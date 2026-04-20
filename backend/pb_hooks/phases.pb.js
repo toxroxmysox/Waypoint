@@ -1,6 +1,7 @@
 /// <reference path="../pb_data/types.d.ts" />
 
 // Re-bucket days when phases are created, updated, or deleted.
+// Each day gets ALL phases whose date range contains it (multi-relation).
 onRecordCreateRequest('phases', (e) => {
 	e.next();
 	rebucketDays(e.app, e.record.getString('trip'));
@@ -17,8 +18,6 @@ onRecordDeleteRequest('phases', (e) => {
 	rebucketDays(e.app, tripId);
 });
 
-// For each day in the trip, find the phase whose date range contains it.
-// Lower order wins ties. Days outside any phase get phase=null.
 function rebucketDays(app, tripId) {
 	let days;
 	try {
@@ -49,24 +48,24 @@ function rebucketDays(app, tripId) {
 	}
 
 	for (const day of days) {
-		const dayDate = day.getString('date').split('T')[0];
-		let matched = null;
+		const dayDate = day.getString('date').substring(0, 10);
+		const matched = [];
 
 		for (const phase of phases) {
 			const pStart = phase.getString('start_date');
 			const pEnd = phase.getString('end_date');
 			if (!pStart || !pEnd) continue;
-			if (dayDate >= pStart.split('T')[0] && dayDate <= pEnd.split('T')[0]) {
-				matched = phase;
-				break; // first match by order wins
+			if (dayDate >= pStart.substring(0, 10) && dayDate <= pEnd.substring(0, 10)) {
+				matched.push(phase.id);
 			}
 		}
 
-		const currentPhase = day.getString('phase');
-		const newPhase = matched ? matched.id : '';
+		const current = day.get('phases') || [];
+		const currentSorted = [...current].sort().join(',');
+		const newSorted = [...matched].sort().join(',');
 
-		if (currentPhase !== newPhase) {
-			day.set('phase', newPhase);
+		if (currentSorted !== newSorted) {
+			day.set('phases', matched);
 			app.save(day);
 		}
 	}
