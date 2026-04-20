@@ -15,7 +15,7 @@ export interface FieldVisibility {
 export const itemFieldConfig: Record<ItemType, FieldVisibility> = {
 	lodging: {
 		subtype: true,
-		subtypes: ['hotel', 'hostel', 'airbnb', 'resort', 'camping', 'other'],
+		subtypes: ['hotel', 'airbnb', 'resort', 'other'],
 		location: true,
 		times: true,
 		booking: true,
@@ -26,7 +26,7 @@ export const itemFieldConfig: Record<ItemType, FieldVisibility> = {
 	},
 	transportation: {
 		subtype: true,
-		subtypes: ['flight', 'train', 'bus', 'ferry', 'car_rental', 'taxi', 'subway', 'walk', 'other'],
+		subtypes: ['flight', 'train', 'bus', 'car', 'other'],
 		location: true,
 		times: true,
 		booking: true,

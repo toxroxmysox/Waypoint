@@ -49,7 +49,7 @@ export interface Phase extends RecordModel {
 
 export interface Day extends RecordModel {
 	trip: string;
-	phase: string;
+	phases: string[];
 	date: string;
 	notes: string;
 }
