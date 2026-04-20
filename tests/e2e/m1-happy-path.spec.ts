@@ -1,45 +1,38 @@
 import { test, expect } from '@playwright/test';
 
-// Prerequisites: PocketBase running on :8090, SvelteKit on :5173
-// A test user must be pre-created in PocketBase with OTP enabled.
-// This test uses a pre-seeded OTP code (only works in dev mode with PocketBase test config).
+// Prerequisites:
+// - PocketBase running on :8090 with WAYPOINT_DEV_MODE=true and E2E_TEST_EMAIL set
+// - SvelteKit preview auto-booted by playwright.config.ts on :4173
+// - .env.local carries WAYPOINT_DEV_MODE and E2E_TEST_EMAIL (loaded via dotenv
+//   in playwright.config.ts so process.env sees them here).
 //
-// Run: pnpm test:e2e
+// /api/dev/login issues a real auth cookie via a PB bypass endpoint. Both
+// endpoints 404/400 unless WAYPOINT_DEV_MODE=true, so production stays safe.
 
-const BASE_URL = 'http://localhost:5173';
-const TEST_TRIP_SLUG = `e2e-test-${Date.now()}`;
+const BASE_URL = 'http://localhost:4173';
 
 test.describe('M1 Happy Path', () => {
-	test.skip(
-		!process.env.E2E_TEST_EMAIL,
-		'Set E2E_TEST_EMAIL and E2E_TEST_OTP_CODE env vars to run E2E tests'
-	);
+	test.skip(!process.env.E2E_TEST_EMAIL, 'Set E2E_TEST_EMAIL to run E2E tests');
 
-	test('login → create trip → add phase → view day', async ({ page }) => {
-		// --- Login ---
-		await page.goto(`${BASE_URL}/login`);
-		await expect(page.getByText('Waypoint')).toBeVisible();
-
-		await page.fill('input[type="email"]', process.env.E2E_TEST_EMAIL!);
-		await page.click('button[type="submit"]');
-
-		// Wait for OTP input to appear
-		await expect(page.getByPlaceholder('000000')).toBeVisible({ timeout: 5000 });
-
-		await page.fill('input[name="code"]', process.env.E2E_TEST_OTP_CODE!);
-		await page.click('button[type="submit"]');
-
-		// Should redirect to /trips
+	test.beforeEach(async ({ page }) => {
+		const email = encodeURIComponent(process.env.E2E_TEST_EMAIL!);
+		await page.goto(`${BASE_URL}/api/dev/login?email=${email}`);
 		await page.waitForURL(`${BASE_URL}/trips`, { timeout: 10000 });
-		await expect(page.getByText('Trips')).toBeVisible();
+	});
+
+	test('create trip → add phase → add item → verify', async ({ page }) => {
+		// Unique slug per run so repeated CI runs don't collide on the trips.slug unique index.
+		const stamp = Date.now().toString(36);
+		const tripTitle = `E2E Trip ${stamp}`;
+		const tripSlug = `e2e-trip-${stamp}`;
+
+		await expect(page.getByRole('heading', { name: 'Trips', level: 1 })).toBeVisible();
 
 		// --- Create trip ---
-		await page.click('text=New Trip');
+		await page.getByRole('link', { name: 'New Trip' }).click();
 		await page.waitForURL(`${BASE_URL}/trips/new`);
 
-		await page.fill('input[name="title"]', 'E2E Test Trip');
-		// Slug auto-generates from title
-		await expect(page.locator('input[name="slug"]')).toHaveValue('e2e-test-trip');
+		await page.fill('input[name="title"]', tripTitle);
 
 		const today = new Date().toISOString().split('T')[0];
 		const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -48,57 +41,54 @@ test.describe('M1 Happy Path', () => {
 		await page.fill('input[name="end_date"]', nextWeek);
 		await page.fill('input[name="location_summary"]', 'Test Location');
 
-		await page.click('button[type="submit"]');
+		await page.getByRole('button', { name: /create|save/i }).click();
 
-		// Should redirect to the new trip
-		await page.waitForURL(/\/trips\/e2e-test-trip/, { timeout: 10000 });
-		await expect(page.getByText('E2E Test Trip')).toBeVisible();
+		await page.waitForURL(`${BASE_URL}/trips/${tripSlug}`, { timeout: 10000 });
+		await expect(page.getByRole('heading', { name: tripTitle })).toBeVisible();
 
-		// --- Trip overview shows days ---
-		await expect(page.getByText('Days')).toBeVisible();
-		// Should have 8 days (today through nextWeek inclusive)
-		const dayLinks = page.locator('a[href*="/days/"]');
+		// Trip overview shows 8 day rows (today through nextWeek inclusive).
+		const dayLinks = page.locator(`a[href^="/trips/${tripSlug}/days/"]`);
 		await expect(dayLinks).toHaveCount(8, { timeout: 5000 });
 
 		// --- Add phase ---
-		await page.click('text=Phases');
-		await page.waitForURL(/\/trips\/e2e-test-trip\/phases/);
+		await page.getByRole('link', { name: 'Phases', exact: true }).click();
+		await page.waitForURL(`${BASE_URL}/trips/${tripSlug}/phases`);
 
-		await page.click('text=Add Phase');
+		await page.getByRole('button', { name: 'Add Phase' }).click();
 		await page.fill('input[name="name"]', 'Phase One');
 		await page.fill('input[name="start_date"]', today);
 
 		const midpoint = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 		await page.fill('input[name="end_date"]', midpoint);
 
-		await page.click('button[type="submit"]');
-		await expect(page.getByText('Phase One')).toBeVisible({ timeout: 5000 });
+		await page.getByRole('button', { name: /create phase/i }).click();
+		await expect(page.getByRole('heading', { name: 'Phase One', level: 3 })).toBeVisible({
+			timeout: 5000
+		});
 
-		// --- Navigate to first day ---
-		await page.click('text=Overview');
-		await page.waitForURL(/\/trips\/e2e-test-trip$/);
+		// --- Navigate to first day via overview ---
+		await page.getByRole('link', { name: 'Overview', exact: true }).click();
+		await page.waitForURL(`${BASE_URL}/trips/${tripSlug}`);
 
 		const firstDay = dayLinks.first();
 		const dayHref = await firstDay.getAttribute('href');
 		await firstDay.click();
-		await expect(page.getByText('Add Item')).toBeVisible();
+		await expect(page.getByRole('link', { name: 'Add Item', exact: true })).toBeVisible();
 
 		// --- Add an item ---
-		await page.click('text=Add Item');
+		await page.getByRole('link', { name: 'Add Item', exact: true }).click();
 		await page.waitForURL(/\/items\/new/);
 
-		// Select activity type (default)
 		await page.fill('input[name="title"]', 'Test Activity');
-		await page.click('button[type="submit"]');
+		await page.getByRole('button', { name: /create|save/i }).click();
 
-		// Should redirect back to day
 		await page.waitForURL(new RegExp(dayHref!.replace(/\//g, '\\/')), { timeout: 10000 });
 		await expect(page.getByText('Test Activity')).toBeVisible();
 	});
 
 	test('no horizontal scroll on mobile viewport', async ({ page }) => {
 		await page.setViewportSize({ width: 375, height: 812 });
-		await page.goto(`${BASE_URL}/login`);
+		await page.goto(`${BASE_URL}/trips`);
 
 		const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
 		const viewportWidth = await page.evaluate(() => window.innerWidth);

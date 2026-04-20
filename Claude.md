@@ -202,3 +202,76 @@ Tell Scott:
 4. Any decisions you made along the way that he should know about
 
 Don't wait to be asked.
+
+---
+
+## Session discipline
+
+**Size of a session:** one sub-milestone, not one full milestone. Full milestones hit compaction mid-task and degrade. If a session requires compaction to finish a single task, the scope was wrong — split sooner next time.
+
+**Start of every session:**
+1. `git status && git log --oneline -5`
+2. `cat M1_STATUS.md` (or the current milestone's status file)
+3. `pnpm check` as a baseline — silence is the expected output
+4. Then pick up the next task
+
+**Maintain `<MILESTONE>_STATUS.md`** at repo root: current sub-milestone, last completed task, next task, any open decisions. Update between tasks, not between sessions. It's the handoff document for future-you.
+
+**After any DOM change that adds links/buttons**, re-run `pnpm test:e2e`. Playwright role-name matching is substring + case-insensitive and will silently start matching new elements.
+
+**After any Svelte change**, run `pnpm check` before declaring done. Catches a11y + runes warnings in one shot; faster than waiting for a dev build.
+
+**Commit at sub-milestone boundaries.** Gives us safe rollback points and keeps `git log` useful as a progress log.
+
+---
+
+## Technical gotchas learned during M1
+
+- **PocketBase JS hooks (v0.27+) run each callback in an isolated sandbox.** Helper functions defined at the top of the hook file are NOT visible inside callbacks. Inline every helper into the callback body. Smoke-test new hooks with a `console.log` from inside the callback before writing logic.
+- **Svelte 5 `$state(expr)` where `expr` reads `data` or `$props`** triggers `state_referenced_locally`. Wrap the initializer in `untrack(() => ...)` from `svelte`.
+- **Svelte a11y: `<label>` must bind to exactly one control.** Use `<fieldset><legend>` for button/checkbox groups; use a plain styled `<div>` for read-only pseudo-labels (e.g. a locked "Type" display in an edit form).
+- **iOS Safari auto-zooms any input under 16px font-size.** Base CSS must force 16px on `input/select/textarea` at mobile widths. Set this on day 1.
+- **iOS `<input type="date">` has an intrinsic min-width from `-webkit-appearance`.** Strip appearance and set `min-width: 0` so grid cells constrain it.
+- **Snake_case enums need a display formatter.** Add `titleCase()` alongside any enum that gets rendered.
+- **Type-config (field visibility) should drive BOTH form AND detail view.** Single source of truth. Don't duplicate the gating logic.
+
+---
+
+## Visual verification (Claude Preview MCP)
+
+Used for catching layout and CSS bugs before Scott sees them. Server config lives at `.claude/launch.json`.
+
+**Workflow:**
+1. `preview_start name="waypoint-dev"` — starts the SvelteKit dev server on an allocated port and returns a `serverId`
+2. `preview_eval expression="location.href = '/some/route'"` — navigate
+3. `preview_screenshot` — layout sanity only
+4. `preview_inspect selector="..." styles=[...]` — **the real verification tool**. Returns computed CSS values. Use this for font-size, color, padding, dimensions. Screenshots lie; computed styles don't.
+5. `preview_resize preset="mobile"` — test 375px viewport for mobile-first compliance
+6. `preview_console_logs level="error"` / `preview_network filter="failed"` — runtime error / failed-request detection
+7. `preview_stop` when done to free the port
+
+**Critical config:** `vite.config.ts` must honor `PORT` env var (`server.port: process.env.PORT ? Number(process.env.PORT) : 5173`). Without it, Vite ignores the preview tool's port allocation and binds to 5174 on its own, leaving the preview pointed at a dead port.
+
+**When to use it:**
+- After any Tailwind class change on a page Scott will actually see
+- After any layout change (grid, flex, spacing)
+- Before declaring a mobile-responsive change done — always verify at the 375px preset
+- When debugging why something "looks wrong" — `preview_inspect` beats reading classnames
+
+**When not to:**
+- Pure logic changes (no DOM/styling impact)
+- Server-only changes (hooks, migrations, +page.server.ts)
+
+---
+
+## Context economy
+
+**Prefer Grep over Read** when the symbol is known. Full-file reads are expensive.
+
+**Don't re-read files you just edited.** Post-edit state is already in context.
+
+**Parallel tool calls** for independent operations. Batch reads, batch grep queries.
+
+**Delegate exploration to Explore agents.** "Where is X used" questions should not pollute the main conversation. Their context is disposable.
+
+**When resuming after a limit:** don't paste the old conversation summary. Paste the resume template (sub-milestone, last task, next task, baseline check). Clean state beats stale state.
