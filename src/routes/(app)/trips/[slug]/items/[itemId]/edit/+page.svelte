@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { untrack } from 'svelte';
 	import { itemFieldConfig, itemTypeLabels, slotOptions } from '$lib/config/item-fields';
 	import type { ConfirmationCode } from '$lib/types';
 
@@ -12,10 +13,14 @@
 
 	let fields = $derived(itemFieldConfig[data.item.type]);
 
+	// untrack() seeds form state from props exactly once without triggering
+	// Svelte's state_referenced_locally warning. Re-mounts on navigation
+	// reinitialize from fresh data, which is what we want for a form.
 	let confirmationCodes = $state<ConfirmationCode[]>(
-		data.item.confirmation_codes?.length > 0
-			? [...data.item.confirmation_codes]
-			: []
+		untrack(() => {
+			const existing = data.item.confirmation_codes;
+			return existing && existing.length > 0 ? [...existing] : [];
+		})
 	);
 
 	function addCode() {
@@ -24,6 +29,20 @@
 
 	function removeCode(index: number) {
 		confirmationCodes = confirmationCodes.filter((_, i) => i !== index);
+	}
+
+	function titleCase(s: string): string {
+		return s
+			.replace(/_/g, ' ')
+			.replace(/\b\w/g, (c) => c.toUpperCase());
+	}
+
+	function normalizeUrl(e: FocusEvent) {
+		const el = e.currentTarget as HTMLInputElement;
+		const v = el.value.trim();
+		if (v && !/^https?:\/\//i.test(v)) {
+			el.value = `https://${v}`;
+		}
 	}
 </script>
 
@@ -55,9 +74,9 @@
 		}}
 		class="space-y-4"
 	>
-		<!-- Type is read-only -->
+		<!-- Type is read-only; no form control, so just a labeled display row -->
 		<div>
-			<label class="block text-sm font-medium text-slate-700">Type</label>
+			<div class="text-sm font-medium text-slate-700">Type</div>
 			<span class="mt-1 inline-block rounded bg-slate-100 px-2 py-1 text-sm text-slate-600">
 				{itemTypeLabels[data.item.type]}
 			</span>
@@ -74,7 +93,7 @@
 				>
 					<option value="">None</option>
 					{#each fields.subtypes as st}
-						<option value={st} selected={data.item.subtype === st}>{st.replace(/_/g, ' ')}</option>
+						<option value={st} selected={data.item.subtype === st}>{titleCase(st)}</option>
 					{/each}
 				</select>
 			</div>
@@ -129,7 +148,7 @@
 					<option value="">Unscheduled</option>
 					{#each data.days as d}
 						<option value={d.id} selected={d.id === data.item.day}>
-							{new Date(d.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+							{new Date(d.date.replace(' ', 'T')).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })}
 						</option>
 					{/each}
 				</select>
@@ -190,24 +209,24 @@
 		<!-- Times -->
 		{#if fields.times}
 			<div class="grid grid-cols-2 gap-3">
-				<div>
+				<div class="min-w-0">
 					<label for="start_time" class="block text-sm font-medium text-slate-700">Start Time</label>
 					<input
 						type="time"
 						id="start_time"
 						name="start_time"
 						value={data.item.start_time}
-						class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
+						class="mt-1 block w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
 					/>
 				</div>
-				<div>
+				<div class="min-w-0">
 					<label for="end_time" class="block text-sm font-medium text-slate-700">End Time</label>
 					<input
 						type="time"
 						id="end_time"
 						name="end_time"
 						value={data.item.end_time}
-						class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
+						class="mt-1 block w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
 					/>
 				</div>
 			</div>
@@ -227,7 +246,10 @@
 						type="url"
 						id="reservation_url"
 						name="reservation_url"
+						inputmode="url"
 						value={data.item.reservation_url}
+						onblur={normalizeUrl}
+						placeholder="example.com"
 						class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
 					/>
 				</div>
@@ -269,10 +291,11 @@
 						/>
 						<button
 							type="button"
+							aria-label="Remove confirmation code"
 							onclick={() => removeCode(i)}
 							class="text-slate-400 hover:text-red-500"
 						>
-							<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+							<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
 								<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
 							</svg>
 						</button>
@@ -311,10 +334,10 @@
 			</div>
 		{/if}
 
-		<!-- Assigned to -->
+		<!-- Assigned to (fieldset wraps a checkbox group) -->
 		{#if data.members.length > 1}
-			<div>
-				<label class="block text-sm font-medium text-slate-700">Assigned To</label>
+			<fieldset>
+				<legend class="block text-sm font-medium text-slate-700">Assigned To</legend>
 				<div class="mt-1 space-y-1">
 					{#each data.members as member}
 						<label class="flex items-center gap-2">
@@ -331,7 +354,7 @@
 						</label>
 					{/each}
 				</div>
-			</div>
+			</fieldset>
 		{/if}
 
 		<button

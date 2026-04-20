@@ -4,24 +4,16 @@
 	let { form } = $props();
 
 	let title = $state('');
-	let slug = $state('');
+	let startDate = $state('');
+	let endDate = $state('');
 	let loading = $state(false);
 	let error = $derived(form?.error ?? '');
 
-	function generateSlug(value: string): string {
-		return value
-			.toLowerCase()
-			.replace(/[^a-z0-9\s-]/g, '')
-			.replace(/\s+/g, '-')
-			.replace(/-+/g, '-')
-			.replace(/^-|-$/g, '');
-	}
-
-	function handleTitleInput(e: Event) {
-		const target = e.target as HTMLInputElement;
-		title = target.value;
-		slug = generateSlug(title);
-	}
+	let duration = $derived(
+		startDate && endDate
+			? Math.max(Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000) + 1, 0)
+			: null
+	);
 </script>
 
 <div class="mx-auto max-w-lg">
@@ -52,48 +44,47 @@
 				id="title"
 				name="title"
 				required
-				value={title}
-				oninput={handleTitleInput}
+				bind:value={title}
 				class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
 				placeholder="Spain 2026"
 			/>
 		</div>
 
 		<div>
-			<label for="slug" class="block text-sm font-medium text-slate-700">URL Slug</label>
-			<input
-				type="text"
-				id="slug"
-				name="slug"
-				required
-				bind:value={slug}
-				pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
-				class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-				placeholder="spain-2026"
-			/>
-			<p class="mt-1 text-xs text-slate-400">waypoint.app/trips/{slug || '...'}</p>
-		</div>
-
-		<div class="grid grid-cols-2 gap-3">
-			<div>
-				<label for="start_date" class="block text-sm font-medium text-slate-700">Start Date</label>
-				<input
-					type="date"
-					id="start_date"
-					name="start_date"
-					required
-					class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-				/>
-			</div>
-			<div>
-				<label for="end_date" class="block text-sm font-medium text-slate-700">End Date</label>
-				<input
-					type="date"
-					id="end_date"
-					name="end_date"
-					required
-					class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-				/>
+			<div class="flex items-end gap-3">
+				<div class="min-w-0 flex-1">
+					<label for="start_date" class="block text-sm font-medium text-slate-700"
+						>Start Date</label
+					>
+					<input
+						type="date"
+						id="start_date"
+						name="start_date"
+						required
+						bind:value={startDate}
+						max={endDate || undefined}
+						class="mt-1 block w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
+					/>
+				</div>
+				<div class="pb-2 text-sm text-slate-400">
+					{#if duration}
+						{duration} {duration === 1 ? 'day' : 'days'}
+					{:else}
+						→
+					{/if}
+				</div>
+				<div class="min-w-0 flex-1">
+					<label for="end_date" class="block text-sm font-medium text-slate-700">End Date</label>
+					<input
+						type="date"
+						id="end_date"
+						name="end_date"
+						required
+						bind:value={endDate}
+						min={startDate || undefined}
+						class="mt-1 block w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
+					/>
+				</div>
 			</div>
 		</div>
 
@@ -103,20 +94,54 @@
 				type="text"
 				id="timezone"
 				name="timezone"
+				list="timezone-list"
 				class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-				placeholder="Europe/Madrid"
+				placeholder="America/Chicago"
 			/>
+			<datalist id="timezone-list">
+				<option value="America/New_York"></option>
+				<option value="America/Chicago"></option>
+				<option value="America/Denver"></option>
+				<option value="America/Los_Angeles"></option>
+				<option value="America/Phoenix"></option>
+				<option value="America/Anchorage"></option>
+				<option value="Pacific/Honolulu"></option>
+				<option value="Europe/London"></option>
+				<option value="Europe/Paris"></option>
+				<option value="Europe/Berlin"></option>
+				<option value="Europe/Madrid"></option>
+				<option value="Europe/Rome"></option>
+				<option value="Europe/Amsterdam"></option>
+				<option value="Europe/Zurich"></option>
+				<option value="Europe/Athens"></option>
+				<option value="Europe/Istanbul"></option>
+				<option value="Asia/Dubai"></option>
+				<option value="Asia/Kolkata"></option>
+				<option value="Asia/Bangkok"></option>
+				<option value="Asia/Singapore"></option>
+				<option value="Asia/Shanghai"></option>
+				<option value="Asia/Tokyo"></option>
+				<option value="Asia/Seoul"></option>
+				<option value="Australia/Sydney"></option>
+				<option value="Pacific/Auckland"></option>
+			</datalist>
+			<p class="mt-1 text-xs text-slate-400">Leave blank to use your local timezone.</p>
 		</div>
 
 		<div>
-			<label for="location_summary" class="block text-sm font-medium text-slate-700">Location</label>
+			<label for="location_summary" class="block text-sm font-medium text-slate-700"
+				>Location <span class="font-normal text-slate-400">(optional)</span></label
+			>
 			<input
 				type="text"
 				id="location_summary"
 				name="location_summary"
 				class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-				placeholder="Spain"
+				placeholder="Spain & Portugal"
 			/>
+			<p class="mt-1 text-xs text-slate-400">
+				Freeform label — city, country, region, whatever fits.
+			</p>
 		</div>
 
 		<button

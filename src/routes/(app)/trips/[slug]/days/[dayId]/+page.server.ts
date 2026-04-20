@@ -1,6 +1,7 @@
 import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Day, Item, Phase } from '$lib/types';
+import type { Day, Item } from '$lib/types';
+import { phasesForDay } from '$lib/utils/phases';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, phases } = await parent();
@@ -21,9 +22,9 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		sort: 'slot,rank'
 	});
 
-	const phase = day.phase ? phases.find((p: Phase) => p.id === day.phase) ?? null : null;
+	const dayPhases = phasesForDay(day, phases);
 
-	return { day, dayItems: items, dayPhase: phase };
+	return { day, dayItems: items, dayPhases };
 };
 
 export const actions: Actions = {

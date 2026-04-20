@@ -1,1 +1,37 @@
 @import 'tailwindcss';
+
+/* iOS Safari auto-zooms when a focused input's effective font-size is < 16px.
+   Enforce 16px on all form controls so the viewport stays put on focus. */
+@media (max-width: 640px) {
+	input,
+	select,
+	textarea {
+		font-size: 16px;
+	}
+}
+
+/* iOS Safari gives <input type="date"> an intrinsic min-width via -webkit-appearance.
+   Strip it so width:100% + min-width:0 actually constrain to the grid cell. */
+input[type='date'],
+input[type='time'],
+input[type='datetime-local'] {
+	-webkit-appearance: none;
+	appearance: none;
+	min-width: 0;
+}
+
+/* Make the color swatch fill the styled container. */
+input[type='color'] {
+	padding: 0;
+}
+input[type='color']::-webkit-color-swatch-wrapper {
+	padding: 0;
+}
+input[type='color']::-webkit-color-swatch {
+	border: none;
+	border-radius: 0.25rem;
+}
+input[type='color']::-moz-color-swatch {
+	border: none;
+	border-radius: 0.25rem;
+}

@@ -20,12 +20,17 @@
 	}
 
 	function dayLabel(): string {
-		return new Date(data.day.date).toLocaleDateString('en-US', {
+		return new Date(data.day.date.replace(' ', 'T')).toLocaleDateString('en-US', {
 			weekday: 'long',
 			month: 'long',
 			day: 'numeric',
-			year: 'numeric'
+			year: 'numeric',
+			timeZone: 'UTC'
 		});
+	}
+
+	function titleCase(s: string): string {
+		return s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 	}
 
 	const typeIcons: Record<string, string> = {
@@ -40,25 +45,48 @@
 </script>
 
 <div class="space-y-4">
-	<a
-		href="/trips/{data.trip.slug}"
-		class="text-sm text-slate-500 hover:text-slate-700"
-	>
-		&larr; Trip overview
-	</a>
+	{#if data.dayPhases.length > 0}
+		<a
+			href="/trips/{data.trip.slug}/phases/{data.dayPhases[0].id}"
+			class="text-sm text-slate-500 hover:text-slate-700"
+		>
+			&larr; {data.dayPhases[0].name}
+		</a>
+	{:else}
+		<a
+			href="/trips/{data.trip.slug}"
+			class="text-sm text-slate-500 hover:text-slate-700"
+		>
+			&larr; Trip overview
+		</a>
+	{/if}
 
 	<div class="flex items-start justify-between">
 		<div>
 			<h2 class="text-lg font-semibold text-slate-900">{dayLabel()}</h2>
-			{#if data.dayPhase}
-				<div class="mt-1 flex items-center gap-1.5">
-					{#if data.dayPhase.color}
-						<span
-							class="h-2.5 w-2.5 rounded-full"
-							style="background-color: {data.dayPhase.color}"
-						></span>
+			{#if data.dayPhases.length > 0}
+				<div class="mt-1 flex flex-wrap items-center gap-2">
+					{#each data.dayPhases as p, idx}
+						<div class="flex items-center gap-1.5">
+							{#if p.color}
+								<span
+									class="h-2.5 w-2.5 rounded-full"
+									style="background-color: {p.color}"
+								></span>
+							{/if}
+							<span class="text-sm text-slate-500">{p.name}</span>
+						</div>
+						{#if idx < data.dayPhases.length - 1}
+							<svg class="h-3 w-3 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+							</svg>
+						{/if}
+					{/each}
+					{#if data.dayPhases.length > 1}
+						<span class="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+							Travel day
+						</span>
 					{/if}
-					<span class="text-sm text-slate-500">{data.dayPhase.name}</span>
 				</div>
 			{/if}
 		</div>
@@ -120,12 +148,21 @@
 		{/if}
 	</div>
 
-	<!-- Slot groups -->
+	<!-- Slot groups (render all 4 slots always; empty slots show a subtle add-CTA) -->
 	{#each slots as slot}
 		{@const items = itemsForSlot(slot.id)}
-		{#if items.length > 0}
-			<section>
-				<h3 class="mb-1.5 text-xs font-medium text-slate-500 uppercase">{slot.label}</h3>
+		<section>
+			<div class="mb-1.5 flex items-center justify-between">
+				<h3 class="text-xs font-medium text-slate-500 uppercase">{slot.label}</h3>
+				<a
+					href="/trips/{data.trip.slug}/items/new?day={data.day.id}&slot={slot.id}"
+					class="text-xs text-slate-400 hover:text-slate-700"
+					aria-label="Add item to {slot.label}"
+				>
+					+ Add
+				</a>
+			</div>
+			{#if items.length > 0}
 				<div class="space-y-2">
 					{#each items as item}
 						<a
@@ -139,6 +176,7 @@
 									viewBox="0 0 24 24"
 									stroke="currentColor"
 									stroke-width="1.5"
+									aria-hidden="true"
 								>
 									<path
 										stroke-linecap="round"
@@ -166,7 +204,7 @@
 									{/if}
 									{#if item.subtype}
 										<span class="mt-1 inline-block rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-600">
-											{item.subtype}
+											{titleCase(item.subtype)}
 										</span>
 									{/if}
 								</div>
@@ -174,19 +212,14 @@
 						</a>
 					{/each}
 				</div>
-			</section>
-		{/if}
+			{:else}
+				<a
+					href="/trips/{data.trip.slug}/items/new?day={data.day.id}&slot={slot.id}"
+					class="block rounded-lg border border-dashed border-slate-200 px-3 py-2 text-xs text-slate-400 hover:border-slate-300 hover:text-slate-600"
+				>
+					No items yet. Tap to add one.
+				</a>
+			{/if}
+		</section>
 	{/each}
-
-	{#if data.dayItems.length === 0}
-		<div class="rounded-lg border border-dashed border-slate-300 p-8 text-center">
-			<p class="text-sm text-slate-500">No items scheduled for this day.</p>
-			<a
-				href="/trips/{data.trip.slug}/items/new?day={data.day.id}"
-				class="mt-2 inline-block text-sm font-medium text-slate-700 hover:text-slate-900"
-			>
-				Add an item
-			</a>
-		</div>
-	{/if}
 </div>

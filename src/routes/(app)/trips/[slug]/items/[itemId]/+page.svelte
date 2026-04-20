@@ -1,9 +1,12 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { itemFieldConfig, itemTypeLabels } from '$lib/config/item-fields';
 
 	let { data } = $props();
 
 	let fields = $derived(itemFieldConfig[data.item.type]);
+	let confirmDelete = $state(false);
+	let deleting = $state(false);
 
 	function formatTime(t: string): string {
 		if (!t) return '';
@@ -38,12 +41,50 @@
 				&larr; Back
 			</a>
 		{/if}
-		<a
-			href="/trips/{data.trip.slug}/items/{data.item.id}/edit"
-			class="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800"
-		>
-			Edit
-		</a>
+		<div class="flex items-center gap-2">
+			<a
+				href="/trips/{data.trip.slug}/items/{data.item.id}/edit"
+				class="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800"
+			>
+				Edit
+			</a>
+			{#if confirmDelete}
+				<form
+					method="POST"
+					action="?/delete"
+					use:enhance={() => {
+						deleting = true;
+						return async ({ update }) => {
+							await update();
+							deleting = false;
+						};
+					}}
+				>
+					<button
+						type="submit"
+						disabled={deleting}
+						class="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+					>
+						{deleting ? 'Deleting...' : 'Confirm'}
+					</button>
+				</form>
+				<button
+					type="button"
+					onclick={() => (confirmDelete = false)}
+					class="text-sm text-slate-500 hover:text-slate-700"
+				>
+					Cancel
+				</button>
+			{:else}
+				<button
+					type="button"
+					onclick={() => (confirmDelete = true)}
+					class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+				>
+					Delete
+				</button>
+			{/if}
+		</div>
 	</div>
 
 	<!-- Header -->
@@ -56,7 +97,7 @@
 					</span>
 					{#if data.item.subtype}
 						<span class="rounded bg-slate-50 px-2 py-0.5 text-xs text-slate-500">
-							{data.item.subtype.replace(/_/g, ' ')}
+							{data.item.subtype.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
 						</span>
 					{/if}
 				</div>
@@ -77,14 +118,14 @@
 		{/if}
 	</div>
 
-	<!-- Schedule info -->
-	{#if data.itemDay || data.itemPhase || data.item.start_time}
+	<!-- Schedule info (hide start/end times if type doesn't support them) -->
+	{#if data.itemDay || data.itemPhase || (fields.times && data.item.start_time)}
 		<div class="rounded-lg border border-slate-200 bg-white p-4 space-y-2">
 			<h3 class="text-xs font-medium text-slate-500 uppercase">Schedule</h3>
 			{#if data.itemDay}
 				<p class="text-sm text-slate-700">
-					{new Date(data.itemDay.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-					<span class="text-slate-400">&middot; {data.item.slot}</span>
+					{new Date(data.itemDay.date.replace(' ', 'T')).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' })}
+					<span class="text-slate-400">&middot; {data.item.slot.charAt(0).toUpperCase() + data.item.slot.slice(1)}</span>
 				</p>
 			{/if}
 			{#if data.itemPhase}
@@ -95,7 +136,7 @@
 					{data.itemPhase.name}
 				</p>
 			{/if}
-			{#if data.item.start_time}
+			{#if fields.times && data.item.start_time}
 				<p class="text-sm text-slate-700">
 					{formatTime(data.item.start_time)}{data.item.end_time ? ` - ${formatTime(data.item.end_time)}` : ''}
 				</p>
@@ -103,8 +144,8 @@
 		</div>
 	{/if}
 
-	<!-- Location -->
-	{#if data.item.location_name || data.item.location_address}
+	<!-- Location (type must support it AND have a populated value) -->
+	{#if fields.location && (data.item.location_name || data.item.location_address)}
 		<div class="rounded-lg border border-slate-200 bg-white p-4 space-y-1">
 			<h3 class="text-xs font-medium text-slate-500 uppercase">Location</h3>
 			{#if data.item.location_name}
@@ -168,24 +209,125 @@
 	{/if}
 
 	<!-- Checklist -->
-	{#if data.item.type === 'checklist' && data.checklistItems.length > 0}
+	{#if data.item.type === 'checklist'}
 		<div class="rounded-lg border border-slate-200 bg-white p-4">
-			<h3 class="text-xs font-medium text-slate-500 uppercase">Checklist</h3>
-			<div class="mt-2 space-y-1">
-				{#each data.checklistItems as ci}
-					<div class="flex items-center gap-2">
-						<input
-							type="checkbox"
-							checked={!!ci.checked_by}
-							disabled
-							class="rounded border-slate-300"
-						/>
-						<span class="text-sm {ci.checked_by ? 'text-slate-400 line-through' : 'text-slate-700'}">
-							{ci.text}
+			<div class="flex items-center justify-between">
+				<h3 class="text-xs font-medium text-slate-500 uppercase">
+					Checklist
+					{#if data.checklistItems.length > 0}
+						<span class="ml-1 text-slate-400">
+							({data.checklistItems.filter((ci) => ci.checked_by).length}/{data.checklistItems.length})
 						</span>
-					</div>
-				{/each}
+					{/if}
+				</h3>
 			</div>
+
+			{#if data.checklistItems.length > 0}
+				<div class="mt-2 space-y-1">
+					{#each data.checklistItems as ci, i}
+						<div class="flex items-center gap-1">
+							<form method="POST" action="?/toggleChecklistItem" use:enhance>
+								<input type="hidden" name="ci_id" value={ci.id} />
+								<button
+									type="submit"
+									class="flex items-center"
+									aria-label={ci.checked_by ? 'Uncheck' : 'Check'}
+								>
+									<span
+										class="flex h-5 w-5 items-center justify-center rounded border
+											{ci.checked_by
+											? 'border-slate-900 bg-slate-900 text-white'
+											: 'border-slate-300 bg-white hover:border-slate-500'}"
+									>
+										{#if ci.checked_by}
+											<svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+											</svg>
+										{/if}
+									</span>
+								</button>
+							</form>
+							<span class="flex-1 px-2 text-sm {ci.checked_by ? 'text-slate-400 line-through' : 'text-slate-700'}">
+								{ci.text}
+							</span>
+							{#if i > 0}
+								<form method="POST" action="?/reorderChecklistItem" use:enhance>
+									<input type="hidden" name="ci_id" value={ci.id} />
+									<input type="hidden" name="direction" value="up" />
+									<button
+										type="submit"
+										class="rounded p-1 text-slate-300 hover:bg-slate-100 hover:text-slate-600"
+										title="Move up"
+										aria-label="Move up"
+									>
+										<svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
+										</svg>
+									</button>
+								</form>
+							{/if}
+							{#if i < data.checklistItems.length - 1}
+								<form method="POST" action="?/reorderChecklistItem" use:enhance>
+									<input type="hidden" name="ci_id" value={ci.id} />
+									<input type="hidden" name="direction" value="down" />
+									<button
+										type="submit"
+										class="rounded p-1 text-slate-300 hover:bg-slate-100 hover:text-slate-600"
+										title="Move down"
+										aria-label="Move down"
+									>
+										<svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+										</svg>
+									</button>
+								</form>
+							{/if}
+							<form method="POST" action="?/deleteChecklistItem" use:enhance>
+								<input type="hidden" name="ci_id" value={ci.id} />
+								<button
+									type="submit"
+									class="rounded p-1 text-slate-300 hover:bg-red-50 hover:text-red-600"
+									title="Delete"
+									aria-label="Delete"
+								>
+									<svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+									</svg>
+								</button>
+							</form>
+						</div>
+					{/each}
+				</div>
+			{:else}
+				<p class="mt-2 text-xs text-slate-400 italic">No items yet.</p>
+			{/if}
+
+			<form
+				method="POST"
+				action="?/addChecklistItem"
+				use:enhance={() =>
+					async ({ result, update, formElement }) => {
+						await update({ reset: false });
+						if (result.type === 'success') {
+							formElement.reset();
+						}
+					}}
+				class="mt-3 flex gap-2"
+			>
+				<input
+					type="text"
+					name="text"
+					required
+					placeholder="Add item..."
+					class="flex-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
+				/>
+				<button
+					type="submit"
+					class="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800"
+				>
+					Add
+				</button>
+			</form>
 		</div>
 	{/if}
 

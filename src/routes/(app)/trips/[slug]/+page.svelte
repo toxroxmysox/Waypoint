@@ -1,34 +1,23 @@
 <script lang="ts">
 	import type { Phase, Day } from '$lib/types';
+	import { phasesForDay } from '$lib/utils/phases';
 
 	let { data } = $props();
 
-	function formatDate(d: string): string {
-		return new Date(d).toLocaleDateString('en-US', {
-			month: 'short',
-			day: 'numeric',
-			year: 'numeric'
-		});
-	}
-
 	function formatDateRange(start: string, end: string): string {
-		const s = new Date(start);
-		const e = new Date(end);
-		const startStr = s.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-		const endStr = e.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+		const s = new Date(start.replace(' ', 'T'));
+		const e = new Date(end.replace(' ', 'T'));
+		const startStr = s.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+		const endStr = e.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 		return `${startStr} - ${endStr}`;
 	}
 
 	function daysInPhase(phase: Phase): Day[] {
-		return data.days.filter((d: Day) => d.phase === phase.id);
-	}
-
-	function unassignedDays(): Day[] {
-		return data.days.filter((d: Day) => !d.phase);
+		return data.days.filter((d: Day) => (d.phases ?? []).includes(phase.id));
 	}
 
 	function dayLabel(d: Day): string {
-		return new Date(d.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+		return new Date(d.date.replace(' ', 'T')).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
 	}
 </script>
 
@@ -114,24 +103,27 @@
 			<h2 class="mb-2 text-sm font-medium text-slate-500 uppercase">Days</h2>
 			<div class="space-y-1">
 				{#each data.days as day}
+					{@const dp = phasesForDay(day, data.phases)}
 					<a
 						href="/trips/{data.trip.slug}/days/{day.id}"
 						class="flex items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2"
 					>
 						<span class="text-sm text-slate-900">{dayLabel(day)}</span>
-						{#if day.phase}
-							{@const phase = data.phases.find((p: Phase) => p.id === day.phase)}
-							{#if phase}
-								<span class="flex items-center gap-1 text-xs text-slate-500">
-									{#if phase.color}
+						{#if dp.length > 0}
+							<span class="flex items-center gap-1 text-xs text-slate-500">
+								{#each dp as p, idx}
+									{#if p.color}
 										<span
 											class="h-2 w-2 rounded-full"
-											style="background-color: {phase.color}"
+											style="background-color: {p.color}"
 										></span>
 									{/if}
-									{phase.name}
-								</span>
-							{/if}
+									<span>{p.name}</span>
+									{#if idx < dp.length - 1}
+										<span class="text-slate-300">&rarr;</span>
+									{/if}
+								{/each}
+							</span>
 						{/if}
 					</a>
 				{/each}

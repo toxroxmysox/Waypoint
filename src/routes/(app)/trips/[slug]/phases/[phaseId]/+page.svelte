@@ -7,14 +7,22 @@
 	let editing = $state(false);
 	let loading = $state(false);
 	let error = $derived(form?.error ?? '');
-	let success = $derived(form?.success ?? false);
 
 	function dayLabel(d: Day): string {
-		return new Date(d.date).toLocaleDateString('en-US', {
+		return new Date(d.date.replace(' ', 'T')).toLocaleDateString('en-US', {
 			weekday: 'short',
 			month: 'short',
-			day: 'numeric'
+			day: 'numeric',
+			timeZone: 'UTC'
 		});
+	}
+
+	function daysNightsLabel(start: string, end: string): string {
+		const s = new Date(start.substring(0, 10) + 'T00:00:00.000Z');
+		const e = new Date(end.substring(0, 10) + 'T00:00:00.000Z');
+		const days = Math.round((e.getTime() - s.getTime()) / 86_400_000) + 1;
+		if (days <= 1) return '1 day';
+		return `${days} days · ${days - 1} night${days - 1 === 1 ? '' : 's'}`;
 	}
 </script>
 
@@ -28,10 +36,6 @@
 
 	{#if error}
 		<div class="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</div>
-	{/if}
-
-	{#if success}
-		<div class="rounded-md bg-green-50 p-3 text-sm text-green-700">Phase updated.</div>
 	{/if}
 
 	<!-- Phase header -->
@@ -49,7 +53,7 @@
 			<button
 				type="button"
 				onclick={() => (editing = !editing)}
-				class="text-sm text-slate-500 hover:text-slate-700"
+				class="cursor-pointer rounded-md border border-slate-200 px-3 py-1 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
 			>
 				{editing ? 'Cancel' : 'Edit'}
 			</button>
@@ -58,8 +62,9 @@
 			<p class="mt-1 text-sm text-slate-500">{data.phase.location}</p>
 		{/if}
 		<p class="mt-1 text-xs text-slate-400">
-			{new Date(data.phase.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} -
-			{new Date(data.phase.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+			{new Date(data.phase.start_date.replace(' ', 'T')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })} -
+			{new Date(data.phase.end_date.replace(' ', 'T')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
+			&middot; {daysNightsLabel(data.phase.start_date, data.phase.end_date)}
 		</p>
 	</div>
 
@@ -101,7 +106,7 @@
 			</div>
 
 			<div class="grid grid-cols-2 gap-3">
-				<div>
+				<div class="min-w-0">
 					<label for="start_date" class="block text-sm font-medium text-slate-700">Start</label>
 					<input
 						type="date"
@@ -109,10 +114,10 @@
 						name="start_date"
 						required
 						value={data.phase.start_date.split('T')[0].split(' ')[0]}
-						class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
+						class="mt-1 block w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
 					/>
 				</div>
-				<div>
+				<div class="min-w-0">
 					<label for="end_date" class="block text-sm font-medium text-slate-700">End</label>
 					<input
 						type="date"
@@ -120,7 +125,7 @@
 						name="end_date"
 						required
 						value={data.phase.end_date.split('T')[0].split(' ')[0]}
-						class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
+						class="mt-1 block w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
 					/>
 				</div>
 			</div>

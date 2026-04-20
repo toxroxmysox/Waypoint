@@ -21,6 +21,20 @@
 	function removeCode(index: number) {
 		confirmationCodes = confirmationCodes.filter((_, i) => i !== index);
 	}
+
+	function titleCase(s: string): string {
+		return s
+			.replace(/_/g, ' ')
+			.replace(/\b\w/g, (c) => c.toUpperCase());
+	}
+
+	function normalizeUrl(e: FocusEvent) {
+		const el = e.currentTarget as HTMLInputElement;
+		const v = el.value.trim();
+		if (v && !/^https?:\/\//i.test(v)) {
+			el.value = `https://${v}`;
+		}
+	}
 </script>
 
 <div class="space-y-4">
@@ -48,43 +62,6 @@
 		}}
 		class="space-y-4"
 	>
-		<!-- Type selector -->
-		<div>
-			<label class="block text-sm font-medium text-slate-700">Type</label>
-			<div class="mt-1 flex flex-wrap gap-2">
-				{#each Object.entries(itemTypeLabels) as [type, label]}
-					<button
-						type="button"
-						onclick={() => (selectedType = type as ItemType)}
-						class="rounded-full px-3 py-1 text-sm font-medium
-							{selectedType === type
-							? 'bg-slate-900 text-white'
-							: 'bg-slate-100 text-slate-600 hover:bg-slate-200'}"
-					>
-						{label}
-					</button>
-				{/each}
-			</div>
-			<input type="hidden" name="type" value={selectedType} />
-		</div>
-
-		<!-- Subtype pills -->
-		{#if fields.subtype && fields.subtypes.length > 0}
-			<div>
-				<label for="subtype" class="block text-sm font-medium text-slate-700">Subtype</label>
-				<select
-					id="subtype"
-					name="subtype"
-					class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-				>
-					<option value="">None</option>
-					{#each fields.subtypes as st}
-						<option value={st}>{st.replace(/_/g, ' ')}</option>
-					{/each}
-				</select>
-			</div>
-		{/if}
-
 		<!-- Title -->
 		<div>
 			<label for="title" class="block text-sm font-medium text-slate-700">Title</label>
@@ -97,6 +74,44 @@
 				placeholder="Hotel check-in, Train to Madrid, etc."
 			/>
 		</div>
+
+		<!-- Type selector (fieldset/legend: these buttons are a group control) -->
+		<fieldset>
+			<legend class="block text-sm font-medium text-slate-700">Type</legend>
+			<div class="mt-1 flex flex-wrap gap-2">
+				{#each Object.entries(itemTypeLabels) as [type, label]}
+					<button
+						type="button"
+						aria-pressed={selectedType === type}
+						onclick={() => (selectedType = type as ItemType)}
+						class="rounded-full px-3 py-1 text-sm font-medium
+							{selectedType === type
+							? 'bg-slate-900 text-white'
+							: 'bg-slate-100 text-slate-600 hover:bg-slate-200'}"
+					>
+						{label}
+					</button>
+				{/each}
+			</div>
+			<input type="hidden" name="type" value={selectedType} />
+		</fieldset>
+
+		<!-- Subtype -->
+		{#if fields.subtype && fields.subtypes.length > 0}
+			<div>
+				<label for="subtype" class="block text-sm font-medium text-slate-700">Subtype</label>
+				<select
+					id="subtype"
+					name="subtype"
+					class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
+				>
+					<option value="">None</option>
+					{#each fields.subtypes as st}
+						<option value={st}>{titleCase(st)}</option>
+					{/each}
+				</select>
+			</div>
+		{/if}
 
 		<!-- Description -->
 		<div>
@@ -121,7 +136,7 @@
 					<option value="">Unscheduled</option>
 					{#each data.days as d}
 						<option value={d.id} selected={d.id === data.preselectedDay}>
-							{new Date(d.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+							{new Date(d.date.replace(' ', 'T')).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })}
 						</option>
 					{/each}
 				</select>
@@ -134,7 +149,7 @@
 					class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
 				>
 					{#each slotOptions as opt}
-						<option value={opt.value}>{opt.label}</option>
+						<option value={opt.value} selected={opt.value === data.preselectedSlot}>{opt.label}</option>
 					{/each}
 				</select>
 			</div>
@@ -183,22 +198,22 @@
 		<!-- Times -->
 		{#if fields.times}
 			<div class="grid grid-cols-2 gap-3">
-				<div>
+				<div class="min-w-0">
 					<label for="start_time" class="block text-sm font-medium text-slate-700">Start Time</label>
 					<input
 						type="time"
 						id="start_time"
 						name="start_time"
-						class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
+						class="mt-1 block w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
 					/>
 				</div>
-				<div>
+				<div class="min-w-0">
 					<label for="end_time" class="block text-sm font-medium text-slate-700">End Time</label>
 					<input
 						type="time"
 						id="end_time"
 						name="end_time"
-						class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
+						class="mt-1 block w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
 					/>
 				</div>
 			</div>
@@ -218,6 +233,9 @@
 						type="url"
 						id="reservation_url"
 						name="reservation_url"
+						inputmode="url"
+						onblur={normalizeUrl}
+						placeholder="example.com"
 						class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
 					/>
 				</div>
@@ -259,10 +277,11 @@
 						/>
 						<button
 							type="button"
+							aria-label="Remove confirmation code"
 							onclick={() => removeCode(i)}
 							class="text-slate-400 hover:text-red-500"
 						>
-							<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+							<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
 								<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
 							</svg>
 						</button>
@@ -299,10 +318,10 @@
 			</div>
 		{/if}
 
-		<!-- Assigned to -->
+		<!-- Assigned to (fieldset wraps a checkbox group) -->
 		{#if data.members.length > 1}
-			<div>
-				<label class="block text-sm font-medium text-slate-700">Assigned To</label>
+			<fieldset>
+				<legend class="block text-sm font-medium text-slate-700">Assigned To</legend>
 				<div class="mt-1 space-y-1">
 					{#each data.members as member}
 						<label class="flex items-center gap-2">
@@ -318,7 +337,7 @@
 						</label>
 					{/each}
 				</div>
-			</div>
+			</fieldset>
 		{/if}
 
 		<button

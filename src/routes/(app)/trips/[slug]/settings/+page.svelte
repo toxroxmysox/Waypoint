@@ -44,7 +44,7 @@
 		</div>
 
 		<div class="grid grid-cols-2 gap-3">
-			<div>
+			<div class="min-w-0">
 				<label for="start_date" class="block text-sm font-medium text-slate-700">Start Date</label>
 				<input
 					type="date"
@@ -52,10 +52,10 @@
 					name="start_date"
 					required
 					value={data.trip.start_date.split('T')[0].split(' ')[0]}
-					class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
+					class="mt-1 block w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
 				/>
 			</div>
-			<div>
+			<div class="min-w-0">
 				<label for="end_date" class="block text-sm font-medium text-slate-700">End Date</label>
 				<input
 					type="date"
@@ -63,7 +63,7 @@
 					name="end_date"
 					required
 					value={data.trip.end_date.split('T')[0].split(' ')[0]}
-					class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
+					class="mt-1 block w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
 				/>
 			</div>
 		</div>

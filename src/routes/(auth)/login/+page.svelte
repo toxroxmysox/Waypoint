@@ -6,7 +6,10 @@
 	let otpId = $state('');
 	let email = $state('');
 	let loading = $state(false);
-	let error = $derived(form?.error ?? '');
+	let error = $state('');
+	$effect(() => {
+		if (form?.error) error = form.error;
+	});
 </script>
 
 <div class="flex min-h-dvh items-center justify-center bg-slate-50 p-4">
@@ -34,6 +37,7 @@
 				action="?/requestOTP"
 				use:enhance={() => {
 					loading = true;
+					error = '';
 					return async ({ result, update }) => {
 						loading = false;
 						if (result.type === 'success' && result.data?.otpId) {
@@ -70,6 +74,7 @@
 				action="?/verifyOTP"
 				use:enhance={() => {
 					loading = true;
+					error = '';
 					return async ({ update }) => {
 						loading = false;
 						await update();
@@ -86,7 +91,7 @@
 					autocomplete="one-time-code"
 					inputmode="numeric"
 					maxlength="6"
-					pattern="[0-9]{6}"
+					oninput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/\D/g, ''); }}
 					class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-center text-2xl tracking-[0.5em] text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
 					placeholder="000000"
 				/>

@@ -2,9 +2,9 @@
 	let { data } = $props();
 
 	function formatDateRange(start: string, end: string): string {
-		const s = new Date(start);
-		const e = new Date(end);
-		const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+		const s = new Date(start.replace(' ', 'T'));
+		const e = new Date(end.replace(' ', 'T'));
+		const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', timeZone: 'UTC' };
 		const startStr = s.toLocaleDateString('en-US', opts);
 		const endStr = e.toLocaleDateString('en-US', { ...opts, year: 'numeric' });
 		return `${startStr} - ${endStr}`;

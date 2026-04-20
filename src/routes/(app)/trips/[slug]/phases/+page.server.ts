@@ -23,13 +23,21 @@ export const actions: Actions = {
 			return fail(400, { error: 'Start date must be before end date.' });
 		}
 
+		const tripStart = (trip['start_date'] as string).split('T')[0].split(' ')[0];
+		const tripEnd = (trip['end_date'] as string).split('T')[0].split(' ')[0];
+		if (startDate < tripStart || endDate > tripEnd) {
+			return fail(400, {
+				error: `Phase dates must fall within the trip (${tripStart} to ${tripEnd}). Edit the trip dates first if you need a wider range.`
+			});
+		}
+
 		try {
 			const existing = await locals.pb.collection('phases').getFullList({
 				filter: `trip = "${trip.id}"`,
 				sort: '-order',
 				fields: 'order'
 			});
-			const nextOrder = existing.length > 0 ? existing[0].getInt('order') + 1 : 0;
+			const nextOrder = existing.length > 0 ? Number(existing[0]['order']) + 1 : 0;
 
 			await locals.pb.collection('phases').create({
 				trip: trip.id,
@@ -69,8 +77,8 @@ export const actions: Actions = {
 			const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
 			if (swapIdx < 0 || swapIdx >= phases.length) return { success: true };
 
-			const currentOrder = phases[idx].getInt('order');
-			const swapOrder = phases[swapIdx].getInt('order');
+			const currentOrder = Number(phases[idx]['order']);
+			const swapOrder = Number(phases[swapIdx]['order']);
 
 			await Promise.all([
 				locals.pb.collection('phases').update(phases[idx].id, { order: swapOrder }),

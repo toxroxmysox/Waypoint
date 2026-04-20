@@ -1,12 +1,25 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Day, TripMember } from '$lib/types';
+import type { Day, Phase, TripMember, Slot } from '$lib/types';
+
+const VALID_SLOTS: Slot[] = ['morning', 'afternoon', 'evening', 'anytime'];
 
 export const load: PageServerLoad = async ({ url, locals, parent }) => {
 	const { trip, phases, days } = await parent();
 
 	const dayId = url.searchParams.get('day');
-	const phaseId = url.searchParams.get('phase');
+	const phaseIdParam = url.searchParams.get('phase');
+	const slotParam = url.searchParams.get('slot') as Slot | null;
+
+	// If a day was preselected and no phase was explicitly passed, infer the
+	// phase from the day's first matched phase so the form arrives filled in.
+	let preselectedPhase = phaseIdParam || '';
+	if (dayId && !preselectedPhase) {
+		const day = (days as Day[]).find((d) => d.id === dayId);
+		if (day?.phases?.length) {
+			preselectedPhase = day.phases[0];
+		}
+	}
 
 	// Load trip members for assigned_to selector
 	const members = await locals.pb.collection('trip_members').getFullList<TripMember>({
@@ -20,13 +33,17 @@ export const load: PageServerLoad = async ({ url, locals, parent }) => {
 		days,
 		members,
 		preselectedDay: dayId || '',
-		preselectedPhase: phaseId || ''
+		preselectedPhase,
+		preselectedSlot: slotParam && VALID_SLOTS.includes(slotParam) ? slotParam : 'anytime'
 	};
 };
 
 export const actions: Actions = {
 	default: async ({ request, locals, params }) => {
 		const trip = await locals.pb.collection('trips').getFirstListItem(`slug = "${params.slug}"`);
+		const membership = await locals.pb
+			.collection('trip_members')
+			.getFirstListItem(`trip = "${trip.id}" && user = "${locals.user!.id}"`);
 		const data = await request.formData();
 
 		const type = data.get('type')?.toString() || 'activity';
@@ -76,7 +93,7 @@ export const actions: Actions = {
 				sort: '-rank',
 				fields: 'rank'
 			});
-			const nextRank = existingItems.length > 0 ? existingItems[0].getInt('rank') + 1 : 0;
+			const nextRank = existingItems.length > 0 ? Number(existingItems[0]['rank']) + 1 : 0;
 
 			const item = await locals.pb.collection('items').create({
 				trip: trip.id,
@@ -101,18 +118,25 @@ export const actions: Actions = {
 				rank: nextRank,
 				parent_item: parentItem || '',
 				parking_lot_scope: day ? 'none' : 'trip',
-				created_by: locals.user!.id,
+				created_by: membership.id,
 				status: 'planned'
 			});
 
 			// Redirect back to day view if came from a day, otherwise trip overview
 			if (day) {
-				redirect(303, `/trips/${trip.getString('slug')}/days/${day}`);
+				redirect(303, `/trips/${params.slug}/days/${day}`);
 			}
-			redirect(303, `/trips/${trip.getString('slug')}`);
+			redirect(303, `/trips/${params.slug}`);
 		} catch (err: unknown) {
 			if (err && typeof err === 'object' && 'status' in err && err.status === 303) throw err;
-			const message = err instanceof Error ? err.message : 'Failed to create item.';
+			// PocketBase ClientResponseError has a .response.data with per-field validation errors.
+			const e = err as { message?: string; response?: { data?: Record<string, { message: string }> } };
+			const fieldErrors = e.response?.data
+				? Object.entries(e.response.data)
+						.map(([f, v]) => `${f}: ${v.message}`)
+						.join('; ')
+				: '';
+			const message = fieldErrors || e.message || 'Failed to create item.';
 			return fail(500, { error: message });
 		}
 	}

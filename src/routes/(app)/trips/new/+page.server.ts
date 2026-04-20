@@ -5,25 +5,42 @@ export const load: PageServerLoad = async () => {
 	return {};
 };
 
+function toSlug(title: string): string {
+	return title
+		.toLowerCase()
+		.replace(/[^a-z0-9\s-]/g, '')
+		.replace(/\s+/g, '-')
+		.replace(/-+/g, '-')
+		.replace(/^-|-$/g, '');
+}
+
 export const actions: Actions = {
 	default: async ({ request, locals }) => {
 		const data = await request.formData();
 		const title = data.get('title')?.toString().trim();
-		const slug = data.get('slug')?.toString().trim().toLowerCase();
 		const startDate = data.get('start_date')?.toString();
 		const endDate = data.get('end_date')?.toString();
-		const timezone = data.get('timezone')?.toString() || Intl.DateTimeFormat().resolvedOptions().timeZone;
+		const timezone =
+			data.get('timezone')?.toString().trim() ||
+			Intl.DateTimeFormat().resolvedOptions().timeZone;
 		const locationSummary = data.get('location_summary')?.toString().trim() || '';
 
 		if (!title) return fail(400, { error: 'Title is required.' });
-		if (!slug) return fail(400, { error: 'URL slug is required.' });
 		if (!startDate || !endDate) return fail(400, { error: 'Start and end dates are required.' });
 		if (new Date(startDate) > new Date(endDate)) {
 			return fail(400, { error: 'Start date must be before end date.' });
 		}
-		// Validate slug format
-		if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
-			return fail(400, { error: 'Slug must be lowercase letters, numbers, and hyphens only.' });
+
+		// Generate slug from title, append suffix on collision
+		const base = toSlug(title) || 'trip';
+		let slug = base;
+		for (let i = 1; i <= 10; i++) {
+			const existing = await locals.pb
+				.collection('trips')
+				.getFirstListItem(`slug = "${slug}"`)
+				.catch(() => null);
+			if (!existing) break;
+			slug = `${base}-${i}`;
 		}
 
 		try {
@@ -41,12 +58,10 @@ export const actions: Actions = {
 				archived: false
 			});
 
-			redirect(303, `/trips/${trip.getString('slug')}`);
+			redirect(303, `/trips/${trip.slug}`);
 		} catch (err: unknown) {
-			const message = err instanceof Error ? err.message : 'Failed to create trip.';
-			if (message.includes('slug')) {
-				return fail(400, { error: 'That URL slug is already taken.' });
-			}
+			if (err && typeof err === 'object' && 'status' in err) throw err;
+			const message = (err as { message?: string }).message ?? 'Failed to create trip.';
 			return fail(500, { error: message });
 		}
 	}

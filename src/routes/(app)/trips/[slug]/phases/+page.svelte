@@ -6,17 +6,29 @@
 	let showCreate = $state(false);
 	let loading = $state(false);
 	let error = $derived(form?.error ?? '');
+	let confirmDeleteId = $state<string | null>(null);
 
 	function formatDateRange(start: string, end: string): string {
-		const s = new Date(start);
-		const e = new Date(end);
-		const startStr = s.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+		const s = new Date(start.replace(' ', 'T'));
+		const e = new Date(end.replace(' ', 'T'));
+		const startStr = s.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 		const endStr = e.toLocaleDateString('en-US', {
 			month: 'short',
 			day: 'numeric',
-			year: 'numeric'
+			year: 'numeric',
+			timeZone: 'UTC'
 		});
 		return `${startStr} - ${endStr}`;
+	}
+
+	// Inclusive day span. Single-day phases drop the nights label since
+	// "1 day · 0 nights" reads wrong for something like a day trip.
+	function daysNightsLabel(start: string, end: string): string {
+		const s = new Date(start.substring(0, 10) + 'T00:00:00.000Z');
+		const e = new Date(end.substring(0, 10) + 'T00:00:00.000Z');
+		const days = Math.round((e.getTime() - s.getTime()) / 86_400_000) + 1;
+		if (days <= 1) return '1 day';
+		return `${days} days · ${days - 1} night${days - 1 === 1 ? '' : 's'}`;
 	}
 </script>
 
@@ -78,24 +90,24 @@
 			</div>
 
 			<div class="grid grid-cols-2 gap-3">
-				<div>
+				<div class="min-w-0">
 					<label for="start_date" class="block text-sm font-medium text-slate-700">Start</label>
 					<input
 						type="date"
 						id="start_date"
 						name="start_date"
 						required
-						class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
+						class="mt-1 block w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
 					/>
 				</div>
-				<div>
+				<div class="min-w-0">
 					<label for="end_date" class="block text-sm font-medium text-slate-700">End</label>
 					<input
 						type="date"
 						id="end_date"
 						name="end_date"
 						required
-						class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
+						class="mt-1 block w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
 					/>
 				</div>
 			</div>
@@ -161,6 +173,7 @@
 						</div>
 						<p class="mt-1 text-xs text-slate-500">
 							{formatDateRange(phase.start_date, phase.end_date)}
+							&middot; {daysNightsLabel(phase.start_date, phase.end_date)}
 							{#if phase.location}
 								&middot; {phase.location}
 							{/if}
@@ -201,18 +214,38 @@
 						{/if}
 
 						<!-- Delete -->
-						<form
-							method="POST"
-							action="?/delete"
-							use:enhance={() => {
-								return async ({ update }) => {
-									await update();
-								};
-							}}
-						>
-							<input type="hidden" name="phase_id" value={phase.id} />
+						{#if confirmDeleteId === phase.id}
+							<form
+								method="POST"
+								action="?/delete"
+								use:enhance={() => {
+									return async ({ update }) => {
+										confirmDeleteId = null;
+										await update();
+									};
+								}}
+								class="flex items-center gap-1"
+							>
+								<input type="hidden" name="phase_id" value={phase.id} />
+								<button
+									type="submit"
+									class="rounded bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700"
+									title="Confirm delete"
+								>
+									Delete?
+								</button>
+								<button
+									type="button"
+									onclick={() => (confirmDeleteId = null)}
+									class="rounded px-2 py-1 text-xs text-slate-500 hover:text-slate-700"
+								>
+									Cancel
+								</button>
+							</form>
+						{:else}
 							<button
-								type="submit"
+								type="button"
+								onclick={() => (confirmDeleteId = phase.id)}
 								class="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600"
 								title="Delete phase"
 							>
@@ -220,7 +253,7 @@
 									<path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
 								</svg>
 							</button>
-						</form>
+						{/if}
 					</div>
 				</div>
 			</div>

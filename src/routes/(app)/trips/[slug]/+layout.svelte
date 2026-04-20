@@ -21,8 +21,7 @@
 
 <div>
 	<div class="mb-4">
-		<a href="/trips" class="text-sm text-slate-500 hover:text-slate-700">&larr; Back to trips</a>
-		<h1 class="mt-1 text-xl font-bold text-slate-900">{data.trip.title}</h1>
+		<h1 class="text-xl font-bold text-slate-900">{data.trip.title}</h1>
 		{#if data.trip.location_summary}
 			<p class="text-sm text-slate-500">{data.trip.location_summary}</p>
 		{/if}

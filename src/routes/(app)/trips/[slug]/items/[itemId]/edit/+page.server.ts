@@ -68,7 +68,7 @@ export const actions: Actions = {
 
 		try {
 			const item = await locals.pb.collection('items').getOne(params.itemId);
-			const type = item.getString('type');
+			const type = item['type'] as string;
 
 			if (booked && (type === 'meal' || type === 'note')) {
 				return fail(400, { error: `${type} items cannot be marked as booked.` });
@@ -107,7 +107,7 @@ export const actions: Actions = {
 	delete: async ({ params, locals }) => {
 		try {
 			const item = await locals.pb.collection('items').getOne(params.itemId);
-			const dayId = item.getString('day');
+			const dayId = item['day'] as string;
 			await locals.pb.collection('items').delete(params.itemId);
 
 			if (dayId) {
