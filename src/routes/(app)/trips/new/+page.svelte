@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { enhance } from '$app/forms';
 
 	let { form } = $props();
@@ -6,8 +7,13 @@
 	let title = $state('');
 	let startDate = $state('');
 	let endDate = $state('');
+	let timezone = $state('');
 	let loading = $state(false);
 	let error = $derived(form?.error ?? '');
+
+	onMount(() => {
+		timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+	});
 
 	let duration = $derived(
 		startDate && endDate
@@ -95,6 +101,7 @@
 				id="timezone"
 				name="timezone"
 				list="timezone-list"
+				bind:value={timezone}
 				class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
 				placeholder="America/Chicago"
 			/>

@@ -39,7 +39,7 @@ export const actions: Actions = {
 	update: async ({ request, params, locals }) => {
 		const trip = await locals.pb
 			.collection('trips')
-			.getFirstListItem(`slug = "${params.slug}"`);
+			.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
 		const data = await request.formData();
 		const name = data.get('name')?.toString().trim();
 		const location = data.get('location')?.toString().trim() || '';

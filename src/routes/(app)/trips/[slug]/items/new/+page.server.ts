@@ -1,4 +1,4 @@
-import { fail, redirect } from '@sveltejs/kit';
+import { fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Day, Phase, TripMember, Slot } from '$lib/types';
 
@@ -40,7 +40,9 @@ export const load: PageServerLoad = async ({ url, locals, parent }) => {
 
 export const actions: Actions = {
 	default: async ({ request, locals, params }) => {
-		const trip = await locals.pb.collection('trips').getFirstListItem(`slug = "${params.slug}"`);
+		const trip = await locals.pb
+			.collection('trips')
+			.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
 		const membership = await locals.pb
 			.collection('trip_members')
 			.getFirstListItem(`trip = "${trip.id}" && user = "${locals.user!.id}"`);
@@ -128,7 +130,7 @@ export const actions: Actions = {
 			}
 			redirect(303, `/trips/${params.slug}`);
 		} catch (err: unknown) {
-			if (err && typeof err === 'object' && 'status' in err && err.status === 303) throw err;
+			if (isRedirect(err)) throw err;
 			// PocketBase ClientResponseError has a .response.data with per-field validation errors.
 			const e = err as { message?: string; response?: { data?: Record<string, { message: string }> } };
 			const fieldErrors = e.response?.data

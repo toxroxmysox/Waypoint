@@ -8,7 +8,9 @@ export const load: PageServerLoad = async ({ parent }) => {
 
 export const actions: Actions = {
 	create: async ({ request, locals, params }) => {
-		const trip = await locals.pb.collection('trips').getFirstListItem(`slug = "${params.slug}"`);
+		const trip = await locals.pb
+			.collection('trips')
+			.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
 		const data = await request.formData();
 		const name = data.get('name')?.toString().trim();
 		const location = data.get('location')?.toString().trim() || '';
@@ -58,7 +60,9 @@ export const actions: Actions = {
 	},
 
 	reorder: async ({ request, locals, params }) => {
-		const trip = await locals.pb.collection('trips').getFirstListItem(`slug = "${params.slug}"`);
+		const trip = await locals.pb
+			.collection('trips')
+			.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
 		const data = await request.formData();
 		const phaseId = data.get('phase_id')?.toString();
 		const direction = data.get('direction')?.toString();

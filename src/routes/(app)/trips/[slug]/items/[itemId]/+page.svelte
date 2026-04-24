@@ -10,8 +10,9 @@
 
 	function formatTime(t: string): string {
 		if (!t) return '';
-		const [h, m] = t.split(':');
-		const hour = parseInt(h);
+		const timePart = t.includes('T') ? t.split('T')[1] : t.includes(' ') ? t.split(' ')[1] : t;
+		const [h, m] = timePart.split(':');
+		const hour = parseInt(h, 10);
 		const ampm = hour >= 12 ? 'PM' : 'AM';
 		const h12 = hour % 12 || 12;
 		return `${h12}:${m} ${ampm}`;

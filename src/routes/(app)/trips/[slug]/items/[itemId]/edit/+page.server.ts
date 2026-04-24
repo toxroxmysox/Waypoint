@@ -1,4 +1,4 @@
-import { error, fail, redirect } from '@sveltejs/kit';
+import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Item, ChecklistItem, TripMember } from '$lib/types';
 
@@ -98,7 +98,7 @@ export const actions: Actions = {
 
 			redirect(303, `/trips/${params.slug}/items/${params.itemId}`);
 		} catch (err: unknown) {
-			if (err && typeof err === 'object' && 'status' in err && err.status === 303) throw err;
+			if (isRedirect(err)) throw err;
 			const message = err instanceof Error ? err.message : 'Failed to update item.';
 			return fail(500, { error: message });
 		}
@@ -115,7 +115,7 @@ export const actions: Actions = {
 			}
 			redirect(303, `/trips/${params.slug}`);
 		} catch (err: unknown) {
-			if (err && typeof err === 'object' && 'status' in err && err.status === 303) throw err;
+			if (isRedirect(err)) throw err;
 			const message = err instanceof Error ? err.message : 'Failed to delete item.';
 			return fail(500, { error: message });
 		}

@@ -1,5 +1,6 @@
-import { fail, redirect } from '@sveltejs/kit';
+import { fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
+import type { TripMember } from '$lib/types';
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { trip, membership } = await parent();
@@ -22,10 +23,16 @@ export const actions: Actions = {
 		}
 
 		try {
-			// Get the trip first
 			const trip = await locals.pb
 				.collection('trips')
-				.getFirstListItem(`slug = "${params.slug}"`);
+				.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+
+			const membership = await locals.pb
+				.collection('trip_members')
+				.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}"`);
+			if (membership.role !== 'owner' && membership.role !== 'co_owner') {
+				return fail(403, { error: 'Only trip owners can change settings.' });
+			}
 
 			await locals.pb.collection('trips').update(trip.id, {
 				title,
@@ -46,12 +53,19 @@ export const actions: Actions = {
 		try {
 			const trip = await locals.pb
 				.collection('trips')
-				.getFirstListItem(`slug = "${params.slug}"`);
+				.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+
+			const membership = await locals.pb
+				.collection('trip_members')
+				.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}"`);
+			if (membership.role !== 'owner' && membership.role !== 'co_owner') {
+				return fail(403, { error: 'Only trip owners can delete the trip.' });
+			}
 
 			await locals.pb.collection('trips').delete(trip.id);
 			redirect(303, '/trips');
 		} catch (err: unknown) {
-			if (err && typeof err === 'object' && 'status' in err && err.status === 303) throw err;
+			if (isRedirect(err)) throw err;
 			const message = err instanceof Error ? err.message : 'Failed to delete trip.';
 			return fail(500, { error: message });
 		}

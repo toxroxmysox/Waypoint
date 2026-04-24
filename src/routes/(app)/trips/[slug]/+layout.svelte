@@ -3,7 +3,7 @@
 
 	let { data, children } = $props();
 
-	let activeTab = $derived(() => {
+	let activeTab = $derived.by(() => {
 		const path = page.url.pathname;
 		if (path.endsWith('/settings')) return 'settings';
 		if (path.includes('/phases')) return 'phases';
@@ -31,7 +31,7 @@
 		{#each tabs as tab}
 			<a
 				href={tab.href}
-				class="whitespace-nowrap border-b-2 px-3 pb-2 text-sm font-medium {activeTab() === tab.id
+				class="whitespace-nowrap border-b-2 px-3 pb-2 text-sm font-medium {activeTab === tab.id
 					? 'border-slate-900 text-slate-900'
 					: 'border-transparent text-slate-500 hover:text-slate-700'}"
 			>

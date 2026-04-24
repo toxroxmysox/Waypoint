@@ -33,6 +33,16 @@
 		return s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 	}
 
+	function formatTime(t: string): string {
+		if (!t) return '';
+		const timePart = t.includes('T') ? t.split('T')[1] : t.includes(' ') ? t.split(' ')[1] : t;
+		const [h, m] = timePart.split(':');
+		const hour = parseInt(h, 10);
+		const ampm = hour >= 12 ? 'PM' : 'AM';
+		const h12 = hour % 12 || 12;
+		return `${h12}:${m} ${ampm}`;
+	}
+
 	const typeIcons: Record<string, string> = {
 		lodging: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
 		transportation:
@@ -196,7 +206,7 @@
 									{#if item.start_time || item.location_name}
 										<p class="mt-0.5 text-xs text-slate-500">
 											{#if item.start_time}
-												{item.start_time}{item.end_time ? ` - ${item.end_time}` : ''}
+												{formatTime(item.start_time)}{item.end_time ? ` - ${formatTime(item.end_time)}` : ''}
 											{/if}
 											{#if item.start_time && item.location_name} &middot; {/if}
 											{#if item.location_name}{item.location_name}{/if}

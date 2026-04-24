@@ -5,7 +5,9 @@ import type { Trip, TripMember, Phase, Day } from '$lib/types';
 export const load: LayoutServerLoad = async ({ params, locals }) => {
 	let trip: Trip;
 	try {
-		trip = await locals.pb.collection('trips').getFirstListItem<Trip>(`slug = "${params.slug}"`);
+		trip = await locals.pb
+			.collection('trips')
+			.getFirstListItem<Trip>(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
 	} catch {
 		error(404, 'Trip not found');
 	}

@@ -1,4 +1,4 @@
-import { error, fail, redirect } from '@sveltejs/kit';
+import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Item, ChecklistItem, TripMember } from '$lib/types';
 
@@ -53,7 +53,7 @@ export const actions: Actions = {
 			}
 			redirect(303, `/trips/${params.slug}`);
 		} catch (err: unknown) {
-			if (err && typeof err === 'object' && 'status' in err && err.status === 303) throw err;
+			if (isRedirect(err)) throw err;
 			const message = err instanceof Error ? err.message : 'Failed to delete item.';
 			return fail(500, { error: message });
 		}
@@ -93,6 +93,7 @@ export const actions: Actions = {
 
 		try {
 			const ci = await locals.pb.collection('checklist_items').getOne(ciId);
+			if (ci['item'] !== params.itemId) return fail(403, { error: 'Not authorized.' });
 			const isChecked = !!ci['checked_by'];
 
 			if (isChecked) {
@@ -114,12 +115,14 @@ export const actions: Actions = {
 		}
 	},
 
-	deleteChecklistItem: async ({ request, locals }) => {
+	deleteChecklistItem: async ({ request, locals, params }) => {
 		const formData = await request.formData();
 		const ciId = formData.get('ci_id')?.toString();
 		if (!ciId) return fail(400, { error: 'Missing id.' });
 
 		try {
+			const ci = await locals.pb.collection('checklist_items').getOne(ciId);
+			if (ci['item'] !== params.itemId) return fail(403, { error: 'Not authorized.' });
 			await locals.pb.collection('checklist_items').delete(ciId);
 			return { success: true };
 		} catch (err: unknown) {
