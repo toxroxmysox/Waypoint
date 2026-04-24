@@ -1,6 +1,6 @@
 # Trip App — v1 Specification
 
-> Codename: TBD. Working name in this doc: **the App**.
+> Codename: Waypoint
 > Owner: Scott Vanden Warsen
 > Last updated: 2026-04-15
 
