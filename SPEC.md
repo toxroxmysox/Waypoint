@@ -2,7 +2,7 @@
 
 > Codename: Waypoint
 > Owner: Scott Vanden Warsen
-> Last updated: 2026-04-15
+> Last updated: 2026-04-25
 
 ---
 
@@ -337,7 +337,42 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 - Basic accessibility: keyboard nav, alt text, semantic HTML
 - All forms validate before submit
 
-**Dogfood:** China work trip, May 15.
+**Dogfood:** China work trip, May 15 (runs on the M1.5 re-skinned build).
+
+---
+
+### M1.5 — Design System (target: by May 10, before China dogfood)
+**Goal:** Replace ad-hoc slate Tailwind styling with the Waypoint design system from the Claude Design handoff. Zero product surface change; zero feature regression. The China dogfood runs on this re-skinned build.
+
+**Features:**
+- Design tokens in Tailwind v4 `@theme`: paper, surface, surface-2, ink, ink-soft, ink-muted, line, moss, moss-soft, moss-tint, clay, gold, sky; radii sm/md/lg/xl; card shadow; 8pt spacing scale
+- Google Fonts: Fraunces (display), Inter (UI), JetBrains Mono (codes / times / money)
+- Primitive components in `src/lib/components/ui/`: `Pill`, `Card`, `Button`, `SectionH`, `TypeIcon`, `Avatar`, `NavBar`, `FAB`
+- `<NavBar>` context-aware per route (title, subtitle, back, right) — replaces current top `Header.svelte`
+- Trip subtitle renders `location_summary` in Fraunces italic (handoff-style tagline; carries through to the archive view in M5)
+- Phase color picker locked to the accent palette (moss, clay, gold, sky); storage stays hex text
+- Empty trip starter actions: only what M1 supports (Add a phase, Add a day item)
+- Re-skin all M1 routes: trips list, trip overview, phase detail, day detail, item detail, item form, login
+- `app.html` theme-color and apple-touch-icon refreshed to the paper/ink palette
+
+**Out of scope (deferred to future milestones — add when the underlying feature lands):**
+- `<BottomNav>` — keep top `<NavBar>` until M4 introduces a second top-level surface (Trip Mode "Today" home)
+- `<AvatarStack>` rendering of multiple members — only the single-user case is exercised pre-M2
+- Empty-trip CTA: "Invite a member" → M2; "Add an expense" → M3; "Open vault" → M4
+- Trip Mode state machine, NOW divider, clay accent swap — M4
+- Pill variants for `pending` / `to_book` — M3 (paired with tri-state booking pill backlog item)
+- Decisions screen, suggestions inbox UI, parking-lot drawer — respective milestones
+- Feature-flag infrastructure — introduced when the first flag is actually needed
+
+**Acceptance:**
+- All M1 acceptance criteria still pass
+- `pnpm check` clean, `pnpm test:e2e` 2/2 green
+- No horizontal scroll at 375px on any M1 route
+- All form controls remain ≥16px font-size on mobile (iOS auto-zoom guard)
+- Manual sanity pass on iPhone Safari
+- Existing test phase color values updated to palette values (one-time data fix, not a migration)
+
+**Dogfood:** Carried by the M1 China trip — same trip, re-skinned build.
 
 ---
 
@@ -606,7 +641,7 @@ Explicitly not building. Each is a future consideration but **must not creep in*
 ## 13. Open Decisions (defer until forced)
 
 1. **Vote display UI** — heart, star, thumbs-up, +1 counter. Decide when building M4.
-2. **Color palette / typography** — mood: clean and confident like colabsoftware.com, with personality not corporate. Decide during M1 frontend setup.
+2. **Color palette / typography** — **Closed 2026-04-25.** Adopted the Waypoint design system from the Claude Design handoff: paper/ink/moss/clay/gold/sky palette, Fraunces (display) / Inter (UI) / JetBrains Mono (mono). Implemented in M1.5; tokens live in `src/routes/layout.css` `@theme`.
 3. **App name** — placeholder. Decide before public archive launch (M5).
 4. **Domain** — `trips.scottvandenwarsen.com` recommended. Confirm before M4 deployment.
 5. **Server location** — home server vs VPS. Decide before M4.
