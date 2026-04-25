@@ -1,0 +1,103 @@
+# PocketBase Permissions — Rules of Record
+
+Source of truth for who can do what against the API. Generated and verified by `backend/test-rules.mjs`. Update this file when rules change; the harness will fail if the documented intent diverges from observed behavior.
+
+Last reviewed: 2026-04-25 (M2a baseline — role-agnostic membership check).
+
+---
+
+## Vocabulary
+
+- **member** = a user with any `trip_members` row for the trip in question
+- **non-member** = an authenticated user with no `trip_members` row
+- **anon** = no auth token
+- **admin context** = PocketBase server hook running as superuser; bypasses all rules
+
+PocketBase rule semantics:
+
+- `null` → admin context only; no API access at any level
+- `""` (empty string) → no rule; anyone (including anon) passes
+- expression → evaluated per-record; `@request.auth.id != ""` requires authentication
+
+When a list/view rule denies a record, PB returns `404` (not `403`) so existence isn't leaked. Create/update/delete denials return `403`.
+
+---
+
+## Current rules (M1 baseline, post-0014)
+
+Role-agnostic. Any member of a trip can do anything to that trip's data; non-members are shut out. Role-based gating (per SPEC §3) is layered on top in later sub-milestones via server hooks and additional rules — see "Planned tightening" below.
+
+| Collection | list | view | create | update | delete |
+|---|---|---|---|---|---|
+| `users` | self only | self only | null (OTP hook) | self only | null (no API) |
+| `trips` | member | member | authed | member | member |
+| `trip_members` | member of trip | member of trip | null (hooks/admin) | member of trip | member of trip |
+| `phases` | member of trip | member of trip | member of trip | member of trip | member of trip |
+| `days` | member of trip | member of trip | null (hooks) | member of trip | null (hooks) |
+| `items` | member of trip | member of trip | member of trip | member of trip | member of trip |
+| `checklist_items` | member of item.trip | member of item.trip | member of item.trip | member of item.trip | member of item.trip |
+
+**Reasoning for each `null`:**
+
+- `users.create` — user records are created by the OTP hook (`auth.pb.js`) or the dev bypass, both running in admin context. Direct API signup would skip OTP verification.
+- `users.delete` — out of scope for M1/M2. Account deletion is a future SPEC item (M6+); leave shut until designed.
+- `trip_members.create` — creator-owner row is added by the trips after-create hook; placeholders + invite acceptance are hook-driven (M2b/M2c). No legitimate path goes through direct client POST.
+- `days.create` — generated automatically by trips after-create / after-update hooks based on the trip's date range. Users never create days directly.
+- `days.delete` — same: pruning happens inside the trips after-update hook when the date range shrinks.
+
+**Identity expressions used in 0014:**
+
+```
+self_only        = id = @request.auth.id
+authed           = @request.auth.id != ""
+member           = @request.auth.id != "" && trip_members_via_trip.user ?= @request.auth.id
+member_via_trip  = @request.auth.id != "" && trip.trip_members_via_trip.user ?= @request.auth.id
+member_via_item  = @request.auth.id != "" && item.trip.trip_members_via_trip.user ?= @request.auth.id
+```
+
+The `?=` operator in PB is "any of the multi-relation values matches". Required because `trip_members_via_trip` is a back-relation (multiple rows per trip).
+
+---
+
+## Target rules per SPEC §3
+
+The current baseline lets any member do anything. SPEC §3 carves out role-specific behavior that gets enforced over the course of M2:
+
+| Action | Owner | Co-Owner | Traveler | Viewer |
+|---|:---:|:---:|:---:|:---:|
+| trips.update (metadata) | ✓ | ✓ | — | — |
+| trips.delete | ✓ | — | — | — |
+| trip_members.create (invite) | ✓ all roles | ✓ all roles | ✓ traveler/viewer only | — |
+| trip_members.update (promote / change role) | ✓ | ✓ (not the sole owner) | — | — |
+| trip_members.delete (remove member) | ✓ | ✓ (not the sole owner) | self only | self only |
+| items.create direct | ✓ | ✓ | — (suggests instead) | — |
+| items.update / delete | ✓ | ✓ | — | — |
+| suggestions.create (target_type=new_item) | ✓ auto-approve | ✓ auto-approve | ✓ queued unless trip.auto_approve_suggestions | — |
+| suggestions.update (approve/reject) | ✓ | ✓ | — | — |
+| suggestions.create (target_type=comment) | ✓ | ✓ | ✓ | ✓ |
+| checklist_items.update (check/uncheck) | ✓ | ✓ | ✓ | — |
+
+Implementation strategy: anything expressible as a PB rule expression goes into the rule. Anything that requires reading `trip_members.role` or cross-record logic (e.g. "cannot remove the sole owner") goes into a server hook in `pb_hooks/` and the rule stays at "member-of-trip". The hook rejects with `BadRequestError` / `ForbiddenError` and the harness asserts the resulting status.
+
+---
+
+## Planned tightening per sub-milestone
+
+- **M2a (this milestone)** — Reassert all rules explicitly with reasons. Add harness. No behavior change. ← we are here
+- **M2b** — Add `pending_invites` collection with its own 5 rules. Invite-create hook validates inviter role per SPEC §3 (travelers can only invite traveler/viewer). Accept-invite hook creates the trip_members row.
+- **M2c** — Tighten `trip_members.update` and `trip_members.delete` to owner/co-owner only via hook + tighten the rules to allow self-row updates (display_name) for any member. Sole-owner invariants enforced in hook.
+- **M2d** — Add `suggestions` collection. Tighten `items.create` to owner/co-owner only (travelers route through suggestions). Hook on suggestion-create handles auto-approval per role.
+- **M2e** — Suggestion rule branch for `target_type=comment` always auto-approves regardless of role.
+- **M2f** — Add `notifications` collection with recipient-only rules. Hooks on suggestion/comment/member events fan out to recipients.
+
+The harness expectations table at the bottom of `test-rules.mjs` is updated alongside each tightening migration. A green run is the gate for declaring a sub-milestone done.
+
+---
+
+## Notes & gotchas
+
+- **`view` denials look like 404s**, not 403s. The harness encodes both as "denied" but reports the exact code so we can spot when PB upgrades and changes behavior.
+- **`list` denials don't 404 — they return 200 with an empty page.** The harness asserts `items.length === 0` for non-members instead of a status code.
+- **Auth-collection `view` quirk**: PB's auth collection view rule is also gated by superuser-or-self for the auth fields (password hash, tokenKey). With `viewRule = id = @request.auth.id` we get a clean self-only view. Cross-member lookup (e.g. avatar of a co-traveler) goes through `trip_members.display_name` instead, not through reading other users' rows.
+- **Back-relation requires the field to exist on the foreign side.** `trip_members.user` (relation to users) gives us `users.trip_members_via_user`. If a relation field is renamed or removed the back-relation name changes — update rule expressions in lockstep.
+- **Multi-relation membership uses `?=`.** Single-relation would use `=`. The `trip_members_via_trip` back-relation is a list, hence `?=`.
