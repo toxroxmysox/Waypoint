@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Waypoint — Dev Handoff for Claude Code</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F6F2EA;
+    --surface: #FFFFFF;
+    --surface-2: #FBF8F2;
+    --ink: #1C1B18;
+    --ink-soft: #4C4A44;
+    --ink-muted: #8A847A;
+    --line: #E2DCD0;
+    --moss: #3E5A3A;
+    --moss-soft: #6F8B6A;
+    --moss-tint: #E8EFE3;
+    --clay: #A5593A;
+    --gold: #C89B3C;
+    --sky: #3B6BA5;
+    --ui: 'Inter', system-ui, sans-serif;
+    --display: 'Fraunces', Georgia, serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; background: var(--paper);
+    font-family: var(--ui); color: var(--ink); -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 64px 32px 160px; }
+  h1 {
+    font-family: var(--display); font-size: 48px; font-weight: 500;
+    letter-spacing: -1px; line-height: 1.05; margin: 8px 0 14px;
+  }
+  h2 {
+    font-family: var(--display); font-size: 30px; font-weight: 500;
+    letter-spacing: -0.5px; line-height: 1.1; margin: 56px 0 8px;
+    padding-bottom: 10px; border-bottom: 1.5px solid var(--ink);
+  }
+  h3 {
+    font-family: var(--display); font-size: 20px; font-weight: 600;
+    letter-spacing: -0.2px; margin: 28px 0 6px;
+  }
+  h4 { font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--moss); margin: 18px 0 4px; font-weight: 700; }
+  p { color: var(--ink-soft); margin: 6px 0 12px; }
+  a { color: var(--moss); }
+  code, pre {
+    font-family: var(--mono); font-size: 12.5px;
+  }
+  code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); color: var(--ink); }
+  pre {
+    background: var(--ink); color: #EDE4D0; padding: 16px 18px;
+    border-radius: 10px; overflow-x: auto; font-size: 12px; line-height: 1.55;
+    border: 1px solid var(--ink);
+  }
+  pre .k { color: #A5D8B6; } pre .s { color: #F2C596; } pre .c { color: #7A7468; font-style: italic; }
+  pre .n { color: #9CC7E8; } pre .t { color: #E6D68A; }
+  .kicker { font-size: 11px; letter-spacing: 0.2em; font-weight: 700; text-transform: uppercase; color: var(--moss); }
+  .callout {
+    padding: 14px 18px; background: var(--moss-tint);
+    border: 1px solid var(--moss); border-radius: 10px;
+    color: var(--ink); margin: 16px 0;
+    font-size: 14px;
+  }
+  .callout.warn { background: #FBF1DC; border-color: var(--gold); }
+  table {
+    width: 100%; border-collapse: collapse; margin: 10px 0 18px;
+    font-size: 13.5px; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+  }
+  th, td {
+    text-align: left; padding: 10px 14px;
+    border-bottom: 1px solid var(--line); vertical-align: top;
+  }
+  th {
+    font-weight: 600; color: var(--ink); background: var(--surface-2);
+    font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  tr:last-child td { border-bottom: 0; }
+  td code { font-size: 11.5px; }
+  ul, ol { padding-left: 22px; color: var(--ink-soft); }
+  li { margin: 4px 0; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .swatch {
+    padding: 10px 12px; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 8px; display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: var(--ink-soft);
+  }
+  .swatch .chip { width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--line); flex-shrink: 0; }
+  .swatch b { color: var(--ink); display: block; font-size: 13px; }
+  .tocbox {
+    padding: 16px 18px; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 12px; margin: 24px 0 40px;
+  }
+  .tocbox a { display: block; text-decoration: none; padding: 4px 0; color: var(--ink-soft); font-size: 14px; }
+  .tocbox a:hover { color: var(--moss); }
+  .tocbox a b { color: var(--ink); margin-right: 8px; font-family: var(--mono); font-size: 12px; }
+  hr { border: 0; border-top: 1px solid var(--line); margin: 32px 0; }
+  .top {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; color: var(--ink-muted); margin-bottom: 40px;
+  }
+  .top a { color: var(--ink-soft); text-decoration: none; }
+  .tag {
+    display: inline-block; padding: 2px 8px; font-size: 10.5px;
+    background: var(--moss-tint); color: var(--moss);
+    border-radius: 999px; font-weight: 600; letter-spacing: 0.05em;
+    vertical-align: middle; margin-left: 6px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <a href="Waypoint Round 2.html">← Hi-fi prototype</a>
+    <span>·</span>
+    <a href="Waypoint Wireframes.html">Round 1 wireframes</a>
+  </div>
+
+  <div class="kicker">Dev handoff · for Claude Code</div>
+  <h1>Waypoint — integration spec</h1>
+  <p style="font-size: 17px; max-width: 680px;">
+    Everything you need to scaffold the real app alongside ongoing design iteration.
+    The prototype is a thin presentation layer over the contracts below —
+    wire these primitives up first and design changes will land as theme/content swaps,
+    not rewrites.
+  </p>
+
+  <div class="tocbox">
+    <a href="#philosophy"><b>00</b>Integration philosophy — what to build first</a>
+    <a href="#stack"><b>01</b>Recommended stack</a>
+    <a href="#tokens"><b>02</b>Design tokens</a>
+    <a href="#data"><b>03</b>Data model</a>
+    <a href="#state"><b>04</b>Mode + state machines</a>
+    <a href="#components"><b>05</b>Component contracts</a>
+    <a href="#screens"><b>06</b>Screen inventory</a>
+    <a href="#api"><b>07</b>API surface</a>
+    <a href="#flags"><b>08</b>Feature flags</a>
+    <a href="#open"><b>09</b>Open questions</a>
+  </div>
+
+  <!-- ─────────────────────────────── -->
+  <h2 id="philosophy">00 · Integration philosophy</h2>
+  <p>
+    The goal: land design changes as <b>theme + content swaps</b>, not
+    rewrites. Build the three things that don't change first — tokens, data
+    model, mode state — then layer components on top. Screens are the most
+    volatile layer and should come last.
+  </p>
+
+  <h4>Build order</h4>
+  <ol>
+    <li><b>Tokens</b> — lift §02 verbatim into <code>src/theme/tokens.ts</code> and CSS vars. These are stable.</li>
+    <li><b>Schema + seed data</b> — §03. Ship with the Andalucía trip as a seed so you can test with real shape from day 1.</li>
+    <li><b>Mode state</b> — §04. Put this in a root-level context; almost every screen reads it.</li>
+    <li><b>Primitives</b> — §05: Pill, Avatar, TypeIcon, Card, Button, NavBar, BottomNav, Phone. These have frozen APIs. Skin is locked.</li>
+    <li><b>Screens</b> — §06. Wire them to primitives + data. Design will iterate here; that's fine.</li>
+    <li><b>Collaboration + sync</b> last — §07.</li>
+  </ol>
+
+  <div class="callout">
+    <b>Rule of thumb.</b> If a primitive's API changes, every screen has to re-render mentally. So lock primitives early.
+    If a screen's layout changes, only that screen does. So leave screens flexible.
+  </div>
+
+  <!-- ─────────────────────────────── -->
+  <h2 id="stack">01 · Recommended stack</h2>
+  <table>
+    <tr><th>Layer</th><th>Choice</th><th>Why</th></tr>
+    <tr><td>Framework</td><td>React Native + Expo</td><td>iOS-first prototype targets phone. Web mirror via Expo Router if needed.</td></tr>
+    <tr><td>Nav</td><td>Expo Router (file-based)</td><td>Each <code>screen-*</code> ID in §06 maps 1:1 to a route file.</td></tr>
+    <tr><td>State</td><td>Zustand + TanStack Query</td><td>Zustand for UI/mode state; Query for trip/item data + sync.</td></tr>
+    <tr><td>Backend</td><td>Convex or Supabase</td><td>Real-time is non-negotiable for suggestions/collab.</td></tr>
+    <tr><td>Type</td><td>TypeScript strict</td><td>Data model has many discriminated unions (item types). Strict keeps you honest.</td></tr>
+    <tr><td>Auth</td><td>Passkeys + magic link</td><td>Travelers shouldn't fight passwords on the road.</td></tr>
+  </table>
+
+  <!-- ─────────────────────────────── -->
+  <h2 id="tokens">02 · Design tokens</h2>
+  <p>Lift verbatim. The prototype CSS vars map 1:1 to these.</p>
+
+  <h4>Color</h4>
+  <div class="grid-2">
+    <div class="swatch"><div class="chip" style="background:#F6F2EA"></div><div><b>paper · #F6F2EA</b>Page background</div></div>
+    <div class="swatch"><div class="chip" style="background:#FFFFFF"></div><div><b>surface · #FFF</b>Cards</div></div>
+    <div class="swatch"><div class="chip" style="background:#FBF8F2"></div><div><b>surface-2 · #FBF8F2</b>Nested</div></div>
+    <div class="swatch"><div class="chip" style="background:#1C1B18"></div><div><b>ink · #1C1B18</b>Primary text</div></div>
+    <div class="swatch"><div class="chip" style="background:#4C4A44"></div><div><b>ink-soft · #4C4A44</b>Body text</div></div>
+    <div class="swatch"><div class="chip" style="background:#8A847A"></div><div><b>ink-muted · #8A847A</b>Secondary</div></div>
+    <div class="swatch"><div class="chip" style="background:#E2DCD0"></div><div><b>line · #E2DCD0</b>Borders</div></div>
+    <div class="swatch"><div class="chip" style="background:#3E5A3A"></div><div><b>moss · #3E5A3A</b>Primary accent, booked, commit</div></div>
+    <div class="swatch"><div class="chip" style="background:#A5593A"></div><div><b>clay · #A5593A</b>Trip mode, urgency</div></div>
+    <div class="swatch"><div class="chip" style="background:#C89B3C"></div><div><b>gold · #C89B3C</b>Pending / TODAY badge</div></div>
+    <div class="swatch"><div class="chip" style="background:#3B6BA5"></div><div><b>sky · #3B6BA5</b>Info, maps</div></div>
+    <div class="swatch"><div class="chip" style="background:#E8EFE3"></div><div><b>moss-tint · #E8EFE3</b>Booked backgrounds</div></div>
+  </div>
+
+  <h4>Type</h4>
+  <table>
+    <tr><th>Role</th><th>Family</th><th>Use</th></tr>
+    <tr><td><code>--display</code></td><td>Fraunces 500</td><td>Trip / day / item titles, section headers. Use italic for supporting lines ("Nendaz, Lucerne, Zürich.").</td></tr>
+    <tr><td><code>--ui</code></td><td>Inter 400–700</td><td>Body, labels, buttons.</td></tr>
+    <tr><td><code>--mono</code></td><td>JetBrains Mono</td><td>Confirmation codes, times ("14:30"), money, small-caps metadata.</td></tr>
+  </table>
+
+  <h4>Radii · shadow · spacing</h4>
+  <pre><span class="c">/* radius */</span>
+<span class="k">--r-sm</span>: 6px;  <span class="k">--r-md</span>: 10px;  <span class="k">--r-lg</span>: 16px;  <span class="k">--r-xl</span>: 22px;
+
+<span class="c">/* card shadow (normal / strong) */</span>
+box-shadow: <span class="n">0 1px 2px</span> rgba(28,27,24,0.03);
+box-shadow: <span class="n">0 1px 0</span> rgba(28,27,24,0.04), <span class="n">0 8px 24px</span> rgba(28,27,24,0.06);
+
+<span class="c">/* spacing (8pt) */</span>
+4, 8, 10, 12, 14, 16, 20, 24, 32, 40, 56
+</pre>
+
+  <!-- ─────────────────────────────── -->
+  <h2 id="data">03 · Data model</h2>
+  <p>TypeScript discriminated unions. Item types drive both icon and the set of fields.</p>
+
+  <pre><span class="k">type</span> <span class="t">Trip</span> = {
+  id: <span class="t">string</span>;
+  title: <span class="t">string</span>;            <span class="c">// "Andalucía Loop"</span>
+  tagline?: <span class="t">string</span>;         <span class="c">// "Nendaz, Lucerne, Zürich."</span>
+  startDate: <span class="t">ISODate</span>;
+  endDate: <span class="t">ISODate</span>;
+  status: <span class="s">'draft' | 'upcoming' | 'on_trip' | 'past' | 'archived'</span>;
+  cover?: <span class="t">Image</span>;
+  phases: <span class="t">Phase</span>[];
+  members: <span class="t">Member</span>[];
+  createdBy: <span class="t">UserId</span>;
+};
+
+<span class="k">type</span> <span class="t">Phase</span> = {
+  id: <span class="t">string</span>;
+  name: <span class="t">string</span>;              <span class="c">// "Granada"</span>
+  startDate: <span class="t">ISODate</span>;
+  endDate: <span class="t">ISODate</span>;
+  days: <span class="t">Day</span>[];
+};
+
+<span class="k">type</span> <span class="t">Day</span> = {
+  id: <span class="t">string</span>;
+  date: <span class="t">ISODate</span>;
+  label?: <span class="s">'travel_day' | 'rest_day'</span>;
+  slots: <span class="t">Record</span>&lt;<span class="t">SlotKey</span>, <span class="t">Item</span>[]&gt;;   <span class="c">// morning/afternoon/evening/anytime</span>
+};
+
+<span class="k">type</span> <span class="t">Item</span> =
+  | <span class="t">LodgingItem</span> | <span class="t">TransportItem</span>
+  | <span class="t">ActivityItem</span> | <span class="t">MealItem</span>
+  | <span class="t">NoteItem</span> | <span class="t">ChecklistItem</span>;
+
+<span class="k">interface</span> <span class="t">BaseItem</span> {
+  id: <span class="t">string</span>;
+  type: <span class="t">ItemType</span>;            <span class="c">// drives icon family</span>
+  sub?: <span class="t">ItemSubtype</span>;         <span class="c">// drives icon variant</span>
+  title: <span class="t">string</span>;
+  startsAt?: <span class="t">ISODateTime</span>;   <span class="c">// when present, slot is inferred</span>
+  endsAt?: <span class="t">ISODateTime</span>;
+  durationMin?: <span class="t">number</span>;
+  location?: <span class="t">Location</span>;
+  status: <span class="t">ItemStatus</span>;        <span class="c">// see §04</span>
+  bookedBy?: <span class="t">UserId</span>;
+  confirmationCodes: <span class="t">ConfCode</span>[];
+  cost?: <span class="t">Money</span>;              <span class="c">// per-person or total + split</span>
+  attendees: <span class="t">UserId</span>[];       <span class="c">// opt-in, defaults to all</span>
+  alternates: <span class="t">ItemId</span>[];      <span class="c">// collapsed alts — live in parking lot</span>
+  parkingLot?: <span class="t">boolean</span>;      <span class="c">// true = unscheduled idea</span>
+  proposedBy?: <span class="t">UserId</span>;       <span class="c">// for suggestion inbox</span>
+  comments: <span class="t">Comment</span>[];
+}
+
+<span class="k">type</span> <span class="t">ItemType</span> =
+  <span class="s">'lodging' | 'transportation' | 'activity' | 'meal' | 'note' | 'checklist'</span>;
+
+<span class="c">// Exhaustive sub-types drive icon set.</span>
+<span class="k">type</span> <span class="t">ItemSubtype</span> =
+  <span class="c">// lodging</span>
+  <span class="s">'hotel' | 'airbnb' | 'hostel' | 'resort' | 'chalet'</span>
+  <span class="c">// transport</span>
+  | <span class="s">'flight' | 'train' | 'bus' | 'car_rental' | 'ferry' | 'rideshare' | 'walk'</span>
+  <span class="c">// activity</span>
+  | <span class="s">'tour' | 'museum' | 'outdoor' | 'sport' | 'shopping'</span>
+  | <span class="s">'spa' | 'nightlife' | 'sightseeing'</span>
+  <span class="c">// meal</span>
+  | <span class="s">'breakfast' | 'brunch' | 'lunch' | 'dinner' | 'drinks' | 'snack' | 'coffee'</span>;
+
+<span class="k">type</span> <span class="t">Member</span> = {
+  userId?: <span class="t">UserId</span>;           <span class="c">// undefined → invited but not joined</span>
+  email?: <span class="t">string</span>;
+  displayName: <span class="t">string</span>;
+  initial: <span class="t">string</span>;
+  avatarUrl?: <span class="t">string</span>;
+  role: <span class="s">'owner' | 'editor' | 'viewer'</span>;
+  joinedAt?: <span class="t">ISODateTime</span>;
+};
+
+<span class="k">type</span> <span class="t">Suggestion</span> = {
+  id: <span class="t">string</span>;
+  kind: <span class="s">'new_item' | 'change' | 'comment'</span>;
+  proposedBy: <span class="t">UserId</span>;
+  targetItemId?: <span class="t">ItemId</span>;
+  payload: <span class="t">Partial</span>&lt;<span class="t">Item</span>&gt;;
+  rationale?: <span class="t">string</span>;
+  createdAt: <span class="t">ISODateTime</span>;
+  state: <span class="s">'pending' | 'approved' | 'auto_approved' | 'rejected'</span>;
+};
+</pre>
+
+  <div class="callout warn">
+    <b>Gotcha.</b> A member with <code>userId === undefined</code> renders as a dashed
+    placeholder avatar everywhere (<code>Avatar placeholder</code>). Don't filter them out
+    in queries — the app shows them by design.
+  </div>
+
+  <!-- ─────────────────────────────── -->
+  <h2 id="state">04 · Mode + state machines</h2>
+
+  <h3>Trip Mode<span class="tag">root state</span></h3>
+  <p>Auto-engages, but manually overridable. Per-trip, not global.</p>
+
+  <pre><span class="k">type</span> <span class="t">TripMode</span> = <span class="s">'planning' | 'trip'</span>;
+
+<span class="c">// Auto-engage rule (runs on open + timer every 10min while open):</span>
+<span class="k">function</span> <span class="t">defaultModeFor</span>(trip: <span class="t">Trip</span>, now: <span class="t">Date</span>): <span class="t">TripMode</span> {
+  <span class="k">const</span> startedButNotFinished =
+    now &gt;= trip.startDate.minus({ hours: 12 }) &amp;&amp;
+    now &lt;= trip.endDate.plus({ days: 1 });
+  <span class="k">return</span> startedButNotFinished ? <span class="s">'trip'</span> : <span class="s">'planning'</span>;
+}
+
+<span class="c">// User override persists UNTIL next mode-boundary transition.</span>
+<span class="c">// i.e. if a user flips to Planning at 9am on day 2, they stay in Planning</span>
+<span class="c">// until the trip ends; a new auto-engage applies to the NEXT trip window.</span>
+</pre>
+
+  <div class="callout">
+    <b>UX contract.</b> Editing is available in both modes. Trip mode
+    simply reshapes the day view around <i>now</i> (what's current, what's next)
+    and swaps the accent to clay. Don't gate features behind the toggle.
+  </div>
+
+  <h3>Item status</h3>
+  <pre><span class="k">type</span> <span class="t">ItemStatus</span> =
+  | <span class="s">'idea'</span>           <span class="c">// in parking lot, unscheduled</span>
+  | <span class="s">'scheduled'</span>      <span class="c">// on a day, not yet booked/confirmed</span>
+  | <span class="s">'to_book'</span>        <span class="c">// needs booking action</span>
+  | <span class="s">'pending'</span>        <span class="c">// booking submitted, awaiting confirm</span>
+  | <span class="s">'booked'</span>         <span class="c">// confirmed, has conf code</span>
+  | <span class="s">'in_progress'</span>    <span class="c">// now() within [startsAt, endsAt]</span>
+  | <span class="s">'done'</span>           <span class="c">// past endsAt</span>
+  | <span class="s">'cancelled'</span>;
+</pre>
+
+  <h3>Pill → status mapping</h3>
+  <table>
+    <tr><th>Pill variant</th><th>Bg</th><th>When</th></tr>
+    <tr><td><code>booked</code></td><td>moss-tint</td><td>status ∈ {booked, done}. Show "✓ Booked".</td></tr>
+    <tr><td><code>pending</code></td><td>gold-tint</td><td>status = pending. Show "Awaiting confirm".</td></tr>
+    <tr><td><code>planned</code></td><td>transparent</td><td>status = to_book. Show "To book".</td></tr>
+    <tr><td><code>trip</code></td><td>clay</td><td>Context is trip mode, or "in_progress".</td></tr>
+    <tr><td><code>info</code></td><td>sky-tint</td><td>Travel days, new suggestions.</td></tr>
+  </table>
+
+  <!-- ─────────────────────────────── -->
+  <h2 id="components">05 · Component contracts</h2>
+  <p>These are frozen — build them once, use everywhere.</p>
+
+  <pre><span class="c">// src/ui/primitives.ts — do not break these props</span>
+
+&lt;<span class="n">Pill</span> variant=<span class="s">"booked|pending|planned|trip|info|default|ink"</span> size=<span class="s">"sm|md"</span> /&gt;
+
+&lt;<span class="n">Avatar</span> initial size={<span class="t">N</span>} placeholder img /&gt;
+&lt;<span class="n">AvatarStack</span> members={<span class="t">Member</span>[]} size={<span class="t">N</span>} /&gt;
+  <span class="c">// Member with userId === undefined ⇒ placeholder automatically</span>
+
+&lt;<span class="n">TypeIcon</span> type={<span class="t">ItemType</span>} sub={<span class="t">ItemSubtype?</span>} size={<span class="t">N</span>} variant=<span class="s">"soft|square"</span> /&gt;
+  <span class="c">// Resolves via iconFor(type, sub); colored circle by type family.</span>
+
+&lt;<span class="n">Card</span> strong? accent? onClick? /&gt;
+&lt;<span class="n">Button</span> variant=<span class="s">"primary|moss|ghost|soft"</span> size=<span class="s">"sm|md|lg"</span> icon? /&gt;
+&lt;<span class="n">NavBar</span> title subtitle? back? onBack? right? /&gt;
+&lt;<span class="n">BottomNav</span> active=<span class="s">"home|trips"</span> onTabChange /&gt;   <span class="c">// 2 tabs ONLY until new features exist</span>
+&lt;<span class="n">SectionH</span> right? /&gt;                            <span class="c">// small-caps section header</span>
+&lt;<span class="n">FAB</span> onClick /&gt;
+</pre>
+
+  <div class="callout warn">
+    <b>Nav count.</b> Bottom nav is two tabs by design: Home · Trips. Do NOT add
+    tabs for features that don't exist yet (Decisions, Suggestions, etc). Those
+    live inside the trip.
+  </div>
+
+  <!-- ─────────────────────────────── -->
+  <h2 id="screens">06 · Screen inventory</h2>
+  <table>
+    <tr><th>ID</th><th>File</th><th>Purpose</th></tr>
+    <tr><td><code>trips-list</code></td><td>app/index.tsx</td><td>Home. On-trip hero + upcoming + past archive.</td></tr>
+    <tr><td><code>trip-overview</code></td><td>app/trip/[id]/index.tsx</td><td>Phase stepper, stats, members, days. Mode-aware.</td></tr>
+    <tr><td><code>day-planning</code></td><td>app/trip/[id]/day/[d].tsx?mode=planning</td><td>Morning/afternoon/evening/anytime slots. Alts collapsed.</td></tr>
+    <tr><td><code>day-trip</code></td><td>same (mode=trip)</td><td>NOW divider, hero current item, later-today list.</td></tr>
+    <tr><td><code>item-detail</code></td><td>app/trip/[id]/item/[i].tsx</td><td>Hero + conf codes + attendees + comments.</td></tr>
+    <tr><td><code>decisions</code></td><td>app/trip/[id]/decisions.tsx</td><td>Stepper (sequential) + carousel (lateral).</td></tr>
+    <tr><td><code>suggestions</code></td><td>app/trip/[id]/suggestions.tsx</td><td>Inbox. Approve / edit-approve / reject.</td></tr>
+    <tr><td><code>parking-lot</code></td><td>bottom-sheet modal</td><td>Contextual alternates drawer. Filterable.</td></tr>
+    <tr><td><code>empty-trip</code></td><td>app/trip/[id]/index.tsx (empty)</td><td>4 starter actions.</td></tr>
+    <tr><td><code>archive</code></td><td>public/archive/[slug].tsx</td><td>Public page post-trip. SEO-friendly route.</td></tr>
+  </table>
+
+  <h4>Navigation graph</h4>
+  <pre>trips-list
+  └─ trip-overview
+       ├─ day-{planning|trip}
+       │    ├─ item-detail
+       │    └─ parking-lot (drawer)
+       ├─ decisions
+       └─ suggestions
+</pre>
+
+  <!-- ─────────────────────────────── -->
+  <h2 id="api">07 · API surface</h2>
+  <p>Minimal set to light up the prototype. Real-time hooks come from your backend client.</p>
+
+  <pre><span class="c">// Trips</span>
+GET    /trips                         → Trip[]        <span class="c">// home page</span>
+POST   /trips                         → Trip
+GET    /trips/:id                     → TripWithChildren
+PATCH  /trips/:id                     → Trip
+
+<span class="c">// Items — upsert across day/slot</span>
+POST   /trips/:id/items               → Item
+PATCH  /items/:id                     → Item
+DELETE /items/:id                     → 204
+POST   /items/:id/move                → Item          <span class="c">// { dayId, slot }</span>
+POST   /items/:id/park                → Item          <span class="c">// move to parking lot</span>
+
+<span class="c">// Suggestions (collab)</span>
+POST   /trips/:id/suggestions         → Suggestion
+POST   /suggestions/:id/approve       → Suggestion
+POST   /suggestions/:id/reject        → Suggestion
+
+<span class="c">// Realtime — WS channel per trip</span>
+ws://…/trip/:id   events:
+  item.created | item.updated | item.moved
+  suggestion.created | suggestion.resolved
+  member.joined | comment.added
+
+<span class="c">// Archive (public)</span>
+GET    /public/archive/:slug          → PublicTrip     <span class="c">// no auth, read-only</span>
+</pre>
+
+  <!-- ─────────────────────────────── -->
+  <h2 id="flags">08 · Feature flags</h2>
+  <p>Everything below the core flow ships behind flags so design can keep moving.</p>
+  <table>
+    <tr><th>Flag</th><th>Default</th><th>Gates</th></tr>
+    <tr><td><code>suggestions_v1</code></td><td>off</td><td>Suggestions inbox, auto-approve rules. Needs member accounts first.</td></tr>
+    <tr><td><code>decisions_v1</code></td><td>off</td><td>Decisions tab. Stepper/carousel come online together.</td></tr>
+    <tr><td><code>archive_public</code></td><td>off</td><td>/public/archive/:slug route + "archive" CTA post-trip.</td></tr>
+    <tr><td><code>trip_mode_auto</code></td><td>on</td><td>Auto-engage rule in §04. Disable for demo/QA.</td></tr>
+    <tr><td><code>ai_suggest_parking</code></td><td>off</td><td>"3 ideas for this day" — AI-generated suggestions in parking lot.</td></tr>
+  </table>
+
+  <!-- ─────────────────────────────── -->
+  <h2 id="open">09 · Open questions</h2>
+  <ol>
+    <li><b>Timezone handling</b>: item <code>startsAt</code> — store UTC and convert at the phase's timezone, or store local + IANA zone? Decision blocks NOW divider accuracy.</li>
+    <li><b>Cost splits</b>: per-item split vs trip-wide ledger? Prototype shows per-item "$208 · split 4 ways" — need to model who-owes-who.</li>
+    <li><b>Attendance model</b>: default "all going" vs explicit opt-in per item? Prototype implies "all going unless removed".</li>
+    <li><b>Offline</b>: trip mode implies poor connectivity. Do conf codes + day view need full offline cache, or is "last synced" good enough?</li>
+    <li><b>Photo album</b>: Apple Photos integration is native-only. Web archive falls back to a gallery upload?</li>
+  </ol>
+
+  <hr/>
+  <p style="font-size: 12.5px; color: var(--ink-muted); text-align: center;">
+    Waypoint · Round 2 · <span style="font-family: var(--mono);">handoff.html</span> ·
+    iterate the prototype, the contracts stay stable.
+  </p>
+</div>
+</body>
+</html>
