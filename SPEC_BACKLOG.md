@@ -25,6 +25,12 @@ Deferred work captured during M1. Each entry notes what it is, why it was deferr
 - **Target:** M3 Money (booking lives next to cost).
 - **Notes:** Migration will widen the column. UI already has space for a pill-shaped control.
 
+## App Icon Artwork Refresh
+- **What:** Regenerate `static/icons/icon-192.png` and `icon-512.png` (and the `apple-touch-icon` they back) in the new paper/ink/moss palette so the home-screen icon matches the in-app design system.
+- **Why deferred:** M1.5a updated the meta `theme-color` and manifest colors but left the existing PNGs in place — new artwork is a design task, not a code change.
+- **Target:** M6 Polish (or sooner if Scott wants the home-screen install to look right before the China dogfood).
+- **Notes:** Maskable variant should keep safe area; consider a moss-on-paper monogram or a simple waypoint glyph. Update both sizes plus any future favicon.
+
 ---
 
 ## How to use this file

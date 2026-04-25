@@ -1,5 +1,45 @@
 @import 'tailwindcss';
 
+/* Waypoint design tokens. Lifted verbatim from the Claude Design handoff
+   (design/initial-handoff.html §02). Tailwind v4 exposes these as utilities
+   (bg-paper, text-ink, font-display, rounded-md, shadow-card, etc.). */
+@theme {
+	--color-paper: #f6f2ea;
+	--color-surface: #ffffff;
+	--color-surface-2: #fbf8f2;
+	--color-ink: #1c1b18;
+	--color-ink-soft: #4c4a44;
+	--color-ink-muted: #8a847a;
+	--color-line: #e2dcd0;
+	--color-moss: #3e5a3a;
+	--color-moss-soft: #6f8b6a;
+	--color-moss-tint: #e8efe3;
+	--color-clay: #a5593a;
+	--color-gold: #c89b3c;
+	--color-sky: #3b6ba5;
+
+	--font-sans: 'Inter', system-ui, sans-serif;
+	--font-display: 'Fraunces', Georgia, serif;
+	--font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+	--radius-sm: 6px;
+	--radius-md: 10px;
+	--radius-lg: 16px;
+	--radius-xl: 22px;
+
+	--shadow-card: 0 1px 2px rgba(28, 27, 24, 0.03);
+	--shadow-card-strong:
+		0 1px 0 rgba(28, 27, 24, 0.04), 0 8px 24px rgba(28, 27, 24, 0.06);
+}
+
+/* Page baseline. Paper background, ink text, Inter UI. */
+html,
+body {
+	background: var(--color-paper);
+	color: var(--color-ink);
+	-webkit-font-smoothing: antialiased;
+}
+
 /* iOS Safari auto-zooms when a focused input's effective font-size is < 16px.
    Enforce 16px on all form controls so the viewport stays put on focus. */
 @media (max-width: 640px) {
