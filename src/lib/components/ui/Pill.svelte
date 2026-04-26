@@ -16,10 +16,10 @@
 
 	const variantClass: Record<Variant, string> = {
 		booked: 'bg-moss-tint text-moss border-moss/20',
-		pending: 'bg-[#FBF1DC] text-[#8a6f24] border-gold/30',
+		pending: 'bg-gold-tint text-[#8a6f24] border-gold/30',
 		planned: 'bg-transparent text-ink-soft border-line',
 		trip: 'bg-clay text-paper border-clay',
-		info: 'bg-[#E6EEF8] text-sky border-sky/20',
+		info: 'bg-sky-tint text-sky border-sky/20',
 		default: 'bg-surface-2 text-ink-soft border-line',
 		ink: 'bg-ink text-paper border-ink'
 	};
