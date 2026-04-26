@@ -209,3 +209,72 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 		userIds: userIds
 	});
 });
+
+// POST /api/dev/resend-smoke — sanity-check that PB can reach Resend with the
+// configured API key + verified domain. Sends one email to a hardcoded
+// whitelist of recipients (Scott's gmail) and returns Resend's response.
+//
+// Requires env: WAYPOINT_DEV_MODE=true, RESEND_API_KEY, RESEND_FROM.
+//
+// Body: { to: 'scottvh519@gmail.com' }
+//
+// This is the M2 pre-flight gate: green here unblocks M2b (invites). Once the
+// real invite path is wired in M2b, this endpoint stays as a diagnostic — keep
+// it around for "is Resend up and configured?" checks.
+routerAdd('POST', '/api/dev/resend-smoke', (e) => {
+	if ($os.getenv('WAYPOINT_DEV_MODE') !== 'true') {
+		throw new BadRequestError('Dev smoke is not enabled');
+	}
+
+	const apiKey = $os.getenv('RESEND_API_KEY');
+	const from = $os.getenv('RESEND_FROM');
+	if (!apiKey) throw new BadRequestError('RESEND_API_KEY is not set');
+	if (!from) throw new BadRequestError('RESEND_FROM is not set');
+
+	const info = e.requestInfo();
+	const to = (info.body && info.body['to']) || '';
+	if (!to) throw new BadRequestError('Missing "to" in request body');
+
+	// Hardcoded recipient whitelist — defense against accidental email blasts
+	// if this endpoint somehow makes it into a non-dev env. Add to this list
+	// when a new known-good test address is needed.
+	const recipientWhitelist = new Set(['scottvh519@gmail.com']);
+	if (!recipientWhitelist.has(to)) {
+		throw new ForbiddenError('Recipient not in smoke-test whitelist: ' + to);
+	}
+
+	const stamp = new Date().toISOString();
+	const res = $http.send({
+		method: 'POST',
+		url: 'https://api.resend.com/emails',
+		headers: {
+			'Content-Type': 'application/json',
+			Authorization: 'Bearer ' + apiKey
+		},
+		body: JSON.stringify({
+			from: from,
+			to: [to],
+			subject: 'Waypoint Resend smoke test',
+			text:
+				'This is the Waypoint pre-flight smoke test for Resend.\n\n' +
+				'If you are reading this, the PB hook → Resend → inbox path is working.\n\n' +
+				'Sent at: ' +
+				stamp +
+				'\nFrom: ' +
+				from +
+				'\nTo: ' +
+				to
+		})
+	});
+
+	console.log('resend-smoke status=' + res.statusCode + ' body=' + JSON.stringify(res.json));
+
+	return e.json(200, {
+		ok: res.statusCode >= 200 && res.statusCode < 300,
+		resend_status: res.statusCode,
+		resend_response: res.json,
+		from: from,
+		to: to,
+		sent_at: stamp
+	});
+});
