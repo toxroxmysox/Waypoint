@@ -28,7 +28,7 @@ const EMAILS = {
 };
 
 const ROLES = ['owner', 'co_owner', 'traveler', 'viewer', 'non_member'];
-const COLLECTIONS = ['users', 'trips', 'trip_members', 'phases', 'days', 'items', 'checklist_items'];
+const COLLECTIONS = ['users', 'trips', 'trip_members', 'phases', 'days', 'items', 'checklist_items', 'pending_invites'];
 
 async function pbRequest(method, path, opts = {}) {
 	const headers = { 'Content-Type': 'application/json' };
@@ -81,6 +81,8 @@ function fixtureRecordId(fixture, collection) {
 			return fixture.itemId;
 		case 'checklist_items':
 			return fixture.checklistItemId;
+		case 'pending_invites':
+			return fixture.pendingInviteId;
 		default:
 			throw new Error('unknown collection ' + collection);
 	}
@@ -201,6 +203,27 @@ const EXPECT = {
 		create: ALLOW_MEMBERS_DENY_NONMEMBER,
 		update: ALLOW_MEMBERS_DENY_NONMEMBER,
 		delete: ALLOW_MEMBERS_DENY_NONMEMBER
+	},
+	// pending_invites (M2b):
+	//   list/view: any member can see invites for the trip
+	//   create: null (rule) — legitimate path is /api/invites/create endpoint
+	//   update: null (rule) — invites are immutable; revoke + re-invite to change
+	//   delete: rule = member; HOOK enforces SPEC §3 — owner/co_owner can
+	//           revoke any; traveler can revoke only their own; viewer cannot.
+	//           Fixture invite is created by the owner, so traveler/viewer
+	//           both deny here.
+	pending_invites: {
+		list: ALLOW_MEMBERS_DENY_NONMEMBER,
+		view: ALLOW_MEMBERS_DENY_NONMEMBER,
+		create: DENY_ALL,
+		update: DENY_ALL,
+		delete: {
+			owner: 'allow',
+			co_owner: 'allow',
+			traveler: 'deny',
+			viewer: 'deny',
+			non_member: 'deny'
+		}
 	}
 };
 
@@ -248,6 +271,15 @@ function createBody(collection, role, fixture) {
 			};
 		case 'checklist_items':
 			return { item: fixture.itemId, text: `Harness row ${stamp}`, order: 99 };
+		case 'pending_invites':
+			return {
+				trip: fixture.tripId,
+				email: `harness-invitee-${stamp}@e2e.test`,
+				role: 'viewer',
+				invited_by: fixture.memberIds[role] || fixture.memberIds.owner,
+				code: `harness-code-${stamp}`,
+				expires_at: '2027-01-01 00:00:00.000Z'
+			};
 		default:
 			throw new Error('no body for ' + collection);
 	}
@@ -269,6 +301,10 @@ function updateBody(collection) {
 			return { description: 'Harness updated' };
 		case 'checklist_items':
 			return { text: 'Harness updated' };
+		case 'pending_invites':
+			// updateRule = null, so any field works; PB will reject before
+			// validating the payload.
+			return { role: 'viewer' };
 		default:
 			throw new Error('no body for ' + collection);
 	}

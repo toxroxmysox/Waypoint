@@ -104,3 +104,14 @@ export interface ChecklistItem extends RecordModel {
 	checked_at: string;
 	order: number;
 }
+
+export type InviteRole = 'co_owner' | 'traveler' | 'viewer';
+
+export interface PendingInvite extends RecordModel {
+	trip: string;
+	email: string;
+	role: InviteRole;
+	invited_by: string;
+	code: string;
+	expires_at: string;
+}

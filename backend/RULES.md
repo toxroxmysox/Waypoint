@@ -2,7 +2,7 @@
 
 Source of truth for who can do what against the API. Generated and verified by `backend/test-rules.mjs`. Update this file when rules change; the harness will fail if the documented intent diverges from observed behavior.
 
-Last reviewed: 2026-04-25 (M2a baseline — role-agnostic membership check).
+Last reviewed: 2026-04-26 (M2b — pending_invites added; first hook-based role gating).
 
 ---
 
@@ -36,6 +36,7 @@ Role-agnostic. Any member of a trip can do anything to that trip's data; non-mem
 | `days` | member of trip | member of trip | null (hooks) | member of trip | null (hooks) |
 | `items` | member of trip | member of trip | member of trip | member of trip | member of trip |
 | `checklist_items` | member of item.trip | member of item.trip | member of item.trip | member of item.trip | member of item.trip |
+| `pending_invites` | member of trip | member of trip | null (endpoint) | null (immutable) | member of trip + hook (SPEC §3) |
 
 **Reasoning for each `null`:**
 
@@ -44,6 +45,8 @@ Role-agnostic. Any member of a trip can do anything to that trip's data; non-mem
 - `trip_members.create` — creator-owner row is added by the trips after-create hook; placeholders + invite acceptance are hook-driven (M2b/M2c). No legitimate path goes through direct client POST.
 - `days.create` — generated automatically by trips after-create / after-update hooks based on the trip's date range. Users never create days directly.
 - `days.delete` — same: pruning happens inside the trips after-update hook when the date range shrinks.
+- `pending_invites.create` — invite creation goes through `POST /api/invites/create`, which validates the inviter's role per SPEC §3 (travelers can only invite traveler/viewer; viewers cannot invite at all) and generates `code` + `expires_at` server-side. Direct API POST would let any member set arbitrary codes / lifetimes / inviter ids.
+- `pending_invites.update` — invites are immutable. To change a role or extend expiry, revoke and re-invite. Keeps the audit trail honest.
 
 **Identity expressions used in 0014:**
 
@@ -83,14 +86,16 @@ Implementation strategy: anything expressible as a PB rule expression goes into 
 
 ## Planned tightening per sub-milestone
 
-- **M2a (this milestone)** — Reassert all rules explicitly with reasons. Add harness. No behavior change. ← we are here
-- **M2b** — Add `pending_invites` collection with its own 5 rules. Invite-create hook validates inviter role per SPEC §3 (travelers can only invite traveler/viewer). Accept-invite hook creates the trip_members row.
+- **M2a** — Reassert all rules explicitly with reasons. Add harness. No behavior change. ✓ done.
+- **M2b (this milestone)** — Add `pending_invites` collection with its own 5 rules. `/api/invites/create` validates inviter role per SPEC §3 (travelers can only invite traveler/viewer; viewers cannot invite). `/api/invites/accept` creates the `trip_members` row and deletes the invite. Revoke (DELETE) is gated by an `onRecordDeleteRequest` hook: owner/co_owner can revoke any invite; traveler can revoke only invites they sent themselves; viewer cannot revoke. **First hook-based role gating** in the codebase — pattern established here gets reused for M2c+. ← we are here
 - **M2c** — Tighten `trip_members.update` and `trip_members.delete` to owner/co-owner only via hook + tighten the rules to allow self-row updates (display_name) for any member. Sole-owner invariants enforced in hook.
 - **M2d** — Add `suggestions` collection. Tighten `items.create` to owner/co-owner only (travelers route through suggestions). Hook on suggestion-create handles auto-approval per role.
 - **M2e** — Suggestion rule branch for `target_type=comment` always auto-approves regardless of role.
 - **M2f** — Add `notifications` collection with recipient-only rules. Hooks on suggestion/comment/member events fan out to recipients.
 
 The harness expectations table at the bottom of `test-rules.mjs` is updated alongside each tightening migration. A green run is the gate for declaring a sub-milestone done.
+
+`backend/test-invites.mjs` (`pnpm test:invites`) covers the invite endpoints (create role-gating, payload validation, lookup, accept happy + edge paths, revoke gating). Run alongside `pnpm test:rules` from M2b on.
 
 ---
 

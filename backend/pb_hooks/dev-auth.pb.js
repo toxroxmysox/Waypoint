@@ -199,12 +199,34 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 	checklistItem.set('order', 0);
 	e.app.save(checklistItem);
 
+	// Create a pending_invites row owned by the owner so the harness has a
+	// fixture record to exercise list/view/delete against. Code is fixed (per
+	// fixture) to keep the harness output deterministic; the create path
+	// generates random codes.
+	const invitesCol = e.app.findCollectionByNameOrId('pending_invites');
+	const inviteCode = 'fixture-invite-code-' + Date.now();
+	const expiresAt =
+		new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+			.toISOString()
+			.replace('T', ' ')
+			.replace('Z', '') + 'Z';
+	const invite = new Record(invitesCol);
+	invite.set('trip', trip.id);
+	invite.set('email', 'fixture-invitee@e2e.test');
+	invite.set('role', 'viewer');
+	invite.set('invited_by', memberIds.owner);
+	invite.set('code', inviteCode);
+	invite.set('expires_at', expiresAt);
+	e.app.save(invite);
+
 	return e.json(200, {
 		tripId: trip.id,
 		phaseId: phase.id,
 		dayId: day.id,
 		itemId: item.id,
 		checklistItemId: checklistItem.id,
+		pendingInviteId: invite.id,
+		pendingInviteCode: inviteCode,
 		memberIds: memberIds,
 		userIds: userIds
 	});

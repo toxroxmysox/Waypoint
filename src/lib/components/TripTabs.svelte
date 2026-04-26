@@ -6,12 +6,14 @@
 	const tabs = $derived([
 		{ id: 'overview', label: 'Overview', href: `/trips/${slug}` },
 		{ id: 'phases', label: 'Phases', href: `/trips/${slug}/phases` },
+		{ id: 'members', label: 'Members', href: `/trips/${slug}/members` },
 		{ id: 'settings', label: 'Settings', href: `/trips/${slug}/settings` }
 	]);
 
 	let activeId = $derived.by(() => {
 		const path = page.url.pathname;
 		if (path.endsWith('/settings')) return 'settings';
+		if (path.includes('/members')) return 'members';
 		if (path.includes('/phases')) return 'phases';
 		return 'overview';
 	});
