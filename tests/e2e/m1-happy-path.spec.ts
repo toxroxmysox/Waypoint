@@ -26,7 +26,7 @@ test.describe('M1 Happy Path', () => {
 		const tripTitle = `E2E Trip ${stamp}`;
 		const tripSlug = `e2e-trip-${stamp}`;
 
-		await expect(page.getByRole('heading', { name: 'Trips', level: 1 })).toBeVisible();
+		await expect(page.getByRole('heading', { name: 'Waypoint', level: 1 })).toBeVisible();
 
 		// --- Create trip ---
 		await page.getByRole('link', { name: 'New Trip' }).click();

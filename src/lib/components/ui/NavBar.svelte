@@ -4,6 +4,7 @@
 	let {
 		title,
 		subtitle,
+		subtitleStyle = 'default',
 		back = false,
 		backHref,
 		onBack,
@@ -11,6 +12,7 @@
 	}: {
 		title: string;
 		subtitle?: string;
+		subtitleStyle?: 'default' | 'tagline';
 		back?: boolean;
 		backHref?: string;
 		onBack?: () => void;
@@ -54,9 +56,15 @@
 	</div>
 
 	<div class="min-w-0 flex-1 text-center">
-		<div class="text-ink truncate text-base font-semibold leading-tight">{title}</div>
+		<h1 class="text-ink truncate text-base font-semibold leading-tight">{title}</h1>
 		{#if subtitle}
-			<div class="text-ink-muted truncate text-[12px] leading-tight">{subtitle}</div>
+			{#if subtitleStyle === 'tagline'}
+				<div class="font-display text-ink-soft truncate text-[13px] leading-tight italic">
+					{subtitle}
+				</div>
+			{:else}
+				<div class="text-ink-muted truncate text-[12px] leading-tight">{subtitle}</div>
+			{/if}
 		{/if}
 	</div>
 

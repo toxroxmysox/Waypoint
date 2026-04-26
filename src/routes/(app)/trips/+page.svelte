@@ -1,4 +1,10 @@
 <script lang="ts">
+	import NavBar from '$lib/components/ui/NavBar.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import Pill from '$lib/components/ui/Pill.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import FAB from '$lib/components/ui/FAB.svelte';
+
 	let { data } = $props();
 
 	function formatDateRange(start: string, end: string): string {
@@ -7,85 +13,114 @@
 		const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', timeZone: 'UTC' };
 		const startStr = s.toLocaleDateString('en-US', opts);
 		const endStr = e.toLocaleDateString('en-US', { ...opts, year: 'numeric' });
-		return `${startStr} - ${endStr}`;
+		return `${startStr} – ${endStr}`;
 	}
+
+	let isEmpty = $derived(
+		data.active.length === 0 && data.upcoming.length === 0 && data.past.length === 0
+	);
 </script>
 
-<div class="mx-auto max-w-lg">
-	<div class="mb-6 flex items-center justify-between">
-		<h1 class="text-xl font-bold text-slate-900">Trips</h1>
-		<a
-			href="/trips/new"
-			class="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800"
-		>
-			New Trip
-		</a>
-	</div>
+<NavBar title="Waypoint">
+	{#snippet right()}
+		<form method="POST" action="/logout">
+			<button
+				type="submit"
+				class="text-ink-muted hover:text-ink-soft text-[12px] font-medium"
+			>
+				Sign out
+			</button>
+		</form>
+	{/snippet}
+</NavBar>
 
-	{#if data.active.length === 0 && data.upcoming.length === 0 && data.past.length === 0}
-		<div class="py-12 text-center text-slate-500">
-			<p class="text-lg">No trips yet</p>
-			<p class="mt-1 text-sm">Create your first trip to get started.</p>
+<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-24">
+	{#if isEmpty}
+		<div class="py-16 text-center">
+			<p class="font-display text-ink text-lg italic">No trips yet.</p>
+			<p class="text-ink-muted mt-1 text-sm">Plan your first one.</p>
+			<div class="mt-5">
+				<Button href="/trips/new" variant="moss" size="md">New trip</Button>
+			</div>
+		</div>
+	{:else}
+		<div class="space-y-6">
+			{#if data.active.length > 0}
+				<section class="space-y-2">
+					<div class="flex items-baseline justify-between pt-1">
+						<h3 class="text-moss text-[11px] font-bold tracking-[0.2em] uppercase">On trip</h3>
+					</div>
+					{#each data.active as { trip }}
+						<Card href="/trips/{trip?.slug}" strong accent="var(--color-clay)">
+							<div class="p-4">
+								<div class="flex items-start justify-between gap-2">
+									<h3 class="font-display text-ink text-lg leading-tight font-semibold">
+										{trip?.title}
+									</h3>
+									<Pill variant="trip" size="sm">Now</Pill>
+								</div>
+								<p class="text-ink-muted font-mono mt-1 text-[12px]">
+									{formatDateRange(trip?.start_date ?? '', trip?.end_date ?? '')}
+								</p>
+								{#if trip?.location_summary}
+									<p class="font-display text-ink-soft mt-1 text-sm italic">
+										{trip.location_summary}
+									</p>
+								{/if}
+							</div>
+						</Card>
+					{/each}
+				</section>
+			{/if}
+
+			{#if data.upcoming.length > 0}
+				<section class="space-y-2">
+					<div class="flex items-baseline justify-between pt-1">
+						<h3 class="text-moss text-[11px] font-bold tracking-[0.2em] uppercase">Upcoming</h3>
+					</div>
+					{#each data.upcoming as { trip }}
+						<Card href="/trips/{trip?.slug}">
+							<div class="p-4">
+								<h3 class="font-display text-ink text-lg leading-tight font-semibold">
+									{trip?.title}
+								</h3>
+								<p class="text-ink-muted font-mono mt-1 text-[12px]">
+									{formatDateRange(trip?.start_date ?? '', trip?.end_date ?? '')}
+								</p>
+								{#if trip?.location_summary}
+									<p class="font-display text-ink-soft mt-1 text-sm italic">
+										{trip.location_summary}
+									</p>
+								{/if}
+							</div>
+						</Card>
+					{/each}
+				</section>
+			{/if}
+
+			{#if data.past.length > 0}
+				<section class="space-y-2">
+					<div class="flex items-baseline justify-between pt-1">
+						<h3 class="text-ink-muted text-[11px] font-bold tracking-[0.2em] uppercase">
+							Past
+						</h3>
+					</div>
+					{#each data.past as { trip }}
+						<Card href="/trips/{trip?.slug}" class="opacity-80">
+							<div class="p-4">
+								<h3 class="text-ink-soft text-base leading-tight font-medium">{trip?.title}</h3>
+								<p class="text-ink-muted font-mono mt-1 text-[12px]">
+									{formatDateRange(trip?.start_date ?? '', trip?.end_date ?? '')}
+								</p>
+							</div>
+						</Card>
+					{/each}
+				</section>
+			{/if}
 		</div>
 	{/if}
+</main>
 
-	{#if data.active.length > 0}
-		<section class="mb-6">
-			<h2 class="mb-2 text-sm font-medium text-slate-500 uppercase">Active</h2>
-			{#each data.active as { trip }}
-				<a
-					href="/trips/{trip?.slug}"
-					class="mb-2 block rounded-lg border border-green-200 bg-green-50 p-4"
-				>
-					<h3 class="font-semibold text-slate-900">{trip?.title}</h3>
-					<p class="mt-1 text-sm text-slate-600">
-						{formatDateRange(trip?.start_date ?? '', trip?.end_date ?? '')}
-					</p>
-					{#if trip?.location_summary}
-						<p class="mt-0.5 text-sm text-slate-500">{trip.location_summary}</p>
-					{/if}
-				</a>
-			{/each}
-		</section>
-	{/if}
-
-	{#if data.upcoming.length > 0}
-		<section class="mb-6">
-			<h2 class="mb-2 text-sm font-medium text-slate-500 uppercase">Upcoming</h2>
-			{#each data.upcoming as { trip }}
-				<a
-					href="/trips/{trip?.slug}"
-					class="mb-2 block rounded-lg border border-slate-200 bg-white p-4"
-				>
-					<h3 class="font-semibold text-slate-900">{trip?.title}</h3>
-					<p class="mt-1 text-sm text-slate-600">
-						{formatDateRange(trip?.start_date ?? '', trip?.end_date ?? '')}
-					</p>
-					{#if trip?.location_summary}
-						<p class="mt-0.5 text-sm text-slate-500">{trip.location_summary}</p>
-					{/if}
-				</a>
-			{/each}
-		</section>
-	{/if}
-
-	{#if data.past.length > 0}
-		<section>
-			<h2 class="mb-2 text-sm font-medium text-slate-500 uppercase">Past</h2>
-			{#each data.past as { trip }}
-				<a
-					href="/trips/{trip?.slug}"
-					class="mb-2 block rounded-lg border border-slate-200 bg-slate-100 p-4 opacity-75"
-				>
-					<h3 class="font-semibold text-slate-900">{trip?.title}</h3>
-					<p class="mt-1 text-sm text-slate-600">
-						{formatDateRange(trip?.start_date ?? '', trip?.end_date ?? '')}
-					</p>
-					{#if trip?.location_summary}
-						<p class="mt-0.5 text-sm text-slate-500">{trip.location_summary}</p>
-					{/if}
-				</a>
-			{/each}
-		</section>
-	{/if}
-</div>
+{#if !isEmpty}
+	<FAB href="/trips/new" label="New trip" />
+{/if}
