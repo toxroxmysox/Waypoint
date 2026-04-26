@@ -68,7 +68,7 @@
 		{/if}
 	</div>
 
-	<div class="flex w-10 shrink-0 items-center justify-end">
+	<div class="flex min-w-10 shrink-0 items-center justify-end whitespace-nowrap">
 		{#if right}{@render right()}{/if}
 	</div>
 </header>

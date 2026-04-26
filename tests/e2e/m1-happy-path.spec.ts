@@ -73,10 +73,10 @@ test.describe('M1 Happy Path', () => {
 		const firstDay = dayLinks.first();
 		const dayHref = await firstDay.getAttribute('href');
 		await firstDay.click();
-		await expect(page.getByRole('link', { name: 'Add Item', exact: true })).toBeVisible();
+		await expect(page.getByRole('link', { name: /^Add item$/i })).toBeVisible();
 
 		// --- Add an item ---
-		await page.getByRole('link', { name: 'Add Item', exact: true }).click();
+		await page.getByRole('link', { name: /^Add item$/i }).click();
 		await page.waitForURL(/\/items\/new/);
 
 		await page.fill('input[name="title"]', 'Test Activity');
