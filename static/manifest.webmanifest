@@ -4,8 +4,8 @@
   "description": "Self-hosted trip planning",
   "start_url": "/trips",
   "display": "standalone",
-  "background_color": "#f8fafc",
-  "theme_color": "#0f172a",
+  "background_color": "#F6F2EA",
+  "theme_color": "#F6F2EA",
   "orientation": "portrait-primary",
   "icons": [
     {

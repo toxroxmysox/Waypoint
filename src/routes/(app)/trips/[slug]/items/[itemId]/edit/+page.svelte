@@ -3,6 +3,12 @@
 	import { untrack } from 'svelte';
 	import { itemFieldConfig, itemTypeLabels, slotOptions } from '$lib/config/item-fields';
 	import type { ConfirmationCode } from '$lib/types';
+	import NavBar from '$lib/components/ui/NavBar.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import SectionH from '$lib/components/ui/SectionH.svelte';
+	import Pill from '$lib/components/ui/Pill.svelte';
+	import { titleCase } from '$lib/utils/format';
 
 	let { data, form } = $props();
 
@@ -13,9 +19,6 @@
 
 	let fields = $derived(itemFieldConfig[data.item.type]);
 
-	// untrack() seeds form state from props exactly once without triggering
-	// Svelte's state_referenced_locally warning. Re-mounts on navigation
-	// reinitialize from fresh data, which is what we want for a form.
 	let confirmationCodes = $state<ConfirmationCode[]>(
 		untrack(() => {
 			const existing = data.item.confirmation_codes;
@@ -31,12 +34,6 @@
 		confirmationCodes = confirmationCodes.filter((_, i) => i !== index);
 	}
 
-	function titleCase(s: string): string {
-		return s
-			.replace(/_/g, ' ')
-			.replace(/\b\w/g, (c) => c.toUpperCase());
-	}
-
 	function normalizeUrl(e: FocusEvent) {
 		const el = e.currentTarget as HTMLInputElement;
 		const v = el.value.trim();
@@ -46,20 +43,16 @@
 	}
 </script>
 
-<div class="space-y-4">
-	<a
-		href="/trips/{data.trip.slug}/items/{data.item.id}"
-		class="text-sm text-slate-500 hover:text-slate-700"
-	>
-		&larr; Back to item
-	</a>
+<NavBar
+	title="Edit"
+	subtitle={data.item.title}
+	back
+	backHref="/trips/{data.trip.slug}/items/{data.item.id}"
+/>
 
-	<h2 class="text-lg font-bold text-slate-900">
-		Edit {itemTypeLabels[data.item.type]}
-	</h2>
-
+<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 space-y-4">
 	{#if error}
-		<div class="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</div>
+		<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">{error}</div>
 	{/if}
 
 	<form
@@ -74,306 +67,341 @@
 		}}
 		class="space-y-4"
 	>
-		<!-- Type is read-only; no form control, so just a labeled display row -->
-		<div>
-			<div class="text-sm font-medium text-slate-700">Type</div>
-			<span class="mt-1 inline-block rounded bg-slate-100 px-2 py-1 text-sm text-slate-600">
-				{itemTypeLabels[data.item.type]}
-			</span>
-		</div>
-
-		<!-- Subtype -->
-		{#if fields.subtype && fields.subtypes.length > 0}
-			<div>
-				<label for="subtype" class="block text-sm font-medium text-slate-700">Subtype</label>
-				<select
-					id="subtype"
-					name="subtype"
-					class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-				>
-					<option value="">None</option>
-					{#each fields.subtypes as st}
-						<option value={st} selected={data.item.subtype === st}>{titleCase(st)}</option>
-					{/each}
-				</select>
-			</div>
-		{/if}
-
-		<!-- Title -->
-		<div>
-			<label for="title" class="block text-sm font-medium text-slate-700">Title</label>
-			<input
-				type="text"
-				id="title"
-				name="title"
-				required
-				value={data.item.title}
-				class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-			/>
-		</div>
-
-		<!-- Description -->
-		<div>
-			<label for="description" class="block text-sm font-medium text-slate-700">Description</label>
-			<textarea
-				id="description"
-				name="description"
-				rows="2"
-				class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-			>{data.item.description}</textarea>
-		</div>
-
-		<!-- Status -->
-		<div>
-			<label for="status" class="block text-sm font-medium text-slate-700">Status</label>
-			<select
-				id="status"
-				name="status"
-				class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-			>
-				<option value="planned" selected={data.item.status === 'planned'}>Planned</option>
-				<option value="done" selected={data.item.status === 'done'}>Done</option>
-			</select>
-		</div>
-
-		<!-- Day + Slot -->
-		<div class="grid grid-cols-2 gap-3">
-			<div>
-				<label for="day" class="block text-sm font-medium text-slate-700">Day</label>
-				<select
-					id="day"
-					name="day"
-					class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-				>
-					<option value="">Unscheduled</option>
-					{#each data.days as d}
-						<option value={d.id} selected={d.id === data.item.day}>
-							{new Date(d.date.replace(' ', 'T')).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })}
-						</option>
-					{/each}
-				</select>
-			</div>
-			<div>
-				<label for="slot" class="block text-sm font-medium text-slate-700">Slot</label>
-				<select
-					id="slot"
-					name="slot"
-					class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-				>
-					{#each slotOptions as opt}
-						<option value={opt.value} selected={data.item.slot === opt.value}>{opt.label}</option>
-					{/each}
-				</select>
-			</div>
-		</div>
-
-		<!-- Phase -->
-		<div>
-			<label for="phase" class="block text-sm font-medium text-slate-700">Phase</label>
-			<select
-				id="phase"
-				name="phase"
-				class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-			>
-				<option value="">None</option>
-				{#each data.phases as p}
-					<option value={p.id} selected={p.id === data.item.phase}>{p.name}</option>
-				{/each}
-			</select>
-		</div>
-
-		<!-- Location -->
-		{#if fields.location}
-			<div>
-				<label for="location_name" class="block text-sm font-medium text-slate-700">Location Name</label>
-				<input
-					type="text"
-					id="location_name"
-					name="location_name"
-					value={data.item.location_name}
-					class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-				/>
-			</div>
-			<div>
-				<label for="location_address" class="block text-sm font-medium text-slate-700">Address</label>
-				<input
-					type="text"
-					id="location_address"
-					name="location_address"
-					value={data.item.location_address}
-					class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-				/>
-			</div>
-		{/if}
-
-		<!-- Times -->
-		{#if fields.times}
-			<div class="grid grid-cols-2 gap-3">
-				<div class="min-w-0">
-					<label for="start_time" class="block text-sm font-medium text-slate-700">Start Time</label>
-					<input
-						type="time"
-						id="start_time"
-						name="start_time"
-						value={data.item.start_time}
-						class="mt-1 block w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-					/>
-				</div>
-				<div class="min-w-0">
-					<label for="end_time" class="block text-sm font-medium text-slate-700">End Time</label>
-					<input
-						type="time"
-						id="end_time"
-						name="end_time"
-						value={data.item.end_time}
-						class="mt-1 block w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-					/>
-				</div>
-			</div>
-		{/if}
-
-		<!-- Booking -->
-		{#if fields.booking}
-			<div class="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-				<h3 class="text-xs font-medium text-slate-500 uppercase">Booking</h3>
-				<label class="flex items-center gap-2">
-					<input type="checkbox" name="booked" checked={data.item.booked} class="rounded border-slate-300" />
-					<span class="text-sm text-slate-700">Booked</span>
-				</label>
+		<Card>
+			<div class="p-4 space-y-4">
+				<!-- Read-only Type display: a styled <div>, not a label, since type can't be changed here -->
 				<div>
-					<label for="reservation_url" class="block text-sm font-medium text-slate-700">Reservation URL</label>
-					<input
-						type="url"
-						id="reservation_url"
-						name="reservation_url"
-						inputmode="url"
-						value={data.item.reservation_url}
-						onblur={normalizeUrl}
-						placeholder="example.com"
-						class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-					/>
-				</div>
-				<label class="flex items-center gap-2">
-					<input type="checkbox" name="free_cancellation" checked={data.item.free_cancellation} class="rounded border-slate-300" />
-					<span class="text-sm text-slate-700">Free cancellation</span>
-				</label>
-			</div>
-		{/if}
-
-		<!-- Confirmation codes -->
-		{#if fields.confirmationCodes}
-			<div class="space-y-2">
-				<div class="flex items-center justify-between">
-					<h3 class="text-xs font-medium text-slate-500 uppercase">Confirmation Codes</h3>
-					<button
-						type="button"
-						onclick={addCode}
-						class="text-xs text-slate-500 hover:text-slate-700"
-					>
-						+ Add code
-					</button>
-				</div>
-				{#each confirmationCodes as code, i}
-					<div class="flex gap-2">
-						<input
-							type="text"
-							name="confirmation_code_label"
-							placeholder="Label"
-							bind:value={code.label}
-							class="block w-1/3 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-						/>
-						<input
-							type="text"
-							name="confirmation_code_value"
-							placeholder="Code"
-							bind:value={code.value}
-							class="block flex-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-						/>
-						<button
-							type="button"
-							aria-label="Remove confirmation code"
-							onclick={() => removeCode(i)}
-							class="text-slate-400 hover:text-red-500"
-						>
-							<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-							</svg>
-						</button>
+					<div class="text-ink-soft text-sm font-medium">Type</div>
+					<div class="mt-1">
+						<Pill variant="default" size="md">{itemTypeLabels[data.item.type]}</Pill>
 					</div>
-				{/each}
-			</div>
-		{/if}
+				</div>
 
-		<!-- Costs -->
-		{#if fields.costs}
-			<div class="grid grid-cols-2 gap-3">
+				{#if fields.subtype && fields.subtypes.length > 0}
+					<div>
+						<label for="subtype" class="text-ink-soft block text-sm font-medium">Subtype</label>
+						<select
+							id="subtype"
+							name="subtype"
+							class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+						>
+							<option value="">None</option>
+							{#each fields.subtypes as st}
+								<option value={st} selected={data.item.subtype === st}>{titleCase(st)}</option>
+							{/each}
+						</select>
+					</div>
+				{/if}
+
 				<div>
-					<label for="cost_estimate_usd" class="block text-sm font-medium text-slate-700">Est. Cost (USD)</label>
+					<label for="title" class="text-ink-soft block text-sm font-medium">Title</label>
 					<input
-						type="number"
-						id="cost_estimate_usd"
-						name="cost_estimate_usd"
-						step="0.01"
-						min="0"
-						value={data.item.cost_estimate_usd || ''}
-						class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
+						type="text"
+						id="title"
+						name="title"
+						required
+						value={data.item.title}
+						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 					/>
 				</div>
+
 				<div>
-					<label for="cost_actual_usd" class="block text-sm font-medium text-slate-700">Actual Cost (USD)</label>
-					<input
-						type="number"
-						id="cost_actual_usd"
-						name="cost_actual_usd"
-						step="0.01"
-						min="0"
-						value={data.item.cost_actual_usd || ''}
-						class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-					/>
+					<label for="description" class="text-ink-soft block text-sm font-medium">Description</label>
+					<textarea
+						id="description"
+						name="description"
+						rows="2"
+						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+					>{data.item.description}</textarea>
+				</div>
+
+				<div>
+					<label for="status" class="text-ink-soft block text-sm font-medium">Status</label>
+					<select
+						id="status"
+						name="status"
+						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+					>
+						<option value="planned" selected={data.item.status === 'planned'}>Planned</option>
+						<option value="done" selected={data.item.status === 'done'}>Done</option>
+					</select>
 				</div>
 			</div>
-		{/if}
+		</Card>
 
-		<!-- Assigned to (fieldset wraps a checkbox group) -->
-		{#if data.members.length > 1}
-			<fieldset>
-				<legend class="block text-sm font-medium text-slate-700">Assigned To</legend>
-				<div class="mt-1 space-y-1">
-					{#each data.members as member}
-						<label class="flex items-center gap-2">
+		<Card>
+			<div class="p-4 space-y-4">
+				<SectionH>When</SectionH>
+				<div class="grid grid-cols-2 gap-3">
+					<div>
+						<label for="day" class="text-ink-soft block text-sm font-medium">Day</label>
+						<select
+							id="day"
+							name="day"
+							class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+						>
+							<option value="">Unscheduled</option>
+							{#each data.days as d}
+								<option value={d.id} selected={d.id === data.item.day}>
+									{new Date(d.date.replace(' ', 'T')).toLocaleDateString('en-US', {
+										weekday: 'short',
+										month: 'short',
+										day: 'numeric',
+										timeZone: 'UTC'
+									})}
+								</option>
+							{/each}
+						</select>
+					</div>
+					<div>
+						<label for="slot" class="text-ink-soft block text-sm font-medium">Slot</label>
+						<select
+							id="slot"
+							name="slot"
+							class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+						>
+							{#each slotOptions as opt}
+								<option value={opt.value} selected={data.item.slot === opt.value}
+									>{opt.label}</option
+								>
+							{/each}
+						</select>
+					</div>
+				</div>
+
+				<div>
+					<label for="phase" class="text-ink-soft block text-sm font-medium">Phase</label>
+					<select
+						id="phase"
+						name="phase"
+						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+					>
+						<option value="">None</option>
+						{#each data.phases as p}
+							<option value={p.id} selected={p.id === data.item.phase}>{p.name}</option>
+						{/each}
+					</select>
+				</div>
+
+				{#if fields.times}
+					<div class="grid grid-cols-2 gap-3">
+						<div class="min-w-0">
+							<label for="start_time" class="text-ink-soft block text-sm font-medium">Start time</label>
 							<input
-								type="checkbox"
-								name="assigned_to"
-								value={member.id}
-								checked={data.item.assigned_to.includes(member.id)}
-								class="rounded border-slate-300"
+								type="time"
+								id="start_time"
+								name="start_time"
+								value={data.item.start_time}
+								class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
 							/>
-							<span class="text-sm text-slate-700">
-								{member.display_name || member.expand?.user?.name || member.expand?.user?.email || member.placeholder_name || 'Unknown'}
-							</span>
-						</label>
+						</div>
+						<div class="min-w-0">
+							<label for="end_time" class="text-ink-soft block text-sm font-medium">End time</label>
+							<input
+								type="time"
+								id="end_time"
+								name="end_time"
+								value={data.item.end_time}
+								class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
+							/>
+						</div>
+					</div>
+				{/if}
+			</div>
+		</Card>
+
+		{#if fields.location}
+			<Card>
+				<div class="p-4 space-y-4">
+					<SectionH>Location</SectionH>
+					<div>
+						<label for="location_name" class="text-ink-soft block text-sm font-medium">Name</label>
+						<input
+							type="text"
+							id="location_name"
+							name="location_name"
+							value={data.item.location_name}
+							class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+						/>
+					</div>
+					<div>
+						<label for="location_address" class="text-ink-soft block text-sm font-medium">Address</label>
+						<input
+							type="text"
+							id="location_address"
+							name="location_address"
+							value={data.item.location_address}
+							class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+						/>
+					</div>
+				</div>
+			</Card>
+		{/if}
+
+		{#if fields.booking}
+			<Card>
+				<div class="p-4 space-y-3">
+					<SectionH>Booking</SectionH>
+					<label class="flex items-center gap-2">
+						<input
+							type="checkbox"
+							name="booked"
+							checked={data.item.booked}
+							class="border-line rounded"
+						/>
+						<span class="text-ink-soft text-sm">Booked</span>
+					</label>
+					<div>
+						<label for="reservation_url" class="text-ink-soft block text-sm font-medium"
+							>Reservation URL</label
+						>
+						<input
+							type="url"
+							id="reservation_url"
+							name="reservation_url"
+							inputmode="url"
+							value={data.item.reservation_url}
+							onblur={normalizeUrl}
+							placeholder="example.com"
+							class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+						/>
+					</div>
+					<label class="flex items-center gap-2">
+						<input
+							type="checkbox"
+							name="free_cancellation"
+							checked={data.item.free_cancellation}
+							class="border-line rounded"
+						/>
+						<span class="text-ink-soft text-sm">Free cancellation</span>
+					</label>
+				</div>
+			</Card>
+		{/if}
+
+		{#if fields.confirmationCodes}
+			<Card>
+				<div class="p-4 space-y-2">
+					<SectionH>
+						{#snippet right()}
+							<button type="button" onclick={addCode} class="text-ink-muted hover:text-ink-soft">
+								+ Add code
+							</button>
+						{/snippet}
+						Confirmation codes
+					</SectionH>
+					{#each confirmationCodes as code, i}
+						<div class="flex gap-2">
+							<input
+								type="text"
+								name="confirmation_code_label"
+								placeholder="Label"
+								bind:value={code.label}
+								class="border-line bg-surface text-ink block w-1/3 rounded-md border px-2 py-1.5 text-sm"
+							/>
+							<input
+								type="text"
+								name="confirmation_code_value"
+								placeholder="Code"
+								bind:value={code.value}
+								class="border-line bg-surface text-ink font-mono block flex-1 rounded-md border px-2 py-1.5 text-sm"
+							/>
+							<button
+								type="button"
+								aria-label="Remove confirmation code"
+								onclick={() => removeCode(i)}
+								class="text-ink-muted hover:text-clay"
+							>
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+									<path d="M6 18L18 6M6 6l12 12" />
+								</svg>
+							</button>
+						</div>
 					{/each}
 				</div>
-			</fieldset>
+			</Card>
 		{/if}
 
-		<button
-			type="submit"
-			disabled={loading}
-			class="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
-		>
-			{loading ? 'Saving...' : 'Save Changes'}
-		</button>
+		{#if fields.costs}
+			<Card>
+				<div class="p-4">
+					<SectionH>Costs</SectionH>
+					<div class="mt-2 grid grid-cols-2 gap-3">
+						<div>
+							<label for="cost_estimate_usd" class="text-ink-soft block text-sm font-medium"
+								>Estimate (USD)</label
+							>
+							<input
+								type="number"
+								id="cost_estimate_usd"
+								name="cost_estimate_usd"
+								step="0.01"
+								min="0"
+								value={data.item.cost_estimate_usd || ''}
+								class="border-line bg-surface text-ink font-mono mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+							/>
+						</div>
+						<div>
+							<label for="cost_actual_usd" class="text-ink-soft block text-sm font-medium"
+								>Actual (USD)</label
+							>
+							<input
+								type="number"
+								id="cost_actual_usd"
+								name="cost_actual_usd"
+								step="0.01"
+								min="0"
+								value={data.item.cost_actual_usd || ''}
+								class="border-line bg-surface text-ink font-mono mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+							/>
+						</div>
+					</div>
+				</div>
+			</Card>
+		{/if}
+
+		{#if data.members.length > 1}
+			<Card>
+				<div class="p-4">
+					<fieldset>
+						<legend class="text-moss text-[11px] font-bold tracking-[0.2em] uppercase">Assigned to</legend>
+						<div class="mt-2 space-y-1">
+							{#each data.members as member}
+								<label class="flex items-center gap-2">
+									<input
+										type="checkbox"
+										name="assigned_to"
+										value={member.id}
+										checked={data.item.assigned_to.includes(member.id)}
+										class="border-line rounded"
+									/>
+									<span class="text-ink-soft text-sm">
+										{member.display_name ||
+											member.expand?.user?.name ||
+											member.expand?.user?.email ||
+											member.placeholder_name ||
+											'Unknown'}
+									</span>
+								</label>
+							{/each}
+						</div>
+					</fieldset>
+				</div>
+			</Card>
+		{/if}
+
+		<Button type="submit" disabled={loading} variant="moss" size="lg" class="w-full">
+			{loading ? 'Saving…' : 'Save changes'}
+		</Button>
 	</form>
 
-	<!-- Delete -->
-	<div class="rounded-lg border border-red-200 p-4">
-		<h3 class="text-sm font-medium text-red-700">Delete Item</h3>
+	<div class="border-clay/30 rounded-lg border p-4">
+		<h3 class="text-clay text-sm font-semibold">Delete item</h3>
 		{#if !confirmDelete}
 			<button
 				type="button"
 				onclick={() => (confirmDelete = true)}
-				class="mt-2 rounded-md border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
+				class="border-clay/40 text-clay hover:bg-clay/10 mt-2 rounded-md border px-3 py-1.5 text-sm font-semibold"
 			>
 				Delete
 			</button>
@@ -393,18 +421,18 @@
 				<button
 					type="submit"
 					disabled={deleting}
-					class="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+					class="bg-clay text-paper hover:bg-clay/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
 				>
-					{deleting ? 'Deleting...' : 'Confirm Delete'}
+					{deleting ? 'Deleting…' : 'Confirm delete'}
 				</button>
 				<button
 					type="button"
 					onclick={() => (confirmDelete = false)}
-					class="text-sm text-slate-500 hover:text-slate-700"
+					class="text-ink-muted hover:text-ink-soft text-sm"
 				>
 					Cancel
 				</button>
 			</form>
 		{/if}
 	</div>
-</div>
+</main>

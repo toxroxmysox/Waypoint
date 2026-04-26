@@ -1,12 +1,20 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { untrack } from 'svelte';
 	import type { Day } from '$lib/types';
+	import NavBar from '$lib/components/ui/NavBar.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import SectionH from '$lib/components/ui/SectionH.svelte';
+	import PhaseColorPicker from '$lib/components/PhaseColorPicker.svelte';
+	import { phasePalette } from '$lib/utils/phase-palette';
 
 	let { data, form } = $props();
 
 	let editing = $state(false);
 	let loading = $state(false);
 	let error = $derived(form?.error ?? '');
+	let editColor = $state(untrack(() => data.phase.color || phasePalette[0].hex));
 
 	function dayLabel(d: Day): string {
 		return new Date(d.date.replace(' ', 'T')).toLocaleDateString('en-US', {
@@ -26,166 +34,146 @@
 	}
 </script>
 
-<div class="space-y-4">
-	<a
-		href="/trips/{data.trip.slug}/phases"
-		class="text-sm text-slate-500 hover:text-slate-700"
-	>
-		&larr; All phases
-	</a>
+<NavBar title={data.phase.name} subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}/phases" />
 
+<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 space-y-4">
 	{#if error}
-		<div class="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</div>
+		<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">{error}</div>
 	{/if}
 
-	<!-- Phase header -->
-	<div class="rounded-lg border border-slate-200 bg-white p-4">
-		<div class="flex items-start justify-between">
-			<div class="flex items-center gap-2">
-				{#if data.phase.color}
-					<span
-						class="h-4 w-4 rounded-full"
-						style="background-color: {data.phase.color}"
-					></span>
-				{/if}
-				<h2 class="text-lg font-semibold text-slate-900">{data.phase.name}</h2>
+	<Card accent={data.phase.color}>
+		<div class="p-4">
+			<div class="flex items-start justify-between gap-2">
+				<h2 class="font-display text-ink text-lg leading-tight font-semibold">{data.phase.name}</h2>
+				<Button onclick={() => (editing = !editing)} variant="ghost" size="sm">
+					{editing ? 'Cancel' : 'Edit'}
+				</Button>
 			</div>
-			<button
-				type="button"
-				onclick={() => (editing = !editing)}
-				class="cursor-pointer rounded-md border border-slate-200 px-3 py-1 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-			>
-				{editing ? 'Cancel' : 'Edit'}
-			</button>
+			{#if data.phase.location}
+				<p class="text-ink-soft mt-1 text-sm">{data.phase.location}</p>
+			{/if}
+			<p class="text-ink-muted font-mono mt-1 text-[11.5px]">
+				{new Date(data.phase.start_date.replace(' ', 'T')).toLocaleDateString('en-US', {
+					month: 'short',
+					day: 'numeric',
+					timeZone: 'UTC'
+				})}
+				–
+				{new Date(data.phase.end_date.replace(' ', 'T')).toLocaleDateString('en-US', {
+					month: 'short',
+					day: 'numeric',
+					year: 'numeric',
+					timeZone: 'UTC'
+				})}
+				<span class="text-line">·</span>
+				{daysNightsLabel(data.phase.start_date, data.phase.end_date)}
+			</p>
 		</div>
-		{#if data.phase.location}
-			<p class="mt-1 text-sm text-slate-500">{data.phase.location}</p>
-		{/if}
-		<p class="mt-1 text-xs text-slate-400">
-			{new Date(data.phase.start_date.replace(' ', 'T')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })} -
-			{new Date(data.phase.end_date.replace(' ', 'T')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
-			&middot; {daysNightsLabel(data.phase.start_date, data.phase.end_date)}
-		</p>
-	</div>
+	</Card>
 
 	{#if editing}
-		<form
-			method="POST"
-			action="?/update"
-			use:enhance={() => {
-				loading = true;
-				return async ({ result, update }) => {
-					loading = false;
-					if (result.type === 'success') editing = false;
-					await update();
-				};
-			}}
-			class="rounded-lg border border-slate-200 bg-white p-4 space-y-3"
-		>
-			<div>
-				<label for="name" class="block text-sm font-medium text-slate-700">Name</label>
-				<input
-					type="text"
-					id="name"
-					name="name"
-					required
-					value={data.phase.name}
-					class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-				/>
-			</div>
-
-			<div>
-				<label for="location" class="block text-sm font-medium text-slate-700">Location</label>
-				<input
-					type="text"
-					id="location"
-					name="location"
-					value={data.phase.location}
-					class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-				/>
-			</div>
-
-			<div class="grid grid-cols-2 gap-3">
-				<div class="min-w-0">
-					<label for="start_date" class="block text-sm font-medium text-slate-700">Start</label>
-					<input
-						type="date"
-						id="start_date"
-						name="start_date"
-						required
-						value={data.phase.start_date.split('T')[0].split(' ')[0]}
-						class="mt-1 block w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-					/>
-				</div>
-				<div class="min-w-0">
-					<label for="end_date" class="block text-sm font-medium text-slate-700">End</label>
-					<input
-						type="date"
-						id="end_date"
-						name="end_date"
-						required
-						value={data.phase.end_date.split('T')[0].split(' ')[0]}
-						class="mt-1 block w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
-					/>
-				</div>
-			</div>
-
-			<div class="grid grid-cols-2 gap-3">
+		<Card>
+			<form
+				method="POST"
+				action="?/update"
+				use:enhance={() => {
+					loading = true;
+					return async ({ result, update }) => {
+						loading = false;
+						if (result.type === 'success') editing = false;
+						await update();
+					};
+				}}
+				class="p-4 space-y-3"
+			>
 				<div>
-					<label for="country_code" class="block text-sm font-medium text-slate-700">Country Code</label>
+					<label for="name" class="text-ink-soft block text-sm font-medium">Name</label>
 					<input
 						type="text"
-						id="country_code"
-						name="country_code"
-						maxlength="2"
-						value={data.phase.country_code}
-						class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
+						id="name"
+						name="name"
+						required
+						value={data.phase.name}
+						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 					/>
 				</div>
-				<div>
-					<label for="color" class="block text-sm font-medium text-slate-700">Color</label>
-					<input
-						type="color"
-						id="color"
-						name="color"
-						value={data.phase.color || '#6b7280'}
-						class="mt-1 block h-10 w-full rounded-md border border-slate-300 bg-white px-1 shadow-sm"
-					/>
-				</div>
-			</div>
 
-			<button
-				type="submit"
-				disabled={loading}
-				class="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-			>
-				{loading ? 'Saving...' : 'Save Changes'}
-			</button>
-		</form>
+				<div>
+					<label for="location" class="text-ink-soft block text-sm font-medium">Location</label>
+					<input
+						type="text"
+						id="location"
+						name="location"
+						value={data.phase.location}
+						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+					/>
+				</div>
+
+				<div class="grid grid-cols-2 gap-3">
+					<div class="min-w-0">
+						<label for="start_date" class="text-ink-soft block text-sm font-medium">Start</label>
+						<input
+							type="date"
+							id="start_date"
+							name="start_date"
+							required
+							value={data.phase.start_date.split('T')[0].split(' ')[0]}
+							class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
+						/>
+					</div>
+					<div class="min-w-0">
+						<label for="end_date" class="text-ink-soft block text-sm font-medium">End</label>
+						<input
+							type="date"
+							id="end_date"
+							name="end_date"
+							required
+							value={data.phase.end_date.split('T')[0].split(' ')[0]}
+							class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
+						/>
+					</div>
+				</div>
+
+				<div class="grid grid-cols-2 gap-3">
+					<div>
+						<label for="country_code" class="text-ink-soft block text-sm font-medium">Country</label>
+						<input
+							type="text"
+							id="country_code"
+							name="country_code"
+							maxlength="2"
+							value={data.phase.country_code}
+							class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm uppercase"
+						/>
+					</div>
+					<PhaseColorPicker bind:value={editColor} />
+				</div>
+
+				<Button type="submit" disabled={loading} variant="moss" size="md" class="w-full">
+					{loading ? 'Saving…' : 'Save changes'}
+				</Button>
+			</form>
+		</Card>
 	{/if}
 
-	<!-- Days in this phase -->
-	<section>
-		<h3 class="mb-2 text-sm font-medium text-slate-500 uppercase">
-			Days ({data.phaseDays.length})
-		</h3>
+	<section class="space-y-1.5">
+		<SectionH>Days ({data.phaseDays.length})</SectionH>
 		{#if data.phaseDays.length === 0}
-			<p class="text-sm text-slate-400">No days fall within this phase's date range.</p>
+			<p class="text-ink-muted text-sm italic">No days fall within this phase's date range.</p>
 		{:else}
 			<div class="space-y-1">
 				{#each data.phaseDays as day}
 					{@const dayItems = data.phaseItems.filter((it) => it.day === day.id)}
-					<a
-						href="/trips/{data.trip.slug}/days/{day.id}"
-						class="flex items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2"
-					>
-						<span class="text-sm text-slate-900">{dayLabel(day)}</span>
-						{#if dayItems.length > 0}
-							<span class="text-xs text-slate-400">{dayItems.length} items</span>
-						{/if}
-					</a>
+					<Card href="/trips/{data.trip.slug}/days/{day.id}">
+						<div class="flex items-center justify-between px-3 py-2">
+							<span class="text-ink text-sm">{dayLabel(day)}</span>
+							{#if dayItems.length > 0}
+								<span class="text-ink-muted font-mono text-[11.5px]">{dayItems.length} items</span>
+							{/if}
+						</div>
+					</Card>
 				{/each}
 			</div>
 		{/if}
 	</section>
-</div>
+</main>

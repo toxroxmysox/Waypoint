@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import Button from '$lib/components/ui/Button.svelte';
 
 	let { form } = $props();
 
@@ -12,11 +13,11 @@
 	});
 </script>
 
-<div class="flex min-h-dvh items-center justify-center bg-slate-50 p-4">
+<div class="bg-paper text-ink flex min-h-dvh items-center justify-center p-4">
 	<div class="w-full max-w-sm">
 		<div class="mb-8 text-center">
-			<h1 class="text-2xl font-bold text-slate-900">Waypoint</h1>
-			<p class="mt-1 text-sm text-slate-500">
+			<h1 class="font-display text-ink text-3xl font-semibold tracking-tight">Waypoint</h1>
+			<p class="text-ink-muted mt-2 text-sm">
 				{#if otpId}
 					Enter the 6-digit code sent to {email}
 				{:else}
@@ -26,7 +27,7 @@
 		</div>
 
 		{#if error}
-			<div class="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700">
+			<div class="border-clay/30 bg-clay/10 text-clay mb-4 rounded-md border p-3 text-sm">
 				{error}
 			</div>
 		{/if}
@@ -49,7 +50,7 @@
 					};
 				}}
 			>
-				<label for="email" class="block text-sm font-medium text-slate-700">Email</label>
+				<label for="email" class="text-ink-soft block text-sm font-medium">Email</label>
 				<input
 					type="email"
 					id="email"
@@ -57,16 +58,12 @@
 					value={email}
 					required
 					autocomplete="email"
-					class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
+					class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 					placeholder="you@example.com"
 				/>
-				<button
-					type="submit"
-					disabled={loading}
-					class="mt-4 w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
-				>
-					{loading ? 'Sending...' : 'Send Code'}
-				</button>
+				<Button type="submit" disabled={loading} variant="moss" size="lg" class="mt-4 w-full">
+					{loading ? 'Sending…' : 'Send code'}
+				</Button>
 			</form>
 		{:else}
 			<form
@@ -82,7 +79,7 @@
 				}}
 			>
 				<input type="hidden" name="otpId" value={otpId} />
-				<label for="code" class="block text-sm font-medium text-slate-700">Code</label>
+				<label for="code" class="text-ink-soft block text-sm font-medium">Code</label>
 				<input
 					type="text"
 					id="code"
@@ -91,20 +88,18 @@
 					autocomplete="one-time-code"
 					inputmode="numeric"
 					maxlength="6"
-					oninput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/\D/g, ''); }}
-					class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-center text-2xl tracking-[0.5em] text-slate-900 shadow-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
+					oninput={(e) => {
+						e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '');
+					}}
+					class="border-line bg-surface text-ink font-mono mt-1 block w-full rounded-md border px-3 py-2 text-center text-2xl tracking-[0.5em]"
 					placeholder="000000"
 				/>
-				<button
-					type="submit"
-					disabled={loading}
-					class="mt-4 w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
-				>
-					{loading ? 'Verifying...' : 'Verify'}
-				</button>
+				<Button type="submit" disabled={loading} variant="moss" size="lg" class="mt-4 w-full">
+					{loading ? 'Verifying…' : 'Verify'}
+				</Button>
 				<button
 					type="button"
-					class="mt-2 w-full text-sm text-slate-500 hover:text-slate-700"
+					class="text-ink-muted hover:text-ink-soft mt-2 w-full text-sm"
 					onclick={() => {
 						otpId = '';
 					}}
