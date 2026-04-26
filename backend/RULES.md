@@ -97,7 +97,10 @@ The harness expectations table at the bottom of `test-rules.mjs` is updated alon
 ## Notes & gotchas
 
 - **`view` denials look like 404s**, not 403s. The harness encodes both as "denied" but reports the exact code so we can spot when PB upgrades and changes behavior.
-- **`list` denials don't 404 — they return 200 with an empty page.** The harness asserts `items.length === 0` for non-members instead of a status code.
+- **`list` denials don't 404 — they return 200 with an empty page.** The harness asserts the fixture record id is absent from the result set rather than checking a status code.
+- **Anon doesn't get 401.** Unauthenticated requests against rule-protected endpoints fall through the same rule check as everyone else; since every rule starts with `@request.auth.id != ""`, anon always lands in the "deny" bucket (200 empty list / 404 view / 403 or 400 write). The harness expects `deny` for anon across the board.
+- **Anon write may surface as 400 instead of 403.** When a rule denies a create payload that also fails server-side validation (e.g. trips.create with no `created_by`), PB returns the validation error, not the rule error. Both classify as `deny`.
 - **Auth-collection `view` quirk**: PB's auth collection view rule is also gated by superuser-or-self for the auth fields (password hash, tokenKey). With `viewRule = id = @request.auth.id` we get a clean self-only view. Cross-member lookup (e.g. avatar of a co-traveler) goes through `trip_members.display_name` instead, not through reading other users' rows.
 - **Back-relation requires the field to exist on the foreign side.** `trip_members.user` (relation to users) gives us `users.trip_members_via_user`. If a relation field is renamed or removed the back-relation name changes — update rule expressions in lockstep.
 - **Multi-relation membership uses `?=`.** Single-relation would use `=`. The `trip_members_via_trip` back-relation is a list, hence `?=`.
+- **`bindBody` doesn't unmarshal nested JSON.** A `DynamicModel` with nested object fields silently reads as empty in PB 0.27. For nested request bodies, read `e.requestInfo().body['key']` directly. The `/api/dev/rules-fixture` endpoint hit this; documented inline.

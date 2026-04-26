@@ -26,16 +26,18 @@ M2a does not need Resend. Run pre-flight in parallel with M2a so M2b isn't block
 
 ## Sub-milestones
 
-### M2a — Rules audit + verification harness
+### M2a — Rules audit + verification harness ✓ Complete (2026-04-25)
 Lock down permissions before adding any new surface. M1 shipped a missing `deleteRule` (commit fd23eac) — this prevents that class of bug.
 
 Tasks:
-- New migration: audit `users`, `trips`, `trip_members`, `phases`, `days`, `items`, `checklist_items` — every collection has all 5 rules (list/view/create/update/delete) explicitly set, with `// reason: ...` for any intentional null
-- `backend/RULES.md`: matrix of "role × collection × op" with intended behavior
-- `backend/test-rules.mjs`: script auths as owner / co-owner / traveler / viewer / non-member; exercises each (collection, op) cell; reports pass/fail with HTTP codes
-- Run harness, fix discrepancies, commit RULES.md as source of truth
+- [x] New migration `0014_explicit_rules_audit.js`: audits `users`, `trips`, `trip_members`, `phases`, `days`, `items`, `checklist_items` — every collection has all 5 rules (list/view/create/update/delete) explicitly set, with `// reason: ...` for any intentional null
+- [x] `backend/RULES.md`: matrix of "role × collection × op" with intended behavior + planned tightening per sub-milestone
+- [x] `backend/test-rules.mjs`: script auths as owner / co-owner / traveler / viewer / non-member + anon; exercises each (collection, op) cell against a fresh fixture trip; reports pass/fail with HTTP codes
+- [x] `pnpm test:rules` script wired up; harness runs against a PB started with `WAYPOINT_DEV_MODE=true E2E_TEST_EMAILS=<5 emails>`
+- [x] Harness green: **210/210 cells pass** against current schema
+- [x] Lessons captured in RULES.md notes (anon→deny, bindBody nested unmarshaling gotcha)
 
-Acceptance: harness green against current schema. Documented intent matches observed behavior.
+Acceptance: harness green against current schema. Documented intent matches observed behavior. **Met.**
 
 ---
 

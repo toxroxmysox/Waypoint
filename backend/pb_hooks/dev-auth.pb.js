@@ -81,20 +81,16 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 		if (trimmed) whitelist.add(trimmed);
 	}
 
-	const body = new DynamicModel({
-		emails: {
-			owner: '',
-			co_owner: '',
-			traveler: '',
-			viewer: '',
-			non_member: ''
-		}
-	});
-	e.bindBody(body);
+	// bindBody + nested DynamicModel doesn't populate inner fields in PB 0.27 —
+	// the JS bridge marshals the schema as a flat map and silently drops the
+	// nesting. requestInfo().body returns the parsed JSON dict directly, so we
+	// can read body['emails']['owner'] without going through DynamicModel.
+	const info = e.requestInfo();
+	const emails = (info.body && info.body['emails']) || {};
 
 	const required = ['owner', 'co_owner', 'traveler', 'viewer', 'non_member'];
 	for (const role of required) {
-		const email = body.emails[role];
+		const email = emails[role];
 		if (!email) throw new BadRequestError('Missing email for role: ' + role);
 		if (!whitelist.has(email)) {
 			throw new ForbiddenError('Email not whitelisted: ' + email);
@@ -105,7 +101,7 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 	const usersCol = e.app.findCollectionByNameOrId('users');
 	const userIds = {};
 	for (const role of required) {
-		const email = body.emails[role];
+		const email = emails[role];
 		let user;
 		try {
 			user = e.app.findAuthRecordByEmail('users', email);

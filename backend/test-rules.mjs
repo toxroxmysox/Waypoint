@@ -122,8 +122,10 @@ function recordResult(collection, op, role, expected, actual, status) {
 	});
 }
 
-// Expected outcomes per (collection, op, role). 'auth_error' is implicit for
-// the anon role and not listed here.
+// Expected outcomes per (collection, op, role). Anon is hardcoded to 'deny'
+// in each phase runner: PB doesn't return 401 to unauthenticated requests
+// against rule-protected endpoints — every rule starts with
+// `@request.auth.id != ""`, so anon just fails the rule like a non-member.
 //
 // The matrix below reflects M2a baseline (role-agnostic membership). When a
 // later sub-milestone tightens permissions, update the affected cells AND
@@ -282,7 +284,7 @@ async function runListPhase(tokens, fixture) {
 			recordResult(col, 'list', role, EXPECT[col].list[role], classifyList(r.status, r.data?.items, fid), r.status);
 		}
 		const r = await pbRequest('GET', `/api/collections/${col}/records?perPage=200`);
-		recordResult(col, 'list', 'anon', 'auth_error', classifyList(r.status, r.data?.items, fid), r.status);
+		recordResult(col, 'list', 'anon', 'deny', classifyList(r.status, r.data?.items, fid), r.status);
 	}
 }
 
@@ -296,7 +298,7 @@ async function runViewPhase(tokens, fixture) {
 			recordResult(col, 'view', role, EXPECT[col].view[role], classifyView(r.status), r.status);
 		}
 		const r = await pbRequest('GET', `/api/collections/${col}/records/${fid}`);
-		recordResult(col, 'view', 'anon', 'auth_error', classifyView(r.status), r.status);
+		recordResult(col, 'view', 'anon', 'deny', classifyView(r.status), r.status);
 	}
 }
 
@@ -312,7 +314,7 @@ async function runCreatePhase(tokens, fixture) {
 		const r = await pbRequest('POST', `/api/collections/${col}/records`, {
 			body: createBody(col, 'owner', fixture)
 		});
-		recordResult(col, 'create', 'anon', 'auth_error', classifyWrite(r.status), r.status);
+		recordResult(col, 'create', 'anon', 'deny', classifyWrite(r.status), r.status);
 	}
 }
 
@@ -329,7 +331,7 @@ async function runUpdatePhase(tokens, fixture) {
 		const r = await pbRequest('PATCH', `/api/collections/${col}/records/${fid}`, {
 			body: updateBody(col)
 		});
-		recordResult(col, 'update', 'anon', 'auth_error', classifyWrite(r.status), r.status);
+		recordResult(col, 'update', 'anon', 'deny', classifyWrite(r.status), r.status);
 	}
 }
 
@@ -352,7 +354,7 @@ async function runDeletePhase(tokens) {
 		// anon
 		const fidAnon = fixtureRecordId(fixture, col);
 		const ranon = await pbRequest('DELETE', `/api/collections/${col}/records/${fidAnon}`);
-		recordResult(col, 'delete', 'anon', 'auth_error', classifyWrite(ranon.status), ranon.status);
+		recordResult(col, 'delete', 'anon', 'deny', classifyWrite(ranon.status), ranon.status);
 
 		for (const role of ROLES) {
 			if (exp[role] !== 'allow') continue;
