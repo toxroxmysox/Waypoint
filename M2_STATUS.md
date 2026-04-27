@@ -68,18 +68,29 @@ Open notes:
 
 ---
 
-### M2c — Placeholder members, auto-merge, promote, remove
+### M2c — Placeholder members, auto-merge, promote, remove ✓ Complete (2026-04-27)
 All Members-screen role management.
 
 Tasks:
-- Frontend: "Add placeholder" form on Members screen (display_name + optional placeholder_email + role)
-- pb_hook on `users` create: scan `trip_members` for `placeholder_email = user.email`; if any match, mark them claimable for the new user
-- Claim UI: post-login interstitial "Join [trip title] as [placeholder_name]? You can change your display name." Confirm → set `user`, clear placeholder fields, set `joined_at`
-- Frontend: per-row "Promote to Co-Owner" action (visible only to owners/co-owners, only on travelers)
-- Frontend: per-row "Remove" action (visible to owners/co-owners; disabled for self if sole owner)
-- Hook validation enforces invariants: cannot demote sole owner, cannot remove sole owner, only owner/co-owner can change roles
+- [x] Migration `0016_trip_members_claimable.js`: `claimable_by` RelationField → users on `trip_members`
+- [x] `pb_hooks/members.pb.js`: six endpoints + hook
+  - `onRecordAfterCreateSuccess('users')` — auto-merge: scans trip_members for placeholder_email match, sets claimable_by
+  - `GET /api/members/my-claims` — returns pending placeholder claims for auth user (admin context)
+  - `POST /api/members/claim` — accept claim; sets user, joined_at, display_name; clears placeholders. Check order: user-already-set (400 if same user, 403 if different) before claimable_by check (403)
+  - `POST /api/members/add-placeholder` — role-gated (viewer denied, traveler limited to traveler/viewer); sets claimable_by immediately if user already exists
+  - `POST /api/members/promote` — owner/co_owner only; traveler → co_owner only
+  - `POST /api/members/remove` — owner/co_owner only; sole-owner removal blocked
+- [x] `/claim` route: post-login interstitial; auto-redirects to `/trips` if no pending claims
+- [x] Members page: collapsible add-placeholder form, per-row promote/remove with auth guards
+- [x] Login (verifyOTP + dev bypass) redirects to `/claim` instead of `/trips`
+- [x] `backend/test-members.mjs` + `pnpm test:members` — **31/31** assertions green
+- [x] `.env.local`: `e2e@waypoint.local` added to `E2E_TEST_EMAILS` (was breaking E2E after whitelist gate added in M2b)
 
-Acceptance: add Jake placeholder → Jake signs up → claim prompt → membership merges. Promote Jake to co-owner. Remove Jake. Sole-owner self-removal blocked.
+Acceptance: all acceptance criteria met.
+- pnpm check: 0/0/0
+- test:rules: 240/240
+- test:members: 31/31
+- test:e2e: 2/2
 
 ---
 
