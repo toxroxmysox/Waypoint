@@ -1,13 +1,15 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { TripMember, PendingInvite, User } from '$lib/types';
+import { PUBLIC_PB_URL } from '$env/static/public';
 
 // Hydrated row for the members list. Display name resolution:
-//   placeholder → placeholder_name
+//   placeholder → display_name (set at creation) || placeholder_name
 //   real user → display_name (per-trip nickname) || user.name || user.email
 type MemberRow = TripMember & {
 	displayLabel: string;
 	emailLabel: string;
+	isPlaceholder: boolean;
 };
 
 type PendingRow = PendingInvite & {
@@ -23,28 +25,31 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 		sort: 'created'
 	});
 
-	// Resolve user records in one batch — display_name + email are needed per row.
-	const userIds = members.map((m) => m.user).filter((id) => !!id);
-	const usersById: Record<string, User> = {};
-	if (userIds.length > 0) {
-		const filter = userIds.map((id) => `id = "${id}"`).join(' || ');
-		const users = await locals.pb.collection('users').getFullList<User>({ filter });
-		for (const u of users) usersById[u.id] = u;
-	}
+	const authUser = (locals.user ?? null) as User | null;
 
 	const memberRows: MemberRow[] = members.map((m) => {
-		if (!m.user) {
+		const isPlaceholder = !m.user;
+		if (isPlaceholder) {
 			return {
 				...m,
-				displayLabel: m.placeholder_name || '(placeholder)',
-				emailLabel: m.placeholder_email || ''
+				displayLabel: m.display_name || m.placeholder_name || '(placeholder)',
+				emailLabel: m.placeholder_email || '',
+				isPlaceholder: true
 			};
 		}
-		const u = usersById[m.user];
+		if (authUser && m.user === authUser.id) {
+			return {
+				...m,
+				displayLabel: m.display_name || authUser.name || authUser.email || '(you)',
+				emailLabel: authUser.email || '',
+				isPlaceholder: false
+			};
+		}
 		return {
 			...m,
-			displayLabel: m.display_name || u?.name || u?.email || '(unknown)',
-			emailLabel: u?.email || ''
+			displayLabel: m.display_name || '(member)',
+			emailLabel: '',
+			isPlaceholder: false
 		};
 	});
 
@@ -63,11 +68,12 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 		const inviter = memberById.get(p.invited_by);
 		let inviterLabel = 'someone';
 		if (inviter) {
-			if (inviter.user && usersById[inviter.user]) {
-				const u = usersById[inviter.user];
-				inviterLabel = inviter.display_name || u.name || u.email;
-			} else {
-				inviterLabel = inviter.placeholder_name || 'someone';
+			if (authUser && inviter.user === authUser.id) {
+				inviterLabel = inviter.display_name || authUser.name || authUser.email || 'you';
+			} else if (inviter.display_name) {
+				inviterLabel = inviter.display_name;
+			} else if (inviter.placeholder_name) {
+				inviterLabel = inviter.placeholder_name;
 			}
 		}
 		return {
@@ -79,6 +85,8 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 
 	const isOwner = membership.role === 'owner' || membership.role === 'co_owner';
 	const canInvite = isOwner || membership.role === 'traveler';
+	const canAddPlaceholder = canInvite;
+	const ownerCount = members.filter((m) => m.role === 'owner').length;
 
 	return {
 		trip,
@@ -86,7 +94,9 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 		members: memberRows,
 		pending: pendingRows,
 		isOwner,
-		canInvite
+		canInvite,
+		canAddPlaceholder,
+		ownerCount
 	};
 };
 
@@ -127,13 +137,108 @@ export const actions: Actions = {
 			const message = extractErrorMessage(err) || 'Failed to revoke invite.';
 			return fail(400, { revoke: { error: message } });
 		}
+	},
+
+	addPlaceholder: async ({ request, locals, params }) => {
+		const data = await request.formData();
+		const displayName = data.get('display_name')?.toString().trim() || '';
+		const placeholderEmail = data.get('placeholder_email')?.toString().trim().toLowerCase() || '';
+		const role = data.get('role')?.toString() || '';
+
+		if (!displayName) return fail(400, { placeholder: { error: 'Display name is required.' } });
+		if (!role) return fail(400, { placeholder: { error: 'Role is required.' } });
+
+		try {
+			const trip = await locals.pb
+				.collection('trips')
+				.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+
+			const token = locals.pb.authStore.token;
+			const res = await fetch(`${PUBLIC_PB_URL}/api/members/add-placeholder`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${token}`
+				},
+				body: JSON.stringify({
+					trip_id: trip.id,
+					display_name: displayName,
+					placeholder_email: placeholderEmail || undefined,
+					role
+				})
+			});
+
+			if (!res.ok) {
+				let msg = 'Failed to add member.';
+				try {
+					const body = await res.json();
+					msg = body?.message || msg;
+				} catch (_) {}
+				return fail(res.status, { placeholder: { error: msg } });
+			}
+
+			return { placeholder: { success: true, displayName } };
+		} catch (err: unknown) {
+			const message = extractErrorMessage(err) || 'Failed to add member.';
+			return fail(400, { placeholder: { error: message } });
+		}
+	},
+
+	promote: async ({ request, locals }) => {
+		const data = await request.formData();
+		const memberId = data.get('member_id')?.toString();
+		if (!memberId) return fail(400, { action: { error: 'Missing member id.' } });
+
+		const token = locals.pb.authStore.token;
+		const res = await fetch(`${PUBLIC_PB_URL}/api/members/promote`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${token}`
+			},
+			body: JSON.stringify({ member_id: memberId })
+		});
+
+		if (!res.ok) {
+			let msg = 'Failed to promote member.';
+			try {
+				const body = await res.json();
+				msg = body?.message || msg;
+			} catch (_) {}
+			return fail(res.status, { action: { error: msg } });
+		}
+
+		return { action: { success: true } };
+	},
+
+	remove: async ({ request, locals }) => {
+		const data = await request.formData();
+		const memberId = data.get('member_id')?.toString();
+		if (!memberId) return fail(400, { action: { error: 'Missing member id.' } });
+
+		const token = locals.pb.authStore.token;
+		const res = await fetch(`${PUBLIC_PB_URL}/api/members/remove`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${token}`
+			},
+			body: JSON.stringify({ member_id: memberId })
+		});
+
+		if (!res.ok) {
+			let msg = 'Failed to remove member.';
+			try {
+				const body = await res.json();
+				msg = body?.message || msg;
+			} catch (_) {}
+			return fail(res.status, { action: { error: msg } });
+		}
+
+		return { action: { success: true } };
 	}
 };
 
-// Pull a useful message out of either a SvelteKit fetch-style error or a
-// PocketBase ClientResponseError. The custom invite endpoints throw
-// BadRequestError / ForbiddenError, which the SDK wraps in
-// ClientResponseError with the message in `response.data.message`.
 function extractErrorMessage(err: unknown): string {
 	if (!err || typeof err !== 'object') return '';
 	const e = err as { message?: string; response?: { message?: string } };

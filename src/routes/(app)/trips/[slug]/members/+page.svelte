@@ -10,27 +10,35 @@
 	let { data, form } = $props();
 
 	let inviteLoading = $state(false);
+	let placeholderLoading = $state(false);
 	let revoking = $state<string | null>(null);
+	let promoting = $state<string | null>(null);
+	let removing = $state<string | null>(null);
+	let showPlaceholderForm = $state(false);
 
-	// Inviter role gating per SPEC §3:
-	//   owner/co_owner → all 3 roles
-	//   traveler → traveler/viewer only
-	//   viewer → cannot invite (handled by `canInvite`)
 	const allowedRoles = $derived<InviteRole[]>(
 		data.isOwner ? ['co_owner', 'traveler', 'viewer'] : ['traveler', 'viewer']
 	);
 
-	// SvelteKit narrows form action returns into a union; use a permissive
-	// shape here so we can read either branch without ts-pattern matching.
 	const inviteForm = $derived(
 		(form?.invite ?? null) as
 			| { success?: boolean; email?: string; error?: string; role?: string }
 			| null
 	);
 	const revokeForm = $derived((form?.revoke ?? null) as { success?: boolean; error?: string } | null);
+	const placeholderForm = $derived(
+		(form?.placeholder ?? null) as
+			| { success?: boolean; displayName?: string; error?: string }
+			| null
+	);
+	const actionForm = $derived(
+		(form?.action ?? null) as { success?: boolean; error?: string } | null
+	);
+
 	const inviteSuccess = $derived(inviteForm?.success ?? false);
 	const inviteError = $derived(inviteForm?.error ?? '');
 	const revokeError = $derived(revokeForm?.error ?? '');
+	const actionError = $derived(actionForm?.error ?? '');
 
 	const roleLabel: Record<string, string> = {
 		owner: 'Owner',
@@ -44,12 +52,22 @@
 		if (role === 'traveler') return 'info';
 		return 'default';
 	}
+
+	const isSoleOwner = $derived(
+		data.membership.role === 'owner' && data.ownerCount <= 1
+	);
 </script>
 
 <NavBar title="Members" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}" />
 <TripTabs slug={data.trip.slug} />
 
 <main class="mx-auto w-full max-w-lg flex-1 space-y-6 px-4 pt-4 pb-8">
+	{#if actionError}
+		<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">
+			{actionError}
+		</div>
+	{/if}
+
 	<!-- Members list -->
 	<section class="space-y-3">
 		<h2 class="text-ink-soft text-xs font-semibold tracking-wider uppercase">
@@ -60,17 +78,170 @@
 				{#each data.members as m (m.id)}
 					<li class="flex items-center justify-between gap-3 px-4 py-3">
 						<div class="min-w-0 flex-1">
-							<div class="text-ink truncate text-sm font-semibold">{m.displayLabel}</div>
+							<div class="flex items-center gap-2">
+								<span class="text-ink truncate text-sm font-semibold">{m.displayLabel}</span>
+								{#if m.isPlaceholder}
+									<span class="text-ink-muted text-xs">(offline)</span>
+								{/if}
+							</div>
 							{#if m.emailLabel}
 								<div class="text-ink-muted truncate text-xs">{m.emailLabel}</div>
 							{/if}
 						</div>
-						<Pill variant={rolePillVariant(m.role)} size="sm">{roleLabel[m.role] ?? m.role}</Pill>
+						<div class="flex shrink-0 items-center gap-2">
+							<Pill variant={rolePillVariant(m.role)} size="sm">{roleLabel[m.role] ?? m.role}</Pill>
+							{#if data.isOwner && m.role === 'traveler'}
+								<form
+									method="POST"
+									action="?/promote"
+									use:enhance={() => {
+										promoting = m.id;
+										return async ({ update }) => {
+											promoting = null;
+											await update();
+										};
+									}}
+								>
+									<input type="hidden" name="member_id" value={m.id} />
+									<button
+										type="submit"
+										disabled={promoting === m.id}
+										class="text-ink-soft hover:text-ink disabled:text-ink-muted text-xs font-medium"
+									>
+										{promoting === m.id ? '…' : 'Promote'}
+									</button>
+								</form>
+							{/if}
+							{#if data.isOwner}
+								{@const isSelf = m.user === data.membership.user}
+								{@const blocked = isSelf && isSoleOwner}
+								<form
+									method="POST"
+									action="?/remove"
+									use:enhance={() => {
+										removing = m.id;
+										return async ({ update }) => {
+											removing = null;
+											await update();
+										};
+									}}
+								>
+									<input type="hidden" name="member_id" value={m.id} />
+									<button
+										type="submit"
+										disabled={removing === m.id || blocked}
+										title={blocked ? 'Cannot remove the sole owner' : undefined}
+										class="text-clay hover:text-clay/80 disabled:text-ink-muted text-xs font-semibold"
+									>
+										{removing === m.id ? '…' : 'Remove'}
+									</button>
+								</form>
+							{/if}
+						</div>
 					</li>
 				{/each}
 			</ul>
 		</Card>
 	</section>
+
+	<!-- Add placeholder -->
+	{#if data.canAddPlaceholder}
+		<section class="space-y-3">
+			<div class="flex items-center justify-between">
+				<h2 class="text-ink-soft text-xs font-semibold tracking-wider uppercase">
+					Add offline member
+				</h2>
+				<button
+					type="button"
+					onclick={() => (showPlaceholderForm = !showPlaceholderForm)}
+					class="text-ink-soft hover:text-ink text-xs font-medium"
+				>
+					{showPlaceholderForm ? 'Cancel' : '+ Add'}
+				</button>
+			</div>
+			{#if showPlaceholderForm}
+				<Card>
+					<form
+						method="POST"
+						action="?/addPlaceholder"
+						use:enhance={() => {
+							placeholderLoading = true;
+							return async ({ update }) => {
+								placeholderLoading = false;
+								showPlaceholderForm = false;
+								await update({ reset: true });
+							};
+						}}
+						class="space-y-3 p-4"
+					>
+						{#if placeholderForm?.error}
+							<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">
+								{placeholderForm.error}
+							</div>
+						{/if}
+						{#if placeholderForm?.success}
+							<div class="border-moss/30 bg-moss-tint text-moss rounded-md border p-3 text-sm">
+								{placeholderForm.displayName} added.
+							</div>
+						{/if}
+
+						<div>
+							<label for="ph-name" class="text-ink-soft block text-sm font-medium">
+								Display name <span class="text-clay">*</span>
+							</label>
+							<input
+								type="text"
+								id="ph-name"
+								name="display_name"
+								required
+								maxlength="100"
+								placeholder="Jake"
+								class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-base"
+							/>
+						</div>
+
+						<div>
+							<label for="ph-email" class="text-ink-soft block text-sm font-medium">
+								Email <span class="text-ink-muted font-normal">(optional — enables auto-join)</span>
+							</label>
+							<input
+								type="email"
+								id="ph-email"
+								name="placeholder_email"
+								autocomplete="email"
+								placeholder="jake@example.com"
+								class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-base"
+							/>
+						</div>
+
+						<div>
+							<label for="ph-role" class="text-ink-soft block text-sm font-medium">Role</label>
+							<select
+								id="ph-role"
+								name="role"
+								required
+								class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-base"
+							>
+								{#each allowedRoles as role}
+									<option value={role}>{roleLabel[role]}</option>
+								{/each}
+							</select>
+						</div>
+
+						<Button
+							type="submit"
+							disabled={placeholderLoading}
+							variant="moss"
+							size="md"
+							class="w-full"
+						>
+							{placeholderLoading ? 'Adding…' : 'Add member'}
+						</Button>
+					</form>
+				</Card>
+			{/if}
+		</section>
+	{/if}
 
 	<!-- Invite form -->
 	{#if data.canInvite}
@@ -193,8 +364,6 @@
 	{/if}
 
 	{#if !data.canInvite}
-		<p class="text-ink-muted text-center text-xs">
-			Viewers cannot invite new members.
-		</p>
+		<p class="text-ink-muted text-center text-xs">Viewers cannot invite new members.</p>
 	{/if}
 </main>
