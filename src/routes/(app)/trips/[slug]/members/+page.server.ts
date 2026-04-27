@@ -22,7 +22,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 
 	const members = await locals.pb.collection('trip_members').getFullList<TripMember>({
 		filter: `trip = "${trip.id}"`,
-		sort: 'created'
+		sort: 'id'
 	});
 
 	const authUser = (locals.user ?? null) as User | null;
