@@ -81,13 +81,14 @@ rm pocketbase.zip
 cd ..
 ```
 
-First run:
+First run (before `.env.local` exists):
 ```bash
-cd backend
-./pocketbase serve
+cd backend && ./pocketbase serve
 ```
 
 Open http://127.0.0.1:8090/_/ — create the admin account. Stop the server (Ctrl-C). Initial collections will be created via migrations.
+
+After `.env.local` is populated, always use `./backend/start.sh` instead — see §9.
 
 ---
 
@@ -159,7 +160,7 @@ Two terminals:
 
 **Terminal 1 — backend:**
 ```bash
-cd backend && ./pocketbase serve
+./backend/start.sh
 ```
 
 **Terminal 2 — frontend:**

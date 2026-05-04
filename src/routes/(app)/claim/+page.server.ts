@@ -25,6 +25,16 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const { claims } = (await res.json()) as { claims: Claim[] };
 
 	if (!claims || claims.length === 0) {
+		// No placeholder claims — check for pending email invites.
+		const invRes = await fetch(`${PUBLIC_PB_URL}/api/invites/my-pending`, {
+			headers: { Authorization: `Bearer ${token}` }
+		});
+		if (invRes.ok) {
+			const { invites } = (await invRes.json()) as { invites: { code: string }[] };
+			if (invites && invites.length > 0) {
+				redirect(303, `/invite/${invites[0].code}`);
+			}
+		}
 		redirect(303, '/trips');
 	}
 

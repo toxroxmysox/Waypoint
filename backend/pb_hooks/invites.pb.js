@@ -473,3 +473,41 @@ onRecordAfterCreateSuccess((e) => {
 
 	e.next();
 }, 'pending_invites');
+
+// ---------------------------------------------------------------------------
+// GET /api/invites/my-pending
+// Returns pending invites for the authenticated user's email so the post-login
+// /claim interstitial can redirect them back to the invite page.
+// Admin context so it can read pending_invites regardless of trip membership.
+// ---------------------------------------------------------------------------
+routerAdd('GET', '/api/invites/my-pending', (e) => {
+	const auth = e.auth;
+	if (!auth) throw new UnauthorizedError('Authentication required');
+
+	const email = String(auth.email() || '').trim().toLowerCase();
+	if (!email) return e.json(200, { invites: [] });
+
+	let rows;
+	try {
+		rows = e.app.findRecordsByFilter(
+			'pending_invites',
+			'email = {:email}',
+			'',
+			0,
+			0,
+			{ email: email }
+		);
+	} catch (_) {
+		return e.json(200, { invites: [] });
+	}
+
+	const now = new Date();
+	const invites = [];
+	for (const row of rows) {
+		const expiresAt = row.get('expires_at');
+		if (expiresAt && new Date(expiresAt) < now) continue;
+		invites.push({ code: row.get('code') });
+	}
+
+	return e.json(200, { invites: invites });
+});
