@@ -7,16 +7,30 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import SectionH from '$lib/components/ui/SectionH.svelte';
 	import { titleCase } from '$lib/utils/format';
+	import { untrack } from 'svelte';
 
 	let { data, form } = $props();
 
-	let selectedType = $state<ItemType>('activity');
+	let selectedType = $state<ItemType>(untrack(() => (data.prefill?.type as ItemType) ?? 'activity'));
 	let loading = $state(false);
 	let error = $derived(form?.error ?? '');
 
+	let submitAsSuggestion = $derived(data.submitAsSuggestion ?? false);
+	let prefill = $derived(data.prefill ?? null);
+	let suggestionId = $derived((prefill as Record<string, unknown> | null)?._suggestion_id as string ?? '');
+	let prefillAuthorName = $derived((prefill as Record<string, unknown> | null)?._author_name as string ?? '');
+
+	let buttonLabel = $derived(
+		loading
+			? (submitAsSuggestion ? 'Submitting…' : suggestionId ? 'Approving…' : 'Creating…')
+			: (submitAsSuggestion ? 'Submit suggestion' : suggestionId ? 'Approve with edits' : 'Create item')
+	);
+
 	let fields = $derived(itemFieldConfig[selectedType]);
 
-	let confirmationCodes = $state<{ label: string; value: string }[]>([]);
+	let confirmationCodes = $state<{ label: string; value: string }[]>(
+		untrack(() => Array.isArray(data.prefill?.confirmation_codes) ? data.prefill.confirmation_codes : [])
+	);
 
 	function addCode() {
 		confirmationCodes = [...confirmationCodes, { label: '', value: '' }];
@@ -42,6 +56,18 @@
 		<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">{error}</div>
 	{/if}
 
+	{#if submitAsSuggestion}
+		<div class="border-sky/30 bg-sky/10 text-sky-700 rounded-md border p-3 text-sm">
+			You're a traveler on this trip. Your item will be submitted as a suggestion for the owner to review.
+		</div>
+	{/if}
+
+	{#if suggestionId && prefillAuthorName}
+		<div class="border-moss/30 bg-moss-tint text-moss rounded-md border p-3 text-sm">
+			Reviewing suggestion from <strong>{prefillAuthorName}</strong>. Edit as needed, then approve.
+		</div>
+	{/if}
+
 	<form
 		method="POST"
 		use:enhance={() => {
@@ -53,6 +79,10 @@
 		}}
 		class="space-y-4"
 	>
+		{#if suggestionId}
+			<input type="hidden" name="suggestion_id" value={suggestionId} />
+		{/if}
+
 		<Card>
 			<div class="p-4 space-y-4">
 				<div>
@@ -62,6 +92,7 @@
 						id="title"
 						name="title"
 						required
+						value={prefill?.title ?? ''}
 						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 						placeholder="Hotel check-in, Train to Madrid, etc."
 					/>
@@ -111,7 +142,7 @@
 						name="description"
 						rows="2"
 						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
-					></textarea>
+					>{prefill?.description ?? ''}</textarea>
 				</div>
 			</div>
 		</Card>
@@ -180,6 +211,7 @@
 								type="time"
 								id="start_time"
 								name="start_time"
+								value={prefill?.start_time ?? ''}
 								class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
 							/>
 						</div>
@@ -189,6 +221,7 @@
 								type="time"
 								id="end_time"
 								name="end_time"
+								value={prefill?.end_time ?? ''}
 								class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
 							/>
 						</div>
@@ -207,6 +240,7 @@
 							type="text"
 							id="location_name"
 							name="location_name"
+							value={prefill?.location_name ?? ''}
 							class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 							placeholder="Hotel Barcelona"
 						/>
@@ -217,6 +251,7 @@
 							type="text"
 							id="location_address"
 							name="location_address"
+							value={prefill?.location_address ?? ''}
 							class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 						/>
 					</div>
@@ -229,7 +264,7 @@
 				<div class="p-4 space-y-3">
 					<SectionH>Booking</SectionH>
 					<label class="flex items-center gap-2">
-						<input type="checkbox" name="booked" class="border-line rounded" />
+						<input type="checkbox" name="booked" checked={prefill?.booked === true} class="border-line rounded" />
 						<span class="text-ink-soft text-sm">Booked</span>
 					</label>
 					<div>
@@ -242,12 +277,13 @@
 							name="reservation_url"
 							inputmode="url"
 							onblur={normalizeUrl}
+							value={prefill?.reservation_url ?? ''}
 							placeholder="example.com"
 							class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 						/>
 					</div>
 					<label class="flex items-center gap-2">
-						<input type="checkbox" name="free_cancellation" class="border-line rounded" />
+						<input type="checkbox" name="free_cancellation" checked={prefill?.free_cancellation === true} class="border-line rounded" />
 						<span class="text-ink-soft text-sm">Free cancellation</span>
 					</label>
 				</div>
@@ -316,6 +352,7 @@
 								name="cost_estimate_usd"
 								step="0.01"
 								min="0"
+								value={prefill?.cost_estimate_usd ?? ''}
 								class="border-line bg-surface text-ink font-mono mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 							/>
 						</div>
@@ -329,6 +366,7 @@
 								name="cost_actual_usd"
 								step="0.01"
 								min="0"
+								value={prefill?.cost_actual_usd ?? ''}
 								class="border-line bg-surface text-ink font-mono mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 							/>
 						</div>
@@ -367,7 +405,7 @@
 		{/if}
 
 		<Button type="submit" disabled={loading} variant="moss" size="lg" class="w-full">
-			{loading ? 'Creating…' : 'Create item'}
+			{buttonLabel}
 		</Button>
 	</form>
 </main>

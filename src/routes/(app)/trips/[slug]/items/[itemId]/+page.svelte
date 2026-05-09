@@ -9,11 +9,19 @@
 	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
 	import { titleCase } from '$lib/utils/format';
 
-	let { data } = $props();
+	import type { Comment } from '$lib/types';
+
+	let { data, form } = $props();
 
 	let fields = $derived(itemFieldConfig[data.item.type]);
 	let confirmDelete = $state(false);
 	let deleting = $state(false);
+
+	// Comments
+	let commentText = $state('');
+	let commentSubmitting = $state(false);
+	let optimisticComments = $state<Comment[]>([]);
+	let allComments = $derived([...data.comments, ...optimisticComments]);
 
 	function formatTime(t: string): string {
 		if (!t) return '';
@@ -334,6 +342,86 @@
 			</div>
 		</Card>
 	{/if}
+
+	<!-- Comment thread -->
+	<Card>
+		<div class="p-4 space-y-3">
+			<SectionH>Comments</SectionH>
+
+			{#if allComments.length === 0}
+				<p class="text-ink-muted text-sm">No comments yet.</p>
+			{:else}
+				<div class="space-y-3">
+					{#each allComments as c (c.id)}
+						<div class="flex gap-2">
+							<div class="min-w-0 flex-1">
+								<div class="flex flex-wrap items-baseline gap-1.5">
+									<span class="text-ink text-sm font-semibold">{c.author_name || 'Unknown'}</span>
+									{#if c.author_role}
+										<span class="text-ink-muted text-[11px]">{titleCase(c.author_role)}</span>
+									{/if}
+									<span class="text-ink-muted text-[11px]">
+										{new Date(c.created.replace(' ', 'T')).toLocaleDateString('en-US', {
+											month: 'short', day: 'numeric', timeZone: 'UTC'
+										})}
+									</span>
+								</div>
+								<p class="text-ink-soft mt-0.5 text-sm whitespace-pre-wrap">{c.comment_text}</p>
+							</div>
+						</div>
+					{/each}
+				</div>
+			{/if}
+
+			{#if form?.commentError}
+				<p class="text-clay text-sm">{form.commentError}</p>
+			{/if}
+
+			<form
+				method="POST"
+				action="?/addComment"
+				use:enhance={({ cancel }) => {
+					if (!commentText.trim()) { cancel(); return; }
+					const optimistic: Comment = {
+						id: `opt-${Date.now()}`,
+						trip: data.trip.id,
+						author: '',
+						target_type: 'comment',
+						target_item: data.item.id,
+						comment_text: commentText.trim(),
+						status: 'approved',
+						created: new Date().toISOString(),
+						author_name: data.membership?.display_name || data.membership?.placeholder_name || 'You',
+						author_role: data.membership?.role || ''
+					};
+					optimisticComments = [...optimisticComments, optimistic];
+					commentText = '';
+					commentSubmitting = true;
+					return async ({ update }) => {
+						commentSubmitting = false;
+						await update({ reset: false });
+					};
+				}}
+				class="flex gap-2 pt-1"
+			>
+				<textarea
+					name="comment_text"
+					bind:value={commentText}
+					rows="2"
+					placeholder="Add a comment…"
+					maxlength="5000"
+					class="border-line bg-surface text-ink flex-1 rounded-md border px-3 py-2 text-sm resize-none"
+				></textarea>
+				<button
+					type="submit"
+					disabled={commentSubmitting || !commentText.trim()}
+					class="bg-moss text-paper self-end rounded-md px-3 py-2 text-sm font-semibold disabled:opacity-40"
+				>
+					Post
+				</button>
+			</form>
+		</div>
+	</Card>
 
 	<!-- Delete -->
 	<div class="border-clay/30 rounded-lg border p-4">

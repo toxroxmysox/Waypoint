@@ -15,7 +15,7 @@
 </script>
 
 <NavBar title="Settings" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}" />
-<TripTabs slug={data.trip.slug} />
+<TripTabs slug={data.trip.slug} role={data.membership.role} />
 
 <main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 space-y-6">
 	{#if error}
@@ -99,6 +99,19 @@
 					placeholder="Spain"
 				/>
 			</div>
+
+			<label class="flex items-center gap-3">
+				<input
+					type="checkbox"
+					name="auto_approve_suggestions"
+					checked={data.trip.auto_approve_suggestions}
+					class="border-line h-4 w-4 rounded"
+				/>
+				<div>
+					<span class="text-ink block text-sm font-medium">Auto-approve traveler suggestions</span>
+					<span class="text-ink-muted block text-xs">When on, traveler suggestions are added immediately without owner review.</span>
+				</div>
+			</label>
 
 			<Button type="submit" disabled={loading} variant="moss" size="md" class="w-full">
 				{loading ? 'Saving…' : 'Save changes'}

@@ -37,7 +37,48 @@ A self-hosted, mobile-first PWA that replaces the Google Doc / Google Sheet / Sp
 
 ---
 
-## 3. User Roles & Permissions
+## 3. Dev Environment
+
+### Start servers (two terminals)
+
+**Terminal 1 — PocketBase:**
+```bash
+./backend/start.sh
+```
+`start.sh` sources `.env.local` automatically. **Do not use `./backend/pocketbase serve` directly** — it won't pick up `RESEND_API_KEY`, `RESEND_FROM`, or `WAYPOINT_DEV_MODE`.
+
+**Terminal 2 — SvelteKit:**
+```bash
+pnpm dev
+```
+
+### Required `.env.local` keys
+
+```
+PUBLIC_PB_URL=http://127.0.0.1:8090
+PUBLIC_APP_URL=http://127.0.0.1:5173
+WAYPOINT_DEV_MODE=true
+E2E_TEST_EMAIL=e2e@waypoint.local
+E2E_TEST_EMAILS=rules-owner@e2e.test,rules-coowner@e2e.test,rules-traveler@e2e.test,rules-viewer@e2e.test,rules-nonmember@e2e.test,e2e@waypoint.local
+RESEND_API_KEY=<from resend.com dashboard>
+RESEND_FROM=<verified sender address>
+```
+
+### Verification commands
+
+```bash
+pnpm check              # TypeScript + Svelte type check — expect 0 errors
+pnpm test:rules         # PB collection rules matrix — expect 240/240
+pnpm test:invites       # Invite hook harness — expect 41/41
+pnpm test:members       # Members hook harness — expect 31/31
+pnpm test:e2e           # Playwright M1 happy path — expect 2/2
+```
+
+All test harnesses require PocketBase running via `./backend/start.sh` with `WAYPOINT_DEV_MODE=true` and the test emails whitelisted in `E2E_TEST_EMAILS`.
+
+---
+
+## 4. User Roles & Permissions
 
 | Action | Owner | Co-Owner | Traveler | Viewer | Public (archive link) |
 |---|:---:|:---:|:---:|:---:|:---:|
@@ -71,7 +112,7 @@ A self-hosted, mobile-first PWA that replaces the Google Doc / Google Sheet / Sp
 
 ---
 
-## 4. Data Model
+## 5. Data Model
 
 PocketBase collections. Field types use PocketBase notation. All collections include `id`, `created`, `updated` automatically.
 
@@ -275,7 +316,7 @@ In-app only for v1. Display: bell icon with unread count, dropdown list. No emai
 
 ---
 
-## 5. Item Types & Status Model
+## 6. Item Types & Status Model
 
 ### Item types
 | Type | Bookable? | Time-anchored? | Examples |
@@ -306,7 +347,7 @@ In-app only for v1. Display: bell icon with unread count, dropdown list. No emai
 
 ---
 
-## 6. Feature Milestones
+## 7. Feature Milestones
 
 Each milestone is **independently shippable**. Do not start Mn+1 until Mn has been used on a real (or fake) trip and you've tightened any pain points.
 
@@ -487,7 +528,7 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 
 ---
 
-## 7. Screen Inventory
+## 8. Screen Inventory
 
 ### Authenticated app
 1. **Login** — email entry → code entry → in
@@ -515,7 +556,7 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 
 ---
 
-## 8. Cross-Cutting UX Patterns
+## 9. Cross-Cutting UX Patterns
 
 ### Autofill from external source
 Every "add item" form has an optional **lookup field** at the top.
@@ -557,7 +598,7 @@ Every "add item" form has an optional **lookup field** at the top.
 
 ---
 
-## 9. Captured From Existing Docs (patterns you didn't articulate)
+## 10. Captured From Existing Docs (patterns you didn't articulate)
 
 Items found in your Switzerland and Spain docs that are now folded into the spec:
 
@@ -582,7 +623,7 @@ Items found in your Switzerland and Spain docs that are now folded into the spec
 
 ---
 
-## 10. External Integrations
+## 11. External Integrations
 
 | Service | Use | Auth | Notes |
 |---|---|---|---|
@@ -595,7 +636,7 @@ API keys live in Pocketbase env vars or `.env` file, never in client code. Front
 
 ---
 
-## 11. Non-Functional Requirements
+## 12. Non-Functional Requirements
 
 - **Accessibility:** WCAG 2.1 AA. Semantic HTML, keyboard nav, focus visible, ARIA where needed, color contrast ≥4.5:1, alt text on images, form labels, screen-reader-friendly errors.
 - **Performance:** First contentful paint <1.5s on 4G mobile. Trip Mode interactive in <1s after cache. Lighthouse score ≥90 across the board.
@@ -613,7 +654,7 @@ API keys live in Pocketbase env vars or `.env` file, never in client code. Front
 
 ---
 
-## 12. Out of Scope (v1)
+## 13. Out of Scope (v1)
 
 Explicitly not building. Each is a future consideration but **must not creep in**:
 
@@ -638,7 +679,7 @@ Explicitly not building. Each is a future consideration but **must not creep in*
 
 ---
 
-## 13. Open Decisions (defer until forced)
+## 14. Open Decisions (defer until forced)
 
 1. **Vote display UI** — heart, star, thumbs-up, +1 counter. Decide when building M4.
 2. **Color palette / typography** — **Closed 2026-04-25.** Adopted the Waypoint design system from the Claude Design handoff: paper/ink/moss/clay/gold/sky palette, Fraunces (display) / Inter (UI) / JetBrains Mono (mono). Implemented in M1.5; tokens live in `src/routes/layout.css` `@theme`.
@@ -650,7 +691,7 @@ Explicitly not building. Each is a future consideration but **must not creep in*
 
 ---
 
-## 14. Acceptance Definition for v1 Done
+## 15. Acceptance Definition for v1 Done
 
 v1 = M1 through M5. Considered done when:
 

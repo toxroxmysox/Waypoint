@@ -1,6 +1,6 @@
 import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Item, ChecklistItem, TripMember } from '$lib/types';
+import type { Item, ChecklistItem, TripMember, Comment } from '$lib/types';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, phases, days } = await parent();
@@ -16,7 +16,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		error(404, 'Item not found');
 	}
 
-	const [checklistItems, members] = await Promise.all([
+	const [checklistItems, members, rawComments] = await Promise.all([
 		item.type === 'checklist'
 			? locals.pb.collection('checklist_items').getFullList<ChecklistItem>({
 					filter: `item = "${item.id}"`,
@@ -26,13 +26,28 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		locals.pb.collection('trip_members').getFullList<TripMember>({
 			filter: `trip = "${trip.id}"`,
 			expand: 'user'
-		})
+		}),
+		locals.pb.collection('suggestions').getFullList<Comment>({
+			filter: `target_item = "${item.id}" && target_type = "comment" && status = "approved"`,
+			sort: 'created',
+			expand: 'author'
+		}).catch(() => [] as Comment[])
 	]);
+
+	// Annotate comments with author display info from the expand.
+	const comments = rawComments.map((c) => {
+		const authorMember = c.expand?.author as TripMember | undefined;
+		return {
+			...c,
+			author_name: authorMember?.display_name || authorMember?.placeholder_name || 'Unknown',
+			author_role: authorMember?.role ?? ''
+		};
+	});
 
 	const day = item.day ? days.find((d) => d.id === item.day) ?? null : null;
 	const phase = item.phase ? phases.find((p) => p.id === item.phase) ?? null : null;
 
-	return { item, checklistItems, members, itemDay: day, itemPhase: phase };
+	return { item, checklistItems, members, comments, itemDay: day, itemPhase: phase };
 };
 
 async function getMembership(locals: App.Locals, tripId: string): Promise<TripMember> {
@@ -129,6 +144,31 @@ export const actions: Actions = {
 			const message = err instanceof Error ? err.message : 'Failed to delete.';
 			return fail(500, { error: message });
 		}
+	},
+
+	addComment: async ({ request, params, locals }) => {
+		const formData = await request.formData();
+		const commentText = formData.get('comment_text')?.toString().trim() ?? '';
+		if (!commentText) return fail(400, { commentError: 'Comment cannot be empty.' });
+
+		const BASE = locals.pb.baseUrl;
+		const token = locals.pb.authStore.token;
+
+		const res = await fetch(`${BASE}/api/comments/add`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${token}`
+			},
+			body: JSON.stringify({ item_id: params.itemId, comment_text: commentText })
+		});
+
+		if (!res.ok) {
+			const json = (await res.json().catch(() => ({}))) as { message?: string };
+			return fail(res.status, { commentError: json.message || 'Failed to post comment.' });
+		}
+
+		return { commentSuccess: true };
 	},
 
 	reorderChecklistItem: async ({ request, params, locals }) => {

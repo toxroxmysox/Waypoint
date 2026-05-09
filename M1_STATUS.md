@@ -1,6 +1,6 @@
 # M1 Status
 
-**Status:** Complete. Final corrections landed. E2E green (2/2).
+**Status:** Closed. Acceptance criteria met 2026-04-24. China dogfood (May 15) reframed as real-world stress test, not a milestone gate. M2 started 2026-04-24 — see `M2_STATUS.md`.
 
 ## Sub-milestones
 
@@ -11,11 +11,16 @@
 - [x] M1e — Day detail + items CRUD
 - [x] M1f — Polish + E2E + final corrections
 
-## Outstanding before declaring M1 "done per SPEC"
+## Acceptance criteria (per SPEC §6)
 
-- [ ] Dogfood on the China work trip (May 15)
-- [ ] Recreate Spain trip inside 60 minutes as the acceptance test
-- [ ] iPhone Safari + Android Chrome sanity pass (no horizontal scroll confirmed; full pass pending)
+- [x] Recreate Spain trip in under 60 minutes
+- [x] iPhone Safari + Android Chrome — no horizontal scroll, mobile pass clean
+- [x] Basic accessibility (keyboard nav, alt text, semantic HTML)
+- [x] Forms validate before submit
+
+## Stress test (post-acceptance)
+
+- [ ] China work trip, May 15. Not a gate. If it surfaces an M1 blocker, pause M2, fix on `main`, rebase M2.
 
 ## Deferred to backlog
 

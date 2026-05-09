@@ -41,6 +41,8 @@ export const actions: Actions = {
 			return fail(400, { error: 'Invalid or expired code. Try again.' });
 		}
 
-		redirect(303, '/trips');
+		// /claim checks for pending placeholder memberships and redirects to
+		// /trips immediately if there are none.
+		redirect(303, '/claim');
 	}
 };

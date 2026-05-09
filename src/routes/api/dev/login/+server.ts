@@ -36,5 +36,5 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	// be stomped by the hook's empty cookie.
 	locals.pb.authStore.save(token, record);
 
-	throw redirect(303, '/trips');
+	throw redirect(303, '/claim');
 };

@@ -1,17 +1,24 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import type { MemberRole } from '$lib/types';
 
-	let { slug }: { slug: string } = $props();
+	let { slug, role = '' }: { slug: string; role?: MemberRole | string } = $props();
+
+	const isOwnerOrCoOwner = $derived(role === 'owner' || role === 'co_owner');
 
 	const tabs = $derived([
 		{ id: 'overview', label: 'Overview', href: `/trips/${slug}` },
 		{ id: 'phases', label: 'Phases', href: `/trips/${slug}/phases` },
+		{ id: 'members', label: 'Members', href: `/trips/${slug}/members` },
+		...(isOwnerOrCoOwner ? [{ id: 'inbox', label: 'Inbox', href: `/trips/${slug}/inbox` }] : []),
 		{ id: 'settings', label: 'Settings', href: `/trips/${slug}/settings` }
 	]);
 
 	let activeId = $derived.by(() => {
 		const path = page.url.pathname;
 		if (path.endsWith('/settings')) return 'settings';
+		if (path.includes('/inbox')) return 'inbox';
+		if (path.includes('/members')) return 'members';
 		if (path.includes('/phases')) return 'phases';
 		return 'overview';
 	});

@@ -81,13 +81,14 @@ rm pocketbase.zip
 cd ..
 ```
 
-First run:
+First run (before `.env.local` exists):
 ```bash
-cd backend
-./pocketbase serve
+cd backend && ./pocketbase serve
 ```
 
 Open http://127.0.0.1:8090/_/ — create the admin account. Stop the server (Ctrl-C). Initial collections will be created via migrations.
+
+After `.env.local` is populated, always use `./backend/start.sh` instead — see §9.
 
 ---
 
@@ -147,9 +148,30 @@ PUBLIC_PB_URL=http://127.0.0.1:8090
 GOOGLE_MAPS_API_KEY=
 AERODATABOX_API_KEY=
 RESEND_API_KEY=
+RESEND_FROM=trips@scottvandenwarsen.com
+WAYPOINT_DEV_MODE=false
 ```
 
 Real values go in `.env.local`. Never commit them.
+
+**M2 additions:**
+
+| Variable | Required for | Notes |
+|---|---|---|
+| `RESEND_API_KEY` | M2b invite emails | Free tier: 3000/mo. Get from resend.com → API Keys. |
+| `RESEND_FROM` | M2b invite emails | Must be a verified domain. Recommendation: `trips@scottvandenwarsen.com`. |
+| `WAYPOINT_DEV_MODE` | Dev/test only | Set `true` locally to enable `/api/dev/login` bypass and `rules-fixture` endpoint. Never `true` in production. |
+
+**E2E test accounts:**
+
+The test harnesses (`pnpm test:rules`, `pnpm test:suggestions`, `pnpm test:e2e`) use fixed email addresses. Add all of them to `.env.local` so the PocketBase dev-mode whitelist allows them:
+
+```
+E2E_TEST_EMAIL=e2e@waypoint.local
+E2E_TEST_EMAILS=rules-owner@e2e.test,rules-coowner@e2e.test,rules-traveler@e2e.test,rules-viewer@e2e.test,rules-nonmember@e2e.test,e2e@waypoint.local
+```
+
+`E2E_TEST_EMAIL` (singular) is the Playwright skip gate — tests are skipped if unset. `E2E_TEST_EMAILS` (plural) is the PocketBase whitelist for dev-mode auth bypass.
 
 ---
 
@@ -159,7 +181,7 @@ Two terminals:
 
 **Terminal 1 — backend:**
 ```bash
-cd backend && ./pocketbase serve
+./backend/start.sh
 ```
 
 **Terminal 2 — frontend:**

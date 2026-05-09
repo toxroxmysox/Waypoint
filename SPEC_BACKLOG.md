@@ -33,6 +33,45 @@ Deferred work captured during M1. Each entry notes what it is, why it was deferr
 
 ---
 
+## From M2 — Collaboration
+
+### Invite resend action
+- **What:** "Resend invite email" button on the pending invites list. Currently the inviter must revoke and re-create to trigger a new email.
+- **Why deferred:** Uncommon path; revoke + re-create works.
+- **Target:** M4 Polish.
+
+### Role downgrade (co-owner → traveler)
+- **What:** The promote endpoint only upgrades traveler → co-owner. Downgrade is missing.
+- **Why deferred:** Not needed for initial dogfood trips where Scott is the only owner.
+- **Target:** M4.
+
+### Notification dedup / batching
+- **What:** Multiple comments in quick succession generate one notification per comment. Add a debounce window (e.g. 5 minutes) so a comment storm becomes one digest notification.
+- **Why deferred:** Not a problem at small trip scale.
+- **Target:** M3 or M4 based on dogfood feedback.
+
+### Notification realtime update
+- **What:** The bell unread count reflects page-load state only. New notifications arriving while the page is open don't update the badge until a full reload.
+- **Why deferred:** Polling or SSE adds complexity; single-user trips rarely need it.
+- **Target:** M4 Execution (when offline/realtime work happens anyway).
+
+### Traveler auto-approve full E2E test (test-suggestions.mjs test 6)
+- **What:** Test 6 in `backend/test-suggestions.mjs` is SKIPped because it requires PB admin credentials to set `auto_approve_suggestions = true` mid-test. The logic is exercised manually but not in CI.
+- **Why deferred:** Needs `PB_ADMIN_EMAIL` + `PB_ADMIN_PASSWORD` in `.env.local`.
+- **Target:** M3 pre-flight — add creds to env, un-skip test.
+
+### Edit-and-approve UI in inbox
+- **What:** The backend `/api/suggestions/review` endpoint accepts a `payload` override for edit-and-approve, but the inbox UI just passes the original traveler payload. No edit form is exposed.
+- **Why deferred:** Backend is ready; frontend work is polish.
+- **Target:** M4 Polish.
+
+### Comment edit / delete
+- **What:** Comments are immutable once posted.
+- **Why deferred:** Per SPEC intent. Most collaborative tools don't allow retroactive comment edits to preserve audit trail.
+- **Target:** Only pull in if dogfood reveals real friction.
+
+---
+
 ## How to use this file
 - Add entries here instead of silently piling them into SPEC.md.
 - When promoting an item into a milestone, cut it from this file in the same commit that amends SPEC.md.
