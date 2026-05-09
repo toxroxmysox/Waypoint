@@ -131,3 +131,18 @@ export interface Suggestion {
 	reviewed_at: string;
 	created: string;
 }
+
+export interface Comment {
+	id: string;
+	trip: string;
+	author: string;
+	target_type: 'comment';
+	target_item: string;
+	comment_text: string;
+	status: 'approved';
+	created: string;
+	expand?: { author?: TripMember };
+	// annotated in server load:
+	author_name?: string;
+	author_role?: string;
+}

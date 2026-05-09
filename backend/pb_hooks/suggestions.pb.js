@@ -296,3 +296,62 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 
 	return e.json(200, { ok: true, status: suggestion.get('status'), item_id: itemId });
 });
+
+// ---------------------------------------------------------------------------
+// POST /api/comments/add
+// Body: { item_id, comment_text }
+// Auth: any trip member including viewer (SPEC §3: all roles can comment).
+// Always auto-approves immediately.
+// ---------------------------------------------------------------------------
+routerAdd('POST', '/api/comments/add', (e) => {
+	const authRecord = e.auth;
+	if (!authRecord) {
+		throw new UnauthorizedError('Authentication required');
+	}
+
+	const info = e.requestInfo();
+	const itemId = (info.body && info.body['item_id']) || '';
+	const commentText = (info.body && info.body['comment_text']) || '';
+
+	if (!itemId) throw new BadRequestError('item_id is required');
+	if (!commentText.trim()) throw new BadRequestError('comment_text is required');
+	if (commentText.length > 5000) throw new BadRequestError('comment_text exceeds 5000 characters');
+
+	// Load the item to get the trip.
+	let item;
+	try {
+		item = e.app.findRecordById('items', itemId);
+	} catch (_) {
+		throw new NotFoundError('Item not found');
+	}
+
+	const tripId = item.get('trip');
+
+	// Resolve caller's membership — all roles (including viewer) can comment.
+	let callerMember;
+	try {
+		callerMember = e.app.findFirstRecordByFilter(
+			'trip_members',
+			'trip = {:tripId} && user = {:uid}',
+			{ tripId: tripId, uid: authRecord.id }
+		);
+	} catch (_) {
+		throw new ForbiddenError('You are not a member of this trip');
+	}
+
+	// Comments always auto-approve.
+	const now = new Date().toISOString().replace('T', ' ').replace('Z', '') + 'Z';
+	const suggestionsCol = e.app.findCollectionByNameOrId('suggestions');
+	const comment = new Record(suggestionsCol);
+	comment.set('trip', tripId);
+	comment.set('author', callerMember.id);
+	comment.set('target_type', 'comment');
+	comment.set('target_item', itemId);
+	comment.set('comment_text', commentText.trim());
+	comment.set('status', 'approved');
+	comment.set('reviewed_by', callerMember.id);
+	comment.set('reviewed_at', now);
+	e.app.save(comment);
+
+	return e.json(200, { ok: true, comment_id: comment.id });
+});
