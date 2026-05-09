@@ -7,10 +7,11 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import SectionH from '$lib/components/ui/SectionH.svelte';
 	import { titleCase } from '$lib/utils/format';
+	import { untrack } from 'svelte';
 
 	let { data, form } = $props();
 
-	let selectedType = $state<ItemType>((data.prefill?.type as ItemType) ?? 'activity');
+	let selectedType = $state<ItemType>(untrack(() => (data.prefill?.type as ItemType) ?? 'activity'));
 	let loading = $state(false);
 	let error = $derived(form?.error ?? '');
 
@@ -28,7 +29,7 @@
 	let fields = $derived(itemFieldConfig[selectedType]);
 
 	let confirmationCodes = $state<{ label: string; value: string }[]>(
-		Array.isArray(data.prefill?.confirmation_codes) ? data.prefill.confirmation_codes : []
+		untrack(() => Array.isArray(data.prefill?.confirmation_codes) ? data.prefill.confirmation_codes : [])
 	);
 
 	function addCode() {

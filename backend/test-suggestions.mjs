@@ -60,7 +60,7 @@ if (fixtureRes.status !== 200) {
 	console.error('FATAL: fixture creation failed', fixtureRes.status, fixtureRes.json);
 	process.exit(1);
 }
-const { trip_id: tripId } = fixtureRes.json;
+const { tripId } = fixtureRes.json;
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 

@@ -1,8 +1,9 @@
 /// <reference path="../pb_data/types.d.ts" />
 // M2d: suggestions — create, list, review.
 //
-// PB 0.27: each callback runs in an isolated sandbox.
-// Helpers are inlined into every callback that needs them.
+// PB 0.27: each routerAdd callback runs in an isolated sandbox.
+// The createItemFromPayload helper CANNOT be shared at module scope —
+// it is inlined into every callback that needs it.
 
 // ---------------------------------------------------------------------------
 // POST /api/suggestions/create
@@ -49,8 +50,6 @@ routerAdd('POST', '/api/suggestions/create', (e) => {
 	}
 
 	const autoApproveFlag = trip.get('auto_approve_suggestions') === true;
-
-	// Determine if this suggestion should be auto-approved.
 	const isPrivileged = callerRole === 'owner' || callerRole === 'co_owner';
 	const autoApprove = isPrivileged || (callerRole === 'traveler' && autoApproveFlag);
 
@@ -68,16 +67,39 @@ routerAdd('POST', '/api/suggestions/create', (e) => {
 		suggestion.set('reviewed_at', now);
 	}
 
-	try {
-		e.app.save(suggestion);
-	} catch (err) {
-		throw new BadRequestError('Failed to save suggestion: ' + err);
-	}
+	e.app.save(suggestion);
 
 	// If auto-approved, create the item immediately.
+	// Inlined here because module-scope helpers are not visible in PB 0.27 sandbox.
 	let itemId = '';
 	if (autoApprove) {
-		itemId = createItemFromPayload(e.app, trip, payload, callerMember.id, tripId);
+		const itemsCol = e.app.findCollectionByNameOrId('items');
+		const item = new Record(itemsCol);
+		item.set('trip', tripId);
+		item.set('phase', payload.phase || '');
+		item.set('day', payload.day || '');
+		item.set('slot', payload.slot || 'anytime');
+		item.set('type', payload.type || 'activity');
+		item.set('subtype', payload.subtype || '');
+		item.set('title', payload.title || '');
+		item.set('description', payload.description || '');
+		item.set('location_name', payload.location_name || '');
+		item.set('location_address', payload.location_address || '');
+		item.set('start_time', payload.start_time || '');
+		item.set('end_time', payload.end_time || '');
+		item.set('booked', payload.booked === true);
+		item.set('reservation_url', payload.reservation_url || '');
+		item.set('free_cancellation', payload.free_cancellation === true);
+		item.set('cost_estimate_usd', Number(payload.cost_estimate_usd) || 0);
+		item.set('cost_actual_usd', Number(payload.cost_actual_usd) || 0);
+		item.set('assigned_to', Array.isArray(payload.assigned_to) ? payload.assigned_to : []);
+		item.set('confirmation_codes', Array.isArray(payload.confirmation_codes) ? payload.confirmation_codes : []);
+		item.set('rank', 0);
+		item.set('parking_lot_scope', payload.day ? 'none' : 'trip');
+		item.set('created_by', callerMember.id);
+		item.set('status', 'planned');
+		e.app.save(item);
+		itemId = item.id;
 	}
 
 	return e.json(200, {
@@ -91,7 +113,7 @@ routerAdd('POST', '/api/suggestions/create', (e) => {
 // ---------------------------------------------------------------------------
 // GET /api/suggestions/list
 // Query: ?trip_id=<id>&status=pending|approved|rejected (status optional)
-// Auth: owner/co_owner sees all; traveler sees own pending.
+// Auth: owner/co_owner sees all new_item suggestions; traveler sees own.
 // ---------------------------------------------------------------------------
 routerAdd('GET', '/api/suggestions/list', (e) => {
 	const authRecord = e.auth;
@@ -99,8 +121,11 @@ routerAdd('GET', '/api/suggestions/list', (e) => {
 		throw new UnauthorizedError('Authentication required');
 	}
 
-	const tripId = e.request.url.searchParams.get('trip_id') || '';
-	const statusFilter = e.request.url.searchParams.get('status') || '';
+	// Use requestInfo().query — e.request.url is not valid in PB 0.27 sandbox.
+	// Values may be a string or string array depending on PB version; normalize safely.
+	const query = e.requestInfo().query || {};
+	const tripId = Array.isArray(query['trip_id']) ? query['trip_id'][0] : (query['trip_id'] || '');
+	const statusFilter = Array.isArray(query['status']) ? query['status'][0] : (query['status'] || '');
 
 	if (!tripId) throw new BadRequestError('trip_id is required');
 
@@ -123,7 +148,6 @@ routerAdd('GET', '/api/suggestions/list', (e) => {
 	let filter = 'trip = {:tripId} && target_type = "new_item"';
 	const filterParams = { tripId: tripId };
 	if (!isPrivileged) {
-		// Travelers only see their own suggestions.
 		filter += ' && author = {:authorId}';
 		filterParams['authorId'] = callerMember.id;
 	}
@@ -134,12 +158,11 @@ routerAdd('GET', '/api/suggestions/list', (e) => {
 
 	let records;
 	try {
-		records = e.app.findRecordsByFilter('suggestions', filter, '-created', 0, 0, filterParams);
+		records = e.app.findRecordsByFilter('suggestions', filter, '-id', 0, 0, filterParams);
 	} catch (_) {
 		records = [];
 	}
 
-	// Expand author and reviewed_by display names.
 	const items = records.map((r) => {
 		let authorName = '';
 		let authorRole = '';
@@ -170,8 +193,6 @@ routerAdd('GET', '/api/suggestions/list', (e) => {
 // POST /api/suggestions/review
 // Body: { suggestion_id, action: 'approve' | 'reject', payload? }
 // Auth: owner/co_owner only.
-// If action='approve', creates the item (with optional modified payload).
-// If action='reject', marks rejected.
 // ---------------------------------------------------------------------------
 routerAdd('POST', '/api/suggestions/review', (e) => {
 	const authRecord = e.auth;
@@ -189,7 +210,6 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 		throw new BadRequestError('action must be "approve" or "reject"');
 	}
 
-	// Load suggestion.
 	let suggestion;
 	try {
 		suggestion = e.app.findRecordById('suggestions', suggestionId);
@@ -203,7 +223,6 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 
 	const tripId = suggestion.get('trip');
 
-	// Verify caller is owner/co_owner.
 	let callerMember;
 	try {
 		callerMember = e.app.findFirstRecordByFilter(
@@ -224,13 +243,10 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 	suggestion.set('status', action === 'approve' ? 'approved' : 'rejected');
 	suggestion.set('reviewed_by', callerMember.id);
 	suggestion.set('reviewed_at', now);
+	e.app.save(suggestion);
 
-	try {
-		e.app.save(suggestion);
-	} catch (err) {
-		throw new BadRequestError('Failed to update suggestion: ' + err);
-	}
-
+	// If approving, create the item.
+	// Inlined here because module-scope helpers are not visible in PB 0.27 sandbox.
 	let itemId = '';
 	if (action === 'approve') {
 		let trip;
@@ -239,51 +255,44 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 		} catch (_) {
 			throw new NotFoundError('Trip not found');
 		}
-		const payload = modifiedPayload || suggestion.get('payload');
-		itemId = createItemFromPayload(e.app, trip, payload, callerMember.id, tripId);
+		// PB JSON fields may come back as a string — parse defensively.
+		let rawPayload = suggestion.get('payload');
+		// PB 0.27 JSON fields return as a byte array, string, or object depending on context — normalize all cases.
+		if (Array.isArray(rawPayload)) {
+			try { rawPayload = JSON.parse(String.fromCharCode.apply(null, rawPayload)); } catch (_) { rawPayload = {}; }
+		} else if (typeof rawPayload === 'string') {
+			try { rawPayload = JSON.parse(rawPayload); } catch (_) { rawPayload = {}; }
+		}
+		const payload = modifiedPayload || rawPayload;
+
+		const itemsCol = e.app.findCollectionByNameOrId('items');
+		const item = new Record(itemsCol);
+		item.set('trip', tripId);
+		item.set('phase', payload.phase || '');
+		item.set('day', payload.day || '');
+		item.set('slot', payload.slot || 'anytime');
+		item.set('type', payload.type || 'activity');
+		item.set('subtype', payload.subtype || '');
+		item.set('title', payload.title || '');
+		item.set('description', payload.description || '');
+		item.set('location_name', payload.location_name || '');
+		item.set('location_address', payload.location_address || '');
+		item.set('start_time', payload.start_time || '');
+		item.set('end_time', payload.end_time || '');
+		item.set('booked', payload.booked === true);
+		item.set('reservation_url', payload.reservation_url || '');
+		item.set('free_cancellation', payload.free_cancellation === true);
+		item.set('cost_estimate_usd', Number(payload.cost_estimate_usd) || 0);
+		item.set('cost_actual_usd', Number(payload.cost_actual_usd) || 0);
+		item.set('assigned_to', Array.isArray(payload.assigned_to) ? payload.assigned_to : []);
+		item.set('confirmation_codes', Array.isArray(payload.confirmation_codes) ? payload.confirmation_codes : []);
+		item.set('rank', 0);
+		item.set('parking_lot_scope', payload.day ? 'none' : 'trip');
+		item.set('created_by', callerMember.id);
+		item.set('status', 'planned');
+		e.app.save(item);
+		itemId = item.id;
 	}
 
 	return e.json(200, { ok: true, status: suggestion.get('status'), item_id: itemId });
 });
-
-// ---------------------------------------------------------------------------
-// Shared helper: create an item record from a suggestion payload.
-// Called by both create (auto-approve) and review (approve).
-// Defined at module scope — visible to all routerAdd callbacks in this file.
-// ---------------------------------------------------------------------------
-function createItemFromPayload(app, trip, payload, reviewerMemberId, tripId) {
-	const itemsCol = app.findCollectionByNameOrId('items');
-	const item = new Record(itemsCol);
-
-	item.set('trip', tripId);
-	item.set('phase', payload.phase || '');
-	item.set('day', payload.day || '');
-	item.set('slot', payload.slot || 'anytime');
-	item.set('type', payload.type || 'activity');
-	item.set('subtype', payload.subtype || '');
-	item.set('title', payload.title || '');
-	item.set('description', payload.description || '');
-	item.set('location_name', payload.location_name || '');
-	item.set('location_address', payload.location_address || '');
-	item.set('start_time', payload.start_time || '');
-	item.set('end_time', payload.end_time || '');
-	item.set('booked', payload.booked === true);
-	item.set('reservation_url', payload.reservation_url || '');
-	item.set('free_cancellation', payload.free_cancellation === true);
-	item.set('cost_estimate_usd', Number(payload.cost_estimate_usd) || 0);
-	item.set('cost_actual_usd', Number(payload.cost_actual_usd) || 0);
-	item.set('assigned_to', Array.isArray(payload.assigned_to) ? payload.assigned_to : []);
-	item.set('confirmation_codes', Array.isArray(payload.confirmation_codes) ? payload.confirmation_codes : []);
-	item.set('rank', 0);
-	item.set('parking_lot_scope', payload.day ? 'none' : 'trip');
-	item.set('created_by', reviewerMemberId);
-	item.set('status', 'planned');
-
-	try {
-		app.save(item);
-	} catch (err) {
-		throw new BadRequestError('Failed to create item from suggestion: ' + err);
-	}
-
-	return item.id;
-}
