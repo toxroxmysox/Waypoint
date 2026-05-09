@@ -132,6 +132,18 @@ export interface Suggestion {
 	created: string;
 }
 
+export type NotificationType = 'suggestion_added' | 'comment_added' | 'member_joined';
+
+export interface Notification {
+	id: string;
+	trip: string;
+	type: NotificationType;
+	body: string;
+	link: string;
+	read_at: string | null;
+	created: string;
+}
+
 export interface Comment {
 	id: string;
 	trip: string;
