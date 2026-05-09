@@ -232,6 +232,18 @@ Don't wait to be asked.
 
 ---
 
+## Technical gotchas learned during M2
+
+- **PocketBase JSON fields return as byte arrays in hook callbacks.** `record.get('myJsonField')` inside a `routerAdd` or `onRecord*` callback returns an array of char codes, not a string or parsed object. Decode with `String.fromCharCode.apply(null, raw)` then `JSON.parse`. The REST API returns proper JSON; this only bites you in hook-side reads.
+- **PocketBase hook API doesn't accept `created` as a sort field.** `findRecordsByFilter(coll, filter, '-created', ...)` silently fails or errors in PB 0.27 hooks. Use `-id` instead — IDs are monotonically increasing, so the sort order is equivalent for append-only collections.
+- **Silent `catch` blocks in hooks mask the real error.** The pattern `catch(_) { records = []; }` will hide sort-field errors, auth errors, and filter parse errors. During debugging, always log inside the catch. Remove the log once the root cause is fixed, but keep the catch narrow.
+- **PocketBase `requestInfo().query` values may be string or array.** For GET endpoints, query param values come back as either a bare string or an array of strings depending on how many times the param appears. Always `Array.isArray(v) ? v[0] : v` before using.
+- **Client-side JS can't call PocketBase hook endpoints with auth.** Browser fetch can't easily attach the PB JWT. Pattern: add a SvelteKit `+server.ts` proxy route that reads `locals.pb.authStore.token` and forwards it as `Authorization: Bearer <token>` to the PB hook. See `src/routes/api/notifications/mark-read/+server.ts`.
+- **Playwright `getByText(/pattern/i)` is strict-mode by default.** If the pattern matches more than one element (e.g. "suggestion" appears in both a notice banner and a submit button), the assertion throws. Use `.first()` or a more specific locator (`getByRole('button', ...)` for the button, `getByText(...)` for the banner).
+- **Worktrees can block branch deletion.** If the root repo directory is checked out on a feature branch, `git branch -d` fails even from another worktree. Fix: `git checkout --detach HEAD` in the root worktree to detach it, then `git branch -D` (force needed because the remote tracking ref won't show as merged if the branch was never pushed directly).
+
+---
+
 ## Technical gotchas learned during M1
 
 - **PocketBase JS hooks (v0.27+) run each callback in an isolated sandbox.** Helper functions defined at the top of the hook file are NOT visible inside callbacks. Inline every helper into the callback body. Smoke-test new hooks with a `console.log` from inside the callback before writing logic.
