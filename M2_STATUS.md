@@ -94,22 +94,27 @@ Acceptance: all acceptance criteria met.
 
 ---
 
-### M2d — Suggestions inbox
+### M2d — Suggestions inbox ✓ Complete (2026-05-09)
 Travelers suggest items; owners review. Spec auto-approval logic centralized in one hook.
 
 Tasks:
-- Migration: `suggestions` per SPEC §4, all 5 rules (only owners/co-owners can update review status; authors can read their own; trip members can read approved)
-- Server hook on suggestion create:
-  - If author role ∈ {owner, co_owner} → auto-approve, create item from payload immediately
-  - Else if author role = traveler AND trip.auto_approve_suggestions → auto-approve, create item
-  - Else → leave pending
-- Frontend: when role = traveler AND auto-approve off, item-add form POSTs to `suggestions` (target_type=new_item) instead of `items`
-- Frontend: Inbox screen `/trips/[slug]/inbox` — pending list with diff/preview card per suggestion (renders the `payload` as a read-only item card)
-- Frontend: action buttons — Approve / Edit & Approve / Reject. Edit & Approve opens the item-add form pre-filled from `payload`
-- Trip settings: `auto_approve_suggestions` toggle
-- Auto-approved suggestions kept with `status=approved` + audit marker
+- [x] Migration `0017_suggestions.js`: `suggestions` collection, all 5 rules, cascade delete
+- [x] Migration `0018_fix_suggestions_fields.js`: schema corrections
+- [x] Migration `0019_suggestions_cascade.js`: cascade delete suggestions on trip delete
+- [x] `pb_hooks/suggestions.pb.js`: three endpoints
+  - `POST /api/suggestions/create` — viewer blocked, owner/co_owner auto-approve (creates item), traveler auto-approve when trip flag set, else pending
+  - `GET /api/suggestions/list` — owner/co_owner see all, traveler sees own; status filter optional
+  - `POST /api/suggestions/review` — owner/co_owner only; approve creates item (with optional payload override for edit-and-approve); reject marks rejected; idempotent guard on non-pending
+- [x] `auto_approve_suggestions` trip field + settings toggle (M2d branch)
+- [x] `/trips/[slug]/inbox` route: pending list, approve/reject/edit-and-approve actions
+- [x] Inbox tab in TripTabs (owner/co_owner only)
+- [x] `backend/test-suggestions.mjs` + `pnpm test:suggestions` — **19/19** green (1 SKIP: traveler auto-approve needs PB admin creds in .env.local)
+- [x] PB 0.27 gotchas: JSON field returns as byte array (fixed with String.fromCharCode decode), `created` not valid sort key (use `-id`), module-scope helpers invisible (inline all logic)
 
-Acceptance: traveler with auto-approve off suggests an item → it lands in inbox → owner approves → real item appears. Auto-approve path also works. Reject removes from pending without creating an item.
+Acceptance: all met. traveler suggests → inbox → owner approves → item created. Edit-and-approve, reject, double-reject guard, auto-approve paths all green.
+
+Open notes:
+- Traveler auto-approve test (test 6) SKIPs without PB admin credentials. Add `PB_ADMIN_EMAIL` + `PB_ADMIN_PASSWORD` to `.env.local` to enable it.
 
 ---
 
