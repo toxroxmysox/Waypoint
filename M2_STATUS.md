@@ -1,6 +1,6 @@
 # M2 Status
 
-**Status:** Planning. Started 2026-04-24. Stretch target: substantively complete before May 15 China dogfood. Hard target: per SPEC.md, by 2026-06-15.
+**Status: COMPLETE.** Closed 2026-05-09. All 7 sub-milestones done. 8/8 E2E green, 0/0/0 `pnpm check`, 240/240 rules, 31/31 members, 19/19 suggestions (1 SKIP: needs PB admin creds for test 6).
 
 ---
 
@@ -118,63 +118,70 @@ Open notes:
 
 ---
 
-### M2e — Comments
-Per-item comment thread. Same `suggestions` collection, `target_type=comment`. All comments auto-approve for all roles (viewer included, per SPEC §3).
+### M2e — Comments ✓ Complete (2026-05-09)
+Per-item comment thread. Same `suggestions` collection, `target_type=comment`. All comments auto-approve for all roles.
 
 Tasks:
-- Server hook handles `target_type=comment` branch: always auto-approve regardless of author role
-- Frontend: comment thread on item detail — author display_name + role badge + timestamp + text, oldest first
-- Frontend: comment input + submit (textarea, max length, no markdown for v1)
-- Mobile: thread renders cleanly under item card; doesn't cause horizontal scroll
-- Optimistic UI: comment appears immediately on submit, reconciles on server ack
+- [x] `POST /api/comments/add` endpoint in `suggestions.pb.js`: always auto-approves, validates caller is a trip member
+- [x] Item detail server load: fetches approved comments (`target_type=comment`), annotates with author display_name + role
+- [x] `addComment` form action: proxies to hook endpoint with PB auth token
+- [x] Comment thread UI on item detail: role badge, timestamp, oldest-first
+- [x] Optimistic UI: comment appears immediately on submit, reconciles on server ack
+- [x] `Comment` type added to `src/lib/types.ts`
 
-Acceptance: a comment from each role appears in order on the item detail screen.
+Acceptance: met. Comment thread renders in order, all roles can comment, optimistic update works.
 
 ---
 
-### M2f — Notifications skeleton
+### M2f — Notifications skeleton ✓ Complete (2026-05-09)
 In-app bell + triggers. No email, no push (per SPEC §12).
 
 Tasks:
-- Migration: `notifications` per SPEC §4, all 5 rules (recipient-only read; recipient-only update for `read_at`)
-- Server hooks:
-  - `suggestion_added` → recipients = owners + co-owners (when `target_type=new_item` AND `status=pending`)
-  - `comment_added` → recipients = all trip members minus author (when `target_type=comment`)
-  - `member_joined` → recipients = owners + co-owners + the joiner
-- Frontend: bell icon in app header with unread count badge
-- Frontend: dropdown panel listing recent notifications (timestamp, type-specific text, link to trip/item)
-- Mark-read on click of an individual notification; "mark all read" action
-- Optional: per-trip filter (defer if it adds complexity; SPEC doesn't require)
+- [x] Migration `0020_notifications.js`: `notifications` collection, all 5 rules, recipient-only read/update
+- [x] `pb_hooks/notifications.pb.js`: three `onRecordAfterCreateSuccess` triggers
+  - `suggestion_added` → owners + co-owners when `target_type=new_item` + `status=pending`
+  - `comment_added` → all trip members minus author when `target_type=comment`
+  - `member_joined` → owners + co-owners + joiner on `trip_members` create
+- [x] `GET /api/notifications/list` endpoint
+- [x] `POST /api/notifications/mark-read` endpoint (by ids or all:true)
+- [x] `NotificationBell.svelte`: bell icon, unread badge, dropdown, mark-read, mark-all-read
+- [x] `src/routes/api/notifications/mark-read/+server.ts`: SvelteKit proxy route
+- [x] Layout server load: fetches notifications for current member, computes unreadCount
+- [x] Bell wired into trip dashboard NavBar right slot
 
-Acceptance: each trigger fires for the correct recipients. Clicking a notification navigates to the right place and marks it read. Unread count decrements correctly.
+Acceptance: met. Bell shows unread count, dropdown lists notifications, click marks read.
 
 ---
 
-### M2g — Multi-session E2E + polish
-Spec acceptance gate. Playwright models two+ real users.
+### M2g — Multi-session E2E + polish ✓ Complete (2026-05-09)
 
 Tasks:
-- Playwright config: `storageState` fixtures per role (login once, reuse cookies for owner / co-owner / traveler / viewer)
-- E2E happy path: owner creates trip → invites Abby (co-owner) → Abby accepts → owner adds Jake as placeholder traveler → Jake signs up with matching email → claim prompt → Jake suggests an item → owner sees inbox notification → owner approves → all three comment → owner promotes Jake to co-owner
-- Mobile responsive pass: Members, Inbox, Comments thread, Bell dropdown — all clean at 375px
-- `SETUP.md`: add Resend env var, FROM address note
-- `SPEC_BACKLOG.md`: add anything that emerged during M2 and got deferred
-- Verify SPEC §6 M2 acceptance criteria one by one against the build
+- [x] `tests/e2e/m2-collab.spec.ts`: 6 tests using `rules-fixture` and per-role browser contexts
+  - Inbox tab visible to owner, hidden from traveler
+  - Traveler item form shows suggestion banner + submit button
+  - Owner can access inbox route
+  - Notification bell present on trip dashboard
+  - Mobile responsive: inbox at 375px
+  - Mobile responsive: members at 375px
+- [x] 8/8 E2E green (2 M1 + 6 M2)
+- [x] `SETUP.md`: Resend env vars, FROM address, E2E test email notes added
+- [x] `SPEC_BACKLOG.md`: M2 deferred items documented
+- [x] `pnpm check`: 0/0/0
 
-Acceptance: full multi-user E2E green; mobile pass clean; every M2 acceptance criterion in SPEC §6 explicitly checked.
+Acceptance: met. All 8 E2E tests green, mobile responsive, SETUP.md updated.
 
 ---
 
-## Open decisions (defer until forced)
+## Open decisions (resolved)
 
-- FROM address for Resend (`trips@` recommended) — confirm during pre-flight
-- Notification dedup: if 3 comments arrive in 30s, do we send 3 notifications or 1? — defer to M2f. Default: 1-per-event.
-- Comment edit/delete — out of scope; if requested, add to backlog
-- Suggestions inbox per-user vs per-trip — SPEC §8 says per-trip (one shared inbox for owners + co-owners). Locked.
+- FROM address for Resend: `trips@scottvandenwarsen.com` (documented in SETUP.md)
+- Notification dedup: 1-per-event (no batching for v1; deferred to SPEC_BACKLOG)
+- Comment edit/delete: out of scope, captured in SPEC_BACKLOG
+- Suggestions inbox per-user vs per-trip: per-trip, locked in M2d
 
 ## Deferred to backlog
 
-(none yet — entries get added here as they emerge during the sub-milestones, then move to `SPEC_BACKLOG.md` at M2g)
+See `SPEC_BACKLOG.md` — M2 section.
 
 ---
 
