@@ -115,3 +115,19 @@ export interface PendingInvite extends RecordModel {
 	code: string;
 	expires_at: string;
 }
+
+export type SuggestionStatus = 'pending' | 'approved' | 'rejected';
+export type SuggestionTargetType = 'new_item' | 'comment';
+
+export interface Suggestion {
+	id: string;
+	trip: string;
+	author_id: string;
+	author_name: string;
+	author_role: MemberRole;
+	target_type: SuggestionTargetType;
+	payload: Partial<Item> | null;
+	status: SuggestionStatus;
+	reviewed_at: string;
+	created: string;
+}

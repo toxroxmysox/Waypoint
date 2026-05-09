@@ -59,7 +59,7 @@
 </script>
 
 <NavBar title="Members" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}" />
-<TripTabs slug={data.trip.slug} />
+<TripTabs slug={data.trip.slug} role={data.membership.role} />
 
 <main class="mx-auto w-full max-w-lg flex-1 space-y-6 px-4 pt-4 pb-8">
 	{#if actionError}

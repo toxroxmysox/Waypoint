@@ -15,6 +15,7 @@ export const actions: Actions = {
 		const endDate = data.get('end_date')?.toString();
 		const timezone = data.get('timezone')?.toString() || '';
 		const locationSummary = data.get('location_summary')?.toString().trim() || '';
+		const autoApproveSuggestions = data.get('auto_approve_suggestions') === 'on';
 
 		if (!title) return fail(400, { error: 'Title is required.' });
 		if (!startDate || !endDate) return fail(400, { error: 'Start and end dates are required.' });
@@ -39,7 +40,8 @@ export const actions: Actions = {
 				start_date: startDate + ' 00:00:00.000Z',
 				end_date: endDate + ' 00:00:00.000Z',
 				timezone,
-				location_summary: locationSummary
+				location_summary: locationSummary,
+				auto_approve_suggestions: autoApproveSuggestions
 			});
 
 			return { success: true };
