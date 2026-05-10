@@ -1,0 +1,30 @@
+app = 'waypoint-trips'
+primary_region = 'ord'
+
+[build]
+
+[env]
+  PORT = '3000'
+  PUBLIC_PB_URL = 'https://waypoint-trips.fly.dev/pb'
+  PUBLIC_APP_URL = 'https://waypoint-trips.fly.dev'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'suspend'
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = 'requests'
+    hard_limit = 250
+    soft_limit = 200
+
+[[vm]]
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1
+
+[mounts]
+  source = 'pb_data'
+  destination = '/data'

@@ -359,6 +359,12 @@ onRecordAfterCreateSuccess((e) => {
 		'invites.pb.js: pending_invites after-create fired id=' + e.record.id
 	);
 
+	if ($os.getenv('WAYPOINT_DEV_MODE') === 'true') {
+		console.log('invites.pb.js: WAYPOINT_DEV_MODE=true; skipping invite email');
+		e.next();
+		return;
+	}
+
 	const apiKey = $os.getenv('RESEND_API_KEY');
 	const from = $os.getenv('RESEND_FROM');
 	const publicUrl = $os.getenv('PUBLIC_APP_URL') || 'http://localhost:5173';

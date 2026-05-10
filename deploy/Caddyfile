@@ -1,0 +1,11 @@
+:8080 {
+	# PocketBase API + admin UI — served under /pb/ prefix, stripped before proxying
+	handle_path /pb/* {
+		reverse_proxy localhost:8090
+	}
+
+	# Everything else goes to SvelteKit
+	handle {
+		reverse_proxy localhost:3000
+	}
+}
