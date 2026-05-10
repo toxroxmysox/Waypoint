@@ -14,10 +14,11 @@ RUN pnpm build
 FROM node:22-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates curl unzip debian-keyring debian-archive-keyring apt-transport-https \
-    && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg \
-    && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list \
-    && apt-get update && apt-get install -y --no-install-recommends caddy \
+    ca-certificates curl unzip \
+    && curl -fsSL "https://github.com/caddyserver/caddy/releases/download/v2.9.1/caddy_2.9.1_linux_amd64.tar.gz" \
+       -o /tmp/caddy.tar.gz \
+    && tar -xzf /tmp/caddy.tar.gz -C /usr/local/bin caddy \
+    && rm /tmp/caddy.tar.gz \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
