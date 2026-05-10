@@ -8,6 +8,12 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 COPY . .
+
+ARG PUBLIC_PB_URL=https://waypoint-trips.fly.dev/pb
+ARG PUBLIC_APP_URL=https://waypoint-trips.fly.dev
+ENV PUBLIC_PB_URL=$PUBLIC_PB_URL
+ENV PUBLIC_APP_URL=$PUBLIC_APP_URL
+
 RUN pnpm build
 
 # Stage 2: Production image
