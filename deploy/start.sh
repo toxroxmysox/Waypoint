@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 DATA_DIR="${PB_DATA_DIR:-/data}"
