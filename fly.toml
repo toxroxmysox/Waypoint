@@ -5,8 +5,8 @@ primary_region = 'ord'
 
 [env]
   PORT = '3000'
-  PUBLIC_PB_URL = 'https://waypoint-trips.fly.dev/pb'
-  PUBLIC_APP_URL = 'https://waypoint-trips.fly.dev'
+  PUBLIC_PB_URL = 'https://app.vandenwarsen.com/pb'
+  PUBLIC_APP_URL = 'https://app.vandenwarsen.com'
 
 [http_service]
   internal_port = 8080

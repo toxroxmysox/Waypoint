@@ -9,8 +9,8 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-ARG PUBLIC_PB_URL=https://waypoint-trips.fly.dev/pb
-ARG PUBLIC_APP_URL=https://waypoint-trips.fly.dev
+ARG PUBLIC_PB_URL=https://app.vandenwarsen.com/pb
+ARG PUBLIC_APP_URL=https://app.vandenwarsen.com
 ENV PUBLIC_PB_URL=$PUBLIC_PB_URL
 ENV PUBLIC_APP_URL=$PUBLIC_APP_URL
 
