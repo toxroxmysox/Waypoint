@@ -6,7 +6,7 @@
 	import Pill from '$lib/components/ui/Pill.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import SectionH from '$lib/components/ui/SectionH.svelte';
-	import TripTabs from '$lib/components/TripTabs.svelte';
+	import SubTabs from '$lib/components/SubTabs.svelte';
 	import NotificationBell from '$lib/components/ui/NotificationBell.svelte';
 	import { titleCase } from '$lib/utils/format';
 	import { untrack } from 'svelte';
@@ -61,7 +61,10 @@
 		<NotificationBell bind:notifications bind:unreadCount />
 	{/snippet}
 </NavBar>
-<TripTabs slug={data.trip.slug} role={data.membership.role} />
+<SubTabs tabs={[
+	{ id: 'overview', label: 'Overview', href: `/trips/${data.trip.slug}` },
+	{ id: 'phases', label: 'Phases', href: `/trips/${data.trip.slug}/phases` }
+]} />
 
 <main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 space-y-6">
 	<!-- Trip stats card -->
