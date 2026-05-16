@@ -166,6 +166,15 @@
 										{#if item.booked}
 											<Pill variant="booked" size="sm">Booked</Pill>
 										{/if}
+										{#if data.voteCounts[item.id]}
+											<span class="text-moss inline-flex items-center gap-0.5 text-[11px] font-semibold">
+												<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+													<path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z" />
+													<path d="M1 21h4V10H1z" />
+												</svg>
+												{data.voteCounts[item.id]}
+											</span>
+										{/if}
 									</div>
 									{#if item.start_time || item.location_name}
 										<p class="text-ink-muted mt-0.5 text-[12px]">

@@ -1,6 +1,6 @@
 import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Day, Item } from '$lib/types';
+import type { Day, Item, Vote } from '$lib/types';
 import { phasesForDay } from '$lib/utils/phases';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
@@ -22,9 +22,22 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		sort: 'slot,rank'
 	});
 
+	const itemIds = items.map((i) => i.id);
+	const votes =
+		itemIds.length > 0
+			? await locals.pb.collection('votes').getFullList<Vote>({
+					filter: itemIds.map((id) => `item = "${id}"`).join(' || ')
+				})
+			: [];
+
+	const voteCounts: Record<string, number> = {};
+	for (const v of votes) {
+		voteCounts[v.item] = (voteCounts[v.item] ?? 0) + 1;
+	}
+
 	const dayPhases = phasesForDay(day, phases);
 
-	return { day, dayItems: items, dayPhases };
+	return { day, dayItems: items, dayPhases, voteCounts };
 };
 
 export const actions: Actions = {
