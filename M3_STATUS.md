@@ -1,6 +1,6 @@
 # M3 Status
 
-**Status: CODE COMPLETE.** Started 2026-05-15. All sub-milestones built; pending visual verification + full E2E run with PocketBase.
+**Status: COMPLETE.** Started 2026-05-15. Merged to main via [PR #6](https://github.com/toxroxmysox/Waypoint/pull/6). Deployed to production. CD pipeline added.
 
 ---
 
@@ -20,7 +20,7 @@ Tasks:
 - [x] Created `/more` page (Inbox, Settings, Vault placeholder)
 - [x] `pnpm check`: 0/0/0
 - [x] Updated M2 E2E test for nav restructure
-- [ ] Visual verification at 375px mobile (blocked on PB — deferred to M3f)
+- [x] Visual verification at 375px mobile
 
 ### M3b — Data Model + Rules (done)
 PB migrations for expenses, settlements, trip_budgets. Permission rules. Server-side hooks.
@@ -46,7 +46,7 @@ Tasks:
 - [x] Add Expense form: amount, description, paid by, split config (equal/by_amount), category chips, date
 - [x] FAB wired to open Add Expense sheet
 - [x] `pnpm check`: 0/0/0
-- [ ] Visual verification at 375px mobile (blocked on PB — deferred to M3f)
+- [x] Visual verification at 375px mobile
 
 ### M3d — Budget View (done)
 Budget planning sub-tab, category detail, budget vs actual summary.
@@ -59,7 +59,7 @@ Tasks:
 - [x] Save Budget form with `use:enhance`
 - [x] Budget-vs-actual collapsible summary on expenses page (collapsed: total progress bar, expanded: per-category bars)
 - [x] `pnpm check`: 0/0/0
-- [ ] Visual verification at 375px mobile (deferred to M3f)
+- [x] Visual verification at 375px mobile
 
 ### M3e — Balances + Settle Up (done)
 Debt simplification algorithm, balance cards, settle up flow.
@@ -83,11 +83,27 @@ Tasks:
 - [x] `tests/e2e/m3-money.spec.ts`: 6 tests covering expenses empty state, add expense, budget save, settle up, mobile responsive (375px expenses + budget)
 - [x] `pnpm check`: 0/0/0
 - [x] Unit tests: 23/23 passing
-- [ ] Visual verification at 375px mobile (requires running PB instance)
-- [ ] Full Playwright run (requires PB + E2E_TEST_EMAIL configured)
+- [x] Visual verification at 375px mobile
+- [x] Full Playwright run: 6/6 passing
+
+### M3g — CD Pipeline (done)
+- [x] `.github/workflows/deploy.yml`: auto-deploy to Fly.io on push to main
+- [x] `FLY_API_TOKEN` stored as GitHub secret
+- [x] First deploy triggered on push
+
+---
+
+## Lessons learned (M3)
+
+- **PocketBase `created_by` is not auto-populated.** Server actions must explicitly look up the current user's trip_member record and include `created_by: membership.id` in create payloads.
+- **PocketBase datetime strings need splitting before Date construction.** PB stores dates as `YYYY-MM-DD HH:MM:SS.sssZ`. Appending `T00:00:00` to the full string creates an invalid date. Always split on `T` or space first: `dateStr.split(/[T ]/)[0]`.
+- **FAB positioning must account for BottomNav.** `bottom-5` gets cut off by the fixed bottom nav. Use `bottom-20` minimum.
+- **Playwright strict mode bites with generic text matchers.** `getByText(/payment.*needed/i)` matched both a button label and a `<p>` tag. Use `.first()` or more specific locators. `getByRole('button', { name: 'X', exact: true })` is safest for buttons.
+- **Cross-test state in Playwright is fragile.** Tests that depend on data created by prior tests work only when run serially with a single worker. Use `.or()` to accept either state (data exists or empty state) for resilience.
+- **Browser scroll-to-change on number inputs is a UX trap.** Users scrolling past a focused number input unknowingly change its value. Global wheel handler that blurs number inputs is the fix -- add it once in root layout.
 
 ---
 
 ## Open decisions
 
-None yet.
+None.
