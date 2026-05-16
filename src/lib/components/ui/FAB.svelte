@@ -14,7 +14,7 @@
 	} = $props();
 
 	const base =
-		'fixed bottom-5 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-ink text-paper shadow-card-strong active:scale-95 transition-transform';
+		'fixed bottom-20 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-ink text-paper shadow-card-strong active:scale-95 transition-transform';
 </script>
 
 {#if href}

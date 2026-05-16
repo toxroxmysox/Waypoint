@@ -4,7 +4,6 @@
 	import Card from '$lib/components/ui/Card.svelte';
 	import Pill from '$lib/components/ui/Pill.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
-	import TripTabs from '$lib/components/TripTabs.svelte';
 	import type { InviteRole } from '$lib/types';
 
 	let { data, form } = $props();
@@ -59,8 +58,6 @@
 </script>
 
 <NavBar title="Members" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}" />
-<TripTabs slug={data.trip.slug} role={data.membership.role} />
-
 <main class="mx-auto w-full max-w-lg flex-1 space-y-6 px-4 pt-4 pb-8">
 	{#if actionError}
 		<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">

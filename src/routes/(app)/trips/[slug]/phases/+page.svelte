@@ -4,7 +4,7 @@
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import SectionH from '$lib/components/ui/SectionH.svelte';
-	import TripTabs from '$lib/components/TripTabs.svelte';
+	import SubTabs from '$lib/components/SubTabs.svelte';
 	import PhaseColorPicker from '$lib/components/PhaseColorPicker.svelte';
 	import { phasePalette } from '$lib/utils/phase-palette';
 
@@ -43,7 +43,10 @@
 </script>
 
 <NavBar title="Phases" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}" />
-<TripTabs slug={data.trip.slug} role={data.membership.role} />
+<SubTabs tabs={[
+	{ id: 'overview', label: 'Overview', href: `/trips/${data.trip.slug}` },
+	{ id: 'phases', label: 'Phases', href: `/trips/${data.trip.slug}/phases` }
+]} />
 
 <main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 space-y-4">
 	{#if error}

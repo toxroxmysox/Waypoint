@@ -59,17 +59,17 @@ test.describe('M2 Collaboration', () => {
 		await setupFixture(EMAILS.owner);
 	});
 
-	test('inbox tab visible to owner, hidden from traveler', async ({ browser }) => {
+	test('inbox visible to owner on More page, hidden from traveler', async ({ browser }) => {
 		const { page: ownerPage, ctx: ownerCtx } = await devLogin(browser, EMAILS.owner);
 		const { page: travelerPage, ctx: travelerCtx } = await devLogin(browser, EMAILS.traveler);
 
 		try {
-			// Owner sees Inbox tab.
-			await ownerPage.goto(`${BASE}/trips/${tripSlug}`);
+			// Owner sees Inbox on the More page.
+			await ownerPage.goto(`${BASE}/trips/${tripSlug}/more`);
 			await expect(ownerPage.getByRole('link', { name: /inbox/i })).toBeVisible({ timeout: 10000 });
 
-			// Traveler does NOT see Inbox tab.
-			await travelerPage.goto(`${BASE}/trips/${tripSlug}`);
+			// Traveler does NOT see Inbox on the More page.
+			await travelerPage.goto(`${BASE}/trips/${tripSlug}/more`);
 			await expect(travelerPage.getByRole('link', { name: /inbox/i })).not.toBeVisible({ timeout: 5000 });
 		} finally {
 			await ownerCtx.close();

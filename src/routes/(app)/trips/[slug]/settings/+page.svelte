@@ -3,8 +3,6 @@
 	import NavBar from '$lib/components/ui/NavBar.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
-	import TripTabs from '$lib/components/TripTabs.svelte';
-
 	let { data, form } = $props();
 
 	let loading = $state(false);
@@ -15,8 +13,6 @@
 </script>
 
 <NavBar title="Settings" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}" />
-<TripTabs slug={data.trip.slug} role={data.membership.role} />
-
 <main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 space-y-6">
 	{#if error}
 		<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">{error}</div>
