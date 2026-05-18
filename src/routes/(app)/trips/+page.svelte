@@ -39,8 +39,13 @@
 		<div class="py-16 text-center">
 			<p class="font-display text-ink text-lg italic">No trips yet.</p>
 			<p class="text-ink-muted mt-1 text-sm">Plan your first one.</p>
-			<div class="mt-5">
+			<div class="mt-5 space-y-2">
 				<Button href="/trips/new" variant="moss" size="md">New trip</Button>
+				<p>
+					<a href="/trips/import" class="text-ink-muted text-xs font-medium hover:text-ink-soft">
+						or import from JSON
+					</a>
+				</p>
 			</div>
 		</div>
 	{:else}
@@ -122,5 +127,10 @@
 </main>
 
 {#if !isEmpty}
+	<div class="fixed bottom-20 left-0 right-0 text-center">
+		<a href="/trips/import" class="text-ink-muted text-xs font-medium hover:text-ink-soft">
+			Import from JSON
+		</a>
+	</div>
 	<FAB href="/trips/new" label="New trip" />
 {/if}

@@ -97,6 +97,27 @@
 	</Card>
 
 	<Card>
+		<a
+			href="/trips/{data.trip.slug}/export"
+			download
+			class="flex items-center gap-3 p-4"
+		>
+			<svg class="text-ink-soft shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+				<polyline points="7 10 12 15 17 10" />
+				<line x1="12" y1="15" x2="12" y2="3" />
+			</svg>
+			<div class="min-w-0 flex-1">
+				<p class="text-ink text-sm font-semibold">Export</p>
+				<p class="text-ink-muted text-[12px]">Download trip as JSON backup</p>
+			</div>
+			<svg class="text-ink-muted shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<path d="m9 18 6-6-6-6" />
+			</svg>
+		</a>
+	</Card>
+
+	<Card>
 		<button
 			type="button"
 			onclick={() => {
