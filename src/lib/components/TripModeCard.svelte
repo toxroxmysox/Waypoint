@@ -56,7 +56,7 @@
 		</div>
 	</div>
 
-	{#if item.confirmation_codes.length > 0}
+	{#if item.confirmation_codes?.length > 0}
 		<div class="mt-3 space-y-1">
 			{#each item.confirmation_codes as code}
 				<div class="bg-surface-2 flex items-center justify-between rounded px-3 py-1.5">

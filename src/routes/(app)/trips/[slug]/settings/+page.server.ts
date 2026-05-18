@@ -5,7 +5,7 @@ import { hashVaultPassword } from '$lib/utils/vault-password';
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { trip, membership } = await parent();
-	return { trip, membership };
+	return { trip, membership, hasVaultPassword: !!trip.vault_password_hash };
 };
 
 export const actions: Actions = {

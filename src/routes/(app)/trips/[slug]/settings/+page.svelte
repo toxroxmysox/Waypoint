@@ -140,7 +140,7 @@
 			>
 				<div>
 					<label for="vault_password" class="text-ink-soft block text-sm font-medium">
-						{data.trip.vault_password_hash ? 'Change password' : 'Set password'}
+						{data.hasVaultPassword ? 'Change password' : 'Set password'}
 					</label>
 					<input
 						type="password"

@@ -87,9 +87,13 @@ self.addEventListener('fetch', (event) => {
 	// Navigation requests — network-first with cache fallback
 	if (event.request.mode === 'navigate') {
 		event.respondWith(
-			fetch(event.request).catch(() =>
-				caches.match(event.request) as Promise<Response>
-			)
+			fetch(event.request).catch(async () => {
+				const cached = await caches.match(event.request);
+				return cached ?? new Response('Offline', {
+					status: 503,
+					headers: { 'Content-Type': 'text/html' }
+				});
+			})
 		);
 		return;
 	}
