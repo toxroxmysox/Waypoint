@@ -3,11 +3,11 @@ import type { PageServerLoad } from './$types';
 import type { Trip, Phase, Day, Item } from '$lib/types';
 import PocketBase from 'pocketbase';
 import { PUBLIC_PB_URL } from '$env/static/public';
-import { PB_ADMIN_EMAIL, PB_ADMIN_PASSWORD } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 export const load: PageServerLoad = async ({ params }) => {
 	const pb = new PocketBase(PUBLIC_PB_URL);
-	await pb.collection('_superusers').authWithPassword(PB_ADMIN_EMAIL, PB_ADMIN_PASSWORD);
+	await pb.collection('_superusers').authWithPassword(env.PB_ADMIN_EMAIL!, env.PB_ADMIN_PASSWORD!);
 
 	let trip: Trip;
 	try {
