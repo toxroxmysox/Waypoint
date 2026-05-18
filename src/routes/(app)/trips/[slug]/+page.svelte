@@ -82,9 +82,21 @@
 					<span class="font-mono">{data.phases.length}</span> phase{data.phases.length === 1 ? '' : 's'}
 				</p>
 			</div>
-			<Pill variant={data.membership.role === 'owner' ? 'ink' : 'default'} size="sm">
-				{titleCase(data.membership.role)}
-			</Pill>
+			<div class="flex flex-col items-end gap-2">
+				<Pill variant={data.membership.role === 'owner' ? 'ink' : 'default'} size="sm">
+					{titleCase(data.membership.role)}
+				</Pill>
+				<a
+					href="/trips/{data.trip.slug}/today"
+					class="bg-clay text-paper inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
+				>
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<circle cx="12" cy="12" r="10" />
+						<polyline points="12 6 12 12 16 14" />
+					</svg>
+					Trip Mode
+				</a>
+			</div>
 		</div>
 	</Card>
 
