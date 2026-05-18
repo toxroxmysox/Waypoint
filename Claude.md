@@ -182,10 +182,9 @@ If you find yourself wanting to add anything from the second list "just because 
 
 ## Deployment expectations
 
-- M1-M3: local dev only, optional preview on Vercel/Fly free tier
-- M4 onward: deployed to a real server (home or VPS)
+- Deployed to Fly.io (app: `waypoint-trips`, region: `ord`)
+- **CD:** GitHub Actions auto-deploys on push to `main` (`.github/workflows/deploy.yml`)
 - Caddy config in `deploy/Caddyfile`
-- Systemd unit for PocketBase in `deploy/pocketbase.service`
 - Backup script in `deploy/backup.sh`
 - All deployment docs in `deploy/README.md`
 
@@ -229,6 +228,26 @@ Don't wait to be asked.
 **After any Svelte change**, run `pnpm check` before declaring done. Catches a11y + runes warnings in one shot; faster than waiting for a dev build.
 
 **Commit at sub-milestone boundaries.** Gives us safe rollback points and keeps `git log` useful as a progress log.
+
+---
+
+## Technical gotchas learned during M5
+
+- **`$derived(() => ...)` stores a function, not a memoized value.** In Svelte 5, `$derived(expr)` is for simple expressions. For multi-statement computations, use `$derived.by(() => { ... })`. The `$derived(() => ...)` form creates a closure that's never actually memoized — the template then needs `value()` call syntax, which defeats the entire reactivity model. Always use `$derived.by` for anything with a function body.
+- **SvelteKit `+server.ts` routes bypass `+layout.server.ts` auth guards.** The `(app)` layout group's redirect-if-unauthenticated logic only protects page loads, not standalone API endpoints. Every `+server.ts` inside `(app)` must have its own `if (!locals.user)` guard, or unauthenticated requests hit `locals.user!` non-null assertions and crash with a 500.
+- **`navigator` is undefined during SSR, and `typeof window` doesn't guard it.** `typeof window !== 'undefined' && !navigator.onLine` crashes server-side because `navigator` is a separate global from `window`. Guard both: `typeof window !== 'undefined' && typeof navigator !== 'undefined' && !navigator.onLine`.
+- **Public routes need standalone PocketBase clients.** Routes outside the `(app)` group have no user session. For reading protected collections (trips, phases, etc.) in a public archive view, create a fresh `new PocketBase()` and auth as admin via `_superusers.authWithPassword()`. This runs per-request — acceptable for v1 traffic but would need caching under load.
+
+---
+
+## Technical gotchas learned during M3
+
+- **PocketBase `created_by` is not auto-populated.** When a collection has a `created_by` relation field, server actions must explicitly look up the current user's trip_member record and include `created_by: membership.id` in the create payload. PB won't infer it from the auth context.
+- **PocketBase datetime strings need splitting before Date construction.** PB stores dates as `YYYY-MM-DD HH:MM:SS.sssZ`. Passing the full string to `new Date()` with an appended `T00:00:00` creates an invalid date. Always extract the date part first: `dateStr.split(/[T ]/)[0]`.
+- **FAB positioning must account for BottomNav.** A fixed-position FAB with `bottom-5` gets cut off by the fixed bottom nav. Use `bottom-20` minimum to clear it.
+- **Playwright `.or()` for cross-test data dependencies.** Tests that depend on data from prior tests are fragile. Use `locator.or(fallbackLocator)` to accept either state (e.g., expense exists OR empty state shows) so each test is self-contained.
+- **Browser scroll-to-change on number inputs.** Users scrolling past a focused `<input type="number">` unknowingly change its value. Fix: global wheel event handler in root layout that blurs number inputs on scroll. Add once, never think about it again.
+- **Svelte 5 `{@const}` placement.** `{@const}` tags can only appear as direct children of block elements (`{#if}`, `{#each}`, etc.), not at arbitrary positions in the template. Wrap in `{#if true}` if needed outside a block.
 
 ---
 
