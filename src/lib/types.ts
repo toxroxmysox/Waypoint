@@ -22,6 +22,7 @@ export interface Trip extends RecordModel {
 	auto_approve_suggestions: boolean;
 	created_by: string;
 	archived: boolean;
+	vault_password_hash: string;
 }
 
 export type MemberRole = 'owner' | 'co_owner' | 'traveler' | 'viewer';
@@ -228,4 +229,32 @@ export interface TripBudget {
 	categories: BudgetCategory[];
 	created: string;
 	updated: string;
+}
+
+// M4 — Execution types
+
+export interface Vote {
+	id: string;
+	trip: string;
+	item: string;
+	member: string;
+	created: string;
+}
+
+export interface VaultEntry {
+	id: string;
+	trip: string;
+	encrypted_title: string;
+	encrypted_body: string;
+	created_by: string;
+	created: string;
+	updated: string;
+}
+
+export interface VaultEntryDecrypted {
+	id: string;
+	title: string;
+	body: string;
+	created_by: string;
+	created: string;
 }

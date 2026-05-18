@@ -1,9 +1,9 @@
 import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Item, ChecklistItem, TripMember, Comment } from '$lib/types';
+import type { Item, ChecklistItem, TripMember, Vote, Comment } from '$lib/types';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
-	const { trip, phases, days } = await parent();
+	const { trip, membership, phases, days } = await parent();
 
 	let item: Item;
 	try {
@@ -16,7 +16,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		error(404, 'Item not found');
 	}
 
-	const [checklistItems, members, rawComments] = await Promise.all([
+	const [checklistItems, members, rawComments, votes, alternates] = await Promise.all([
 		item.type === 'checklist'
 			? locals.pb.collection('checklist_items').getFullList<ChecklistItem>({
 					filter: `item = "${item.id}"`,
@@ -31,7 +31,16 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 			filter: `target_item = "${item.id}" && target_type = "comment" && status = "approved"`,
 			sort: 'created',
 			expand: 'author'
-		}).catch(() => [] as Comment[])
+		}).catch(() => [] as Comment[]),
+		locals.pb.collection('votes').getFullList<Vote>({
+			filter: `item = "${item.id}"`
+		}),
+		item.day
+			? locals.pb.collection('items').getFullList<Item>({
+					filter: `day = "${item.day}" && slot = "${item.slot}" && id != "${item.id}"`,
+					sort: 'rank'
+				})
+			: Promise.resolve([])
 	]);
 
 	// Annotate comments with author display info from the expand.
@@ -47,7 +56,9 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const day = item.day ? days.find((d) => d.id === item.day) ?? null : null;
 	const phase = item.phase ? phases.find((p) => p.id === item.phase) ?? null : null;
 
-	return { item, checklistItems, members, comments, itemDay: day, itemPhase: phase };
+	const myVote = votes.find((v) => v.member === membership.id) ?? null;
+
+	return { item, checklistItems, members, comments, votes, myVote, alternates, itemDay: day, itemPhase: phase };
 };
 
 async function getMembership(locals: App.Locals, tripId: string): Promise<TripMember> {
@@ -198,6 +209,104 @@ export const actions: Actions = {
 			return { success: true };
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : 'Failed to reorder.';
+			return fail(500, { error: message });
+		}
+	},
+
+	vote: async ({ params, locals }) => {
+		try {
+			const targetItem = await locals.pb.collection('items').getOne(params.itemId);
+			const membership = await locals.pb
+				.collection('trip_members')
+				.getFirstListItem<TripMember>(`trip = "${targetItem.trip}" && user = "${locals.user!.id}"`);
+			await locals.pb.collection('votes').create({
+				trip: targetItem.trip,
+				item: targetItem.id,
+				member: membership.id
+			});
+			return { success: true };
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : 'Failed to vote.';
+			return fail(400, { error: message });
+		}
+	},
+
+	unvote: async ({ request, locals }) => {
+		const data = await request.formData();
+		const voteId = data.get('vote_id')?.toString();
+		if (!voteId) return fail(400, { error: 'Missing vote_id.' });
+
+		try {
+			await locals.pb.collection('votes').delete(voteId);
+			return { success: true };
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : 'Failed to remove vote.';
+			return fail(400, { error: message });
+		}
+	},
+
+	promote: async ({ params, locals }) => {
+		try {
+			const targetItem = await locals.pb.collection('items').getOne<Item>(params.itemId);
+			if (targetItem.rank === 0) return fail(400, { error: 'Item is already primary.' });
+
+			// Find the current primary (rank 0) for this day+slot
+			const primaries = await locals.pb.collection('items').getFullList<Item>({
+				filter: `day = "${targetItem.day}" && slot = "${targetItem.slot}" && rank = 0 && id != "${targetItem.id}"`
+			});
+
+			// Swap: demote current primary, promote this item
+			for (const p of primaries) {
+				await locals.pb.collection('items').update(p.id, { rank: targetItem.rank });
+			}
+			await locals.pb.collection('items').update(targetItem.id, { rank: 0 });
+
+			return { success: true };
+		} catch (err: unknown) {
+			if (isRedirect(err)) throw err;
+			const message = err instanceof Error ? err.message : 'Failed to promote.';
+			return fail(500, { error: message });
+		}
+	},
+
+	demote: async ({ params, locals }) => {
+		try {
+			const targetItem = await locals.pb.collection('items').getOne<Item>(params.itemId);
+			if (targetItem.rank !== 0) return fail(400, { error: 'Item is not primary.' });
+
+			// Find the highest-ranked alternate
+			const alts = await locals.pb.collection('items').getFullList<Item>({
+				filter: `day = "${targetItem.day}" && slot = "${targetItem.slot}" && rank > 0 && id != "${targetItem.id}"`,
+				sort: 'rank'
+			});
+
+			const nextRank = alts.length > 0 ? alts[alts.length - 1].rank + 1 : 1;
+			await locals.pb.collection('items').update(targetItem.id, { rank: nextRank });
+
+			return { success: true };
+		} catch (err: unknown) {
+			if (isRedirect(err)) throw err;
+			const message = err instanceof Error ? err.message : 'Failed to demote.';
+			return fail(500, { error: message });
+		}
+	},
+
+	moveItem: async ({ request, params, locals }) => {
+		const data = await request.formData();
+		const newDay = data.get('day')?.toString() || '';
+		const newSlot = data.get('slot')?.toString() || 'anytime';
+		const newPhase = data.get('phase')?.toString() || '';
+
+		try {
+			await locals.pb.collection('items').update(params.itemId, {
+				day: newDay,
+				slot: newSlot,
+				phase: newPhase
+			});
+
+			return { success: true };
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : 'Failed to move item.';
 			return fail(500, { error: message });
 		}
 	}

@@ -9,6 +9,8 @@
 	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
 	import { titleCase } from '$lib/utils/format';
 
+	import VoteButtons from '$lib/components/VoteButtons.svelte';
+	import MoveItemSheet from '$lib/components/MoveItemSheet.svelte';
 	import type { Comment } from '$lib/types';
 
 	let { data, form } = $props();
@@ -16,6 +18,12 @@
 	let fields = $derived(itemFieldConfig[data.item.type]);
 	let confirmDelete = $state(false);
 	let deleting = $state(false);
+	let moveSheetOpen = $state(false);
+	let promoteLoading = $state(false);
+	let demoteLoading = $state(false);
+	const isAlternate = $derived(data.item.rank > 0);
+	const isPrimary = $derived(data.item.rank === 0 && data.alternates.length > 0);
+	const itemUrl = $derived(`/trips/${data.trip.slug}/items/${data.item.id}`);
 
 	// Comments
 	let commentText = $state('');
@@ -54,12 +62,21 @@
 
 <NavBar title={data.item.title} subtitle={data.trip.title} back {backHref}>
 	{#snippet right()}
-		<a
-			href="/trips/{data.trip.slug}/items/{data.item.id}/edit"
-			class="text-ink-soft hover:text-ink text-[12px] font-semibold"
-		>
-			Edit
-		</a>
+		<div class="flex items-center gap-2">
+			<button
+				type="button"
+				onclick={() => (moveSheetOpen = true)}
+				class="border-line text-ink-muted hover:text-ink-soft rounded-md border px-3 py-1.5 text-xs font-semibold"
+			>
+				Move
+			</button>
+			<a
+				href="/trips/{data.trip.slug}/items/{data.item.id}/edit"
+				class="text-ink-soft hover:text-ink text-[12px] font-semibold"
+			>
+				Edit
+			</a>
+		</div>
 	{/snippet}
 </NavBar>
 
@@ -85,6 +102,55 @@
 					<h2 class="font-display text-ink mt-2 text-xl leading-tight font-semibold">
 						{data.item.title}
 					</h2>
+					<div class="mt-3 flex items-center gap-3">
+						<VoteButtons
+							voteCount={data.votes.length}
+							myVoteId={data.myVote?.id ?? null}
+							{itemUrl}
+						/>
+						{#if isAlternate}
+							<form
+								method="POST"
+								action="?/promote"
+								use:enhance={() => {
+									promoteLoading = true;
+									return async ({ update }) => {
+										promoteLoading = false;
+										await update();
+									};
+								}}
+							>
+								<button
+									type="submit"
+									disabled={promoteLoading}
+									class="border-moss/40 text-moss hover:bg-moss/10 rounded-full border px-3 py-1 text-xs font-semibold"
+								>
+									{promoteLoading ? '...' : 'Promote to primary'}
+								</button>
+							</form>
+						{/if}
+						{#if isPrimary}
+							<form
+								method="POST"
+								action="?/demote"
+								use:enhance={() => {
+									demoteLoading = true;
+									return async ({ update }) => {
+										demoteLoading = false;
+										await update();
+									};
+								}}
+							>
+								<button
+									type="submit"
+									disabled={demoteLoading}
+									class="border-clay/40 text-clay hover:bg-clay/10 rounded-full border px-3 py-1 text-xs font-semibold"
+								>
+									{demoteLoading ? '...' : 'Demote'}
+								</button>
+							</form>
+						{/if}
+					</div>
 				</div>
 			</div>
 
@@ -126,6 +192,34 @@
 							: ''}
 					</p>
 				{/if}
+			</div>
+		</Card>
+	{/if}
+
+	{#if data.alternates.length > 0}
+		<Card>
+			<div class="p-4 space-y-2">
+				<SectionH>
+					{#snippet right()}
+						<span class="text-ink-muted text-xs">{data.alternates.length} alternate{data.alternates.length === 1 ? '' : 's'}</span>
+					{/snippet}
+					Alternates
+				</SectionH>
+				{#each data.alternates as alt}
+					<a
+						href="/trips/{data.trip.slug}/items/{alt.id}"
+						class="border-line hover:border-ink-muted flex items-center gap-3 rounded-lg border p-3"
+					>
+						<TypeIcon type={alt.type} sub={alt.subtype} size={28} />
+						<div class="min-w-0 flex-1">
+							<p class="text-ink text-sm font-semibold truncate">{alt.title}</p>
+							{#if alt.location_name}
+								<p class="text-ink-muted text-[12px] truncate">{alt.location_name}</p>
+							{/if}
+						</div>
+						<span class="text-ink-muted text-[11px]">Rank {alt.rank}</span>
+					</a>
+				{/each}
 			</div>
 		</Card>
 	{/if}
@@ -465,3 +559,13 @@
 		{/if}
 	</div>
 </main>
+
+<MoveItemSheet
+	bind:open={moveSheetOpen}
+	days={data.days}
+	phases={data.phases}
+	currentDay={data.item.day}
+	currentSlot={data.item.slot}
+	currentPhase={data.item.phase}
+	actionUrl={itemUrl}
+/>
