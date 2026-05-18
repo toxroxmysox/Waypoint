@@ -171,6 +171,65 @@
 		</div>
 	</Card>
 
+	<Card>
+		<div class="p-4 space-y-3">
+			<h3 class="text-ink text-sm font-semibold">Public Archive</h3>
+			<p class="text-ink-muted text-xs">
+				When enabled, a public read-only link is generated after the trip is archived.
+			</p>
+
+			{#if form?.archiveError}
+				<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">{form.archiveError}</div>
+			{/if}
+			{#if form?.archiveSuccess}
+				<div class="border-moss/30 bg-moss-tint text-moss rounded-md border p-3 text-sm">Archive settings saved.</div>
+			{/if}
+
+			<form
+				method="POST"
+				action="?/toggleArchive"
+				use:enhance
+				class="space-y-3"
+			>
+				<label class="flex items-center gap-3">
+					<input
+						type="checkbox"
+						name="archive_enabled"
+						checked={data.trip.archive_enabled}
+						class="border-line h-4 w-4 rounded"
+					/>
+					<span class="text-ink text-sm font-medium">Enable public archive</span>
+				</label>
+
+				<div>
+					<label for="archive_publish_after_days" class="text-ink-soft block text-sm font-medium">
+						Publish delay (days after archiving)
+					</label>
+					<input
+						type="number"
+						id="archive_publish_after_days"
+						name="archive_publish_after_days"
+						min="0"
+						max="365"
+						value={data.trip.archive_publish_after_days ?? 7}
+						class="border-line bg-surface text-ink mt-1 block w-24 rounded-md border px-3 py-2 text-sm"
+					/>
+				</div>
+
+				{#if data.trip.public_share_token}
+					<div>
+						<p class="text-ink-soft text-sm font-medium">Share URL</p>
+						<div class="bg-surface-2 mt-1 rounded-md px-3 py-2">
+							<code class="text-ink text-xs break-all">/archive/{data.trip.public_share_token}</code>
+						</div>
+					</div>
+				{/if}
+
+				<Button type="submit" variant="moss" size="sm">Save archive settings</Button>
+			</form>
+		</div>
+	</Card>
+
 	<div class="border-clay/30 rounded-lg border p-4">
 		<h3 class="text-clay text-sm font-semibold">Danger zone</h3>
 		<p class="text-clay/80 mt-1 text-xs">

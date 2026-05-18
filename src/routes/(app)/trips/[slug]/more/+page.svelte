@@ -46,6 +46,24 @@
 		</Card>
 	{/if}
 
+	{#if isOwnerOrCoOwner}
+		<Card href="/trips/{data.trip.slug}/closeout">
+			<div class="flex items-center gap-3 p-4">
+				<svg class="text-ink-soft shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M9 11l3 3L22 4" />
+					<path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+				</svg>
+				<div class="min-w-0 flex-1">
+					<p class="text-ink text-sm font-semibold">Closeout</p>
+					<p class="text-ink-muted text-[12px]">Review each day and archive the trip</p>
+				</div>
+				<svg class="text-ink-muted shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="m9 18 6-6-6-6" />
+				</svg>
+			</div>
+		</Card>
+	{/if}
+
 	<Card href="/trips/{data.trip.slug}/settings">
 		<div class="flex items-center gap-3 p-4">
 			<svg class="text-ink-soft shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
