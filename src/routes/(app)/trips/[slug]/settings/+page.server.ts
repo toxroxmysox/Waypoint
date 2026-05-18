@@ -1,6 +1,7 @@
 import { fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { TripMember } from '$lib/types';
+import { hashVaultPassword } from '$lib/utils/vault-password';
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { trip, membership } = await parent();
@@ -70,6 +71,40 @@ export const actions: Actions = {
 			if (isRedirect(err)) throw err;
 			const message = err instanceof Error ? err.message : 'Failed to delete trip.';
 			return fail(500, { error: message });
+		}
+	},
+
+	setVaultPassword: async ({ request, locals, params }) => {
+		const data = await request.formData();
+		const password = data.get('vault_password')?.toString();
+		const confirm = data.get('vault_password_confirm')?.toString();
+
+		if (!password || password.length < 4) {
+			return fail(400, { vaultError: 'Password must be at least 4 characters.' });
+		}
+		if (password !== confirm) {
+			return fail(400, { vaultError: 'Passwords do not match.' });
+		}
+
+		try {
+			const trip = await locals.pb
+				.collection('trips')
+				.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+
+			const membership = await locals.pb
+				.collection('trip_members')
+				.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}"`);
+			if (membership.role !== 'owner' && membership.role !== 'co_owner') {
+				return fail(403, { vaultError: 'Only trip owners can set the vault password.' });
+			}
+
+			const hash = hashVaultPassword(password);
+			await locals.pb.collection('trips').update(trip.id, { vault_password_hash: hash });
+
+			return { vaultSuccess: true };
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : 'Failed to set vault password.';
+			return fail(500, { vaultError: message });
 		}
 	}
 };
