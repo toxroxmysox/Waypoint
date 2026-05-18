@@ -106,5 +106,73 @@ export const actions: Actions = {
 			const message = err instanceof Error ? err.message : 'Failed to set vault password.';
 			return fail(500, { vaultError: message });
 		}
+	},
+
+	toggleArchive: async ({ request, locals, params }) => {
+		const data = await request.formData();
+		const archiveEnabled = data.get('archive_enabled') === 'on';
+		const publishDays = parseInt(data.get('archive_publish_after_days')?.toString() || '7', 10);
+
+		try {
+			const trip = await locals.pb
+				.collection('trips')
+				.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+
+			const membership = await locals.pb
+				.collection('trip_members')
+				.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}"`);
+			if (membership.role !== 'owner' && membership.role !== 'co_owner') {
+				return fail(403, { archiveError: 'Only trip owners can change archive settings.' });
+			}
+
+			const updates: Record<string, unknown> = {
+				archive_enabled: archiveEnabled,
+				archive_publish_after_days: publishDays
+			};
+
+			if (archiveEnabled && !trip.public_share_token) {
+				const { generateArchiveToken } = await import('$lib/utils/archive-token');
+				updates.public_share_token = generateArchiveToken();
+			}
+
+			await locals.pb.collection('trips').update(trip.id, updates);
+			const updatedTrip = await locals.pb.collection('trips').getOne(trip.id);
+
+			return {
+				archiveSuccess: true,
+				shareToken: updatedTrip.public_share_token
+			};
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : 'Failed to update archive settings.';
+			return fail(500, { archiveError: message });
+		}
+	},
+
+	archiveTrip: async ({ locals, params }) => {
+		try {
+			const trip = await locals.pb
+				.collection('trips')
+				.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+
+			const membership = await locals.pb
+				.collection('trip_members')
+				.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}"`);
+			if (membership.role !== 'owner' && membership.role !== 'co_owner') {
+				return fail(403, { error: 'Only trip owners can archive a trip.' });
+			}
+
+			const updates: Record<string, unknown> = { archived: true };
+
+			if (trip.archive_enabled && !trip.public_share_token) {
+				const { generateArchiveToken } = await import('$lib/utils/archive-token');
+				updates.public_share_token = generateArchiveToken();
+			}
+
+			await locals.pb.collection('trips').update(trip.id, updates);
+			return { archived: true };
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : 'Failed to archive trip.';
+			return fail(500, { error: message });
+		}
 	}
 };
