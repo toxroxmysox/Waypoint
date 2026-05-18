@@ -1,6 +1,6 @@
 # M4 Status
 
-**Status: COMPLETE.** Started 2026-05-17. Ready for PR to main.
+**Status: MERGED.** Started 2026-05-17. Merged to main 2026-05-18 via [PR #7](https://github.com/toxroxmysox/Waypoint/pull/7).
 
 ---
 
@@ -83,9 +83,27 @@ Tasks:
 - **`beforeinstallprompt` only fires on Android Chrome.** iOS Safari has no programmatic install prompt — must show manual "Add to Home Screen" instructions with share icon. Check `navigator.userAgent` for iOS detection.
 - **Parallel subagent dispatch works well for independent UI tasks.** M4d Tasks 1+2+3 and M4e Tasks 1+2+3 were dispatched in parallel batches, cutting wall-clock time significantly without conflicts.
 - **Visual verification requires PocketBase running.** In worktree-based development, PB isn't running, so preview verification must be deferred to dogfooding on the main branch with a live PB instance.
+- **Always check for field conflicts across migrations.** Migration 0026 re-added `vault_password_hash` that already existed in 0002 with `hidden: true` — the re-add would have stripped the hidden flag and exposed the hash to clients. Caught in code review and deleted.
+- **PocketBase `hidden: true` fields aren't returned in API responses.** Use this for sensitive fields like password hashes. But verify the TypeScript interface doesn't expose them to the client via SvelteKit data serialization — the `parent()` data flow sends the full record object.
+- **Service worker `caches.match()` returns `undefined`, not `Response`.** Casting to `Promise<Response>` hides the undefined and crashes `respondWith()` when offline. Always handle the undefined case.
 
 ---
 
 ## Open decisions
 
 None.
+
+---
+
+## Post-merge review notes
+
+Three-agent code review found and fixed:
+1. SW navigation fallback crash (undefined → Response cast)
+2. TripModeCard null guard on confirmation_codes
+3. Redundant migration 0026 (would strip hidden flag on vault_password_hash)
+4. Settings template: replaced hash access with server-derived boolean
+
+Deferred to M6 polish:
+- Rate limiting on vault unlock endpoint
+- A2HS beforeinstallprompt listener cleanup
+- Timezone documentation in deploy config (server must run TZ=UTC)
