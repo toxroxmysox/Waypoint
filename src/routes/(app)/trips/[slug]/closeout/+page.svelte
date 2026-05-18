@@ -11,7 +11,7 @@
 	let finishing = $state(false);
 
 	const isOffline = $derived(
-		typeof window !== 'undefined' && !navigator.onLine
+		typeof window !== 'undefined' && typeof navigator !== 'undefined' && !navigator.onLine
 	);
 
 	const sortedDays = $derived(
@@ -27,7 +27,7 @@
 		return data.items.filter((i) => i.day === day.id);
 	}
 
-	const summary = $derived(() => {
+	const summary = $derived.by(() => {
 		let done = 0;
 		let planned = 0;
 		let considered = 0;
@@ -116,19 +116,19 @@
 			<div class="mt-4 space-y-2">
 				<div class="flex justify-between text-sm">
 					<span class="text-ink-muted">Done</span>
-					<span class="font-medium text-green-600">{summary().done}</span>
+					<span class="font-medium text-green-600">{summary.done}</span>
 				</div>
 				<div class="flex justify-between text-sm">
 					<span class="text-ink-muted">Skipped (stayed planned)</span>
-					<span class="text-ink-muted font-medium">{summary().planned}</span>
+					<span class="text-ink-muted font-medium">{summary.planned}</span>
 				</div>
 				<div class="flex justify-between text-sm">
 					<span class="text-ink-muted">Swapped (considered)</span>
-					<span class="font-medium text-amber-600">{summary().considered}</span>
+					<span class="font-medium text-amber-600">{summary.considered}</span>
 				</div>
 				<div class="border-border flex justify-between border-t pt-2 text-sm">
 					<span class="text-ink font-medium">Total items</span>
-					<span class="text-ink font-medium">{summary().total}</span>
+					<span class="text-ink font-medium">{summary.total}</span>
 				</div>
 			</div>
 

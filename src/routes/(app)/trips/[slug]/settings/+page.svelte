@@ -165,7 +165,7 @@
 					/>
 				</div>
 				<Button type="submit" variant="moss" size="sm">
-					{data.trip.vault_password_hash ? 'Update password' : 'Set password'}
+					{data.hasVaultPassword ? 'Update password' : 'Set password'}
 				</Button>
 			</form>
 		</div>

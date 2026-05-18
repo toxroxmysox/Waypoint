@@ -26,14 +26,14 @@
 		})
 	);
 
-	const phaseName = $derived(() => {
+	const phaseName = $derived.by(() => {
 		if (!day.phases || day.phases.length === 0) return null;
 		return phaseMap.get(day.phases[0])?.name || null;
 	});
 
 	const slotOrder = ['morning', 'afternoon', 'evening', 'anytime'] as const;
 
-	const itemsBySlot = $derived(() => {
+	const itemsBySlot = $derived.by(() => {
 		const grouped = new Map<string, Item[]>();
 		for (const slot of slotOrder) {
 			const slotItems = items.filter((i) => (i.slot || 'anytime') === slot);
@@ -51,8 +51,8 @@
 	<div class="flex items-center justify-between border-b border-border/50 px-4 py-3">
 		<div>
 			<h3 class="text-ink text-base font-semibold">{dayDate}</h3>
-			{#if phaseName()}
-				<p class="text-ink-muted text-xs">{phaseName()}</p>
+			{#if phaseName}
+				<p class="text-ink-muted text-xs">{phaseName}</p>
 			{/if}
 		</div>
 
@@ -89,7 +89,7 @@
 		<p class="text-ink-muted px-4 py-6 text-center text-sm">No items for this day.</p>
 	{:else}
 		{#each slotOrder as slot}
-			{@const slotItems = itemsBySlot().get(slot)}
+			{@const slotItems = itemsBySlot.get(slot)}
 			{#if slotItems && slotItems.length > 0}
 				<div>
 					<div class="bg-surface-2 px-4 py-1.5">

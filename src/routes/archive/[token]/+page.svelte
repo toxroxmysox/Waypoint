@@ -5,7 +5,7 @@
 
 	let { data } = $props();
 
-	const dateRange = $derived(() => {
+	const dateRange = $derived.by(() => {
 		const fmt = (d: string) =>
 			new Date(d.replace(' ', 'T')).toLocaleDateString('en-US', {
 				month: 'long',
@@ -15,7 +15,7 @@
 		return `${fmt(data.trip.start_date)} – ${fmt(data.trip.end_date)}`;
 	});
 
-	const consideredByType = $derived(() => {
+	const consideredByType = $derived.by(() => {
 		const grouped = new Map<string, typeof data.consideredItems>();
 		for (const item of data.consideredItems) {
 			const type = item.type || 'activity';
@@ -38,7 +38,7 @@
 		{#if data.trip.location_summary}
 			<p class="text-ink-muted mt-2 font-serif text-lg italic">{data.trip.location_summary}</p>
 		{/if}
-		<p class="text-ink-muted mt-2 text-sm">{dateRange()}</p>
+		<p class="text-ink-muted mt-2 text-sm">{dateRange}</p>
 		{#if data.trip.photo_album_url}
 			<a
 				href={data.trip.photo_album_url}
@@ -89,7 +89,7 @@
 
 			{#if showConsidered}
 				<div class="mt-4 space-y-4">
-					{#each [...consideredByType().entries()] as [type, items] (type)}
+					{#each [...consideredByType.entries()] as [type, items] (type)}
 						<div class="bg-surface border-border rounded-xl border p-4">
 							<h4 class="text-ink mb-3 text-sm font-semibold">{titleCase(type)}s</h4>
 							<ul class="space-y-2">

@@ -61,6 +61,7 @@
 		<select
 			bind:value={type}
 			name="type"
+			aria-label="Item type"
 			class="border-border bg-surface text-ink rounded-md border px-2 py-2 text-sm"
 		>
 			<option value="activity">Activity</option>

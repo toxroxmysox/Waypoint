@@ -113,6 +113,10 @@ export const actions: Actions = {
 		const archiveEnabled = data.get('archive_enabled') === 'on';
 		const publishDays = parseInt(data.get('archive_publish_after_days')?.toString() || '7', 10);
 
+		if (isNaN(publishDays) || publishDays < 0) {
+			return fail(400, { archiveError: 'Publish delay must be a non-negative number.' });
+		}
+
 		try {
 			const trip = await locals.pb
 				.collection('trips')

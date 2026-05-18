@@ -3,13 +3,17 @@ import type { Trip, Phase, Day, Item, TripBudget } from '$lib/types';
 import { buildTripExport } from '$lib/utils/export';
 
 export const GET: RequestHandler = async ({ params, locals }) => {
+	if (!locals.user) {
+		return new Response('Unauthorized', { status: 401 });
+	}
+
 	const trip = await locals.pb
 		.collection('trips')
 		.getFirstListItem<Trip>(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
 
 	await locals.pb
 		.collection('trip_members')
-		.getFirstListItem(`trip = "${trip.id}" && user = "${locals.user!.id}"`);
+		.getFirstListItem(`trip = "${trip.id}" && user = "${locals.user.id}"`);
 
 	const [phases, days, items] = await Promise.all([
 		locals.pb.collection('phases').getFullList<Phase>({
