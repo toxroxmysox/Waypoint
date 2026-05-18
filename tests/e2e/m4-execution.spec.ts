@@ -21,15 +21,15 @@ test.describe('M4 Execution', () => {
 			await dayLink.click();
 			await page.waitForURL('**/days/**');
 
-			// Click first item
-			const itemLink = page.locator('a[href*="/items/"]').first();
+			// Click an existing item link (exclude /items/new which is the "add" link)
+			const itemLink = page.locator('a[href*="/items/"]:not([href*="/items/new"])').first();
 			if (await itemLink.isVisible()) {
 				await itemLink.click();
 				await page.waitForURL('**/items/**');
 
-				// Vote button should exist
-				const voteBtn = page.getByLabel(/vote/i).first();
-				await expect(voteBtn.or(page.getByLabel(/remove vote/i).first())).toBeVisible();
+				// Vote button should exist (aria-label="Vote for this option" or "Remove vote")
+				const voteBtn = page.getByLabel('Vote for this option');
+				await expect(voteBtn.or(page.getByLabel('Remove vote'))).toBeVisible();
 			}
 		}
 	});
@@ -77,7 +77,7 @@ test.describe('M4 Execution', () => {
 
 		// Banner may or may not show depending on browser (Chrome shows, others may not)
 		// Just verify the page loads without errors
-		await expect(page.getByText('Trips')).toBeVisible({ timeout: 5000 });
+		await expect(page.getByRole('heading', { name: 'Waypoint' })).toBeVisible({ timeout: 5000 });
 	});
 
 	test('mobile responsive — vault at 375px', async ({ page }) => {
@@ -85,8 +85,10 @@ test.describe('M4 Execution', () => {
 		await page.goto(`${BASE}/trips`);
 		const tripCard = page.locator('a[href*="/trips/"]').first();
 		await tripCard.click();
+		await page.waitForURL('**/trips/**');
 
-		await page.getByText('More').click();
+		await page.locator('nav').getByText('More').click();
+		await page.waitForURL('**/more');
 		await page.getByText('Vault').click();
 		await page.waitForURL('**/vault');
 
