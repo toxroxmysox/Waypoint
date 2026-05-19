@@ -1,6 +1,6 @@
 <script lang="ts">
 	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
-	import { titleCase } from '$lib/utils/format';
+	import { titleCase, formatTime } from '$lib/utils/format';
 	import type { Day, Phase, ItemType } from '$lib/types';
 
 	type SanitizedItem = {
@@ -91,7 +91,7 @@
 								{/if}
 								{#if item.start_time}
 									<p class="text-ink-muted text-xs">
-										{item.start_time}{#if item.end_time} – {item.end_time}{/if}
+										{formatTime(item.start_time)}{#if item.end_time} – {formatTime(item.end_time)}{/if}
 									</p>
 								{/if}
 								{#if item.description}

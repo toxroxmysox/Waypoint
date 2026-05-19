@@ -1,6 +1,8 @@
 import type { PageServerLoad } from './$types';
 import type { Day, Item } from '$lib/types';
 
+const SLOT_ORDER: Record<string, number> = { morning: 0, afternoon: 1, evening: 2, anytime: 3 };
+
 export const load: PageServerLoad = async ({ locals, parent }) => {
 	const { trip, days } = await parent();
 
@@ -30,9 +32,10 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 	const todayItems = today
 		? await locals.pb.collection('items').getFullList<Item>({
 				filter: `day = "${today.id}"`,
-				sort: 'slot,start_time,rank'
+				sort: 'start_time,rank'
 			})
 		: [];
+	todayItems.sort((a, b) => (SLOT_ORDER[a.slot] ?? 9) - (SLOT_ORDER[b.slot] ?? 9));
 
 	// Load items for upcoming days
 	const upcomingDayIds = upcomingDays.map((d) => d.id);
@@ -40,9 +43,10 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 		upcomingDayIds.length > 0
 			? await locals.pb.collection('items').getFullList<Item>({
 					filter: upcomingDayIds.map((id) => `day = "${id}"`).join(' || '),
-					sort: 'day,slot,start_time,rank'
+					sort: 'day,start_time,rank'
 				})
 			: [];
+	upcomingItems.sort((a, b) => (SLOT_ORDER[a.slot] ?? 9) - (SLOT_ORDER[b.slot] ?? 9));
 
 	return {
 		today,

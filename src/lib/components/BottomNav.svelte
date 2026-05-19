@@ -6,6 +6,19 @@
 
 	const isOwnerOrCoOwner = $derived(role === 'owner' || role === 'co_owner');
 
+	let inputFocused = $state(false);
+
+	function handleFocusIn(e: FocusEvent) {
+		const tag = (e.target as HTMLElement)?.tagName;
+		if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+			inputFocused = true;
+		}
+	}
+
+	function handleFocusOut() {
+		inputFocused = false;
+	}
+
 	let activeTab = $derived.by(() => {
 		const path = page.url.pathname;
 		if (path.includes('/expenses') || path.includes('/budget')) return 'money';
@@ -22,6 +35,9 @@
 	]);
 </script>
 
+<svelte:window onfocusin={handleFocusIn} onfocusout={handleFocusOut} />
+
+{#if !inputFocused}
 <nav class="border-line bg-paper/95 fixed bottom-0 left-0 right-0 z-40 flex border-t backdrop-blur safe-bottom">
 	{#each tabs as tab}
 		{@const active = activeTab === tab.id}
@@ -61,6 +77,7 @@
 		</a>
 	{/each}
 </nav>
+{/if}
 
 <style>
 	.safe-bottom {

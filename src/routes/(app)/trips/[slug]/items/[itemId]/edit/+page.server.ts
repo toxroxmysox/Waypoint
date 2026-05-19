@@ -1,6 +1,7 @@
 import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Item, ChecklistItem, TripMember } from '$lib/types';
+import { timeToDatetime, datetimeToTime } from '$lib/utils/format';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, phases, days } = await parent();
@@ -29,7 +30,17 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		})
 	]);
 
-	return { item, checklistItems, members, phases, days };
+	return {
+		item: {
+			...item,
+			start_time: datetimeToTime(item.start_time ?? ''),
+			end_time: datetimeToTime(item.end_time ?? '')
+		},
+		checklistItems,
+		members,
+		phases,
+		days
+	};
 };
 
 export const actions: Actions = {
@@ -83,8 +94,8 @@ export const actions: Actions = {
 				slot,
 				location_name: locationName,
 				location_address: locationAddress,
-				start_time: startTime,
-				end_time: endTime,
+				start_time: timeToDatetime(startTime),
+				end_time: timeToDatetime(endTime),
 				booked,
 				confirmation_codes: confirmationCodes,
 				reservation_url: reservationUrl,
