@@ -36,3 +36,6 @@ backend/pocketbase
 # Editor / personal
 .obsidian/
 .claude/scratch/
+.claude/worktrees/
+.claude/settings.local.json
+.wolf/designqc-captures/

@@ -1,12 +1,12 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-10T19:12:30.710Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-19T13:26:33.366Z
 > Files: 530 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ./
 
 - `.dockerignore` (~31 tok)
-- `.gitignore` — Git ignore rules (~95 tok)
+- `.gitignore` — Git ignore rules (~114 tok)
 - `.npmrc` (~6 tok)
 - `.prettierignore` — Package Managers (~29 tok)
 - `.prettierrc` — Prettier configuration (~82 tok)
