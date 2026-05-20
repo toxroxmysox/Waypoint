@@ -7,6 +7,8 @@
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import SectionH from '$lib/components/ui/SectionH.svelte';
+	import PlacesAutocomplete from '$lib/components/PlacesAutocomplete.svelte';
+	import FlightLookup from '$lib/components/FlightLookup.svelte';
 	import { titleCase } from '$lib/utils/format';
 	import { untrack } from 'svelte';
 
@@ -43,7 +45,48 @@
 			: (submitAsSuggestion ? 'Submit suggestion' : suggestionId ? 'Approve with edits' : 'Create item')
 	);
 
+	let selectedSubtype = $state('');
 	let fields = $derived(itemFieldConfig[selectedType]);
+
+	let locationCoords = $state('');
+	let googlePlaceId = $state('');
+
+	function handlePlaceSelect(place: {
+		name: string;
+		address: string;
+		coords: { lat: number; lng: number };
+		placeId: string;
+	}) {
+		const nameInput = document.getElementById('location_name') as HTMLInputElement;
+		const addrInput = document.getElementById('location_address') as HTMLInputElement;
+		if (nameInput) nameInput.value = place.name;
+		if (addrInput) addrInput.value = place.address;
+		locationCoords = JSON.stringify(place.coords);
+		googlePlaceId = place.placeId;
+		markDirty();
+	}
+
+	function handleFlightSelect(flight: {
+		title: string;
+		start_time: string;
+		end_time: string;
+		start_tz: string;
+		end_tz: string;
+		location_name: string;
+		description: string;
+	}) {
+		const titleInput = document.getElementById('title') as HTMLInputElement;
+		const descInput = document.getElementById('description') as HTMLTextAreaElement;
+		const startInput = document.getElementById('start_time') as HTMLInputElement;
+		const endInput = document.getElementById('end_time') as HTMLInputElement;
+		const locInput = document.getElementById('location_name') as HTMLInputElement;
+		if (titleInput) titleInput.value = flight.title;
+		if (descInput) descInput.value = flight.description;
+		if (startInput) startInput.value = flight.start_time;
+		if (endInput) endInput.value = flight.end_time;
+		if (locInput) locInput.value = flight.location_name;
+		markDirty();
+	}
 
 	let confirmationCodes = $state<{ label: string; value: string }[]>(
 		untrack(() => Array.isArray(data.prefill?.confirmation_codes) ? data.prefill.confirmation_codes : [])
@@ -145,6 +188,7 @@
 						<select
 							id="subtype"
 							name="subtype"
+							bind:value={selectedSubtype}
 							class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 						>
 							<option value="">None</option>
@@ -152,6 +196,13 @@
 								<option value={st}>{titleCase(st)}</option>
 							{/each}
 						</select>
+					</div>
+				{/if}
+
+				{#if selectedType === 'transportation' && selectedSubtype === 'flight'}
+					<div>
+						<div class="text-ink-soft text-sm font-medium mb-1">Flight lookup</div>
+						<FlightLookup onSelect={handleFlightSelect} />
 					</div>
 				{/if}
 
@@ -254,6 +305,7 @@
 			<Card>
 				<div class="p-4 space-y-4">
 					<SectionH>Location</SectionH>
+					<PlacesAutocomplete onSelect={handlePlaceSelect} />
 					<div>
 						<label for="location_name" class="text-ink-soft block text-sm font-medium">Name</label>
 						<input
@@ -275,6 +327,8 @@
 							class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 						/>
 					</div>
+					<input type="hidden" name="location_coords" value={locationCoords} />
+					<input type="hidden" name="google_place_id" value={googlePlaceId} />
 				</div>
 			</Card>
 		{/if}

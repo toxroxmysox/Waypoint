@@ -55,6 +55,9 @@ export const actions: Actions = {
 		const slot = data.get('slot')?.toString() || 'anytime';
 		const locationName = data.get('location_name')?.toString() || '';
 		const locationAddress = data.get('location_address')?.toString() || '';
+		const locationCoordsRaw = data.get('location_coords')?.toString() || '';
+		const locationCoords = locationCoordsRaw ? JSON.parse(locationCoordsRaw) : null;
+		const googlePlaceId = data.get('google_place_id')?.toString() || '';
 		const startTime = data.get('start_time')?.toString() || '';
 		const endTime = data.get('end_time')?.toString() || '';
 		const booked = data.get('booked') === 'on';
@@ -94,6 +97,8 @@ export const actions: Actions = {
 				slot,
 				location_name: locationName,
 				location_address: locationAddress,
+				location_coords: locationCoords,
+				google_place_id: googlePlaceId,
 				start_time: timeToDatetime(startTime),
 				end_time: timeToDatetime(endTime),
 				booked,
