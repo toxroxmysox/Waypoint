@@ -18,12 +18,12 @@
 	// Color family per type (matches handoff: lodging=moss, transport=sky, activity=gold,
 	// meal=clay, note/checklist=ink-soft).
 	const palette: Record<ItemType, { bg: string; fg: string }> = {
-		lodging: { bg: 'var(--color-moss-tint)', fg: 'var(--color-moss)' },
-		transportation: { bg: '#E6EEF8', fg: 'var(--color-sky)' },
-		activity: { bg: '#FBF1DC', fg: '#8a6f24' },
-		meal: { bg: '#F4DDD2', fg: 'var(--color-clay)' },
-		note: { bg: 'var(--color-surface-2)', fg: 'var(--color-ink-soft)' },
-		checklist: { bg: 'var(--color-surface-2)', fg: 'var(--color-ink-soft)' }
+		lodging: { bg: 'var(--color-sky-tint)', fg: 'var(--color-sky)' },
+		transportation: { bg: 'var(--color-line)', fg: 'var(--color-ink)' },
+		activity: { bg: 'var(--color-gold-tint)', fg: 'var(--color-gold)' },
+		meal: { bg: 'var(--color-clay-tint)', fg: 'var(--color-clay)' },
+		note: { bg: 'var(--color-paper)', fg: 'var(--color-ink-soft)' },
+		checklist: { bg: 'var(--color-moss-tint)', fg: 'var(--color-moss)' }
 	};
 
 	const colors = $derived(palette[type]);

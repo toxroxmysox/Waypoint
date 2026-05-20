@@ -7,19 +7,20 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import { titleCase } from '$lib/utils/format';
-	import type { Notification, BudgetCategory, ExpenseCategory } from '$lib/types';
+	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
+	import type { Notification, BudgetCategory, ExpenseCategory, ItemType } from '$lib/types';
 
 	let { data, form } = $props();
 
 	let notifications = $state<Notification[]>(untrack(() => data.notifications ?? []));
 	let unreadCount = $state(untrack(() => data.unreadCount ?? 0));
 
-	const categoryMeta: Record<ExpenseCategory, { emoji: string; label: string }> = {
-		lodging: { emoji: '🏨', label: 'Lodging' },
-		transportation: { emoji: '🚗', label: 'Transport' },
-		food: { emoji: '🍽', label: 'Food' },
-		activity: { emoji: '🎫', label: 'Activities' },
-		other: { emoji: '📦', label: 'Other' }
+	const categoryMeta: Record<ExpenseCategory, { iconType: ItemType; label: string }> = {
+		lodging: { iconType: 'lodging', label: 'Lodging' },
+		transportation: { iconType: 'transportation', label: 'Transport' },
+		food: { iconType: 'meal', label: 'Food' },
+		activity: { iconType: 'activity', label: 'Activities' },
+		other: { iconType: 'note', label: 'Other' }
 	};
 
 	// Editable category state
@@ -141,7 +142,7 @@
 					<div class="p-3">
 						<div class="flex items-center justify-between mb-2">
 							<div class="flex items-center gap-2">
-								<span class="text-lg">{meta.emoji}</span>
+								<TypeIcon type={meta.iconType} size={24} />
 								<span class="text-sm font-medium text-ink">{meta.label}</span>
 							</div>
 							<span class="font-mono text-sm font-semibold text-ink">${formatAmount(cat.total)}</span>
