@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import ArchiveDaySection from '$lib/components/ArchiveDaySection.svelte';
 	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
 	import { titleCase } from '$lib/utils/format';
@@ -30,6 +31,10 @@
 
 <svelte:head>
 	<title>{data.trip.title} — Trip Archive</title>
+	<meta property="og:title" content={data.trip.title} />
+	<meta property="og:description" content="{data.trip.location_summary ? data.trip.location_summary + ' · ' : ''}{dateRange}" />
+	<meta property="og:type" content="article" />
+	<meta property="og:url" content={page.url.href} />
 </svelte:head>
 
 <main class="mx-auto w-full max-w-2xl px-4 pb-16">

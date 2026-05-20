@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { beforeNavigate } from '$app/navigation';
 	import { itemFieldConfig, itemTypeLabels, slotOptions } from '$lib/config/item-fields';
+	import { checklistTemplates } from '$lib/config/checklist-templates';
 	import type { ItemType } from '$lib/types';
 	import NavBar from '$lib/components/ui/NavBar.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
@@ -107,6 +108,17 @@
 			el.value = `https://${v}`;
 		}
 	}
+
+	let showTemplatePicker = $state(false);
+
+	function applyTemplate(templateItems: string[]) {
+		const titleInput = document.getElementById('title') as HTMLInputElement;
+		const descInput = document.getElementById('description') as HTMLTextAreaElement;
+		if (descInput) descInput.value = templateItems.map((t) => `- [ ] ${t}`).join('\n');
+		if (titleInput && !titleInput.value) titleInput.focus();
+		showTemplatePicker = false;
+		markDirty();
+	}
 </script>
 
 <NavBar title="New item" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}" />
@@ -208,10 +220,42 @@
 
 				<div>
 					<label for="description" class="text-ink-soft block text-sm font-medium">Description</label>
+					{#if selectedType === 'checklist' && !showTemplatePicker}
+						<button
+							type="button"
+							onclick={() => (showTemplatePicker = true)}
+							class="text-sky mt-1 mb-1 text-xs font-medium hover:underline"
+						>
+							Start from template
+						</button>
+					{/if}
+					{#if showTemplatePicker}
+						<div class="bg-surface-2 border-line mt-1 mb-2 rounded-md border p-3 space-y-2">
+							{#each checklistTemplates as tmpl}
+								<button
+									type="button"
+									onclick={() => applyTemplate(tmpl.items)}
+									class="border-line hover:bg-surface flex w-full items-start gap-2 rounded-md border px-3 py-2 text-left text-sm transition-colors"
+								>
+									<div>
+										<p class="text-ink font-medium">{tmpl.name}</p>
+										<p class="text-ink-muted text-xs">{tmpl.description}</p>
+									</div>
+								</button>
+							{/each}
+							<button
+								type="button"
+								onclick={() => (showTemplatePicker = false)}
+								class="text-ink-muted text-xs hover:underline"
+							>
+								Cancel
+							</button>
+						</div>
+					{/if}
 					<textarea
 						id="description"
 						name="description"
-						rows="2"
+						rows={selectedType === 'checklist' ? 6 : 2}
 						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 					>{prefill?.description ?? ''}</textarea>
 				</div>

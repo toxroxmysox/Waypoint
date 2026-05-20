@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import '$lib/styles/print.css';
 
 /* Waypoint design tokens. Lifted verbatim from the Claude Design handoff
    (design/initial-handoff.html §02). Tailwind v4 exposes these as utilities

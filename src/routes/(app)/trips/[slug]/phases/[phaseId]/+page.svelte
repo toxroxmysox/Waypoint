@@ -6,8 +6,10 @@
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import SectionH from '$lib/components/ui/SectionH.svelte';
+	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
 	import PhaseColorPicker from '$lib/components/PhaseColorPicker.svelte';
 	import { phasePalette } from '$lib/utils/phase-palette';
+	import { titleCase } from '$lib/utils/format';
 
 	let { data, form } = $props();
 
@@ -15,6 +17,8 @@
 	let loading = $state(false);
 	let error = $derived(form?.error ?? '');
 	let editColor = $state(untrack(() => data.phase.color || phasePalette[0].hex));
+
+	const parkingLotItems = $derived(data.phaseItems.filter((it) => it.parking_lot_scope === 'phase'));
 
 	function dayLabel(d: Day): string {
 		return new Date(d.date.replace(' ', 'T')).toLocaleDateString('en-US', {
@@ -154,6 +158,25 @@
 				</Button>
 			</form>
 		</Card>
+	{/if}
+
+	{#if parkingLotItems.length > 0}
+		<section class="space-y-1.5">
+			<SectionH>Parking lot ({parkingLotItems.length})</SectionH>
+			{#each parkingLotItems as item (item.id)}
+				<Card href="/trips/{data.trip.slug}/items/{item.id}">
+					<div class="flex items-center gap-3 px-3 py-2">
+						<TypeIcon type={item.type} size={18} />
+						<div class="min-w-0 flex-1">
+							<p class="text-ink truncate text-sm">{item.title}</p>
+						</div>
+						<span class="bg-paper text-ink-muted shrink-0 rounded px-1.5 py-0.5 text-[11px]">
+							{titleCase(item.type)}
+						</span>
+					</div>
+				</Card>
+			{/each}
+		</section>
 	{/if}
 
 	<section class="space-y-1.5">
