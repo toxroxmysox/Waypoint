@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { Phase, Day } from '$lib/types';
-	import { phasesForDay } from '$lib/utils/phases';
 	import NavBar from '$lib/components/ui/NavBar.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Pill from '$lib/components/ui/Pill.svelte';
@@ -100,36 +99,68 @@
 		</div>
 	</Card>
 
-	<!-- Phases -->
 	{#if data.phases.length > 0}
-		<section class="space-y-2">
-			<SectionH>
-				{#snippet right()}
-					<a class="text-ink-muted hover:text-ink-soft" href="/trips/{data.trip.slug}/phases"
-						>Manage</a
-					>
-				{/snippet}
-				Phases
-			</SectionH>
-			{#each data.phases as phase}
-				<Card href="/trips/{data.trip.slug}/phases/{phase.id}" accent={phase.color}>
-					<div class="p-3">
-						<div class="flex items-center gap-2">
-							<h3 class="text-ink font-semibold">{phase.name}</h3>
-						</div>
-						<p class="text-ink-muted font-mono mt-1 text-[11.5px]">
-							{formatDateRange(phase.start_date, phase.end_date)}
-							{#if phase.location}
-								<span class="text-line">·</span> {phase.location}
-							{/if}
-							<span class="text-line">·</span> {daysInPhase(phase).length} days
-						</p>
+		<!-- Phases with nested days -->
+		{@const orphanDays = data.days.filter((d) => !data.phases.some((p) => (d.phases ?? []).includes(p.id)))}
+		{#each data.phases as phase}
+			{@const pDays = daysInPhase(phase)}
+			<section class="space-y-1.5">
+				<div class="flex items-center justify-between">
+					<div class="flex items-center gap-2">
+						{#if phase.color}
+							<span class="h-2.5 w-2.5 rounded-full" style="background-color: {phase.color}"></span>
+						{/if}
+						<a href="/trips/{data.trip.slug}/phases/{phase.id}" class="text-ink font-semibold hover:underline">{phase.name}</a>
 					</div>
-				</Card>
-			{/each}
+					<span class="text-ink-muted font-mono text-[11px]">
+						{formatDateRange(phase.start_date, phase.end_date)}
+						{#if phase.location}
+							<span class="text-line">·</span> {phase.location}
+						{/if}
+					</span>
+				</div>
+				{#if pDays.length > 0}
+					<div class="space-y-1">
+						{#each pDays as day}
+							<Card href="/trips/{data.trip.slug}/days/{day.id}">
+								<div class="flex items-center justify-between px-3 py-3">
+									<span class="text-ink text-sm">{dayLabel(day)}</span>
+								</div>
+							</Card>
+						{/each}
+					</div>
+				{/if}
+			</section>
+		{/each}
+		{#if orphanDays.length > 0}
+			<section class="space-y-1.5">
+				<SectionH>Unassigned days</SectionH>
+				<div class="space-y-1">
+					{#each orphanDays as day}
+						<Card href="/trips/{data.trip.slug}/days/{day.id}">
+							<div class="flex items-center justify-between px-3 py-3">
+								<span class="text-ink text-sm">{dayLabel(day)}</span>
+							</div>
+						</Card>
+					{/each}
+				</div>
+			</section>
+		{/if}
+	{:else if data.days.length > 0}
+		<!-- No phases: flat day list -->
+		<section class="space-y-1.5">
+			<SectionH>Days</SectionH>
+			<div class="space-y-1">
+				{#each data.days as day}
+					<Card href="/trips/{data.trip.slug}/days/{day.id}">
+						<div class="flex items-center justify-between px-3 py-3">
+							<span class="text-ink text-sm">{dayLabel(day)}</span>
+						</div>
+					</Card>
+				{/each}
+			</div>
 		</section>
 	{:else}
-		<!-- M1 empty state: only CTAs that exist in M1 -->
 		<Card>
 			<div class="p-6 text-center">
 				<p class="font-display text-ink-soft text-base italic">A blank itinerary.</p>
@@ -150,38 +181,5 @@
 				</div>
 			</div>
 		</Card>
-	{/if}
-
-	<!-- Days timeline -->
-	{#if data.days.length > 0}
-		<section class="space-y-1.5">
-			<SectionH>Days</SectionH>
-			<div class="space-y-1">
-				{#each data.days as day}
-					{@const dp = phasesForDay(day, data.phases)}
-					<Card href="/trips/{data.trip.slug}/days/{day.id}">
-						<div class="flex items-center justify-between px-3 py-2">
-							<span class="text-ink text-sm">{dayLabel(day)}</span>
-							{#if dp.length > 0}
-								<span class="text-ink-muted flex items-center gap-1 text-[11.5px]">
-									{#each dp as p, idx}
-										{#if p.color}
-											<span
-												class="h-2 w-2 rounded-full"
-												style="background-color: {p.color}"
-											></span>
-										{/if}
-										<span>{p.name}</span>
-										{#if idx < dp.length - 1}
-											<span class="text-line">→</span>
-										{/if}
-									{/each}
-								</span>
-							{/if}
-						</div>
-					</Card>
-				{/each}
-			</div>
-		</section>
 	{/if}
 </main>

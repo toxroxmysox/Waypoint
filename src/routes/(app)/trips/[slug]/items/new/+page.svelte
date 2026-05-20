@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { beforeNavigate } from '$app/navigation';
 	import { itemFieldConfig, itemTypeLabels, slotOptions } from '$lib/config/item-fields';
 	import type { ItemType } from '$lib/types';
 	import NavBar from '$lib/components/ui/NavBar.svelte';
@@ -10,6 +11,22 @@
 	import { untrack } from 'svelte';
 
 	let { data, form } = $props();
+
+	let dirty = $state(false);
+	let submitting = $state(false);
+
+	function markDirty() { dirty = true; }
+
+	beforeNavigate(({ cancel }) => {
+		if (dirty && !submitting && !confirm('You have unsaved changes. Leave anyway?')) cancel();
+	});
+
+	$effect(() => {
+		if (!dirty) return;
+		const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+		window.addEventListener('beforeunload', handler);
+		return () => window.removeEventListener('beforeunload', handler);
+	});
 
 	let selectedType = $state<ItemType>(untrack(() => (data.prefill?.type as ItemType) ?? 'activity'));
 	let loading = $state(false);
@@ -70,10 +87,13 @@
 
 	<form
 		method="POST"
+		oninput={markDirty}
 		use:enhance={() => {
 			loading = true;
+			submitting = true;
 			return async ({ update }) => {
 				loading = false;
+				submitting = false;
 				await update();
 			};
 		}}

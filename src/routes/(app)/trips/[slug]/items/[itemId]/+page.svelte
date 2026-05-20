@@ -7,7 +7,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import SectionH from '$lib/components/ui/SectionH.svelte';
 	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
-	import { titleCase } from '$lib/utils/format';
+	import { titleCase, formatTime } from '$lib/utils/format';
 
 	import VoteButtons from '$lib/components/VoteButtons.svelte';
 	import MoveItemSheet from '$lib/components/MoveItemSheet.svelte';
@@ -30,16 +30,6 @@
 	let commentSubmitting = $state(false);
 	let optimisticComments = $state<Comment[]>([]);
 	let allComments = $derived([...data.comments, ...optimisticComments]);
-
-	function formatTime(t: string): string {
-		if (!t) return '';
-		const timePart = t.includes('T') ? t.split('T')[1] : t.includes(' ') ? t.split(' ')[1] : t;
-		const [h, m] = timePart.split(':');
-		const hour = parseInt(h, 10);
-		const ampm = hour >= 12 ? 'PM' : 'AM';
-		const h12 = hour % 12 || 12;
-		return `${h12}:${m} ${ampm}`;
-	}
 
 	function memberName(memberId: string): string {
 		const member = data.members.find((m) => m.id === memberId);

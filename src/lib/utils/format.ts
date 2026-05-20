@@ -22,3 +22,9 @@ export function datetimeToTime(dt: string): string {
 	const match = dt.match(/(\d{2}:\d{2})/);
 	return match ? match[1] : '';
 }
+
+export function formatTimeRange(start: string, end: string): string {
+	if (!start && !end) return '';
+	if (start && end) return `${formatTime(start)} – ${formatTime(end)}`;
+	return formatTime(start || end);
+}
