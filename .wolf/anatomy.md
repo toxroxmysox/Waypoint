@@ -1,12 +1,12 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-19T23:42:13.658Z
-> Files: 546 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-19T13:26:33.366Z
+> Files: 530 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ./
 
 - `.dockerignore` (~31 tok)
-- `.gitignore` — Git ignore rules (~95 tok)
+- `.gitignore` — Git ignore rules (~114 tok)
 - `.npmrc` (~6 tok)
 - `.prettierignore` — Package Managers (~29 tok)
 - `.prettierrc` — Prettier configuration (~82 tok)
@@ -17,7 +17,6 @@
 - `M1_STATUS.md` — M1 Status (~404 tok)
 - `M1.5_STATUS.md` — M1.5 Status (~1560 tok)
 - `M2_STATUS.md` — M2 Status (~3121 tok)
-- `M6_PLAN.md` — M6 — Polish & Nice-to-Haves (~12600 tok)
 - `package.json` — Node.js package manifest (~461 tok)
 - `playwright.config.ts` — Playwright test configuration (~128 tok)
 - `pnpm-lock.yaml` — pnpm lock file (~29244 tok)
@@ -935,54 +934,6 @@
 
 - `app.html` — Declares html (~301 tok)
 
-## src/lib/components/ui/
-
-- `AppShell.svelte` — Svelte: AppShell (~179 tok)
-- `DayNav.svelte` — Day prev/next navigation bar with swipe gestures (~596 tok)
-- `SideRail.svelte` — Svelte: SideRail (~743 tok)
-- `TypeIcon.svelte` — Svelte: TypeIcon (~797 tok)
-
-## src/lib/utils/
-
-- `format.ts` — Exports titleCase, formatTime, timeToDatetime, datetimeToTime, formatTimeRange (~267 tok)
-
-## src/routes/
-
-- `layout.css` — Styles: 3 rules, 28 vars (~626 tok)
-
-## src/routes/(app)/trips/[slug]/
-
-- `+layout.svelte` — Svelte: +layout (~80 tok)
-- `+page.svelte` — Svelte: +page (~1613 tok)
-
-## src/routes/(app)/trips/[slug]/budget/
-
-- `+page.svelte` — Svelte: +page (~2101 tok)
-
-## src/routes/(app)/trips/[slug]/days/[dayId]/
-
-- `+page.svelte` — Svelte: +page (~1806 tok)
-
-## src/routes/(app)/trips/[slug]/expenses/
-
-- `+page.svelte` — Svelte: +page (~8337 tok)
-
-## src/routes/(app)/trips/[slug]/items/[itemId]/
-
-- `+page.svelte` — Svelte: +page (~4595 tok)
-
-## src/routes/(app)/trips/[slug]/items/[itemId]/edit/
-
-- `+page.svelte` — Svelte: +page (~3592 tok)
-
-## src/routes/(app)/trips/[slug]/items/new/
-
-- `+page.svelte` — Svelte: +page (~3597 tok)
-
-## src/routes/(auth)/login/
-
-- `+page.svelte` — Svelte: +page (~938 tok)
-
 ## static/
 
-- `favicon.svg` (~122 tok)
+- `favicon.svg` (~106 tok)
