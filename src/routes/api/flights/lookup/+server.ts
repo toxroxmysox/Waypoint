@@ -6,6 +6,9 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	if (!locals.user) {
 		error(401, 'Unauthorized');
 	}
+	if (!env.AERODATABOX_API_KEY) {
+		error(503, 'Flight lookup service unavailable');
+	}
 
 	const flightNumber = url.searchParams.get('flight');
 	const date = url.searchParams.get('date');
@@ -17,7 +20,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		`https://aerodatabox.p.rapidapi.com/flights/number/${encodeURIComponent(flightNumber)}/${date}`,
 		{
 			headers: {
-				'X-RapidAPI-Key': env.AERODATABOX_API_KEY!,
+				'X-RapidAPI-Key': env.AERODATABOX_API_KEY,
 				'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com'
 			}
 		}

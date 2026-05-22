@@ -13,6 +13,11 @@
 
 	let notifications = $state<Notification[]>(untrack(() => data.notifications ?? []));
 	let unreadCount = $state(untrack(() => data.unreadCount ?? 0));
+	let offlineEnabled = $state(false);
+
+	$effect(() => {
+		offlineEnabled = typeof localStorage !== 'undefined' && localStorage.getItem('waypoint-offline') === 'true';
+	});
 </script>
 
 <NavBar
@@ -194,8 +199,11 @@
 			</svg>
 			<div class="min-w-0 flex-1 text-left">
 				<p class="text-ink text-sm font-semibold">Offline mode</p>
-				<p class="text-ink-muted text-[12px]">Toggle offline to use cached trip data</p>
+				<p class="text-ink-muted text-[12px]">{offlineEnabled ? 'Currently on — using cached data' : 'Toggle offline to use cached trip data'}</p>
 			</div>
+			{#if offlineEnabled}
+				<span class="bg-gold-tint text-gold shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium">On</span>
+			{/if}
 		</button>
 	</Card>
 </main>

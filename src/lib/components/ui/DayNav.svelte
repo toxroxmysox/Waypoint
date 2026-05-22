@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import type { Day } from '$lib/types';
 
 	let {
@@ -34,7 +35,7 @@
 		const dx = e.changedTouches[0].clientX - touchStartX;
 		if (Math.abs(dx) < 60) return;
 		const target = dx > 0 ? prevDay : nextDay;
-		if (target) window.location.href = `/trips/${tripSlug}/days/${target.id}`;
+		if (target) goto(`/trips/${tripSlug}/days/${target.id}`);
 	}
 </script>
 

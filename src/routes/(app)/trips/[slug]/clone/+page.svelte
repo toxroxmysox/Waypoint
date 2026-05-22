@@ -68,6 +68,7 @@
 							id="start_date"
 							name="start_date"
 							required
+							value={sourceStartStr}
 							class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
 						/>
 					</div>
@@ -78,6 +79,7 @@
 							id="end_date"
 							name="end_date"
 							required
+							value={sourceEndStr}
 							class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
 						/>
 					</div>

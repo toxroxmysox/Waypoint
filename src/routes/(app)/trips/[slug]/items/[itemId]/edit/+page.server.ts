@@ -56,7 +56,14 @@ export const actions: Actions = {
 		const locationName = data.get('location_name')?.toString() || '';
 		const locationAddress = data.get('location_address')?.toString() || '';
 		const locationCoordsRaw = data.get('location_coords')?.toString() || '';
-		const locationCoords = locationCoordsRaw ? JSON.parse(locationCoordsRaw) : null;
+		let locationCoords = null;
+		if (locationCoordsRaw) {
+			try {
+				locationCoords = JSON.parse(locationCoordsRaw);
+			} catch {
+				return fail(400, { error: 'Invalid location data.' });
+			}
+		}
 		const googlePlaceId = data.get('google_place_id')?.toString() || '';
 		const startTime = data.get('start_time')?.toString() || '';
 		const endTime = data.get('end_time')?.toString() || '';

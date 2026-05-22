@@ -6,6 +6,9 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	if (!locals.user) {
 		error(401, 'Unauthorized');
 	}
+	if (!env.GOOGLE_MAPS_API_KEY) {
+		error(503, 'Places service unavailable');
+	}
 
 	const placeId = url.searchParams.get('place_id');
 	const sessionToken = url.searchParams.get('session_token');
@@ -13,13 +16,14 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
 	const fields =
 		'displayName,formattedAddress,location,id,websiteUri,internationalPhoneNumber';
-	const params = new URLSearchParams({ sessionToken: sessionToken ?? '' });
 	const res = await fetch(
-		`https://places.googleapis.com/v1/places/${placeId}?${params}`,
+		`https://places.googleapis.com/v1/places/${placeId}`,
 		{
 			headers: {
-				'X-Goog-Api-Key': env.GOOGLE_MAPS_API_KEY!,
-				'X-Goog-FieldMask': fields
+				'Content-Type': 'application/json',
+				'X-Goog-Api-Key': env.GOOGLE_MAPS_API_KEY,
+				'X-Goog-FieldMask': fields,
+				...(sessionToken ? { 'X-Goog-Session-Token': sessionToken } : {})
 			}
 		}
 	);

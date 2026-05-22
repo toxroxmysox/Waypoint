@@ -6,6 +6,9 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	if (!locals.user) {
 		error(401, 'Unauthorized');
 	}
+	if (!env.GOOGLE_MAPS_API_KEY) {
+		error(503, 'Places service unavailable');
+	}
 
 	const input = url.searchParams.get('input');
 	const sessionToken = url.searchParams.get('session_token');
@@ -15,7 +18,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
-			'X-Goog-Api-Key': env.GOOGLE_MAPS_API_KEY!
+			'X-Goog-Api-Key': env.GOOGLE_MAPS_API_KEY
 		},
 		body: JSON.stringify({
 			input,
