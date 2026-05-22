@@ -2,7 +2,7 @@
 	import { enhance } from '$app/forms';
 	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
 	import InlineQuickAdd from '$lib/components/InlineQuickAdd.svelte';
-	import { titleCase } from '$lib/utils/format';
+	import { titleCase, formatTime } from '$lib/utils/format';
 	import type { Item } from '$lib/types';
 
 	let {
@@ -38,7 +38,7 @@
 				{item.title}
 			</p>
 			{#if item.start_time}
-				<p class="text-ink-muted text-xs">{item.start_time}</p>
+				<p class="text-ink-muted text-xs">{formatTime(item.start_time)}</p>
 			{/if}
 		</div>
 

@@ -8,7 +8,8 @@
 	import SectionH from '$lib/components/ui/SectionH.svelte';
 	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
 	import FAB from '$lib/components/ui/FAB.svelte';
-	import { titleCase } from '$lib/utils/format';
+	import DayNav from '$lib/components/ui/DayNav.svelte';
+	import { titleCase, formatTime } from '$lib/utils/format';
 
 	let { data, form } = $props();
 
@@ -45,16 +46,6 @@
 		});
 	}
 
-	function formatTime(t: string): string {
-		if (!t) return '';
-		const timePart = t.includes('T') ? t.split('T')[1] : t.includes(' ') ? t.split(' ')[1] : t;
-		const [h, m] = timePart.split(':');
-		const hour = parseInt(h, 10);
-		const ampm = hour >= 12 ? 'PM' : 'AM';
-		const h12 = hour % 12 || 12;
-		return `${h12}:${m} ${ampm}`;
-	}
-
 	let backHref = $derived(
 		data.dayPhases.length > 0
 			? `/trips/${data.trip.slug}/phases/${data.dayPhases[0].id}`
@@ -63,6 +54,7 @@
 </script>
 
 <NavBar title={shortDayLabel()} subtitle={data.trip.title} back {backHref} />
+<DayNav days={data.days} currentDayId={data.day.id} tripSlug={data.trip.slug} />
 
 <main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-24 space-y-4">
 	<div>

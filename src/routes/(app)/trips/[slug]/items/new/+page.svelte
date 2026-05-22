@@ -1,15 +1,35 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { beforeNavigate } from '$app/navigation';
 	import { itemFieldConfig, itemTypeLabels, slotOptions } from '$lib/config/item-fields';
+	import { checklistTemplates } from '$lib/config/checklist-templates';
 	import type { ItemType } from '$lib/types';
 	import NavBar from '$lib/components/ui/NavBar.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import SectionH from '$lib/components/ui/SectionH.svelte';
+	import PlacesAutocomplete from '$lib/components/PlacesAutocomplete.svelte';
+	import FlightLookup from '$lib/components/FlightLookup.svelte';
 	import { titleCase } from '$lib/utils/format';
 	import { untrack } from 'svelte';
 
 	let { data, form } = $props();
+
+	let dirty = $state(false);
+	let submitting = $state(false);
+
+	function markDirty() { dirty = true; }
+
+	beforeNavigate(({ cancel }) => {
+		if (dirty && !submitting && !confirm('You have unsaved changes. Leave anyway?')) cancel();
+	});
+
+	$effect(() => {
+		if (!dirty) return;
+		const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+		window.addEventListener('beforeunload', handler);
+		return () => window.removeEventListener('beforeunload', handler);
+	});
 
 	let selectedType = $state<ItemType>(untrack(() => (data.prefill?.type as ItemType) ?? 'activity'));
 	let loading = $state(false);
@@ -26,7 +46,48 @@
 			: (submitAsSuggestion ? 'Submit suggestion' : suggestionId ? 'Approve with edits' : 'Create item')
 	);
 
+	let selectedSubtype = $state('');
 	let fields = $derived(itemFieldConfig[selectedType]);
+
+	let locationCoords = $state('');
+	let googlePlaceId = $state('');
+
+	function handlePlaceSelect(place: {
+		name: string;
+		address: string;
+		coords: { lat: number; lng: number };
+		placeId: string;
+	}) {
+		const nameInput = document.getElementById('location_name') as HTMLInputElement;
+		const addrInput = document.getElementById('location_address') as HTMLInputElement;
+		if (nameInput) nameInput.value = place.name;
+		if (addrInput) addrInput.value = place.address;
+		locationCoords = JSON.stringify(place.coords);
+		googlePlaceId = place.placeId;
+		markDirty();
+	}
+
+	function handleFlightSelect(flight: {
+		title: string;
+		start_time: string;
+		end_time: string;
+		start_tz: string;
+		end_tz: string;
+		location_name: string;
+		description: string;
+	}) {
+		const titleInput = document.getElementById('title') as HTMLInputElement;
+		const descInput = document.getElementById('description') as HTMLTextAreaElement;
+		const startInput = document.getElementById('start_time') as HTMLInputElement;
+		const endInput = document.getElementById('end_time') as HTMLInputElement;
+		const locInput = document.getElementById('location_name') as HTMLInputElement;
+		if (titleInput) titleInput.value = flight.title;
+		if (descInput) descInput.value = flight.description;
+		if (startInput) startInput.value = flight.start_time;
+		if (endInput) endInput.value = flight.end_time;
+		if (locInput) locInput.value = flight.location_name;
+		markDirty();
+	}
 
 	let confirmationCodes = $state<{ label: string; value: string }[]>(
 		untrack(() => Array.isArray(data.prefill?.confirmation_codes) ? data.prefill.confirmation_codes : [])
@@ -46,6 +107,17 @@
 		if (v && !/^https?:\/\//i.test(v)) {
 			el.value = `https://${v}`;
 		}
+	}
+
+	let showTemplatePicker = $state(false);
+
+	function applyTemplate(templateItems: string[]) {
+		const titleInput = document.getElementById('title') as HTMLInputElement;
+		const descInput = document.getElementById('description') as HTMLTextAreaElement;
+		if (descInput) descInput.value = templateItems.map((t) => `- [ ] ${t}`).join('\n');
+		if (titleInput && !titleInput.value) titleInput.focus();
+		showTemplatePicker = false;
+		markDirty();
 	}
 </script>
 
@@ -70,10 +142,13 @@
 
 	<form
 		method="POST"
+		oninput={markDirty}
 		use:enhance={() => {
 			loading = true;
+			submitting = true;
 			return async ({ update }) => {
 				loading = false;
+				submitting = false;
 				await update();
 			};
 		}}
@@ -125,6 +200,7 @@
 						<select
 							id="subtype"
 							name="subtype"
+							bind:value={selectedSubtype}
 							class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 						>
 							<option value="">None</option>
@@ -135,12 +211,51 @@
 					</div>
 				{/if}
 
+				{#if selectedType === 'transportation' && selectedSubtype === 'flight'}
+					<div>
+						<div class="text-ink-soft text-sm font-medium mb-1">Flight lookup</div>
+						<FlightLookup onSelect={handleFlightSelect} />
+					</div>
+				{/if}
+
 				<div>
 					<label for="description" class="text-ink-soft block text-sm font-medium">Description</label>
+					{#if selectedType === 'checklist' && !showTemplatePicker}
+						<button
+							type="button"
+							onclick={() => (showTemplatePicker = true)}
+							class="text-sky mt-1 mb-1 text-xs font-medium hover:underline"
+						>
+							Start from template
+						</button>
+					{/if}
+					{#if showTemplatePicker}
+						<div class="bg-surface-2 border-line mt-1 mb-2 rounded-md border p-3 space-y-2">
+							{#each checklistTemplates as tmpl}
+								<button
+									type="button"
+									onclick={() => applyTemplate(tmpl.items)}
+									class="border-line hover:bg-surface flex w-full items-start gap-2 rounded-md border px-3 py-2 text-left text-sm transition-colors"
+								>
+									<div>
+										<p class="text-ink font-medium">{tmpl.name}</p>
+										<p class="text-ink-muted text-xs">{tmpl.description}</p>
+									</div>
+								</button>
+							{/each}
+							<button
+								type="button"
+								onclick={() => (showTemplatePicker = false)}
+								class="text-ink-muted text-xs hover:underline"
+							>
+								Cancel
+							</button>
+						</div>
+					{/if}
 					<textarea
 						id="description"
 						name="description"
-						rows="2"
+						rows={selectedType === 'checklist' ? 6 : 2}
 						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 					>{prefill?.description ?? ''}</textarea>
 				</div>
@@ -234,6 +349,7 @@
 			<Card>
 				<div class="p-4 space-y-4">
 					<SectionH>Location</SectionH>
+					<PlacesAutocomplete onSelect={handlePlaceSelect} />
 					<div>
 						<label for="location_name" class="text-ink-soft block text-sm font-medium">Name</label>
 						<input
@@ -255,6 +371,8 @@
 							class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 						/>
 					</div>
+					<input type="hidden" name="location_coords" value={locationCoords} />
+					<input type="hidden" name="google_place_id" value={googlePlaceId} />
 				</div>
 			</Card>
 		{/if}

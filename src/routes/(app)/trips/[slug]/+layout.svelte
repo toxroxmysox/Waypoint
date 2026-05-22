@@ -1,11 +1,13 @@
 <script lang="ts">
-	import BottomNav from '$lib/components/BottomNav.svelte';
+	import AppShell from '$lib/components/ui/AppShell.svelte';
 
 	let { data, children } = $props();
 </script>
 
-{@render children()}
+<svelte:head>
+	<title>{data.trip.title} — Waypoint</title>
+</svelte:head>
 
-<BottomNav slug={data.trip.slug} role={data.membership.role} />
-
-<div class="h-16"></div>
+<AppShell slug={data.trip.slug} role={data.membership.role}>
+	{@render children()}
+</AppShell>

@@ -1,6 +1,7 @@
 import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Item, ChecklistItem, TripMember } from '$lib/types';
+import { timeToDatetime, datetimeToTime } from '$lib/utils/format';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, phases, days } = await parent();
@@ -29,7 +30,17 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		})
 	]);
 
-	return { item, checklistItems, members, phases, days };
+	return {
+		item: {
+			...item,
+			start_time: datetimeToTime(item.start_time ?? ''),
+			end_time: datetimeToTime(item.end_time ?? '')
+		},
+		checklistItems,
+		members,
+		phases,
+		days
+	};
 };
 
 export const actions: Actions = {
@@ -44,6 +55,16 @@ export const actions: Actions = {
 		const slot = data.get('slot')?.toString() || 'anytime';
 		const locationName = data.get('location_name')?.toString() || '';
 		const locationAddress = data.get('location_address')?.toString() || '';
+		const locationCoordsRaw = data.get('location_coords')?.toString() || '';
+		let locationCoords = null;
+		if (locationCoordsRaw) {
+			try {
+				locationCoords = JSON.parse(locationCoordsRaw);
+			} catch {
+				return fail(400, { error: 'Invalid location data.' });
+			}
+		}
+		const googlePlaceId = data.get('google_place_id')?.toString() || '';
 		const startTime = data.get('start_time')?.toString() || '';
 		const endTime = data.get('end_time')?.toString() || '';
 		const booked = data.get('booked') === 'on';
@@ -83,8 +104,10 @@ export const actions: Actions = {
 				slot,
 				location_name: locationName,
 				location_address: locationAddress,
-				start_time: startTime,
-				end_time: endTime,
+				location_coords: locationCoords,
+				google_place_id: googlePlaceId,
+				start_time: timeToDatetime(startTime),
+				end_time: timeToDatetime(endTime),
 				booked,
 				confirmation_codes: confirmationCodes,
 				reservation_url: reservationUrl,

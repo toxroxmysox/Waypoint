@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import '$lib/styles/print.css';
 
 /* Waypoint design tokens. Lifted verbatim from the Claude Design handoff
    (design/initial-handoff.html §02). Tailwind v4 exposes these as utilities
@@ -19,6 +20,11 @@
 	--color-gold-tint: #fbf1dc;
 	--color-sky: #3b6ba5;
 	--color-sky-tint: #e6eef8;
+	--color-clay-tint: #f0e0d6;
+	--color-error: #b33a3a;
+
+	--breakpoint-md-desktop: 900px;
+	--breakpoint-lg-desktop: 1280px;
 
 	--font-sans: 'Inter', system-ui, sans-serif;
 	--font-display: 'Fraunces', Georgia, serif;

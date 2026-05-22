@@ -80,6 +80,102 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-05-10T19:11:51.377Z"
+    },
+    {
+      "id": "bug-006",
+      "timestamp": "2026-05-19T23:20:50.406Z",
+      "error_message": "Missing guard clause",
+      "file": "src/routes/(app)/trips/[slug]/items/new/+page.svelte",
+      "root_cause": "No early return/throw for edge case: dirty && !submitting && !confirm('You have unsaved changes. ",
+      "fix": "Added guard clause: if (dirty && !submitting && !confirm('You ha)",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-05-19T23:21:04.078Z"
+    },
+    {
+      "id": "bug-007",
+      "timestamp": "2026-05-19T23:21:37.986Z",
+      "error_message": "Null/undefined access in ",
+      "file": "src/routes/(app)/trips/[slug]/+page.svelte",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-19T23:21:37.986Z"
+    },
+    {
+      "id": "bug-008",
+      "timestamp": "2026-05-19T23:22:03.093Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/routes/(app)/trips/[slug]/days/[dayId]/+page.svelte",
+      "root_cause": "Had '$lib/utils/format'",
+      "fix": "Changed to '$lib/components/ui/DayNav.svelte'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-19T23:22:03.093Z"
+    },
+    {
+      "id": "bug-009",
+      "timestamp": "2026-05-19T23:38:55.274Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/routes/(app)/trips/[slug]/budget/+page.svelte",
+      "root_cause": "Had '$lib/types'",
+      "fix": "Changed to '$lib/components/ui/TypeIcon.svelte'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 4,
+      "last_seen": "2026-05-19T23:39:42.871Z"
+    },
+    {
+      "id": "bug-010",
+      "timestamp": "2026-05-19T23:39:33.868Z",
+      "error_message": "Wrong return value",
+      "file": "src/routes/(app)/trips/[slug]/expenses/+page.svelte",
+      "root_cause": "Was returning: found?.emoji ?? '📦';",
+      "fix": "Now returns: expenseCategoryIcon[cat as ExpenseCategory] ?? 'no",
+      "tags": [
+        "auto-detected",
+        "return-value",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-19T23:39:33.868Z"
+    },
+    {
+      "id": "bug-011",
+      "timestamp": "2026-05-19T23:39:47.490Z",
+      "error_message": "Wrong reference: emoji should be label",
+      "file": "src/routes/(app)/trips/[slug]/expenses/+page.svelte",
+      "root_cause": "Used \"emoji\" instead of \"label\"",
+      "fix": "Changed emoji → label",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-19T23:39:47.490Z"
     }
   ]
 }

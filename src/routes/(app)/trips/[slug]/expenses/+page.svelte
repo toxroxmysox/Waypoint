@@ -10,7 +10,8 @@
 	import BottomSheet from '$lib/components/ui/BottomSheet.svelte';
 	import { simplifyDebts } from '$lib/utils/debt-simplify';
 	import { titleCase } from '$lib/utils/format';
-	import type { Notification, TripMember, Expense, ExpenseCategory, BudgetCategory } from '$lib/types';
+	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
+	import type { Notification, TripMember, Expense, ExpenseCategory, BudgetCategory, ItemType } from '$lib/types';
 	import type { DebtEdge } from '$lib/utils/debt-simplify';
 
 	let { data, form } = $props();
@@ -66,12 +67,20 @@
 	let showSplitConfig = $state(false);
 
 	// Category chips config
-	const categories: { value: ExpenseCategory; label: string; emoji: string }[] = [
-		{ value: 'food', label: 'Food', emoji: '🍽' },
-		{ value: 'transportation', label: 'Transport', emoji: '🚗' },
-		{ value: 'lodging', label: 'Lodging', emoji: '🏨' },
-		{ value: 'activity', label: 'Activity', emoji: '🎫' },
-		{ value: 'other', label: 'Other', emoji: '📦' }
+	const expenseCategoryIcon: Record<ExpenseCategory, ItemType> = {
+		lodging: 'lodging',
+		transportation: 'transportation',
+		food: 'meal',
+		activity: 'activity',
+		other: 'note'
+	};
+
+	const categories: { value: ExpenseCategory; label: string }[] = [
+		{ value: 'food', label: 'Food' },
+		{ value: 'transportation', label: 'Transport' },
+		{ value: 'lodging', label: 'Lodging' },
+		{ value: 'activity', label: 'Activity' },
+		{ value: 'other', label: 'Other' }
 	];
 
 	function memberName(memberId: string): string {
@@ -123,9 +132,8 @@
 		return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 	}
 
-	function categoryEmoji(cat: string): string {
-		const found = categories.find((c) => c.value === cat);
-		return found?.emoji ?? '📦';
+	function categoryIconType(cat: string): ItemType {
+		return expenseCategoryIcon[cat as ExpenseCategory] ?? 'note';
 	}
 
 	// Expense detail sheet
@@ -249,7 +257,7 @@
 						{@const meta = categories.find((c) => c.value === cat.category)}
 						{#if cat.total > 0}
 							<div class="flex items-center gap-2 rounded-md bg-surface-2/50 px-3 py-2">
-								<span class="text-sm">{meta?.emoji ?? '📦'}</span>
+								<TypeIcon type={expenseCategoryIcon[cat.category] ?? 'note'} size={20} />
 								<div class="min-w-0 flex-1">
 									<div class="flex items-center justify-between mb-0.5">
 										<span class="text-xs font-medium text-ink">{meta?.label ?? titleCase(cat.category)}</span>
@@ -308,9 +316,7 @@
 				{@const payerName = memberName(expense.paid_by)}
 				<Card>
 					<button type="button" class="flex w-full items-center gap-3 p-3 text-left" onclick={() => openExpenseDetail(expense)}>
-						<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-2 text-lg">
-							{categoryEmoji(expense.category)}
-						</div>
+						<TypeIcon type={categoryIconType(expense.category)} size={36} variant="square" />
 						<div class="min-w-0 flex-1">
 							<p class="text-sm font-medium text-ink truncate">{expense.description}</p>
 							<p class="text-xs text-ink-muted">
@@ -482,7 +488,7 @@
 								type="button"
 								class="rounded-full px-3 py-1 text-xs font-medium transition-colors {category === cat.value ? 'bg-ink text-paper' : 'bg-surface-2 text-ink-soft hover:bg-line'}"
 								onclick={() => (category = cat.value)}
-							>{cat.emoji} {cat.label}</button>
+							>{cat.label}</button>
 						{/each}
 					</div>
 				</fieldset>
@@ -597,7 +603,7 @@
 							type="button"
 							class="rounded-full px-3 py-1 text-xs font-medium transition-colors {editCategory === cat.value ? 'bg-ink text-paper' : 'bg-surface-2 text-ink-soft hover:bg-line'}"
 							onclick={() => (editCategory = cat.value)}
-						>{cat.emoji} {cat.label}</button>
+						>{cat.label}</button>
 					{/each}
 				</div>
 			</fieldset>

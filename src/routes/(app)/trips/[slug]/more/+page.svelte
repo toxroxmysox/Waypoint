@@ -13,6 +13,11 @@
 
 	let notifications = $state<Notification[]>(untrack(() => data.notifications ?? []));
 	let unreadCount = $state(untrack(() => data.unreadCount ?? 0));
+	let offlineEnabled = $state(false);
+
+	$effect(() => {
+		offlineEnabled = typeof localStorage !== 'undefined' && localStorage.getItem('waypoint-offline') === 'true';
+	});
 </script>
 
 <NavBar
@@ -96,6 +101,40 @@
 		</div>
 	</Card>
 
+	{#if isOwnerOrCoOwner}
+		<Card href="/trips/{data.trip.slug}/clone">
+			<div class="flex items-center gap-3 p-4">
+				<svg class="text-ink-soft shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+					<rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+					<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+				</svg>
+				<div class="min-w-0 flex-1">
+					<p class="text-ink text-sm font-semibold">Clone trip</p>
+					<p class="text-ink-muted text-[12px]">Create a new trip based on this one</p>
+				</div>
+				<svg class="text-ink-muted shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="m9 18 6-6-6-6" />
+				</svg>
+			</div>
+		</Card>
+	{/if}
+
+	<Card href="/trips/{data.trip.slug}/parking-lot">
+		<div class="flex items-center gap-3 p-4">
+			<svg class="text-ink-soft shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+				<circle cx="12" cy="12" r="10" />
+				<path d="M8 12h4c1.1 0 2-.9 2-2s-.9-2-2-2H8v8" />
+			</svg>
+			<div class="min-w-0 flex-1">
+				<p class="text-ink text-sm font-semibold">Parking lot</p>
+				<p class="text-ink-muted text-[12px]">Alternate and considered items</p>
+			</div>
+			<svg class="text-ink-muted shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<path d="m9 18 6-6-6-6" />
+			</svg>
+		</div>
+	</Card>
+
 	<Card>
 		<a
 			href="/trips/{data.trip.slug}/export"
@@ -115,6 +154,24 @@
 				<path d="m9 18 6-6-6-6" />
 			</svg>
 		</a>
+	</Card>
+
+	<Card>
+		<button
+			type="button"
+			onclick={() => window.print()}
+			class="flex w-full items-center gap-3 p-4"
+		>
+			<svg class="text-ink-soft shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+				<polyline points="6 9 6 2 18 2 18 9" />
+				<path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+				<rect x="6" y="14" width="12" height="8" />
+			</svg>
+			<div class="min-w-0 flex-1 text-left">
+				<p class="text-ink text-sm font-semibold">Print itinerary</p>
+				<p class="text-ink-muted text-[12px]">Print-friendly view of your trip</p>
+			</div>
+		</button>
 	</Card>
 
 	<Card>
@@ -142,8 +199,11 @@
 			</svg>
 			<div class="min-w-0 flex-1 text-left">
 				<p class="text-ink text-sm font-semibold">Offline mode</p>
-				<p class="text-ink-muted text-[12px]">Toggle offline to use cached trip data</p>
+				<p class="text-ink-muted text-[12px]">{offlineEnabled ? 'Currently on — using cached data' : 'Toggle offline to use cached trip data'}</p>
 			</div>
+			{#if offlineEnabled}
+				<span class="bg-gold-tint text-gold shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium">On</span>
+			{/if}
 		</button>
 	</Card>
 </main>

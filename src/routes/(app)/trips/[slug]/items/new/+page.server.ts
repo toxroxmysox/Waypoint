@@ -1,6 +1,7 @@
 import { fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Day, TripMember, Slot } from '$lib/types';
+import { timeToDatetime, datetimeToTime } from '$lib/utils/format';
 
 const VALID_SLOTS: Slot[] = ['morning', 'afternoon', 'evening', 'anytime'];
 const PB_BASE = process.env.PUBLIC_PB_URL || 'http://127.0.0.1:8090';
@@ -40,7 +41,16 @@ export const load: PageServerLoad = async ({ url, locals, parent }) => {
 			);
 			const resData = await res.json();
 			const s = (resData.items ?? []).find((item: { id: string }) => item.id === suggestionId);
-			if (s) prefill = { ...(s.payload ?? {}), _suggestion_id: s.id, _author_name: s.author_name };
+			if (s) {
+				const raw = s.payload ?? {};
+				prefill = {
+					...raw,
+					start_time: datetimeToTime(raw.start_time ?? ''),
+					end_time: datetimeToTime(raw.end_time ?? ''),
+					_suggestion_id: s.id,
+					_author_name: s.author_name
+				};
+			}
 		} catch (_) {
 			// If load fails, render empty form.
 		}
@@ -83,6 +93,16 @@ export const actions: Actions = {
 		const slot = data.get('slot')?.toString() || 'anytime';
 		const locationName = data.get('location_name')?.toString() || '';
 		const locationAddress = data.get('location_address')?.toString() || '';
+		const locationCoordsRaw = data.get('location_coords')?.toString() || '';
+		let locationCoords = null;
+		if (locationCoordsRaw) {
+			try {
+				locationCoords = JSON.parse(locationCoordsRaw);
+			} catch {
+				return fail(400, { error: 'Invalid location data.' });
+			}
+		}
+		const googlePlaceId = data.get('google_place_id')?.toString() || '';
 		const startTime = data.get('start_time')?.toString() || '';
 		const endTime = data.get('end_time')?.toString() || '';
 		const booked = data.get('booked') === 'on';
@@ -124,8 +144,10 @@ export const actions: Actions = {
 			description,
 			location_name: locationName,
 			location_address: locationAddress,
-			start_time: startTime,
-			end_time: endTime,
+			location_coords: locationCoords,
+			google_place_id: googlePlaceId,
+			start_time: timeToDatetime(startTime),
+			end_time: timeToDatetime(endTime),
 			booked,
 			confirmation_codes: confirmationCodes,
 			reservation_url: reservationUrl,
