@@ -217,7 +217,7 @@
 		{/if}
 
 		{#if data.isOwner}
-			<Button type="submit" variant="primary" size="lg" class="mt-4 w-full" disabled={saving}>
+			<Button type="submit" variant="primary" size="lg" class="mt-4 w-full" disabled={saving} loading={saving}>
 				{saving ? 'Saving...' : 'Save Budget'}
 			</Button>
 		{/if}

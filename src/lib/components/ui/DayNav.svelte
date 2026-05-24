@@ -60,7 +60,7 @@
 		<span></span>
 	{/if}
 
-	<span class="text-ink-muted font-mono text-[11px]">{currentIndex + 1} / {days.length}</span>
+	<span class="text-ink-muted font-mono text-xs">{currentIndex + 1} / {days.length}</span>
 
 	{#if nextDay}
 		<a

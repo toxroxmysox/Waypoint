@@ -522,7 +522,7 @@
 			</Card>
 		{/if}
 
-		<Button type="submit" disabled={loading} variant="moss" size="lg" class="w-full">
+		<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="w-full">
 			{buttonLabel}
 		</Button>
 	</form>

@@ -141,7 +141,7 @@
 					<PhaseColorPicker bind:value={newColor} />
 				</div>
 
-				<Button type="submit" disabled={loading} variant="moss" size="md" class="w-full">
+				<Button type="submit" disabled={loading} loading={loading} variant="moss" size="md" class="w-full">
 					{loading ? 'Creating…' : 'Create phase'}
 				</Button>
 			</form>

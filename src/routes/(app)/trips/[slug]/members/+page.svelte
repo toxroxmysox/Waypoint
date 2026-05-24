@@ -228,6 +228,7 @@
 						<Button
 							type="submit"
 							disabled={placeholderLoading}
+							loading={placeholderLoading}
 							variant="moss"
 							size="md"
 							class="w-full"
@@ -300,7 +301,7 @@
 						{/if}
 					</div>
 
-					<Button type="submit" disabled={inviteLoading} variant="moss" size="md" class="w-full">
+					<Button type="submit" disabled={inviteLoading} loading={inviteLoading} variant="moss" size="md" class="w-full">
 						{inviteLoading ? 'Sending…' : 'Send invite'}
 					</Button>
 				</form>

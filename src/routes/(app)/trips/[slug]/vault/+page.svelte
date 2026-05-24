@@ -146,7 +146,7 @@
 					/>
 				</div>
 
-				<Button onclick={handleUnlock} disabled={unlockLoading || !vaultPassword.trim()} variant="moss" size="md" class="w-full">
+				<Button onclick={handleUnlock} disabled={unlockLoading || !vaultPassword.trim()} loading={unlockLoading} variant="moss" size="md" class="w-full">
 					{unlockLoading ? 'Unlocking...' : 'Unlock'}
 				</Button>
 			</div>
@@ -273,7 +273,7 @@
 						placeholder="Sensitive information..."
 					></textarea>
 				</div>
-				<Button type="submit" disabled={createLoading || !newTitle.trim() || !newBody.trim()} variant="moss" size="md" class="w-full">
+				<Button type="submit" disabled={createLoading || !newTitle.trim() || !newBody.trim()} loading={createLoading} variant="moss" size="md" class="w-full">
 					{createLoading ? 'Encrypting...' : 'Save encrypted'}
 				</Button>
 			</form>

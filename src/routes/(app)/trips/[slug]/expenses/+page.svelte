@@ -246,7 +246,7 @@
 					></div>
 				</div>
 				{#if totalSpent > budgetTotal}
-					<p class="mt-1 text-[11px] text-clay">${formatAmount(totalSpent - budgetTotal)} over budget</p>
+					<p class="mt-1 text-xs text-clay">${formatAmount(totalSpent - budgetTotal)} over budget</p>
 				{/if}
 			</button>
 
@@ -261,7 +261,7 @@
 								<div class="min-w-0 flex-1">
 									<div class="flex items-center justify-between mb-0.5">
 										<span class="text-xs font-medium text-ink">{meta?.label ?? titleCase(cat.category)}</span>
-										<span class="font-mono text-[11px] text-ink-muted">${formatAmount(spent)} / ${formatAmount(cat.total)}</span>
+										<span class="font-mono text-xs text-ink-muted">${formatAmount(spent)} / ${formatAmount(cat.total)}</span>
 									</div>
 									<div class="h-1 rounded-full bg-surface-2 overflow-hidden">
 										<div
@@ -540,7 +540,7 @@
 			<p class="mb-3 text-sm text-error">{form.addExpense.error}</p>
 		{/if}
 
-		<Button type="submit" variant="primary" size="lg" class="w-full" disabled={submitting}>
+		<Button type="submit" variant="primary" size="lg" class="w-full" disabled={submitting} loading={submitting}>
 			{submitting ? 'Adding...' : 'Add Expense'}
 		</Button>
 	</form>
@@ -707,7 +707,7 @@
 				<p class="mb-3 text-sm text-error">{form.updateExpense.error}</p>
 			{/if}
 
-			<Button type="submit" variant="primary" size="lg" class="w-full" disabled={updating}>
+			<Button type="submit" variant="primary" size="lg" class="w-full" disabled={updating} loading={updating}>
 				{updating ? 'Saving...' : 'Save Changes'}
 			</Button>
 		</form>
@@ -735,7 +735,7 @@
 				<p class="mb-2 text-sm text-error">{form.deleteExpense.error}</p>
 			{/if}
 
-			<Button type="submit" variant="ghost" size="md" class="w-full text-clay" disabled={deleting}>
+			<Button type="submit" variant="ghost" size="md" class="w-full text-clay" disabled={deleting} loading={deleting}>
 				{deleting ? 'Deleting...' : 'Delete Expense'}
 			</Button>
 		</form>
@@ -853,7 +853,7 @@
 				<Button variant="ghost" size="md" class="flex-1" onclick={() => (settleStep = 'list')}>
 					Back
 				</Button>
-				<Button type="submit" variant="primary" size="md" class="flex-1" disabled={settleSubmitting}>
+				<Button type="submit" variant="primary" size="md" class="flex-1" disabled={settleSubmitting} loading={settleSubmitting}>
 					{settleSubmitting ? 'Recording...' : 'Confirm Payment'}
 				</Button>
 			</div>

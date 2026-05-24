@@ -71,7 +71,7 @@
 						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 						placeholder="you@example.com"
 					/>
-					<Button type="submit" disabled={loading} variant="moss" size="lg" class="mt-4 w-full">
+					<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="mt-4 w-full">
 						{loading ? 'Sending…' : 'Send code'}
 					</Button>
 				</form>
@@ -104,7 +104,7 @@
 						class="border-line bg-surface text-ink font-mono mt-1 block w-full rounded-md border px-3 py-2 text-center text-2xl tracking-[0.5em]"
 						placeholder="000000"
 					/>
-					<Button type="submit" disabled={loading} variant="moss" size="lg" class="mt-4 w-full">
+					<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="mt-4 w-full">
 						{loading ? 'Verifying…' : 'Verify'}
 					</Button>
 					<button

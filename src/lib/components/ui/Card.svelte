@@ -20,7 +20,7 @@
 	const base =
 		'block rounded-lg border border-line bg-surface text-ink transition-shadow';
 	const shadow = $derived(strong ? 'shadow-card-strong' : 'shadow-card');
-	const interactive = $derived(href || onclick ? 'hover:shadow-card-strong active:scale-[0.997]' : '');
+	const interactive = $derived(href || onclick ? 'hover:shadow-card-strong active:scale-[0.98] active:bg-surface-2' : '');
 	const accentStyle = $derived(accent ? `border-left-width:4px;border-left-color:${accent};` : '');
 </script>
 

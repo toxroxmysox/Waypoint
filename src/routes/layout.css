@@ -54,11 +54,20 @@
 }
 
 /* Page baseline. Paper background, ink text, Inter UI. */
+html {
+	touch-action: manipulation;
+}
+
 html,
 body {
 	background: var(--color-paper);
 	color: var(--color-ink);
 	-webkit-font-smoothing: antialiased;
+}
+
+/* Tabular figures for numeric alignment in expense tables and budgets. */
+.font-mono {
+	font-variant-numeric: tabular-nums;
 }
 
 /* iOS Safari auto-zooms when a focused input's effective font-size is < 16px.

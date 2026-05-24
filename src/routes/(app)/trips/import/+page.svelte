@@ -89,7 +89,7 @@
 			</div>
 		{/if}
 
-		<Button type="submit" disabled={submitting || !fileInput?.files?.length} variant="moss" size="md" class="w-full">
+		<Button type="submit" disabled={submitting || !fileInput?.files?.length} loading={submitting} variant="moss" size="md" class="w-full">
 			{submitting ? 'Importing...' : 'Import Trip'}
 		</Button>
 	</form>

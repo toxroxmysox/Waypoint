@@ -69,7 +69,7 @@
 				}}
 				class="mt-4"
 			>
-				<Button type="submit" disabled={loading} variant="primary" size="md" class="w-full">
+				<Button type="submit" disabled={loading} loading={loading} variant="primary" size="md" class="w-full">
 					{loading ? 'Signing out…' : 'Sign out and accept as ' + data.email}
 				</Button>
 			</form>
@@ -104,7 +104,7 @@
 				}}
 				class="mt-6"
 			>
-				<Button type="submit" disabled={loading} variant="moss" size="lg" class="w-full">
+				<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="w-full">
 					{loading ? 'Joining…' : 'Accept invite'}
 				</Button>
 			</form>
@@ -146,7 +146,7 @@
 					class="mt-4"
 				>
 					<input type="hidden" name="email" value={data.email} />
-					<Button type="submit" disabled={loading} variant="moss" size="lg" class="w-full">
+					<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="w-full">
 						{loading ? 'Sending…' : 'Send 6-digit code'}
 					</Button>
 				</form>
@@ -185,7 +185,7 @@
 						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-center font-mono text-2xl tracking-[0.5em]"
 						placeholder="000000"
 					/>
-					<Button type="submit" disabled={loading} variant="moss" size="lg" class="mt-4 w-full">
+					<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="mt-4 w-full">
 						{loading ? 'Verifying…' : 'Verify and join'}
 					</Button>
 					<button

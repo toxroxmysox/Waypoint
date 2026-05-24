@@ -74,7 +74,7 @@
 					{formatDateRange(data.trip.start_date, data.trip.end_date)}
 				</p>
 				{#if data.trip.timezone}
-					<p class="text-ink-muted font-mono mt-0.5 text-[11px]">{data.trip.timezone}</p>
+					<p class="text-ink-muted font-mono mt-0.5 text-xs">{data.trip.timezone}</p>
 				{/if}
 				<p class="text-ink-soft mt-2 text-sm">
 					<span class="font-mono">{data.days.length}</span> days ·
@@ -112,7 +112,7 @@
 						{/if}
 						<a href="/trips/{data.trip.slug}/phases/{phase.id}" class="text-ink font-semibold hover:underline">{phase.name}</a>
 					</div>
-					<span class="text-ink-muted font-mono text-[11px]">
+					<span class="text-ink-muted font-mono text-xs">
 						{formatDateRange(phase.start_date, phase.end_date)}
 						{#if phase.location}
 							<span class="text-line">·</span> {phase.location}

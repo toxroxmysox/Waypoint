@@ -85,7 +85,7 @@
 						/>
 					</div>
 
-					<Button type="submit" variant="moss" size="md" class="w-full" disabled={accepting}>
+					<Button type="submit" variant="moss" size="md" class="w-full" disabled={accepting} loading={accepting}>
 						{accepting ? 'Joining…' : `Join ${claim.trip_title}`}
 					</Button>
 				</form>

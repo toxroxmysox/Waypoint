@@ -26,7 +26,7 @@
 		{@const active = activeTab === tab.id}
 		<a
 			href={tab.href}
-			class="flex w-14 flex-col items-center gap-0.5 rounded-lg px-1 py-2 text-[10px] font-medium transition-colors
+			class="flex w-14 flex-col items-center gap-0.5 rounded-lg px-1 py-2.5 text-[11px] font-medium transition-colors
 				{active ? 'bg-moss-tint text-moss' : 'text-ink-muted hover:bg-paper hover:text-ink-soft'}"
 			aria-current={active ? 'page' : undefined}
 		>

@@ -153,7 +153,7 @@
 					<PhaseColorPicker bind:value={editColor} />
 				</div>
 
-				<Button type="submit" disabled={loading} variant="moss" size="md" class="w-full">
+				<Button type="submit" disabled={loading} loading={loading} variant="moss" size="md" class="w-full">
 					{loading ? 'Saving…' : 'Save changes'}
 				</Button>
 			</form>

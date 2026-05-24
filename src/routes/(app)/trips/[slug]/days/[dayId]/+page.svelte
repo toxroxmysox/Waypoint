@@ -117,7 +117,7 @@
 						rows="3"
 						class="border-line bg-surface text-ink block w-full rounded-md border px-3 py-2 text-sm"
 					>{data.day.notes}</textarea>
-					<Button type="submit" disabled={notesLoading} variant="primary" size="sm" class="mt-2">
+					<Button type="submit" disabled={notesLoading} loading={notesLoading} variant="primary" size="sm" class="mt-2">
 						{notesLoading ? 'Saving…' : 'Save'}
 					</Button>
 				</form>
