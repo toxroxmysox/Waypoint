@@ -11,7 +11,7 @@ export const load: PageServerLoad = async ({ parent, locals, params }) => {
 
 	const items = await locals.pb.collection('items').getFullList<Item>({
 		filter: `trip = "${trip.id}"`,
-		sort: 'day,slot,order'
+		sort: 'day,slot,rank'
 	});
 
 	return { trip, membership, days, phases, items };
@@ -72,7 +72,7 @@ export const actions: Actions = {
 				title,
 				status: 'done',
 				booked: false,
-				order: 999
+				rank: 999
 			});
 			return { replacementAdded: true };
 		} catch (err: unknown) {
