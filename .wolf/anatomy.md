@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-19T13:26:33.366Z
-> Files: 530 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-24T10:41:42.280Z
+> Files: 554 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ./
 
@@ -933,6 +933,69 @@
 ## src/
 
 - `app.html` — Declares html (~301 tok)
+
+## src/lib/components/
+
+- `BottomNav.svelte` — Svelte: BottomNav (~861 tok)
+- `CloseoutDayCard.svelte` — Svelte: CloseoutDayCard (~786 tok)
+- `FlightLookup.svelte` — Svelte: FlightLookup (~644 tok)
+- `InlineQuickAdd.svelte` — Svelte: InlineQuickAdd (~585 tok)
+- `PlacesAutocomplete.svelte` — Svelte: PlacesAutocomplete (~787 tok)
+- `SubTabs.svelte` — Svelte: SubTabs (~218 tok)
+- `TripTabs.svelte` — Svelte: TripTabs (~376 tok)
+
+## src/lib/components/ui/
+
+- `BottomSheet.svelte` — Svelte: BottomSheet (~434 tok)
+- `Button.svelte` — Svelte: Button (~410 tok)
+- `FAB.svelte` — Svelte: FAB (~310 tok)
+- `NavBar.svelte` — Svelte: NavBar (~540 tok)
+- `NotificationBell.svelte` — Svelte: NotificationBell (~1281 tok)
+
+## src/routes/
+
+- `layout.css` — Styles: 4 rules, 39 vars (~811 tok)
+
+## src/routes/(app)/trips/[slug]/clone/
+
+- `+page.svelte` — Svelte: +page (~1098 tok)
+
+## src/routes/(app)/trips/[slug]/closeout/
+
+- `+page.server.ts` — API routes: GET (8 endpoints) (~1074 tok)
+- `+page.svelte` — Svelte: +page (~1426 tok)
+
+## src/routes/(app)/trips/[slug]/days/[dayId]/
+
+- `+page.svelte` — Svelte: +page (~1808 tok)
+
+## src/routes/(app)/trips/[slug]/expenses/
+
+- `+page.svelte` — Svelte: +page (~8338 tok)
+
+## src/routes/(app)/trips/[slug]/export/
+
+- `+server.ts` — Exports GET (~453 tok)
+
+## src/routes/(app)/trips/[slug]/inbox/
+
+- `+page.svelte` — Svelte: +page (~1432 tok)
+
+## src/routes/(app)/trips/[slug]/parking-lot/
+
+- `+page.server.ts` — Exports load (~142 tok)
+
+## src/routes/(app)/trips/[slug]/settings/
+
+- `+page.svelte` — Svelte: +page (~2244 tok)
+
+## src/routes/(app)/trips/import/
+
+- `+page.svelte` — Svelte: +page (~754 tok)
+
+## src/routes/(app)/trips/new/
+
+- `+page.svelte` — Svelte: +page (~1323 tok)
 
 ## static/
 

@@ -176,6 +176,342 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-05-19T23:39:47.490Z"
+    },
+    {
+      "id": "bug-012",
+      "timestamp": "2026-05-24T00:41:06.518Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/routes/(app)/trips/[slug]/parking-lot/+page.server.ts",
+      "root_cause": "Had \" && parking_lot_scope != \"",
+      "fix": "Changed to \" && (parking_lot_scope = \"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-05-24T00:41:11.615Z"
+    },
+    {
+      "id": "bug-013",
+      "timestamp": "2026-05-24T00:41:15.179Z",
+      "error_message": "Wrong reference: order should be rank",
+      "file": "src/routes/(app)/trips/[slug]/closeout/+page.server.ts",
+      "root_cause": "Used \"order\" instead of \"rank\"",
+      "fix": "Changed order → rank",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-24T00:41:15.179Z"
+    },
+    {
+      "id": "bug-014",
+      "timestamp": "2026-05-24T00:41:19.199Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/routes/(app)/trips/[slug]/export/+server.ts",
+      "root_cause": "Had 'day,slot,order'",
+      "fix": "Changed to 'day,slot,rank'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-24T00:41:19.199Z"
+    },
+    {
+      "id": "bug-015",
+      "timestamp": "2026-05-24T00:47:08.209Z",
+      "error_message": "Wrong reference: 8a847a should be 67625a",
+      "file": "src/routes/layout.css",
+      "root_cause": "Used \"8a847a\" instead of \"67625a\"",
+      "fix": "Changed 8a847a → 67625a",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "css"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-24T00:47:08.209Z"
+    },
+    {
+      "id": "bug-016",
+      "timestamp": "2026-05-24T00:47:20.788Z",
+      "error_message": "CSS fix: --shadow-card",
+      "file": "src/routes/layout.css",
+      "root_cause": "--shadow-card: 0 1px 2px rgba(28, 27, 24, 0.03) → 0 1px 2px rgba(28, 27, 24, 0.04)",
+      "fix": "Changed --shadow-card: 0 1px 2px rgba(28, 27, 24, 0.03) → 0 1px 2px rgba(28, 27, 24, 0.04)",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "css"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-24T00:47:20.788Z"
+    },
+    {
+      "id": "bug-017",
+      "timestamp": "2026-05-24T00:47:35.432Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/lib/components/BottomNav.svelte",
+      "root_cause": "Had \"border-line bg-paper/95 fixed bottom-0 left-0 rig",
+      "fix": "Changed to \"border-line bg-paper/95 fixed bottom-0 left-0 rig",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-24T00:47:35.432Z"
+    },
+    {
+      "id": "bug-018",
+      "timestamp": "2026-05-24T00:47:39.709Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/lib/components/PlacesAutocomplete.svelte",
+      "root_cause": "Had \"border-line bg-surface absolute z-50 mt-1 max-h-6",
+      "fix": "Changed to \"border-line bg-surface absolute z-modal mt-1 max-",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-24T00:47:39.709Z"
+    },
+    {
+      "id": "bug-019",
+      "timestamp": "2026-05-24T00:47:51.973Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/lib/components/TripTabs.svelte",
+      "root_cause": "Had \"border-line bg-paper/95 sticky top-[57px] z-20 fl",
+      "fix": "Changed to \"border-line bg-paper/95 sticky top-[57px] z-dropd",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-24T00:47:51.973Z"
+    },
+    {
+      "id": "bug-020",
+      "timestamp": "2026-05-24T00:47:58.024Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/lib/components/SubTabs.svelte",
+      "root_cause": "Had \"border-line bg-paper/95 sticky top-[57px] z-20 fl",
+      "fix": "Changed to \"border-line bg-paper/95 sticky top-[57px] z-dropd",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-24T00:47:58.024Z"
+    },
+    {
+      "id": "bug-021",
+      "timestamp": "2026-05-24T00:48:02.161Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/lib/components/ui/NotificationBell.svelte",
+      "root_cause": "Had \"fixed inset-0 z-40\"",
+      "fix": "Changed to \"fixed inset-0 z-nav\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-05-24T00:48:05.951Z"
+    },
+    {
+      "id": "bug-022",
+      "timestamp": "2026-05-24T00:48:12.781Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/lib/components/ui/NavBar.svelte",
+      "root_cause": "Had \"border-line bg-paper/95 sticky top-0 z-30 flex it",
+      "fix": "Changed to \"border-line bg-paper/95 sticky top-0 z-sticky fle",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-24T00:48:12.781Z"
+    },
+    {
+      "id": "bug-023",
+      "timestamp": "2026-05-24T00:48:19.360Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/lib/components/ui/BottomSheet.svelte",
+      "root_cause": "Had \"fixed inset-0 z-50 flex items-end justify-center ",
+      "fix": "Changed to \"fixed inset-0 z-modal flex items-end justify-cent",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-24T00:48:19.360Z"
+    },
+    {
+      "id": "bug-024",
+      "timestamp": "2026-05-24T00:48:23.578Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/lib/components/ui/FAB.svelte",
+      "root_cause": "Had 'fixed right-5 z-40 flex h-14 w-14 items-center ju",
+      "fix": "Changed to 'fixed right-5 z-nav flex h-14 w-14 items-center j",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-24T00:48:23.578Z"
+    },
+    {
+      "id": "bug-025",
+      "timestamp": "2026-05-24T00:48:52.263Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/routes/(app)/trips/new/+page.svelte",
+      "root_cause": "Had \"border-clay/30 bg-clay/10 text-clay mb-4 rounded-",
+      "fix": "Changed to \"border-error/30 bg-error/10 text-error-deep mb-4 ",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 12,
+      "last_seen": "2026-05-24T00:49:47.428Z"
+    },
+    {
+      "id": "bug-026",
+      "timestamp": "2026-05-24T00:49:25.101Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/lib/components/FlightLookup.svelte",
+      "root_cause": "Had \"text-clay text-sm\"",
+      "fix": "Changed to \"text-error text-sm\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-24T00:49:25.101Z"
+    },
+    {
+      "id": "bug-027",
+      "timestamp": "2026-05-24T10:33:21.289Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/routes/(app)/trips/[slug]/closeout/+page.svelte",
+      "root_cause": "Had \"h-full rounded-full bg-green-500 transition-all\"",
+      "fix": "Changed to \"h-full rounded-full bg-moss transition-all\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 5,
+      "last_seen": "2026-05-24T10:33:40.444Z"
+    },
+    {
+      "id": "bug-028",
+      "timestamp": "2026-05-24T10:33:47.157Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/lib/components/CloseoutDayCard.svelte",
+      "root_cause": "Had \"rounded-lg bg-green-50 px-3 py-1.5 text-xs font-m",
+      "fix": "Changed to \"rounded-lg bg-moss-tint px-3 py-1.5 text-xs font-",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-24T10:33:47.157Z"
+    },
+    {
+      "id": "bug-029",
+      "timestamp": "2026-05-24T10:34:00.376Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/lib/components/ui/Button.svelte",
+      "root_cause": "Had 'inline-flex items-center justify-center font-semi",
+      "fix": "Changed to 'inline-flex items-center justify-center font-semi",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-24T10:34:00.376Z"
+    },
+    {
+      "id": "bug-030",
+      "timestamp": "2026-05-24T10:34:08.880Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/lib/components/InlineQuickAdd.svelte",
+      "root_cause": "Had \"bg-ink text-on-ink rounded-md px-3 py-1.5 text-sm",
+      "fix": "Changed to \"bg-ink text-on-ink rounded-md px-3 py-1.5 text-sm",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-24T10:34:08.880Z"
+    },
+    {
+      "id": "bug-031",
+      "timestamp": "2026-05-24T10:41:25.651Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/lib/components/ui/BottomSheet.svelte",
+      "root_cause": "Had \"w-full max-w-lg rounded-t-xl bg-surface shadow-ca",
+      "fix": "Changed to \"w-full max-w-lg rounded-t-xl bg-surface shadow-ca",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-24T10:41:25.651Z"
+    },
+    {
+      "id": "bug-032",
+      "timestamp": "2026-05-24T10:41:35.542Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/lib/components/ui/NotificationBell.svelte",
+      "root_cause": "Had \"fixed inset-0 z-nav\"",
+      "fix": "Changed to \"fixed inset-0 z-modal\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-24T10:41:35.542Z"
     }
   ]
 }
