@@ -7,6 +7,7 @@
 	import SectionH from '$lib/components/ui/SectionH.svelte';
 	import BottomSheet from '$lib/components/ui/BottomSheet.svelte';
 	import type { VaultEntryDecrypted } from '$lib/types';
+	import { toast } from '$lib/stores/toast';
 
 	let { data, form } = $props();
 
@@ -197,10 +198,11 @@
 								use:enhance={() => {
 									deleteLoading = true;
 									deleteId = entry.id;
-									return async ({ update }) => {
+									return async ({ update, result }) => {
 										deleteLoading = false;
 										deleteId = null;
 										viewEntry = null;
+										if (result.type === 'success') toast.show('Entry deleted');
 										await update();
 									};
 								}}
@@ -245,6 +247,7 @@
 							newTitle = '';
 							newBody = '';
 							createOpen = false;
+							toast.show('Entry created');
 							await update();
 						}
 					};

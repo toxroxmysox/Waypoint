@@ -303,13 +303,13 @@ Progress tracked in this file — mark each WP with completion date when done.
 
 | WP | Status | Date |
 |----|--------|------|
-| WP-1 | Not started | |
-| WP-2 | Not started | |
-| WP-3 | Not started | |
-| WP-4 | Not started | |
-| WP-5 | Not started | |
-| WP-6 | Not started | |
-| WP-7 | Not started | |
+| WP-1 | Done | 2026-05-23 |
+| WP-2 | Done | 2026-05-23 |
+| WP-3 | Done | 2026-05-24 |
+| WP-4 | Done | 2026-05-24 |
+| WP-5 | Done | 2026-05-24 |
+| WP-6 | Done | 2026-05-25 |
+| WP-7 | Done | 2026-05-24 |
 | WP-8 | Not started | |
 | WP-9 | Not started | |
 | WP-10 | Not started | |

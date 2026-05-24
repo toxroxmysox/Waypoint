@@ -6,6 +6,7 @@
 	import Pill from '$lib/components/ui/Pill.svelte';
 	import type { Suggestion } from '$lib/types';
 	import { titleCase } from '$lib/utils/format';
+	import { toast } from '$lib/stores/toast';
 
 	let { data, form } = $props();
 
@@ -92,8 +93,9 @@
 								action="?/approve"
 								use:enhance={() => {
 									approving = s.id;
-									return async ({ update }) => {
+									return async ({ update, result }) => {
 										approving = null;
+										if (result.type === 'success') toast.show('Suggestion approved');
 										await update();
 									};
 								}}
@@ -121,8 +123,9 @@
 								action="?/reject"
 								use:enhance={() => {
 									rejecting = s.id;
-									return async ({ update }) => {
+									return async ({ update, result }) => {
 										rejecting = null;
+										if (result.type === 'success') toast.show('Suggestion rejected');
 										await update();
 									};
 								}}

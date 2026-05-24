@@ -9,6 +9,7 @@
 	import { titleCase } from '$lib/utils/format';
 	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
 	import type { Notification, BudgetCategory, ExpenseCategory, ItemType } from '$lib/types';
+	import { toast } from '$lib/stores/toast';
 
 	let { data, form } = $props();
 
@@ -126,8 +127,9 @@
 		action="?/saveBudget"
 		use:enhance={() => {
 			saving = true;
-			return async ({ update }) => {
+			return async ({ update, result }) => {
 				saving = false;
+				if (result.type === 'success') toast.show('Budget saved');
 				await update();
 			};
 		}}

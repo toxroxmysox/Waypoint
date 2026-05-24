@@ -12,6 +12,7 @@
 	import { titleCase } from '$lib/utils/format';
 	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
 	import type { Notification, TripMember, Expense, ExpenseCategory, BudgetCategory, ItemType } from '$lib/types';
+	import { toast } from '$lib/stores/toast';
 	import type { DebtEdge } from '$lib/utils/debt-simplify';
 
 	let { data, form } = $props();
@@ -348,6 +349,7 @@
 				if (result.type === 'success') {
 					showAddExpense = false;
 					resetForm();
+					toast.show('Expense added');
 				}
 				await update();
 			};
@@ -559,6 +561,7 @@
 					if (result.type === 'success') {
 						showExpenseDetail = false;
 						selectedExpense = null;
+						toast.show('Expense updated');
 					}
 					await update();
 				};
@@ -724,6 +727,7 @@
 					if (result.type === 'success') {
 						showExpenseDetail = false;
 						selectedExpense = null;
+						toast.show('Expense deleted');
 					}
 					await update();
 				};
@@ -794,6 +798,7 @@
 					settleSubmitting = false;
 					if (result.type === 'success') {
 						settleStep = 'confirmed';
+						toast.show('Settlement recorded');
 					}
 					await update();
 				};

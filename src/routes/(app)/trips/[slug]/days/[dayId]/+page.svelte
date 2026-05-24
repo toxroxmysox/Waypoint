@@ -8,6 +8,7 @@
 	import SectionH from '$lib/components/ui/SectionH.svelte';
 	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
 	import FAB from '$lib/components/ui/FAB.svelte';
+	import { toast } from '$lib/stores/toast';
 	import DayNav from '$lib/components/ui/DayNav.svelte';
 	import PhaseChip from '$lib/components/ui/PhaseChip.svelte';
 	import { titleCase, formatTime } from '$lib/utils/format';
@@ -105,7 +106,10 @@
 						notesLoading = true;
 						return async ({ result, update }) => {
 							notesLoading = false;
-							if (result.type === 'success') editingNotes = false;
+							if (result.type === 'success') {
+								editingNotes = false;
+								toast.show('Notes saved');
+							}
 							await update();
 						};
 					}}

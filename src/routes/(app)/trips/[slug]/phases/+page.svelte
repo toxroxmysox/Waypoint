@@ -7,6 +7,7 @@
 	import SubTabs from '$lib/components/SubTabs.svelte';
 	import PhaseColorPicker from '$lib/components/PhaseColorPicker.svelte';
 	import { phasePalette } from '$lib/utils/phase-palette';
+	import { toast } from '$lib/stores/toast';
 
 	let { data, form } = $props();
 
@@ -74,6 +75,7 @@
 						if (result.type === 'success') {
 							showCreate = false;
 							newColor = phasePalette[0].hex;
+							toast.show('Phase created');
 						}
 						await update();
 					};
@@ -214,8 +216,9 @@
 								method="POST"
 								action="?/delete"
 								use:enhance={() => {
-									return async ({ update }) => {
+									return async ({ update, result }) => {
 										confirmDeleteId = null;
+										if (result.type === 'success') toast.show('Phase deleted');
 										await update();
 									};
 								}}

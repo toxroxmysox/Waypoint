@@ -9,6 +9,7 @@
 	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
 	import PhaseColorPicker from '$lib/components/PhaseColorPicker.svelte';
 	import { phasePalette } from '$lib/utils/phase-palette';
+	import { toast } from '$lib/stores/toast';
 	import { titleCase } from '$lib/utils/format';
 
 	let { data, form } = $props();
@@ -84,7 +85,10 @@
 					loading = true;
 					return async ({ result, update }) => {
 						loading = false;
-						if (result.type === 'success') editing = false;
+						if (result.type === 'success') {
+							editing = false;
+							toast.show('Phase updated');
+						}
 						await update();
 					};
 				}}

@@ -5,6 +5,7 @@
 	import Pill from '$lib/components/ui/Pill.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import type { InviteRole } from '$lib/types';
+	import { toast } from '$lib/stores/toast';
 
 	let { data, form } = $props();
 
@@ -93,8 +94,9 @@
 									action="?/promote"
 									use:enhance={() => {
 										promoting = m.id;
-										return async ({ update }) => {
+										return async ({ update, result }) => {
 											promoting = null;
+											if (result.type === 'success') toast.show('Member promoted');
 											await update();
 										};
 									}}
@@ -117,8 +119,9 @@
 									action="?/remove"
 									use:enhance={() => {
 										removing = m.id;
-										return async ({ update }) => {
+										return async ({ update, result }) => {
 											removing = null;
+											if (result.type === 'success') toast.show('Member removed');
 											await update();
 										};
 									}}
@@ -163,9 +166,10 @@
 						action="?/addPlaceholder"
 						use:enhance={() => {
 							placeholderLoading = true;
-							return async ({ update }) => {
+							return async ({ update, result }) => {
 								placeholderLoading = false;
 								showPlaceholderForm = false;
+								if (result.type === 'success') toast.show('Member added');
 								await update({ reset: true });
 							};
 						}}
@@ -251,8 +255,9 @@
 					action="?/invite"
 					use:enhance={() => {
 						inviteLoading = true;
-						return async ({ update }) => {
+						return async ({ update, result }) => {
 							inviteLoading = false;
+							if (result.type === 'success') toast.show('Invite sent');
 							await update({ reset: true });
 						};
 					}}
@@ -339,8 +344,9 @@
 								action="?/revoke"
 								use:enhance={() => {
 									revoking = p.id;
-									return async ({ update }) => {
+									return async ({ update, result }) => {
 										revoking = null;
+										if (result.type === 'success') toast.show('Invite revoked');
 										await update();
 									};
 								}}

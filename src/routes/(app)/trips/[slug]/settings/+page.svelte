@@ -3,6 +3,7 @@
 	import NavBar from '$lib/components/ui/NavBar.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import { toast } from '$lib/stores/toast';
 	let { data, form } = $props();
 
 	let loading = $state(false);
@@ -28,8 +29,9 @@
 			action="?/update"
 			use:enhance={() => {
 				loading = true;
-				return async ({ update }) => {
+				return async ({ update, result }) => {
 					loading = false;
+					if (result.type === 'success') toast.show('Settings saved');
 					await update();
 				};
 			}}

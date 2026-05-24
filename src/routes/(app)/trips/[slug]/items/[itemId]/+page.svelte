@@ -9,6 +9,7 @@
 	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
 	import PhaseChip from '$lib/components/ui/PhaseChip.svelte';
 	import { titleCase, formatTime } from '$lib/utils/format';
+	import { toast } from '$lib/stores/toast';
 
 	import VoteButtons from '$lib/components/VoteButtons.svelte';
 	import MoveItemSheet from '$lib/components/MoveItemSheet.svelte';
@@ -105,8 +106,9 @@
 								action="?/promote"
 								use:enhance={() => {
 									promoteLoading = true;
-									return async ({ update }) => {
+									return async ({ update, result }) => {
 										promoteLoading = false;
+										if (result.type === 'success') toast.show('Item promoted');
 										await update();
 									};
 								}}
@@ -126,8 +128,9 @@
 								action="?/demote"
 								use:enhance={() => {
 									demoteLoading = true;
-									return async ({ update }) => {
+									return async ({ update, result }) => {
 										demoteLoading = false;
+										if (result.type === 'success') toast.show('Item demoted');
 										await update();
 									};
 								}}
