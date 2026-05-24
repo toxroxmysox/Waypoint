@@ -116,7 +116,7 @@
 
 <main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 space-y-4">
 	{#if error}
-		<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">{error}</div>
+		<div class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{error}</div>
 	{/if}
 
 	<form

@@ -60,7 +60,7 @@
 <NavBar title="Members" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}" />
 <main class="mx-auto w-full max-w-lg flex-1 space-y-6 px-4 pt-4 pb-8">
 	{#if actionError}
-		<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">
+		<div class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">
 			{actionError}
 		</div>
 	{/if}
@@ -172,7 +172,7 @@
 						class="space-y-3 p-4"
 					>
 						{#if placeholderForm?.error}
-							<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">
+							<div class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">
 								{placeholderForm.error}
 							</div>
 						{/if}
@@ -258,7 +258,7 @@
 					class="space-y-3 p-4"
 				>
 					{#if inviteError}
-						<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">
+						<div class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">
 							{inviteError}
 						</div>
 					{/if}
@@ -315,7 +315,7 @@
 				Pending invites ({data.pending.length})
 			</h2>
 			{#if revokeError}
-				<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">
+				<div class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">
 					{revokeError}
 				</div>
 			{/if}

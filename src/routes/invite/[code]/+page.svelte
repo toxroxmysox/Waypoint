@@ -24,7 +24,7 @@
 		</div>
 
 		{#if data.status === 'not_found'}
-			<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-4 text-sm">
+			<div class="border-error/30 bg-error/10 text-error-deep rounded-md border p-4 text-sm">
 				<p class="font-semibold">Invite not found</p>
 				<p class="mt-1">
 					This link is invalid or has already been used. If you think it should still work, ask the
@@ -35,7 +35,7 @@
 				>Back to your trips</a
 			>
 		{:else if data.status === 'expired'}
-			<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-4 text-sm">
+			<div class="border-error/30 bg-error/10 text-error-deep rounded-md border p-4 text-sm">
 				<p class="font-semibold">Invite expired</p>
 				<p class="mt-1">
 					This invitation to <strong>{data.tripTitle}</strong> has expired. Ask the person who
@@ -46,7 +46,7 @@
 				>Back to your trips</a
 			>
 		{:else if data.status === 'mismatch'}
-			<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-4 text-sm">
+			<div class="border-error/30 bg-error/10 text-error-deep rounded-md border p-4 text-sm">
 				<p class="font-semibold">Wrong account</p>
 				<p class="mt-2">
 					This invite was sent to <strong>{data.email}</strong>, but you're signed in as
@@ -87,7 +87,7 @@
 			</div>
 
 			{#if error}
-				<div class="border-clay/30 bg-clay/10 text-clay mt-4 rounded-md border p-3 text-sm">
+				<div class="border-error/30 bg-error/10 text-error-deep mt-4 rounded-md border p-3 text-sm">
 					{error}
 				</div>
 			{/if}
@@ -123,7 +123,7 @@
 			</div>
 
 			{#if error}
-				<div class="border-clay/30 bg-clay/10 text-clay mt-4 rounded-md border p-3 text-sm">
+				<div class="border-error/30 bg-error/10 text-error-deep mt-4 rounded-md border p-3 text-sm">
 					{error}
 				</div>
 			{/if}
