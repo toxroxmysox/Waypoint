@@ -534,7 +534,7 @@
 				<button
 					type="submit"
 					disabled={deleting}
-					class="bg-clay text-paper hover:bg-clay/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
+					class="bg-clay text-paper hover:bg-clay/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-40"
 				>
 					{deleting ? 'Deleting…' : 'Confirm'}
 				</button>

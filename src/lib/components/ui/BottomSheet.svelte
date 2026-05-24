@@ -23,7 +23,7 @@
 {#if open}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
-		class="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
+		class="fixed inset-0 z-modal flex items-end justify-center bg-black/40"
 		onclick={onBackdropClick}
 		onkeydown={onKeydown}
 	>

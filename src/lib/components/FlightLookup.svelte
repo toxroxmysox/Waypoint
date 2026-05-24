@@ -87,6 +87,6 @@
 		{loading ? 'Looking up...' : 'Look up flight'}
 	</Button>
 	{#if error}
-		<p class="text-clay text-sm">{error}</p>
+		<p class="text-error text-sm">{error}</p>
 	{/if}
 </div>

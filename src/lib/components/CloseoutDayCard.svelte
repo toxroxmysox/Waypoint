@@ -77,7 +77,7 @@
 				<button
 					type="submit"
 					disabled={bulkSubmitting}
-					class="rounded-lg bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 disabled:opacity-50"
+					class="rounded-lg bg-moss-tint px-3 py-1.5 text-xs font-medium text-moss hover:bg-moss-tint/70 disabled:opacity-40"
 				>
 					{bulkSubmitting ? 'Marking...' : 'All done'}
 				</button>

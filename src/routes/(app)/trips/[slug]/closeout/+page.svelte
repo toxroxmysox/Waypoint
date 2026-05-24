@@ -78,7 +78,7 @@
 			</div>
 			<div class="bg-surface-2 mt-2 h-1.5 w-full overflow-hidden rounded-full">
 				<div
-					class="h-full rounded-full bg-green-500 transition-all"
+					class="h-full rounded-full bg-moss transition-all"
 					style="width: {((currentDayIndex + 1) / totalDays) * 100}%"
 				></div>
 			</div>
@@ -96,7 +96,7 @@
 				type="button"
 				disabled={currentDayIndex === 0}
 				onclick={() => (currentDayIndex--)}
-				class="text-ink-muted rounded-lg px-4 py-2 text-sm font-medium hover:bg-gray-100 disabled:opacity-30"
+				class="text-ink-muted rounded-lg px-4 py-2 text-sm font-medium hover:bg-surface-2 disabled:opacity-40"
 			>
 				Previous
 			</button>
@@ -116,7 +116,7 @@
 			<div class="mt-4 space-y-2">
 				<div class="flex justify-between text-sm">
 					<span class="text-ink-muted">Done</span>
-					<span class="font-medium text-green-600">{summary.done}</span>
+					<span class="font-medium text-moss">{summary.done}</span>
 				</div>
 				<div class="flex justify-between text-sm">
 					<span class="text-ink-muted">Skipped (stayed planned)</span>
@@ -124,7 +124,7 @@
 				</div>
 				<div class="flex justify-between text-sm">
 					<span class="text-ink-muted">Swapped (considered)</span>
-					<span class="font-medium text-amber-600">{summary.considered}</span>
+					<span class="font-medium text-gold">{summary.considered}</span>
 				</div>
 				<div class="border-border flex justify-between border-t pt-2 text-sm">
 					<span class="text-ink font-medium">Total items</span>
@@ -146,7 +146,7 @@
 					<button
 						type="submit"
 						disabled={finishing}
-						class="bg-ink text-on-ink w-full rounded-lg px-4 py-3 text-sm font-medium disabled:opacity-50"
+						class="bg-ink text-on-ink w-full rounded-lg px-4 py-3 text-sm font-medium disabled:opacity-40"
 					>
 						{finishing ? 'Archiving...' : 'Finish & Archive Trip'}
 					</button>

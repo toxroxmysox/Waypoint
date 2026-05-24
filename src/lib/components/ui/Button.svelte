@@ -40,7 +40,7 @@
 	};
 
 	const base =
-		'inline-flex items-center justify-center font-semibold border transition-colors disabled:opacity-50 disabled:pointer-events-none';
+		'inline-flex items-center justify-center font-semibold border transition-colors disabled:opacity-40 disabled:pointer-events-none';
 </script>
 
 {#if href && !disabled}

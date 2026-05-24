@@ -10,7 +10,7 @@
 	--color-surface-2: #fbf8f2;
 	--color-ink: #1c1b18;
 	--color-ink-soft: #4c4a44;
-	--color-ink-muted: #8a847a;
+	--color-ink-muted: #67625a;
 	--color-line: #e2dcd0;
 	--color-moss: #3e5a3a;
 	--color-moss-soft: #6f8b6a;
@@ -22,6 +22,8 @@
 	--color-sky-tint: #e6eef8;
 	--color-clay-tint: #f0e0d6;
 	--color-error: #b33a3a;
+	--color-error-tint: #f5e0de;
+	--color-error-deep: #8e2a2a;
 
 	--breakpoint-md-desktop: 900px;
 	--breakpoint-lg-desktop: 1280px;
@@ -35,9 +37,19 @@
 	--radius-lg: 16px;
 	--radius-xl: 22px;
 
-	--shadow-card: 0 1px 2px rgba(28, 27, 24, 0.03);
+	--shadow-card:     0 1px 2px rgba(28, 27, 24, 0.04);
+	--shadow-elevated: 0 1px 2px rgba(28, 27, 24, 0.05), 0 4px 10px rgba(28, 27, 24, 0.06);
+	--shadow-dropdown: 0 2px 4px rgba(28, 27, 24, 0.05), 0 8px 20px rgba(28, 27, 24, 0.09);
+	--shadow-overlay:  0 -2px 8px rgba(28, 27, 24, 0.05), 0 -12px 40px rgba(28, 27, 24, 0.13);
+	--shadow-modal:    0 4px 12px rgba(28, 27, 24, 0.10), 0 24px 60px rgba(28, 27, 24, 0.20);
 	--shadow-card-strong:
 		0 1px 0 rgba(28, 27, 24, 0.04), 0 8px 24px rgba(28, 27, 24, 0.06);
+
+	--z-dropdown: 20;
+	--z-sticky:   30;
+	--z-nav:      40;
+	--z-modal:    50;
+	--z-overlay:  60;
 }
 
 /* Page baseline. Paper background, ink text, Inter UI. */

@@ -15,7 +15,7 @@
 <NavBar title="Settings" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}" />
 <main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 space-y-6">
 	{#if error}
-		<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">{error}</div>
+		<div class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{error}</div>
 	{/if}
 
 	{#if success}
@@ -126,7 +126,7 @@
 			</div>
 
 			{#if form?.vaultError}
-				<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">{form.vaultError}</div>
+				<div class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{form.vaultError}</div>
 			{/if}
 			{#if form?.vaultSuccess}
 				<div class="border-moss/30 bg-moss-tint text-moss rounded-md border p-3 text-sm">Vault password set.</div>
@@ -179,7 +179,7 @@
 			</p>
 
 			{#if form?.archiveError}
-				<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">{form.archiveError}</div>
+				<div class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{form.archiveError}</div>
 			{/if}
 			{#if form?.archiveSuccess}
 				<div class="border-moss/30 bg-moss-tint text-moss rounded-md border p-3 text-sm">Archive settings saved.</div>
@@ -259,7 +259,7 @@
 				<button
 					type="submit"
 					disabled={deleting}
-					class="bg-clay text-paper hover:bg-clay/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
+					class="bg-clay text-paper hover:bg-clay/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-40"
 				>
 					{deleting ? 'Deleting…' : 'Confirm delete'}
 				</button>

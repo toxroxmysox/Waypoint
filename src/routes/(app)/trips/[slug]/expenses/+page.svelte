@@ -537,7 +537,7 @@
 		{/if}
 
 		{#if form?.addExpense && 'error' in form.addExpense}
-			<p class="mb-3 text-sm text-clay">{form.addExpense.error}</p>
+			<p class="mb-3 text-sm text-error">{form.addExpense.error}</p>
 		{/if}
 
 		<Button type="submit" variant="primary" size="lg" class="w-full" disabled={submitting}>
@@ -704,7 +704,7 @@
 			<input type="hidden" name="split_data" value={buildEditSplitData()} />
 
 			{#if form?.updateExpense && 'error' in form.updateExpense}
-				<p class="mb-3 text-sm text-clay">{form.updateExpense.error}</p>
+				<p class="mb-3 text-sm text-error">{form.updateExpense.error}</p>
 			{/if}
 
 			<Button type="submit" variant="primary" size="lg" class="w-full" disabled={updating}>
@@ -732,7 +732,7 @@
 			<input type="hidden" name="expense_id" value={selectedExpense.id} />
 
 			{#if form?.deleteExpense && 'error' in form.deleteExpense}
-				<p class="mb-2 text-sm text-clay">{form.deleteExpense.error}</p>
+				<p class="mb-2 text-sm text-error">{form.deleteExpense.error}</p>
 			{/if}
 
 			<Button type="submit" variant="ghost" size="md" class="w-full text-clay" disabled={deleting}>
@@ -846,7 +846,7 @@
 			<input type="hidden" name="to_member" value={settleDebt.to} />
 
 			{#if form?.recordSettlement && 'error' in form.recordSettlement}
-				<p class="mb-3 text-sm text-clay">{form.recordSettlement.error}</p>
+				<p class="mb-3 text-sm text-error">{form.recordSettlement.error}</p>
 			{/if}
 
 			<div class="flex gap-2">

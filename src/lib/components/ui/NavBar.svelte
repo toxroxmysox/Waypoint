@@ -26,7 +26,7 @@
 </script>
 
 <header
-	class="border-line bg-paper/95 sticky top-0 z-30 flex items-center gap-3 border-b px-4 py-3 backdrop-blur"
+	class="border-line bg-paper/95 sticky top-0 z-sticky flex items-center gap-3 border-b px-4 py-3 backdrop-blur"
 >
 	<div class="flex w-10 shrink-0 items-center">
 		{#if back}

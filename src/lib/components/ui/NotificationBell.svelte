@@ -85,7 +85,7 @@
 		<!-- Backdrop -->
 		<button
 			type="button"
-			class="fixed inset-0 z-40"
+			class="fixed inset-0 z-nav"
 			onclick={close}
 			aria-label="Close notifications"
 			tabindex="-1"
@@ -93,7 +93,7 @@
 
 		<!-- Dropdown -->
 		<div
-			class="border-line bg-paper shadow-md absolute right-0 top-full z-50 mt-1 w-80 max-h-[70vh] overflow-y-auto rounded-lg border"
+			class="border-line bg-paper shadow-md absolute right-0 top-full z-modal mt-1 w-80 max-h-[70vh] overflow-y-auto rounded-lg border"
 		>
 			<div class="border-line flex items-center justify-between border-b px-4 py-2.5">
 				<span class="text-ink text-sm font-semibold">Notifications</span>
