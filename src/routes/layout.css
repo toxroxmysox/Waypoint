@@ -21,6 +21,7 @@
 	--color-sky: #3b6ba5;
 	--color-sky-tint: #e6eef8;
 	--color-clay-tint: #f0e0d6;
+	/* error: inline field text; error-deep: banner text on tinted bg (needs higher contrast). */
 	--color-error: #b33a3a;
 	--color-error-tint: #f5e0de;
 	--color-error-deep: #8e2a2a;

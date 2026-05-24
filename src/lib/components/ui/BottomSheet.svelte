@@ -29,7 +29,7 @@
 	>
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
-			class="w-full max-w-lg rounded-t-xl bg-surface shadow-card-strong animate-slide-up max-h-[85vh] overflow-y-auto"
+			class="w-full max-w-lg rounded-t-xl bg-surface shadow-card-strong animate-slide-up max-h-[85vh] overflow-y-auto z-overlay"
 			onclick={(e) => e.stopPropagation()}
 			onkeydown={(e) => e.stopPropagation()}
 		>

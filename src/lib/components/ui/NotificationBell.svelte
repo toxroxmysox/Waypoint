@@ -85,7 +85,7 @@
 		<!-- Backdrop -->
 		<button
 			type="button"
-			class="fixed inset-0 z-nav"
+			class="fixed inset-0 z-modal"
 			onclick={close}
 			aria-label="Close notifications"
 			tabindex="-1"
