@@ -1,15 +1,21 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-19T13:26:33.366Z
-> Files: 530 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-23T23:16:06.750Z
+> Files: 537 tracked | Anatomy hits: 0 | Misses: 0
+
+## ../.claude/projects/-Users-Scott-Waypoint/memory/
+
+- `MEMORY.md` (~81 tok)
+- `project_waypoint_status.md` (~505 tok)
 
 ## ./
 
 - `.dockerignore` (~31 tok)
-- `.gitignore` — Git ignore rules (~114 tok)
+- `.gitignore` — Git ignore rules (~118 tok)
 - `.npmrc` (~6 tok)
 - `.prettierignore` — Package Managers (~29 tok)
 - `.prettierrc` — Prettier configuration (~82 tok)
+- `CLAUDE_DESIGN_PROMPT.md` — Claude Design Prompt — Waypoint v2 Visual Design (~3783 tok)
 - `Claude.md` — OpenWolf (~3132 tok)
 - `Dockerfile` — Docker container definition (~482 tok)
 - `eslint.config.js` — ESLint flat configuration (~390 tok)
@@ -25,7 +31,10 @@
 - `SPEC_BACKLOG.md` — SPEC_BACKLOG (~721 tok)
 - `SPEC.md` — Trip App — v1 Specification (~8824 tok)
 - `svelte.config.js` — Declares config (~199 tok)
+- `TEST_PLAN.md` — Waypoint v1 — User Test Plan (~5389 tok)
 - `tsconfig.json` — TypeScript configuration (~198 tok)
+- `UI_AUDIT.md` — Waypoint UI/UX Audit Report (~8202 tok)
+- `V2_SPEC.md` — Waypoint v2 — UI/UX Polish Specification (~3629 tok)
 - `vite.config.ts` — Vite build configuration (~204 tok)
 
 ## .claude/
@@ -929,6 +938,10 @@
 
 - `Caddyfile` (~62 tok)
 - `start.sh` (~209 tok)
+
+## docs/superpowers/plans/
+
+- `2026-05-24-v2-ui-ux-polish.md` — Waypoint v2 — UI/UX Polish Implementation Plan (~13698 tok)
 
 ## src/
 

@@ -39,3 +39,4 @@ backend/pocketbase
 .claude/worktrees/
 .claude/settings.local.json
 .wolf/designqc-captures/
+TEST_PLAN.md
