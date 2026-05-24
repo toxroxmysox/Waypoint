@@ -7,6 +7,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import SectionH from '$lib/components/ui/SectionH.svelte';
 	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
+	import PhaseChip from '$lib/components/ui/PhaseChip.svelte';
 	import { titleCase, formatTime } from '$lib/utils/format';
 
 	import VoteButtons from '$lib/components/VoteButtons.svelte';
@@ -168,10 +169,7 @@
 				{/if}
 				{#if data.itemPhase}
 					<p class="text-ink-muted flex items-center gap-1.5 text-sm">
-						{#if data.itemPhase.color}
-							<span class="h-2 w-2 rounded-full" style="background-color: {data.itemPhase.color}"
-							></span>
-						{/if}
+						<PhaseChip name={data.itemPhase.name} color={data.itemPhase.color} size={16} />
 						{data.itemPhase.name}
 					</p>
 				{/if}

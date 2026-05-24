@@ -51,7 +51,7 @@
 		{#each data.upcomingDays as day}
 			{@const dayItems = data.upcomingItems.filter((i: Item) => i.day === day.id)}
 			<section class="space-y-2">
-				<h3 class="font-display text-ink text-lg font-semibold">{dayLabel(day.date)}</h3>
+				<h2 class="font-display text-ink text-lg font-semibold">{dayLabel(day.date)}</h2>
 				{#if dayItems.length === 0}
 					<p class="text-ink-muted text-sm">Nothing scheduled.</p>
 				{:else}

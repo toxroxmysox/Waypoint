@@ -9,6 +9,7 @@
 	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
 	import FAB from '$lib/components/ui/FAB.svelte';
 	import DayNav from '$lib/components/ui/DayNav.svelte';
+	import PhaseChip from '$lib/components/ui/PhaseChip.svelte';
 	import { titleCase, formatTime } from '$lib/utils/format';
 
 	let { data, form } = $props();
@@ -63,9 +64,7 @@
 			<div class="mt-1 flex flex-wrap items-center gap-2">
 				{#each data.dayPhases as p, idx}
 					<div class="flex items-center gap-1.5">
-						{#if p.color}
-							<span class="h-2.5 w-2.5 rounded-full" style="background-color: {p.color}"></span>
-						{/if}
+						<PhaseChip name={p.name} color={p.color} size={18} />
 						<span class="text-ink-soft text-sm">{p.name}</span>
 					</div>
 					{#if idx < data.dayPhases.length - 1}
@@ -82,7 +81,7 @@
 	</div>
 
 	{#if error}
-		<div class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{error}</div>
+		<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{error}</div>
 	{/if}
 
 	<!-- Day notes -->

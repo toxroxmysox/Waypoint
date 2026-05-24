@@ -48,7 +48,7 @@
 
 <main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8">
 	{#if form?.error}
-		<div class="border-error/30 bg-error/10 text-error-deep mb-4 rounded-md border p-3 text-sm">
+		<div role="alert" class="border-error/30 bg-error/10 text-error-deep mb-4 rounded-md border p-3 text-sm">
 			{form.error}
 		</div>
 	{/if}

@@ -1,9 +1,12 @@
 <script lang="ts">
 	import './layout.css';
 	import { onMount } from 'svelte';
+	import { afterNavigate } from '$app/navigation';
+	import { page } from '$app/stores';
 	import A2HSBanner from '$lib/components/A2HSBanner.svelte';
 
 	let { children } = $props();
+	let routeAnnouncement = $state('');
 
 	let offline = $state(false);
 
@@ -34,6 +37,18 @@
 		return () => document.removeEventListener('wheel', handler);
 	});
 
+	afterNavigate(() => {
+		const mainEl = document.querySelector('main');
+		if (mainEl) {
+			mainEl.id = 'main-content';
+			mainEl.tabIndex = -1;
+			mainEl.style.outline = 'none';
+			mainEl.focus({ preventScroll: true });
+		}
+		const h1 = document.querySelector('h1');
+		routeAnnouncement = h1?.textContent?.trim() || document.title;
+	});
+
 	function sendOfflineToSW(value: boolean) {
 		if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
 			navigator.serviceWorker.controller.postMessage({
@@ -53,6 +68,9 @@
 <svelte:head>
 	<meta name="theme-color" content="#1e293b" />
 </svelte:head>
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+<div class="sr-only" aria-live="polite" aria-atomic="true">{routeAnnouncement}</div>
 
 {#if offline}
 	<div class="bg-clay/90 text-paper px-4 py-1.5 text-center text-xs font-semibold">

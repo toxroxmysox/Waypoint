@@ -15,7 +15,7 @@
 <NavBar title="Settings" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}" />
 <main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 space-y-6">
 	{#if error}
-		<div class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{error}</div>
+		<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{error}</div>
 	{/if}
 
 	{#if success}
@@ -117,7 +117,7 @@
 
 	<Card>
 		<div class="p-4 space-y-3">
-			<h3 class="text-ink text-sm font-semibold">Vault Password</h3>
+			<h2 class="text-ink text-sm font-semibold">Vault Password</h2>
 			<div class="border-clay/20 bg-clay/5 rounded-md p-3">
 				<p class="text-clay text-xs font-semibold">No recovery</p>
 				<p class="text-ink-muted mt-1 text-xs">
@@ -126,7 +126,7 @@
 			</div>
 
 			{#if form?.vaultError}
-				<div class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{form.vaultError}</div>
+				<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{form.vaultError}</div>
 			{/if}
 			{#if form?.vaultSuccess}
 				<div class="border-moss/30 bg-moss-tint text-moss rounded-md border p-3 text-sm">Vault password set.</div>
@@ -173,13 +173,13 @@
 
 	<Card>
 		<div class="p-4 space-y-3">
-			<h3 class="text-ink text-sm font-semibold">Public Archive</h3>
+			<h2 class="text-ink text-sm font-semibold">Public Archive</h2>
 			<p class="text-ink-muted text-xs">
 				When enabled, a public read-only link is generated after the trip is archived.
 			</p>
 
 			{#if form?.archiveError}
-				<div class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{form.archiveError}</div>
+				<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{form.archiveError}</div>
 			{/if}
 			{#if form?.archiveSuccess}
 				<div class="border-moss/30 bg-moss-tint text-moss rounded-md border p-3 text-sm">Archive settings saved.</div>
@@ -231,7 +231,7 @@
 	</Card>
 
 	<div class="border-clay/30 rounded-lg border p-4">
-		<h3 class="text-clay text-sm font-semibold">Danger zone</h3>
+		<h2 class="text-clay text-sm font-semibold">Danger zone</h2>
 		<p class="text-clay/80 mt-1 text-xs">
 			Deleting a trip removes all phases, days, and items permanently.
 		</p>

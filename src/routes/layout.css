@@ -70,6 +70,45 @@ body {
 	font-variant-numeric: tabular-nums;
 }
 
+/* Global focus-visible ring for keyboard navigation. */
+:focus-visible {
+	outline: 2px solid var(--color-moss);
+	outline-offset: 2px;
+}
+
+/* Visually hidden but accessible to screen readers. */
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border-width: 0;
+}
+
+/* Skip link — hidden until focused. */
+.skip-link {
+	position: fixed;
+	top: -100%;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 9999;
+	padding: 8px 16px;
+	background: var(--color-ink);
+	color: var(--color-paper);
+	border-radius: var(--radius-md);
+	font-size: 14px;
+	font-weight: 600;
+	text-decoration: none;
+	transition: top 0.15s ease;
+}
+.skip-link:focus {
+	top: 12px;
+}
+
 /* iOS Safari auto-zooms when a focused input's effective font-size is < 16px.
    Enforce 16px on all form controls so the viewport stays put on focus. */
 @media (max-width: 640px) {

@@ -133,7 +133,7 @@
 				</div>
 
 				{#if unlockError}
-					<div class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{unlockError}</div>
+					<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{unlockError}</div>
 				{/if}
 
 				<div>
@@ -163,7 +163,7 @@
 		</div>
 
 		{#if form?.error}
-			<div class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{form.error}</div>
+			<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{form.error}</div>
 		{/if}
 
 		{#if decryptedEntries.length === 0}

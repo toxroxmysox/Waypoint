@@ -53,7 +53,7 @@
 			{#if data.active.length > 0}
 				<section class="space-y-2">
 					<div class="flex items-baseline justify-between pt-1">
-						<h3 class="text-moss text-[11px] font-bold tracking-[0.2em] uppercase">On trip</h3>
+						<h2 class="text-moss text-[11px] font-bold tracking-[0.2em] uppercase">On trip</h2>
 					</div>
 					{#each data.active as { trip }}
 						<Card href="/trips/{trip?.slug}" strong accent="var(--color-clay)">
@@ -81,7 +81,7 @@
 			{#if data.upcoming.length > 0}
 				<section class="space-y-2">
 					<div class="flex items-baseline justify-between pt-1">
-						<h3 class="text-moss text-[11px] font-bold tracking-[0.2em] uppercase">Upcoming</h3>
+						<h2 class="text-moss text-[11px] font-bold tracking-[0.2em] uppercase">Upcoming</h2>
 					</div>
 					{#each data.upcoming as { trip }}
 						<Card href="/trips/{trip?.slug}">
@@ -106,9 +106,9 @@
 			{#if data.past.length > 0}
 				<section class="space-y-2">
 					<div class="flex items-baseline justify-between pt-1">
-						<h3 class="text-ink-muted text-[11px] font-bold tracking-[0.2em] uppercase">
+						<h2 class="text-ink-muted text-[11px] font-bold tracking-[0.2em] uppercase">
 							Past
-						</h3>
+						</h2>
 					</div>
 					{#each data.past as { trip }}
 						<Card href="/trips/{trip?.slug}" class="opacity-80">

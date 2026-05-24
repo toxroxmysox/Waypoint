@@ -37,7 +37,7 @@
 			</div>
 
 			{#if error}
-				<div class="border-error/30 bg-error/10 text-error-deep mb-4 rounded-md border p-3 text-sm">
+				<div role="alert" class="border-error/30 bg-error/10 text-error-deep mb-4 rounded-md border p-3 text-sm">
 					{error}
 				</div>
 			{/if}

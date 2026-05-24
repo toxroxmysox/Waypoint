@@ -40,7 +40,7 @@
 <NavBar title="Inbox" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}" />
 <main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 space-y-6">
 	{#if actionError}
-		<div class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{actionError}</div>
+		<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{actionError}</div>
 	{/if}
 
 	<section class="space-y-3">

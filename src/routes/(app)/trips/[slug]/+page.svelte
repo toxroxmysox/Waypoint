@@ -7,6 +7,7 @@
 	import SectionH from '$lib/components/ui/SectionH.svelte';
 	import SubTabs from '$lib/components/SubTabs.svelte';
 	import NotificationBell from '$lib/components/ui/NotificationBell.svelte';
+	import PhaseChip from '$lib/components/ui/PhaseChip.svelte';
 	import { titleCase } from '$lib/utils/format';
 	import { untrack } from 'svelte';
 	import type { Notification } from '$lib/types';
@@ -107,9 +108,7 @@
 			<section class="space-y-1.5">
 				<div class="flex items-center justify-between">
 					<div class="flex items-center gap-2">
-						{#if phase.color}
-							<span class="h-2.5 w-2.5 rounded-full" style="background-color: {phase.color}"></span>
-						{/if}
+						<PhaseChip name={phase.name} color={phase.color} size={20} />
 						<a href="/trips/{data.trip.slug}/phases/{phase.id}" class="text-ink font-semibold hover:underline">{phase.name}</a>
 					</div>
 					<span class="text-ink-muted font-mono text-xs">
