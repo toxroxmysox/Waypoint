@@ -104,7 +104,7 @@
 
 <NavBar title="Vault" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}/more" />
 
-<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-24 space-y-4">
+<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-24 space-y-4">
 	{#if !data.hasVaultPassword}
 		<!-- No vault password set -->
 		<Card>

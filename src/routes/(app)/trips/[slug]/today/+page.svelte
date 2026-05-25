@@ -62,7 +62,7 @@
 	{ id: 'upcoming', label: 'Next 3 Days', href: `/trips/${data.trip.slug}/today/upcoming` }
 ]} />
 
-<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-24 space-y-4">
+<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-24 space-y-4">
 	{#if !data.today}
 		<Card>
 			<div class="p-6 text-center">

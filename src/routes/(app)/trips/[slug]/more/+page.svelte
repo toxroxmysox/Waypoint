@@ -32,7 +32,7 @@
 	{/snippet}
 </NavBar>
 
-<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 space-y-2">
+<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-2">
 	{#if isOwnerOrCoOwner}
 		<Card href="/trips/{data.trip.slug}/inbox">
 			<div class="flex items-center gap-3 p-4">

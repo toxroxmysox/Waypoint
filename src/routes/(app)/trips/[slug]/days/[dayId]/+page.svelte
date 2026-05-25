@@ -58,7 +58,7 @@
 <NavBar title={shortDayLabel()} subtitle={data.trip.title} back {backHref} />
 <DayNav days={data.days} currentDayId={data.day.id} tripSlug={data.trip.slug} />
 
-<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-24 space-y-4">
+<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-24 space-y-4">
 	<div>
 		<h2 class="font-display text-ink text-xl leading-tight font-semibold">{dayLabel()}</h2>
 		{#if data.dayPhases.length > 0}

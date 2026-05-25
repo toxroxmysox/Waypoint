@@ -114,7 +114,7 @@
 	backHref="/trips/{data.trip.slug}/items/{data.item.id}"
 />
 
-<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 space-y-4">
+<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-4">
 	{#if error}
 		<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{error}</div>
 	{/if}

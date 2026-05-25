@@ -34,7 +34,7 @@
 	{/snippet}
 </NavBar>
 
-<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-24">
+<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-24">
 	{#if isEmpty}
 		<div class="py-16 text-center">
 			<p class="font-display text-ink text-lg italic">No trips yet.</p>

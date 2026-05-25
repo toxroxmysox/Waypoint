@@ -30,7 +30,7 @@
 
 <NavBar title="You've been added to a trip" />
 
-<main class="mx-auto w-full max-w-lg flex-1 space-y-6 px-4 pt-8 pb-8">
+<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 space-y-6 px-4 pt-8 pb-8">
 	{#if claim}
 		<div class="space-y-1 text-center">
 			<p class="text-ink-soft text-sm">Someone added you as a member of</p>

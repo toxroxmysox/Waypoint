@@ -66,7 +66,7 @@
 	{ id: 'phases', label: 'Phases', href: `/trips/${data.trip.slug}/phases` }
 ]} />
 
-<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 space-y-6">
+<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-6">
 	<!-- Trip stats card -->
 	<Card>
 		<div class="flex items-start justify-between p-4">

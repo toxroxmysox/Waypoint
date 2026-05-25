@@ -96,7 +96,7 @@
 	{ id: 'budget', label: 'Budget', href: `/trips/${data.trip.slug}/budget` }
 ]} />
 
-<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8">
+<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8">
 	<!-- Grand total -->
 	<div class="mb-6 text-center">
 		<p class="text-xs font-medium text-ink-muted uppercase tracking-wider">Estimated Total</p>

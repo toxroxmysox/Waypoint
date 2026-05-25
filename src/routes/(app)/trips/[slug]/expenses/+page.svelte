@@ -209,7 +209,7 @@
 	{ id: 'budget', label: 'Budget', href: `/trips/${data.trip.slug}/budget` }
 ]} />
 
-<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-24">
+<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-24">
 	{#if data.expenses.length === 0}
 		<!-- Empty state -->
 		<div class="flex flex-col items-center justify-center py-16 text-center">
