@@ -171,7 +171,7 @@ New component needed. Depends on WP-2 (design tokens) for elevation.
 
 ---
 
-### WP-9: Animation & Motion
+### WP-9: Animation & Motion — Done (2026-05-25)
 
 | ID | Finding | Change |
 |----|---------|--------|
@@ -311,12 +311,12 @@ Progress tracked in this file — mark each WP with completion date when done.
 | WP-6 | Done | 2026-05-25 |
 | WP-7 | Done | 2026-05-24 |
 | WP-8 | Done | 2026-05-25 |
-| WP-9 | Not started | |
+| WP-9 | Done | 2026-05-25 |
 | WP-10 | Not started | |
 | WP-11 | Not started | |
 | WP-12 | Not started | |
 | WP-13 | Not started | |
-| WP-14 | Not started | |
+| WP-14 | Done | 2026-05-25 |
 
 ---
 
