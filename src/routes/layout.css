@@ -129,6 +129,78 @@ input[type='datetime-local'] {
 	min-width: 0;
 }
 
+/* ── Page transitions (View Transitions API) ────────────────────────── */
+@keyframes vt-fade-in {
+	from { opacity: 0; }
+}
+@keyframes vt-fade-out {
+	to { opacity: 0; }
+}
+@keyframes vt-slide-in-right {
+	from { transform: translateX(25%); opacity: 0; }
+}
+@keyframes vt-slide-out-left {
+	to { transform: translateX(-25%); opacity: 0; }
+}
+@keyframes vt-slide-in-up {
+	from { transform: translateY(15%); opacity: 0; }
+}
+@keyframes vt-slide-out-down {
+	to { transform: translateY(15%); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	/* Tab switch: crossfade 180ms */
+	[data-transition='tab']::view-transition-old(root) {
+		animation: vt-fade-out 180ms ease-out both;
+	}
+	[data-transition='tab']::view-transition-new(root) {
+		animation: vt-fade-in 180ms ease-in both;
+	}
+
+	/* Peer nav: horizontal slide 240ms */
+	[data-transition='peer']::view-transition-old(root) {
+		animation: vt-slide-out-left 240ms ease-out both;
+	}
+	[data-transition='peer']::view-transition-new(root) {
+		animation: vt-slide-in-right 240ms ease-out both;
+	}
+
+	/* Drill-down: slide up 280ms */
+	[data-transition='drill-down']::view-transition-old(root) {
+		animation: vt-fade-out 200ms ease-out both;
+	}
+	[data-transition='drill-down']::view-transition-new(root) {
+		animation: vt-slide-in-up 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+	}
+
+	/* Drill-up: reverse slide 280ms */
+	[data-transition='drill-up']::view-transition-old(root) {
+		animation: vt-slide-out-down 250ms ease-in both;
+	}
+	[data-transition='drill-up']::view-transition-new(root) {
+		animation: vt-fade-in 280ms ease-out both;
+	}
+
+	/* Default/fade */
+	[data-transition='fade']::view-transition-old(root) {
+		animation: vt-fade-out 150ms ease-out both;
+	}
+	[data-transition='fade']::view-transition-new(root) {
+		animation: vt-fade-in 150ms ease-in both;
+	}
+}
+
+/* Reduced motion: simple fade only (spec says "simple fade, not disabled") */
+@media (prefers-reduced-motion: reduce) {
+	::view-transition-old(root) {
+		animation: vt-fade-out 120ms ease-out both;
+	}
+	::view-transition-new(root) {
+		animation: vt-fade-in 120ms ease-in both;
+	}
+}
+
 /* Make the color swatch fill the styled container. */
 input[type='color'] {
 	padding: 0;

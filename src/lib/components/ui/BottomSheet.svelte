@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { fly, fade } from 'svelte/transition';
 
 	let {
 		open = $bindable(false),
@@ -10,6 +11,17 @@
 		title?: string;
 		children: Snippet;
 	} = $props();
+
+	const reducedMotion =
+		typeof window !== 'undefined' &&
+		typeof matchMedia !== 'undefined' &&
+		matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+	const flyParams = reducedMotion
+		? { y: 0, duration: 0 }
+		: { y: 300, duration: 250, easing: (t: number) => 1 - Math.pow(1 - t, 3) };
+
+	const fadeParams = reducedMotion ? { duration: 0 } : { duration: 200 };
 
 	function onBackdropClick() {
 		open = false;
@@ -23,15 +35,21 @@
 {#if open}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
-		class="fixed inset-0 z-modal flex items-end justify-center bg-black/40"
-		onclick={onBackdropClick}
+		class="fixed inset-0 z-modal flex items-end justify-center"
 		onkeydown={onKeydown}
 	>
+		<div
+			class="fixed inset-0 bg-black/40"
+			onclick={onBackdropClick}
+			role="presentation"
+			transition:fade={fadeParams}
+		></div>
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
-			class="w-full max-w-lg rounded-t-xl bg-surface shadow-card-strong animate-slide-up max-h-[85vh] overflow-y-auto z-overlay"
+			class="relative w-full max-w-lg rounded-t-xl bg-surface shadow-card-strong max-h-[85vh] overflow-y-auto z-overlay"
 			onclick={(e) => e.stopPropagation()}
 			onkeydown={(e) => e.stopPropagation()}
+			transition:fly={flyParams}
 		>
 			<div class="flex items-center justify-between border-b border-line px-4 py-3">
 				<h2 class="font-display text-base font-semibold text-ink">{title}</h2>
@@ -52,17 +70,3 @@
 		</div>
 	</div>
 {/if}
-
-<style>
-	@keyframes slide-up {
-		from {
-			transform: translateY(100%);
-		}
-		to {
-			transform: translateY(0);
-		}
-	}
-	.animate-slide-up {
-		animation: slide-up 0.25s ease-out;
-	}
-</style>
