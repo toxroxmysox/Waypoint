@@ -142,3 +142,68 @@
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+| 07:35 | Created src/lib/stores/toast.ts | — | ~276 |
+| 07:36 | Created src/lib/components/ui/Toast.svelte | — | ~591 |
+| 07:36 | Edited src/routes/+layout.svelte | added 1 import(s) | ~31 |
+| 07:36 | Edited src/routes/+layout.svelte | 1→3 lines | ~9 |
+| 07:37 | Edited src/routes/(app)/trips/[slug]/settings/+page.svelte | added 1 import(s) | ~35 |
+| 07:37 | Edited src/routes/(app)/trips/[slug]/settings/+page.svelte | added 1 condition(s) | ~56 |
+| 07:38 | Edited src/routes/(app)/trips/[slug]/days/[dayId]/+page.svelte | added 1 import(s) | ~25 |
+| 07:38 | Edited src/routes/(app)/trips/[slug]/days/[dayId]/+page.svelte | modified if() | ~31 |
+| 07:38 | Edited src/routes/(app)/trips/[slug]/expenses/+page.svelte | added 1 import(s) | ~42 |
+| 07:38 | Edited src/routes/(app)/trips/[slug]/expenses/+page.svelte | modified if() | ~33 |
+| 07:39 | Edited src/routes/(app)/trips/[slug]/expenses/+page.svelte | modified if() | ~76 |
+| 07:39 | Edited src/routes/(app)/trips/[slug]/expenses/+page.svelte | modified if() | ~80 |
+| 07:39 | Edited src/routes/(app)/trips/[slug]/expenses/+page.svelte | modified if() | ~32 |
+| 07:39 | Edited src/routes/(app)/trips/[slug]/members/+page.svelte | added 1 import(s) | ~24 |
+| 07:40 | Edited src/routes/(app)/trips/[slug]/members/+page.svelte | added 1 condition(s) | ~77 |
+| 07:40 | Edited src/routes/(app)/trips/[slug]/members/+page.svelte | added 1 condition(s) | ~76 |
+| 07:40 | Edited src/routes/(app)/trips/[slug]/members/+page.svelte | added 1 condition(s) | ~90 |
+| 07:40 | Edited src/routes/(app)/trips/[slug]/members/+page.svelte | added 1 condition(s) | ~73 |
+| 07:40 | Edited src/routes/(app)/trips/[slug]/members/+page.svelte | added 1 condition(s) | ~71 |
+| 07:41 | Edited src/routes/(app)/trips/[slug]/phases/+page.svelte | added 1 import(s) | ~27 |
+| 07:41 | Edited src/routes/(app)/trips/[slug]/phases/+page.svelte | modified if() | ~40 |
+| 07:41 | Edited src/routes/(app)/trips/[slug]/phases/+page.svelte | added 1 condition(s) | ~68 |
+| 07:41 | Edited src/routes/(app)/trips/[slug]/phases/[phaseId]/+page.svelte | added 1 import(s) | ~27 |
+| 07:41 | Edited src/routes/(app)/trips/[slug]/phases/[phaseId]/+page.svelte | modified if() | ~29 |
+| 07:42 | Edited src/routes/(app)/trips/[slug]/budget/+page.svelte | added 1 import(s) | ~36 |
+| 07:42 | Edited src/routes/(app)/trips/[slug]/budget/+page.svelte | added 1 condition(s) | ~53 |
+| 07:42 | Edited src/routes/(app)/trips/[slug]/vault/+page.svelte | added 1 import(s) | ~27 |
+| 07:42 | Edited src/routes/(app)/trips/[slug]/vault/+page.svelte | added 1 condition(s) | ~92 |
+| 07:43 | Edited src/routes/(app)/trips/[slug]/vault/+page.svelte | modified if() | ~47 |
+| 07:43 | Edited src/routes/(app)/trips/[slug]/inbox/+page.svelte | added 1 import(s) | ~25 |
+| 07:43 | Edited src/routes/(app)/trips/[slug]/inbox/+page.svelte | added 1 condition(s) | ~76 |
+| 07:43 | Edited src/routes/(app)/trips/[slug]/inbox/+page.svelte | added 1 condition(s) | ~76 |
+| 07:44 | Edited src/routes/(app)/trips/[slug]/items/[itemId]/+page.svelte | added 1 import(s) | ~28 |
+| 07:44 | Edited src/routes/(app)/trips/[slug]/items/[itemId]/+page.svelte | added 1 condition(s) | ~77 |
+| 07:44 | Edited src/routes/(app)/trips/[slug]/items/[itemId]/+page.svelte | added 1 condition(s) | ~76 |
+| 07:45 | Edited V2_SPEC.md | 7→7 lines | ~54 |
+| 07:46 | Created src/lib/components/ui/Skeleton.svelte | — | ~207 |
+
+## Session: 2026-05-25 17:11
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-05-25 17:12
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-05-25 17:15
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 17:16 | Created src/lib/components/skeletons/TripCardSkeleton.svelte | — | ~98 |
+| 17:16 | Created src/lib/components/skeletons/DayItemSkeleton.svelte | — | ~120 |
+| 17:16 | Created src/lib/components/skeletons/ExpenseRowSkeleton.svelte | — | ~123 |
+| 17:16 | Created src/lib/components/skeletons/MemberRowSkeleton.svelte | — | ~107 |
+| 17:16 | Created src/lib/components/skeletons/TripsPageSkeleton.svelte | — | ~219 |
+| 17:16 | Created src/lib/components/skeletons/DayPageSkeleton.svelte | — | ~259 |
+| 17:16 | Created src/lib/components/skeletons/ExpensesPageSkeleton.svelte | — | ~249 |
+| 17:16 | Created src/lib/components/skeletons/MembersPageSkeleton.svelte | — | ~269 |
+| 17:16 | Created src/routes/(app)/+layout.svelte | — | ~270 |
+| 17:17 | Created src/routes/dev-skeletons/+page.svelte (temp, deleted) | — | ~372 |
+| 17:20 | WP-8 complete | 4 composites + 4 page shells + layout wiring via $navigating | pnpm check clean, visual QC passed | ~0 |
+| 17:20 | Edited V2_SPEC.md | inline fix | ~8 |
+| 17:20 | Session end: 11 writes across 11 files (TripCardSkeleton.svelte, DayItemSkeleton.svelte, ExpenseRowSkeleton.svelte, MemberRowSkeleton.svelte, TripsPageSkeleton.svelte) | 2 reads | ~11067 tok |

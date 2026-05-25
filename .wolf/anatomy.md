@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-24T10:41:42.280Z
-> Files: 554 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-25T09:20:15.864Z
+> Files: 583 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ./
 
@@ -26,6 +26,7 @@
 - `SPEC.md` — Trip App — v1 Specification (~8824 tok)
 - `svelte.config.js` — Declares config (~199 tok)
 - `tsconfig.json` — TypeScript configuration (~198 tok)
+- `V2_SPEC.md` — Waypoint v2 — UI/UX Polish Specification (~4401 tok)
 - `vite.config.ts` — Vite build configuration (~204 tok)
 
 ## .claude/
@@ -944,6 +945,25 @@
 - `SubTabs.svelte` — Svelte: SubTabs (~218 tok)
 - `TripTabs.svelte` — Svelte: TripTabs (~376 tok)
 
+## src/lib/components/skeletons/
+
+- `DayItemSkeleton.svelte` — Svelte: DayItemSkeleton (~120 tok)
+- `DayItemSkeleton.svelte` — Composite skeleton for day item (Card + circle icon + 2 bones) (~120 tok)
+- `DayPageSkeleton.svelte` — Svelte: DayPageSkeleton (~259 tok)
+- `DayPageSkeleton.svelte` — Full page skeleton shell for day view (nav + 2 slot sections + DayItemSkeletons) (~259 tok)
+- `ExpenseRowSkeleton.svelte` — Svelte: ExpenseRowSkeleton (~123 tok)
+- `ExpenseRowSkeleton.svelte` — Composite skeleton for expense row (square icon + 2 bones + amount) (~123 tok)
+- `ExpensesPageSkeleton.svelte` — Svelte: ExpensesPageSkeleton (~249 tok)
+- `ExpensesPageSkeleton.svelte` — Full page skeleton shell for expenses (nav + Card + ExpenseRowSkeletons) (~249 tok)
+- `MemberRowSkeleton.svelte` — Svelte: MemberRowSkeleton (~107 tok)
+- `MemberRowSkeleton.svelte` — Composite skeleton for member row (name + email bones + pill) (~107 tok)
+- `MembersPageSkeleton.svelte` — Svelte: MembersPageSkeleton (~269 tok)
+- `MembersPageSkeleton.svelte` — Full page skeleton shell for members (nav + section + Card + MemberRowSkeletons) (~269 tok)
+- `TripCardSkeleton.svelte` — Svelte: TripCardSkeleton (~98 tok)
+- `TripCardSkeleton.svelte` — Composite skeleton for trip card (Card + 3 bones) (~98 tok)
+- `TripsPageSkeleton.svelte` — Svelte: TripsPageSkeleton (~219 tok)
+- `TripsPageSkeleton.svelte` — Full page skeleton shell for /trips (nav + 2 sections + TripCardSkeletons) (~219 tok)
+
 ## src/lib/components/ui/
 
 - `BottomSheet.svelte` — Svelte: BottomSheet (~434 tok)
@@ -951,10 +971,25 @@
 - `FAB.svelte` — Svelte: FAB (~310 tok)
 - `NavBar.svelte` — Svelte: NavBar (~540 tok)
 - `NotificationBell.svelte` — Svelte: NotificationBell (~1281 tok)
+- `Skeleton.svelte` — Svelte: Skeleton (~207 tok)
+- `Toast.svelte` — Svelte: Toast (~591 tok)
+
+## src/lib/stores/
+
+- `toast.ts` — Exports ToastVariant, Toast, toast (~276 tok)
 
 ## src/routes/
 
+- `+layout.svelte` — Svelte: +layout (~626 tok)
 - `layout.css` — Styles: 4 rules, 39 vars (~811 tok)
+
+## src/routes/(app)/
+
+- `+layout.svelte` — Svelte: +layout (~270 tok)
+
+## src/routes/(app)/trips/[slug]/budget/
+
+- `+page.svelte` — Svelte: +page (~2136 tok)
 
 ## src/routes/(app)/trips/[slug]/clone/
 
@@ -967,11 +1002,11 @@
 
 ## src/routes/(app)/trips/[slug]/days/[dayId]/
 
-- `+page.svelte` — Svelte: +page (~1808 tok)
+- `+page.svelte` — Svelte: +page (~1844 tok)
 
 ## src/routes/(app)/trips/[slug]/expenses/
 
-- `+page.svelte` — Svelte: +page (~8338 tok)
+- `+page.svelte` — Svelte: +page (~8424 tok)
 
 ## src/routes/(app)/trips/[slug]/export/
 
@@ -979,15 +1014,35 @@
 
 ## src/routes/(app)/trips/[slug]/inbox/
 
-- `+page.svelte` — Svelte: +page (~1432 tok)
+- `+page.svelte` — Svelte: +page (~1492 tok)
+
+## src/routes/(app)/trips/[slug]/items/[itemId]/
+
+- `+page.svelte` — Svelte: +page (~4647 tok)
+
+## src/routes/(app)/trips/[slug]/members/
+
+- `+page.svelte` — Svelte: +page (~3128 tok)
 
 ## src/routes/(app)/trips/[slug]/parking-lot/
 
 - `+page.server.ts` — Exports load (~142 tok)
 
+## src/routes/(app)/trips/[slug]/phases/
+
+- `+page.svelte` — Svelte: +page (~2290 tok)
+
+## src/routes/(app)/trips/[slug]/phases/[phaseId]/
+
+- `+page.svelte` — Svelte: +page (~1806 tok)
+
 ## src/routes/(app)/trips/[slug]/settings/
 
-- `+page.svelte` — Svelte: +page (~2244 tok)
+- `+page.svelte` — Svelte: +page (~2291 tok)
+
+## src/routes/(app)/trips/[slug]/vault/
+
+- `+page.svelte` — Svelte: +page (~2434 tok)
 
 ## src/routes/(app)/trips/import/
 
@@ -996,6 +1051,10 @@
 ## src/routes/(app)/trips/new/
 
 - `+page.svelte` — Svelte: +page (~1323 tok)
+
+## src/routes/dev-skeletons/
+
+- `+page.svelte` — Svelte: +page (~372 tok)
 
 ## static/
 

@@ -310,7 +310,7 @@ Progress tracked in this file — mark each WP with completion date when done.
 | WP-5 | Done | 2026-05-24 |
 | WP-6 | Done | 2026-05-25 |
 | WP-7 | Done | 2026-05-24 |
-| WP-8 | Not started | |
+| WP-8 | Done | 2026-05-25 |
 | WP-9 | Not started | |
 | WP-10 | Not started | |
 | WP-11 | Not started | |
