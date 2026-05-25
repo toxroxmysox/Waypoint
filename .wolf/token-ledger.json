@@ -2,14 +2,14 @@
   "version": 1,
   "created_at": "2026-05-02T16:39:00.124Z",
   "lifetime": {
-    "total_tokens_estimated": 45107,
-    "total_reads": 129,
-    "total_writes": 116,
-    "total_sessions": 16,
-    "anatomy_hits": 23,
-    "anatomy_misses": 99,
-    "repeated_reads_blocked": 59,
-    "estimated_savings_vs_bare_cli": 44059
+    "total_tokens_estimated": 84583,
+    "total_reads": 147,
+    "total_writes": 142,
+    "total_sessions": 21,
+    "anatomy_hits": 35,
+    "anatomy_misses": 105,
+    "repeated_reads_blocked": 76,
+    "estimated_savings_vs_bare_cli": 116928
   },
   "sessions": [
     {
@@ -1648,6 +1648,261 @@
         "writes_count": 11,
         "repeated_reads_blocked": 0,
         "anatomy_lookups": 1
+      }
+    },
+    {
+      "id": "session-2026-05-25-1758",
+      "started": "2026-05-25T09:58:48.060Z",
+      "ended": "2026-05-25T10:06:06.827Z",
+      "reads": [
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/import/+page.svelte",
+          "tokens_estimated": 754,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/settings/+page.svelte",
+          "tokens_estimated": 2318,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/items/new/+page.svelte",
+          "tokens_estimated": 4624,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/items/[itemId]/edit/+page.svelte",
+          "tokens_estimated": 4223,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/clone/+page.svelte",
+          "tokens_estimated": 1098,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/expenses/+page.svelte",
+          "tokens_estimated": 8424,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/members/+page.svelte",
+          "tokens_estimated": 3162,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/Scott/Waypoint/V2_SPEC.md",
+          "tokens_estimated": 8824,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/lib/components/ui/Card.svelte",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/lib/utils/phase-palette.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/lib/components/ui/Button.svelte",
+          "tokens_estimated": 410,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/vault/+page.svelte",
+          "tokens_estimated": 2434,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/lib/components/SubTabs.svelte",
+          "tokens_estimated": 218,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/lib/components/ui/AppShell.svelte",
+          "tokens_estimated": 261,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/lib/components/ui/FAB.svelte",
+          "tokens_estimated": 310,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/today/+page.svelte",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/today/upcoming/+page.svelte",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/closeout/+page.svelte",
+          "tokens_estimated": 1426,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/new/+page.svelte",
+          "tokens_estimated": 20,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/settings/+page.svelte",
+          "tokens_estimated": 44,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/items/new/+page.svelte",
+          "tokens_estimated": 43,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/items/[itemId]/edit/+page.svelte",
+          "tokens_estimated": 43,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/clone/+page.svelte",
+          "tokens_estimated": 44,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/expenses/+page.svelte",
+          "tokens_estimated": 38,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/members/+page.svelte",
+          "tokens_estimated": 44,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/settings/+page.svelte",
+          "tokens_estimated": 26,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/items/new/+page.svelte",
+          "tokens_estimated": 25,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/items/[itemId]/edit/+page.svelte",
+          "tokens_estimated": 31,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/clone/+page.svelte",
+          "tokens_estimated": 36,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/expenses/+page.svelte",
+          "tokens_estimated": 86,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/expenses/+page.svelte",
+          "tokens_estimated": 34,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/members/+page.svelte",
+          "tokens_estimated": 42,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/members/+page.svelte",
+          "tokens_estimated": 37,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/lib/components/ui/Card.svelte",
+          "tokens_estimated": 61,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/settings/+page.svelte",
+          "tokens_estimated": 39,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/settings/+page.svelte",
+          "tokens_estimated": 24,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/settings/+page.svelte",
+          "tokens_estimated": 38,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/settings/+page.svelte",
+          "tokens_estimated": 24,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/members/+page.svelte",
+          "tokens_estimated": 71,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/lib/components/SubTabs.svelte",
+          "tokens_estimated": 38,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/vault/+page.svelte",
+          "tokens_estimated": 26,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/today/+page.svelte",
+          "tokens_estimated": 26,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/today/upcoming/+page.svelte",
+          "tokens_estimated": 26,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/Scott/Waypoint/src/routes/(app)/trips/[slug]/closeout/+page.svelte",
+          "tokens_estimated": 24,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 38486,
+        "output_tokens_estimated": 990,
+        "reads_count": 18,
+        "writes_count": 26,
+        "repeated_reads_blocked": 17,
+        "anatomy_lookups": 12
       }
     }
   ],

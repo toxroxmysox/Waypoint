@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-25T09:20:15.864Z
-> Files: 583 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-25T10:05:10.762Z
+> Files: 608 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ./
 
@@ -26,7 +26,7 @@
 - `SPEC.md` — Trip App — v1 Specification (~8824 tok)
 - `svelte.config.js` — Declares config (~199 tok)
 - `tsconfig.json` — TypeScript configuration (~198 tok)
-- `V2_SPEC.md` — Waypoint v2 — UI/UX Polish Specification (~4401 tok)
+- `V2_SPEC.md` — Waypoint v2 — UI/UX Polish Specification (~4408 tok)
 - `vite.config.ts` — Vite build configuration (~204 tok)
 
 ## .claude/
@@ -931,9 +931,17 @@
 - `Caddyfile` (~62 tok)
 - `start.sh` (~209 tok)
 
+## scripts/
+
+- `generate-icons.mjs` — __dirname: svgToPng (~383 tok)
+
 ## src/
 
-- `app.html` — Declares html (~301 tok)
+- `app.html` — Waypoint (~352 tok)
+
+## src/lib/actions/
+
+- `validate-form.ts` — Svelte action: adds blur-validation (`.touched` class) to form controls (~282 tok)
 
 ## src/lib/components/
 
@@ -942,7 +950,7 @@
 - `FlightLookup.svelte` — Svelte: FlightLookup (~644 tok)
 - `InlineQuickAdd.svelte` — Svelte: InlineQuickAdd (~585 tok)
 - `PlacesAutocomplete.svelte` — Svelte: PlacesAutocomplete (~787 tok)
-- `SubTabs.svelte` — Svelte: SubTabs (~218 tok)
+- `SubTabs.svelte` — Svelte: SubTabs (~222 tok)
 - `TripTabs.svelte` — Svelte: TripTabs (~376 tok)
 
 ## src/lib/components/skeletons/
@@ -966,13 +974,22 @@
 
 ## src/lib/components/ui/
 
-- `BottomSheet.svelte` — Svelte: BottomSheet (~434 tok)
+- `AppShell.svelte` — Svelte: AppShell (~261 tok)
+- `Avatar.svelte` — Svelte: Avatar (~264 tok)
+- `BottomSheet.svelte` — Svelte: BottomSheet (~526 tok)
 - `Button.svelte` — Svelte: Button (~410 tok)
+- `Card.svelte` — Svelte: Card (~324 tok)
+- `ContextRail.svelte` — Svelte: ContextRail (~2020 tok)
 - `FAB.svelte` — Svelte: FAB (~310 tok)
-- `NavBar.svelte` — Svelte: NavBar (~540 tok)
+- `NavBar.svelte` — Svelte: NavBar (~544 tok)
 - `NotificationBell.svelte` — Svelte: NotificationBell (~1281 tok)
+- `SideRail.svelte` — Svelte: SideRail (~1380 tok)
 - `Skeleton.svelte` — Svelte: Skeleton (~207 tok)
 - `Toast.svelte` — Svelte: Toast (~591 tok)
+
+## src/lib/icons/
+
+- `StarIcons.svelte` — Svelte: StarIcons (~695 tok)
 
 ## src/lib/stores/
 
@@ -981,11 +998,15 @@
 ## src/routes/
 
 - `+layout.svelte` — Svelte: +layout (~626 tok)
-- `layout.css` — Styles: 4 rules, 39 vars (~811 tok)
+- `layout.css` — Styles: 18 rules, 39 vars (~2043 tok)
 
 ## src/routes/(app)/
 
-- `+layout.svelte` — Svelte: +layout (~270 tok)
+- `+layout.svelte` — Svelte: +layout (~638 tok)
+
+## src/routes/(app)/trips/[slug]/
+
+- `+layout.svelte` — Svelte: +layout (~96 tok)
 
 ## src/routes/(app)/trips/[slug]/budget/
 
@@ -993,12 +1014,12 @@
 
 ## src/routes/(app)/trips/[slug]/clone/
 
-- `+page.svelte` — Svelte: +page (~1098 tok)
+- `+page.svelte` — Svelte: +page (~1133 tok)
 
 ## src/routes/(app)/trips/[slug]/closeout/
 
 - `+page.server.ts` — API routes: GET (8 endpoints) (~1074 tok)
-- `+page.svelte` — Svelte: +page (~1426 tok)
+- `+page.svelte` — Svelte: +page (~1431 tok)
 
 ## src/routes/(app)/trips/[slug]/days/[dayId]/
 
@@ -1006,7 +1027,7 @@
 
 ## src/routes/(app)/trips/[slug]/expenses/
 
-- `+page.svelte` — Svelte: +page (~8424 tok)
+- `+page.svelte` — Svelte: +page (~8456 tok)
 
 ## src/routes/(app)/trips/[slug]/export/
 
@@ -1020,9 +1041,17 @@
 
 - `+page.svelte` — Svelte: +page (~4647 tok)
 
+## src/routes/(app)/trips/[slug]/items/[itemId]/edit/
+
+- `+page.svelte` — Svelte: +page (~4228 tok)
+
+## src/routes/(app)/trips/[slug]/items/new/
+
+- `+page.svelte` — Svelte: +page (~4629 tok)
+
 ## src/routes/(app)/trips/[slug]/members/
 
-- `+page.svelte` — Svelte: +page (~3128 tok)
+- `+page.svelte` — Svelte: +page (~3162 tok)
 
 ## src/routes/(app)/trips/[slug]/parking-lot/
 
@@ -1038,11 +1067,19 @@
 
 ## src/routes/(app)/trips/[slug]/settings/
 
-- `+page.svelte` — Svelte: +page (~2291 tok)
+- `+page.svelte` — Svelte: +page (~2318 tok)
+
+## src/routes/(app)/trips/[slug]/today/
+
+- `+page.svelte` — Svelte: +page (~1170 tok)
+
+## src/routes/(app)/trips/[slug]/today/upcoming/
+
+- `+page.svelte` — Svelte: +page (~542 tok)
 
 ## src/routes/(app)/trips/[slug]/vault/
 
-- `+page.svelte` — Svelte: +page (~2434 tok)
+- `+page.svelte` — Svelte: +page (~2439 tok)
 
 ## src/routes/(app)/trips/import/
 
@@ -1050,7 +1087,7 @@
 
 ## src/routes/(app)/trips/new/
 
-- `+page.svelte` — Svelte: +page (~1323 tok)
+- `+page.svelte` — Svelte: +page (~1358 tok)
 
 ## src/routes/dev-skeletons/
 
@@ -1058,4 +1095,19 @@
 
 ## static/
 
-- `favicon.svg` (~106 tok)
+- `favicon.svg` (~98 tok)
+- `manifest.webmanifest` (~162 tok)
+
+## static/brand/
+
+- `app-icon-ink.svg` (~129 tok)
+- `app-icon-maskable.svg` (~127 tok)
+- `app-icon.svg` (~129 tok)
+- `favicon.svg` (~98 tok)
+- `lockup-horizontal.svg` (~165 tok)
+- `lockup-stacked.svg` (~165 tok)
+- `sparkle.svg` (~134 tok)
+- `star-mark-inverse.svg` (~84 tok)
+- `star-mark-outline.svg` (~82 tok)
+- `star-mark.svg` (~84 tok)
+- `star-stamp.svg` (~128 tok)

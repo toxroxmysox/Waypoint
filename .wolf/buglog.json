@@ -512,6 +512,86 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-05-24T10:41:35.542Z"
+    },
+    {
+      "id": "bug-033",
+      "timestamp": "2026-05-25T09:28:19.065Z",
+      "error_message": "Missing guard clause",
+      "file": "src/routes/(app)/+layout.svelte",
+      "root_cause": "No early return/throw for edge case: !from || !to || from === to",
+      "fix": "Added guard clause: if (!from || !to || from === to)",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-25T09:28:19.065Z"
+    },
+    {
+      "id": "bug-034",
+      "timestamp": "2026-05-25T09:37:50.745Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/app.html",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 3→4 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "html"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-25T09:37:50.745Z"
+    },
+    {
+      "id": "bug-035",
+      "timestamp": "2026-05-25T09:59:48.425Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/routes/(app)/trips/[slug]/settings/+page.svelte",
+      "root_cause": "Had '$lib/components/ui/NavBar.svelte'",
+      "fix": "Changed to '$lib/actions/validate-form'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 14,
+      "last_seen": "2026-05-25T10:05:10.774Z"
+    },
+    {
+      "id": "bug-036",
+      "timestamp": "2026-05-25T10:01:20.163Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/lib/components/ui/Card.svelte",
+      "root_cause": "Had `border-left-width:4px;border-left-color:${accent}",
+      "fix": "Changed to ');\n\tconst accentStyle = $derived(safeAccent ? `",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-25T10:01:20.163Z"
+    },
+    {
+      "id": "bug-037",
+      "timestamp": "2026-05-25T10:03:02.676Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/lib/components/SubTabs.svelte",
+      "root_cause": "Had \"border-line bg-paper/95 sticky top-[57px] z-dropd",
+      "fix": "Changed to \"border-line bg-paper/95 sticky top-[57px] z-dropd",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "svelte"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-25T10:03:02.676Z"
     }
   ]
 }

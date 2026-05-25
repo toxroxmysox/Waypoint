@@ -207,3 +207,87 @@
 | 17:20 | WP-8 complete | 4 composites + 4 page shells + layout wiring via $navigating | pnpm check clean, visual QC passed | ~0 |
 | 17:20 | Edited V2_SPEC.md | inline fix | ~8 |
 | 17:20 | Session end: 11 writes across 11 files (TripCardSkeleton.svelte, DayItemSkeleton.svelte, ExpenseRowSkeleton.svelte, MemberRowSkeleton.svelte, TripsPageSkeleton.svelte) | 2 reads | ~11067 tok |
+| 17:22 | Created src/lib/components/ui/BottomSheet.svelte | — | ~526 |
+
+## Session: 2026-05-25 17:24
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 17:28 | Edited src/routes/(app)/+layout.svelte | added 5 condition(s) | ~591 |
+| 17:28 | Edited src/routes/layout.css | modified media() | ~615 |
+| 17:31 | Edited V2_SPEC.md | inline fix | ~13 |
+
+## Session: 2026-05-25 17:33
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 17:34 | Created static/brand/star-mark.svg | — | ~84 |
+| 17:34 | Created static/brand/star-mark-inverse.svg | — | ~84 |
+| 17:34 | Created static/brand/star-mark-outline.svg | — | ~82 |
+| 17:35 | Created static/brand/sparkle.svg | — | ~134 |
+| 17:35 | Created static/brand/star-stamp.svg | — | ~128 |
+| 17:35 | Created static/brand/favicon.svg | — | ~98 |
+| 17:35 | Created static/brand/app-icon.svg | — | ~129 |
+| 17:35 | Created static/brand/app-icon-ink.svg | — | ~129 |
+| 17:35 | Created static/brand/app-icon-maskable.svg | — | ~127 |
+| 17:35 | Created static/brand/lockup-horizontal.svg | — | ~165 |
+| 17:35 | Created static/brand/lockup-stacked.svg | — | ~165 |
+| 17:35 | Created src/lib/icons/StarIcons.svelte | — | ~695 |
+| 17:37 | Created scripts/generate-icons.mjs | — | ~383 |
+| 17:37 | Edited src/app.html | 3→4 lines | ~74 |
+| 17:37 | Edited static/manifest.webmanifest | 18→18 lines | ~95 |
+| 17:38 | Created static/favicon.svg | — | ~98 |
+| 17:39 | Edited V2_SPEC.md | 6→6 lines | ~44 |
+
+## Session: 2026-05-25 17:40
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 17:43 | Created src/lib/components/ui/SideRail.svelte | — | ~1380 |
+| 17:44 | Created src/lib/components/ui/AppShell.svelte | — | ~261 |
+| 17:44 | Created src/routes/(app)/trips/[slug]/+layout.svelte | — | ~96 |
+| 17:44 | Created src/lib/components/ui/ContextRail.svelte | — | ~2020 |
+
+## Session: 2026-05-25 17:47
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 17:50 | Edited src/lib/components/ui/Avatar.svelte | 6→10 lines | ~55 |
+| 17:52 | Edited src/routes/layout.css | expanded (+19 lines) | ~241 |
+| 17:52 | Edited src/app.html | 6→8 lines | ~123 |
+| 17:55 | Edited src/lib/components/ui/NavBar.svelte | modified handleBack() | ~14 |
+| 17:56 | Edited src/routes/layout.css | modified has() | ~162 |
+| 17:56 | Created src/lib/actions/validate-form.ts | — | ~282 |
+| 17:57 | Edited src/routes/(app)/trips/new/+page.svelte | added 1 import(s) | ~70 |
+
+## Session: 2026-05-25 17:58
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 17:58 | Edited src/routes/(app)/trips/new/+page.svelte | 3→4 lines | ~19 |
+| 17:59 | Edited src/routes/(app)/trips/[slug]/settings/+page.svelte | added 1 import(s) | ~42 |
+| 17:59 | Edited src/routes/(app)/trips/[slug]/items/new/+page.svelte | added 1 import(s) | ~40 |
+| 17:59 | Edited src/routes/(app)/trips/[slug]/items/[itemId]/edit/+page.svelte | added 1 import(s) | ~40 |
+| 17:59 | Edited src/routes/(app)/trips/[slug]/clone/+page.svelte | added 1 import(s) | ~42 |
+| 18:00 | Edited src/routes/(app)/trips/[slug]/expenses/+page.svelte | added 1 import(s) | ~36 |
+| 18:00 | Edited src/routes/(app)/trips/[slug]/members/+page.svelte | added 1 import(s) | ~42 |
+| 18:00 | Edited src/routes/(app)/trips/[slug]/settings/+page.svelte | 4→5 lines | ~24 |
+| 18:00 | Edited src/routes/(app)/trips/[slug]/items/new/+page.svelte | 4→5 lines | ~23 |
+| 18:00 | Edited src/routes/(app)/trips/[slug]/items/[itemId]/edit/+page.svelte | 5→6 lines | ~29 |
+| 18:00 | Edited src/routes/(app)/trips/[slug]/clone/+page.svelte | 5→6 lines | ~34 |
+| 18:00 | Edited src/routes/(app)/trips/[slug]/expenses/+page.svelte | modified if() | ~80 |
+| 18:00 | Edited src/routes/(app)/trips/[slug]/expenses/+page.svelte | 5→6 lines | ~32 |
+| 18:00 | Edited src/routes/(app)/trips/[slug]/members/+page.svelte | 5→6 lines | ~39 |
+| 18:00 | Edited src/routes/(app)/trips/[slug]/members/+page.svelte | 5→6 lines | ~34 |
+| 18:01 | Edited src/lib/components/ui/Card.svelte | 1→2 lines | ~57 |
+| 18:01 | Edited src/routes/(app)/trips/[slug]/settings/+page.svelte | 3→3 lines | ~36 |
+| 18:01 | Edited src/routes/(app)/trips/[slug]/settings/+page.svelte | inline fix | ~23 |
+| 18:02 | Edited src/routes/(app)/trips/[slug]/settings/+page.svelte | 3→3 lines | ~36 |
+| 18:02 | Edited src/routes/(app)/trips/[slug]/settings/+page.svelte | inline fix | ~22 |
+| 18:02 | Edited src/routes/(app)/trips/[slug]/members/+page.svelte | 10→10 lines | ~67 |
+| 18:03 | Edited src/lib/components/SubTabs.svelte | "border-line bg-paper/95 s" → "border-line bg-paper/95 s" | ~36 |
+| 18:04 | Edited src/routes/(app)/trips/[slug]/vault/+page.svelte | "mx-auto w-full max-w-lg m" → "mx-auto w-full max-w-lg m" | ~25 |
+| 18:05 | Edited src/routes/(app)/trips/[slug]/today/+page.svelte | "mx-auto w-full max-w-lg m" → "mx-auto w-full max-w-lg m" | ~25 |
+| 18:05 | Edited src/routes/(app)/trips/[slug]/today/upcoming/+page.svelte | "mx-auto w-full max-w-lg m" → "mx-auto w-full max-w-lg m" | ~25 |
+| 18:05 | Edited src/routes/(app)/trips/[slug]/closeout/+page.svelte | "mx-auto w-full max-w-lg m" → "mx-auto w-full max-w-lg m" | ~22 |
+| 18:06 | Session end: 26 writes across 3 files (+page.svelte, Card.svelte, SubTabs.svelte) | 18 reads | ~39476 tok |
