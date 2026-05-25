@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { validateForm } from '$lib/actions/validate-form';
 	import NavBar from '$lib/components/ui/NavBar.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Pill from '$lib/components/ui/Pill.svelte';
@@ -164,6 +165,7 @@
 					<form
 						method="POST"
 						action="?/addPlaceholder"
+						use:validateForm
 						use:enhance={() => {
 							placeholderLoading = true;
 							return async ({ update, result }) => {
@@ -233,7 +235,7 @@
 							type="submit"
 							disabled={placeholderLoading}
 							loading={placeholderLoading}
-							variant="moss"
+							variant="ghost"
 							size="md"
 							class="w-full"
 						>
@@ -253,6 +255,7 @@
 				<form
 					method="POST"
 					action="?/invite"
+					use:validateForm
 					use:enhance={() => {
 						inviteLoading = true;
 						return async ({ update, result }) => {

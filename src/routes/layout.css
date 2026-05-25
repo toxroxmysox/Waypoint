@@ -220,6 +220,22 @@ input[type='datetime-local'] {
 	}
 }
 
+/* ── Form UX ──────────────────────────────────────────────────────── */
+
+/* Required-field asterisk: auto-applied when a label's sibling is [required]. */
+label:has(~ input[required], ~ select[required], ~ textarea[required])::after,
+label:has(~ div input[required])::after {
+	content: ' *';
+	color: var(--color-error);
+}
+
+/* Blur validation: show error border after user has touched the field. */
+input.touched:invalid,
+select.touched:invalid,
+textarea.touched:invalid {
+	border-color: var(--color-error);
+}
+
 /* Make the color swatch fill the styled container. */
 input[type='color'] {
 	padding: 0;

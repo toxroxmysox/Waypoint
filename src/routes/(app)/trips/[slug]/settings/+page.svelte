@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { validateForm } from '$lib/actions/validate-form';
 	import NavBar from '$lib/components/ui/NavBar.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -27,6 +28,7 @@
 		<form
 			method="POST"
 			action="?/update"
+			use:validateForm
 			use:enhance={() => {
 				loading = true;
 				return async ({ update, result }) => {
@@ -166,7 +168,7 @@
 						placeholder="Confirm password"
 					/>
 				</div>
-				<Button type="submit" variant="moss" size="sm">
+				<Button type="submit" variant="ghost" size="sm">
 					{data.hasVaultPassword ? 'Update password' : 'Set password'}
 				</Button>
 			</form>
@@ -227,7 +229,7 @@
 					</div>
 				{/if}
 
-				<Button type="submit" variant="moss" size="sm">Save archive settings</Button>
+				<Button type="submit" variant="ghost" size="sm">Save archive settings</Button>
 			</form>
 		</div>
 	</Card>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { validateForm } from '$lib/actions/validate-form';
 	import { beforeNavigate } from '$app/navigation';
 	import { untrack } from 'svelte';
 	import { itemFieldConfig, itemTypeLabels, slotOptions } from '$lib/config/item-fields';
@@ -123,6 +124,7 @@
 		method="POST"
 		action="?/update"
 		oninput={markDirty}
+		use:validateForm
 		use:enhance={() => {
 			loading = true;
 			submitting = true;

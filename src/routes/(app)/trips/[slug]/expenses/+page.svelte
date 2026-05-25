@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { validateForm } from '$lib/actions/validate-form';
 	import { untrack } from 'svelte';
 	import NavBar from '$lib/components/ui/NavBar.svelte';
 	import SubTabs from '$lib/components/SubTabs.svelte';
@@ -342,6 +343,7 @@
 	<form
 		method="POST"
 		action="?/addExpense"
+		use:validateForm
 		use:enhance={() => {
 			submitting = true;
 			return async ({ update, result }) => {
@@ -554,6 +556,7 @@
 		<form
 			method="POST"
 			action="?/updateExpense"
+			use:validateForm
 			use:enhance={() => {
 				updating = true;
 				return async ({ update, result }) => {

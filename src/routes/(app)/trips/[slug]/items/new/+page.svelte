@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { validateForm } from '$lib/actions/validate-form';
 	import { beforeNavigate } from '$app/navigation';
 	import { itemFieldConfig, itemTypeLabels, slotOptions } from '$lib/config/item-fields';
 	import { checklistTemplates } from '$lib/config/checklist-templates';
@@ -143,6 +144,7 @@
 	<form
 		method="POST"
 		oninput={markDirty}
+		use:validateForm
 		use:enhance={() => {
 			loading = true;
 			submitting = true;

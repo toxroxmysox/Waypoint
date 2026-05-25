@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { enhance } from '$app/forms';
+	import { validateForm } from '$lib/actions/validate-form';
 	import NavBar from '$lib/components/ui/NavBar.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -38,6 +39,7 @@
 	<Card>
 		<form
 			method="POST"
+			use:validateForm
 			use:enhance={() => {
 				loading = true;
 				return async ({ update }) => {

@@ -52,7 +52,7 @@
 	backHref="/trips/{data.trip.slug}"
 />
 
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-32">
+<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8">
 	{#if isOffline}
 		<div class="bg-surface border-border mt-8 rounded-xl border p-6 text-center">
 			<svg class="text-ink-muted mx-auto mb-3" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">

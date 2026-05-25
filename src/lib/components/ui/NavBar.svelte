@@ -21,7 +21,6 @@
 
 	function handleBack() {
 		if (onBack) onBack();
-		else if (typeof history !== 'undefined') history.back();
 	}
 </script>
 
