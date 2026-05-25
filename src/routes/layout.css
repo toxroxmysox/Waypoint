@@ -20,6 +20,15 @@
 	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+@font-face {
+	font-family: 'JetBrains Mono';
+	font-style: normal;
+	font-weight: 400 600;
+	font-display: swap;
+	src: url('/fonts/jetbrains-mono-latin.woff2') format('woff2');
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 /* Waypoint design tokens. Lifted verbatim from the Claude Design handoff
    (design/initial-handoff.html §02). Tailwind v4 exposes these as utilities
    (bg-paper, text-ink, font-display, rounded-md, shadow-card, etc.). */
@@ -40,6 +49,7 @@
 	--color-sky: #3b6ba5;
 	--color-sky-tint: #e6eef8;
 	--color-clay-tint: #f0e0d6;
+	--color-gold-deep: #8a6f24;
 	/* error: inline field text; error-deep: banner text on tinted bg (needs higher contrast). */
 	--color-error: #b33a3a;
 	--color-error-tint: #f5e0de;

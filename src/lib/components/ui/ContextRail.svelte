@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import type { Trip, Phase, Day } from '$lib/types';
+	import { getActiveSection, formatTripDate, sanitizeColor } from '$lib/utils/trip-nav';
 
 	let {
 		slug,
@@ -14,22 +15,7 @@
 		days?: Day[];
 	} = $props();
 
-	let activeContext = $derived.by(() => {
-		const path = page.url.pathname;
-		if (path.includes('/expenses') || path.includes('/budget')) return 'money';
-		if (path.includes('/members')) return 'members';
-		return 'itinerary';
-	});
-
-	function formatDate(dateStr: string): string {
-		const d = new Date(dateStr.split(/[T ]/)[0] + 'T00:00:00Z');
-		return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
-	}
-
-	function formatDateFull(dateStr: string): string {
-		const d = new Date(dateStr.split(/[T ]/)[0] + 'T00:00:00Z');
-		return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
-	}
+	let activeContext = $derived(getActiveSection(page.url.pathname));
 
 	const today = $derived(new Date().toISOString().split('T')[0]);
 
@@ -79,7 +65,7 @@
 		<div class="border-line space-y-2 border-b px-5 py-4">
 			<h2 class="text-ink text-sm font-semibold">{trip.title}</h2>
 			<div class="text-ink-muted flex items-center gap-2 text-xs">
-				<span>{formatDate(trip.start_date)} — {formatDate(trip.end_date)}</span>
+				<span>{formatTripDate(trip.start_date)} — {formatTripDate(trip.end_date)}</span>
 				<span class="text-line">|</span>
 				<span>{tripDuration} days</span>
 			</div>
@@ -103,15 +89,15 @@
 			{@const todayPhases = phasesForDay(todayDay)}
 			<div class="border-line space-y-2 border-b px-5 py-4">
 				<h3 class="text-ink-soft text-xs font-semibold uppercase tracking-wider">Today</h3>
-				<p class="text-ink text-sm font-medium">{formatDateFull(todayDay.date)}</p>
+				<p class="text-ink text-sm font-medium">{formatTripDate(todayDay.date, 'full')}</p>
 				{#if todayPhases.length > 0}
 					<div class="flex flex-wrap gap-1.5">
 						{#each todayPhases as phase}
 							<span
 								class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
-								style="background-color: {phase.color}20; color: {phase.color}"
+								style="background-color: {sanitizeColor(phase.color)}20; color: {sanitizeColor(phase.color)}"
 							>
-								<span class="h-1.5 w-1.5 rounded-full" style="background-color: {phase.color}"></span>
+								<span class="h-1.5 w-1.5 rounded-full" style="background-color: {sanitizeColor(phase.color)}"></span>
 								{phase.name}
 							</span>
 						{/each}
@@ -125,7 +111,7 @@
 			<div class="border-line space-y-2 border-b px-5 py-4">
 				<h3 class="text-ink-soft text-xs font-semibold uppercase tracking-wider">Current Phase</h3>
 				<div class="flex items-center gap-2">
-					<span class="h-2.5 w-2.5 rounded-full" style="background-color: {currentPhase.color}"></span>
+					<span class="h-2.5 w-2.5 rounded-full" style="background-color: {sanitizeColor(currentPhase.color)}"></span>
 					<span class="text-ink text-sm font-medium">{currentPhase.name}</span>
 				</div>
 				{#if currentPhase.location}
@@ -145,7 +131,7 @@
 						class="hover:bg-paper -mx-2 flex items-center gap-3 rounded-lg px-2 py-2 transition-colors"
 					>
 						<div class="text-center">
-							<div class="text-ink-muted text-[10px] uppercase">
+							<div class="text-ink-muted text-[11px] uppercase">
 								{new Date(day.date.split(/[T ]/)[0] + 'T00:00:00Z').toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })}
 							</div>
 							<div class="text-ink text-sm font-semibold">
@@ -154,7 +140,7 @@
 						</div>
 						<div class="min-w-0 flex-1">
 							{#if dayPhases.length > 0}
-								<p class="truncate text-xs font-medium" style="color: {dayPhases[0].color}">
+								<p class="truncate text-xs font-medium" style="color: {sanitizeColor(dayPhases[0].color)}">
 									{dayPhases.map(p => p.name).join(' · ')}
 								</p>
 							{:else}
@@ -177,9 +163,9 @@
 				<div class="space-y-1.5 pt-1">
 					{#each phases as phase}
 						<div class="flex items-center gap-2 text-xs">
-							<span class="h-2 w-2 shrink-0 rounded-full" style="background-color: {phase.color}"></span>
+							<span class="h-2 w-2 shrink-0 rounded-full" style="background-color: {sanitizeColor(phase.color)}"></span>
 							<span class="text-ink-soft flex-1 truncate">{phase.name}</span>
-							<span class="text-ink-muted">{formatDate(phase.start_date)}</span>
+							<span class="text-ink-muted">{formatTripDate(phase.start_date)}</span>
 						</div>
 					{/each}
 				</div>
@@ -197,11 +183,11 @@
 				<div class="space-y-2 pt-2">
 					{#each phases as phase}
 						<div class="flex items-start gap-2">
-							<span class="mt-1 h-2 w-2 shrink-0 rounded-full" style="background-color: {phase.color}"></span>
+							<span class="mt-1 h-2 w-2 shrink-0 rounded-full" style="background-color: {sanitizeColor(phase.color)}"></span>
 							<div class="min-w-0">
 								<p class="text-ink text-xs font-medium">{phase.name}</p>
 								<p class="text-ink-muted text-[11px]">
-									{formatDate(phase.start_date)} — {formatDate(phase.end_date)}
+									{formatTripDate(phase.start_date)} — {formatTripDate(phase.end_date)}
 									{#if phase.location}
 										· {phase.location}
 									{/if}

@@ -124,7 +124,7 @@ New component needed. Depends on WP-2 (design tokens) for elevation.
 - Layout: `inline-flex`, padding `10px 12px` (`py-2.5 px-3`), border-radius 14px (`rounded-[14px]`), `shadow-dropdown`
 - Animation: slide-in from bottom on mobile, slide-in from right on desktop. Exit at ~60% of entrance duration.
 - Position: mobile bottom above BottomNav + FAB; top-right on desktop
-- Max 1 visible toast at a time (queue if needed)
+- Max 1 visible toast at a time (new toast replaces current)
 - Accessible: `role="status"`, `aria-live="polite"`, does not steal focus
 
 **Integration points:** trip create, item create/edit/delete, expense create/edit/delete, member invite, settings save, phase create/edit/delete.
@@ -312,10 +312,10 @@ Progress tracked in this file — mark each WP with completion date when done.
 | WP-7 | Done | 2026-05-24 |
 | WP-8 | Done | 2026-05-25 |
 | WP-9 | Done | 2026-05-25 |
-| WP-10 | Not started | |
-| WP-11 | Not started | |
-| WP-12 | Not started | |
-| WP-13 | Not started | |
+| WP-10 | Done | 2026-05-25 |
+| WP-11 | Done | 2026-05-25 |
+| WP-12 | Done | 2026-05-25 |
+| WP-13 | Done | 2026-05-25 |
 | WP-14 | Done | 2026-05-25 |
 
 ---

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { fly, fade } from 'svelte/transition';
+	import { reducedMotion } from '$lib/stores/reduced-motion';
 
 	let {
 		open = $bindable(false),
@@ -12,16 +13,15 @@
 		children: Snippet;
 	} = $props();
 
-	const reducedMotion =
-		typeof window !== 'undefined' &&
-		typeof matchMedia !== 'undefined' &&
-		matchMedia('(prefers-reduced-motion: reduce)').matches;
+	let noMotion = $derived($reducedMotion);
 
-	const flyParams = reducedMotion
-		? { y: 0, duration: 0 }
-		: { y: 300, duration: 250, easing: (t: number) => 1 - Math.pow(1 - t, 3) };
+	const flyParams = $derived(
+		noMotion
+			? { y: 0, duration: 0 }
+			: { y: 300, duration: 250, easing: (t: number) => 1 - Math.pow(1 - t, 3) }
+	);
 
-	const fadeParams = reducedMotion ? { duration: 0 } : { duration: 200 };
+	const fadeParams = $derived(noMotion ? { duration: 0 } : { duration: 200 });
 
 	function onBackdropClick() {
 		open = false;

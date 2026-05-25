@@ -46,7 +46,7 @@
 	}
 
 	onNavigate((navigation) => {
-		if (!(document as any).startViewTransition) return;
+		if (!document.startViewTransition) return;
 
 		const from = navigation.from?.route?.id;
 		const to = navigation.to?.route?.id;
@@ -55,7 +55,7 @@
 		document.documentElement.dataset.transition = type;
 
 		return new Promise((resolve) => {
-			const transition = (document as any).startViewTransition(async () => {
+			const transition = document.startViewTransition(async () => {
 				resolve();
 				await navigation.complete;
 			});

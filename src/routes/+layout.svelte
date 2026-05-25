@@ -67,7 +67,7 @@
 </script>
 
 <svelte:head>
-	<meta name="theme-color" content="#1e293b" />
+	<meta name="theme-color" content="#F6F2EA" />
 </svelte:head>
 
 <a href="#main-content" class="skip-link">Skip to content</a>

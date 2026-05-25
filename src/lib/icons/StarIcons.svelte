@@ -34,7 +34,7 @@
 >
 	{#if name === 'compass'}
 		<circle cx="12" cy="12" r="9" />
-		<path d="M12 5 L13 10.5 L12 11.5 L11 10.5 Z" fill="#a5593a" stroke="none" />
+		<path d="M12 5 L13 10.5 L12 11.5 L11 10.5 Z" class="fill-clay" stroke="none" />
 		<path d="M12 19 L11 13.5 L12 12.5 L13 13.5 Z" fill="currentColor" stroke="none" opacity="0.5" />
 		<path d="M5 12 L10.5 11 L11.5 12 L10.5 13 Z" fill="currentColor" stroke="none" opacity="0.5" />
 		<path d="M19 12 L13.5 13 L12.5 12 L13.5 11 Z" fill="currentColor" stroke="none" opacity="0.5" />
