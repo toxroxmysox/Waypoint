@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { validateForm } from '$lib/actions/validate-form';
 	import NavBar from '$lib/components/ui/NavBar.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Pill from '$lib/components/ui/Pill.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import type { InviteRole } from '$lib/types';
+	import { toast } from '$lib/stores/toast';
 
 	let { data, form } = $props();
 
@@ -58,9 +60,9 @@
 </script>
 
 <NavBar title="Members" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}" />
-<main class="mx-auto w-full max-w-lg flex-1 space-y-6 px-4 pt-4 pb-8">
+<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 space-y-6 px-4 pt-4 pb-8">
 	{#if actionError}
-		<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">
+		<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">
 			{actionError}
 		</div>
 	{/if}
@@ -93,8 +95,9 @@
 									action="?/promote"
 									use:enhance={() => {
 										promoting = m.id;
-										return async ({ update }) => {
+										return async ({ update, result }) => {
 											promoting = null;
+											if (result.type === 'success') toast.show('Member promoted');
 											await update();
 										};
 									}}
@@ -117,8 +120,9 @@
 									action="?/remove"
 									use:enhance={() => {
 										removing = m.id;
-										return async ({ update }) => {
+										return async ({ update, result }) => {
 											removing = null;
+											if (result.type === 'success') toast.show('Member removed');
 											await update();
 										};
 									}}
@@ -161,18 +165,20 @@
 					<form
 						method="POST"
 						action="?/addPlaceholder"
+						use:validateForm
 						use:enhance={() => {
 							placeholderLoading = true;
-							return async ({ update }) => {
+							return async ({ update, result }) => {
 								placeholderLoading = false;
 								showPlaceholderForm = false;
+								if (result.type === 'success') toast.show('Member added');
 								await update({ reset: true });
 							};
 						}}
 						class="space-y-3 p-4"
 					>
 						{#if placeholderForm?.error}
-							<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">
+							<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">
 								{placeholderForm.error}
 							</div>
 						{/if}
@@ -228,7 +234,8 @@
 						<Button
 							type="submit"
 							disabled={placeholderLoading}
-							variant="moss"
+							loading={placeholderLoading}
+							variant="ghost"
 							size="md"
 							class="w-full"
 						>
@@ -248,17 +255,19 @@
 				<form
 					method="POST"
 					action="?/invite"
+					use:validateForm
 					use:enhance={() => {
 						inviteLoading = true;
-						return async ({ update }) => {
+						return async ({ update, result }) => {
 							inviteLoading = false;
+							if (result.type === 'success') toast.show('Invite sent');
 							await update({ reset: true });
 						};
 					}}
 					class="space-y-3 p-4"
 				>
 					{#if inviteError}
-						<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">
+						<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">
 							{inviteError}
 						</div>
 					{/if}
@@ -300,7 +309,7 @@
 						{/if}
 					</div>
 
-					<Button type="submit" disabled={inviteLoading} variant="moss" size="md" class="w-full">
+					<Button type="submit" disabled={inviteLoading} loading={inviteLoading} variant="moss" size="md" class="w-full">
 						{inviteLoading ? 'Sending…' : 'Send invite'}
 					</Button>
 				</form>
@@ -315,7 +324,7 @@
 				Pending invites ({data.pending.length})
 			</h2>
 			{#if revokeError}
-				<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">
+				<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">
 					{revokeError}
 				</div>
 			{/if}
@@ -338,8 +347,9 @@
 								action="?/revoke"
 								use:enhance={() => {
 									revoking = p.id;
-									return async ({ update }) => {
+									return async ({ update, result }) => {
 										revoking = null;
+										if (result.type === 'success') toast.show('Invite revoked');
 										await update();
 									};
 								}}

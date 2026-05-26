@@ -7,6 +7,7 @@
 	import SectionH from '$lib/components/ui/SectionH.svelte';
 	import BottomSheet from '$lib/components/ui/BottomSheet.svelte';
 	import type { VaultEntryDecrypted } from '$lib/types';
+	import { toast } from '$lib/stores/toast';
 
 	let { data, form } = $props();
 
@@ -103,7 +104,7 @@
 
 <NavBar title="Vault" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}/more" />
 
-<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-24 space-y-4">
+<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-4">
 	{#if !data.hasVaultPassword}
 		<!-- No vault password set -->
 		<Card>
@@ -133,7 +134,7 @@
 				</div>
 
 				{#if unlockError}
-					<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">{unlockError}</div>
+					<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{unlockError}</div>
 				{/if}
 
 				<div>
@@ -146,7 +147,7 @@
 					/>
 				</div>
 
-				<Button onclick={handleUnlock} disabled={unlockLoading || !vaultPassword.trim()} variant="moss" size="md" class="w-full">
+				<Button onclick={handleUnlock} disabled={unlockLoading || !vaultPassword.trim()} loading={unlockLoading} variant="moss" size="md" class="w-full">
 					{unlockLoading ? 'Unlocking...' : 'Unlock'}
 				</Button>
 			</div>
@@ -163,7 +164,7 @@
 		</div>
 
 		{#if form?.error}
-			<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">{form.error}</div>
+			<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{form.error}</div>
 		{/if}
 
 		{#if decryptedEntries.length === 0}
@@ -197,10 +198,11 @@
 								use:enhance={() => {
 									deleteLoading = true;
 									deleteId = entry.id;
-									return async ({ update }) => {
+									return async ({ update, result }) => {
 										deleteLoading = false;
 										deleteId = null;
 										viewEntry = null;
+										if (result.type === 'success') toast.show('Entry deleted');
 										await update();
 									};
 								}}
@@ -245,6 +247,7 @@
 							newTitle = '';
 							newBody = '';
 							createOpen = false;
+							toast.show('Entry created');
 							await update();
 						}
 					};
@@ -273,7 +276,7 @@
 						placeholder="Sensitive information..."
 					></textarea>
 				</div>
-				<Button type="submit" disabled={createLoading || !newTitle.trim() || !newBody.trim()} variant="moss" size="md" class="w-full">
+				<Button type="submit" disabled={createLoading || !newTitle.trim() || !newBody.trim()} loading={createLoading} variant="moss" size="md" class="w-full">
 					{createLoading ? 'Encrypting...' : 'Save encrypted'}
 				</Button>
 			</form>

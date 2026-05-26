@@ -24,7 +24,7 @@
 	});
 </script>
 
-<nav class="border-line bg-paper/95 sticky top-[57px] z-20 flex gap-1 overflow-x-auto border-b px-4 backdrop-blur">
+<nav class="border-line bg-paper/95 sticky top-[57px] z-dropdown flex gap-1 overflow-x-auto border-b px-4 backdrop-blur">
 	{#each tabs as tab}
 		{@const active = activeId === tab.id}
 		<a

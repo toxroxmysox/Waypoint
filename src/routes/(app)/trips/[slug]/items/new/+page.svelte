@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { validateForm } from '$lib/actions/validate-form';
 	import { beforeNavigate } from '$app/navigation';
 	import { itemFieldConfig, itemTypeLabels, slotOptions } from '$lib/config/item-fields';
 	import { checklistTemplates } from '$lib/config/checklist-templates';
@@ -123,9 +124,9 @@
 
 <NavBar title="New item" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}" />
 
-<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 space-y-4">
+<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-4">
 	{#if error}
-		<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">{error}</div>
+		<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{error}</div>
 	{/if}
 
 	{#if submitAsSuggestion}
@@ -143,6 +144,7 @@
 	<form
 		method="POST"
 		oninput={markDirty}
+		use:validateForm
 		use:enhance={() => {
 			loading = true;
 			submitting = true;
@@ -522,7 +524,7 @@
 			</Card>
 		{/if}
 
-		<Button type="submit" disabled={loading} variant="moss" size="lg" class="w-full">
+		<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="w-full">
 			{buttonLabel}
 		</Button>
 	</form>

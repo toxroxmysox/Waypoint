@@ -24,7 +24,7 @@
 		</div>
 
 		{#if data.status === 'not_found'}
-			<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-4 text-sm">
+			<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-4 text-sm">
 				<p class="font-semibold">Invite not found</p>
 				<p class="mt-1">
 					This link is invalid or has already been used. If you think it should still work, ask the
@@ -35,7 +35,7 @@
 				>Back to your trips</a
 			>
 		{:else if data.status === 'expired'}
-			<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-4 text-sm">
+			<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-4 text-sm">
 				<p class="font-semibold">Invite expired</p>
 				<p class="mt-1">
 					This invitation to <strong>{data.tripTitle}</strong> has expired. Ask the person who
@@ -46,7 +46,7 @@
 				>Back to your trips</a
 			>
 		{:else if data.status === 'mismatch'}
-			<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-4 text-sm">
+			<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-4 text-sm">
 				<p class="font-semibold">Wrong account</p>
 				<p class="mt-2">
 					This invite was sent to <strong>{data.email}</strong>, but you're signed in as
@@ -69,7 +69,7 @@
 				}}
 				class="mt-4"
 			>
-				<Button type="submit" disabled={loading} variant="primary" size="md" class="w-full">
+				<Button type="submit" disabled={loading} loading={loading} variant="primary" size="md" class="w-full">
 					{loading ? 'Signing out…' : 'Sign out and accept as ' + data.email}
 				</Button>
 			</form>
@@ -87,7 +87,7 @@
 			</div>
 
 			{#if error}
-				<div class="border-clay/30 bg-clay/10 text-clay mt-4 rounded-md border p-3 text-sm">
+				<div role="alert" class="border-error/30 bg-error/10 text-error-deep mt-4 rounded-md border p-3 text-sm">
 					{error}
 				</div>
 			{/if}
@@ -104,7 +104,7 @@
 				}}
 				class="mt-6"
 			>
-				<Button type="submit" disabled={loading} variant="moss" size="lg" class="w-full">
+				<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="w-full">
 					{loading ? 'Joining…' : 'Accept invite'}
 				</Button>
 			</form>
@@ -123,7 +123,7 @@
 			</div>
 
 			{#if error}
-				<div class="border-clay/30 bg-clay/10 text-clay mt-4 rounded-md border p-3 text-sm">
+				<div role="alert" class="border-error/30 bg-error/10 text-error-deep mt-4 rounded-md border p-3 text-sm">
 					{error}
 				</div>
 			{/if}
@@ -146,7 +146,7 @@
 					class="mt-4"
 				>
 					<input type="hidden" name="email" value={data.email} />
-					<Button type="submit" disabled={loading} variant="moss" size="lg" class="w-full">
+					<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="w-full">
 						{loading ? 'Sending…' : 'Send 6-digit code'}
 					</Button>
 				</form>
@@ -185,7 +185,7 @@
 						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-center font-mono text-2xl tracking-[0.5em]"
 						placeholder="000000"
 					/>
-					<Button type="submit" disabled={loading} variant="moss" size="lg" class="mt-4 w-full">
+					<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="mt-4 w-full">
 						{loading ? 'Verifying…' : 'Verify and join'}
 					</Button>
 					<button

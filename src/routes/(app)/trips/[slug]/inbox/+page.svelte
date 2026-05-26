@@ -6,6 +6,7 @@
 	import Pill from '$lib/components/ui/Pill.svelte';
 	import type { Suggestion } from '$lib/types';
 	import { titleCase } from '$lib/utils/format';
+	import { toast } from '$lib/stores/toast';
 
 	let { data, form } = $props();
 
@@ -38,9 +39,9 @@
 </script>
 
 <NavBar title="Inbox" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}" />
-<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 space-y-6">
+<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-6">
 	{#if actionError}
-		<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">{actionError}</div>
+		<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{actionError}</div>
 	{/if}
 
 	<section class="space-y-3">
@@ -92,8 +93,9 @@
 								action="?/approve"
 								use:enhance={() => {
 									approving = s.id;
-									return async ({ update }) => {
+									return async ({ update, result }) => {
 										approving = null;
+										if (result.type === 'success') toast.show('Suggestion approved');
 										await update();
 									};
 								}}
@@ -121,8 +123,9 @@
 								action="?/reject"
 								use:enhance={() => {
 									rejecting = s.id;
-									return async ({ update }) => {
+									return async ({ update, result }) => {
 										rejecting = null;
+										if (result.type === 'success') toast.show('Suggestion rejected');
 										await update();
 									};
 								}}

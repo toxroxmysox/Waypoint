@@ -86,121 +86,208 @@
 | 21:25 | Edited .gitignore | 1→2 lines | ~10 |
 | 21:25 | Session end: 1 writes across 1 files (.gitignore) | 1 reads | ~105 tok |
 | 21:26 | Edited .gitignore | 2→4 lines | ~24 |
-| 15:19 | Session end: 2 writes across 1 files (.gitignore) | 1 reads | ~136 tok |
-| 15:21 | Created ../.claude/projects/-Users-Scott-Waypoint/memory/project_waypoint_status.md | — | ~539 |
-| 15:22 | Edited ../.claude/projects/-Users-Scott-Waypoint/memory/MEMORY.md | inline fix | ~43 |
 
-## Session: 2026-05-22 07:00
-
-| Time | Action | File(s) | Outcome | ~Tokens |
-|------|--------|---------|---------|--------|
-| 07:15 | Fix 1: JSON.parse try/catch | items/new/+page.server.ts, items/edit/+page.server.ts | Wrapped unguarded JSON.parse in try/catch, returns fail(400) | ~200 |
-| 07:16 | Fix 2: Places session token | api/places/details/+server.ts | Moved from query param to X-Goog-Session-Token header | ~300 |
-| 07:17 | Fix 3: DayNav goto() | DayNav.svelte | Replaced window.location.href with goto() for client-side nav | ~50 |
-| 07:18 | Fix 4: Env var guards | api/flights/lookup, api/places/autocomplete, api/places/details | Added 503 guards for missing API keys, removed ! assertions | ~150 |
-| 07:19 | Fix 5: Clone date prefill | clone/+page.svelte | Prefilled start/end date inputs with source trip dates | ~50 |
-| 07:20 | Fix 6: Offline indicator | more/+page.svelte | Added $effect for localStorage read, gold badge + dynamic subtitle | ~100 |
-| 07:25 | Committed M6g review fixes | 8 files | 39fff99 | ~0 |
-| 07:30 | Merged PR #9 | main branch | Resolved .wolf/ merge conflicts, merged M6 milestone to main | ~0 |
-| 07:45 | Documented M6 lessons | cerebrum.md, buglog.json, memory files | 7 Do-Not-Repeat, 6 Decision Log, 6 bugs logged, project status updated | ~2000 |
-| 15:22 | Session end: 4 writes across 3 files (.gitignore, project_waypoint_status.md, MEMORY.md) | 3 reads | ~759 tok |
-
-## Session: 2026-05-22 15:24
-
-| Time | Action | File(s) | Outcome | ~Tokens |
-|------|--------|---------|---------|--------|
-| 18:09 | Created TEST_PLAN.md | — | ~5748 |
-| 18:10 | Session end: 1 writes across 1 files (TEST_PLAN.md) | 2 reads | ~15704 tok |
-| 18:11 | Edited .gitignore | 1→2 lines | ~10 |
-| 18:11 | Session end: 2 writes across 2 files (TEST_PLAN.md, .gitignore) | 3 reads | ~15829 tok |
-
-## Session: 2026-05-22 18:12
+## Session: 2026-05-24 08:12
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
 
-## Session: 2026-05-22 18:14
+## Session: 2026-05-24 08:35
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 08:41 | Edited src/routes/(app)/trips/[slug]/parking-lot/+page.server.ts | inline fix | ~36 |
+| 08:41 | Edited src/routes/(app)/trips/[slug]/closeout/+page.server.ts | "day,slot,order" → "day,slot,rank" | ~7 |
+| 08:41 | Edited src/routes/(app)/trips/[slug]/closeout/+page.server.ts | inline fix | ~4 |
+| 08:41 | Edited src/routes/(app)/trips/[slug]/export/+server.ts | "day,slot,order" → "day,slot,rank" | ~7 |
+| 08:47 | Edited src/routes/layout.css | inline fix | ~8 |
+| 08:47 | Edited src/routes/layout.css | CSS: --color-error-tint, --color-error-deep | ~34 |
+| 08:47 | Edited src/routes/layout.css | expanded (+10 lines) | ~173 |
+| 08:47 | Edited src/lib/components/BottomNav.svelte | "border-line bg-paper/95 f" → "border-line bg-paper/95 f" | ~31 |
+| 08:47 | Edited src/lib/components/PlacesAutocomplete.svelte | "border-line bg-surface ab" → "border-line bg-surface ab" | ~31 |
+| 08:47 | Edited src/lib/components/TripTabs.svelte | "border-line bg-paper/95 s" → "border-line bg-paper/95 s" | ~33 |
+| 08:47 | Edited src/lib/components/SubTabs.svelte | "border-line bg-paper/95 s" → "border-line bg-paper/95 s" | ~33 |
+| 08:48 | Edited src/lib/components/ui/NotificationBell.svelte | "fixed inset-0 z-40" → "fixed inset-0 z-nav" | ~8 |
+| 08:48 | Edited src/lib/components/ui/NotificationBell.svelte | "border-line bg-paper shad" → "border-line bg-paper shad" | ~36 |
+| 08:48 | Edited src/lib/components/ui/NavBar.svelte | "border-line bg-paper/95 s" → "border-line bg-paper/95 s" | ~30 |
+| 08:48 | Edited src/lib/components/ui/BottomSheet.svelte | "fixed inset-0 z-50 flex i" → "fixed inset-0 z-modal fle" | ~20 |
+| 08:48 | Edited src/lib/components/ui/FAB.svelte | "fixed right-5 z-40 flex h" → "fixed right-5 z-nav flex " | ~46 |
+| 08:48 | Edited src/routes/(app)/trips/new/+page.svelte | "border-clay/30 bg-clay/10" → "border-error/30 bg-error/" | ~29 |
+| 08:48 | Edited src/routes/(app)/trips/import/+page.svelte | 3→3 lines | ~32 |
+| 08:49 | Edited src/routes/(app)/trips/[slug]/settings/+page.svelte | "border-clay/30 bg-clay/10" → "border-error/30 bg-error/" | ~28 |
+| 08:49 | Edited src/routes/(app)/trips/[slug]/settings/+page.svelte | "border-clay/30 bg-clay/10" → "border-error/30 bg-error/" | ~31 |
+| 08:49 | Edited src/routes/(app)/trips/[slug]/settings/+page.svelte | "border-clay/30 bg-clay/10" → "border-error/30 bg-error/" | ~31 |
+| 08:49 | Edited src/routes/(app)/trips/[slug]/inbox/+page.svelte | "border-clay/30 bg-clay/10" → "border-error/30 bg-error/" | ~29 |
+| 08:49 | Edited src/routes/(app)/trips/[slug]/clone/+page.svelte | 3→3 lines | ~31 |
+| 08:49 | Edited src/routes/(app)/trips/[slug]/days/[dayId]/+page.svelte | "border-clay/30 bg-clay/10" → "border-error/30 bg-error/" | ~28 |
+| 08:49 | Edited src/lib/components/FlightLookup.svelte | "text-clay text-sm" → "text-error text-sm" | ~12 |
+| 08:49 | Edited src/routes/(app)/trips/[slug]/expenses/+page.svelte | "mb-3 text-sm text-clay" → "mb-3 text-sm text-error" | ~18 |
+| 08:49 | Edited src/routes/(app)/trips/[slug]/expenses/+page.svelte | "mb-3 text-sm text-clay" → "mb-3 text-sm text-error" | ~19 |
+| 08:49 | Edited src/routes/(app)/trips/[slug]/expenses/+page.svelte | "mb-2 text-sm text-clay" → "mb-2 text-sm text-error" | ~19 |
+| 08:49 | Edited src/routes/(app)/trips/[slug]/expenses/+page.svelte | "mb-3 text-sm text-clay" → "mb-3 text-sm text-error" | ~20 |
+| 18:33 | Edited src/routes/(app)/trips/[slug]/closeout/+page.svelte | "h-full rounded-full bg-gr" → "h-full rounded-full bg-mo" | ~15 |
+| 18:33 | Edited src/routes/(app)/trips/[slug]/closeout/+page.svelte | 2→2 lines | ~29 |
+| 18:33 | Edited src/routes/(app)/trips/[slug]/closeout/+page.svelte | "font-medium text-amber-60" → "font-medium text-gold" | ~19 |
+| 18:33 | Edited src/routes/(app)/trips/[slug]/closeout/+page.svelte | "text-ink-muted rounded-lg" → "text-ink-muted rounded-lg" | ~29 |
+| 18:33 | Edited src/routes/(app)/trips/[slug]/closeout/+page.svelte | "bg-ink text-on-ink w-full" → "bg-ink text-on-ink w-full" | ~27 |
+| 18:33 | Edited src/lib/components/CloseoutDayCard.svelte | "rounded-lg bg-green-50 px" → "rounded-lg bg-moss-tint p" | ~32 |
+| 18:34 | Edited src/lib/components/ui/Button.svelte | "inline-flex items-center " → "inline-flex items-center " | ~36 |
+| 18:34 | Edited src/lib/components/InlineQuickAdd.svelte | "bg-ink text-on-ink rounde" → "bg-ink text-on-ink rounde" | ~25 |
+| 18:41 | Edited src/lib/components/ui/BottomSheet.svelte | 2→2 lines | ~36 |
+| 18:41 | Edited src/lib/components/ui/NotificationBell.svelte | "fixed inset-0 z-nav" → "fixed inset-0 z-modal" | ~9 |
+| 18:41 | Edited src/routes/layout.css | CSS: error, error-deep | ~52 |
+| 18:42 | Session end: 40 writes across 16 files (+page.server.ts, +server.ts, layout.css, BottomNav.svelte, PlacesAutocomplete.svelte) | 32 reads | ~13366 tok |
+
+## Session: 2026-05-24 19:32
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 07:35 | Created src/lib/stores/toast.ts | — | ~276 |
+| 07:36 | Created src/lib/components/ui/Toast.svelte | — | ~591 |
+| 07:36 | Edited src/routes/+layout.svelte | added 1 import(s) | ~31 |
+| 07:36 | Edited src/routes/+layout.svelte | 1→3 lines | ~9 |
+| 07:37 | Edited src/routes/(app)/trips/[slug]/settings/+page.svelte | added 1 import(s) | ~35 |
+| 07:37 | Edited src/routes/(app)/trips/[slug]/settings/+page.svelte | added 1 condition(s) | ~56 |
+| 07:38 | Edited src/routes/(app)/trips/[slug]/days/[dayId]/+page.svelte | added 1 import(s) | ~25 |
+| 07:38 | Edited src/routes/(app)/trips/[slug]/days/[dayId]/+page.svelte | modified if() | ~31 |
+| 07:38 | Edited src/routes/(app)/trips/[slug]/expenses/+page.svelte | added 1 import(s) | ~42 |
+| 07:38 | Edited src/routes/(app)/trips/[slug]/expenses/+page.svelte | modified if() | ~33 |
+| 07:39 | Edited src/routes/(app)/trips/[slug]/expenses/+page.svelte | modified if() | ~76 |
+| 07:39 | Edited src/routes/(app)/trips/[slug]/expenses/+page.svelte | modified if() | ~80 |
+| 07:39 | Edited src/routes/(app)/trips/[slug]/expenses/+page.svelte | modified if() | ~32 |
+| 07:39 | Edited src/routes/(app)/trips/[slug]/members/+page.svelte | added 1 import(s) | ~24 |
+| 07:40 | Edited src/routes/(app)/trips/[slug]/members/+page.svelte | added 1 condition(s) | ~77 |
+| 07:40 | Edited src/routes/(app)/trips/[slug]/members/+page.svelte | added 1 condition(s) | ~76 |
+| 07:40 | Edited src/routes/(app)/trips/[slug]/members/+page.svelte | added 1 condition(s) | ~90 |
+| 07:40 | Edited src/routes/(app)/trips/[slug]/members/+page.svelte | added 1 condition(s) | ~73 |
+| 07:40 | Edited src/routes/(app)/trips/[slug]/members/+page.svelte | added 1 condition(s) | ~71 |
+| 07:41 | Edited src/routes/(app)/trips/[slug]/phases/+page.svelte | added 1 import(s) | ~27 |
+| 07:41 | Edited src/routes/(app)/trips/[slug]/phases/+page.svelte | modified if() | ~40 |
+| 07:41 | Edited src/routes/(app)/trips/[slug]/phases/+page.svelte | added 1 condition(s) | ~68 |
+| 07:41 | Edited src/routes/(app)/trips/[slug]/phases/[phaseId]/+page.svelte | added 1 import(s) | ~27 |
+| 07:41 | Edited src/routes/(app)/trips/[slug]/phases/[phaseId]/+page.svelte | modified if() | ~29 |
+| 07:42 | Edited src/routes/(app)/trips/[slug]/budget/+page.svelte | added 1 import(s) | ~36 |
+| 07:42 | Edited src/routes/(app)/trips/[slug]/budget/+page.svelte | added 1 condition(s) | ~53 |
+| 07:42 | Edited src/routes/(app)/trips/[slug]/vault/+page.svelte | added 1 import(s) | ~27 |
+| 07:42 | Edited src/routes/(app)/trips/[slug]/vault/+page.svelte | added 1 condition(s) | ~92 |
+| 07:43 | Edited src/routes/(app)/trips/[slug]/vault/+page.svelte | modified if() | ~47 |
+| 07:43 | Edited src/routes/(app)/trips/[slug]/inbox/+page.svelte | added 1 import(s) | ~25 |
+| 07:43 | Edited src/routes/(app)/trips/[slug]/inbox/+page.svelte | added 1 condition(s) | ~76 |
+| 07:43 | Edited src/routes/(app)/trips/[slug]/inbox/+page.svelte | added 1 condition(s) | ~76 |
+| 07:44 | Edited src/routes/(app)/trips/[slug]/items/[itemId]/+page.svelte | added 1 import(s) | ~28 |
+| 07:44 | Edited src/routes/(app)/trips/[slug]/items/[itemId]/+page.svelte | added 1 condition(s) | ~77 |
+| 07:44 | Edited src/routes/(app)/trips/[slug]/items/[itemId]/+page.svelte | added 1 condition(s) | ~76 |
+| 07:45 | Edited V2_SPEC.md | 7→7 lines | ~54 |
+| 07:46 | Created src/lib/components/ui/Skeleton.svelte | — | ~207 |
+
+## Session: 2026-05-25 17:11
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
 
-## Session: 2026-05-22 18:26
+## Session: 2026-05-25 17:12
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
 
-## Session: 2026-05-22 18:36
+## Session: 2026-05-25 17:15
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+| 17:16 | Created src/lib/components/skeletons/TripCardSkeleton.svelte | — | ~98 |
+| 17:16 | Created src/lib/components/skeletons/DayItemSkeleton.svelte | — | ~120 |
+| 17:16 | Created src/lib/components/skeletons/ExpenseRowSkeleton.svelte | — | ~123 |
+| 17:16 | Created src/lib/components/skeletons/MemberRowSkeleton.svelte | — | ~107 |
+| 17:16 | Created src/lib/components/skeletons/TripsPageSkeleton.svelte | — | ~219 |
+| 17:16 | Created src/lib/components/skeletons/DayPageSkeleton.svelte | — | ~259 |
+| 17:16 | Created src/lib/components/skeletons/ExpensesPageSkeleton.svelte | — | ~249 |
+| 17:16 | Created src/lib/components/skeletons/MembersPageSkeleton.svelte | — | ~269 |
+| 17:16 | Created src/routes/(app)/+layout.svelte | — | ~270 |
+| 17:17 | Created src/routes/dev-skeletons/+page.svelte (temp, deleted) | — | ~372 |
+| 17:20 | WP-8 complete | 4 composites + 4 page shells + layout wiring via $navigating | pnpm check clean, visual QC passed | ~0 |
+| 17:20 | Edited V2_SPEC.md | inline fix | ~8 |
+| 17:20 | Session end: 11 writes across 11 files (TripCardSkeleton.svelte, DayItemSkeleton.svelte, ExpenseRowSkeleton.svelte, MemberRowSkeleton.svelte, TripsPageSkeleton.svelte) | 2 reads | ~11067 tok |
+| 17:22 | Created src/lib/components/ui/BottomSheet.svelte | — | ~526 |
 
-## Session: 2026-05-22 07:54
-
-| Time | Action | File(s) | Outcome | ~Tokens |
-|------|--------|---------|---------|--------|
-
-## Session: 2026-05-23 08:08
-
-| Time | Action | File(s) | Outcome | ~Tokens |
-|------|--------|---------|---------|--------|
-| 08:13 | Created UI_AUDIT.md | — | ~5347 |
-| 08:13 | Created comprehensive UI_AUDIT.md report | UI_AUDIT.md | Complete audit with v2/v3/backlog plan | ~1500 |
-| 08:14 | Session end: 1 writes across 1 files (UI_AUDIT.md) | 5 reads | ~5728 tok |
-
-## Session: 2026-05-23 21:11
-
-| Time | Action | File(s) | Outcome | ~Tokens |
-|------|--------|---------|---------|--------|
-
-## Session: 2026-05-23 21:39
+## Session: 2026-05-25 17:24
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
-| 21:39 | Edited UI_AUDIT.md | 36→36 lines | ~516 |
-| 21:39 | Session end: 1 writes across 1 files (UI_AUDIT.md) | 0 reads | ~553 tok |
-| 21:41 | Session end: 1 writes across 1 files (UI_AUDIT.md) | 10 reads | ~5864 tok |
-| 21:42 | Session end: 1 writes across 1 files (UI_AUDIT.md) | 10 reads | ~5864 tok |
+| 17:28 | Edited src/routes/(app)/+layout.svelte | added 5 condition(s) | ~591 |
+| 17:28 | Edited src/routes/layout.css | modified media() | ~615 |
+| 17:31 | Edited V2_SPEC.md | inline fix | ~13 |
 
-## Session: 2026-05-23 21:42
-
-| Time | Action | File(s) | Outcome | ~Tokens |
-|------|--------|---------|---------|--------|
-| 21:44 | Edited UI_AUDIT.md | expanded (+123 lines) | ~3421 |
-| 21:44 | Session end: 1 writes across 1 files (UI_AUDIT.md) | 1 reads | ~8675 tok |
-| 21:51 | Session end: 1 writes across 1 files (UI_AUDIT.md) | 1 reads | ~11867 tok |
-| 21:56 | Created V2_SPEC.md | — | ~3871 |
-
-## Session: 2026-05-23 22:00
+## Session: 2026-05-25 17:33
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
-| 22:03 | Created CLAUDE_DESIGN_PROMPT.md | — | ~4036 |
-| 22:03 | Session end: 1 writes across 1 files (CLAUDE_DESIGN_PROMPT.md) | 10 reads | ~4324 tok |
+| 17:34 | Created static/brand/star-mark.svg | — | ~84 |
+| 17:34 | Created static/brand/star-mark-inverse.svg | — | ~84 |
+| 17:34 | Created static/brand/star-mark-outline.svg | — | ~82 |
+| 17:35 | Created static/brand/sparkle.svg | — | ~134 |
+| 17:35 | Created static/brand/star-stamp.svg | — | ~128 |
+| 17:35 | Created static/brand/favicon.svg | — | ~98 |
+| 17:35 | Created static/brand/app-icon.svg | — | ~129 |
+| 17:35 | Created static/brand/app-icon-ink.svg | — | ~129 |
+| 17:35 | Created static/brand/app-icon-maskable.svg | — | ~127 |
+| 17:35 | Created static/brand/lockup-horizontal.svg | — | ~165 |
+| 17:35 | Created static/brand/lockup-stacked.svg | — | ~165 |
+| 17:35 | Created src/lib/icons/StarIcons.svelte | — | ~695 |
+| 17:37 | Created scripts/generate-icons.mjs | — | ~383 |
+| 17:37 | Edited src/app.html | 3→4 lines | ~74 |
+| 17:37 | Edited static/manifest.webmanifest | 18→18 lines | ~95 |
+| 17:38 | Created static/favicon.svg | — | ~98 |
+| 17:39 | Edited V2_SPEC.md | 6→6 lines | ~44 |
 
-## Session: 2026-05-23 22:13
-
-| Time | Action | File(s) | Outcome | ~Tokens |
-|------|--------|---------|---------|--------|
-
-## Session: 2026-05-23 07:10
-
-| Time | Action | File(s) | Outcome | ~Tokens |
-|------|--------|---------|---------|--------|
-| 07:16 | Created docs/superpowers/plans/2026-05-24-v2-ui-ux-polish.md | — | ~14611 |
-| 07:20 | Wrote complete v2 implementation plan | docs/superpowers/plans/2026-05-24-v2-ui-ux-polish.md | 50 tasks, 13 sessions, all 13 WPs covered | ~2068 lines |
-| 07:16 | Session end: 1 writes across 1 files (2026-05-24-v2-ui-ux-polish.md) | 0 reads | ~15655 tok |
-
-## Session: 2026-05-24 18:31
-
-| Time | Action | File(s) | Outcome | ~Tokens |
-|------|--------|---------|---------|--------|
-
-## Session: 2026-05-24 18:33
+## Session: 2026-05-25 17:40
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+| 17:43 | Created src/lib/components/ui/SideRail.svelte | — | ~1380 |
+| 17:44 | Created src/lib/components/ui/AppShell.svelte | — | ~261 |
+| 17:44 | Created src/routes/(app)/trips/[slug]/+layout.svelte | — | ~96 |
+| 17:44 | Created src/lib/components/ui/ContextRail.svelte | — | ~2020 |
 
-## Session: 2026-05-24 19:33
+## Session: 2026-05-25 17:47
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+| 17:50 | Edited src/lib/components/ui/Avatar.svelte | 6→10 lines | ~55 |
+| 17:52 | Edited src/routes/layout.css | expanded (+19 lines) | ~241 |
+| 17:52 | Edited src/app.html | 6→8 lines | ~123 |
+| 17:55 | Edited src/lib/components/ui/NavBar.svelte | modified handleBack() | ~14 |
+| 17:56 | Edited src/routes/layout.css | modified has() | ~162 |
+| 17:56 | Created src/lib/actions/validate-form.ts | — | ~282 |
+| 17:57 | Edited src/routes/(app)/trips/new/+page.svelte | added 1 import(s) | ~70 |
+
+## Session: 2026-05-25 17:58
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 17:58 | Edited src/routes/(app)/trips/new/+page.svelte | 3→4 lines | ~19 |
+| 17:59 | Edited src/routes/(app)/trips/[slug]/settings/+page.svelte | added 1 import(s) | ~42 |
+| 17:59 | Edited src/routes/(app)/trips/[slug]/items/new/+page.svelte | added 1 import(s) | ~40 |
+| 17:59 | Edited src/routes/(app)/trips/[slug]/items/[itemId]/edit/+page.svelte | added 1 import(s) | ~40 |
+| 17:59 | Edited src/routes/(app)/trips/[slug]/clone/+page.svelte | added 1 import(s) | ~42 |
+| 18:00 | Edited src/routes/(app)/trips/[slug]/expenses/+page.svelte | added 1 import(s) | ~36 |
+| 18:00 | Edited src/routes/(app)/trips/[slug]/members/+page.svelte | added 1 import(s) | ~42 |
+| 18:00 | Edited src/routes/(app)/trips/[slug]/settings/+page.svelte | 4→5 lines | ~24 |
+| 18:00 | Edited src/routes/(app)/trips/[slug]/items/new/+page.svelte | 4→5 lines | ~23 |
+| 18:00 | Edited src/routes/(app)/trips/[slug]/items/[itemId]/edit/+page.svelte | 5→6 lines | ~29 |
+| 18:00 | Edited src/routes/(app)/trips/[slug]/clone/+page.svelte | 5→6 lines | ~34 |
+| 18:00 | Edited src/routes/(app)/trips/[slug]/expenses/+page.svelte | modified if() | ~80 |
+| 18:00 | Edited src/routes/(app)/trips/[slug]/expenses/+page.svelte | 5→6 lines | ~32 |
+| 18:00 | Edited src/routes/(app)/trips/[slug]/members/+page.svelte | 5→6 lines | ~39 |
+| 18:00 | Edited src/routes/(app)/trips/[slug]/members/+page.svelte | 5→6 lines | ~34 |
+| 18:01 | Edited src/lib/components/ui/Card.svelte | 1→2 lines | ~57 |
+| 18:01 | Edited src/routes/(app)/trips/[slug]/settings/+page.svelte | 3→3 lines | ~36 |
+| 18:01 | Edited src/routes/(app)/trips/[slug]/settings/+page.svelte | inline fix | ~23 |
+| 18:02 | Edited src/routes/(app)/trips/[slug]/settings/+page.svelte | 3→3 lines | ~36 |
+| 18:02 | Edited src/routes/(app)/trips/[slug]/settings/+page.svelte | inline fix | ~22 |
+| 18:02 | Edited src/routes/(app)/trips/[slug]/members/+page.svelte | 10→10 lines | ~67 |
+| 18:03 | Edited src/lib/components/SubTabs.svelte | "border-line bg-paper/95 s" → "border-line bg-paper/95 s" | ~36 |
+| 18:04 | Edited src/routes/(app)/trips/[slug]/vault/+page.svelte | "mx-auto w-full max-w-lg m" → "mx-auto w-full max-w-lg m" | ~25 |
+| 18:05 | Edited src/routes/(app)/trips/[slug]/today/+page.svelte | "mx-auto w-full max-w-lg m" → "mx-auto w-full max-w-lg m" | ~25 |
+| 18:05 | Edited src/routes/(app)/trips/[slug]/today/upcoming/+page.svelte | "mx-auto w-full max-w-lg m" → "mx-auto w-full max-w-lg m" | ~25 |
+| 18:05 | Edited src/routes/(app)/trips/[slug]/closeout/+page.svelte | "mx-auto w-full max-w-lg m" → "mx-auto w-full max-w-lg m" | ~22 |
+| 18:06 | Session end: 26 writes across 3 files (+page.svelte, Card.svelte, SubTabs.svelte) | 18 reads | ~39476 tok |

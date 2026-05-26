@@ -7,6 +7,7 @@
 	import SectionH from '$lib/components/ui/SectionH.svelte';
 	import SubTabs from '$lib/components/SubTabs.svelte';
 	import NotificationBell from '$lib/components/ui/NotificationBell.svelte';
+	import PhaseChip from '$lib/components/ui/PhaseChip.svelte';
 	import { titleCase } from '$lib/utils/format';
 	import { untrack } from 'svelte';
 	import type { Notification } from '$lib/types';
@@ -65,7 +66,7 @@
 	{ id: 'phases', label: 'Phases', href: `/trips/${data.trip.slug}/phases` }
 ]} />
 
-<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 space-y-6">
+<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-6">
 	<!-- Trip stats card -->
 	<Card>
 		<div class="flex items-start justify-between p-4">
@@ -74,7 +75,7 @@
 					{formatDateRange(data.trip.start_date, data.trip.end_date)}
 				</p>
 				{#if data.trip.timezone}
-					<p class="text-ink-muted font-mono mt-0.5 text-[11px]">{data.trip.timezone}</p>
+					<p class="text-ink-muted font-mono mt-0.5 text-xs">{data.trip.timezone}</p>
 				{/if}
 				<p class="text-ink-soft mt-2 text-sm">
 					<span class="font-mono">{data.days.length}</span> days ·
@@ -107,12 +108,10 @@
 			<section class="space-y-1.5">
 				<div class="flex items-center justify-between">
 					<div class="flex items-center gap-2">
-						{#if phase.color}
-							<span class="h-2.5 w-2.5 rounded-full" style="background-color: {phase.color}"></span>
-						{/if}
+						<PhaseChip name={phase.name} color={phase.color} size={20} />
 						<a href="/trips/{data.trip.slug}/phases/{phase.id}" class="text-ink font-semibold hover:underline">{phase.name}</a>
 					</div>
-					<span class="text-ink-muted font-mono text-[11px]">
+					<span class="text-ink-muted font-mono text-xs">
 						{formatDateRange(phase.start_date, phase.end_date)}
 						{#if phase.location}
 							<span class="text-line">·</span> {phase.location}

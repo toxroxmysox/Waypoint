@@ -21,6 +21,10 @@
 	<img
 		src={img}
 		{alt}
+		width={size}
+		height={size}
+		loading="lazy"
+		decoding="async"
 		class="border-line inline-block rounded-full border object-cover"
 		style="width:{size}px;height:{size}px;"
 	/>

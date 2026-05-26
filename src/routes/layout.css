@@ -1,6 +1,34 @@
 @import 'tailwindcss';
 @import '$lib/styles/print.css';
 
+/* Self-hosted critical fonts — preloaded in app.html for zero-FOIT on first paint. */
+@font-face {
+	font-family: 'Inter';
+	font-style: normal;
+	font-weight: 400 700;
+	font-display: swap;
+	src: url('/fonts/inter-latin.woff2') format('woff2');
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+	font-family: 'Fraunces';
+	font-style: normal;
+	font-weight: 400 700;
+	font-display: swap;
+	src: url('/fonts/fraunces-latin.woff2') format('woff2');
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+	font-family: 'JetBrains Mono';
+	font-style: normal;
+	font-weight: 400 600;
+	font-display: swap;
+	src: url('/fonts/jetbrains-mono-latin.woff2') format('woff2');
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 /* Waypoint design tokens. Lifted verbatim from the Claude Design handoff
    (design/initial-handoff.html §02). Tailwind v4 exposes these as utilities
    (bg-paper, text-ink, font-display, rounded-md, shadow-card, etc.). */
@@ -10,7 +38,7 @@
 	--color-surface-2: #fbf8f2;
 	--color-ink: #1c1b18;
 	--color-ink-soft: #4c4a44;
-	--color-ink-muted: #8a847a;
+	--color-ink-muted: #67625a;
 	--color-line: #e2dcd0;
 	--color-moss: #3e5a3a;
 	--color-moss-soft: #6f8b6a;
@@ -21,7 +49,11 @@
 	--color-sky: #3b6ba5;
 	--color-sky-tint: #e6eef8;
 	--color-clay-tint: #f0e0d6;
+	--color-gold-deep: #8a6f24;
+	/* error: inline field text; error-deep: banner text on tinted bg (needs higher contrast). */
 	--color-error: #b33a3a;
+	--color-error-tint: #f5e0de;
+	--color-error-deep: #8e2a2a;
 
 	--breakpoint-md-desktop: 900px;
 	--breakpoint-lg-desktop: 1280px;
@@ -35,17 +67,75 @@
 	--radius-lg: 16px;
 	--radius-xl: 22px;
 
-	--shadow-card: 0 1px 2px rgba(28, 27, 24, 0.03);
+	--shadow-card:     0 1px 2px rgba(28, 27, 24, 0.04);
+	--shadow-elevated: 0 1px 2px rgba(28, 27, 24, 0.05), 0 4px 10px rgba(28, 27, 24, 0.06);
+	--shadow-dropdown: 0 2px 4px rgba(28, 27, 24, 0.05), 0 8px 20px rgba(28, 27, 24, 0.09);
+	--shadow-overlay:  0 -2px 8px rgba(28, 27, 24, 0.05), 0 -12px 40px rgba(28, 27, 24, 0.13);
+	--shadow-modal:    0 4px 12px rgba(28, 27, 24, 0.10), 0 24px 60px rgba(28, 27, 24, 0.20);
 	--shadow-card-strong:
 		0 1px 0 rgba(28, 27, 24, 0.04), 0 8px 24px rgba(28, 27, 24, 0.06);
+
+	--z-dropdown: 20;
+	--z-sticky:   30;
+	--z-nav:      40;
+	--z-modal:    50;
+	--z-overlay:  60;
 }
 
 /* Page baseline. Paper background, ink text, Inter UI. */
+html {
+	touch-action: manipulation;
+}
+
 html,
 body {
 	background: var(--color-paper);
 	color: var(--color-ink);
 	-webkit-font-smoothing: antialiased;
+}
+
+/* Tabular figures for numeric alignment in expense tables and budgets. */
+.font-mono {
+	font-variant-numeric: tabular-nums;
+}
+
+/* Global focus-visible ring for keyboard navigation. */
+:focus-visible {
+	outline: 2px solid var(--color-moss);
+	outline-offset: 2px;
+}
+
+/* Visually hidden but accessible to screen readers. */
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border-width: 0;
+}
+
+/* Skip link — hidden until focused. */
+.skip-link {
+	position: fixed;
+	top: -100%;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 9999;
+	padding: 8px 16px;
+	background: var(--color-ink);
+	color: var(--color-paper);
+	border-radius: var(--radius-md);
+	font-size: 14px;
+	font-weight: 600;
+	text-decoration: none;
+	transition: top 0.15s ease;
+}
+.skip-link:focus {
+	top: 12px;
 }
 
 /* iOS Safari auto-zooms when a focused input's effective font-size is < 16px.
@@ -66,6 +156,94 @@ input[type='datetime-local'] {
 	-webkit-appearance: none;
 	appearance: none;
 	min-width: 0;
+}
+
+/* ── Page transitions (View Transitions API) ────────────────────────── */
+@keyframes vt-fade-in {
+	from { opacity: 0; }
+}
+@keyframes vt-fade-out {
+	to { opacity: 0; }
+}
+@keyframes vt-slide-in-right {
+	from { transform: translateX(25%); opacity: 0; }
+}
+@keyframes vt-slide-out-left {
+	to { transform: translateX(-25%); opacity: 0; }
+}
+@keyframes vt-slide-in-up {
+	from { transform: translateY(15%); opacity: 0; }
+}
+@keyframes vt-slide-out-down {
+	to { transform: translateY(15%); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	/* Tab switch: crossfade 180ms */
+	[data-transition='tab']::view-transition-old(root) {
+		animation: vt-fade-out 180ms ease-out both;
+	}
+	[data-transition='tab']::view-transition-new(root) {
+		animation: vt-fade-in 180ms ease-in both;
+	}
+
+	/* Peer nav: horizontal slide 240ms */
+	[data-transition='peer']::view-transition-old(root) {
+		animation: vt-slide-out-left 240ms ease-out both;
+	}
+	[data-transition='peer']::view-transition-new(root) {
+		animation: vt-slide-in-right 240ms ease-out both;
+	}
+
+	/* Drill-down: slide up 280ms */
+	[data-transition='drill-down']::view-transition-old(root) {
+		animation: vt-fade-out 200ms ease-out both;
+	}
+	[data-transition='drill-down']::view-transition-new(root) {
+		animation: vt-slide-in-up 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+	}
+
+	/* Drill-up: reverse slide 280ms */
+	[data-transition='drill-up']::view-transition-old(root) {
+		animation: vt-slide-out-down 250ms ease-in both;
+	}
+	[data-transition='drill-up']::view-transition-new(root) {
+		animation: vt-fade-in 280ms ease-out both;
+	}
+
+	/* Default/fade */
+	[data-transition='fade']::view-transition-old(root) {
+		animation: vt-fade-out 150ms ease-out both;
+	}
+	[data-transition='fade']::view-transition-new(root) {
+		animation: vt-fade-in 150ms ease-in both;
+	}
+}
+
+/* Reduced motion: simple fade only (spec says "simple fade, not disabled") */
+@media (prefers-reduced-motion: reduce) {
+	::view-transition-old(root) {
+		animation: vt-fade-out 120ms ease-out both;
+	}
+	::view-transition-new(root) {
+		animation: vt-fade-in 120ms ease-in both;
+	}
+}
+
+/* ── Form UX ──────────────────────────────────────────────────────── */
+
+/* Required-field asterisk: auto-applied when a label's sibling is [required]. */
+label:has(~ input[required], ~ select[required], ~ textarea[required])::after,
+label:has(~ div input[required])::after {
+	content: ' *';
+	color: var(--color-error);
+}
+
+/* Blur validation: show error border after user has touched the field. */
+input.touched:invalid,
+select.touched:invalid,
+textarea.touched:invalid {
+	border-color: var(--color-error);
 }
 
 /* Make the color swatch fill the styled container. */

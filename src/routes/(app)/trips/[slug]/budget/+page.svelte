@@ -9,6 +9,7 @@
 	import { titleCase } from '$lib/utils/format';
 	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
 	import type { Notification, BudgetCategory, ExpenseCategory, ItemType } from '$lib/types';
+	import { toast } from '$lib/stores/toast';
 
 	let { data, form } = $props();
 
@@ -95,7 +96,7 @@
 	{ id: 'budget', label: 'Budget', href: `/trips/${data.trip.slug}/budget` }
 ]} />
 
-<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8">
+<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8">
 	<!-- Grand total -->
 	<div class="mb-6 text-center">
 		<p class="text-xs font-medium text-ink-muted uppercase tracking-wider">Estimated Total</p>
@@ -126,8 +127,9 @@
 		action="?/saveBudget"
 		use:enhance={() => {
 			saving = true;
-			return async ({ update }) => {
+			return async ({ update, result }) => {
 				saving = false;
+				if (result.type === 'success') toast.show('Budget saved');
 				await update();
 			};
 		}}
@@ -217,7 +219,7 @@
 		{/if}
 
 		{#if data.isOwner}
-			<Button type="submit" variant="primary" size="lg" class="mt-4 w-full" disabled={saving}>
+			<Button type="submit" variant="primary" size="lg" class="mt-4 w-full" disabled={saving} loading={saving}>
 				{saving ? 'Saving...' : 'Save Budget'}
 			</Button>
 		{/if}

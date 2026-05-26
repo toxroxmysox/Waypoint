@@ -1,17 +1,24 @@
 <script lang="ts">
 	import BottomNav from '$lib/components/BottomNav.svelte';
 	import SideRail from './SideRail.svelte';
+	import ContextRail from './ContextRail.svelte';
 	import type { Snippet } from 'svelte';
-	import type { MemberRole } from '$lib/types';
+	import type { MemberRole, Phase, Day, Trip } from '$lib/types';
 
 	let {
 		children,
 		slug,
-		role = ''
+		role = '',
+		trip,
+		phases = [],
+		days = []
 	}: {
 		children: Snippet;
 		slug: string;
 		role?: MemberRole | string;
+		trip?: Trip;
+		phases?: Phase[];
+		days?: Day[];
 	} = $props();
 </script>
 
@@ -22,10 +29,11 @@
 	<div class="h-16"></div>
 </div>
 
-<!-- Desktop: side rail + content -->
+<!-- Desktop: side rail + content + context rail -->
 <div class="hidden md-desktop:block">
-	<SideRail {slug} {role} />
-	<div class="ml-[72px]">
+	<SideRail {slug} {role} tripName={trip?.title ?? ''} {phases} />
+	<div class="md-desktop:ml-[72px] lg-desktop:ml-[240px] lg-desktop:mr-[320px]">
 		{@render children()}
 	</div>
+	<ContextRail {slug} {trip} {phases} {days} />
 </div>

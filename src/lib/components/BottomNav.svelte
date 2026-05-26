@@ -38,7 +38,7 @@
 <svelte:window onfocusin={handleFocusIn} onfocusout={handleFocusOut} />
 
 {#if !inputFocused}
-<nav class="border-line bg-paper/95 fixed bottom-0 left-0 right-0 z-40 flex border-t backdrop-blur safe-bottom">
+<nav class="border-line bg-paper/95 fixed bottom-0 left-0 right-0 z-nav flex border-t backdrop-blur safe-bottom">
 	{#each tabs as tab}
 		{@const active = activeTab === tab.id}
 		<a

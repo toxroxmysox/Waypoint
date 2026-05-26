@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { validateForm } from '$lib/actions/validate-form';
 	import NavBar from '$lib/components/ui/NavBar.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import { toast } from '$lib/stores/toast';
 	let { data, form } = $props();
 
 	let loading = $state(false);
@@ -13,9 +15,9 @@
 </script>
 
 <NavBar title="Settings" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}" />
-<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 space-y-6">
+<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-6">
 	{#if error}
-		<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">{error}</div>
+		<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{error}</div>
 	{/if}
 
 	{#if success}
@@ -26,10 +28,12 @@
 		<form
 			method="POST"
 			action="?/update"
+			use:validateForm
 			use:enhance={() => {
 				loading = true;
-				return async ({ update }) => {
+				return async ({ update, result }) => {
 					loading = false;
+					if (result.type === 'success') toast.show('Settings saved');
 					await update();
 				};
 			}}
@@ -109,7 +113,7 @@
 				</div>
 			</label>
 
-			<Button type="submit" disabled={loading} variant="moss" size="md" class="w-full">
+			<Button type="submit" disabled={loading} loading={loading} variant="moss" size="md" class="w-full">
 				{loading ? 'Saving…' : 'Save changes'}
 			</Button>
 		</form>
@@ -117,7 +121,7 @@
 
 	<Card>
 		<div class="p-4 space-y-3">
-			<h3 class="text-ink text-sm font-semibold">Vault Password</h3>
+			<h2 class="text-ink text-sm font-semibold">Vault Password</h2>
 			<div class="border-clay/20 bg-clay/5 rounded-md p-3">
 				<p class="text-clay text-xs font-semibold">No recovery</p>
 				<p class="text-ink-muted mt-1 text-xs">
@@ -126,7 +130,7 @@
 			</div>
 
 			{#if form?.vaultError}
-				<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">{form.vaultError}</div>
+				<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{form.vaultError}</div>
 			{/if}
 			{#if form?.vaultSuccess}
 				<div class="border-moss/30 bg-moss-tint text-moss rounded-md border p-3 text-sm">Vault password set.</div>
@@ -164,7 +168,7 @@
 						placeholder="Confirm password"
 					/>
 				</div>
-				<Button type="submit" variant="moss" size="sm">
+				<Button type="submit" variant="ghost" size="sm">
 					{data.hasVaultPassword ? 'Update password' : 'Set password'}
 				</Button>
 			</form>
@@ -173,13 +177,13 @@
 
 	<Card>
 		<div class="p-4 space-y-3">
-			<h3 class="text-ink text-sm font-semibold">Public Archive</h3>
+			<h2 class="text-ink text-sm font-semibold">Public Archive</h2>
 			<p class="text-ink-muted text-xs">
 				When enabled, a public read-only link is generated after the trip is archived.
 			</p>
 
 			{#if form?.archiveError}
-				<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">{form.archiveError}</div>
+				<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{form.archiveError}</div>
 			{/if}
 			{#if form?.archiveSuccess}
 				<div class="border-moss/30 bg-moss-tint text-moss rounded-md border p-3 text-sm">Archive settings saved.</div>
@@ -225,13 +229,13 @@
 					</div>
 				{/if}
 
-				<Button type="submit" variant="moss" size="sm">Save archive settings</Button>
+				<Button type="submit" variant="ghost" size="sm">Save archive settings</Button>
 			</form>
 		</div>
 	</Card>
 
 	<div class="border-clay/30 rounded-lg border p-4">
-		<h3 class="text-clay text-sm font-semibold">Danger zone</h3>
+		<h2 class="text-clay text-sm font-semibold">Danger zone</h2>
 		<p class="text-clay/80 mt-1 text-xs">
 			Deleting a trip removes all phases, days, and items permanently.
 		</p>
@@ -259,7 +263,7 @@
 				<button
 					type="submit"
 					disabled={deleting}
-					class="bg-clay text-paper hover:bg-clay/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
+					class="bg-clay text-paper hover:bg-clay/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-40"
 				>
 					{deleting ? 'Deleting…' : 'Confirm delete'}
 				</button>

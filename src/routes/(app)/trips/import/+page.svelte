@@ -46,9 +46,9 @@
 
 <NavBar title="Import Trip" back backHref="/trips" />
 
-<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8">
+<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8">
 	{#if form?.error}
-		<div class="border-clay/30 bg-clay/10 text-clay mb-4 rounded-md border p-3 text-sm">
+		<div role="alert" class="border-error/30 bg-error/10 text-error-deep mb-4 rounded-md border p-3 text-sm">
 			{form.error}
 		</div>
 	{/if}
@@ -89,7 +89,7 @@
 			</div>
 		{/if}
 
-		<Button type="submit" disabled={submitting || !fileInput?.files?.length} variant="moss" size="md" class="w-full">
+		<Button type="submit" disabled={submitting || !fileInput?.files?.length} loading={submitting} variant="moss" size="md" class="w-full">
 			{submitting ? 'Importing...' : 'Import Trip'}
 		</Button>
 	</form>

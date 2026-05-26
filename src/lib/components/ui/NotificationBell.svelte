@@ -65,7 +65,7 @@
 		type="button"
 		onclick={toggle}
 		aria-label="Notifications{unreadCount > 0 ? ` (${unreadCount} unread)` : ''}"
-		class="text-ink-soft hover:text-ink relative flex h-9 w-9 items-center justify-center rounded-full"
+		class="text-ink-soft hover:text-ink relative flex h-11 w-11 items-center justify-center rounded-full"
 	>
 		<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 			<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -85,7 +85,7 @@
 		<!-- Backdrop -->
 		<button
 			type="button"
-			class="fixed inset-0 z-40"
+			class="fixed inset-0 z-modal"
 			onclick={close}
 			aria-label="Close notifications"
 			tabindex="-1"
@@ -93,7 +93,7 @@
 
 		<!-- Dropdown -->
 		<div
-			class="border-line bg-paper shadow-md absolute right-0 top-full z-50 mt-1 w-80 max-h-[70vh] overflow-y-auto rounded-lg border"
+			class="border-line bg-paper shadow-md absolute right-0 top-full z-modal mt-1 w-80 max-h-[70vh] overflow-y-auto rounded-lg border"
 		>
 			<div class="border-line flex items-center justify-between border-b px-4 py-2.5">
 				<span class="text-ink text-sm font-semibold">Notifications</span>
@@ -123,7 +123,7 @@
 								>
 									<div class="flex min-w-0 flex-1 flex-col gap-0.5">
 										<span class="text-ink text-sm leading-snug {isUnread ? 'font-medium' : ''}">{n.body}</span>
-										<span class="text-ink-muted text-[11px]">{formatDate(n.created)}</span>
+										<span class="text-ink-muted text-xs">{formatDate(n.created)}</span>
 									</div>
 									{#if isUnread}
 										<span class="bg-moss mt-1.5 h-2 w-2 shrink-0 rounded-full" aria-hidden="true"></span>
@@ -137,7 +137,7 @@
 								>
 									<div class="flex min-w-0 flex-1 flex-col gap-0.5">
 										<span class="text-ink text-sm leading-snug {isUnread ? 'font-medium' : ''}">{n.body}</span>
-										<span class="text-ink-muted text-[11px]">{formatDate(n.created)}</span>
+										<span class="text-ink-muted text-xs">{formatDate(n.created)}</span>
 									</div>
 									{#if isUnread}
 										<span class="bg-moss mt-1.5 h-2 w-2 shrink-0 rounded-full" aria-hidden="true"></span>

@@ -7,7 +7,9 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import SectionH from '$lib/components/ui/SectionH.svelte';
 	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
+	import PhaseChip from '$lib/components/ui/PhaseChip.svelte';
 	import { titleCase, formatTime } from '$lib/utils/format';
+	import { toast } from '$lib/stores/toast';
 
 	import VoteButtons from '$lib/components/VoteButtons.svelte';
 	import MoveItemSheet from '$lib/components/MoveItemSheet.svelte';
@@ -70,7 +72,7 @@
 	{/snippet}
 </NavBar>
 
-<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 space-y-4">
+<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-4">
 	<!-- Header card -->
 	<Card>
 		<div class="p-4">
@@ -104,8 +106,9 @@
 								action="?/promote"
 								use:enhance={() => {
 									promoteLoading = true;
-									return async ({ update }) => {
+									return async ({ update, result }) => {
 										promoteLoading = false;
+										if (result.type === 'success') toast.show('Item promoted');
 										await update();
 									};
 								}}
@@ -125,8 +128,9 @@
 								action="?/demote"
 								use:enhance={() => {
 									demoteLoading = true;
-									return async ({ update }) => {
+									return async ({ update, result }) => {
 										demoteLoading = false;
+										if (result.type === 'success') toast.show('Item demoted');
 										await update();
 									};
 								}}
@@ -168,10 +172,7 @@
 				{/if}
 				{#if data.itemPhase}
 					<p class="text-ink-muted flex items-center gap-1.5 text-sm">
-						{#if data.itemPhase.color}
-							<span class="h-2 w-2 rounded-full" style="background-color: {data.itemPhase.color}"
-							></span>
-						{/if}
+						<PhaseChip name={data.itemPhase.name} color={data.itemPhase.color} size={16} />
 						{data.itemPhase.name}
 					</p>
 				{/if}
@@ -534,7 +535,7 @@
 				<button
 					type="submit"
 					disabled={deleting}
-					class="bg-clay text-paper hover:bg-clay/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
+					class="bg-clay text-paper hover:bg-clay/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-40"
 				>
 					{deleting ? 'Deleting…' : 'Confirm'}
 				</button>

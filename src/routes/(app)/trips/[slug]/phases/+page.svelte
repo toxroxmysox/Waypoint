@@ -7,6 +7,7 @@
 	import SubTabs from '$lib/components/SubTabs.svelte';
 	import PhaseColorPicker from '$lib/components/PhaseColorPicker.svelte';
 	import { phasePalette } from '$lib/utils/phase-palette';
+	import { toast } from '$lib/stores/toast';
 
 	let { data, form } = $props();
 
@@ -48,9 +49,9 @@
 	{ id: 'phases', label: 'Phases', href: `/trips/${data.trip.slug}/phases` }
 ]} />
 
-<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 space-y-4">
+<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-4">
 	{#if error}
-		<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">{error}</div>
+		<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{error}</div>
 	{/if}
 
 	<div class="flex items-center justify-between">
@@ -74,6 +75,7 @@
 						if (result.type === 'success') {
 							showCreate = false;
 							newColor = phasePalette[0].hex;
+							toast.show('Phase created');
 						}
 						await update();
 					};
@@ -141,7 +143,7 @@
 					<PhaseColorPicker bind:value={newColor} />
 				</div>
 
-				<Button type="submit" disabled={loading} variant="moss" size="md" class="w-full">
+				<Button type="submit" disabled={loading} loading={loading} variant="moss" size="md" class="w-full">
 					{loading ? 'Creating…' : 'Create phase'}
 				</Button>
 			</form>
@@ -214,8 +216,9 @@
 								method="POST"
 								action="?/delete"
 								use:enhance={() => {
-									return async ({ update }) => {
+									return async ({ update, result }) => {
 										confirmDeleteId = null;
+										if (result.type === 'success') toast.show('Phase deleted');
 										await update();
 									};
 								}}

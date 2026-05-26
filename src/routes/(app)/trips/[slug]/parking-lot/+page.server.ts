@@ -5,7 +5,7 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 	const { trip, phases } = await parent();
 
 	const items = await locals.pb.collection('items').getFullList<Item>({
-		filter: `trip = "${trip.id}" && parking_lot_scope != "none"`,
+		filter: `trip = "${trip.id}" && (parking_lot_scope = "trip" || parking_lot_scope = "phase" || parking_lot_scope = "day")`,
 		sort: '-created'
 	});
 

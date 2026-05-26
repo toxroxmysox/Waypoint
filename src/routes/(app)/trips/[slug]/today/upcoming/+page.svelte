@@ -40,7 +40,7 @@
 	{ id: 'upcoming', label: 'Next 3 Days', href: `/trips/${data.trip.slug}/today/upcoming` }
 ]} />
 
-<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-24 space-y-6">
+<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-6">
 	{#if data.upcomingDays.length === 0}
 		<Card>
 			<div class="p-6 text-center">
@@ -51,7 +51,7 @@
 		{#each data.upcomingDays as day}
 			{@const dayItems = data.upcomingItems.filter((i: Item) => i.day === day.id)}
 			<section class="space-y-2">
-				<h3 class="font-display text-ink text-lg font-semibold">{dayLabel(day.date)}</h3>
+				<h2 class="font-display text-ink text-lg font-semibold">{dayLabel(day.date)}</h2>
 				{#if dayItems.length === 0}
 					<p class="text-ink-muted text-sm">Nothing scheduled.</p>
 				{:else}

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { validateForm } from '$lib/actions/validate-form';
 	import { untrack } from 'svelte';
 	import NavBar from '$lib/components/ui/NavBar.svelte';
 	import SubTabs from '$lib/components/SubTabs.svelte';
@@ -12,6 +13,7 @@
 	import { titleCase } from '$lib/utils/format';
 	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
 	import type { Notification, TripMember, Expense, ExpenseCategory, BudgetCategory, ItemType } from '$lib/types';
+	import { toast } from '$lib/stores/toast';
 	import type { DebtEdge } from '$lib/utils/debt-simplify';
 
 	let { data, form } = $props();
@@ -208,7 +210,7 @@
 	{ id: 'budget', label: 'Budget', href: `/trips/${data.trip.slug}/budget` }
 ]} />
 
-<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-24">
+<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-24">
 	{#if data.expenses.length === 0}
 		<!-- Empty state -->
 		<div class="flex flex-col items-center justify-center py-16 text-center">
@@ -246,7 +248,7 @@
 					></div>
 				</div>
 				{#if totalSpent > budgetTotal}
-					<p class="mt-1 text-[11px] text-clay">${formatAmount(totalSpent - budgetTotal)} over budget</p>
+					<p class="mt-1 text-xs text-clay">${formatAmount(totalSpent - budgetTotal)} over budget</p>
 				{/if}
 			</button>
 
@@ -261,7 +263,7 @@
 								<div class="min-w-0 flex-1">
 									<div class="flex items-center justify-between mb-0.5">
 										<span class="text-xs font-medium text-ink">{meta?.label ?? titleCase(cat.category)}</span>
-										<span class="font-mono text-[11px] text-ink-muted">${formatAmount(spent)} / ${formatAmount(cat.total)}</span>
+										<span class="font-mono text-xs text-ink-muted">${formatAmount(spent)} / ${formatAmount(cat.total)}</span>
 									</div>
 									<div class="h-1 rounded-full bg-surface-2 overflow-hidden">
 										<div
@@ -341,6 +343,7 @@
 	<form
 		method="POST"
 		action="?/addExpense"
+		use:validateForm
 		use:enhance={() => {
 			submitting = true;
 			return async ({ update, result }) => {
@@ -348,6 +351,7 @@
 				if (result.type === 'success') {
 					showAddExpense = false;
 					resetForm();
+					toast.show('Expense added');
 				}
 				await update();
 			};
@@ -537,10 +541,10 @@
 		{/if}
 
 		{#if form?.addExpense && 'error' in form.addExpense}
-			<p class="mb-3 text-sm text-clay">{form.addExpense.error}</p>
+			<p role="alert" class="mb-3 text-sm text-error">{form.addExpense.error}</p>
 		{/if}
 
-		<Button type="submit" variant="primary" size="lg" class="w-full" disabled={submitting}>
+		<Button type="submit" variant="primary" size="lg" class="w-full" disabled={submitting} loading={submitting}>
 			{submitting ? 'Adding...' : 'Add Expense'}
 		</Button>
 	</form>
@@ -552,6 +556,7 @@
 		<form
 			method="POST"
 			action="?/updateExpense"
+			use:validateForm
 			use:enhance={() => {
 				updating = true;
 				return async ({ update, result }) => {
@@ -559,6 +564,7 @@
 					if (result.type === 'success') {
 						showExpenseDetail = false;
 						selectedExpense = null;
+						toast.show('Expense updated');
 					}
 					await update();
 				};
@@ -704,10 +710,10 @@
 			<input type="hidden" name="split_data" value={buildEditSplitData()} />
 
 			{#if form?.updateExpense && 'error' in form.updateExpense}
-				<p class="mb-3 text-sm text-clay">{form.updateExpense.error}</p>
+				<p role="alert" class="mb-3 text-sm text-error">{form.updateExpense.error}</p>
 			{/if}
 
-			<Button type="submit" variant="primary" size="lg" class="w-full" disabled={updating}>
+			<Button type="submit" variant="primary" size="lg" class="w-full" disabled={updating} loading={updating}>
 				{updating ? 'Saving...' : 'Save Changes'}
 			</Button>
 		</form>
@@ -724,6 +730,7 @@
 					if (result.type === 'success') {
 						showExpenseDetail = false;
 						selectedExpense = null;
+						toast.show('Expense deleted');
 					}
 					await update();
 				};
@@ -732,10 +739,10 @@
 			<input type="hidden" name="expense_id" value={selectedExpense.id} />
 
 			{#if form?.deleteExpense && 'error' in form.deleteExpense}
-				<p class="mb-2 text-sm text-clay">{form.deleteExpense.error}</p>
+				<p role="alert" class="mb-2 text-sm text-error">{form.deleteExpense.error}</p>
 			{/if}
 
-			<Button type="submit" variant="ghost" size="md" class="w-full text-clay" disabled={deleting}>
+			<Button type="submit" variant="ghost" size="md" class="w-full text-clay" disabled={deleting} loading={deleting}>
 				{deleting ? 'Deleting...' : 'Delete Expense'}
 			</Button>
 		</form>
@@ -794,6 +801,7 @@
 					settleSubmitting = false;
 					if (result.type === 'success') {
 						settleStep = 'confirmed';
+						toast.show('Settlement recorded');
 					}
 					await update();
 				};
@@ -846,14 +854,14 @@
 			<input type="hidden" name="to_member" value={settleDebt.to} />
 
 			{#if form?.recordSettlement && 'error' in form.recordSettlement}
-				<p class="mb-3 text-sm text-clay">{form.recordSettlement.error}</p>
+				<p role="alert" class="mb-3 text-sm text-error">{form.recordSettlement.error}</p>
 			{/if}
 
 			<div class="flex gap-2">
 				<Button variant="ghost" size="md" class="flex-1" onclick={() => (settleStep = 'list')}>
 					Back
 				</Button>
-				<Button type="submit" variant="primary" size="md" class="flex-1" disabled={settleSubmitting}>
+				<Button type="submit" variant="primary" size="md" class="flex-1" disabled={settleSubmitting} loading={settleSubmitting}>
 					{settleSubmitting ? 'Recording...' : 'Confirm Payment'}
 				</Button>
 			</div>

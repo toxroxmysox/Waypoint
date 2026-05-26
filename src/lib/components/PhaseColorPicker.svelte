@@ -13,7 +13,7 @@
 		{#each phasePalette as swatch}
 			{@const selected = value.toLowerCase() === swatch.hex.toLowerCase()}
 			<label
-				class="relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-full ring-offset-2 transition {selected
+				class="relative flex h-11 w-11 cursor-pointer items-center justify-center rounded-full ring-offset-2 transition {selected
 					? 'ring-ink ring-2 ring-offset-1'
 					: 'hover:ring-line hover:ring-1'}"
 				style="background-color: {swatch.hex};"

@@ -1,21 +1,15 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-23T23:16:06.750Z
-> Files: 537 tracked | Anatomy hits: 0 | Misses: 0
-
-## ../.claude/projects/-Users-Scott-Waypoint/memory/
-
-- `MEMORY.md` (~81 tok)
-- `project_waypoint_status.md` (~505 tok)
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-25T10:05:10.762Z
+> Files: 608 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ./
 
 - `.dockerignore` (~31 tok)
-- `.gitignore` — Git ignore rules (~118 tok)
+- `.gitignore` — Git ignore rules (~114 tok)
 - `.npmrc` (~6 tok)
 - `.prettierignore` — Package Managers (~29 tok)
 - `.prettierrc` — Prettier configuration (~82 tok)
-- `CLAUDE_DESIGN_PROMPT.md` — Claude Design Prompt — Waypoint v2 Visual Design (~3783 tok)
 - `Claude.md` — OpenWolf (~3132 tok)
 - `Dockerfile` — Docker container definition (~482 tok)
 - `eslint.config.js` — ESLint flat configuration (~390 tok)
@@ -31,10 +25,8 @@
 - `SPEC_BACKLOG.md` — SPEC_BACKLOG (~721 tok)
 - `SPEC.md` — Trip App — v1 Specification (~8824 tok)
 - `svelte.config.js` — Declares config (~199 tok)
-- `TEST_PLAN.md` — Waypoint v1 — User Test Plan (~5389 tok)
 - `tsconfig.json` — TypeScript configuration (~198 tok)
-- `UI_AUDIT.md` — Waypoint UI/UX Audit Report (~8202 tok)
-- `V2_SPEC.md` — Waypoint v2 — UI/UX Polish Specification (~3629 tok)
+- `V2_SPEC.md` — Waypoint v2 — UI/UX Polish Specification (~4408 tok)
 - `vite.config.ts` — Vite build configuration (~204 tok)
 
 ## .claude/
@@ -939,14 +931,183 @@
 - `Caddyfile` (~62 tok)
 - `start.sh` (~209 tok)
 
-## docs/superpowers/plans/
+## scripts/
 
-- `2026-05-24-v2-ui-ux-polish.md` — Waypoint v2 — UI/UX Polish Implementation Plan (~13698 tok)
+- `generate-icons.mjs` — __dirname: svgToPng (~383 tok)
 
 ## src/
 
-- `app.html` — Declares html (~301 tok)
+- `app.html` — Waypoint (~352 tok)
+
+## src/lib/actions/
+
+- `validate-form.ts` — Svelte action: adds blur-validation (`.touched` class) to form controls (~282 tok)
+
+## src/lib/components/
+
+- `BottomNav.svelte` — Svelte: BottomNav (~861 tok)
+- `CloseoutDayCard.svelte` — Svelte: CloseoutDayCard (~786 tok)
+- `FlightLookup.svelte` — Svelte: FlightLookup (~644 tok)
+- `InlineQuickAdd.svelte` — Svelte: InlineQuickAdd (~585 tok)
+- `PlacesAutocomplete.svelte` — Svelte: PlacesAutocomplete (~787 tok)
+- `SubTabs.svelte` — Svelte: SubTabs (~222 tok)
+- `TripTabs.svelte` — Svelte: TripTabs (~376 tok)
+
+## src/lib/components/skeletons/
+
+- `DayItemSkeleton.svelte` — Svelte: DayItemSkeleton (~120 tok)
+- `DayItemSkeleton.svelte` — Composite skeleton for day item (Card + circle icon + 2 bones) (~120 tok)
+- `DayPageSkeleton.svelte` — Svelte: DayPageSkeleton (~259 tok)
+- `DayPageSkeleton.svelte` — Full page skeleton shell for day view (nav + 2 slot sections + DayItemSkeletons) (~259 tok)
+- `ExpenseRowSkeleton.svelte` — Svelte: ExpenseRowSkeleton (~123 tok)
+- `ExpenseRowSkeleton.svelte` — Composite skeleton for expense row (square icon + 2 bones + amount) (~123 tok)
+- `ExpensesPageSkeleton.svelte` — Svelte: ExpensesPageSkeleton (~249 tok)
+- `ExpensesPageSkeleton.svelte` — Full page skeleton shell for expenses (nav + Card + ExpenseRowSkeletons) (~249 tok)
+- `MemberRowSkeleton.svelte` — Svelte: MemberRowSkeleton (~107 tok)
+- `MemberRowSkeleton.svelte` — Composite skeleton for member row (name + email bones + pill) (~107 tok)
+- `MembersPageSkeleton.svelte` — Svelte: MembersPageSkeleton (~269 tok)
+- `MembersPageSkeleton.svelte` — Full page skeleton shell for members (nav + section + Card + MemberRowSkeletons) (~269 tok)
+- `TripCardSkeleton.svelte` — Svelte: TripCardSkeleton (~98 tok)
+- `TripCardSkeleton.svelte` — Composite skeleton for trip card (Card + 3 bones) (~98 tok)
+- `TripsPageSkeleton.svelte` — Svelte: TripsPageSkeleton (~219 tok)
+- `TripsPageSkeleton.svelte` — Full page skeleton shell for /trips (nav + 2 sections + TripCardSkeletons) (~219 tok)
+
+## src/lib/components/ui/
+
+- `AppShell.svelte` — Svelte: AppShell (~261 tok)
+- `Avatar.svelte` — Svelte: Avatar (~264 tok)
+- `BottomSheet.svelte` — Svelte: BottomSheet (~526 tok)
+- `Button.svelte` — Svelte: Button (~410 tok)
+- `Card.svelte` — Svelte: Card (~324 tok)
+- `ContextRail.svelte` — Svelte: ContextRail (~2020 tok)
+- `FAB.svelte` — Svelte: FAB (~310 tok)
+- `NavBar.svelte` — Svelte: NavBar (~544 tok)
+- `NotificationBell.svelte` — Svelte: NotificationBell (~1281 tok)
+- `SideRail.svelte` — Svelte: SideRail (~1380 tok)
+- `Skeleton.svelte` — Svelte: Skeleton (~207 tok)
+- `Toast.svelte` — Svelte: Toast (~591 tok)
+
+## src/lib/icons/
+
+- `StarIcons.svelte` — Svelte: StarIcons (~695 tok)
+
+## src/lib/stores/
+
+- `toast.ts` — Exports ToastVariant, Toast, toast (~276 tok)
+
+## src/routes/
+
+- `+layout.svelte` — Svelte: +layout (~626 tok)
+- `layout.css` — Styles: 18 rules, 39 vars (~2043 tok)
+
+## src/routes/(app)/
+
+- `+layout.svelte` — Svelte: +layout (~638 tok)
+
+## src/routes/(app)/trips/[slug]/
+
+- `+layout.svelte` — Svelte: +layout (~96 tok)
+
+## src/routes/(app)/trips/[slug]/budget/
+
+- `+page.svelte` — Svelte: +page (~2136 tok)
+
+## src/routes/(app)/trips/[slug]/clone/
+
+- `+page.svelte` — Svelte: +page (~1133 tok)
+
+## src/routes/(app)/trips/[slug]/closeout/
+
+- `+page.server.ts` — API routes: GET (8 endpoints) (~1074 tok)
+- `+page.svelte` — Svelte: +page (~1431 tok)
+
+## src/routes/(app)/trips/[slug]/days/[dayId]/
+
+- `+page.svelte` — Svelte: +page (~1844 tok)
+
+## src/routes/(app)/trips/[slug]/expenses/
+
+- `+page.svelte` — Svelte: +page (~8456 tok)
+
+## src/routes/(app)/trips/[slug]/export/
+
+- `+server.ts` — Exports GET (~453 tok)
+
+## src/routes/(app)/trips/[slug]/inbox/
+
+- `+page.svelte` — Svelte: +page (~1492 tok)
+
+## src/routes/(app)/trips/[slug]/items/[itemId]/
+
+- `+page.svelte` — Svelte: +page (~4647 tok)
+
+## src/routes/(app)/trips/[slug]/items/[itemId]/edit/
+
+- `+page.svelte` — Svelte: +page (~4228 tok)
+
+## src/routes/(app)/trips/[slug]/items/new/
+
+- `+page.svelte` — Svelte: +page (~4629 tok)
+
+## src/routes/(app)/trips/[slug]/members/
+
+- `+page.svelte` — Svelte: +page (~3162 tok)
+
+## src/routes/(app)/trips/[slug]/parking-lot/
+
+- `+page.server.ts` — Exports load (~142 tok)
+
+## src/routes/(app)/trips/[slug]/phases/
+
+- `+page.svelte` — Svelte: +page (~2290 tok)
+
+## src/routes/(app)/trips/[slug]/phases/[phaseId]/
+
+- `+page.svelte` — Svelte: +page (~1806 tok)
+
+## src/routes/(app)/trips/[slug]/settings/
+
+- `+page.svelte` — Svelte: +page (~2318 tok)
+
+## src/routes/(app)/trips/[slug]/today/
+
+- `+page.svelte` — Svelte: +page (~1170 tok)
+
+## src/routes/(app)/trips/[slug]/today/upcoming/
+
+- `+page.svelte` — Svelte: +page (~542 tok)
+
+## src/routes/(app)/trips/[slug]/vault/
+
+- `+page.svelte` — Svelte: +page (~2439 tok)
+
+## src/routes/(app)/trips/import/
+
+- `+page.svelte` — Svelte: +page (~754 tok)
+
+## src/routes/(app)/trips/new/
+
+- `+page.svelte` — Svelte: +page (~1358 tok)
+
+## src/routes/dev-skeletons/
+
+- `+page.svelte` — Svelte: +page (~372 tok)
 
 ## static/
 
-- `favicon.svg` (~106 tok)
+- `favicon.svg` (~98 tok)
+- `manifest.webmanifest` (~162 tok)
+
+## static/brand/
+
+- `app-icon-ink.svg` (~129 tok)
+- `app-icon-maskable.svg` (~127 tok)
+- `app-icon.svg` (~129 tok)
+- `favicon.svg` (~98 tok)
+- `lockup-horizontal.svg` (~165 tok)
+- `lockup-stacked.svg` (~165 tok)
+- `sparkle.svg` (~134 tok)
+- `star-mark-inverse.svg` (~84 tok)
+- `star-mark-outline.svg` (~82 tok)
+- `star-mark.svg` (~84 tok)
+- `star-stamp.svg` (~128 tok)

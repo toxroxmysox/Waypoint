@@ -93,7 +93,7 @@
 
 	{#if showDropdown}
 		<ul
-			class="border-line bg-surface absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-md border shadow-lg"
+			class="border-line bg-surface absolute z-modal mt-1 max-h-60 w-full overflow-y-auto rounded-md border shadow-lg"
 		>
 			{#each predictions as suggestion}
 				<li>

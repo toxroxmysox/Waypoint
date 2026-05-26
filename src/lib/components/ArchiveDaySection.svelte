@@ -62,8 +62,8 @@
 			<h3 class="text-ink text-base font-semibold">{dayDate}</h3>
 			{#if dayPhase}
 				<span
-					class="mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium"
-					style="background-color: {dayPhase.color || '#e2e8f0'}20; color: {dayPhase.color || '#64748b'}"
+					class="mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium"
+					style="background-color: {dayPhase.color || 'var(--color-line)'}20; color: {dayPhase.color || 'var(--color-ink-muted)'}"
 				>
 					{dayPhase.name}
 				</span>

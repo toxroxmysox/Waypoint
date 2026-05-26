@@ -43,7 +43,7 @@
 					<div class="flex items-center gap-3 px-3 py-2">
 						<TypeIcon type={item.type} size={18} />
 						<div class="min-w-0 flex-1">
-							<p class="text-ink truncate text-sm">{item.title}</p>
+							<p class="text-ink truncate text-sm" title={item.title}>{item.title}</p>
 							{#if item.location_name}
 								<p class="text-ink-muted truncate text-xs">{item.location_name}</p>
 							{/if}
@@ -71,7 +71,7 @@
 							<div class="flex items-center gap-3 px-3 py-2">
 								<TypeIcon type={item.type} size={18} />
 								<div class="min-w-0 flex-1">
-									<p class="text-ink truncate text-sm">{item.title}</p>
+									<p class="text-ink truncate text-sm" title={item.title}>{item.title}</p>
 								</div>
 								<span class="bg-paper text-ink-muted shrink-0 rounded px-1.5 py-0.5 text-[11px]">
 									{titleCase(item.type)}
@@ -92,7 +92,7 @@
 					<div class="flex items-center gap-3 px-3 py-2">
 						<TypeIcon type={item.type} size={18} />
 						<div class="min-w-0 flex-1">
-							<p class="text-ink truncate text-sm">{item.title}</p>
+							<p class="text-ink truncate text-sm" title={item.title}>{item.title}</p>
 						</div>
 						<span class="bg-paper text-ink-muted shrink-0 rounded px-1.5 py-0.5 text-[11px]">
 							{titleCase(item.type)}

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { enhance } from '$app/forms';
+	import { validateForm } from '$lib/actions/validate-form';
 	import NavBar from '$lib/components/ui/NavBar.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -30,14 +31,15 @@
 
 <NavBar title="New trip" back backHref="/trips" />
 
-<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8">
+<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8">
 	{#if error}
-		<div class="border-clay/30 bg-clay/10 text-clay mb-4 rounded-md border p-3 text-sm">{error}</div>
+		<div role="alert" class="border-error/30 bg-error/10 text-error-deep mb-4 rounded-md border p-3 text-sm">{error}</div>
 	{/if}
 
 	<Card>
 		<form
 			method="POST"
+			use:validateForm
 			use:enhance={() => {
 				loading = true;
 				return async ({ update }) => {
@@ -153,7 +155,7 @@
 				</p>
 			</div>
 
-			<Button type="submit" disabled={loading} variant="moss" size="lg" class="w-full">
+			<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="w-full">
 				{loading ? 'Creating…' : 'Create trip'}
 			</Button>
 		</form>
