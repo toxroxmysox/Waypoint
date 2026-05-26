@@ -39,4 +39,5 @@ backend/pocketbase
 .claude/worktrees/
 .claude/settings.local.json
 .wolf/
+*_STATUS.md
 TEST_PLAN.md
