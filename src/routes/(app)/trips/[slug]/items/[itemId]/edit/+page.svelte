@@ -40,6 +40,14 @@
 	let fields = $derived(itemFieldConfig[data.item.type]);
 
 	let selectedSubtype = $state(untrack(() => data.item.subtype ?? ''));
+
+	// State-driven form values — Places/Flight handlers write these instead of DOM
+	let titleValue = $state(untrack(() => data.item.title ?? ''));
+	let descriptionValue = $state(untrack(() => data.item.description ?? ''));
+	let startTimeValue = $state(untrack(() => data.item.start_time ?? ''));
+	let endTimeValue = $state(untrack(() => data.item.end_time ?? ''));
+	let locationNameValue = $state(untrack(() => data.item.location_name ?? ''));
+	let locationAddressValue = $state(untrack(() => data.item.location_address ?? ''));
 	let locationCoords = $state(
 		untrack(() =>
 			data.item.location_coords ? JSON.stringify(data.item.location_coords) : ''
@@ -53,10 +61,8 @@
 		coords: { lat: number; lng: number };
 		placeId: string;
 	}) {
-		const nameInput = document.getElementById('location_name') as HTMLInputElement;
-		const addrInput = document.getElementById('location_address') as HTMLInputElement;
-		if (nameInput) nameInput.value = place.name;
-		if (addrInput) addrInput.value = place.address;
+		locationNameValue = place.name;
+		locationAddressValue = place.address;
 		locationCoords = JSON.stringify(place.coords);
 		googlePlaceId = place.placeId;
 		markDirty();
@@ -71,16 +77,11 @@
 		location_name: string;
 		description: string;
 	}) {
-		const titleInput = document.getElementById('title') as HTMLInputElement;
-		const descInput = document.getElementById('description') as HTMLTextAreaElement;
-		const startInput = document.getElementById('start_time') as HTMLInputElement;
-		const endInput = document.getElementById('end_time') as HTMLInputElement;
-		const locInput = document.getElementById('location_name') as HTMLInputElement;
-		if (titleInput) titleInput.value = flight.title;
-		if (descInput) descInput.value = flight.description;
-		if (startInput) startInput.value = flight.start_time;
-		if (endInput) endInput.value = flight.end_time;
-		if (locInput) locInput.value = flight.location_name;
+		titleValue = flight.title;
+		descriptionValue = flight.description;
+		startTimeValue = flight.start_time;
+		endTimeValue = flight.end_time;
+		locationNameValue = flight.location_name;
 		markDirty();
 	}
 
@@ -128,9 +129,11 @@
 		use:enhance={() => {
 			loading = true;
 			submitting = true;
-			return async ({ update }) => {
-				loading = false;
-				submitting = false;
+			return async ({ update, result }) => {
+				if (result.type === 'failure') {
+					loading = false;
+					submitting = false;
+				}
 				await update();
 			};
 		}}
@@ -177,7 +180,8 @@
 						id="title"
 						name="title"
 						required
-						value={data.item.title}
+						autocomplete="off"
+						bind:value={titleValue}
 						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 					/>
 				</div>
@@ -188,8 +192,9 @@
 						id="description"
 						name="description"
 						rows="2"
+						bind:value={descriptionValue}
 						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
-					>{data.item.description}</textarea>
+					></textarea>
 				</div>
 
 				<div>
@@ -268,7 +273,7 @@
 								type="time"
 								id="start_time"
 								name="start_time"
-								value={data.item.start_time}
+								bind:value={startTimeValue}
 								class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
 							/>
 						</div>
@@ -278,7 +283,7 @@
 								type="time"
 								id="end_time"
 								name="end_time"
-								value={data.item.end_time}
+								bind:value={endTimeValue}
 								class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
 							/>
 						</div>
@@ -298,7 +303,7 @@
 							type="text"
 							id="location_name"
 							name="location_name"
-							value={data.item.location_name}
+							bind:value={locationNameValue}
 							class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 						/>
 					</div>
@@ -308,7 +313,7 @@
 							type="text"
 							id="location_address"
 							name="location_address"
-							value={data.item.location_address}
+							bind:value={locationAddressValue}
 							class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 						/>
 					</div>
@@ -470,9 +475,11 @@
 			</Card>
 		{/if}
 
-		<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="w-full">
-			{loading ? 'Saving…' : 'Save changes'}
-		</Button>
+		<div class="sticky bottom-20 md-desktop:bottom-4 z-sticky bg-paper -mx-4 px-4 pt-2 pb-2">
+			<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="w-full">
+				{loading ? 'Saving…' : 'Save changes'}
+			</Button>
+		</div>
 	</form>
 
 	<div class="border-clay/30 rounded-lg border p-4">

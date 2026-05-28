@@ -53,6 +53,8 @@
 				location_name: `${flight.departure?.airport?.name ?? ''} (${flight.departure?.airport?.iata ?? ''})`,
 				description: `→ ${flight.arrival?.airport?.name ?? ''} (${flight.arrival?.airport?.iata ?? ''})`
 			});
+		} catch {
+			error = 'Flight lookup failed';
 		} finally {
 			loading = false;
 		}

@@ -50,6 +50,13 @@
 	let selectedSubtype = $state('');
 	let fields = $derived(itemFieldConfig[selectedType]);
 
+	// State-driven form values — Places/Flight handlers write these instead of DOM
+	let titleValue = $state(untrack(() => prefill?.title ?? ''));
+	let descriptionValue = $state(untrack(() => prefill?.description ?? ''));
+	let startTimeValue = $state(untrack(() => prefill?.start_time ?? ''));
+	let endTimeValue = $state(untrack(() => prefill?.end_time ?? ''));
+	let locationNameValue = $state(untrack(() => prefill?.location_name ?? ''));
+	let locationAddressValue = $state(untrack(() => prefill?.location_address ?? ''));
 	let locationCoords = $state('');
 	let googlePlaceId = $state('');
 
@@ -59,10 +66,8 @@
 		coords: { lat: number; lng: number };
 		placeId: string;
 	}) {
-		const nameInput = document.getElementById('location_name') as HTMLInputElement;
-		const addrInput = document.getElementById('location_address') as HTMLInputElement;
-		if (nameInput) nameInput.value = place.name;
-		if (addrInput) addrInput.value = place.address;
+		locationNameValue = place.name;
+		locationAddressValue = place.address;
 		locationCoords = JSON.stringify(place.coords);
 		googlePlaceId = place.placeId;
 		markDirty();
@@ -77,16 +82,11 @@
 		location_name: string;
 		description: string;
 	}) {
-		const titleInput = document.getElementById('title') as HTMLInputElement;
-		const descInput = document.getElementById('description') as HTMLTextAreaElement;
-		const startInput = document.getElementById('start_time') as HTMLInputElement;
-		const endInput = document.getElementById('end_time') as HTMLInputElement;
-		const locInput = document.getElementById('location_name') as HTMLInputElement;
-		if (titleInput) titleInput.value = flight.title;
-		if (descInput) descInput.value = flight.description;
-		if (startInput) startInput.value = flight.start_time;
-		if (endInput) endInput.value = flight.end_time;
-		if (locInput) locInput.value = flight.location_name;
+		titleValue = flight.title;
+		descriptionValue = flight.description;
+		startTimeValue = flight.start_time;
+		endTimeValue = flight.end_time;
+		locationNameValue = flight.location_name;
 		markDirty();
 	}
 
@@ -113,10 +113,8 @@
 	let showTemplatePicker = $state(false);
 
 	function applyTemplate(templateItems: string[]) {
-		const titleInput = document.getElementById('title') as HTMLInputElement;
-		const descInput = document.getElementById('description') as HTMLTextAreaElement;
-		if (descInput) descInput.value = templateItems.map((t) => `- [ ] ${t}`).join('\n');
-		if (titleInput && !titleInput.value) titleInput.focus();
+		descriptionValue = templateItems.map((t) => `- [ ] ${t}`).join('\n');
+		if (!titleValue) document.getElementById('title')?.focus();
 		showTemplatePicker = false;
 		markDirty();
 	}
@@ -148,9 +146,11 @@
 		use:enhance={() => {
 			loading = true;
 			submitting = true;
-			return async ({ update }) => {
-				loading = false;
-				submitting = false;
+			return async ({ update, result }) => {
+				if (result.type === 'failure') {
+					loading = false;
+					submitting = false;
+				}
 				await update();
 			};
 		}}
@@ -169,7 +169,8 @@
 						id="title"
 						name="title"
 						required
-						value={prefill?.title ?? ''}
+						autocomplete="off"
+						bind:value={titleValue}
 						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 						placeholder="Hotel check-in, Train to Madrid, etc."
 					/>
@@ -258,8 +259,9 @@
 						id="description"
 						name="description"
 						rows={selectedType === 'checklist' ? 6 : 2}
+						bind:value={descriptionValue}
 						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
-					>{prefill?.description ?? ''}</textarea>
+					></textarea>
 				</div>
 			</div>
 		</Card>
@@ -328,7 +330,7 @@
 								type="time"
 								id="start_time"
 								name="start_time"
-								value={prefill?.start_time ?? ''}
+								bind:value={startTimeValue}
 								class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
 							/>
 						</div>
@@ -338,7 +340,7 @@
 								type="time"
 								id="end_time"
 								name="end_time"
-								value={prefill?.end_time ?? ''}
+								bind:value={endTimeValue}
 								class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
 							/>
 						</div>
@@ -358,7 +360,7 @@
 							type="text"
 							id="location_name"
 							name="location_name"
-							value={prefill?.location_name ?? ''}
+							bind:value={locationNameValue}
 							class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 							placeholder="Hotel Barcelona"
 						/>
@@ -369,7 +371,7 @@
 							type="text"
 							id="location_address"
 							name="location_address"
-							value={prefill?.location_address ?? ''}
+							bind:value={locationAddressValue}
 							class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 						/>
 					</div>
@@ -524,8 +526,10 @@
 			</Card>
 		{/if}
 
-		<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="w-full">
-			{buttonLabel}
-		</Button>
+		<div class="sticky bottom-20 md-desktop:bottom-4 z-sticky bg-paper -mx-4 px-4 pt-2 pb-2">
+			<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="w-full">
+				{buttonLabel}
+			</Button>
+		</div>
 	</form>
 </main>
