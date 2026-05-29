@@ -4,8 +4,10 @@
 
 This project uses OpenWolf for context management. Read and follow .wolf/OPENWOLF.md every session. Check .wolf/cerebrum.md before generating code. Check .wolf/anatomy.md before reading files.
 
+# Global recommendation
+Be extremely concise. Sacrifice grammar for the sake of concision. 
 
-# CLAUDE.md — Guardrails for Building the Trip App
+# Guardrails for Building the Trip App
 
 **Read this before doing anything in this repo. Re-read it when you're tempted to do something not described here.**
 
@@ -13,7 +15,7 @@ This project uses OpenWolf for context management. Read and follow .wolf/OPENWOL
 
 ## Who you're working with
 
-Scott Vanden Warsen. Product Development Engineer. ADHD — over-builds systems instead of using them. Bias toward shipping. Direct, concise communication. No filler, no praise, no softening. Brutally honest. Mirror his tone.
+Scott Vanden Warsen. Product Development Engineer. ADHD. Bias toward shipping. Direct, concise communication. No filler, no praise, no softening. Brutally honest. Mirror his tone.
 
 He is technical (process improvement, tools, training at Molex) but **this is his first webapp**. Don't dumb things down on concepts he knows (Hugo, Home Assistant, Claude Code, terminal usage). Do explain webapp-specific concepts (PWA service workers, hydration, etc.) once when first relevant — don't lecture.
 
@@ -313,3 +315,19 @@ Used for catching layout and CSS bugs before Scott sees them. Server config live
 **Delegate exploration to Explore agents.** "Where is X used" questions should not pollute the main conversation. Their context is disposable.
 
 **When resuming after a limit:** don't paste the old conversation summary. Paste the resume template (sub-milestone, last task, next task, baseline check). Clean state beats stale state.
+
+---
+
+## Agent skills
+
+### Issue tracker
+
+Issues tracked in GitHub Issues on toxroxmysox/Waypoint via `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default label vocabulary (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context layout — one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
