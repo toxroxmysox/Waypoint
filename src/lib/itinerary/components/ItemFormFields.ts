@@ -1,5 +1,4 @@
 import type { ItemType, ConfirmationCode, Day, Phase, TripMember } from '$lib/types';
-import type { FieldVisibility } from '$lib/itinerary/item-fields';
 
 export type ItemFormMode = 'create' | 'edit' | 'view';
 
