@@ -63,7 +63,7 @@
 	<div class="mt-2 h-1.5 rounded-full bg-surface-2 overflow-hidden">
 		<div
 			class="h-full rounded-full transition-all {totalSpent > budgetTotal ? 'bg-clay' : 'bg-moss'}"
-			style="width: {Math.min(100, (totalSpent / budgetTotal) * 100)}%"
+			style="width: {budgetTotal > 0 ? Math.min(100, (totalSpent / budgetTotal) * 100) : 0}%"
 		></div>
 	</div>
 	{#if totalSpent > budgetTotal}

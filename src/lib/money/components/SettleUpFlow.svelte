@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { validateForm } from '$lib/shell/actions/validate-form';
 	import Button from '$lib/ui/Button.svelte';
 	import { toast } from '$lib/shell/stores/toast';
 	import type { DebtEdge } from '$lib/money/debt-simplify';
@@ -21,13 +20,6 @@
 	let settleAmount = $state('');
 	let settleNote = $state('');
 	let submitting = $state(false);
-
-	export function reset() {
-		step = 'list';
-		selectedDebt = null;
-		settleAmount = '';
-		settleNote = '';
-	}
 
 	function startRecordPayment(debt: DebtEdge) {
 		selectedDebt = debt;

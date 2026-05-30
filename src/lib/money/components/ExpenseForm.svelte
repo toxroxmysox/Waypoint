@@ -3,10 +3,9 @@
 	import { validateForm } from '$lib/shell/actions/validate-form';
 	import { untrack } from 'svelte';
 	import Button from '$lib/ui/Button.svelte';
-	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import { toast } from '$lib/shell/stores/toast';
 	import { buildSplitData } from '$lib/money/build-split-data';
-	import type { Expense, ExpenseCategory, TripMember, ItemType } from '$lib/types';
+	import type { Expense, ExpenseCategory, TripMember } from '$lib/types';
 
 	interface Props {
 		members: TripMember[];
@@ -21,14 +20,6 @@
 	let isEdit = $derived(expense !== null);
 	let submitting = $state(false);
 	let deleting = $state(false);
-
-	const expenseCategoryIcon: Record<ExpenseCategory, ItemType> = {
-		lodging: 'lodging',
-		transportation: 'transportation',
-		food: 'meal',
-		activity: 'activity',
-		other: 'note'
-	};
 
 	const categories: { value: ExpenseCategory; label: string }[] = [
 		{ value: 'food', label: 'Food' },
