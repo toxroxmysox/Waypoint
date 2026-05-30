@@ -2,7 +2,7 @@
 
 > Codename: Waypoint
 > Owner: Scott Vanden Warsen
-> Last updated: 2026-04-25
+> Last updated: 2026-05-29
 
 ---
 
@@ -10,10 +10,10 @@
 
 A self-hosted, mobile-first PWA that replaces the Google Doc / Google Sheet / Splitwise / pinned-message stack Scott and Abby use for trip planning, execution, and post-trip sharing. Must be polished enough that non-technical friends will actually contribute, structured enough that nothing gets lost between planning and trip day, and shareable enough that the trip lives on as a public archive afterward.
 
-**Three modes on one data set:**
-1. **Planning Mode** — collaborative editing with suggestions inbox, voting, alternates, budget.
-2. **Trip Mode** — day-of execution view, phone-first, one-handed, large cards, offline-capable read.
-3. **Archive Mode** — public read-only post-trip view of what actually happened. Linkable from Scott's website.
+**Two modes, one view:**
+1. **Planning Mode** — collaborative itinerary building. Default mode. 5-tab moss nav (Itinerary, Money, Activity, Vault, More). Available in all trip statuses.
+2. **Trip Mode** — live-trip execution. Phone-first, one-handed, large cards, offline-capable read. 4-tab clay nav (Now, Today, Add, Vault). Available only when trip status = active. Default mode for active trips; user can switch to Planning Mode and back.
+3. **Public Archive** — read-only post-trip view of what actually happened. Not a mode — rendered automatically for closed trips and via public share link. Linkable from Scott's website.
 
 ---
 
@@ -94,7 +94,7 @@ All test harnesses require PocketBase running via `./backend/start.sh` with `WAY
 | Submit suggestions | ✓ (auto-approve) | ✓ (auto-approve) | ✓ (queued) | comment only | — |
 | Approve suggestions | ✓ | ✓ | — | — | — |
 | Comment on items | ✓ | ✓ | ✓ | ✓ | — |
-| Vote on alternates | ✓ | ✓ | ✓ | — | — |
+| Vote on items | ✓ | ✓ | ✓ | — | — |
 | Invite Travelers / Viewers | ✓ | ✓ | ✓ | — | — |
 | Invite Co-Owners | ✓ | ✓ | — | — | — |
 | Promote Traveler → Co-Owner | ✓ | ✓ | — | — | — |
@@ -165,8 +165,9 @@ PocketBase collections. Field types use PocketBase notation. All collections inc
 | country_code | text | ISO 3166-1 alpha-2 |
 | start_date | date | |
 | end_date | date | |
-| color | text | Hex, for UI tabs |
 | order | int | Manual order, for reorderable phases |
+
+Phase indicators use the active mode's accent color (moss in Planning Mode, clay in Trip Mode), not per-phase colors. See GitHub issue #11.
 
 ### `days`
 | Field | Type | Notes |
@@ -182,23 +183,23 @@ Days can be auto-generated from trip start/end dates and re-bucketed when phases
 | Field | Type | Notes |
 |---|---|---|
 | trip | relation→trips, required | |
-| phase | relation→phases, nullable | Denormalized for query speed |
-| day | relation→days, nullable | Null = unscheduled (parking lot) |
-| slot | enum: morning, afternoon, evening, anytime | Within a day |
-| type | enum: lodging, transportation, activity, meal, note, checklist | |
-| subtype | text, nullable | "tour", "guided", "flight", "train", etc. — drives icon/color |
+| phase | relation→phases, required | Every item belongs to a phase |
+| day | relation→days, nullable | Required when status is planned or done. Optional when unplanned or considered. |
+| type | enum: lodging, transportation, flight, activity, meal, note, checklist | |
+| subtype | text, nullable | "tour", "guided", "train", etc. — drives icon/color |
 | title | text, required | |
 | description | text | |
 | location_name | text | |
 | location_address | text | |
 | location_coords | json `{lat, lng}` | |
 | google_place_id | text | For re-fetch / deep-link to Maps |
-| start_time | datetime, nullable | Trip-local time |
-| end_time | datetime, nullable | Trip-local time |
-| start_tz | text, nullable | For book-end flights crossing zones |
+| start_time | datetime, nullable | Anchor time — trip-local. See glossary "Anchor Time." |
+| end_time | datetime, nullable | Anchor time — trip-local. See glossary "Anchor Time." |
+| end_date | date, nullable | For multi-day items (e.g. hotel stay). Item spans from day.date to end_date and appears at top of each spanned day. |
+| start_tz | text, nullable | For flights crossing zones |
 | end_tz | text, nullable | |
-| status | enum: planned, done | Default planned |
-| booked | bool, default false | Only meaningful for lodging/transportation/activity |
+| status | enum: unplanned, planned, done, considered | Default unplanned. Lifecycle: unplanned → planned → done or considered. |
+| booked | bool, default false | Only meaningful for lodging/transportation/flight/activity |
 | booked_by | relation→trip_members, nullable | Who made the reservation |
 | paid_by | relation→trip_members, nullable | If pre-paid; for budget tracking |
 | confirmation_codes | json (array of `{label, value}`) | "Booking ref", "PIN", etc. — supports multiple |
@@ -207,16 +208,16 @@ Days can be auto-generated from trip start/end dates and re-bucketed when phases
 | cost_estimate_usd | number, nullable | Per-item estimated cost |
 | cost_actual_usd | number, nullable | Filled in after booking/spending |
 | assigned_to | relation→trip_members, multiple | Subset of members this applies to (room assignments, sub-group activities) |
-| rank | int, default 0 | 0 = primary, 1+ = alternates within (day, slot) |
-| parking_lot_scope | enum: none, trip, phase, day | If non-`none`, this is an alternate not a primary; combined with day field for day-scoped |
+| sort_order | int | Drag-to-reorder position for untimed items within a day view |
 | parent_item | relation→items, nullable | For multi-leg transit (flight with layover) |
 | created_by | relation→trip_members | |
 
 **Notes on items:**
-- A single-segment flight = one item. A multi-leg flight (DTW→FRA→ZRH) = parent item with 2 child items via `parent_item`.
+- A single-segment flight = one item. A multi-leg flight (DTW→FRA→ZRH) = parent item with 2 child items via `parent_item`. Flight type integrates with AeroDataBox for autofill of airline, departure/arrival airports, times, and timezones.
 - A `meal` or `note` cannot be `booked` (UI hides the toggle).
-- `parking_lot_scope` answers "what's the scope of this alternate?" — `trip` = trip-wide alternate, `phase` = scoped to phase, `day` = day-slot alternate. The parking lot view at level X unions everything at level X and below.
+- The parking lot is a filtered view of items where `status = unplanned` within a phase. Not a separate data structure.
 - `assigned_to` supports the "sub-group activity" pattern (only Mary/Pat/Laura/Gayle on the Lucerne train).
+- A multi-day item (has `end_date`) is "ongoing" during Trip Mode when the current date/time falls within its span. Single-day items with anchor times are ongoing when the current time is between start_time and end_time. Ongoing is a display state, never stored.
 
 ### `checklist_items` (for items where `type=checklist`)
 | Field | Type | Notes |
@@ -247,9 +248,10 @@ Days can be auto-generated from trip start/end dates and re-bucketed when phases
 |---|---|---|
 | item | relation→items, required | |
 | member | relation→trip_members, required | |
+| value | enum: love, like, flexible, dislike, required | Love (+2), Like (+1), Flexible (0), Dislike (-2) — weights used for sort, never displayed |
 | created | datetime | |
 
-Unique constraint on (item, member). One vote per member per item. Promoting an alternate to primary is a separate action (rank manipulation), not a vote tally.
+Unique constraint on (item, member). One vote per member per item. Updating a vote replaces the previous value. UI shows avatar stacks per vote option, not aggregate scores. Unplanned items sort by aggregate vote score as the default ordering.
 
 ### `expenses`
 | Field | Type | Notes |
@@ -322,34 +324,50 @@ In-app only for v1. Display: bell icon with unread count, dropdown list. No emai
 | Type | Bookable? | Time-anchored? | Examples |
 |---|:---:|:---:|---|
 | lodging | ✓ | sometimes (check-in time) | Hotel, Airbnb, chalet |
-| transportation | ✓ | usually | Flight, train, bus, car rental, ferry |
+| transportation | ✓ | usually | Train, bus, car rental, rideshare |
+| flight | ✓ | usually | Air travel — AeroDataBox integration for autofill of airline, airports, times, timezones |
 | activity | ✓ | sometimes | Tour, museum, hike, ski day, cooking class |
 | meal | — | sometimes (reservations) | Breakfast, lunch, dinner, drinks |
 | note | — | — | Free-text reminders, day notes |
 | checklist | — | — | Grocery list, packing list, to-book list |
 
 ### Subtype tags (color/icon hints)
-- transportation: `flight | train | bus | car_rental | ferry | rideshare | walk`
+- transportation: `train | bus | car_rental | rideshare | walk`
 - activity: `tour | museum | outdoor | sport | shopping | spa | nightlife | sightseeing`
 - meal: `breakfast | brunch | lunch | dinner | drinks | snack | coffee`
 - lodging: `hotel | airbnb | hostel | resort | chalet`
 
 ### Status model
-- `status: planned | done` (no `skipped` per Scott's call — delete if not happening)
+- `status: unplanned | planned | done | considered`
+  - **unplanned** — on the trip as an idea/option. Phase required, day optional. Colloquially "ideas."
+  - **planned** — committed to the itinerary. Phase and day required.
+  - **done** — closeout: we did it. Day required.
+  - **considered** — closeout: we didn't do it (covers both skipped-planned and never-planned items). Day optional.
 - `booked: true | false` (independent boolean for bookable types)
-- `parking_lot_scope: none | trip | phase | day` (`none` = primary item; otherwise = alternate at that scope)
-- `rank: int` (within day-slot, 0 = primary, 1+ = alternates; relevant when `parking_lot_scope = day`)
+
+### Sort order
+
+**Today view — two zones:**
+
+1. **Planned timeline (top):** Items with `status = planned` for the current day, arranged chronologically morning → evening. Anchored items (with start_time) are pinned to their position on the timeline. Untimed planned items fill remaining space within their time slot evenly. Sort within untimed planned items: `sort_order` (manual drag-reorder).
+
+2. **Parking lot (bottom):** Items with `status = unplanned` for the current day's phase. Sorted by aggregate vote score descending, then `sort_order` as tiebreak.
+
+**Time Slot headers** (Morning / Afternoon / Evening / Anytime) are soft display groupings derived from anchor times, never stored. Items without anchor times appear in "Anytime."
 
 **Derived views:**
-- "To-book list" = items where `booked = false` AND `status = planned` AND type ∈ {lodging, transportation, activity}
-- "Today" view = items where `day.date = today`, sorted by `start_time` then slot
-- Archive view = items where `status = done`, plus all parking-lot alternates (read-only "what we considered" sidebar)
+- "To-book list" = items where `booked = false` AND `status = planned` AND type ∈ {lodging, transportation, flight, activity}
+- "Today" view = see sort order above
+- "Parking lot" = items where `status = unplanned` within a phase. A filtered view, not a separate data structure.
+- Archive view = items where `status = done`, plus `status = considered` items shown as "what we considered"
 
 ---
 
 ## 7. Feature Milestones
 
 Each milestone is **independently shippable**. Do not start Mn+1 until Mn has been used on a real (or fake) trip and you've tightened any pain points.
+
+> **Note:** Milestone descriptions below are a historical build log. Some domain language (slots, rank, alternates, parking_lot_scope) was superseded by the v3 design alignment (2026-05-29). For current data model and terminology, see Sections 5–6 above and CONTEXT.md.
 
 ### M1 — Skeleton (target: by May 1)
 **Goal:** Manually enter a trip and view it on your phone. No collaboration, no money, no offline.
@@ -498,12 +516,12 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 **Goal:** Trip ends well; archive lives on.
 
 **Features:**
-- Trip Closeout Wizard: walks day by day, slot by slot, with "Done as planned" / "Did something else" / "Skipped" buttons
-- "Did something else" inline quick-add
+- Trip Closeout Wizard: walks day by day through planned items — mark each done or considered. At end of each phase, reviews unplanned items: keep for archive (mark considered) or remove, with bulk auto-consider option. New items can be added during closeout for things that happened spontaneously.
+- Inline quick-add during closeout for spontaneous items
 - Auto-publish public archive after `end_date + N days` (configurable per trip)
 - Public archive view: done items, day/phase structure, photo link, title/dates/location only
 - Public URL = `/archive/{public_share_token}`
-- Bulk actions: "mark entire day as done as planned"
+- Bulk actions: "mark all planned → done" for days that went as planned
 - JSON export of full trip (per-trip download)
 - JSON import (load trip from backup)
 
@@ -535,8 +553,8 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 2. **Home / Trips list** — cards for active, upcoming, past trips
 3. **Create Trip** — wizard (title, dates, location, cover, optional clone-from)
 4. **Trip Overview** — phases, key stats, members, mode toggle (Planning / Trip)
-5. **Phase Detail** — days within phase, phase-level alternates
-6. **Day Detail** — slot-grouped items, alternates, comments, day notes
+5. **Phase Detail** — days within phase, phase-level parking lot (unplanned items)
+6. **Day Detail** — timeline of planned items with anchor times, untimed items by sort_order, parking lot below, comments, day notes
 7. **Item Detail** — full item view + edit form
 8. **Item Quick-Add** — bottom sheet on mobile, slide-over on desktop
 9. **Suggestions Inbox** — list of pending suggestions for trips you own/co-own
@@ -546,9 +564,11 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 13. **Vault** — password unlock screen, then list of entries
 14. **Trip Settings** — slug, archive toggle, auto-approve toggle, vault password setup, danger zone
 15. **Notifications** — list, mark read
-16. **Closeout Wizard** — full-screen guided flow
-17. **Trip Mode (today)** — focused day-of view
-18. **Trip Mode (next 3 days)** — multi-day at-a-glance
+16. **Closeout Wizard** — day-by-day planned items (done/considered), phase-level unplanned review with bulk auto-consider, inline item add
+17. **Trip Mode — Now** — what's happening now, next up, ongoing items
+18. **Trip Mode — Today** — today timeline, planned items + parking lot
+19. **Trip Mode — Add** — quick-add item during trip
+20. **Trip Mode — Vault** — password-gated encrypted entries
 
 ### Public
 19. **Public Archive** — read-only trip retrospective, no login
@@ -561,29 +581,35 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 ### Autofill from external source
 Every "add item" form has an optional **lookup field** at the top.
 - For lodging/activity/meal: Google Places search → pick → autofill name, address, coords, place_id, phone, website.
-- For transportation/flight: AeroDataBox flight # lookup → autofill airline, dep/arr airports, times, timezones, duration.
+- For flight: AeroDataBox flight # lookup → autofill airline, dep/arr airports, times, timezones, duration.
+- For transportation: manual entry (train, bus, car rental, rideshare).
 - Manual entry always remains available below the lookup.
 - Edits to autofilled fields are always allowed.
 
-### Suggestions inbox
+### Suggestions inbox (two-gate model)
 - One inbox per trip (shared by Owner + Co-Owners; not per-user).
 - Items: who suggested it, when, the diff/payload, [Approve] [Edit & Approve] [Reject] buttons.
+- **Gate 1 — Suggestion approval:** pending → approved. Auto-approve (default on) skips this gate for traveler contributions. When auto-approve is off, UI tells the traveler their contribution will be reviewed.
+- **Gate 2 — Planning:** Approved suggestions become **unplanned items** (not planned). Promoting unplanned → planned is a separate action (drag to day, or explicit "plan this").
 - Auto-approved suggestions land in the inbox marked "auto-approved" so reviewers can see history.
 
-### Parking lot views
-- Day parking lot = alternates with `parking_lot_scope=day` for that day's slots
-- Phase parking lot = unions phase-scope + day-scope for that phase
-- Trip parking lot = unions everything
+### Parking lot
+- The parking lot is a filtered view: `status = unplanned` within a phase. Not a separate data structure.
+- Visible on day views as phase-scoped suggestion cards.
+- Sorted by aggregate vote score descending, then sort_order.
 
-### Multi-mode views on same data
-- Planning ↔ Trip mode toggle in trip header
-- Archive view auto-rendered for past trips with `archived = true` (also accessible via public link)
+### Mode switching
+- Planning Mode ↔ Trip Mode toggle in trip header. Mode is UI state, not data.
+- Trip Mode available only when trip status = active. Default mode for active trips.
+- Planning Mode: 5-tab moss nav (Itinerary, Money, Activity, Vault, More).
+- Trip Mode: 4-tab clay nav (Now, Today, Add, Vault).
+- Archive view auto-rendered for closed trips (also accessible via public share link). Not a mode.
 
 ### Mobile-first interaction patterns
 - Bottom sheets for forms on mobile, slide-overs on tablet+
 - Floating action button for "Add item" on relevant screens
 - Swipe-to-edit on item rows (with desktop-friendly fallback)
-- Sticky bottom nav: Home / Trip / Expenses / Vault / More
+- Sticky bottom nav: see Mode switching section for per-mode tab structure
 
 ### Add-to-home-screen prompt
 - iOS: detect Safari, show banner with screenshots of the share menu steps
@@ -681,7 +707,7 @@ Explicitly not building. Each is a future consideration but **must not creep in*
 
 ## 14. Open Decisions (defer until forced)
 
-1. **Vote display UI** — heart, star, thumbs-up, +1 counter. Decide when building M4.
+1. **Vote display UI** — **Closed 2026-05-29.** Love/Like/Flexible/Dislike model. Avatar stacks per option, no visible numeric score. Unplanned items sort by aggregate vote score. See CONTEXT.md.
 2. **Color palette / typography** — **Closed 2026-04-25.** Adopted the Waypoint design system from the Claude Design handoff: paper/ink/moss/clay/gold/sky palette, Fraunces (display) / Inter (UI) / JetBrains Mono (mono). Implemented in M1.5; tokens live in `src/routes/layout.css` `@theme`.
 3. **App name** — placeholder. Decide before public archive launch (M5).
 4. **Domain** — `trips.scottvandenwarsen.com` recommended. Confirm before M4 deployment.
@@ -700,3 +726,12 @@ v1 = M1 through M5. Considered done when:
 - [ ] No fallback to Google Docs / Sheets / Splitwise / group chat for any of the original 5 use cases
 - [ ] Public archive URL linked from scottvandenwarsen.com
 - [ ] Zero data loss across the trip lifecycle
+
+---
+
+## 16. Changelog
+
+| Date | Summary | Reference |
+|---|---|---|
+| 2026-05-29 | **v3 design alignment.** Slot → anchor time + time slot (derived). Status lifecycle expanded: unplanned → planned → done/considered. Flight promoted to first-class item type with AeroDataBox integration. Votes redesigned: Love/Like/Flexible/Dislike with avatar stacks, no visible score. Rank and parking_lot_scope removed — parking lot is now a filtered view (status = unplanned). Multi-day items via end_date. Phase colors removed (mode accent instead). Three modes → two modes + archive view. Closeout rewritten for new status lifecycle. Suggestion two-gate model (approved → unplanned, not planned). Ferry removed from transportation subtypes. | CONTEXT.md, GitHub #11 |
+| 2026-04-25 | Design system adopted. Paper/ink/moss/clay/gold/sky palette, Fraunces/Inter/JetBrains Mono fonts. | M1.5 milestone |

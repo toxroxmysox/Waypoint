@@ -114,9 +114,13 @@ trip-app/
 ├── static/
 │   ├── manifest.webmanifest
 │   └── icons/
-├── SPEC.md
 ├── CLAUDE.md
 ├── SETUP.md
+├── docs/
+│   ├── SPEC.md
+│   ├── SPEC_BACKLOG.md
+│   ├── V2_SPEC.md
+│   └── milestones/
 ├── README.md
 ├── .env.example
 └── .gitignore
@@ -206,13 +210,13 @@ Set up a remote (GitHub, your choice public/private) and push.
 
 ## 11. M1 starting points
 
-- Create first migration in `backend/pb_migrations/` for the `users`, `trips`, `trip_members`, `phases`, `days`, `items` collections per SPEC.md §4
+- Create first migration in `backend/pb_migrations/` for the `users`, `trips`, `trip_members`, `phases`, `days`, `items` collections per docs/SPEC.md §4
 - Build PocketBase client wrapper at `src/lib/pb.ts`
 - Build auth flow (`/login` route + email/code form)
 - Build trips list (`/` route)
 - Build trip detail (`/trips/[slug]` route)
 
-Refer to `SPEC.md` §6 M1 for the full feature checklist and acceptance criteria.
+Refer to `docs/SPEC.md` §6 M1 for the full feature checklist and acceptance criteria.
 
 ---
 

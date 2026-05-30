@@ -14,10 +14,7 @@ Deferred work captured during M1. Each entry notes what it is, why it was deferr
 - **What:** A single lodging item that spans a date range instead of repeating one item per night, with per-day rendering on each day's detail view.
 - **Why deferred:** SPEC.md models items as belonging to a single day. Changing that touches the data model, day-detail rendering, and the item form. Too invasive for M1.
 - **Target:** Needs a spec amendment. Likely M4 Execution (when lodging is actively in use) or pulled forward if the May dogfood trip makes the current model painful.
-- **Notes:** Options to weigh:
-  1. New `lodging_stays` collection with `check_in` / `check_out` and surface on every day in range.
-  2. Keep items single-day; add `links_to` field so a "Night 2 of Hotel X" item back-references the root item.
-  3. Store `start_date` / `end_date` on items of type `lodging` and fan out in the UI.
+- **Notes:** Resolved in v3 design alignment (2026-05-29). Items now have an `end_date` field for multi-day spanning. See SPEC.md Section 5 items collection.
 
 ## Tri-State Booking Pill
 - **What:** Booking status cycles `not booked` -> `partially booked` -> `booked` (currently a boolean).
@@ -69,6 +66,18 @@ Deferred work captured during M1. Each entry notes what it is, why it was deferr
 - **What:** Comments are immutable once posted.
 - **Why deferred:** Per SPEC intent. Most collaborative tools don't allow retroactive comment edits to preserve audit trail.
 - **Target:** Only pull in if dogfood reveals real friction.
+
+---
+
+---
+
+## v4 Concepts
+
+### Trip Goal
+- **What:** A trip-level aspiration that isn't specific enough to be an item: "try paella," "do a wine tasting." No phase, location, or time. One or more items can address a goal. Enables a quick-planning minigame for capturing group wishes early.
+- **Why deferred:** Not in v3 scope. Every item requires a phase in v3; goals are phase-less by definition.
+- **Target:** v4.
+- **Notes:** See CONTEXT.md glossary entry for Trip Goal.
 
 ---
 

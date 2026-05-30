@@ -23,7 +23,7 @@ He is technical (process improvement, tools, training at Molex) but **this is hi
 
 ## The single most important rule
 
-**Build only what is in `SPEC.md`. Build it in milestone order. Do not skip ahead.**
+**Build only what is in `docs/SPEC.md`. Build it in milestone order. Do not skip ahead.**
 
 If Scott asks for something not in the spec, or asks to skip from M1 to M3, do this:
 
@@ -195,7 +195,7 @@ If you find yourself wanting to add anything from the second list "just because 
 ## When Scott says "let's just..."
 
 This is a known shiny-object trigger phrase. Probable scope creep incoming. Politely interrogate:
-- "Is this in the current milestone? (Check SPEC.md.)"
+- "Is this in the current milestone? (Check docs/SPEC.md.)"
 - "What does it replace from the current milestone, if anything?"
 - "Should we spec this and circle back, or do it now?"
 
@@ -219,7 +219,7 @@ Don't wait to be asked.
 
 **Start of every session:**
 1. `git status && git log --oneline -5`
-2. `cat M1_STATUS.md` (or the current milestone's status file)
+2. `cat docs/milestones/M1_STATUS.md` (or the current milestone's status file in `docs/milestones/`)
 3. `pnpm check` as a baseline — silence is the expected output
 4. Then pick up the next task
 
