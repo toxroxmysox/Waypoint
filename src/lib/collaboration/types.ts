@@ -1,0 +1,75 @@
+import type { RecordModel } from 'pocketbase';
+import type { Item } from '../itinerary/types';
+
+export type MemberRole = 'owner' | 'co_owner' | 'traveler' | 'viewer';
+
+export interface TripMember extends RecordModel {
+	trip: string;
+	user: string;
+	placeholder_name: string;
+	placeholder_email: string;
+	display_name: string;
+	role: MemberRole;
+	joined_at: string;
+}
+
+export type InviteRole = 'co_owner' | 'traveler' | 'viewer';
+
+export interface PendingInvite extends RecordModel {
+	trip: string;
+	email: string;
+	role: InviteRole;
+	invited_by: string;
+	code: string;
+	expires_at: string;
+}
+
+export type SuggestionStatus = 'pending' | 'approved' | 'rejected';
+export type SuggestionTargetType = 'new_item' | 'comment';
+
+export interface Suggestion {
+	id: string;
+	trip: string;
+	author_id: string;
+	author_name: string;
+	author_role: MemberRole;
+	target_type: SuggestionTargetType;
+	payload: Partial<Item> | null;
+	status: SuggestionStatus;
+	reviewed_at: string;
+	created: string;
+}
+
+export type NotificationType = 'suggestion_added' | 'comment_added' | 'member_joined';
+
+export interface Notification {
+	id: string;
+	trip: string;
+	type: NotificationType;
+	body: string;
+	link: string;
+	read_at: string | null;
+	created: string;
+}
+
+export interface Comment {
+	id: string;
+	trip: string;
+	author: string;
+	target_type: 'comment';
+	target_item: string;
+	comment_text: string;
+	status: 'approved';
+	created: string;
+	expand?: { author?: TripMember };
+	author_name?: string;
+	author_role?: string;
+}
+
+export interface Vote {
+	id: string;
+	trip: string;
+	item: string;
+	member: string;
+	created: string;
+}

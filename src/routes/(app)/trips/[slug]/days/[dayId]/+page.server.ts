@@ -1,7 +1,7 @@
 import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Day, Item, Vote } from '$lib/types';
-import { phasesForDay } from '$lib/utils/phases';
+import { phasesForDay } from '$lib/itinerary/phases';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, phases } = await parent();

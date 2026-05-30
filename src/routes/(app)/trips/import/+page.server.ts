@@ -1,6 +1,6 @@
 import { fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { validateTripImport, generateImportSlug } from '$lib/utils/import';
+import { validateTripImport, generateImportSlug } from '$lib/portability/import';
 
 export const load: PageServerLoad = async () => {
 	return {};

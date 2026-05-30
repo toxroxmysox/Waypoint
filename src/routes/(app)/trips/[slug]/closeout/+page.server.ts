@@ -97,7 +97,7 @@ export const actions: Actions = {
 
 			const updates: Record<string, unknown> = { archived: true };
 			if (trip.archive_enabled && !trip.public_share_token) {
-				const { generateArchiveToken } = await import('$lib/utils/archive-token');
+				const { generateArchiveToken } = await import('$lib/portability/archive-token');
 				updates.public_share_token = generateArchiveToken();
 			}
 

@@ -1,7 +1,7 @@
 import { fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { TripMember } from '$lib/types';
-import { hashVaultPassword } from '$lib/utils/vault-password';
+import { hashVaultPassword } from '$lib/vault/vault-password';
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { trip, membership } = await parent();
@@ -135,7 +135,7 @@ export const actions: Actions = {
 			};
 
 			if (archiveEnabled && !trip.public_share_token) {
-				const { generateArchiveToken } = await import('$lib/utils/archive-token');
+				const { generateArchiveToken } = await import('$lib/portability/archive-token');
 				updates.public_share_token = generateArchiveToken();
 			}
 
@@ -168,7 +168,7 @@ export const actions: Actions = {
 			const updates: Record<string, unknown> = { archived: true };
 
 			if (trip.archive_enabled && !trip.public_share_token) {
-				const { generateArchiveToken } = await import('$lib/utils/archive-token');
+				const { generateArchiveToken } = await import('$lib/portability/archive-token');
 				updates.public_share_token = generateArchiveToken();
 			}
 

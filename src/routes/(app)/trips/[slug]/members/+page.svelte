@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { validateForm } from '$lib/actions/validate-form';
-	import NavBar from '$lib/components/ui/NavBar.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
-	import Pill from '$lib/components/ui/Pill.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
+	import { validateForm } from '$lib/shell/actions/validate-form';
+	import NavBar from '$lib/ui/NavBar.svelte';
+	import Card from '$lib/ui/Card.svelte';
+	import Pill from '$lib/ui/Pill.svelte';
+	import Button from '$lib/ui/Button.svelte';
 	import type { InviteRole } from '$lib/types';
-	import { toast } from '$lib/stores/toast';
+	import { toast } from '$lib/shell/stores/toast';
 
 	let { data, form } = $props();
 

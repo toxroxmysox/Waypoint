@@ -1,5 +1,5 @@
 <script lang="ts">
-	import AppShell from '$lib/components/ui/AppShell.svelte';
+	import AppShell from '$lib/shell/components/AppShell.svelte';
 
 	let { data, children } = $props();
 </script>

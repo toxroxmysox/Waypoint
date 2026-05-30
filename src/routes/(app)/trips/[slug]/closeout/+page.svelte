@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import NavBar from '$lib/components/ui/NavBar.svelte';
-	import CloseoutDayCard from '$lib/components/CloseoutDayCard.svelte';
+	import NavBar from '$lib/ui/NavBar.svelte';
+	import CloseoutDayCard from '$lib/itinerary/components/CloseoutDayCard.svelte';
 	import type { Day, Item } from '$lib/types';
 	import { untrack } from 'svelte';
 

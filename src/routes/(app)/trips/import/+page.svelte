@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import NavBar from '$lib/components/ui/NavBar.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
+	import NavBar from '$lib/ui/NavBar.svelte';
+	import Button from '$lib/ui/Button.svelte';
 
 	let { form } = $props();
 

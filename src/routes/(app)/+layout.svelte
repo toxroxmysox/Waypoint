@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { navigating } from '$app/stores';
 	import { onNavigate } from '$app/navigation';
-	import TripsPageSkeleton from '$lib/components/skeletons/TripsPageSkeleton.svelte';
-	import DayPageSkeleton from '$lib/components/skeletons/DayPageSkeleton.svelte';
-	import ExpensesPageSkeleton from '$lib/components/skeletons/ExpensesPageSkeleton.svelte';
-	import MembersPageSkeleton from '$lib/components/skeletons/MembersPageSkeleton.svelte';
+	import TripsPageSkeleton from '$lib/ui/skeletons/TripsPageSkeleton.svelte';
+	import DayPageSkeleton from '$lib/ui/skeletons/DayPageSkeleton.svelte';
+	import ExpensesPageSkeleton from '$lib/ui/skeletons/ExpensesPageSkeleton.svelte';
+	import MembersPageSkeleton from '$lib/ui/skeletons/MembersPageSkeleton.svelte';
 
 	let { children } = $props();
 

@@ -1,14 +1,14 @@
 <script lang="ts">
 	import type { Phase, Day } from '$lib/types';
-	import NavBar from '$lib/components/ui/NavBar.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
-	import Pill from '$lib/components/ui/Pill.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
-	import SectionH from '$lib/components/ui/SectionH.svelte';
-	import SubTabs from '$lib/components/SubTabs.svelte';
-	import NotificationBell from '$lib/components/ui/NotificationBell.svelte';
-	import PhaseChip from '$lib/components/ui/PhaseChip.svelte';
-	import { titleCase } from '$lib/utils/format';
+	import NavBar from '$lib/ui/NavBar.svelte';
+	import Card from '$lib/ui/Card.svelte';
+	import Pill from '$lib/ui/Pill.svelte';
+	import Button from '$lib/ui/Button.svelte';
+	import SectionH from '$lib/ui/SectionH.svelte';
+	import SubTabs from '$lib/ui/SubTabs.svelte';
+	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
+	import PhaseChip from '$lib/ui/PhaseChip.svelte';
+	import { titleCase } from '$lib/shell/format';
 	import { untrack } from 'svelte';
 	import type { Notification } from '$lib/types';
 

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
-	import Button from '$lib/components/ui/Button.svelte';
+	import Button from '$lib/ui/Button.svelte';
 
 	let { data, form } = $props();
 

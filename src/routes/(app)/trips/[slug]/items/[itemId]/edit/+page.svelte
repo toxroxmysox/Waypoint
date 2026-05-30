@@ -1,18 +1,18 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { validateForm } from '$lib/actions/validate-form';
+	import { validateForm } from '$lib/shell/actions/validate-form';
 	import { beforeNavigate } from '$app/navigation';
 	import { untrack } from 'svelte';
-	import { itemFieldConfig, itemTypeLabels, slotOptions } from '$lib/config/item-fields';
+	import { itemFieldConfig, itemTypeLabels, slotOptions } from '$lib/itinerary/item-fields';
 	import type { ConfirmationCode } from '$lib/types';
-	import NavBar from '$lib/components/ui/NavBar.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
-	import SectionH from '$lib/components/ui/SectionH.svelte';
-	import Pill from '$lib/components/ui/Pill.svelte';
-	import PlacesAutocomplete from '$lib/components/PlacesAutocomplete.svelte';
-	import FlightLookup from '$lib/components/FlightLookup.svelte';
-	import { titleCase } from '$lib/utils/format';
+	import NavBar from '$lib/ui/NavBar.svelte';
+	import Card from '$lib/ui/Card.svelte';
+	import Button from '$lib/ui/Button.svelte';
+	import SectionH from '$lib/ui/SectionH.svelte';
+	import Pill from '$lib/ui/Pill.svelte';
+	import PlacesAutocomplete from '$lib/itinerary/components/PlacesAutocomplete.svelte';
+	import FlightLookup from '$lib/itinerary/components/FlightLookup.svelte';
+	import { titleCase } from '$lib/shell/format';
 
 	let { data, form } = $props();
 

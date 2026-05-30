@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import NavBar from '$lib/components/ui/NavBar.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
-	import SectionH from '$lib/components/ui/SectionH.svelte';
-	import SubTabs from '$lib/components/SubTabs.svelte';
-	import PhaseColorPicker from '$lib/components/PhaseColorPicker.svelte';
+	import NavBar from '$lib/ui/NavBar.svelte';
+	import Card from '$lib/ui/Card.svelte';
+	import Button from '$lib/ui/Button.svelte';
+	import SectionH from '$lib/ui/SectionH.svelte';
+	import SubTabs from '$lib/ui/SubTabs.svelte';
+	import PhaseColorPicker from '$lib/itinerary/components/PhaseColorPicker.svelte';
 	import { phasePalette } from '$lib/utils/phase-palette';
-	import { toast } from '$lib/stores/toast';
+	import { toast } from '$lib/shell/stores/toast';
 
 	let { data, form } = $props();
 

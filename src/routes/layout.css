@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-@import '$lib/styles/print.css';
+@import '$lib/shell/print.css';
 
 /* Self-hosted critical fonts — preloaded in app.html for zero-FOIT on first paint. */
 @font-face {

@@ -2,13 +2,14 @@
 
 **Status:** Proposed
 **Date:** 2026-05-29
+**Updated:** 2026-05-29
 **Deciders:** Scott
 
 ## Context
 
 Waypoint's `src/lib/` is a flat grab bag: 67 files across 7 top-level folders (`components/`, `utils/`, `stores/`, `config/`, `actions/`, `icons/`, `assets/`) plus loose files (`types.ts`, `pb.ts`, `index.ts`). There's no grouping by domain. A developer looking at `debt-simplify.ts` next to `phase-palette.ts` gets no signal about which functional area either belongs to.
 
-The codebase is ~9,400 lines of frontend (routes + lib) and ~2,600 lines of backend hooks. It's small enough that the flat structure hasn't caused real pain yet. But with v1 complete and potential feature growth ahead, the cost of reorganizing only goes up over time.
+The codebase is ~9,400 lines of frontend (routes + lib) and ~2,600 lines of backend hooks. It's small enough that the flat structure hasn't caused real pain yet. But with v1 complete and v3 design alignment underway, the cost of reorganizing only goes up over time.
 
 ### Current state
 
@@ -32,9 +33,9 @@ src/lib/
 
 1. **types.ts is a god file.** 326 lines, every domain type in one file. Itinerary types (Trip, Phase, Day, Item) live next to money types (Expense, Settlement, Budget) and collaboration types (Suggestion, Notification).
 
-2. **utils/ is a junk drawer.** `crypto.ts` (vault), `debt-simplify.ts` (money), `export.ts` (portability), `trip-mode.ts` (execution), `phase-palette.ts` (itinerary) -- no cohesion.
+2. **utils/ is a junk drawer.** `crypto.ts` (vault), `debt-simplify.ts` (money), `export.ts` (portability), `trip-mode.ts` (trip mode), `phase-palette.ts` (itinerary) -- no cohesion.
 
-3. **components/ mixes UI primitives with domain components.** `ui/Button.svelte` is a design-system primitive. `VoteButtons.svelte` is execution-domain logic. They're siblings.
+3. **components/ mixes UI primitives with domain components.** `ui/Button.svelte` is a design-system primitive. `VoteButtons.svelte` is collaboration-domain logic. They're siblings.
 
 4. **No domain boundary signals.** A new contributor (or future-Claude) can't tell which files belong to which functional area without reading every import.
 
@@ -51,54 +52,93 @@ src/lib/
 
 Restructure `src/lib/` into domain modules aligned with the bounded contexts defined in `CONTEXT.md`.
 
-## Options Considered
-
-### Option A: Domain modules in lib/
+### Target structure
 
 ```
 src/lib/
   itinerary/
-    types.ts          Trip, Phase, Day, Item, ChecklistItem, Slot, Rank, ParkingLotScope
-    phase-palette.ts
+    types.ts          Trip, Phase, Day, Item, ItemType, ItemStatus, Slot,
+                      ParkingLotScope, ChecklistItem, ConfirmationCode
     phases.ts
     item-fields.ts
     checklist-templates.ts
-    components/       PhaseColorPicker, InlineQuickAdd, MoveItemSheet, ParkingLotSection
+    components/       InlineQuickAdd, MoveItemSheet, ParkingLotSection,
+                      FlightLookup, PlacesAutocomplete,
+                      CloseoutDayCard, CloseoutItemRow
   collaboration/
-    types.ts          TripMember, MemberRole, PendingInvite, Suggestion, Comment, Notification
-    components/       TripTabs, SubTabs, NotificationBell, VoteButtons(?)
+    types.ts          TripMember, MemberRole, InviteRole, PendingInvite,
+                      Suggestion, SuggestionStatus, SuggestionTargetType,
+                      Comment, Notification, NotificationType, Vote
+    components/       VoteButtons, NotificationBell
   money/
-    types.ts          Expense, Settlement, Budget, SplitData, ExpenseCategory
+    types.ts          Expense, ExpenseCategory, SplitMode, SplitData,
+                      SplitDataEqual, SplitDataByAmount, Settlement,
+                      BudgetMode, BudgetCategory, TripBudget
     debt-simplify.ts
-    components/       (none currently -- expense UI is route-level)
-  execution/
-    types.ts          Vote, VaultEntry, VaultEntryDecrypted, ItemStatus
+  trip-mode/
+    types.ts          (created empty — populated with NowState, OngoingState
+                      as v3 derived types are built)
     trip-mode.ts
-    vault-password.ts
-    crypto.ts
-    components/       TripModeCard, NowDivider, CloseoutDayCard, CloseoutItemRow
+    components/       NowDivider, TripModeCard
   portability/
     types.ts          TripExport
     export.ts
     import.ts
-    components/       (none currently)
-  ui/                 (unchanged -- pure design system)
-    Button.svelte
-    Card.svelte
-    NavBar.svelte
-    ...all current ui/ components
+    archive-token.ts
+    components/       ArchiveDaySection
+  vault/
+    types.ts          VaultEntry, VaultEntryDecrypted
+    crypto.ts
+    vault-password.ts
+  ui/
+    Button.svelte, Card.svelte, NavBar.svelte, SubTabs.svelte, ...
+    PhaseChip.svelte, Pill.svelte, SectionH.svelte, TypeIcon.svelte
+    Avatar.svelte, BottomSheet.svelte, Toast.svelte
     Skeleton.svelte
     skeletons/        DayItemSkeleton, TripCardSkeleton, etc.
   shell/
     pb.ts
+    format.ts
+    trip-nav.ts
     stores/           toast.ts, reduced-motion.ts
     actions/          validate-form.ts
-    format.ts
-    archive-token.ts
-    trip-nav.ts
-    components/       AppShell, BottomNav, SideRail, ContextRail, DayNav, A2HSBanner, FAB
+    components/       AppShell, BottomNav, TripTabs, ContextRail,
+                      SideRail, DayNav, A2HSBanner, FAB
   types.ts            Re-export barrel: export * from './itinerary/types' etc.
 ```
+
+### Placement rules
+
+These rules determine where new files go:
+
+1. **Does it import domain types and contain domain logic?** → domain module (`itinerary/`, `collaboration/`, `money/`, `trip-mode/`, `portability/`)
+2. **Is it a technical capability with no domain dependency?** → standalone module (`vault/`)
+3. **Is it a generic UI primitive usable without trip/item/member knowledge?** → `ui/`
+4. **Is it app chrome, navigation, or infrastructure?** → `shell/`
+5. **When in doubt:** check what types the file imports. The import graph determines the module, not the UI shape.
+
+### Files excluded from migration
+
+- `phase-palette.ts` — deleted during v3 (phase colors removed per CONTEXT.md)
+- `PhaseColorPicker.svelte` — deleted during v3 (same reason)
+- `date-math.test.ts` — standalone test mirroring backend hook logic, not a lib file
+
+### v3 component destinations
+
+These components don't exist yet but are planned for v3. When built, they go here:
+
+| Component | Module |
+|-----------|--------|
+| NowCard, UpNextCard, LaterRow, QuickActions, DayWrapCard | `trip-mode/components/` |
+| OngoingCard, UntimedItem, AnchoredItem, TripDayItem, TimelineSection | `itinerary/components/` |
+| PlanningBottomNav, TripBottomNav, TripModeNavBar, SyncDot | `shell/components/` |
+| CatGlyph, CatIconCircleV3 | `ui/` |
+
+## Options Considered
+
+### Option A: Domain modules in lib/ (chosen)
+
+See target structure above.
 
 | Dimension | Assessment |
 |-----------|------------|
@@ -110,33 +150,18 @@ src/lib/
 **Pros:**
 - Domain boundaries become visible in the file tree
 - types.ts splits into focused, smaller files
-- New features have a clear "home"
+- New features have a clear "home" via placement rules
 - Aligns with CONTEXT.md bounded contexts
 - Each module is independently testable
 
 **Cons:**
 - Every `$lib/types` import (63 across the codebase) needs updating or a barrel re-export
 - Deeper nesting (2 levels instead of 1)
-- Some components straddle domains (VoteButtons could be collaboration or execution)
 - Churn in git blame
 
 ### Option B: Keep flat, split types only
 
 Split `types.ts` into per-domain type files but leave everything else flat.
-
-```
-src/lib/
-  types/
-    itinerary.ts
-    collaboration.ts
-    money.ts
-    execution.ts
-    portability.ts
-    index.ts          barrel re-export
-  components/         (unchanged)
-  utils/              (unchanged)
-  ...
-```
 
 | Dimension | Assessment |
 |-----------|------------|
@@ -190,7 +215,10 @@ The key risk with Option A is import churn. Mitigated by:
 2. [ ] Move type definitions into per-module types.ts files
 3. [ ] Move utility files into their domain modules
 4. [ ] Move domain-specific components into their domain modules
-5. [ ] Consolidate skeletons under ui/
-6. [ ] Update all imports (or verify barrel re-exports cover them)
-7. [ ] Run `pnpm check` + `pnpm test` + `pnpm test:e2e` to verify no breakage
-8. [ ] Update `.wolf/anatomy.md` with new file locations
+5. [ ] Move shell components (AppShell, BottomNav, TripTabs, ContextRail, SideRail, DayNav, A2HSBanner, FAB) into shell/components/
+6. [ ] Move SubTabs into ui/
+7. [ ] Consolidate skeletons under ui/
+8. [ ] Delete phase-palette.ts and PhaseColorPicker.svelte (or defer to v3)
+9. [ ] Update all imports (or verify barrel re-exports cover them)
+10. [ ] Run `pnpm check` + `pnpm test` + `pnpm test:e2e` to verify no breakage
+11. [ ] Update `.wolf/anatomy.md` with new file locations

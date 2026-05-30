@@ -1,6 +1,6 @@
 import type { Handle } from '@sveltejs/kit';
 import { dev } from '$app/environment';
-import { createPb } from '$lib/pb';
+import { createPb } from '$lib/shell/pb';
 import type { User } from '$lib/types';
 
 export const handle: Handle = async ({ event, resolve }) => {

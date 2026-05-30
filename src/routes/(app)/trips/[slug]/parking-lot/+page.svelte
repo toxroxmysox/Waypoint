@@ -1,6 +1,6 @@
 <script lang="ts">
-	import NavBar from '$lib/components/ui/NavBar.svelte';
-	import ParkingLotSection from '$lib/components/ParkingLotSection.svelte';
+	import NavBar from '$lib/ui/NavBar.svelte';
+	import ParkingLotSection from '$lib/itinerary/components/ParkingLotSection.svelte';
 
 	let { data } = $props();
 </script>

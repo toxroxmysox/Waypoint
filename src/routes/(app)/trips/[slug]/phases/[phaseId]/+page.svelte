@@ -2,15 +2,15 @@
 	import { enhance } from '$app/forms';
 	import { untrack } from 'svelte';
 	import type { Day } from '$lib/types';
-	import NavBar from '$lib/components/ui/NavBar.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
-	import SectionH from '$lib/components/ui/SectionH.svelte';
-	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
-	import PhaseColorPicker from '$lib/components/PhaseColorPicker.svelte';
+	import NavBar from '$lib/ui/NavBar.svelte';
+	import Card from '$lib/ui/Card.svelte';
+	import Button from '$lib/ui/Button.svelte';
+	import SectionH from '$lib/ui/SectionH.svelte';
+	import TypeIcon from '$lib/ui/TypeIcon.svelte';
+	import PhaseColorPicker from '$lib/itinerary/components/PhaseColorPicker.svelte';
 	import { phasePalette } from '$lib/utils/phase-palette';
-	import { toast } from '$lib/stores/toast';
-	import { titleCase } from '$lib/utils/format';
+	import { toast } from '$lib/shell/stores/toast';
+	import { titleCase } from '$lib/shell/format';
 
 	let { data, form } = $props();
 

@@ -1,17 +1,17 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import type { Item, Slot } from '$lib/types';
-	import NavBar from '$lib/components/ui/NavBar.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
-	import Pill from '$lib/components/ui/Pill.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
-	import SectionH from '$lib/components/ui/SectionH.svelte';
-	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
-	import FAB from '$lib/components/ui/FAB.svelte';
-	import { toast } from '$lib/stores/toast';
-	import DayNav from '$lib/components/ui/DayNav.svelte';
-	import PhaseChip from '$lib/components/ui/PhaseChip.svelte';
-	import { titleCase, formatTime } from '$lib/utils/format';
+	import NavBar from '$lib/ui/NavBar.svelte';
+	import Card from '$lib/ui/Card.svelte';
+	import Pill from '$lib/ui/Pill.svelte';
+	import Button from '$lib/ui/Button.svelte';
+	import SectionH from '$lib/ui/SectionH.svelte';
+	import TypeIcon from '$lib/ui/TypeIcon.svelte';
+	import FAB from '$lib/shell/components/FAB.svelte';
+	import { toast } from '$lib/shell/stores/toast';
+	import DayNav from '$lib/shell/components/DayNav.svelte';
+	import PhaseChip from '$lib/ui/PhaseChip.svelte';
+	import { titleCase, formatTime } from '$lib/shell/format';
 
 	let { data, form } = $props();
 

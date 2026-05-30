@@ -1,13 +1,13 @@
 <script lang="ts">
 	import type { Item, Slot } from '$lib/types';
-	import NavBar from '$lib/components/ui/NavBar.svelte';
-	import SubTabs from '$lib/components/SubTabs.svelte';
-	import TripModeCard from '$lib/components/TripModeCard.svelte';
-	import NowDivider from '$lib/components/NowDivider.svelte';
-	import SectionH from '$lib/components/ui/SectionH.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
-	import NotificationBell from '$lib/components/ui/NotificationBell.svelte';
-	import { findNextItem, parseDateTime } from '$lib/utils/trip-mode';
+	import NavBar from '$lib/ui/NavBar.svelte';
+	import SubTabs from '$lib/ui/SubTabs.svelte';
+	import TripModeCard from '$lib/trip-mode/components/TripModeCard.svelte';
+	import NowDivider from '$lib/trip-mode/components/NowDivider.svelte';
+	import SectionH from '$lib/ui/SectionH.svelte';
+	import Card from '$lib/ui/Card.svelte';
+	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
+	import { findNextItem, parseDateTime } from '$lib/trip-mode/trip-mode';
 	import { untrack } from 'svelte';
 	import type { Notification } from '$lib/types';
 
