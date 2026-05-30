@@ -116,10 +116,13 @@ describe('getFieldConfig', () => {
 	});
 
 	describe('labels', () => {
-		it('typeLabel matches itemTypeLabels', () => {
+		it('typeLabel matches itemTypeLabels for every type', () => {
 			expect(getFieldConfig('lodging').labels.typeLabel).toBe('Lodging');
 			expect(getFieldConfig('transportation').labels.typeLabel).toBe('Transportation');
+			expect(getFieldConfig('activity').labels.typeLabel).toBe('Activity');
+			expect(getFieldConfig('meal').labels.typeLabel).toBe('Meal');
 			expect(getFieldConfig('note').labels.typeLabel).toBe('Note');
+			expect(getFieldConfig('checklist').labels.typeLabel).toBe('Checklist');
 		});
 
 		it('subtypeLabel describes the subtype field', () => {
