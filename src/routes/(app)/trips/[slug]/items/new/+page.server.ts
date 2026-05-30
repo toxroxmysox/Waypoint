@@ -1,7 +1,7 @@
 import { fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Day, TripMember, Slot } from '$lib/types';
-import { timeToDatetime, datetimeToTime } from '$lib/utils/format';
+import { timeToDatetime, datetimeToTime } from '$lib/shell/format';
 
 const VALID_SLOTS: Slot[] = ['morning', 'afternoon', 'evening', 'anytime'];
 const PB_BASE = process.env.PUBLIC_PB_URL || 'http://127.0.0.1:8090';

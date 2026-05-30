@@ -1,7 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import type { TripMember } from '$lib/types';
-import { verifyVaultPassword } from '$lib/utils/vault-password';
+import { verifyVaultPassword } from '$lib/vault/vault-password';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!locals.user) throw error(401, 'Not authenticated');

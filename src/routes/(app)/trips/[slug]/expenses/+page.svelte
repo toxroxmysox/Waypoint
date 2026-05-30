@@ -1,20 +1,20 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { validateForm } from '$lib/actions/validate-form';
+	import { validateForm } from '$lib/shell/actions/validate-form';
 	import { untrack } from 'svelte';
-	import NavBar from '$lib/components/ui/NavBar.svelte';
-	import SubTabs from '$lib/components/SubTabs.svelte';
-	import NotificationBell from '$lib/components/ui/NotificationBell.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
-	import FAB from '$lib/components/ui/FAB.svelte';
-	import BottomSheet from '$lib/components/ui/BottomSheet.svelte';
-	import { simplifyDebts } from '$lib/utils/debt-simplify';
-	import { titleCase } from '$lib/utils/format';
-	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
+	import NavBar from '$lib/ui/NavBar.svelte';
+	import SubTabs from '$lib/ui/SubTabs.svelte';
+	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
+	import Button from '$lib/ui/Button.svelte';
+	import Card from '$lib/ui/Card.svelte';
+	import FAB from '$lib/shell/components/FAB.svelte';
+	import BottomSheet from '$lib/ui/BottomSheet.svelte';
+	import { simplifyDebts } from '$lib/money/debt-simplify';
+	import { titleCase } from '$lib/shell/format';
+	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import type { Notification, TripMember, Expense, ExpenseCategory, BudgetCategory, ItemType } from '$lib/types';
-	import { toast } from '$lib/stores/toast';
-	import type { DebtEdge } from '$lib/utils/debt-simplify';
+	import { toast } from '$lib/shell/stores/toast';
+	import type { DebtEdge } from '$lib/money/debt-simplify';
 
 	let { data, form } = $props();
 

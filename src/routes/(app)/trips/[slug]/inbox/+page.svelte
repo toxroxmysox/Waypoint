@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import NavBar from '$lib/components/ui/NavBar.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
-	import Pill from '$lib/components/ui/Pill.svelte';
+	import NavBar from '$lib/ui/NavBar.svelte';
+	import Card from '$lib/ui/Card.svelte';
+	import Button from '$lib/ui/Button.svelte';
+	import Pill from '$lib/ui/Pill.svelte';
 	import type { Suggestion } from '$lib/types';
-	import { titleCase } from '$lib/utils/format';
-	import { toast } from '$lib/stores/toast';
+	import { titleCase } from '$lib/shell/format';
+	import { toast } from '$lib/shell/stores/toast';
 
 	let { data, form } = $props();
 

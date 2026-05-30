@@ -1,7 +1,7 @@
 <script lang="ts">
-	import NavBar from '$lib/components/ui/NavBar.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
-	import NotificationBell from '$lib/components/ui/NotificationBell.svelte';
+	import NavBar from '$lib/ui/NavBar.svelte';
+	import Card from '$lib/ui/Card.svelte';
+	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
 	import { untrack } from 'svelte';
 	import type { Notification } from '$lib/types';
 

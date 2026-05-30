@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import ArchiveDaySection from '$lib/components/ArchiveDaySection.svelte';
-	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
-	import { titleCase } from '$lib/utils/format';
+	import ArchiveDaySection from '$lib/portability/components/ArchiveDaySection.svelte';
+	import TypeIcon from '$lib/ui/TypeIcon.svelte';
+	import { titleCase } from '$lib/shell/format';
 
 	let { data } = $props();
 

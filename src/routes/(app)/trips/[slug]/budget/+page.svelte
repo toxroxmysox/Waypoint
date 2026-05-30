@@ -1,15 +1,15 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { untrack } from 'svelte';
-	import NavBar from '$lib/components/ui/NavBar.svelte';
-	import SubTabs from '$lib/components/SubTabs.svelte';
-	import NotificationBell from '$lib/components/ui/NotificationBell.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
-	import { titleCase } from '$lib/utils/format';
-	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
+	import NavBar from '$lib/ui/NavBar.svelte';
+	import SubTabs from '$lib/ui/SubTabs.svelte';
+	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
+	import Button from '$lib/ui/Button.svelte';
+	import Card from '$lib/ui/Card.svelte';
+	import { titleCase } from '$lib/shell/format';
+	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import type { Notification, BudgetCategory, ExpenseCategory, ItemType } from '$lib/types';
-	import { toast } from '$lib/stores/toast';
+	import { toast } from '$lib/shell/stores/toast';
 
 	let { data, form } = $props();
 

@@ -1,7 +1,7 @@
 import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Item, ChecklistItem, TripMember } from '$lib/types';
-import { timeToDatetime, datetimeToTime } from '$lib/utils/format';
+import { timeToDatetime, datetimeToTime } from '$lib/shell/format';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, phases, days } = await parent();

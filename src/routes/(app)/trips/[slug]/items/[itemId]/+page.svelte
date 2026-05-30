@@ -1,18 +1,18 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { itemFieldConfig, itemTypeLabels } from '$lib/config/item-fields';
-	import NavBar from '$lib/components/ui/NavBar.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
-	import Pill from '$lib/components/ui/Pill.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
-	import SectionH from '$lib/components/ui/SectionH.svelte';
-	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
-	import PhaseChip from '$lib/components/ui/PhaseChip.svelte';
-	import { titleCase, formatTime } from '$lib/utils/format';
-	import { toast } from '$lib/stores/toast';
+	import { itemFieldConfig, itemTypeLabels } from '$lib/itinerary/item-fields';
+	import NavBar from '$lib/ui/NavBar.svelte';
+	import Card from '$lib/ui/Card.svelte';
+	import Pill from '$lib/ui/Pill.svelte';
+	import Button from '$lib/ui/Button.svelte';
+	import SectionH from '$lib/ui/SectionH.svelte';
+	import TypeIcon from '$lib/ui/TypeIcon.svelte';
+	import PhaseChip from '$lib/ui/PhaseChip.svelte';
+	import { titleCase, formatTime } from '$lib/shell/format';
+	import { toast } from '$lib/shell/stores/toast';
 
-	import VoteButtons from '$lib/components/VoteButtons.svelte';
-	import MoveItemSheet from '$lib/components/MoveItemSheet.svelte';
+	import VoteButtons from '$lib/collaboration/components/VoteButtons.svelte';
+	import MoveItemSheet from '$lib/itinerary/components/MoveItemSheet.svelte';
 	import type { Comment } from '$lib/types';
 
 	let { data, form } = $props();

@@ -1,10 +1,10 @@
 <script lang="ts">
 	import type { Item } from '$lib/types';
-	import NavBar from '$lib/components/ui/NavBar.svelte';
-	import SubTabs from '$lib/components/SubTabs.svelte';
-	import TripModeCard from '$lib/components/TripModeCard.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
-	import NotificationBell from '$lib/components/ui/NotificationBell.svelte';
+	import NavBar from '$lib/ui/NavBar.svelte';
+	import SubTabs from '$lib/ui/SubTabs.svelte';
+	import TripModeCard from '$lib/trip-mode/components/TripModeCard.svelte';
+	import Card from '$lib/ui/Card.svelte';
+	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
 	import { untrack } from 'svelte';
 	import type { Notification } from '$lib/types';
 

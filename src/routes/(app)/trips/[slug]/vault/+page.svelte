@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { encryptText, decryptText } from '$lib/utils/crypto';
-	import NavBar from '$lib/components/ui/NavBar.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
-	import SectionH from '$lib/components/ui/SectionH.svelte';
-	import BottomSheet from '$lib/components/ui/BottomSheet.svelte';
+	import { encryptText, decryptText } from '$lib/vault/crypto';
+	import NavBar from '$lib/ui/NavBar.svelte';
+	import Card from '$lib/ui/Card.svelte';
+	import Button from '$lib/ui/Button.svelte';
+	import SectionH from '$lib/ui/SectionH.svelte';
+	import BottomSheet from '$lib/ui/BottomSheet.svelte';
 	import type { VaultEntryDecrypted } from '$lib/types';
-	import { toast } from '$lib/stores/toast';
+	import { toast } from '$lib/shell/stores/toast';
 
 	let { data, form } = $props();
 

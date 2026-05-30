@@ -1,6 +1,6 @@
 import type { RequestHandler } from './$types';
 import type { Trip, Phase, Day, Item, TripBudget } from '$lib/types';
-import { buildTripExport } from '$lib/utils/export';
+import { buildTripExport } from '$lib/portability/export';
 
 export const GET: RequestHandler = async ({ params, locals }) => {
 	if (!locals.user) {

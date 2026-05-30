@@ -1,9 +1,9 @@
 <script lang="ts">
-	import NavBar from '$lib/components/ui/NavBar.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
-	import Pill from '$lib/components/ui/Pill.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
-	import FAB from '$lib/components/ui/FAB.svelte';
+	import NavBar from '$lib/ui/NavBar.svelte';
+	import Card from '$lib/ui/Card.svelte';
+	import Pill from '$lib/ui/Pill.svelte';
+	import Button from '$lib/ui/Button.svelte';
+	import FAB from '$lib/shell/components/FAB.svelte';
 
 	let { data } = $props();
 

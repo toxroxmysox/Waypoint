@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { untrack } from 'svelte';
-	import NavBar from '$lib/components/ui/NavBar.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
-	import Pill from '$lib/components/ui/Pill.svelte';
+	import NavBar from '$lib/ui/NavBar.svelte';
+	import Card from '$lib/ui/Card.svelte';
+	import Button from '$lib/ui/Button.svelte';
+	import Pill from '$lib/ui/Pill.svelte';
 
 	let { data, form } = $props();
 
