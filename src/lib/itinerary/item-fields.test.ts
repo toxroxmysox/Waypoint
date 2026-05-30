@@ -190,3 +190,25 @@ describe('buildEmptyFormData', () => {
 		expect(noteData.subtype).toBe(''); // no subtypes
 	});
 });
+
+describe('config exhaustiveness', () => {
+	it('every ItemType has a complete config with all four sections', () => {
+		for (const type of ALL_TYPES) {
+			const config = getFieldConfig(type);
+			expect(config.labels.typeLabel).toBeTruthy();
+			expect(config.visibility).toBeDefined();
+			expect(config.defaults).toBeDefined();
+			expect(config.validation).toBeDefined();
+		}
+	});
+
+	it('buildEmptyFormData produces valid form data for every type', () => {
+		for (const type of ALL_TYPES) {
+			const data = buildEmptyFormData(type);
+			expect(data.type).toBe(type);
+			expect(data.title).toBe('');
+			expect(typeof data.slot).toBe('string');
+			expect(typeof data.status).toBe('string');
+		}
+	});
+});
