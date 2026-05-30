@@ -1,4 +1,5 @@
 import type { ItemType } from '$lib/types';
+import type { ItemFormData } from './components/ItemFormFields';
 import { titleCase } from '$lib/shell/format';
 
 export interface FieldVisibility {
@@ -151,6 +152,33 @@ export function getFieldConfig(type: ItemType): FieldConfig {
 			subtypeLabel: 'Type',
 			subtypeOptions: subtypes.map((v) => ({ value: v, label: titleCase(v) }))
 		}
+	};
+}
+
+export function buildEmptyFormData(type: ItemType): ItemFormData {
+	const { defaults } = getFieldConfig(type);
+	return {
+		type,
+		subtype: defaults.subtype,
+		title: '',
+		description: '',
+		day: '',
+		slot: defaults.slot,
+		phase: '',
+		start_time: '',
+		end_time: '',
+		location_name: '',
+		location_address: '',
+		location_coords: null,
+		google_place_id: '',
+		booked: defaults.booked,
+		reservation_url: '',
+		free_cancellation: defaults.free_cancellation,
+		cost_estimate_usd: defaults.cost_estimate_usd,
+		cost_actual_usd: defaults.cost_actual_usd,
+		confirmation_codes: [],
+		assigned_to: [],
+		status: defaults.status
 	};
 }
 

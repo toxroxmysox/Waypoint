@@ -35,26 +35,3 @@ export interface ItemFormContext {
 	preselectedPhase?: string;
 }
 
-export const emptyItemFormData: ItemFormData = {
-	type: 'activity',
-	subtype: '',
-	title: '',
-	description: '',
-	day: '',
-	slot: 'anytime',
-	phase: '',
-	start_time: '',
-	end_time: '',
-	location_name: '',
-	location_address: '',
-	location_coords: null,
-	google_place_id: '',
-	booked: false,
-	reservation_url: '',
-	free_cancellation: false,
-	cost_estimate_usd: 0,
-	cost_actual_usd: 0,
-	confirmation_codes: [],
-	assigned_to: [],
-	status: 'planned'
-};

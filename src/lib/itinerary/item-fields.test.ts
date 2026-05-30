@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getFieldConfig } from './item-fields';
+import { getFieldConfig, buildEmptyFormData } from './item-fields';
 import type { ItemType } from '$lib/types';
 
 const ALL_TYPES: ItemType[] = ['lodging', 'transportation', 'activity', 'meal', 'note', 'checklist'];
@@ -142,5 +142,51 @@ describe('getFieldConfig', () => {
 			const { labels } = getFieldConfig('note');
 			expect(labels.subtypeOptions).toHaveLength(0);
 		});
+	});
+});
+
+describe('buildEmptyFormData', () => {
+	it('sets type to the given type', () => {
+		const data = buildEmptyFormData('meal');
+		expect(data.type).toBe('meal');
+	});
+
+	it('uses defaults from config: slot, status, booked, costs', () => {
+		const data = buildEmptyFormData('meal');
+		expect(data.slot).toBe('anytime');
+		expect(data.status).toBe('planned');
+		expect(data.booked).toBe(false);
+		expect(data.free_cancellation).toBe(false);
+		expect(data.cost_estimate_usd).toBe(0);
+		expect(data.cost_actual_usd).toBe(0);
+	});
+
+	it('initializes string fields as empty strings', () => {
+		const data = buildEmptyFormData('activity');
+		expect(data.title).toBe('');
+		expect(data.description).toBe('');
+		expect(data.day).toBe('');
+		expect(data.phase).toBe('');
+		expect(data.start_time).toBe('');
+		expect(data.end_time).toBe('');
+		expect(data.location_name).toBe('');
+		expect(data.location_address).toBe('');
+		expect(data.google_place_id).toBe('');
+		expect(data.reservation_url).toBe('');
+	});
+
+	it('initializes arrays and objects correctly', () => {
+		const data = buildEmptyFormData('lodging');
+		expect(data.confirmation_codes).toEqual([]);
+		expect(data.assigned_to).toEqual([]);
+		expect(data.location_coords).toBeNull();
+	});
+
+	it('subtype comes from config defaults', () => {
+		const mealData = buildEmptyFormData('meal');
+		expect(mealData.subtype).toBe('breakfast'); // first meal subtype
+
+		const noteData = buildEmptyFormData('note');
+		expect(noteData.subtype).toBe(''); // no subtypes
 	});
 });
