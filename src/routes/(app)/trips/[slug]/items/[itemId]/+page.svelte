@@ -1,15 +1,15 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { itemFieldConfig, itemTypeLabels } from '$lib/itinerary/item-fields';
+	import { itemTypeLabels } from '$lib/itinerary/item-fields';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
 	import Button from '$lib/ui/Button.svelte';
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
-	import PhaseChip from '$lib/ui/PhaseChip.svelte';
-	import { titleCase, formatTime } from '$lib/shell/format';
+	import { titleCase } from '$lib/shell/format';
 	import { toast } from '$lib/shell/stores/toast';
+	import ItemForm from '$lib/itinerary/components/ItemForm.svelte';
 
 	import VoteButtons from '$lib/collaboration/components/VoteButtons.svelte';
 	import MoveItemSheet from '$lib/itinerary/components/MoveItemSheet.svelte';
@@ -17,7 +17,6 @@
 
 	let { data, form } = $props();
 
-	let fields = $derived(itemFieldConfig[data.item.type]);
 	let confirmDelete = $state(false);
 	let deleting = $state(false);
 	let moveSheetOpen = $state(false);
@@ -154,38 +153,37 @@
 		</div>
 	</Card>
 
-	<!-- Schedule -->
-	{#if data.itemDay || data.itemPhase || (fields.times && data.item.start_time)}
-		<Card>
-			<div class="p-4 space-y-2">
-				<SectionH>Schedule</SectionH>
-				{#if data.itemDay}
-					<p class="text-ink text-sm">
-						{new Date(data.itemDay.date.replace(' ', 'T')).toLocaleDateString('en-US', {
-							weekday: 'long',
-							month: 'long',
-							day: 'numeric',
-							timeZone: 'UTC'
-						})}
-						<span class="text-ink-muted">· {titleCase(data.item.slot)}</span>
-					</p>
-				{/if}
-				{#if data.itemPhase}
-					<p class="text-ink-muted flex items-center gap-1.5 text-sm">
-						<PhaseChip name={data.itemPhase.name} color={data.itemPhase.color} size={16} />
-						{data.itemPhase.name}
-					</p>
-				{/if}
-				{#if fields.times && data.item.start_time}
-					<p class="font-mono text-ink text-sm">
-						{formatTime(data.item.start_time)}{data.item.end_time
-							? ` – ${formatTime(data.item.end_time)}`
-							: ''}
-					</p>
-				{/if}
-			</div>
-		</Card>
-	{/if}
+	<ItemForm
+		mode="view"
+		initialData={{
+			type: data.item.type,
+			subtype: data.item.subtype ?? '',
+			title: data.item.title,
+			description: '',
+			day: data.item.day ?? '',
+			slot: data.item.slot ?? 'anytime',
+			phase: data.item.phase ?? '',
+			start_time: data.item.start_time ?? '',
+			end_time: data.item.end_time ?? '',
+			location_name: data.item.location_name ?? '',
+			location_address: data.item.location_address ?? '',
+			location_coords: data.item.location_coords ?? null,
+			google_place_id: data.item.google_place_id ?? '',
+			booked: data.item.booked ?? false,
+			reservation_url: data.item.reservation_url ?? '',
+			free_cancellation: data.item.free_cancellation ?? false,
+			cost_estimate_usd: data.item.cost_estimate_usd ?? 0,
+			cost_actual_usd: data.item.cost_actual_usd ?? 0,
+			confirmation_codes: data.item.confirmation_codes ?? [],
+			assigned_to: data.item.assigned_to ?? [],
+			status: data.item.status ?? 'planned'
+		}}
+		context={{
+			days: data.days ?? [],
+			phases: data.phases ?? [],
+			members: data.members
+		}}
+	/>
 
 	{#if data.alternates.length > 0}
 		<Card>
@@ -211,80 +209,6 @@
 						<span class="text-ink-muted text-[11px]">Rank {alt.rank}</span>
 					</a>
 				{/each}
-			</div>
-		</Card>
-	{/if}
-
-	<!-- Location -->
-	{#if fields.location && (data.item.location_name || data.item.location_address)}
-		<Card>
-			<div class="p-4 space-y-1">
-				<SectionH>Location</SectionH>
-				{#if data.item.location_name}
-					<p class="text-ink text-sm font-semibold">{data.item.location_name}</p>
-				{/if}
-				{#if data.item.location_address}
-					<p class="text-ink-soft text-sm">{data.item.location_address}</p>
-				{/if}
-			</div>
-		</Card>
-	{/if}
-
-	<!-- Booking -->
-	{#if fields.booking && (data.item.booked || data.item.reservation_url || data.item.confirmation_codes.length > 0)}
-		<Card>
-			<div class="p-4 space-y-2">
-				<SectionH>Booking</SectionH>
-				{#if data.item.reservation_url}
-					<a
-						href={data.item.reservation_url}
-						target="_blank"
-						rel="noopener"
-						class="text-sky block truncate text-sm hover:underline"
-					>
-						{data.item.reservation_url}
-					</a>
-				{/if}
-				{#if data.item.free_cancellation}
-					<p class="text-moss text-xs font-semibold">Free cancellation</p>
-				{/if}
-				{#if data.item.confirmation_codes.length > 0}
-					<div class="space-y-1">
-						{#each data.item.confirmation_codes as code}
-							<div class="bg-surface-2 flex items-center justify-between rounded px-2 py-1.5">
-								<span class="text-ink-muted text-xs uppercase tracking-wide">{code.label}</span>
-								<span class="font-mono text-ink text-sm">{code.value}</span>
-							</div>
-						{/each}
-					</div>
-				{/if}
-			</div>
-		</Card>
-	{/if}
-
-	<!-- Costs -->
-	{#if fields.costs && (data.item.cost_estimate_usd || data.item.cost_actual_usd)}
-		<Card>
-			<div class="p-4">
-				<SectionH>Costs</SectionH>
-				<div class="mt-2 grid grid-cols-2 gap-4">
-					{#if data.item.cost_estimate_usd}
-						<div>
-							<p class="text-ink-muted text-[11px] uppercase tracking-wide">Estimate</p>
-							<p class="font-mono text-ink text-sm font-semibold">
-								${data.item.cost_estimate_usd.toFixed(2)}
-							</p>
-						</div>
-					{/if}
-					{#if data.item.cost_actual_usd}
-						<div>
-							<p class="text-ink-muted text-[11px] uppercase tracking-wide">Actual</p>
-							<p class="font-mono text-ink text-sm font-semibold">
-								${data.item.cost_actual_usd.toFixed(2)}
-							</p>
-						</div>
-					{/if}
-				</div>
 			</div>
 		</Card>
 	{/if}
@@ -410,20 +334,6 @@
 					/>
 					<Button type="submit" variant="primary" size="sm">Add</Button>
 				</form>
-			</div>
-		</Card>
-	{/if}
-
-	<!-- Assigned to -->
-	{#if data.item.assigned_to.length > 0}
-		<Card>
-			<div class="p-4">
-				<SectionH>Assigned to</SectionH>
-				<div class="mt-2 flex flex-wrap gap-2">
-					{#each data.item.assigned_to as memberId}
-						<Pill variant="default" size="md">{memberName(memberId)}</Pill>
-					{/each}
-				</div>
 			</div>
 		</Card>
 	{/if}
