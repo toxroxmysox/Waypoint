@@ -14,7 +14,7 @@ export interface FieldVisibility {
 	parentItem: boolean;
 }
 
-export const itemFieldConfig: Record<ItemType, FieldVisibility> = {
+const itemFieldConfig: Record<ItemType, FieldVisibility> = {
 	lodging: {
 		subtype: true,
 		subtypes: ['hotel', 'airbnb', 'resort', 'other'],
@@ -83,7 +83,7 @@ export const itemFieldConfig: Record<ItemType, FieldVisibility> = {
 	}
 };
 
-export const itemTypeLabels: Record<ItemType, string> = {
+const itemTypeLabels: Record<ItemType, string> = {
 	lodging: 'Lodging',
 	transportation: 'Transportation',
 	activity: 'Activity',
