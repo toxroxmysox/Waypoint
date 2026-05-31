@@ -39,7 +39,7 @@ Terms are authoritative. Use these in code, issues, and conversation. Synonyms i
 | **Claim** | The act of a new user taking ownership of a placeholder member record that matches their email. | merge |
 | **Planning Mode** | The default UI mode for building an itinerary: day view, drag-reorder, phase management, full item editing. Available in all trip statuses. 5-tab navigation (Itinerary, Money, Activity, Vault, More). | edit mode |
 | **Trip Mode** | The live-trip UI mode: what's happening now, today timeline, quick actions. Available only when trip status is active. Default mode for active trips. User can switch to Planning Mode and back. 4-tab navigation (Now, Today, Add, Vault) with clay accent. | active mode, live view |
-| **Design Tokens** | Semantic CSS custom properties in layout.css: colors (ink, paper, moss, clay, gold, sky, error), fonts (Fraunces display, Inter body, JetBrains Mono mono), shadows, z-index, breakpoints. | |
+| **Design Tokens** | Semantic CSS custom properties in layout.css: colors (ink, paper, moss, clay, gold, sky, error), fonts (Fraunces display, Inter body, JetBrains Mono mono), shadows, z-index, breakpoints. Full reference: `docs/design-system.md`. | |
 
 ## Bounded Contexts
 
