@@ -301,6 +301,44 @@ routerAdd('POST', '/api/invites/accept', (e) => {
 		});
 	}
 
+	// Name-only placeholder claim path: user explicitly selected a placeholder
+	// from the browse-and-claim UI during invite acceptance.
+	const claimPlaceholderId = (info.body && info.body['claim_placeholder']) || '';
+	if (claimPlaceholderId) {
+		let target;
+		try {
+			target = e.app.findRecordById('trip_members', claimPlaceholderId);
+		} catch (_) {
+			throw new BadRequestError('Placeholder not found');
+		}
+
+		// Validate: belongs to the same trip.
+		if (target.getString('trip') !== tripId) {
+			throw new BadRequestError('Placeholder does not belong to this trip');
+		}
+		// Validate: actually unclaimed (no user, no placeholder_email).
+		if (target.getString('user')) {
+			throw new BadRequestError('This placeholder has already been claimed');
+		}
+		if (target.getString('placeholder_email')) {
+			throw new BadRequestError('This placeholder is managed by email matching');
+		}
+
+		const joinedAt =
+			new Date().toISOString().replace('T', ' ').replace('Z', '') + 'Z';
+		target.set('user', auth.id);
+		target.set('joined_at', joinedAt);
+		target.set('placeholder_name', '');
+		e.app.save(target);
+
+		e.app.delete(invite);
+		return e.json(200, {
+			trip_id: tripId,
+			member_id: target.id,
+			already_member: false
+		});
+	}
+
 	// Placeholder-claim path: if there's a placeholder row matching this email,
 	// claim it (set user, clear placeholder fields, set joined_at). Otherwise
 	// create a fresh trip_members row with the invited role.
