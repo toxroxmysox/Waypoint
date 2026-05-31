@@ -65,7 +65,7 @@
 			<div class="mt-1 flex flex-wrap items-center gap-2">
 				{#each data.dayPhases as p, idx}
 					<div class="flex items-center gap-1.5">
-						<PhaseChip name={p.name} color={p.color} size={18} />
+						<PhaseChip name={p.name} size={18} />
 						<span class="text-ink-soft text-sm">{p.name}</span>
 					</div>
 					{#if idx < data.dayPhases.length - 1}

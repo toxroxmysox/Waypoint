@@ -99,7 +99,6 @@ export const actions: Actions = {
 						country_code: phase.country_code,
 						start_date: shiftDate(phase.start_date),
 						end_date: shiftDate(phase.end_date),
-						color: phase.color,
 						order: phase.order
 					});
 					phaseIdMap.set(phase.id, newPhase.id);

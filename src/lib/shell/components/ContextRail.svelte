@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import type { Trip, Phase, Day } from '$lib/types';
-	import { getActiveSection, formatTripDate, sanitizeColor } from '$lib/shell/trip-nav';
+	import { getActiveSection, formatTripDate } from '$lib/shell/trip-nav';
 
 	let {
 		slug,
@@ -95,9 +95,9 @@
 						{#each todayPhases as phase}
 							<span
 								class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
-								style="background-color: {sanitizeColor(phase.color)}20; color: {sanitizeColor(phase.color)}"
+								style="background-color: var(--color-moss-tint); color: var(--color-moss)"
 							>
-								<span class="h-1.5 w-1.5 rounded-full" style="background-color: {sanitizeColor(phase.color)}"></span>
+								<span class="h-1.5 w-1.5 rounded-full" style="background-color: var(--color-moss)"></span>
 								{phase.name}
 							</span>
 						{/each}
@@ -111,7 +111,7 @@
 			<div class="border-line space-y-2 border-b px-5 py-4">
 				<h3 class="text-ink-soft text-xs font-semibold uppercase tracking-wider">Current Phase</h3>
 				<div class="flex items-center gap-2">
-					<span class="h-2.5 w-2.5 rounded-full" style="background-color: {sanitizeColor(currentPhase.color)}"></span>
+					<span class="h-2.5 w-2.5 rounded-full" style="background-color: var(--color-moss)"></span>
 					<span class="text-ink text-sm font-medium">{currentPhase.name}</span>
 				</div>
 				{#if currentPhase.location}
@@ -140,7 +140,7 @@
 						</div>
 						<div class="min-w-0 flex-1">
 							{#if dayPhases.length > 0}
-								<p class="truncate text-xs font-medium" style="color: {sanitizeColor(dayPhases[0].color)}">
+								<p class="text-moss truncate text-xs font-medium">
 									{dayPhases.map(p => p.name).join(' · ')}
 								</p>
 							{:else}
@@ -163,7 +163,7 @@
 				<div class="space-y-1.5 pt-1">
 					{#each phases as phase}
 						<div class="flex items-center gap-2 text-xs">
-							<span class="h-2 w-2 shrink-0 rounded-full" style="background-color: {sanitizeColor(phase.color)}"></span>
+							<span class="h-2 w-2 shrink-0 rounded-full" style="background-color: var(--color-moss)"></span>
 							<span class="text-ink-soft flex-1 truncate">{phase.name}</span>
 							<span class="text-ink-muted">{formatTripDate(phase.start_date)}</span>
 						</div>
@@ -183,7 +183,7 @@
 				<div class="space-y-2 pt-2">
 					{#each phases as phase}
 						<div class="flex items-start gap-2">
-							<span class="mt-1 h-2 w-2 shrink-0 rounded-full" style="background-color: {sanitizeColor(phase.color)}"></span>
+							<span class="mt-1 h-2 w-2 shrink-0 rounded-full" style="background-color: var(--color-moss)"></span>
 							<div class="min-w-0">
 								<p class="text-ink text-xs font-medium">{phase.name}</p>
 								<p class="text-ink-muted text-[11px]">

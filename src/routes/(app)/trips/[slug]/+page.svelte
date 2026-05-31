@@ -108,7 +108,7 @@
 			<section class="space-y-1.5">
 				<div class="flex items-center justify-between">
 					<div class="flex items-center gap-2">
-						<PhaseChip name={phase.name} color={phase.color} size={20} />
+						<PhaseChip name={phase.name} size={20} />
 						<a href="/trips/{data.trip.slug}/phases/{phase.id}" class="text-ink font-semibold hover:underline">{phase.name}</a>
 					</div>
 					<span class="text-ink-muted font-mono text-xs">

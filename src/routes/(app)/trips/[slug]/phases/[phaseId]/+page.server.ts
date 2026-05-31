@@ -46,8 +46,6 @@ export const actions: Actions = {
 		const countryCode = data.get('country_code')?.toString().trim() || '';
 		const startDate = data.get('start_date')?.toString();
 		const endDate = data.get('end_date')?.toString();
-		const color = data.get('color')?.toString() || '#6b7280';
-
 		if (!name) return fail(400, { error: 'Phase name is required.' });
 		if (!startDate || !endDate) return fail(400, { error: 'Start and end dates are required.' });
 		if (new Date(startDate) > new Date(endDate)) {
@@ -68,8 +66,7 @@ export const actions: Actions = {
 				location,
 				country_code: countryCode,
 				start_date: startDate + ' 00:00:00.000Z',
-				end_date: endDate + ' 00:00:00.000Z',
-				color
+				end_date: endDate + ' 00:00:00.000Z'
 			});
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : 'Failed to update phase.';

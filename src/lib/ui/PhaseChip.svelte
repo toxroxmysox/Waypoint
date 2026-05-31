@@ -1,11 +1,9 @@
 <script lang="ts">
 	let {
 		name,
-		color,
 		size = 20
 	}: {
 		name: string;
-		color?: string;
 		size?: 16 | 18 | 20;
 	} = $props();
 
@@ -15,7 +13,7 @@
 
 <span
 	class="inline-flex shrink-0 items-center justify-center rounded-full"
-	style="width: {size}px; height: {size}px; background-color: {color || 'var(--color-ink-muted)'}; font-size: {fontSize}px;"
+	style="width: {size}px; height: {size}px; background-color: var(--color-moss); font-size: {fontSize}px;"
 	aria-label="{name} phase"
 	title={name}
 >
