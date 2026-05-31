@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { findNextItem, isToday, groupItemsByDay } from './trip-mode';
+import { getTripModeState } from './trip-mode';
 import type { Item, Day } from '$lib/types';
 
 function makeItem(overrides: Partial<Item> = {}): Item {
@@ -58,71 +58,101 @@ function makeDay(overrides: Partial<Day> = {}): Day {
 	} as Day;
 }
 
-describe('isToday', () => {
-	it('returns true for matching date', () => {
-		expect(isToday('2026-10-15 00:00:00.000Z', new Date('2026-10-15T14:00:00Z'))).toBe(true);
-	});
+describe('getTripModeState', () => {
+	const oct15 = new Date('2026-10-15T14:00:00Z');
 
-	it('returns false for different date', () => {
-		expect(isToday('2026-10-16 00:00:00.000Z', new Date('2026-10-15T14:00:00Z'))).toBe(false);
-	});
-});
+	describe('now (NowState)', () => {
+		it('identifies today from days list', () => {
+			const days = [
+				makeDay({ id: 'day1', date: '2026-10-15 00:00:00.000Z' }),
+				makeDay({ id: 'day2', date: '2026-10-16 00:00:00.000Z' })
+			];
+			const state = getTripModeState([], days, oct15);
+			expect(state.now.today?.id).toBe('day1');
+		});
 
-describe('findNextItem', () => {
-	it('returns the next upcoming item', () => {
-		const items = [
-			makeItem({ id: 'a', start_time: '2026-10-15 09:00:00.000Z' }),
-			makeItem({ id: 'b', start_time: '2026-10-15 14:00:00.000Z' }),
-			makeItem({ id: 'c', start_time: '2026-10-15 19:00:00.000Z' })
-		];
-		const now = new Date('2026-10-15T12:00:00Z');
-		const next = findNextItem(items, now);
-		expect(next?.id).toBe('b');
-	});
+		it('returns null today when no day matches', () => {
+			const days = [
+				makeDay({ id: 'day1', date: '2026-10-20 00:00:00.000Z' })
+			];
+			const state = getTripModeState([], days, oct15);
+			expect(state.now.today).toBeNull();
+		});
 
-	it('returns null if all items are past', () => {
-		const items = [
-			makeItem({ id: 'a', start_time: '2026-10-15 09:00:00.000Z' }),
-			makeItem({ id: 'b', start_time: '2026-10-15 11:00:00.000Z' })
-		];
-		const now = new Date('2026-10-15T22:00:00Z');
-		expect(findNextItem(items, now)).toBeNull();
-	});
+		it('filters todayItems to only items for today', () => {
+			const days = [
+				makeDay({ id: 'day1', date: '2026-10-15 00:00:00.000Z' }),
+				makeDay({ id: 'day2', date: '2026-10-16 00:00:00.000Z' })
+			];
+			const items = [
+				makeItem({ id: 'a', day: 'day1', slot: 'morning' }),
+				makeItem({ id: 'b', day: 'day2', slot: 'morning' }),
+				makeItem({ id: 'c', day: 'day1', slot: 'evening' })
+			];
+			const state = getTripModeState(items, days, oct15);
+			expect(state.now.todayItems).toHaveLength(2);
+			expect(state.now.todayItems.map(i => i.id)).toEqual(['a', 'c']);
+		});
 
-	it('skips items without start_time', () => {
-		const items = [
-			makeItem({ id: 'a', start_time: '' }),
-			makeItem({ id: 'b', start_time: '2026-10-15 14:00:00.000Z' })
-		];
-		const now = new Date('2026-10-15T12:00:00Z');
-		expect(findNextItem(items, now)?.id).toBe('b');
-	});
+		it('sorts todayItems by slot order then start_time', () => {
+			const days = [makeDay({ id: 'day1', date: '2026-10-15 00:00:00.000Z' })];
+			const items = [
+				makeItem({ id: 'a', day: 'day1', slot: 'evening', start_time: '2026-10-15 19:00:00.000Z' }),
+				makeItem({ id: 'b', day: 'day1', slot: 'morning', start_time: '2026-10-15 09:00:00.000Z' }),
+				makeItem({ id: 'c', day: 'day1', slot: 'morning', start_time: '2026-10-15 10:00:00.000Z' })
+			];
+			const state = getTripModeState(items, days, oct15);
+			expect(state.now.todayItems.map(i => i.id)).toEqual(['b', 'c', 'a']);
+		});
 
-	it('returns null for empty list', () => {
-		expect(findNextItem([], new Date())).toBeNull();
-	});
-});
+		it('finds the next upcoming item by start_time', () => {
+			const days = [makeDay({ id: 'day1', date: '2026-10-15 00:00:00.000Z' })];
+			const items = [
+				makeItem({ id: 'a', day: 'day1', start_time: '2026-10-15 09:00:00.000Z' }),
+				makeItem({ id: 'b', day: 'day1', start_time: '2026-10-15 16:00:00.000Z' }),
+				makeItem({ id: 'c', day: 'day1', start_time: '2026-10-15 19:00:00.000Z' })
+			];
+			const state = getTripModeState(items, days, oct15);
+			expect(state.now.nextItem?.id).toBe('b');
+		});
 
-describe('groupItemsByDay', () => {
-	it('groups items by their day id', () => {
-		const items = [
-			makeItem({ id: 'a', day: 'day1' }),
-			makeItem({ id: 'b', day: 'day2' }),
-			makeItem({ id: 'c', day: 'day1' })
-		];
-		const days = [
-			makeDay({ id: 'day1', date: '2026-10-15 00:00:00.000Z' }),
-			makeDay({ id: 'day2', date: '2026-10-16 00:00:00.000Z' })
-		];
-		const grouped = groupItemsByDay(items, days);
-		expect(grouped).toHaveLength(2);
-		expect(grouped[0].day.id).toBe('day1');
-		expect(grouped[0].items).toHaveLength(2);
-		expect(grouped[1].day.id).toBe('day2');
-		expect(grouped[1].items).toHaveLength(1);
-	});
+		it('returns null nextItem when all items are past', () => {
+			const days = [makeDay({ id: 'day1', date: '2026-10-15 00:00:00.000Z' })];
+			const items = [
+				makeItem({ id: 'a', day: 'day1', start_time: '2026-10-15 09:00:00.000Z' }),
+				makeItem({ id: 'b', day: 'day1', start_time: '2026-10-15 11:00:00.000Z' })
+			];
+			const state = getTripModeState(items, days, oct15);
+			expect(state.now.nextItem).toBeNull();
+		});
 
-	it('returns empty array for no items', () => {
-		expect(groupItemsByDay([], [])).toEqual([]);
+		it('isPast returns true for items with end_time before now', () => {
+			const days = [makeDay({ id: 'day1', date: '2026-10-15 00:00:00.000Z' })];
+			const items = [
+				makeItem({ id: 'a', day: 'day1', end_time: '2026-10-15 10:00:00.000Z' })
+			];
+			const state = getTripModeState(items, days, oct15);
+			expect(state.now.isPast(items[0])).toBe(true);
+		});
+
+		it('isPast returns false for items with no end_time', () => {
+			const days = [makeDay({ id: 'day1', date: '2026-10-15 00:00:00.000Z' })];
+			const item = makeItem({ id: 'a', day: 'day1', end_time: '' });
+			const state = getTripModeState([], days, oct15);
+			expect(state.now.isPast(item)).toBe(false);
+		});
+
+		it('isPast returns false for items with end_time after now', () => {
+			const days = [makeDay({ id: 'day1', date: '2026-10-15 00:00:00.000Z' })];
+			const item = makeItem({ id: 'a', day: 'day1', end_time: '2026-10-15 18:00:00.000Z' });
+			const state = getTripModeState([], days, oct15);
+			expect(state.now.isPast(item)).toBe(false);
+		});
+
+		it('returns empty todayItems when today exists but no items match', () => {
+			const days = [makeDay({ id: 'day1', date: '2026-10-15 00:00:00.000Z' })];
+			const state = getTripModeState([], days, oct15);
+			expect(state.now.todayItems).toEqual([]);
+		});
 	});
 });
