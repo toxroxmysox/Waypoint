@@ -4,6 +4,56 @@ Living reference for colors, typography, components, and patterns. Source of tru
 
 ---
 
+## Branding & Logo
+
+### Symbol
+
+The Waypoint mark is a **four-point star** (compass-star shape). Single cubic-bezier path, pinched at the center, giving a hand-drawn cartographic feel.
+
+```
+M 0 -50 C 4 -12 12 -4 50 0 C 12 4 4 12 0 50 C -4 12 -12 4 -50 0 C -12 -4 -4 -12 0 -50 Z
+```
+
+### Logo Assets
+
+Source files in `design_handoff_v3/brand/`. To be installed at `static/` per PWA manifest.
+
+| Asset | Description | Background | Star | Usage |
+|-------|-------------|-----------|------|-------|
+| `app-icon.svg` / `.png` | Primary app icon | moss (`#3E5A3A`), rx=112 | paper (`#F6F2EA`) | PWA icon, app stores |
+| `app-icon-ink.svg` / `.png` | Dark variant | ink (`#1C1B18`), rx=112 | paper | Dark contexts, social preview |
+| `app-icon-maskable.svg` / `.png` | Maskable (no rounding) | moss, no radius | paper (smaller scale) | Android adaptive icon |
+| `favicon.svg` / `favicon-32.png` | Browser tab | transparent | ink | `<link rel="icon">` |
+| `apple-touch-icon.png` | iOS home screen | (rasterized) | | `<link rel="apple-touch-icon">` |
+
+### Wordmarks (Lockups)
+
+| Asset | Layout | Font |
+|-------|--------|------|
+| `lockup-horizontal.svg` | Star left, "Waypoint" right | Fraunces 500, -0.02em tracking |
+| `lockup-stacked.svg` | Star above, "Waypoint" below | Fraunces 500, -0.02em tracking |
+
+Text color: ink (`#1C1B18`). Star color: ink. Both on transparent background.
+
+### Decorative Marks
+
+| Asset | Description | Usage |
+|-------|-------------|-------|
+| `star-mark.svg` | Solid ink star, no background | Inline decoration, watermarks |
+| `star-mark-inverse.svg` | Solid paper star, no background | On dark backgrounds |
+| `star-mark-outline.svg` | Ink stroke-only star (6px) | Subtle/lightweight contexts |
+| `star-stamp.svg` | Star inside a circle (passport-stamp style) | Badges, completion marks, archive branding |
+| `sparkle.svg` | Tiny 24px star, `currentColor` fill | Inline icon, UI accent (empty states, loading) |
+
+### Brand Rules
+
+- **Primary palette:** moss background + paper star (app icon). Ink + paper for dark variant.
+- **Wordmark font:** Fraunces at weight 500, -0.02em letter-spacing. Never substitute.
+- **Minimum clear space:** Half the star's width on all sides.
+- **Do not:** rotate the star, add drop shadows, use non-token colors, stretch the lockup.
+
+---
+
 ## Color Semantics
 
 ### Base Theme
