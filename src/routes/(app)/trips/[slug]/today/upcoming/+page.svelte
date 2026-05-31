@@ -1,10 +1,10 @@
 <script lang="ts">
-	import type { Item } from '$lib/types';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import SubTabs from '$lib/ui/SubTabs.svelte';
 	import TripModeCard from '$lib/trip-mode/components/TripModeCard.svelte';
 	import Card from '$lib/ui/Card.svelte';
 	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
+	import { getTripModeState } from '$lib/trip-mode/trip-mode';
 	import { untrack } from 'svelte';
 	import type { Notification } from '$lib/types';
 
@@ -12,6 +12,9 @@
 
 	let notifications = $state<Notification[]>(untrack(() => data.notifications ?? []));
 	let unreadCount = $state(untrack(() => data.unreadCount ?? 0));
+
+	const now = new Date(untrack(() => data.now));
+	const tripMode = $derived(getTripModeState(data.items, data.days, now));
 
 	function dayLabel(dateStr: string): string {
 		return new Date(dateStr.replace(' ', 'T')).toLocaleDateString('en-US', {
@@ -41,21 +44,20 @@
 ]} />
 
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-6">
-	{#if data.upcomingDays.length === 0}
+	{#if tripMode.timeline.upcomingDays.length === 0}
 		<Card>
 			<div class="p-6 text-center">
 				<p class="text-ink-muted text-sm">No upcoming days within the next 3 days.</p>
 			</div>
 		</Card>
 	{:else}
-		{#each data.upcomingDays as day}
-			{@const dayItems = data.upcomingItems.filter((i: Item) => i.day === day.id)}
+		{#each tripMode.timeline.upcomingDays as group}
 			<section class="space-y-2">
-				<h2 class="font-display text-ink text-lg font-semibold">{dayLabel(day.date)}</h2>
-				{#if dayItems.length === 0}
+				<h2 class="font-display text-ink text-lg font-semibold">{dayLabel(group.day.date)}</h2>
+				{#if group.items.length === 0}
 					<p class="text-ink-muted text-sm">Nothing scheduled.</p>
 				{:else}
-					{#each dayItems as item}
+					{#each group.items as item}
 						<TripModeCard {item} slug={data.trip.slug} />
 					{/each}
 				{/if}
