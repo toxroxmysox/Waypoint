@@ -1,8 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
-  <path d="M12 2 L13.5 9.5 L12 10.5 L10.5 9.5 Z" fill="#3e5a3a"/>
-  <path d="M12 2 L13.5 9.5 L10.5 9.5 Z" fill="#a5593a"/>
-  <path d="M22 12 L14.5 13.5 L13.5 12 L14.5 10.5 Z" fill="#3e5a3a" opacity="0.5"/>
-  <path d="M12 22 L10.5 14.5 L12 13.5 L13.5 14.5 Z" fill="#3e5a3a" opacity="0.5"/>
-  <path d="M2 12 L9.5 10.5 L10.5 12 L9.5 13.5 Z" fill="#3e5a3a" opacity="0.5"/>
-  <circle cx="12" cy="12" r="1.5" fill="#1c1b18"/>
+  <g transform="translate(12,12) scale(0.2)">
+    <path d="M 0 -50 C 4 -12 12 -4 50 0 C 12 4 4 12 0 50 C -4 12 -12 4 -50 0 C -12 -4 -4 -12 0 -50 Z" fill="currentColor"/>
+  </g>
 </svg>
