@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { itemTypeLabels } from '$lib/itinerary/item-fields';
+	import { getFieldConfig } from '$lib/itinerary/item-fields';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
@@ -79,7 +79,7 @@
 				<TypeIcon type={data.item.type} sub={data.item.subtype} size={44} />
 				<div class="min-w-0 flex-1">
 					<div class="flex flex-wrap items-center gap-1.5">
-						<Pill variant="default" size="sm">{itemTypeLabels[data.item.type]}</Pill>
+						<Pill variant="default" size="sm">{getFieldConfig(data.item.type).labels.typeLabel}</Pill>
 						{#if data.item.subtype}
 							<Pill variant="default" size="sm">{titleCase(data.item.subtype)}</Pill>
 						{/if}

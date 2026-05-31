@@ -5,8 +5,8 @@
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Button from '$lib/ui/Button.svelte';
 	import ItemForm from '$lib/itinerary/components/ItemForm.svelte';
-	import { emptyItemFormData } from '$lib/itinerary/components/ItemFormFields';
 	import type { ItemFormData } from '$lib/itinerary/components/ItemFormFields';
+	import { buildEmptyFormData } from '$lib/itinerary/item-fields';
 	import type { ItemType } from '$lib/types';
 
 	let { data, form } = $props();
@@ -39,7 +39,7 @@
 	});
 
 	let initialData: ItemFormData = $derived({
-		...emptyItemFormData,
+		...buildEmptyFormData((prefill?.type as ItemType) ?? 'activity'),
 		type: (prefill?.type as ItemType) ?? 'activity',
 		title: (prefill?.title as string) ?? '',
 		description: (prefill?.description as string) ?? '',

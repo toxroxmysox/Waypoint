@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { itemFieldConfig, itemTypeLabels, slotOptions } from '$lib/itinerary/item-fields';
+	import { getFieldConfig, slotOptions } from '$lib/itinerary/item-fields';
 	import { checklistTemplates } from '$lib/itinerary/checklist-templates';
 	import type { ItemType, ConfirmationCode } from '$lib/types';
 	import Card from '$lib/ui/Card.svelte';
@@ -32,7 +32,8 @@
 
 	let selectedType = $state<ItemType>(untrack(() => initialData.type));
 	let selectedSubtype = $state(untrack(() => initialData.subtype));
-	let fields = $derived(itemFieldConfig[selectedType]);
+	let config = $derived(getFieldConfig(selectedType));
+	let fields = $derived(config.visibility);
 
 	let titleValue = $state(untrack(() => initialData.title));
 	let descriptionValue = $state(untrack(() => initialData.description));
@@ -261,18 +262,19 @@
 				<fieldset>
 					<legend class="text-ink-soft block text-sm font-medium">Type</legend>
 					<div class="mt-1 flex flex-wrap gap-2">
-						{#each Object.entries(itemTypeLabels) as [type, label]}
+						{#each (['lodging', 'transportation', 'activity', 'meal', 'note', 'checklist'] as const) as type}
+							{@const typeLabel = getFieldConfig(type).labels.typeLabel}
 							{@const active = selectedType === type}
 							<button
 								type="button"
 								aria-pressed={active}
-								onclick={() => (selectedType = type as ItemType)}
+								onclick={() => (selectedType = type)}
 								class="rounded-full px-3 py-1 text-sm font-semibold border transition-colors
 									{active
 									? 'bg-ink text-paper border-ink'
 									: 'bg-surface text-ink-soft border-line hover:bg-surface-2'}"
 							>
-								{label}
+								{typeLabel}
 							</button>
 						{/each}
 					</div>
@@ -282,12 +284,12 @@
 				<div>
 					<div class="text-ink-soft text-sm font-medium">Type</div>
 					<div class="mt-1">
-						<Pill variant="default" size="md">{itemTypeLabels[initialData.type]}</Pill>
+						<Pill variant="default" size="md">{getFieldConfig(initialData.type).labels.typeLabel}</Pill>
 					</div>
 				</div>
 			{/if}
 
-			{#if fields.subtype && fields.subtypes.length > 0}
+			{#if fields.subtype && config.labels.subtypeOptions.length > 0}
 				<div>
 					<label for="subtype" class="text-ink-soft block text-sm font-medium">Subtype</label>
 					<select
@@ -297,8 +299,8 @@
 						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 					>
 						<option value="">None</option>
-						{#each fields.subtypes as st}
-							<option value={st}>{titleCase(st)}</option>
+						{#each config.labels.subtypeOptions as opt}
+							<option value={opt.value}>{opt.label}</option>
 						{/each}
 					</select>
 				</div>
