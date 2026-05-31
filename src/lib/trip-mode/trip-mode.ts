@@ -1,33 +1,53 @@
 import type { Item, Day } from '$lib/types';
+import type { DayGroup, TripModeState } from './types';
 
-export function parseDateTime(dt: string): Date {
+const SLOT_ORDER: Record<string, number> = { morning: 0, afternoon: 1, evening: 2, anytime: 3 };
+
+function parseDateTime(dt: string): Date {
 	if (!dt) return new Date(0);
 	return new Date(dt.replace(' ', 'T'));
 }
 
-export function isToday(dateStr: string, now: Date): boolean {
-	const d = parseDateTime(dateStr);
-	return (
-		d.getUTCFullYear() === now.getUTCFullYear() &&
-		d.getUTCMonth() === now.getUTCMonth() &&
-		d.getUTCDate() === now.getUTCDate()
-	);
+function sortBySlotThenTime(items: Item[]): Item[] {
+	return [...items].sort((a, b) => {
+		const slotDiff = (SLOT_ORDER[a.slot] ?? 9) - (SLOT_ORDER[b.slot] ?? 9);
+		if (slotDiff !== 0) return slotDiff;
+		return parseDateTime(a.start_time).getTime() - parseDateTime(b.start_time).getTime();
+	});
 }
 
-export function findNextItem(items: Item[], now: Date): Item | null {
+function findToday(days: Day[], now: Date): Day | null {
+	const todayStr = now.toISOString().split('T')[0];
+	return days.find((d) => d.date.split(/[T ]/)[0] === todayStr) ?? null;
+}
+
+function findNextItem(items: Item[], now: Date): Item | null {
 	const timed = items
 		.filter((i) => i.start_time)
 		.sort((a, b) => parseDateTime(a.start_time).getTime() - parseDateTime(b.start_time).getTime());
-
 	return timed.find((i) => parseDateTime(i.start_time).getTime() > now.getTime()) ?? null;
 }
 
-export interface DayGroup {
-	day: Day;
-	items: Item[];
+function findTomorrow(days: Day[], now: Date): Day | null {
+	const tomorrow = new Date(now);
+	tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+	const tomorrowStr = tomorrow.toISOString().split('T')[0];
+	return days.find((d) => d.date.split(/[T ]/)[0] === tomorrowStr) ?? null;
 }
 
-export function groupItemsByDay(items: Item[], days: Day[]): DayGroup[] {
+function findUpcomingDays(days: Day[], now: Date, count: number): Day[] {
+	const result: Day[] = [];
+	for (let i = 1; i <= count; i++) {
+		const d = new Date(now);
+		d.setUTCDate(d.getUTCDate() + i);
+		const ds = d.toISOString().split('T')[0];
+		const found = days.find((day) => day.date.split(/[T ]/)[0] === ds);
+		if (found) result.push(found);
+	}
+	return result;
+}
+
+function groupItemsByDay(items: Item[], days: Day[]): DayGroup[] {
 	const dayMap = new Map<string, Item[]>();
 	for (const item of items) {
 		if (!item.day) continue;
@@ -35,8 +55,41 @@ export function groupItemsByDay(items: Item[], days: Day[]): DayGroup[] {
 		existing.push(item);
 		dayMap.set(item.day, existing);
 	}
-
 	return days
 		.filter((d) => dayMap.has(d.id))
-		.map((d) => ({ day: d, items: dayMap.get(d.id)! }));
+		.map((d) => ({ day: d, items: sortBySlotThenTime(dayMap.get(d.id)!) }));
+}
+
+export function getTripModeState(items: Item[], days: Day[], now: Date): TripModeState {
+	const today = findToday(days, now);
+	const todayItems = today
+		? sortBySlotThenTime(items.filter((i) => i.day === today.id))
+		: [];
+
+	const tomorrowDay = findTomorrow(days, now);
+	const tomorrowItems = tomorrowDay
+		? sortBySlotThenTime(items.filter((i) => i.day === tomorrowDay.id))
+		: [];
+
+	const upcomingDaysList = findUpcomingDays(days, now, 3);
+	const upcomingDayGroups = groupItemsByDay(items, upcomingDaysList);
+
+	return {
+		now: {
+			today,
+			todayItems,
+			nextItem: findNextItem(todayItems, now),
+			isPast: (item: Item) => {
+				if (!item.end_time) return false;
+				return parseDateTime(item.end_time).getTime() < now.getTime();
+			}
+		},
+		upNext: {
+			tomorrowDay,
+			tomorrowItems
+		},
+		timeline: {
+			upcomingDays: upcomingDayGroups
+		}
+	};
 }

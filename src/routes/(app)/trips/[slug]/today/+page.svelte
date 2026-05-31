@@ -7,7 +7,7 @@
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import Card from '$lib/ui/Card.svelte';
 	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
-	import { findNextItem, parseDateTime } from '$lib/trip-mode/trip-mode';
+	import { getTripModeState } from '$lib/trip-mode/trip-mode';
 	import { untrack } from 'svelte';
 	import type { Notification } from '$lib/types';
 
@@ -17,7 +17,7 @@
 	let unreadCount = $state(untrack(() => data.unreadCount ?? 0));
 
 	const now = new Date(untrack(() => data.now));
-	const nextItem = $derived(findNextItem(data.todayItems, now));
+	const tripMode = $derived(getTripModeState(data.items, data.days, now));
 
 	const slots: { id: Slot; label: string }[] = [
 		{ id: 'morning', label: 'Morning' },
@@ -27,7 +27,7 @@
 	];
 
 	function itemsForSlot(slot: Slot): Item[] {
-		return data.todayItems.filter((item: Item) => item.slot === slot);
+		return tripMode.now.todayItems.filter((item: Item) => item.slot === slot);
 	}
 
 	function dayLabel(dateStr: string): string {
@@ -37,11 +37,6 @@
 			day: 'numeric',
 			timeZone: 'UTC'
 		});
-	}
-
-	function isPast(item: Item): boolean {
-		if (!item.end_time) return false;
-		return parseDateTime(item.end_time).getTime() < now.getTime();
 	}
 </script>
 
@@ -63,7 +58,7 @@
 ]} />
 
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-4">
-	{#if !data.today}
+	{#if !tripMode.now.today}
 		<Card>
 			<div class="p-6 text-center">
 				<p class="text-ink-soft font-semibold">No itinerary for today</p>
@@ -71,9 +66,9 @@
 			</div>
 		</Card>
 	{:else}
-		<h2 class="font-display text-ink text-xl font-semibold">{dayLabel(data.today.date)}</h2>
+		<h2 class="font-display text-ink text-xl font-semibold">{dayLabel(tripMode.now.today.date)}</h2>
 
-		{#if data.todayItems.length === 0}
+		{#if tripMode.now.todayItems.length === 0}
 			<Card>
 				<div class="p-6 text-center">
 					<p class="text-ink-muted text-sm">Nothing scheduled for today.</p>
@@ -86,13 +81,13 @@
 					<section class="space-y-2">
 						<SectionH>{slot.label}</SectionH>
 						{#each items as item}
-							{#if nextItem && nextItem.id === item.id}
+							{#if tripMode.now.nextItem && tripMode.now.nextItem.id === item.id}
 								<NowDivider label="Up next" />
 							{/if}
 							<TripModeCard
 								{item}
 								slug={data.trip.slug}
-								isNext={nextItem?.id === item.id}
+								isNext={tripMode.now.nextItem?.id === item.id}
 							/>
 						{/each}
 					</section>
@@ -100,8 +95,8 @@
 			{/each}
 		{/if}
 
-		{#if data.tomorrowDay}
-			{@const tomorrowItems = data.upcomingItems.filter((i: Item) => i.day === data.tomorrowDay?.id)}
+		{#if tripMode.upNext.tomorrowDay}
+			{@const tomorrowItems = tripMode.upNext.tomorrowItems}
 			<div class="border-line border-t pt-4">
 				<SectionH>
 					{#snippet right()}
