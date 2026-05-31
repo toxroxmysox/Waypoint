@@ -8,6 +8,8 @@
 	let otpId = $state('');
 	let loading = $state(false);
 	let error = $derived(form?.error ?? '');
+	let selectedPlaceholder = $state<string | null>(null);
+	const placeholders = $derived(data.unclaimedPlaceholders ?? []);
 
 	const roleLabel: Record<string, string> = {
 		owner: 'Owner',
@@ -86,6 +88,32 @@
 				</p>
 			</div>
 
+			{#if placeholders.length > 0}
+				<div class="mt-6 space-y-2">
+					<p class="text-ink-soft text-sm">
+						Were you already added to this trip?
+					</p>
+
+					{#each placeholders as ph (ph.member_id)}
+						<button
+							type="button"
+							class="border-line w-full rounded-lg border p-3 text-left transition-colors
+								{selectedPlaceholder === ph.member_id
+									? 'border-moss bg-moss-tint'
+									: 'bg-surface hover:bg-surface-2'}"
+							onclick={() => {
+								selectedPlaceholder = selectedPlaceholder === ph.member_id ? null : ph.member_id;
+							}}
+						>
+							<span class="text-ink font-medium">{ph.display_name}</span>
+							<span class="text-ink-muted ml-1 text-sm">
+								{roleLabel[ph.role] ?? ph.role}
+							</span>
+						</button>
+					{/each}
+				</div>
+			{/if}
+
 			{#if error}
 				<div role="alert" class="border-error/30 bg-error/10 text-error-deep mt-4 rounded-md border p-3 text-sm">
 					{error}
@@ -104,10 +132,25 @@
 				}}
 				class="mt-6"
 			>
+				{#if selectedPlaceholder}
+					<input type="hidden" name="claim_placeholder" value={selectedPlaceholder} />
+				{/if}
 				<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="w-full">
-					{loading ? 'Joining…' : 'Accept invite'}
+					{#if loading}
+						Joining…
+					{:else if selectedPlaceholder}
+						Join as {placeholders.find(p => p.member_id === selectedPlaceholder)?.display_name}
+					{:else}
+						Accept invite
+					{/if}
 				</Button>
 			</form>
+
+			{#if placeholders.length > 0 && !selectedPlaceholder}
+				<p class="text-ink-muted mt-2 text-center text-xs">
+					None of those are me — join as a new member
+				</p>
+			{/if}
 		{:else if data.status === 'logged_out'}
 			<div class="text-center">
 				<p class="text-ink-soft text-sm">You've been invited to join</p>
