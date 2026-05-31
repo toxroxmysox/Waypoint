@@ -5,8 +5,6 @@
 	import Button from '$lib/ui/Button.svelte';
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import SubTabs from '$lib/ui/SubTabs.svelte';
-	import PhaseColorPicker from '$lib/itinerary/components/PhaseColorPicker.svelte';
-	import { phasePalette } from '$lib/utils/phase-palette';
 	import { toast } from '$lib/shell/stores/toast';
 
 	let { data, form } = $props();
@@ -15,8 +13,6 @@
 	let loading = $state(false);
 	let error = $derived(form?.error ?? '');
 	let confirmDeleteId = $state<string | null>(null);
-	let newColor = $state(phasePalette[0].hex);
-
 	function formatDateRange(start: string, end: string): string {
 		const s = new Date(start.replace(' ', 'T'));
 		const e = new Date(end.replace(' ', 'T'));
@@ -74,7 +70,6 @@
 						loading = false;
 						if (result.type === 'success') {
 							showCreate = false;
-							newColor = phasePalette[0].hex;
 							toast.show('Phase created');
 						}
 						await update();
@@ -128,19 +123,16 @@
 					</div>
 				</div>
 
-				<div class="grid grid-cols-2 gap-3">
-					<div>
-						<label for="country_code" class="text-ink-soft block text-sm font-medium">Country</label>
-						<input
-							type="text"
-							id="country_code"
-							name="country_code"
-							maxlength="2"
-							class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm uppercase"
-							placeholder="ES"
-						/>
-					</div>
-					<PhaseColorPicker bind:value={newColor} />
+				<div>
+					<label for="country_code" class="text-ink-soft block text-sm font-medium">Country</label>
+					<input
+						type="text"
+						id="country_code"
+						name="country_code"
+						maxlength="2"
+						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm uppercase"
+						placeholder="ES"
+					/>
 				</div>
 
 				<Button type="submit" disabled={loading} loading={loading} variant="moss" size="md" class="w-full">
@@ -163,7 +155,7 @@
 
 	<div class="space-y-2">
 		{#each data.phases as phase, i}
-			<Card accent={phase.color}>
+			<Card>
 				<div class="flex items-start justify-between p-4">
 					<a href="/trips/{data.trip.slug}/phases/{phase.id}" class="min-w-0 flex-1">
 						<h3 class="text-ink truncate font-semibold">{phase.name}</h3>

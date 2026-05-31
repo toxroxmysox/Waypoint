@@ -69,7 +69,6 @@ export const actions: Actions = {
 					country_code: phase.country_code || '',
 					start_date: phase.start_date ? phase.start_date + ' 00:00:00.000Z' : '',
 					end_date: phase.end_date ? phase.end_date + ' 00:00:00.000Z' : '',
-					color: phase.color || '',
 					order: phase.order
 				});
 				phaseMap.set(phase.name, created.id);

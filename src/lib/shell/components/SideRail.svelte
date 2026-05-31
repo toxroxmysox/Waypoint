@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import type { Phase } from '$lib/types';
 	import StarIcons from '$lib/ui/StarIcons.svelte';
-	import { getActiveSection, formatTripDate, sanitizeColor } from '$lib/shell/trip-nav';
+	import { getActiveSection, formatTripDate } from '$lib/shell/trip-nav';
 
 	let {
 		slug,
@@ -90,7 +90,7 @@
 				>
 					<span
 						class="h-2.5 w-2.5 shrink-0 rounded-full"
-						style="background-color: {sanitizeColor(phase.color)}"
+						style="background-color: var(--color-moss)"
 					></span>
 					<span class="flex-1 truncate">{phase.name}</span>
 					<span class="text-ink-muted text-[11px]">{formatTripDate(phase.start_date)}</span>

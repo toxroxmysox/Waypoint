@@ -1,14 +1,11 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { untrack } from 'svelte';
 	import type { Day } from '$lib/types';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
 	import Button from '$lib/ui/Button.svelte';
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
-	import PhaseColorPicker from '$lib/itinerary/components/PhaseColorPicker.svelte';
-	import { phasePalette } from '$lib/utils/phase-palette';
 	import { toast } from '$lib/shell/stores/toast';
 	import { titleCase } from '$lib/shell/format';
 
@@ -17,8 +14,6 @@
 	let editing = $state(false);
 	let loading = $state(false);
 	let error = $derived(form?.error ?? '');
-	let editColor = $state(untrack(() => data.phase.color || phasePalette[0].hex));
-
 	const parkingLotItems = $derived(data.phaseItems.filter((it) => it.parking_lot_scope === 'phase'));
 
 	function dayLabel(d: Day): string {
@@ -46,7 +41,7 @@
 		<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{error}</div>
 	{/if}
 
-	<Card accent={data.phase.color}>
+	<Card>
 		<div class="p-4">
 			<div class="flex items-start justify-between gap-2">
 				<h2 class="font-display text-ink text-lg leading-tight font-semibold">{data.phase.name}</h2>
@@ -142,19 +137,16 @@
 					</div>
 				</div>
 
-				<div class="grid grid-cols-2 gap-3">
-					<div>
-						<label for="country_code" class="text-ink-soft block text-sm font-medium">Country</label>
-						<input
-							type="text"
-							id="country_code"
-							name="country_code"
-							maxlength="2"
-							value={data.phase.country_code}
-							class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm uppercase"
-						/>
-					</div>
-					<PhaseColorPicker bind:value={editColor} />
+				<div>
+					<label for="country_code" class="text-ink-soft block text-sm font-medium">Country</label>
+					<input
+						type="text"
+						id="country_code"
+						name="country_code"
+						maxlength="2"
+						value={data.phase.country_code}
+						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm uppercase"
+					/>
 				</div>
 
 				<Button type="submit" disabled={loading} loading={loading} variant="moss" size="md" class="w-full">

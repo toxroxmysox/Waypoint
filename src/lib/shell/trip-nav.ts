@@ -22,9 +22,3 @@ export function formatTripDate(dateStr: string, format: 'short' | 'full' = 'shor
 	}
 	return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
-
-const HEX_RE = /^#[0-9a-fA-F]{6}$/;
-
-export function sanitizeColor(color: string | undefined, fallback = 'var(--color-line)'): string {
-	return color && HEX_RE.test(color) ? color : fallback;
-}

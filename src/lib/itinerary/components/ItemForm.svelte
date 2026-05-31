@@ -139,7 +139,7 @@
 				{/if}
 				{#if itemPhase}
 					<p class="text-ink-muted flex items-center gap-1.5 text-sm">
-						<PhaseChip name={itemPhase.name} color={itemPhase.color} size={16} />
+						<PhaseChip name={itemPhase.name} size={16} />
 						{itemPhase.name}
 					</p>
 				{/if}
