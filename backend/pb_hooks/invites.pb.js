@@ -183,13 +183,57 @@ routerAdd('POST', '/api/invites/lookup', (e) => {
 		// Ignore; just leave inviterName empty.
 	}
 
-	return e.json(200, {
+	// Return base metadata for anon callers or email-mismatch.
+	const baseResponse = {
 		email: invite.getString('email'),
 		role: invite.getString('role'),
 		trip_title: tripTitle,
 		inviter_name: inviterName,
-		expired: expired
-	});
+		expired: expired,
+		unclaimed_placeholders: []
+	};
+
+	// Only fetch placeholders for authenticated users whose email matches.
+	const auth = e.auth;
+	if (!auth || expired) {
+		return e.json(200, baseResponse);
+	}
+
+	const authEmail = (auth.email() || '').trim().toLowerCase();
+	const lookupEmail = invite.getString('email').trim().toLowerCase();
+	if (authEmail !== lookupEmail) {
+		return e.json(200, baseResponse);
+	}
+
+	// Find name-only placeholders: no user, no email, just a display name.
+	const tripId = invite.getString('trip');
+	let placeholders = [];
+	try {
+		placeholders = e.app.findRecordsByFilter(
+			'trip_members',
+			'trip = {:tripId} && user = "" && placeholder_email = ""',
+			'',
+			0,
+			0,
+			{ tripId: tripId }
+		);
+	} catch (_) {
+		// No placeholders; fine.
+	}
+
+	const unclaimedPlaceholders = [];
+	for (const p of placeholders) {
+		const name = p.getString('display_name') || p.getString('placeholder_name') || '';
+		if (!name) continue;
+		unclaimedPlaceholders.push({
+			member_id: p.id,
+			display_name: name,
+			role: p.getString('role')
+		});
+	}
+
+	baseResponse.unclaimed_placeholders = unclaimedPlaceholders;
+	return e.json(200, baseResponse);
 });
 
 // --- POST /api/invites/accept ----------------------------------------------
