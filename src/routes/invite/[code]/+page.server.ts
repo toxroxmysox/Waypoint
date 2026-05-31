@@ -13,12 +13,22 @@ type InviteStatus = 'not_found' | 'expired' | 'match' | 'mismatch' | 'logged_out
 export const load: PageServerLoad = async ({ params, locals, fetch }) => {
 	// Lookup is anon — call directly without going through the SDK so we don't
 	// need to thread auth into the harness path.
-	let lookup: { email?: string; role?: string; trip_title?: string; expired?: boolean } | null = null;
+	let lookup: {
+		email?: string;
+		role?: string;
+		trip_title?: string;
+		expired?: boolean;
+		unclaimed_placeholders?: { member_id: string; display_name: string; role: string }[];
+	} | null = null;
 	let lookupStatus = 0;
+	const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+	if (locals.pb.authStore.token) {
+		headers['Authorization'] = `Bearer ${locals.pb.authStore.token}`;
+	}
 	try {
 		const res = await fetch(PUBLIC_PB_URL + '/api/invites/lookup', {
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
+			headers,
 			body: JSON.stringify({ code: params.code })
 		});
 		lookupStatus = res.status;
@@ -36,7 +46,8 @@ export const load: PageServerLoad = async ({ params, locals, fetch }) => {
 			email: '',
 			role: '',
 			tripTitle: '',
-			authEmail: locals.user?.email ?? ''
+			authEmail: locals.user?.email ?? '',
+			unclaimedPlaceholders: []
 		};
 	}
 
@@ -57,24 +68,34 @@ export const load: PageServerLoad = async ({ params, locals, fetch }) => {
 		email: lookup.email || '',
 		role: lookup.role || '',
 		tripTitle: lookup.trip_title || '',
-		authEmail: locals.user?.email ?? ''
+		authEmail: locals.user?.email ?? '',
+		unclaimedPlaceholders: (lookup.unclaimed_placeholders ?? []) as {
+			member_id: string;
+			display_name: string;
+			role: string;
+		}[]
 	};
 };
 
 export const actions: Actions = {
-	accept: async ({ params, locals }) => {
+	accept: async ({ params, locals, request }) => {
 		if (!locals.user) return fail(401, { error: 'Not authenticated.' });
 
+		const formData = await request.formData();
+		const claimPlaceholder = formData.get('claim_placeholder')?.toString() || '';
+
 		try {
+			const body: Record<string, string> = { code: params.code };
+			if (claimPlaceholder) {
+				body.claim_placeholder = claimPlaceholder;
+			}
 			const res = await locals.pb.send<{ trip_id: string }>('/api/invites/accept', {
 				method: 'POST',
-				body: { code: params.code }
+				body
 			});
-			// Look up trip slug for the redirect.
 			const trip = await locals.pb.collection('trips').getOne<{ slug: string }>(res.trip_id);
 			redirect(303, `/trips/${trip.slug}`);
 		} catch (err: unknown) {
-			// Re-throw redirects so SvelteKit handles them.
 			if (err && typeof err === 'object' && 'status' in err && 'location' in err) throw err;
 			const message = extractErrorMessage(err) || 'Failed to accept invite.';
 			return fail(400, { error: message });

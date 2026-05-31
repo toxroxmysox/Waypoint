@@ -183,13 +183,57 @@ routerAdd('POST', '/api/invites/lookup', (e) => {
 		// Ignore; just leave inviterName empty.
 	}
 
-	return e.json(200, {
+	// Return base metadata for anon callers or email-mismatch.
+	const baseResponse = {
 		email: invite.getString('email'),
 		role: invite.getString('role'),
 		trip_title: tripTitle,
 		inviter_name: inviterName,
-		expired: expired
-	});
+		expired: expired,
+		unclaimed_placeholders: []
+	};
+
+	// Only fetch placeholders for authenticated users whose email matches.
+	const auth = e.auth;
+	if (!auth || expired) {
+		return e.json(200, baseResponse);
+	}
+
+	const authEmail = (auth.email() || '').trim().toLowerCase();
+	const lookupEmail = invite.getString('email').trim().toLowerCase();
+	if (authEmail !== lookupEmail) {
+		return e.json(200, baseResponse);
+	}
+
+	// Find name-only placeholders: no user, no email, just a display name.
+	const tripId = invite.getString('trip');
+	let placeholders = [];
+	try {
+		placeholders = e.app.findRecordsByFilter(
+			'trip_members',
+			'trip = {:tripId} && user = "" && placeholder_email = ""',
+			'',
+			0,
+			0,
+			{ tripId: tripId }
+		);
+	} catch (_) {
+		// No placeholders; fine.
+	}
+
+	const unclaimedPlaceholders = [];
+	for (const p of placeholders) {
+		const name = p.getString('display_name') || p.getString('placeholder_name') || '';
+		if (!name) continue;
+		unclaimedPlaceholders.push({
+			member_id: p.id,
+			display_name: name,
+			role: p.getString('role')
+		});
+	}
+
+	baseResponse.unclaimed_placeholders = unclaimedPlaceholders;
+	return e.json(200, baseResponse);
 });
 
 // --- POST /api/invites/accept ----------------------------------------------
@@ -254,6 +298,44 @@ routerAdd('POST', '/api/invites/accept', (e) => {
 			trip_id: tripId,
 			member_id: existingMember.id,
 			already_member: true
+		});
+	}
+
+	// Name-only placeholder claim path: user explicitly selected a placeholder
+	// from the browse-and-claim UI during invite acceptance.
+	const claimPlaceholderId = (info.body && info.body['claim_placeholder']) || '';
+	if (claimPlaceholderId) {
+		let target;
+		try {
+			target = e.app.findRecordById('trip_members', claimPlaceholderId);
+		} catch (_) {
+			throw new BadRequestError('Placeholder not found');
+		}
+
+		// Validate: belongs to the same trip.
+		if (target.getString('trip') !== tripId) {
+			throw new BadRequestError('Placeholder does not belong to this trip');
+		}
+		// Validate: actually unclaimed (no user, no placeholder_email).
+		if (target.getString('user')) {
+			throw new BadRequestError('This placeholder has already been claimed');
+		}
+		if (target.getString('placeholder_email')) {
+			throw new BadRequestError('This placeholder is managed by email matching');
+		}
+
+		const joinedAt =
+			new Date().toISOString().replace('T', ' ').replace('Z', '') + 'Z';
+		target.set('user', auth.id);
+		target.set('joined_at', joinedAt);
+		target.set('placeholder_name', '');
+		e.app.save(target);
+
+		e.app.delete(invite);
+		return e.json(200, {
+			trip_id: tripId,
+			member_id: target.id,
+			already_member: false
 		});
 	}
 
