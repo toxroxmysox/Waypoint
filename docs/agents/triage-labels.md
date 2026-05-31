@@ -1,15 +1,40 @@
-# Triage Labels
+# Issue Labels
 
-The skills speak in terms of five canonical triage roles. This file maps those roles to the actual label strings used in this repo's issue tracker.
+Three axes for tracking issues through the workflow.
 
-| Label in mattpocock/skills | Label in our tracker | Meaning                                  |
-| -------------------------- | -------------------- | ---------------------------------------- |
-| `needs-triage`             | `needs-triage`       | Maintainer needs to evaluate this issue  |
-| `needs-info`               | `needs-info`         | Waiting on reporter for more information |
-| `ready-for-agent`          | `ready-for-agent`    | Fully specified, ready for an AFK agent  |
-| `ready-for-human`          | `ready-for-human`    | Requires human implementation            |
-| `wontfix`                  | `wontfix`            | Will not be actioned                     |
+## Type (determines ceremony level)
 
-When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the corresponding label string from this table.
+| Label | Ceremony | Description |
+|-------|----------|-------------|
+| `bug` | Fix → PR → review | Something broken |
+| `enhancement` | Plan optional → PR → review | Small improvement, single-session |
+| `feature` | Grill → plan → subagent execution → PR → review | Multi-session, architectural |
+| `research` | Output = decision or ADR, no PR | Investigation, no code expected |
+| `refactor` | Plan → PR → review | Structural improvement, no new behavior |
 
-Edit the right-hand column to match whatever vocabulary you actually use.
+## Workflow stage (determines what's next)
+
+| Label | Meaning |
+|-------|---------|
+| `needs-triage` | Unprocessed, needs evaluation |
+| `needs-info` | Blocked on clarification |
+| `planned` | Has an approved implementation plan |
+| `in-progress` | Actively being worked |
+| `in-review` | PR open, awaiting review |
+| `wontfix` | Will not be actioned |
+
+## Execution mode (determines supervision)
+
+| Label | Meaning |
+|-------|---------|
+| `afk` | Agent can run unsupervised |
+| `hitl` | Needs human checkpoints |
+
+## Skill compatibility
+
+When a skill mentions a triage role, map it:
+- "AFK-ready" / "ready-for-agent" → `afk` + `planned`
+- "ready-for-human" → `hitl`
+- "needs-triage" → `needs-triage`
+- "needs-info" → `needs-info`
+- "wontfix" → `wontfix`
