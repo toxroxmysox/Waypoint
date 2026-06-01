@@ -95,7 +95,6 @@ export const actions: Actions = {
 					trip: trip.id,
 					phase: phaseId,
 					day: dayId,
-					slot: item.slot || 'anytime',
 					type: item.type,
 					subtype: item.subtype || '',
 					title: item.title,

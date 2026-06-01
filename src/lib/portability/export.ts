@@ -32,7 +32,6 @@ export function buildTripExport(
 			country_code: p.country_code || '',
 			start_date: p.start_date || '',
 			end_date: p.end_date || '',
-			color: p.color || '',
 			order: p.order
 		})),
 		days: days.map((d) => {
@@ -51,7 +50,6 @@ export function buildTripExport(
 			return {
 				day_date: day?.date || null,
 				phase_name: phase?.name || null,
-				slot: item.slot || 'anytime',
 				type: item.type,
 				subtype: item.subtype || '',
 				title: item.title,
