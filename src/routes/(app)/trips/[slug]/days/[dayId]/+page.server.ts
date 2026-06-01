@@ -19,7 +19,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 
 	const items = await locals.pb.collection('items').getFullList<Item>({
 		filter: `day = "${day.id}"`,
-		sort: 'slot,rank'
+		sort: 'sort_order'
 	});
 
 	const itemIds = items.map((i) => i.id);

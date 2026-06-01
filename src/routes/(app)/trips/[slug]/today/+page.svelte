@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Item, Slot } from '$lib/types';
+	import type { Item } from '$lib/types';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import SubTabs from '$lib/ui/SubTabs.svelte';
 	import TripModeCard from '$lib/trip-mode/components/TripModeCard.svelte';
@@ -18,17 +18,6 @@
 
 	const now = new Date(untrack(() => data.now));
 	const tripMode = $derived(getTripModeState(data.items, data.days, now));
-
-	const slots: { id: Slot; label: string }[] = [
-		{ id: 'morning', label: 'Morning' },
-		{ id: 'afternoon', label: 'Afternoon' },
-		{ id: 'evening', label: 'Evening' },
-		{ id: 'anytime', label: 'Anytime' }
-	];
-
-	function itemsForSlot(slot: Slot): Item[] {
-		return tripMode.now.todayItems.filter((item: Item) => item.slot === slot);
-	}
 
 	function dayLabel(dateStr: string): string {
 		return new Date(dateStr.replace(' ', 'T')).toLocaleDateString('en-US', {
@@ -75,24 +64,18 @@
 				</div>
 			</Card>
 		{:else}
-			{#each slots as slot}
-				{@const items = itemsForSlot(slot.id)}
-				{#if items.length > 0}
-					<section class="space-y-2">
-						<SectionH>{slot.label}</SectionH>
-						{#each items as item}
-							{#if tripMode.now.nextItem && tripMode.now.nextItem.id === item.id}
-								<NowDivider label="Up next" />
-							{/if}
-							<TripModeCard
-								{item}
-								slug={data.trip.slug}
-								isNext={tripMode.now.nextItem?.id === item.id}
-							/>
-						{/each}
-					</section>
-				{/if}
-			{/each}
+			<section class="space-y-2">
+				{#each tripMode.now.todayItems as item}
+					{#if tripMode.now.nextItem && tripMode.now.nextItem.id === item.id}
+						<NowDivider label="Up next" />
+					{/if}
+					<TripModeCard
+						{item}
+						slug={data.trip.slug}
+						isNext={tripMode.now.nextItem?.id === item.id}
+					/>
+				{/each}
+			</section>
 		{/if}
 
 		{#if tripMode.upNext.tomorrowDay}
@@ -109,7 +92,7 @@
 						{#each tomorrowItems.slice(0, 3) as item}
 							<a href="/trips/{data.trip.slug}/items/{item.id}" class="border-line hover:border-ink-muted flex items-center gap-2 rounded-lg border px-3 py-2">
 								<span class="font-mono text-ink-muted text-xs">
-									{item.start_time ? new Date(item.start_time.replace(' ', 'T')).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }) : item.slot}
+									{item.start_time ? new Date(item.start_time.replace(' ', 'T')).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }) : '—'}
 								</span>
 								<span class="text-ink text-sm truncate">{item.title}</span>
 							</a>

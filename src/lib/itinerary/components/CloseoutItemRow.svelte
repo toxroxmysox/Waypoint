@@ -97,7 +97,6 @@
 				{tripId}
 				{dayId}
 				{phaseId}
-				slot={item.slot}
 				originalItemId={item.id}
 				onAdded={() => (localState = 'done')}
 				onCancel={() => (localState = 'pending')}

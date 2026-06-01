@@ -23,7 +23,8 @@
 		activity: { bg: 'var(--color-gold-tint)', fg: 'var(--color-gold)' },
 		meal: { bg: 'var(--color-clay-tint)', fg: 'var(--color-clay)' },
 		note: { bg: 'var(--color-paper)', fg: 'var(--color-ink-soft)' },
-		checklist: { bg: 'var(--color-moss-tint)', fg: 'var(--color-moss)' }
+		checklist: { bg: 'var(--color-moss-tint)', fg: 'var(--color-moss)' },
+		flight: { bg: 'var(--color-sky-tint)', fg: 'var(--color-sky)' }
 	};
 
 	const colors = $derived(palette[type]);
