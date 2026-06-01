@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { getFieldConfig, buildEmptyFormData } from './item-fields';
 import type { ItemType } from '$lib/types';
 
-const ALL_TYPES: ItemType[] = ['lodging', 'transportation', 'activity', 'meal', 'note', 'checklist'];
+const ALL_TYPES: ItemType[] = ['lodging', 'transportation', 'activity', 'meal', 'note', 'checklist', 'flight'];
 
 describe('getFieldConfig', () => {
 	it('returns a config for every ItemType', () => {
@@ -78,11 +78,6 @@ describe('getFieldConfig', () => {
 	});
 
 	describe('defaults', () => {
-		it('slot defaults to anytime', () => {
-			const { defaults } = getFieldConfig('lodging');
-			expect(defaults.slot).toBe('anytime');
-		});
-
 		it('status defaults to planned', () => {
 			const { defaults } = getFieldConfig('activity');
 			expect(defaults.status).toBe('planned');
@@ -123,6 +118,7 @@ describe('getFieldConfig', () => {
 			expect(getFieldConfig('meal').labels.typeLabel).toBe('Meal');
 			expect(getFieldConfig('note').labels.typeLabel).toBe('Note');
 			expect(getFieldConfig('checklist').labels.typeLabel).toBe('Checklist');
+			expect(getFieldConfig('flight').labels.typeLabel).toBe('Flight');
 		});
 
 		it('subtypeLabel describes the subtype field', () => {
@@ -143,6 +139,14 @@ describe('getFieldConfig', () => {
 			expect(labels.subtypeOptions).toHaveLength(0);
 		});
 	});
+
+	it('returns config for flight type', () => {
+		const config = getFieldConfig('flight');
+		expect(config.visibility.location).toBe(true);
+		expect(config.visibility.times).toBe(true);
+		expect(config.visibility.booking).toBe(true);
+		expect(config.visibility.subtype).toBe(false);
+	});
 });
 
 describe('buildEmptyFormData', () => {
@@ -151,9 +155,8 @@ describe('buildEmptyFormData', () => {
 		expect(data.type).toBe('meal');
 	});
 
-	it('uses defaults from config: slot, status, booked, costs', () => {
+	it('uses defaults from config: status, booked, costs', () => {
 		const data = buildEmptyFormData('meal');
-		expect(data.slot).toBe('anytime');
 		expect(data.status).toBe('planned');
 		expect(data.booked).toBe(false);
 		expect(data.free_cancellation).toBe(false);
@@ -207,7 +210,6 @@ describe('config exhaustiveness', () => {
 			const data = buildEmptyFormData(type);
 			expect(data.type).toBe(type);
 			expect(data.title).toBe('');
-			expect(typeof data.slot).toBe('string');
 			expect(typeof data.status).toBe('string');
 		}
 	});

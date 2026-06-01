@@ -8,7 +8,6 @@ export interface ItemFormData {
 	title: string;
 	description: string;
 	day: string;
-	slot: string;
 	phase: string;
 	start_time: string;
 	end_time: string;
@@ -31,7 +30,6 @@ export interface ItemFormContext {
 	phases: Phase[];
 	members: TripMember[];
 	preselectedDay?: string;
-	preselectedSlot?: string;
 	preselectedPhase?: string;
 }
 
