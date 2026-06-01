@@ -37,8 +37,8 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		}),
 		item.day
 			? locals.pb.collection('items').getFullList<Item>({
-					filter: `day = "${item.day}" && slot = "${item.slot}" && id != "${item.id}"`,
-					sort: 'rank'
+					filter: `day = "${item.day}" && id != "${item.id}"`,
+					sort: 'sort_order'
 				})
 			: Promise.resolve([])
 	]);
@@ -248,18 +248,18 @@ export const actions: Actions = {
 	promote: async ({ params, locals }) => {
 		try {
 			const targetItem = await locals.pb.collection('items').getOne<Item>(params.itemId);
-			if (targetItem.rank === 0) return fail(400, { error: 'Item is already primary.' });
+			if (targetItem.sort_order === 0) return fail(400, { error: 'Item is already primary.' });
 
-			// Find the current primary (rank 0) for this day+slot
+			// Find the current primary (sort_order 0) for this day
 			const primaries = await locals.pb.collection('items').getFullList<Item>({
-				filter: `day = "${targetItem.day}" && slot = "${targetItem.slot}" && rank = 0 && id != "${targetItem.id}"`
+				filter: `day = "${targetItem.day}" && sort_order = 0 && id != "${targetItem.id}"`
 			});
 
 			// Swap: demote current primary, promote this item
 			for (const p of primaries) {
-				await locals.pb.collection('items').update(p.id, { rank: targetItem.rank });
+				await locals.pb.collection('items').update(p.id, { sort_order: targetItem.sort_order });
 			}
-			await locals.pb.collection('items').update(targetItem.id, { rank: 0 });
+			await locals.pb.collection('items').update(targetItem.id, { sort_order: 0 });
 
 			return { success: true };
 		} catch (err: unknown) {
@@ -272,16 +272,16 @@ export const actions: Actions = {
 	demote: async ({ params, locals }) => {
 		try {
 			const targetItem = await locals.pb.collection('items').getOne<Item>(params.itemId);
-			if (targetItem.rank !== 0) return fail(400, { error: 'Item is not primary.' });
+			if (targetItem.sort_order !== 0) return fail(400, { error: 'Item is not primary.' });
 
-			// Find the highest-ranked alternate
+			// Find the highest sort_order alternate
 			const alts = await locals.pb.collection('items').getFullList<Item>({
-				filter: `day = "${targetItem.day}" && slot = "${targetItem.slot}" && rank > 0 && id != "${targetItem.id}"`,
-				sort: 'rank'
+				filter: `day = "${targetItem.day}" && sort_order > 0 && id != "${targetItem.id}"`,
+				sort: 'sort_order'
 			});
 
-			const nextRank = alts.length > 0 ? alts[alts.length - 1].rank + 1 : 1;
-			await locals.pb.collection('items').update(targetItem.id, { rank: nextRank });
+			const nextSortOrder = alts.length > 0 ? alts[alts.length - 1].sort_order + 1 : 1;
+			await locals.pb.collection('items').update(targetItem.id, { sort_order: nextSortOrder });
 
 			return { success: true };
 		} catch (err: unknown) {
@@ -294,13 +294,11 @@ export const actions: Actions = {
 	moveItem: async ({ request, params, locals }) => {
 		const data = await request.formData();
 		const newDay = data.get('day')?.toString() || '';
-		const newSlot = data.get('slot')?.toString() || 'anytime';
 		const newPhase = data.get('phase')?.toString() || '';
 
 		try {
 			await locals.pb.collection('items').update(params.itemId, {
 				day: newDay,
-				slot: newSlot,
 				phase: newPhase
 			});
 

@@ -101,7 +101,6 @@
 				phases: data.phases,
 				members: data.members,
 				preselectedDay: data.preselectedDay,
-				preselectedSlot: data.preselectedSlot,
 				preselectedPhase: data.preselectedPhase
 			}}
 			bind:dirty

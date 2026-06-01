@@ -34,7 +34,6 @@
 		title: data.item.title ?? '',
 		description: data.item.description ?? '',
 		day: data.item.day ?? '',
-		slot: data.item.slot ?? 'anytime',
 		phase: data.item.phase ?? '',
 		start_time: data.item.start_time ?? '',
 		end_time: data.item.end_time ?? '',
