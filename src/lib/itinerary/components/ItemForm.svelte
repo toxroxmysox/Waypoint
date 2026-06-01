@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getFieldConfig, slotOptions } from '$lib/itinerary/item-fields';
+	import { getFieldConfig } from '$lib/itinerary/item-fields';
 	import { checklistTemplates } from '$lib/itinerary/checklist-templates';
 	import type { ItemType, ConfirmationCode } from '$lib/types';
 	import Card from '$lib/ui/Card.svelte';
@@ -134,7 +134,7 @@
 							day: 'numeric',
 							timeZone: 'UTC'
 						})}
-						<span class="text-ink-muted">· {titleCase(initialData.slot)}</span>
+
 					</p>
 				{/if}
 				{#if itemPhase}
@@ -414,23 +414,7 @@
 						{/each}
 					</select>
 				</div>
-				<div>
-					<label for="slot" class="text-ink-soft block text-sm font-medium">Slot</label>
-					<select
-						id="slot"
-						name="slot"
-						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
-					>
-						{#each slotOptions as opt}
-							<option
-								value={opt.value}
-								selected={opt.value === (mode === 'create' ? (context.preselectedSlot ?? 'anytime') : initialData.slot)}
-							>
-								{opt.label}
-							</option>
-						{/each}
-					</select>
-				</div>
+
 			</div>
 
 			<div>

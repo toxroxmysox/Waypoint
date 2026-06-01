@@ -6,7 +6,6 @@
 		tripId,
 		dayId,
 		phaseId,
-		slot,
 		originalItemId,
 		onAdded,
 		onCancel
@@ -14,7 +13,6 @@
 		tripId: string;
 		dayId: string;
 		phaseId: string;
-		slot: string;
 		originalItemId: string;
 		onAdded: () => void;
 		onCancel: () => void;
@@ -45,7 +43,6 @@
 	<input type="hidden" name="trip_id" value={tripId} />
 	<input type="hidden" name="day_id" value={dayId} />
 	<input type="hidden" name="phase_id" value={phaseId} />
-	<input type="hidden" name="slot" value={slot} />
 	<input type="hidden" name="original_item_id" value={originalItemId} />
 
 	<div class="flex gap-2">

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { untrack } from 'svelte';
-	import type { Day, Phase, Slot } from '$lib/types';
+	import type { Day, Phase } from '$lib/types';
 	import BottomSheet from '$lib/ui/BottomSheet.svelte';
 	import Button from '$lib/ui/Button.svelte';
 
@@ -10,7 +10,6 @@
 		days = [] as Day[],
 		phases = [] as Phase[],
 		currentDay = '',
-		currentSlot = 'anytime' as Slot,
 		currentPhase = '',
 		actionUrl = ''
 	}: {
@@ -18,22 +17,13 @@
 		days?: Day[];
 		phases?: Phase[];
 		currentDay?: string;
-		currentSlot?: Slot;
 		currentPhase?: string;
 		actionUrl?: string;
 	} = $props();
 
 	let selectedDay = $state(untrack(() => currentDay));
-	let selectedSlot = $state<Slot>(untrack(() => currentSlot));
 	let selectedPhase = $state(untrack(() => currentPhase));
 	let submitting = $state(false);
-
-	const slotOptions: { id: Slot; label: string }[] = [
-		{ id: 'morning', label: 'Morning' },
-		{ id: 'afternoon', label: 'Afternoon' },
-		{ id: 'evening', label: 'Evening' },
-		{ id: 'anytime', label: 'Anytime' }
-	];
 
 	function dayLabel(d: Day): string {
 		return new Date(d.date.replace(' ', 'T')).toLocaleDateString('en-US', {
@@ -48,7 +38,6 @@
 	$effect(() => {
 		if (open) {
 			selectedDay = currentDay;
-			selectedSlot = currentSlot;
 			selectedPhase = currentPhase;
 		}
 	});
@@ -83,21 +72,7 @@
 			</select>
 		</div>
 
-		<div>
-			<label for="move-slot" class="text-ink-soft block text-sm font-medium">Time slot</label>
-			<select
-				id="move-slot"
-				name="slot"
-				bind:value={selectedSlot}
-				class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
-			>
-				{#each slotOptions as s}
-					<option value={s.id}>{s.label}</option>
-				{/each}
-			</select>
-		</div>
-
-		{#if phases.length > 0}
+{#if phases.length > 0}
 			<div>
 				<label for="move-phase" class="text-ink-soft block text-sm font-medium">Phase</label>
 				<select
