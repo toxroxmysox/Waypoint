@@ -26,7 +26,7 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 		}),
 		locals.pb.collection('items').getFullList<Item>({
 			filter: `trip = "${trip.id}"`,
-			sort: 'day,slot,rank'
+			sort: 'day,sort_order'
 		})
 	]);
 

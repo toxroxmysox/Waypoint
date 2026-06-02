@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
-import type { Trip, TripMember, Phase, Day, Notification } from '$lib/types';
+import type { Trip, TripMember, Phase, Day, Notification, Item } from '$lib/types';
 
 export const load: LayoutServerLoad = async ({ params, locals }) => {
 	let trip: Trip;
@@ -22,7 +22,7 @@ export const load: LayoutServerLoad = async ({ params, locals }) => {
 		error(403, 'You are not a member of this trip');
 	}
 
-	const [phases, days, notifications] = await Promise.all([
+	const [phases, days, notifications, parkingLotItems] = await Promise.all([
 		locals.pb.collection('phases').getFullList<Phase>({
 			filter: `trip = "${trip.id}"`,
 			sort: 'order'
@@ -35,10 +35,14 @@ export const load: LayoutServerLoad = async ({ params, locals }) => {
 			filter: `recipient = "${membership.id}"`,
 			sort: '-id',
 			perPage: 30
-		}).catch(() => [] as Notification[])
+		}).catch(() => [] as Notification[]),
+		locals.pb.collection('items').getFullList<Item>({
+			filter: `trip = "${trip.id}" && status = "unplanned"`,
+			sort: 'sort_order'
+		}).catch(() => [] as Item[])
 	]);
 
 	const unreadCount = notifications.filter((n) => !n.read_at).length;
 
-	return { trip, membership, phases, days, notifications, unreadCount };
+	return { trip, membership, phases, days, notifications, unreadCount, parkingLotItems };
 };

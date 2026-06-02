@@ -20,7 +20,6 @@ export interface TripExport {
 		country_code: string;
 		start_date: string;
 		end_date: string;
-		color: string;
 		order: number;
 	}>;
 	days: Array<{
@@ -31,7 +30,6 @@ export interface TripExport {
 	items: Array<{
 		day_date: string | null;
 		phase_name: string | null;
-		slot: string;
 		type: string;
 		subtype: string;
 		title: string;

@@ -22,8 +22,8 @@
 	let moveSheetOpen = $state(false);
 	let promoteLoading = $state(false);
 	let demoteLoading = $state(false);
-	const isAlternate = $derived(data.item.rank > 0);
-	const isPrimary = $derived(data.item.rank === 0 && data.alternates.length > 0);
+	const isAlternate = $derived(data.item.sort_order > 0);
+	const isPrimary = $derived(data.item.sort_order === 0 && data.alternates.length > 0);
 	const itemUrl = $derived(`/trips/${data.trip.slug}/items/${data.item.id}`);
 
 	// Comments
@@ -161,7 +161,6 @@
 			title: data.item.title,
 			description: '',
 			day: data.item.day ?? '',
-			slot: data.item.slot ?? 'anytime',
 			phase: data.item.phase ?? '',
 			start_time: data.item.start_time ?? '',
 			end_time: data.item.end_time ?? '',
@@ -206,7 +205,7 @@
 								<p class="text-ink-muted text-[12px] truncate">{alt.location_name}</p>
 							{/if}
 						</div>
-						<span class="text-ink-muted text-[11px]">Rank {alt.rank}</span>
+						<span class="text-ink-muted text-[11px]">#{alt.sort_order}</span>
 					</a>
 				{/each}
 			</div>
@@ -466,7 +465,6 @@
 	days={data.days}
 	phases={data.phases}
 	currentDay={data.item.day}
-	currentSlot={data.item.slot}
 	currentPhase={data.item.phase}
 	actionUrl={itemUrl}
 />

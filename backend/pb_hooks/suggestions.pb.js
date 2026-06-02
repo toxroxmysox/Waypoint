@@ -78,7 +78,6 @@ routerAdd('POST', '/api/suggestions/create', (e) => {
 		item.set('trip', tripId);
 		item.set('phase', payload.phase || '');
 		item.set('day', payload.day || '');
-		item.set('slot', payload.slot || 'anytime');
 		item.set('type', payload.type || 'activity');
 		item.set('subtype', payload.subtype || '');
 		item.set('title', payload.title || '');
@@ -94,10 +93,9 @@ routerAdd('POST', '/api/suggestions/create', (e) => {
 		item.set('cost_actual_usd', Number(payload.cost_actual_usd) || 0);
 		item.set('assigned_to', Array.isArray(payload.assigned_to) ? payload.assigned_to : []);
 		item.set('confirmation_codes', Array.isArray(payload.confirmation_codes) ? payload.confirmation_codes : []);
-		item.set('rank', 0);
-		item.set('parking_lot_scope', payload.day ? 'none' : 'trip');
+		item.set('sort_order', 0);
 		item.set('created_by', callerMember.id);
-		item.set('status', 'planned');
+		item.set('status', payload.day ? 'planned' : 'unplanned');
 		e.app.save(item);
 		itemId = item.id;
 	}
@@ -270,7 +268,6 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 		item.set('trip', tripId);
 		item.set('phase', payload.phase || '');
 		item.set('day', payload.day || '');
-		item.set('slot', payload.slot || 'anytime');
 		item.set('type', payload.type || 'activity');
 		item.set('subtype', payload.subtype || '');
 		item.set('title', payload.title || '');
@@ -286,10 +283,9 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 		item.set('cost_actual_usd', Number(payload.cost_actual_usd) || 0);
 		item.set('assigned_to', Array.isArray(payload.assigned_to) ? payload.assigned_to : []);
 		item.set('confirmation_codes', Array.isArray(payload.confirmation_codes) ? payload.confirmation_codes : []);
-		item.set('rank', 0);
-		item.set('parking_lot_scope', payload.day ? 'none' : 'trip');
+		item.set('sort_order', 0);
 		item.set('created_by', callerMember.id);
-		item.set('status', 'planned');
+		item.set('status', payload.day ? 'planned' : 'unplanned');
 		e.app.save(item);
 		itemId = item.id;
 	}

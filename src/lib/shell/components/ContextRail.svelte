@@ -1,21 +1,26 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import type { Trip, Phase, Day } from '$lib/types';
+	import type { Trip, Phase, Day, Item } from '$lib/types';
 	import { getActiveSection, formatTripDate } from '$lib/shell/trip-nav';
+	import ParkingLotSection from '$lib/itinerary/components/ParkingLotSection.svelte';
 
 	let {
 		slug,
 		trip,
 		phases = [],
-		days = []
+		days = [],
+		parkingLotItems = []
 	}: {
 		slug: string;
 		trip?: Trip;
 		phases?: Phase[];
 		days?: Day[];
+		parkingLotItems?: Item[];
 	} = $props();
 
 	let activeContext = $derived(getActiveSection(page.url.pathname));
+
+	const isDayPage = $derived(page.url.pathname.includes('/days/'));
 
 	const today = $derived(new Date().toISOString().split('T')[0]);
 
@@ -149,6 +154,14 @@
 						</div>
 					</a>
 				{/each}
+			</div>
+		{/if}
+
+		<!-- Parking lot (day pages only) -->
+		{#if isDayPage && parkingLotItems.length > 0}
+			<div class="border-line space-y-2 border-t px-5 py-4">
+				<h3 class="text-ink-soft text-xs font-semibold uppercase tracking-wider">Ideas</h3>
+				<ParkingLotSection items={parkingLotItems} {phases} tripSlug={slug} />
 			</div>
 		{/if}
 

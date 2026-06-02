@@ -14,7 +14,7 @@
 	let editing = $state(false);
 	let loading = $state(false);
 	let error = $derived(form?.error ?? '');
-	const parkingLotItems = $derived(data.phaseItems.filter((it) => it.parking_lot_scope === 'phase'));
+	const parkingLotItems = $derived(data.phaseItems.filter((it) => it.status === 'unplanned'));
 
 	function dayLabel(d: Day): string {
 		return new Date(d.date.replace(' ', 'T')).toLocaleDateString('en-US', {

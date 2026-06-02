@@ -1,17 +1,15 @@
 import type { Item, Day } from '$lib/types';
 import type { DayGroup, TripModeState } from './types';
 
-const SLOT_ORDER: Record<string, number> = { morning: 0, afternoon: 1, evening: 2, anytime: 3 };
-
 function parseDateTime(dt: string): Date {
 	if (!dt) return new Date(0);
 	return new Date(dt.replace(' ', 'T'));
 }
 
-function sortBySlotThenTime(items: Item[]): Item[] {
+function sortBySortOrder(items: Item[]): Item[] {
 	return [...items].sort((a, b) => {
-		const slotDiff = (SLOT_ORDER[a.slot] ?? 9) - (SLOT_ORDER[b.slot] ?? 9);
-		if (slotDiff !== 0) return slotDiff;
+		const orderDiff = (a.sort_order ?? 0) - (b.sort_order ?? 0);
+		if (orderDiff !== 0) return orderDiff;
 		return parseDateTime(a.start_time).getTime() - parseDateTime(b.start_time).getTime();
 	});
 }
@@ -57,18 +55,18 @@ function groupItemsByDay(items: Item[], days: Day[]): DayGroup[] {
 	}
 	return days
 		.filter((d) => dayMap.has(d.id))
-		.map((d) => ({ day: d, items: sortBySlotThenTime(dayMap.get(d.id)!) }));
+		.map((d) => ({ day: d, items: sortBySortOrder(dayMap.get(d.id)!) }));
 }
 
 export function getTripModeState(items: Item[], days: Day[], now: Date): TripModeState {
 	const today = findToday(days, now);
 	const todayItems = today
-		? sortBySlotThenTime(items.filter((i) => i.day === today.id))
+		? sortBySortOrder(items.filter((i) => i.day === today.id))
 		: [];
 
 	const tomorrowDay = findTomorrow(days, now);
 	const tomorrowItems = tomorrowDay
-		? sortBySlotThenTime(items.filter((i) => i.day === tomorrowDay.id))
+		? sortBySortOrder(items.filter((i) => i.day === tomorrowDay.id))
 		: [];
 
 	const upcomingDaysList = findUpcomingDays(days, now, 3);

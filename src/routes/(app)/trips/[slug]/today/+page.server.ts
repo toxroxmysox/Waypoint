@@ -25,7 +25,7 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 	const items = todayAndUpcomingIds.length > 0
 		? await locals.pb.collection('items').getFullList<Item>({
 				filter: todayAndUpcomingIds.map((id) => `day = "${id}"`).join(' || '),
-				sort: 'day,start_time,rank'
+				sort: 'day,start_time,sort_order'
 			})
 		: [];
 

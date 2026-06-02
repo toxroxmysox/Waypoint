@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import CloseoutItemRow from '$lib/itinerary/components/CloseoutItemRow.svelte';
-	import { titleCase } from '$lib/shell/format';
 	import type { Day, Item, Phase } from '$lib/types';
 
 	let {
@@ -31,16 +30,7 @@
 		return phaseMap.get(day.phases[0])?.name || null;
 	});
 
-	const slotOrder = ['morning', 'afternoon', 'evening', 'anytime'] as const;
-
-	const itemsBySlot = $derived.by(() => {
-		const grouped = new Map<string, Item[]>();
-		for (const slot of slotOrder) {
-			const slotItems = items.filter((i) => (i.slot || 'anytime') === slot);
-			if (slotItems.length > 0) grouped.set(slot, slotItems);
-		}
-		return grouped;
-	});
+	const sortedItems = $derived([...items].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)));
 
 	const pendingItems = $derived(items.filter((i) => i.status !== 'done'));
 	let bulkSubmitting = $state(false);
@@ -88,23 +78,13 @@
 	{#if items.length === 0}
 		<p class="text-ink-muted px-4 py-6 text-center text-sm">No items for this day.</p>
 	{:else}
-		{#each slotOrder as slot}
-			{@const slotItems = itemsBySlot.get(slot)}
-			{#if slotItems && slotItems.length > 0}
-				<div>
-					<div class="bg-surface-2 px-4 py-1.5">
-						<span class="text-ink-muted text-xs font-medium uppercase tracking-wide">{titleCase(slot)}</span>
-					</div>
-					{#each slotItems as item (item.id)}
-						<CloseoutItemRow
-							{item}
-							{tripId}
-							dayId={day.id}
-							phaseId={day.phases?.[0] || ''}
-						/>
-					{/each}
-				</div>
-			{/if}
+		{#each sortedItems as item (item.id)}
+			<CloseoutItemRow
+				{item}
+				{tripId}
+				dayId={day.id}
+				phaseId={day.phases?.[0] || ''}
+			/>
 		{/each}
 	{/if}
 </div>

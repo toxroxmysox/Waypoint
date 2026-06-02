@@ -52,7 +52,6 @@ export const actions: Actions = {
 		const description = data.get('description')?.toString() || '';
 		const day = data.get('day')?.toString() || '';
 		const phase = data.get('phase')?.toString() || '';
-		const slot = data.get('slot')?.toString() || 'anytime';
 		const locationName = data.get('location_name')?.toString() || '';
 		const locationAddress = data.get('location_address')?.toString() || '';
 		const locationCoordsRaw = data.get('location_coords')?.toString() || '';
@@ -95,13 +94,21 @@ export const actions: Actions = {
 				return fail(400, { error: `${type} items cannot be marked as booked.` });
 			}
 
+			// Status logic: only override to planned/unplanned based on day presence;
+			// preserve 'done' and 'considered' statuses unless the item is being un-scheduled.
+			let resolvedStatus = status;
+			if (!day && status !== 'done' && status !== 'considered') {
+				resolvedStatus = 'unplanned';
+			} else if (day && status === 'unplanned') {
+				resolvedStatus = 'planned';
+			}
+
 			await locals.pb.collection('items').update(params.itemId, {
 				subtype,
 				title,
 				description,
 				day: day || '',
 				phase: phase || '',
-				slot,
 				location_name: locationName,
 				location_address: locationAddress,
 				location_coords: locationCoords,
@@ -115,8 +122,7 @@ export const actions: Actions = {
 				cost_estimate_usd: costEstimate,
 				cost_actual_usd: costActual,
 				assigned_to: assignedTo,
-				status,
-				parking_lot_scope: day ? 'none' : 'trip'
+				status: resolvedStatus
 			});
 
 			redirect(303, `/trips/${params.slug}/items/${params.itemId}`);

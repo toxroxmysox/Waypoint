@@ -43,13 +43,13 @@ describe('buildTripExport', () => {
 
 	it('resolves day dates and phase names for items', () => {
 		const phases: Phase[] = [
-			{ id: 'p1', trip: 'trip1', name: 'Barcelona', location: 'Barcelona', country_code: 'ES', start_date: '2026-06-01', end_date: '2026-06-03', color: '#ff0000', order: 0, collectionId: '', collectionName: 'phases', created: '', updated: '' }
+			{ id: 'p1', trip: 'trip1', name: 'Barcelona', location: 'Barcelona', country_code: 'ES', start_date: '2026-06-01', end_date: '2026-06-03', order: 0, collectionId: '', collectionName: 'phases', created: '', updated: '' }
 		];
 		const days: Day[] = [
 			{ id: 'd1', trip: 'trip1', phases: ['p1'], date: '2026-06-01', notes: '', collectionId: '', collectionName: 'days', created: '', updated: '' }
 		];
 		const items: Item[] = [
-			{ id: 'i1', trip: 'trip1', phase: 'p1', day: 'd1', slot: 'morning', type: 'activity', subtype: '', title: 'Sagrada Familia', description: '', location_name: '', location_address: '', location_coords: null, google_place_id: '', start_time: '', end_time: '', start_tz: '', end_tz: '', status: 'done', booked: true, booked_by: '', paid_by: '', confirmation_codes: [], reservation_url: '', free_cancellation: false, cost_estimate_usd: 0, cost_actual_usd: 0, assigned_to: [], rank: 0, parking_lot_scope: 'none', parent_item: '', created_by: '', collectionId: '', collectionName: 'items', created: '', updated: '' } as Item
+			{ id: 'i1', trip: 'trip1', phase: 'p1', day: 'd1', type: 'activity', subtype: '', title: 'Sagrada Familia', description: '', location_name: '', location_address: '', location_coords: null, google_place_id: '', start_time: '', end_time: '', start_tz: '', end_tz: '', status: 'done', booked: true, booked_by: '', paid_by: '', confirmation_codes: [], reservation_url: '', free_cancellation: false, cost_estimate_usd: 0, cost_actual_usd: 0, assigned_to: [], sort_order: 0, parent_item: '', created_by: '', collectionId: '', collectionName: 'items', created: '', updated: '' } as Item
 		];
 
 		const result = buildTripExport(makeTrip(), phases, days, items, null);

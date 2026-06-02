@@ -26,7 +26,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		}),
 		locals.pb.collection('items').getFullList<Item>({
 			filter: `trip = "${trip.id}" && phase = "${phase.id}"`,
-			sort: 'rank'
+			sort: 'sort_order'
 		})
 	]);
 

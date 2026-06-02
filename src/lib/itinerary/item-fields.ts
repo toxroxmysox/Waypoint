@@ -80,6 +80,17 @@ const itemFieldConfig: Record<ItemType, FieldVisibility> = {
 		confirmationCodes: false,
 		checklist: true,
 		parentItem: false
+	},
+	flight: {
+		subtype: false,
+		subtypes: [],
+		location: true,
+		times: true,
+		booking: true,
+		costs: true,
+		confirmationCodes: true,
+		checklist: false,
+		parentItem: false
 	}
 };
 
@@ -89,7 +100,8 @@ const itemTypeLabels: Record<ItemType, string> = {
 	activity: 'Activity',
 	meal: 'Meal',
 	note: 'Note',
-	checklist: 'Checklist'
+	checklist: 'Checklist',
+	flight: 'Flight'
 };
 
 export interface FieldValidation {
@@ -101,7 +113,6 @@ export interface FieldValidation {
 
 export interface FieldDefaults {
 	subtype: string;
-	slot: string;
 	status: string;
 	booked: boolean;
 	free_cancellation: boolean;
@@ -140,7 +151,6 @@ export function getFieldConfig(type: ItemType): FieldConfig {
 		validation: SHARED_VALIDATION,
 		defaults: {
 			subtype: subtypes.length > 0 ? subtypes[0] : '',
-			slot: 'anytime',
 			status: 'planned',
 			booked: false,
 			free_cancellation: false,
@@ -163,7 +173,6 @@ export function buildEmptyFormData(type: ItemType): ItemFormData {
 		title: '',
 		description: '',
 		day: '',
-		slot: defaults.slot,
 		phase: '',
 		start_time: '',
 		end_time: '',
@@ -182,9 +191,3 @@ export function buildEmptyFormData(type: ItemType): ItemFormData {
 	};
 }
 
-export const slotOptions = [
-	{ value: 'morning', label: 'Morning' },
-	{ value: 'afternoon', label: 'Afternoon' },
-	{ value: 'evening', label: 'Evening' },
-	{ value: 'anytime', label: 'Anytime' }
-] as const;

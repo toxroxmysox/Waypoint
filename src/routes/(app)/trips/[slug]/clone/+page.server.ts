@@ -11,7 +11,7 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 
 	const items = await locals.pb.collection('items').getFullList<Item>({
 		filter: `trip = "${trip.id}"`,
-		sort: 'rank'
+		sort: 'sort_order'
 	});
 
 	const itemTypeCounts = new Map<string, number>();
@@ -125,7 +125,7 @@ export const actions: Actions = {
 			if (includeItemTypes.length > 0) {
 				const sourceItems = await locals.pb.collection('items').getFullList<Item>({
 					filter: `trip = "${sourceTripRecord.id}"`,
-					sort: 'rank'
+					sort: 'sort_order'
 				});
 				const membership = await locals.pb
 					.collection('trip_members')
@@ -137,7 +137,6 @@ export const actions: Actions = {
 						trip: newTrip.id,
 						phase: phaseIdMap.get(item.phase) || '',
 						day: dayIdMap.get(item.day) || '',
-						slot: item.slot,
 						type: item.type,
 						subtype: item.subtype,
 						title: item.title,
@@ -156,8 +155,7 @@ export const actions: Actions = {
 						cost_estimate_usd: item.cost_estimate_usd,
 						cost_actual_usd: 0,
 						assigned_to: [],
-						rank: item.rank,
-						parking_lot_scope: item.parking_lot_scope,
+						sort_order: item.sort_order,
 						parent_item: '',
 						created_by: membership.id
 					});

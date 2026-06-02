@@ -1,9 +1,9 @@
 import { fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Day, TripMember, Slot } from '$lib/types';
+import type { Day, TripMember } from '$lib/types';
 import { timeToDatetime, datetimeToTime } from '$lib/shell/format';
+import { nextSortOrder } from '$lib/itinerary/sort-order';
 
-const VALID_SLOTS: Slot[] = ['morning', 'afternoon', 'evening', 'anytime'];
 const PB_BASE = process.env.PUBLIC_PB_URL || 'http://127.0.0.1:8090';
 
 export const load: PageServerLoad = async ({ url, locals, parent }) => {
@@ -11,7 +11,6 @@ export const load: PageServerLoad = async ({ url, locals, parent }) => {
 
 	const dayId = url.searchParams.get('day');
 	const phaseIdParam = url.searchParams.get('phase');
-	const slotParam = url.searchParams.get('slot') as Slot | null;
 	const suggestionId = url.searchParams.get('suggestion') || '';
 
 	// If a day was preselected and no phase was explicitly passed, infer the
@@ -68,7 +67,6 @@ export const load: PageServerLoad = async ({ url, locals, parent }) => {
 		members,
 		preselectedDay: dayId || '',
 		preselectedPhase,
-		preselectedSlot: slotParam && VALID_SLOTS.includes(slotParam) ? slotParam : 'anytime',
 		submitAsSuggestion,
 		prefill
 	};
@@ -90,7 +88,6 @@ export const actions: Actions = {
 		const description = data.get('description')?.toString() || '';
 		const day = data.get('day')?.toString() || '';
 		const phase = data.get('phase')?.toString() || '';
-		const slot = data.get('slot')?.toString() || 'anytime';
 		const locationName = data.get('location_name')?.toString() || '';
 		const locationAddress = data.get('location_address')?.toString() || '';
 		const locationCoordsRaw = data.get('location_coords')?.toString() || '';
@@ -137,7 +134,6 @@ export const actions: Actions = {
 			trip: trip.id,
 			phase: phase || '',
 			day: day || '',
-			slot,
 			type,
 			subtype,
 			title,
@@ -209,20 +205,16 @@ export const actions: Actions = {
 		// Direct create path (owner/co_owner, or traveler with auto_approve on).
 		try {
 			const existingItems = await locals.pb.collection('items').getFullList({
-				filter: day
-					? `trip = "${trip.id}" && day = "${day}" && slot = "${slot}"`
-					: `trip = "${trip.id}" && day = "" && slot = "${slot}"`,
-				sort: '-rank',
-				fields: 'rank'
+				filter: `trip = "${trip.id}" && day = "${day}"`,
+				fields: 'sort_order'
 			});
-			const nextRank = existingItems.length > 0 ? Number(existingItems[0]['rank']) + 1 : 0;
+			const nextOrder = nextSortOrder(existingItems.map((i) => Number(i.sort_order)));
 
 			await locals.pb.collection('items').create({
 				...payload,
-				rank: nextRank,
-				parking_lot_scope: day ? 'none' : 'trip',
+				sort_order: nextOrder,
 				created_by: membership.id,
-				status: 'planned'
+				status: day ? 'planned' : 'unplanned'
 			});
 
 			// Redirect back to day view if came from a day, otherwise trip overview

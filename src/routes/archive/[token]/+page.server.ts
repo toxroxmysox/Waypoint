@@ -44,7 +44,7 @@ export const load: PageServerLoad = async ({ params }) => {
 		}),
 		pb.collection('items').getFullList<Item>({
 			filter: `trip = "${trip.id}"`,
-			sort: 'day,slot,order'
+			sort: 'day,sort_order'
 		})
 	]);
 
@@ -52,7 +52,6 @@ export const load: PageServerLoad = async ({ params }) => {
 		id: item.id,
 		day: item.day,
 		phase: item.phase,
-		slot: item.slot,
 		type: item.type,
 		subtype: item.subtype,
 		title: item.title,

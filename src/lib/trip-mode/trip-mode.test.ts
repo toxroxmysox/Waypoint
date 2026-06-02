@@ -8,7 +8,6 @@ function makeItem(overrides: Partial<Item> = {}): Item {
 		trip: 'trip1',
 		phase: '',
 		day: 'day1',
-		slot: 'morning',
 		type: 'activity',
 		subtype: '',
 		title: 'Test Item',
@@ -31,8 +30,7 @@ function makeItem(overrides: Partial<Item> = {}): Item {
 		cost_estimate_usd: 0,
 		cost_actual_usd: 0,
 		assigned_to: [],
-		rank: 0,
-		parking_lot_scope: 'none',
+		sort_order: 0,
 		parent_item: '',
 		created_by: '',
 		collectionId: '',
@@ -85,24 +83,26 @@ describe('getTripModeState', () => {
 				makeDay({ id: 'day2', date: '2026-10-16 00:00:00.000Z' })
 			];
 			const items = [
-				makeItem({ id: 'a', day: 'day1', slot: 'morning' }),
-				makeItem({ id: 'b', day: 'day2', slot: 'morning' }),
-				makeItem({ id: 'c', day: 'day1', slot: 'evening' })
+				makeItem({ id: 'a', day: 'day1' }),
+				makeItem({ id: 'b', day: 'day2' }),
+				makeItem({ id: 'c', day: 'day1' })
 			];
 			const state = getTripModeState(items, days, oct15);
 			expect(state.now.todayItems).toHaveLength(2);
 			expect(state.now.todayItems.map(i => i.id)).toEqual(['a', 'c']);
 		});
 
-		it('sorts todayItems by slot order then start_time', () => {
-			const days = [makeDay({ id: 'day1', date: '2026-10-15 00:00:00.000Z' })];
-			const items = [
-				makeItem({ id: 'a', day: 'day1', slot: 'evening', start_time: '2026-10-15 19:00:00.000Z' }),
-				makeItem({ id: 'b', day: 'day1', slot: 'morning', start_time: '2026-10-15 09:00:00.000Z' }),
-				makeItem({ id: 'c', day: 'day1', slot: 'morning', start_time: '2026-10-15 10:00:00.000Z' })
-			];
-			const state = getTripModeState(items, days, oct15);
-			expect(state.now.todayItems.map(i => i.id)).toEqual(['b', 'c', 'a']);
+		it('sorts todayItems by sort_order then start_time', () => {
+			const state = getTripModeState(
+				[
+					makeItem({ id: 'a', day: 'day1', sort_order: 300 }),
+					makeItem({ id: 'b', day: 'day1', sort_order: 100, start_time: '2026-10-15 09:00:00.000Z' }),
+					makeItem({ id: 'c', day: 'day1', sort_order: 100, start_time: '2026-10-15 10:00:00.000Z' })
+				],
+				[makeDay({ id: 'day1', date: '2026-10-15 00:00:00.000Z' })],
+				oct15
+			);
+			expect(state.now.todayItems.map((i) => i.id)).toEqual(['b', 'c', 'a']);
 		});
 
 		it('finds the next upcoming item by start_time', () => {
@@ -181,21 +181,21 @@ describe('getTripModeState', () => {
 			];
 			const items = [
 				makeItem({ id: 'a', day: 'day1' }),
-				makeItem({ id: 'b', day: 'day2', slot: 'morning' }),
-				makeItem({ id: 'c', day: 'day2', slot: 'evening' })
+				makeItem({ id: 'b', day: 'day2', sort_order: 100 }),
+				makeItem({ id: 'c', day: 'day2', sort_order: 200 })
 			];
 			const state = getTripModeState(items, days, oct15);
 			expect(state.upNext.tomorrowItems).toHaveLength(2);
 			expect(state.upNext.tomorrowItems.map(i => i.id)).toEqual(['b', 'c']);
 		});
 
-		it('sorts tomorrowItems by slot order', () => {
+		it('sorts tomorrowItems by sort_order', () => {
 			const days = [
 				makeDay({ id: 'day2', date: '2026-10-16 00:00:00.000Z' })
 			];
 			const items = [
-				makeItem({ id: 'a', day: 'day2', slot: 'evening' }),
-				makeItem({ id: 'b', day: 'day2', slot: 'morning' })
+				makeItem({ id: 'a', day: 'day2', sort_order: 200 }),
+				makeItem({ id: 'b', day: 'day2', sort_order: 100 })
 			];
 			const state = getTripModeState(items, days, oct15);
 			expect(state.upNext.tomorrowItems.map(i => i.id)).toEqual(['b', 'a']);
@@ -238,14 +238,14 @@ describe('getTripModeState', () => {
 			expect(state.timeline.upcomingDays[0].day.id).toBe('day3');
 		});
 
-		it('sorts items within each day group by slot then time', () => {
+		it('sorts items within each day group by sort_order then time', () => {
 			const days = [
 				makeDay({ id: 'day2', date: '2026-10-16 00:00:00.000Z' })
 			];
 			const items = [
-				makeItem({ id: 'a', day: 'day2', slot: 'evening' }),
-				makeItem({ id: 'b', day: 'day2', slot: 'morning', start_time: '2026-10-16 10:00:00.000Z' }),
-				makeItem({ id: 'c', day: 'day2', slot: 'morning', start_time: '2026-10-16 08:00:00.000Z' })
+				makeItem({ id: 'a', day: 'day2', sort_order: 300 }),
+				makeItem({ id: 'b', day: 'day2', sort_order: 100, start_time: '2026-10-16 10:00:00.000Z' }),
+				makeItem({ id: 'c', day: 'day2', sort_order: 100, start_time: '2026-10-16 08:00:00.000Z' })
 			];
 			const state = getTripModeState(items, days, oct15);
 			expect(state.timeline.upcomingDays[0].items.map(i => i.id)).toEqual(['c', 'b', 'a']);

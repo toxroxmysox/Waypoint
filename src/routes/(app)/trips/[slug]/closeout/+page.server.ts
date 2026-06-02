@@ -11,7 +11,7 @@ export const load: PageServerLoad = async ({ parent, locals, params }) => {
 
 	const items = await locals.pb.collection('items').getFullList<Item>({
 		filter: `trip = "${trip.id}"`,
-		sort: 'day,slot,rank'
+		sort: 'day,sort_order'
 	});
 
 	return { trip, membership, days, phases, items };
@@ -52,7 +52,6 @@ export const actions: Actions = {
 		const originalItemId = data.get('original_item_id')?.toString();
 		const dayId = data.get('day_id')?.toString() || '';
 		const phaseId = data.get('phase_id')?.toString() || '';
-		const slot = data.get('slot')?.toString() || 'anytime';
 		const title = data.get('title')?.toString().trim();
 		const type = data.get('type')?.toString() || 'activity';
 
@@ -67,12 +66,11 @@ export const actions: Actions = {
 				trip: tripId,
 				day: dayId,
 				phase: phaseId,
-				slot,
 				type,
 				title,
 				status: 'done',
 				booked: false,
-				rank: 999
+				sort_order: 999
 			});
 			return { replacementAdded: true };
 		} catch (err: unknown) {

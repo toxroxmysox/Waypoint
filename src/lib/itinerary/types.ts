@@ -26,7 +26,6 @@ export interface Phase extends RecordModel {
 	country_code: string;
 	start_date: string;
 	end_date: string;
-	color: string;
 	order: number;
 }
 
@@ -37,10 +36,8 @@ export interface Day extends RecordModel {
 	notes: string;
 }
 
-export type ItemType = 'lodging' | 'transportation' | 'activity' | 'meal' | 'note' | 'checklist';
-export type Slot = 'morning' | 'afternoon' | 'evening' | 'anytime';
-export type ItemStatus = 'planned' | 'done' | 'considered';
-export type ParkingLotScope = 'none' | 'trip' | 'phase' | 'day';
+export type ItemType = 'lodging' | 'transportation' | 'activity' | 'meal' | 'note' | 'checklist' | 'flight';
+export type ItemStatus = 'planned' | 'done' | 'considered' | 'unplanned';
 
 export interface ConfirmationCode {
 	label: string;
@@ -51,7 +48,6 @@ export interface Item extends RecordModel {
 	trip: string;
 	phase: string;
 	day: string;
-	slot: Slot;
 	type: ItemType;
 	subtype: string;
 	title: string;
@@ -74,8 +70,7 @@ export interface Item extends RecordModel {
 	cost_estimate_usd: number;
 	cost_actual_usd: number;
 	assigned_to: string[];
-	rank: number;
-	parking_lot_scope: ParkingLotScope;
+	sort_order: number;
 	parent_item: string;
 	created_by: string;
 }
