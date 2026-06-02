@@ -72,8 +72,8 @@ export const actions: Actions = {
 
 		if (!itemId) return fail(400, { error: 'Missing item ID.' });
 
-		const before = beforeOrder ? Number(beforeOrder) : null;
-		const after = afterOrder ? Number(afterOrder) : null;
+		const before = beforeOrder && !isNaN(Number(beforeOrder)) ? Number(beforeOrder) : null;
+		const after = afterOrder && !isNaN(Number(afterOrder)) ? Number(afterOrder) : null;
 
 		let newOrder = insertBetween(before, after);
 

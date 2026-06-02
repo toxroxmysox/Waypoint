@@ -45,7 +45,7 @@ describe('buildTimeline', () => {
 			makeItem({ id: 'anchor2', start_time: '2026-06-15 14:00:00.000Z', sort_order: 300 }),
 		];
 		const timeline = buildTimeline(items);
-		const itemIds = timeline.filter((e) => e.kind === 'item').map((e) => (e as any).item.id);
+		const itemIds = timeline.filter((e): e is TimelineItemEntry => e.kind === 'item').map((e) => e.item.id);
 		expect(itemIds).toEqual(['anchor1', 'untimed1', 'untimed2', 'anchor2']);
 	});
 
@@ -56,7 +56,7 @@ describe('buildTimeline', () => {
 			makeItem({ id: 'b', sort_order: 200 }),
 		];
 		const timeline = buildTimeline(items);
-		const itemIds = timeline.filter((e) => e.kind === 'item').map((e) => (e as any).item.id);
+		const itemIds = timeline.filter((e): e is TimelineItemEntry => e.kind === 'item').map((e) => e.item.id);
 		expect(itemIds).toEqual(['a', 'b', 'c']);
 	});
 
@@ -78,7 +78,7 @@ describe('buildTimeline', () => {
 			makeItem({ id: 'anchor', start_time: '2026-06-15 10:00:00.000Z', sort_order: 100 }),
 		];
 		const timeline = buildTimeline(items);
-		const itemIds = timeline.filter((e) => e.kind === 'item').map((e) => (e as any).item.id);
+		const itemIds = timeline.filter((e) => e.kind === 'item').map((e) => (e as TimelineItemEntry).item.id);
 		expect(itemIds).toEqual(['untimed', 'anchor']);
 	});
 
@@ -88,7 +88,7 @@ describe('buildTimeline', () => {
 			makeItem({ id: 'untimed', sort_order: 200 }),
 		];
 		const timeline = buildTimeline(items);
-		const itemIds = timeline.filter((e) => e.kind === 'item').map((e) => (e as any).item.id);
+		const itemIds = timeline.filter((e) => e.kind === 'item').map((e) => (e as TimelineItemEntry).item.id);
 		expect(itemIds).toEqual(['anchor', 'untimed']);
 	});
 
