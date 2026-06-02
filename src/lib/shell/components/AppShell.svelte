@@ -3,7 +3,7 @@
 	import SideRail from './SideRail.svelte';
 	import ContextRail from './ContextRail.svelte';
 	import type { Snippet } from 'svelte';
-	import type { MemberRole, Phase, Day, Trip } from '$lib/types';
+	import type { MemberRole, Phase, Day, Trip, Item } from '$lib/types';
 
 	let {
 		children,
@@ -11,7 +11,8 @@
 		role = '',
 		trip,
 		phases = [],
-		days = []
+		days = [],
+		parkingLotItems = []
 	}: {
 		children: Snippet;
 		slug: string;
@@ -19,6 +20,7 @@
 		trip?: Trip;
 		phases?: Phase[];
 		days?: Day[];
+		parkingLotItems?: Item[];
 	} = $props();
 </script>
 
@@ -35,5 +37,5 @@
 	<div class="md-desktop:ml-[72px] lg-desktop:ml-[240px] lg-desktop:mr-[320px]">
 		{@render children()}
 	</div>
-	<ContextRail {slug} {trip} {phases} {days} />
+	<ContextRail {slug} {trip} {phases} {days} {parkingLotItems} />
 </div>
