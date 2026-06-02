@@ -1,17 +1,16 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import type { Item } from '$lib/types';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
 	import Button from '$lib/ui/Button.svelte';
 	import SectionH from '$lib/ui/SectionH.svelte';
-	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import FAB from '$lib/shell/components/FAB.svelte';
 	import { toast } from '$lib/shell/stores/toast';
 	import DayNav from '$lib/shell/components/DayNav.svelte';
 	import PhaseChip from '$lib/ui/PhaseChip.svelte';
-	import { titleCase, formatTime } from '$lib/shell/format';
+	import DayTimeline from '$lib/itinerary/components/DayTimeline.svelte';
+	import ParkingLotSection from '$lib/itinerary/components/ParkingLotSection.svelte';
 
 	let { data, form } = $props();
 
@@ -136,62 +135,24 @@
 			Items
 		</SectionH>
 
-		{#if data.dayItems.length > 0}
-			<div class="space-y-2">
-				{#each data.dayItems as item}
-					<Card href="/trips/{data.trip.slug}/items/{item.id}">
-						<div class="flex items-start gap-3 p-3">
-							<TypeIcon type={item.type} sub={item.subtype} size={32} />
-							<div class="min-w-0 flex-1">
-								<div class="flex items-center gap-2">
-									<h4 class="text-ink truncate text-sm font-semibold">{item.title}</h4>
-									{#if item.booked}
-										<Pill variant="booked" size="sm">Booked</Pill>
-									{/if}
-									{#if data.voteCounts[item.id]}
-										<span class="text-moss inline-flex items-center gap-0.5 text-[11px] font-semibold">
-											<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-												<path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z" />
-												<path d="M1 21h4V10H1z" />
-											</svg>
-											{data.voteCounts[item.id]}
-										</span>
-									{/if}
-								</div>
-								{#if item.start_time || item.location_name}
-									<p class="text-ink-muted mt-0.5 text-[12px]">
-										{#if item.start_time}
-											<span class="font-mono"
-												>{formatTime(item.start_time)}{item.end_time
-													? ` – ${formatTime(item.end_time)}`
-													: ''}</span
-											>
-										{/if}
-										{#if item.start_time && item.location_name}
-											<span class="text-line">·</span>
-										{/if}
-										{#if item.location_name}{item.location_name}{/if}
-									</p>
-								{/if}
-								{#if item.subtype}
-									<p class="text-ink-muted mt-1 text-[11px] uppercase tracking-wide">
-										{titleCase(item.subtype)}
-									</p>
-								{/if}
-							</div>
-						</div>
-					</Card>
-				{/each}
-			</div>
-		{:else}
-			<a
-				href="/trips/{data.trip.slug}/items/new?day={data.day.id}"
-				class="border-line text-ink-muted hover:border-ink-muted hover:text-ink-soft block rounded-lg border border-dashed px-3 py-2 text-xs"
-			>
-				Empty. Tap to add one.
-			</a>
-		{/if}
+		<DayTimeline
+			items={data.dayItems}
+			tripSlug={data.trip.slug}
+			dayId={data.day.id}
+		/>
 	</section>
+
+	<!-- Parking lot (mobile) -->
+	{#if data.parkingLotItems && data.parkingLotItems.length > 0}
+		<section class="space-y-1.5 lg-desktop:hidden">
+			<SectionH>Ideas</SectionH>
+			<ParkingLotSection
+				items={data.parkingLotItems}
+				phases={data.dayPhases}
+				tripSlug={data.trip.slug}
+			/>
+		</section>
+	{/if}
 </main>
 
 <FAB href="/trips/{data.trip.slug}/items/new?day={data.day.id}" label="Add item" />
