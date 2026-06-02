@@ -11,6 +11,7 @@
 	import PhaseChip from '$lib/ui/PhaseChip.svelte';
 	import DayTimeline from '$lib/itinerary/components/DayTimeline.svelte';
 	import ParkingLotSection from '$lib/itinerary/components/ParkingLotSection.svelte';
+	import DragDropTimeline from '$lib/itinerary/components/DragDropTimeline.svelte';
 
 	let { data, form } = $props();
 
@@ -120,39 +121,58 @@
 		</div>
 	</Card>
 
-	<!-- Items -->
-	<section class="space-y-1.5">
-		<SectionH>
-			{#snippet right()}
-				<a
-					href="/trips/{data.trip.slug}/items/new?day={data.day.id}"
-					class="text-ink-muted hover:text-ink-soft"
-					aria-label="Add item"
+	<DragDropTimeline
+		dayItems={data.dayItems}
+		parkingLotItems={data.parkingLotItems}
+		tripSlug={data.trip.slug}
+		dayId={data.day.id}
+	>
+		{#snippet children({ draggedItemId, onDragStart, onDragOver, onDropTimeline, onDropParking, onDragEnd })}
+			<!-- Items -->
+			<section class="space-y-1.5">
+				<SectionH>
+					{#snippet right()}
+						<a
+							href="/trips/{data.trip.slug}/items/new?day={data.day.id}"
+							class="text-ink-muted hover:text-ink-soft"
+							aria-label="Add item"
+						>
+							+ Add
+						</a>
+					{/snippet}
+					Items
+				</SectionH>
+
+				<DayTimeline
+					items={data.dayItems}
+					tripSlug={data.trip.slug}
+					dayId={data.day.id}
+					{draggedItemId}
+					{onDragStart}
+					{onDragOver}
+					{onDropTimeline}
+					{onDragEnd}
+				/>
+			</section>
+
+			<!-- Parking lot (mobile) -->
+			{#if data.parkingLotItems && data.parkingLotItems.length > 0}
+				<section
+					class="space-y-1.5 lg-desktop:hidden"
+					role="none"
+					ondragover={(e) => e.preventDefault()}
+					ondrop={() => onDropParking()}
 				>
-					+ Add
-				</a>
-			{/snippet}
-			Items
-		</SectionH>
-
-		<DayTimeline
-			items={data.dayItems}
-			tripSlug={data.trip.slug}
-			dayId={data.day.id}
-		/>
-	</section>
-
-	<!-- Parking lot (mobile) -->
-	{#if data.parkingLotItems && data.parkingLotItems.length > 0}
-		<section class="space-y-1.5 lg-desktop:hidden">
-			<SectionH>Ideas</SectionH>
-			<ParkingLotSection
-				items={data.parkingLotItems}
-				phases={data.dayPhases}
-				tripSlug={data.trip.slug}
-			/>
-		</section>
-	{/if}
+					<SectionH>Ideas</SectionH>
+					<ParkingLotSection
+						items={data.parkingLotItems}
+						phases={data.dayPhases}
+						tripSlug={data.trip.slug}
+					/>
+				</section>
+			{/if}
+		{/snippet}
+	</DragDropTimeline>
 </main>
 
 <FAB href="/trips/{data.trip.slug}/items/new?day={data.day.id}" label="Add item" />
