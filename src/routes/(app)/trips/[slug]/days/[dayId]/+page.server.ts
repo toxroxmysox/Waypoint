@@ -88,19 +88,28 @@ export const actions: Actions = {
 			const orderedIds = dayItems.filter((i) => i.id !== itemId).map((i) => i.id);
 			let insertIdx = orderedIds.length;
 			if (after !== null) {
-				const afterIdx = dayItems.findIndex((i) => i.sort_order === after);
+				const afterIdx = orderedIds.findIndex(
+					(id) => dayItems.find((i) => i.id === id)?.sort_order === after
+				);
 				if (afterIdx >= 0) insertIdx = afterIdx;
 			} else if (before !== null) {
-				const beforeIdx = dayItems.findIndex((i) => i.sort_order === before);
+				const beforeIdx = orderedIds.findIndex(
+					(id) => dayItems.find((i) => i.id === id)?.sort_order === before
+				);
 				if (beforeIdx >= 0) insertIdx = beforeIdx + 1;
 			}
 			orderedIds.splice(insertIdx, 0, itemId);
 
 			const updates = rebalance(orderedIds);
-			await Promise.all(
-				updates.map((u) => locals.pb.collection('items').update(u.id, { sort_order: u.sort_order }))
-			);
-			return { success: true };
+			try {
+				await Promise.all(
+					updates.map((u) => locals.pb.collection('items').update(u.id, { sort_order: u.sort_order }))
+				);
+				return { success: true };
+			} catch (err: unknown) {
+				const message = err instanceof Error ? err.message : 'Failed to reorder.';
+				return fail(500, { error: message });
+			}
 		}
 
 		try {
