@@ -2,6 +2,7 @@ import { fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Day, TripMember } from '$lib/types';
 import { timeToDatetime, datetimeToTime } from '$lib/shell/format';
+import { nextSortOrder } from '$lib/itinerary/sort-order';
 
 const PB_BASE = process.env.PUBLIC_PB_URL || 'http://127.0.0.1:8090';
 
@@ -205,14 +206,13 @@ export const actions: Actions = {
 		try {
 			const existingItems = await locals.pb.collection('items').getFullList({
 				filter: `trip = "${trip.id}" && day = "${day}"`,
-				sort: '-sort_order',
 				fields: 'sort_order'
 			});
-			const nextSortOrder = existingItems.length > 0 ? Number(existingItems[0]['sort_order']) + 1 : 0;
+			const nextOrder = nextSortOrder(existingItems.map((i) => Number(i.sort_order)));
 
 			await locals.pb.collection('items').create({
 				...payload,
-				sort_order: nextSortOrder,
+				sort_order: nextOrder,
 				created_by: membership.id,
 				status: day ? 'planned' : 'unplanned'
 			});
