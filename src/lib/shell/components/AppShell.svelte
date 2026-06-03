@@ -28,24 +28,20 @@
 	} = $props();
 
 	const active = $derived(trip ? isTripActive(trip) : false);
+	const defaultMode: TripViewMode = $derived(active ? 'trip' : 'planning');
 
-	let mode = $state<TripViewMode>('planning');
-	let initialized = false;
+	let userOverride = $state<TripViewMode | null>(null);
+
+	const mode: TripViewMode = $derived(active ? (userOverride ?? defaultMode) : 'planning');
 
 	$effect(() => {
-		if (active && !initialized) {
-			mode = 'trip';
-			initialized = true;
-		} else if (!active) {
-			mode = 'planning';
-			initialized = false;
-		}
+		if (!active) userOverride = null;
 	});
 
 	const navConfig = $derived(getNavConfig(slug, mode));
 
 	function toggleMode() {
-		mode = mode === 'trip' ? 'planning' : 'trip';
+		userOverride = mode === 'trip' ? 'planning' : 'trip';
 	}
 </script>
 
