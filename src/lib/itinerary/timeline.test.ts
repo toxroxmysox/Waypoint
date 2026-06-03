@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildTimeline } from './timeline';
-import type { TimelineEntry } from './timeline';
+import type { TimelineEntry, TimelineItemEntry } from './timeline';
 import type { Item } from '$lib/types';
 import type { RecordModel } from 'pocketbase';
 
