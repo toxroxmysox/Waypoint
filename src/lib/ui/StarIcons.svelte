@@ -7,7 +7,10 @@
 		| 'more'
 		| 'plus'
 		| 'settings'
-		| 'arrow-left';
+		| 'arrow-left'
+		| 'clock'
+		| 'sun'
+		| 'lock';
 
 	let {
 		name,
@@ -65,5 +68,21 @@
 	{:else if name === 'arrow-left'}
 		<line x1="19" y1="12" x2="5" y2="12" />
 		<polyline points="12 19 5 12 12 5" />
+	{:else if name === 'clock'}
+		<circle cx="12" cy="12" r="10" />
+		<polyline points="12 6 12 12 16 14" />
+	{:else if name === 'sun'}
+		<circle cx="12" cy="12" r="5" />
+		<line x1="12" y1="1" x2="12" y2="3" />
+		<line x1="12" y1="21" x2="12" y2="23" />
+		<line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+		<line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+		<line x1="1" y1="12" x2="3" y2="12" />
+		<line x1="21" y1="12" x2="23" y2="12" />
+		<line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+		<line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+	{:else if name === 'lock'}
+		<rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+		<path d="M7 11V7a5 5 0 0 1 10 0v4" />
 	{/if}
 </svg>
