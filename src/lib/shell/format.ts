@@ -28,3 +28,12 @@ export function formatTimeRange(start: string, end: string): string {
 	if (start && end) return `${formatTime(start)} – ${formatTime(end)}`;
 	return formatTime(start || end);
 }
+
+export function formatCountdown(minutes: number): string {
+	if (minutes <= 0) return '< 1m';
+	const h = Math.floor(minutes / 60);
+	const m = minutes % 60;
+	if (h === 0) return `${m}m`;
+	if (m === 0) return `${h}h`;
+	return `${h}h ${m}m`;
+}
