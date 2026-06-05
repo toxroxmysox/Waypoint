@@ -3,6 +3,7 @@
 	import SideRail from './SideRail.svelte';
 	import ContextRail from './ContextRail.svelte';
 	import ModePill from './ModePill.svelte';
+	import AddSheet from '$lib/trip-mode/components/AddSheet.svelte';
 	import type { Snippet } from 'svelte';
 	import type { MemberRole, Phase, Day, Trip, Item } from '$lib/types';
 	import { isTripActive } from '$lib/trip-mode/activation';
@@ -43,6 +44,18 @@
 	function toggleMode() {
 		userOverride = mode === 'trip' ? 'planning' : 'trip';
 	}
+
+	let addSheetOpen = $state(false);
+
+	const todayDayId = $derived.by(() => {
+		const todayStr = new Date().toISOString().split('T')[0];
+		const day = days.find((d) => d.date?.split(/[T ]/)[0] === todayStr);
+		return day?.id ?? null;
+	});
+
+	function handleNavAction(action: string) {
+		if (action === 'add-sheet') addSheetOpen = true;
+	}
 </script>
 
 <!-- Mobile: content + bottom nav -->
@@ -53,7 +66,7 @@
 		</div>
 	{/if}
 	{@render children()}
-	<BottomNav config={navConfig} />
+	<BottomNav config={navConfig} onAction={handleNavAction} />
 	<div class="h-16"></div>
 </div>
 
@@ -68,9 +81,14 @@
 		{active}
 		onToggleMode={toggleMode}
 		{mode}
+		onAction={handleNavAction}
 	/>
 	<div class="md-desktop:ml-[72px] lg-desktop:ml-[240px] lg-desktop:mr-[320px]">
 		{@render children()}
 	</div>
 	<ContextRail {slug} {trip} {phases} {days} {parkingLotItems} />
 </div>
+
+{#if trip}
+	<AddSheet bind:open={addSheetOpen} slug={trip.slug} {todayDayId} />
+{/if}

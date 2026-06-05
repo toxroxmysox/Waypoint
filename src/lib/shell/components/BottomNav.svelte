@@ -4,7 +4,13 @@
 	import { getActiveTab } from '$lib/shell/nav-tabs';
 	import type { NavConfig } from '$lib/shell/nav-tabs';
 
-	let { config }: { config: NavConfig } = $props();
+	let {
+		config,
+		onAction
+	}: {
+		config: NavConfig;
+		onAction?: (action: string) => void;
+	} = $props();
 
 	let inputFocused = $state(false);
 
@@ -31,7 +37,18 @@
 	{#each config.tabs as tab}
 		{@const isActive = activeTabId === tab.id}
 		{@const activeColor = config.accent === 'clay' ? 'text-clay' : 'text-moss'}
-		{#if tab.oversized}
+		{#if tab.oversized && tab.action}
+			<button
+				type="button"
+				class="flex flex-1 flex-col items-center justify-center py-2"
+				aria-label={tab.label}
+				onclick={() => onAction?.(tab.action!)}
+			>
+				<span class="bg-clay flex h-12 w-12 items-center justify-center rounded-full text-white shadow-md">
+					<StarIcons name={tab.icon} size={22} />
+				</span>
+			</button>
+		{:else if tab.oversized}
 			<a
 				href={tab.href}
 				class="flex flex-1 flex-col items-center justify-center py-2"

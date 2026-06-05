@@ -15,7 +15,8 @@
 		config,
 		active = false,
 		onToggleMode,
-		mode = 'planning'
+		mode = 'planning',
+		onAction
 	}: {
 		slug: string;
 		role?: string;
@@ -25,6 +26,7 @@
 		active?: boolean;
 		onToggleMode?: () => void;
 		mode?: TripViewMode;
+		onAction?: (action: string) => void;
 	} = $props();
 
 	const activeTabId = $derived(
@@ -83,7 +85,24 @@
 			{@const activeClasses = config.accent === 'clay'
 				? 'bg-clay-tint text-clay font-medium'
 				: 'bg-moss-tint text-moss font-medium'}
-			{#if tab.oversized}
+			{#if tab.oversized && tab.action}
+				<button
+					type="button"
+					class="flex items-center gap-3 rounded-lg transition-colors
+						md-desktop:w-12 md-desktop:flex-col md-desktop:justify-center md-desktop:gap-0.5 md-desktop:px-1 md-desktop:py-2.5 md-desktop:text-[11px]
+						lg-desktop:w-auto lg-desktop:flex-row lg-desktop:justify-start lg-desktop:px-3 lg-desktop:py-2 lg-desktop:text-sm
+						bg-clay text-white font-medium"
+					aria-label={tab.label}
+					onclick={() => onAction?.(tab.action!)}
+				>
+					<StarIcons
+						name={tab.icon}
+						size={18}
+						class="shrink-0 md-desktop:h-5 md-desktop:w-5 lg-desktop:h-[18px] lg-desktop:w-[18px]"
+					/>
+					<span class="md-desktop:block lg-desktop:block">{tab.label}</span>
+				</button>
+			{:else if tab.oversized}
 				<a
 					href={tab.href}
 					class="flex items-center gap-3 rounded-lg transition-colors

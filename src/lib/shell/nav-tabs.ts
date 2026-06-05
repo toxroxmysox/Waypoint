@@ -7,6 +7,7 @@ export interface NavTab {
 	href: string;
 	icon: 'calendar' | 'dollar' | 'users' | 'more' | 'clock' | 'sun' | 'plus' | 'lock';
 	oversized?: boolean;
+	action?: 'add-sheet';
 }
 
 export interface NavConfig {
@@ -21,7 +22,7 @@ export function getNavConfig(slug: string, mode: TripViewMode): NavConfig {
 			tabs: [
 				{ id: 'now', label: 'Now', href: `/trips/${slug}/now`, icon: 'clock' },
 				{ id: 'today', label: 'Today', href: `/trips/${slug}/today`, icon: 'sun' },
-				{ id: 'add', label: 'Add', href: `/trips/${slug}/items/new?from=trip`, icon: 'plus', oversized: true },
+				{ id: 'add', label: 'Add', href: '', icon: 'plus', oversized: true, action: 'add-sheet' },
 				{ id: 'vault', label: 'Vault', href: `/trips/${slug}/vault`, icon: 'lock' }
 			]
 		};
