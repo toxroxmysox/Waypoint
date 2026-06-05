@@ -1,13 +1,12 @@
 <script lang="ts">
-	import type { Item } from '$lib/types';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import SubTabs from '$lib/ui/SubTabs.svelte';
-	import TripModeCard from '$lib/trip-mode/components/TripModeCard.svelte';
-	import NowDivider from '$lib/trip-mode/components/NowDivider.svelte';
+	import TodayTimeline from '$lib/trip-mode/components/TodayTimeline.svelte';
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import Card from '$lib/ui/Card.svelte';
 	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
 	import { getTripModeState } from '$lib/trip-mode/trip-mode';
+	import { formatTime } from '$lib/shell/format';
 	import { untrack } from 'svelte';
 	import type { Notification } from '$lib/types';
 
@@ -57,26 +56,11 @@
 	{:else}
 		<h2 class="font-display text-ink text-xl font-semibold">{dayLabel(tripMode.now.today.date)}</h2>
 
-		{#if tripMode.now.todayItems.length === 0}
-			<Card>
-				<div class="p-6 text-center">
-					<p class="text-ink-muted text-sm">Nothing scheduled for today.</p>
-				</div>
-			</Card>
-		{:else}
-			<section class="space-y-2">
-				{#each tripMode.now.todayItems as item}
-					{#if tripMode.now.nextItem && tripMode.now.nextItem.id === item.id}
-						<NowDivider label="Up next" />
-					{/if}
-					<TripModeCard
-						{item}
-						slug={data.trip.slug}
-						isNext={tripMode.now.nextItem?.id === item.id}
-					/>
-				{/each}
-			</section>
-		{/if}
+		<TodayTimeline
+			items={tripMode.now.todayItems}
+			tripSlug={data.trip.slug}
+			{now}
+		/>
 
 		{#if tripMode.upNext.tomorrowDay}
 			{@const tomorrowItems = tripMode.upNext.tomorrowItems}
@@ -92,7 +76,7 @@
 						{#each tomorrowItems.slice(0, 3) as item}
 							<a href="/trips/{data.trip.slug}/items/{item.id}" class="border-line hover:border-ink-muted flex items-center gap-2 rounded-lg border px-3 py-2">
 								<span class="font-mono text-ink-muted text-xs">
-									{item.start_time ? new Date(item.start_time.replace(' ', 'T')).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }) : '—'}
+									{item.start_time ? formatTime(item.start_time) : '—'}
 								</span>
 								<span class="text-ink text-sm truncate">{item.title}</span>
 							</a>

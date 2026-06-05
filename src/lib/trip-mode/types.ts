@@ -26,3 +26,9 @@ export interface TripModeState {
 	upNext: UpNext;
 	timeline: Timeline;
 }
+
+export type NowViewState =
+	| { kind: 'mid-event'; currentItem: Item; nextItem: Item | null; tomorrowFirstItem: Item | null; minutesRemaining: number }
+	| { kind: 'between-things'; nextItem: Item; minutesUntilNext: number }
+	| { kind: 'day-wrapped'; completedCount: number; totalCount: number }
+	| { kind: 'no-day' };
