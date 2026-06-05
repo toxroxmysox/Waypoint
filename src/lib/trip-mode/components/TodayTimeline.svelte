@@ -3,7 +3,7 @@
 	import { buildTimeline } from '$lib/itinerary/timeline';
 	import TodayItemCard from './TodayItemCard.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
-	import { tick } from 'svelte';
+	import { tick, onMount } from 'svelte';
 
 	let {
 		items,
@@ -43,7 +43,7 @@
 		return null;
 	}
 
-	$effect(() => {
+	onMount(() => {
 		const id = findCurrentItemId();
 		if (!id) return;
 		tick().then(() => {
