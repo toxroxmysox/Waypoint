@@ -53,7 +53,7 @@
 
 	<!-- Trip name -->
 	{#if tripName}
-		<div class="border-line border-b px-2 pb-3 md-desktop:text-center lg-desktop:px-5 lg-desktop:text-left">
+		<div class="border-line hidden border-b pb-3 lg-desktop:block lg-desktop:px-5 lg-desktop:text-left">
 			<p
 				class="text-ink-soft truncate text-xs font-medium"
 				title={tripName}
