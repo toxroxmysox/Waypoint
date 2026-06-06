@@ -1,5 +1,6 @@
 import type { PageServerLoad } from './$types';
 import type { Trip, TripMember } from '$lib/types';
+import { tripToday, tripTz } from '$lib/shell/trip-time';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	// Get all trip memberships for the current user
@@ -7,8 +8,6 @@ export const load: PageServerLoad = async ({ locals }) => {
 		filter: `user = "${locals.user!.id}"`,
 		expand: 'trip'
 	});
-
-	const now = new Date().toISOString().split('T')[0];
 
 	const trips = memberships
 		.map((m) => ({
@@ -27,19 +26,22 @@ export const load: PageServerLoad = async ({ locals }) => {
 		});
 
 	const active = trips.filter((t) => {
+		const today = tripToday(tripTz(t.trip!));
 		const start = t.trip!.start_date.split('T')[0];
 		const end = t.trip!.end_date.split('T')[0];
-		return start <= now && now <= end;
+		return start <= today && today <= end;
 	});
 
 	const upcoming = trips.filter((t) => {
+		const today = tripToday(tripTz(t.trip!));
 		const start = t.trip!.start_date.split('T')[0];
-		return start > now;
+		return start > today;
 	});
 
 	const past = trips.filter((t) => {
+		const today = tripToday(tripTz(t.trip!));
 		const end = t.trip!.end_date.split('T')[0];
-		return end < now;
+		return end < today;
 	});
 
 	return { active, upcoming, past };

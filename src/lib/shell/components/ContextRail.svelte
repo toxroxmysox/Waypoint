@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import type { Trip, Phase, Day, Item } from '$lib/types';
 	import { getActiveSection, formatTripDate } from '$lib/shell/trip-nav';
+	import { tripToday, tripTz } from '$lib/shell/trip-time';
 	import ParkingLotSection from '$lib/itinerary/components/ParkingLotSection.svelte';
 
 	let {
@@ -22,7 +23,7 @@
 
 	const isDayPage = $derived(page.url.pathname.includes('/days/'));
 
-	const today = $derived(new Date().toISOString().split('T')[0]);
+	const today = $derived(tripToday(tripTz(trip ?? {})));
 
 	const todayDay = $derived(days.find((d) => d.date.split(/[T ]/)[0] === today));
 
