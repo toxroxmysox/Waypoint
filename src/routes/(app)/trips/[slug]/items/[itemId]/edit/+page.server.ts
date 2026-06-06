@@ -1,7 +1,8 @@
 import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Item, ChecklistItem, TripMember } from '$lib/types';
-import { timeToDatetime, datetimeToTime } from '$lib/shell/format';
+import { datetimeToTime } from '$lib/shell/format';
+import { combineDateTime } from '$lib/shell/trip-time';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, phases, days } = await parent();
@@ -103,6 +104,18 @@ export const actions: Actions = {
 				resolvedStatus = 'planned';
 			}
 
+			// Resolve the owning day's date so item times carry the real calendar
+			// date (naive trip-local), not a 1970 placeholder. No day = no anchor.
+			let dayDate = '';
+			if (day) {
+				try {
+					const dayRec = await locals.pb.collection('days').getOne(day);
+					dayDate = String(dayRec.date || '');
+				} catch {
+					dayDate = '';
+				}
+			}
+
 			await locals.pb.collection('items').update(params.itemId, {
 				subtype,
 				title,
@@ -113,8 +126,8 @@ export const actions: Actions = {
 				location_address: locationAddress,
 				location_coords: locationCoords,
 				google_place_id: googlePlaceId,
-				start_time: timeToDatetime(startTime),
-				end_time: timeToDatetime(endTime),
+				start_time: combineDateTime(dayDate, startTime),
+				end_time: combineDateTime(dayDate, endTime),
 				booked,
 				confirmation_codes: confirmationCodes,
 				reservation_url: reservationUrl,
