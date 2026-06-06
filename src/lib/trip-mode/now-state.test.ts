@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { getNowViewState } from './now-state';
+import { tripNow } from '$lib/shell/trip-time';
 import type { Item } from '$lib/types';
 
 function makeItem(overrides: Partial<Item> = {}): Item {
@@ -243,5 +244,34 @@ describe('getNowViewState', () => {
 			const result = getNowViewState(items, new Date('2026-10-15T14:00:00Z'), true);
 			expect(result.kind).toBe('day-wrapped');
 		});
+	});
+});
+
+describe('now-state with real stored datetimes (regression for 1970 bug)', () => {
+	it('reaches mid-event when an item spans the current trip-local moment', () => {
+		// Instant: 2026-06-08T16:00:00Z. Madrid wall clock = 18:00 Jun 8.
+		const now = tripNow('Europe/Madrid', new Date('2026-06-08T16:00:00.000Z'));
+		const items = [
+			makeItem({
+				start_time: '2026-06-08 17:30:00.000Z',
+				end_time: '2026-06-08 19:00:00.000Z',
+				status: 'planned'
+			})
+		];
+		const state = getNowViewState(items, now, true);
+		expect(state.kind).toBe('mid-event');
+	});
+
+	it('reaches between-things when the next item is later today', () => {
+		const now = tripNow('Europe/Madrid', new Date('2026-06-08T16:00:00.000Z'));
+		const items = [
+			makeItem({
+				start_time: '2026-06-08 20:00:00.000Z',
+				end_time: '2026-06-08 21:00:00.000Z',
+				status: 'planned'
+			})
+		];
+		const state = getNowViewState(items, now, true);
+		expect(state.kind).toBe('between-things');
 	});
 });
