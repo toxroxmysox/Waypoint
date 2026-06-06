@@ -52,6 +52,11 @@
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR/.wolf/hooks/post-write.js\"",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.wolf/hooks/plan-to-issue.js\"",
+            "timeout": 30
           }
         ]
       }
