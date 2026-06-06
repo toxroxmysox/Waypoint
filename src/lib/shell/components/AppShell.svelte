@@ -9,6 +9,7 @@
 	import { isTripActive } from '$lib/trip-mode/activation';
 	import type { TripViewMode } from '$lib/trip-mode/activation';
 	import { getNavConfig } from '$lib/shell/nav-tabs';
+	import { tripToday, tripTz } from '$lib/shell/trip-time';
 
 	let {
 		children,
@@ -48,7 +49,7 @@
 	let addSheetOpen = $state(false);
 
 	const todayDayId = $derived.by(() => {
-		const todayStr = new Date().toISOString().split('T')[0];
+		const todayStr = tripToday(tripTz(trip ?? {}));
 		const day = days.find((d) => d.date?.split(/[T ]/)[0] === todayStr);
 		return day?.id ?? null;
 	});

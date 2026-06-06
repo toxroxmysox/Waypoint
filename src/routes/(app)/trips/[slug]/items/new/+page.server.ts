@@ -1,7 +1,8 @@
 import { fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Day, TripMember } from '$lib/types';
-import { timeToDatetime, datetimeToTime } from '$lib/shell/format';
+import { datetimeToTime } from '$lib/shell/format';
+import { combineDateTime } from '$lib/shell/trip-time';
 import { nextSortOrder } from '$lib/itinerary/sort-order';
 
 const PB_BASE = process.env.PUBLIC_PB_URL || 'http://127.0.0.1:8090';
@@ -130,6 +131,18 @@ export const actions: Actions = {
 			return fail(400, { error: `${type} items cannot be marked as booked.` });
 		}
 
+		// Resolve the owning day's date so item times carry the real calendar
+		// date (naive trip-local), not a 1970 placeholder. No day = no anchor.
+		let dayDate = '';
+		if (day) {
+			try {
+				const dayRec = await locals.pb.collection('days').getOne(day);
+				dayDate = String(dayRec.date || '');
+			} catch {
+				dayDate = '';
+			}
+		}
+
 		const payload = {
 			trip: trip.id,
 			phase: phase || '',
@@ -142,8 +155,8 @@ export const actions: Actions = {
 			location_address: locationAddress,
 			location_coords: locationCoords,
 			google_place_id: googlePlaceId,
-			start_time: timeToDatetime(startTime),
-			end_time: timeToDatetime(endTime),
+			start_time: combineDateTime(dayDate, startTime),
+			end_time: combineDateTime(dayDate, endTime),
 			booked,
 			confirmation_codes: confirmationCodes,
 			reservation_url: reservationUrl,

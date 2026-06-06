@@ -1,10 +1,11 @@
 import type { PageServerLoad } from './$types';
 import type { Day, Item } from '$lib/types';
+import { tripNow, tripTz } from '$lib/shell/trip-time';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
 	const { trip, days } = await parent();
 
-	const now = new Date();
+	const now = tripNow(tripTz(trip));
 
 	// Find today's day record (UTC date match)
 	const todayStr = now.toISOString().split('T')[0];
