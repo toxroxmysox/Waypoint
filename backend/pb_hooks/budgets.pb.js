@@ -6,9 +6,9 @@
 // ---------------------------------------------------------------------------
 // Before create: enforce owner/co_owner + validate categories.
 // ---------------------------------------------------------------------------
-onRecordCreate('trip_budgets', (e) => {
+onRecordCreateRequest((e) => {
 	const record = e.record;
-	const authId = e.httpContext.auth && e.httpContext.auth.id;
+	const authId = e.requestInfo().auth?.id;
 	if (!authId) throw new UnauthorizedError('Authentication required');
 
 	const tripId = record.get('trip');
@@ -57,14 +57,14 @@ onRecordCreate('trip_budgets', (e) => {
 	}
 
 	e.next();
-});
+}, 'trip_budgets');
 
 // ---------------------------------------------------------------------------
 // Before update: enforce owner/co_owner + validate categories.
 // ---------------------------------------------------------------------------
-onRecordUpdate('trip_budgets', (e) => {
+onRecordUpdateRequest((e) => {
 	const record = e.record;
-	const authId = e.httpContext.auth && e.httpContext.auth.id;
+	const authId = e.requestInfo().auth?.id;
 	if (!authId) throw new UnauthorizedError('Authentication required');
 
 	const tripId = record.get('trip');
@@ -111,4 +111,4 @@ onRecordUpdate('trip_budgets', (e) => {
 	}
 
 	e.next();
-});
+}, 'trip_budgets');

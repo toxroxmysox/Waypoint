@@ -75,7 +75,7 @@ onRecordAfterCreateSuccess((e) => {
 }, 'trips');
 
 // After trip update: reconcile days if dates changed.
-onRecordUpdateRequest('trips', (e) => {
+onRecordUpdateRequest((e) => {
 	const oldStartDate = e.record.original().getString('start_date');
 	const oldEndDate = e.record.original().getString('end_date');
 
@@ -169,4 +169,4 @@ onRecordUpdateRequest('trips', (e) => {
 		}
 		e.app.delete(day);
 	}
-});
+}, 'trips');

@@ -6,9 +6,9 @@
 // ---------------------------------------------------------------------------
 // Before create: validate split_data, set created_by to caller's membership.
 // ---------------------------------------------------------------------------
-onRecordCreate('expenses', (e) => {
+onRecordCreateRequest((e) => {
 	const record = e.record;
-	const authId = e.httpContext.auth && e.httpContext.auth.id;
+	const authId = e.requestInfo().auth?.id;
 	if (!authId) throw new UnauthorizedError('Authentication required');
 
 	const tripId = record.get('trip');
@@ -74,12 +74,12 @@ onRecordCreate('expenses', (e) => {
 	}
 
 	e.next();
-});
+}, 'expenses');
 
 // ---------------------------------------------------------------------------
 // Before update: re-validate split_data.
 // ---------------------------------------------------------------------------
-onRecordUpdate('expenses', (e) => {
+onRecordUpdateRequest((e) => {
 	const record = e.record;
 	const amountUsd = Number(record.get('amount_usd'));
 	const splitMode = record.get('split_mode');
@@ -113,14 +113,14 @@ onRecordUpdate('expenses', (e) => {
 	}
 
 	e.next();
-});
+}, 'expenses');
 
 // ---------------------------------------------------------------------------
 // Before delete: only creator or trip owner/co_owner.
 // ---------------------------------------------------------------------------
-onRecordDelete('expenses', (e) => {
+onRecordDeleteRequest((e) => {
 	const record = e.record;
-	const authId = e.httpContext.auth && e.httpContext.auth.id;
+	const authId = e.requestInfo().auth?.id;
 	if (!authId) throw new UnauthorizedError('Authentication required');
 
 	const tripId = record.get('trip');
@@ -146,4 +146,4 @@ onRecordDelete('expenses', (e) => {
 	}
 
 	e.next();
-});
+}, 'expenses');

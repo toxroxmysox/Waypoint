@@ -6,9 +6,9 @@
 // ---------------------------------------------------------------------------
 // Before create: validate parties + set created_by.
 // ---------------------------------------------------------------------------
-onRecordCreate('settlements', (e) => {
+onRecordCreateRequest((e) => {
 	const record = e.record;
-	const authId = e.httpContext.auth && e.httpContext.auth.id;
+	const authId = e.requestInfo().auth?.id;
 	if (!authId) throw new UnauthorizedError('Authentication required');
 
 	const tripId = record.get('trip');
@@ -48,14 +48,14 @@ onRecordCreate('settlements', (e) => {
 	record.set('created_by', callerMember.id);
 
 	e.next();
-});
+}, 'settlements');
 
 // ---------------------------------------------------------------------------
 // Before delete: only creator or trip owner/co_owner.
 // ---------------------------------------------------------------------------
-onRecordDelete('settlements', (e) => {
+onRecordDeleteRequest((e) => {
 	const record = e.record;
-	const authId = e.httpContext.auth && e.httpContext.auth.id;
+	const authId = e.requestInfo().auth?.id;
 	if (!authId) throw new UnauthorizedError('Authentication required');
 
 	const tripId = record.get('trip');
@@ -81,4 +81,4 @@ onRecordDelete('settlements', (e) => {
 	}
 
 	e.next();
-});
+}, 'settlements');
