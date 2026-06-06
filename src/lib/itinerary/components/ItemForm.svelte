@@ -262,7 +262,7 @@
 				<fieldset>
 					<legend class="text-ink-soft block text-sm font-medium">Type</legend>
 					<div class="mt-1 flex flex-wrap gap-2">
-						{#each (['lodging', 'transportation', 'activity', 'meal', 'note', 'checklist'] as const) as type}
+						{#each (['lodging', 'transportation', 'flight', 'activity', 'meal', 'note', 'checklist'] as const) as type}
 							{@const typeLabel = getFieldConfig(type).labels.typeLabel}
 							{@const active = selectedType === type}
 							<button
@@ -306,7 +306,7 @@
 				</div>
 			{/if}
 
-			{#if (typeEditable ? selectedType : initialData.type) === 'transportation' && selectedSubtype === 'flight'}
+			{#if (typeEditable ? selectedType : initialData.type) === 'flight'}
 				<div>
 					<div class="text-ink-soft text-sm font-medium mb-1">Flight lookup</div>
 					<FlightLookup onSelect={handleFlightSelect} />

@@ -18,7 +18,8 @@
 		"test:rules": "node backend/test-rules.mjs",
 		"test:invites": "node backend/test-invites.mjs",
 		"test:members": "node backend/test-members.mjs",
-		"test:suggestions": "node backend/test-suggestions.mjs"
+		"test:suggestions": "node backend/test-suggestions.mjs",
+		"test:money": "node backend/test-money.mjs"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^2.0.4",
