@@ -28,7 +28,7 @@ const itemFieldConfig: Record<ItemType, FieldVisibility> = {
 	},
 	transportation: {
 		subtype: true,
-		subtypes: ['flight', 'train', 'bus', 'car', 'other'],
+		subtypes: ['train', 'bus', 'car', 'other'],
 		location: true,
 		times: true,
 		booking: true,
