@@ -1,6 +1,6 @@
 import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Day, Item, Vote } from '$lib/types';
+import type { Day, Item, Vote, TripMember } from '$lib/types';
 import { phasesForDay } from '$lib/itinerary/phases';
 import { rebalance, insertBetween, GAP } from '$lib/itinerary/sort-order';
 import { spanningItemsForDate } from '$lib/itinerary/multi-day';
@@ -33,17 +33,19 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const spanningItems = spanningItemsForDate(allMultiDay, days as Day[], dayDate);
 
 	const itemIds = items.map((i) => i.id);
-	const votes =
+	const [votes, members] = await Promise.all([
 		itemIds.length > 0
-			? await locals.pb.collection('votes').getFullList<Vote>({
+			? locals.pb.collection('votes').getFullList<Vote>({
 					filter: itemIds.map((id) => `item = "${id}"`).join(' || ')
 				})
-			: [];
+			: Promise.resolve([] as Vote[]),
+		locals.pb.collection('trip_members').getFullList<TripMember>({
+			filter: `trip = "${trip.id}"`
+		})
+	]);
 
-	const voteCounts: Record<string, number> = {};
-	for (const v of votes) {
-		voteCounts[v.item] = (voteCounts[v.item] ?? 0) + 1;
-	}
+	const votesByItem: Record<string, Vote[]> = {};
+	for (const v of votes) (votesByItem[v.item] ??= []).push(v);
 
 	const dayPhases = phasesForDay(day, phases);
 
@@ -56,7 +58,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 				})
 			: [];
 
-	return { day, dayItems: items, dayPhases, voteCounts, parkingLotItems, spanningItems, allDays: days };
+	return { day, dayItems: items, dayPhases, votesByItem, members, parkingLotItems, spanningItems, allDays: days };
 };
 
 export const actions: Actions = {

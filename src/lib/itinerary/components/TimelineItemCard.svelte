@@ -1,8 +1,9 @@
 <script lang="ts">
-	import type { Item } from '$lib/types';
+	import type { Item, Vote, TripMember } from '$lib/types';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
 	import Card from '$lib/ui/Card.svelte';
+	import VoteStacks from '$lib/collaboration/components/VoteStacks.svelte';
 	import { titleCase, formatTime } from '$lib/shell/format';
 
 	let {
@@ -11,12 +12,16 @@
 		anchored = false,
 		overlapping = false,
 		draggable = false,
+		votes = [],
+		members = [],
 	}: {
 		item: Item;
 		tripSlug: string;
 		anchored?: boolean;
 		overlapping?: boolean;
 		draggable?: boolean;
+		votes?: Vote[];
+		members?: TripMember[];
 	} = $props();
 </script>
 
@@ -60,6 +65,11 @@
 				{/if}
 				{#if item.subtype}
 					<p class="text-ink-muted mt-1 text-[11px] uppercase tracking-wide">{titleCase(item.subtype)}</p>
+				{/if}
+				{#if votes.length}
+					<div class="mt-1.5">
+						<VoteStacks {votes} {members} size={18} />
+					</div>
 				{/if}
 			</div>
 		</div>

@@ -94,11 +94,7 @@
 						{data.item.title}
 					</h2>
 					<div class="mt-3 flex items-center gap-3">
-						<VoteButtons
-							voteCount={data.votes.length}
-							myVoteId={data.myVote?.id ?? null}
-							{itemUrl}
-						/>
+						<VoteButtons myVote={data.myVote} {itemUrl} />
 						{#if isAlternate}
 							<form
 								method="POST"

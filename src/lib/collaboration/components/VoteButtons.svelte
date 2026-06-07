@@ -1,70 +1,57 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import type { Vote } from '$lib/types';
+	import { VOTE_OPTIONS, type VoteValue } from '$lib/collaboration/voting';
 
 	let {
-		voteCount = 0,
-		myVoteId = null as string | null,
+		myVote = null,
 		itemUrl = ''
 	}: {
-		voteCount?: number;
-		myVoteId?: string | null;
+		myVote?: Vote | null;
 		itemUrl?: string;
 	} = $props();
 
 	let submitting = $state(false);
+
+	const OPTION_META: Record<VoteValue, { label: string; glyph: string; active: string }> = {
+		love: { label: 'Love', glyph: '♥', active: 'bg-moss text-paper border-moss' },
+		like: { label: 'Like', glyph: '+', active: 'bg-moss/15 text-moss border-moss/40' },
+		flexible: { label: 'Flexible', glyph: '~', active: 'bg-line/60 text-ink border-line' },
+		dislike: { label: 'Pass', glyph: '–', active: 'bg-clay/15 text-clay border-clay/40' }
+	};
 </script>
 
-{#if myVoteId}
-	<form
-		method="POST"
-		action="{itemUrl}?/unvote"
-		use:enhance={() => {
-			submitting = true;
-			return async ({ update }) => {
-				submitting = false;
-				await update();
-			};
-		}}
-		class="inline-flex"
-	>
-		<input type="hidden" name="vote_id" value={myVoteId} />
-		<button
-			type="submit"
-			disabled={submitting}
-			class="bg-moss/15 text-moss border-moss/30 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-semibold transition-colors"
-			aria-label="Remove vote"
+<div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Vote on this item">
+	{#each VOTE_OPTIONS as option (option)}
+		{@const selected = myVote?.value === option}
+		<form
+			method="POST"
+			action="{itemUrl}?/{selected ? 'unvote' : 'vote'}"
+			use:enhance={() => {
+				submitting = true;
+				return async ({ update }) => {
+					submitting = false;
+					await update();
+				};
+			}}
 		>
-			<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-				<path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z" />
-				<path d="M1 21h4V10H1z" />
-			</svg>
-			<span>{voteCount}</span>
-		</button>
-	</form>
-{:else}
-	<form
-		method="POST"
-		action="{itemUrl}?/vote"
-		use:enhance={() => {
-			submitting = true;
-			return async ({ update }) => {
-				submitting = false;
-				await update();
-			};
-		}}
-		class="inline-flex"
-	>
-		<button
-			type="submit"
-			disabled={submitting}
-			class="border-line text-ink-muted hover:border-moss/40 hover:text-moss inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium transition-colors"
-			aria-label="Vote for this option"
-		>
-			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-				<path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z" />
-				<path d="M1 21h4V10H1z" />
-			</svg>
-			<span>{voteCount || ''}</span>
-		</button>
-	</form>
-{/if}
+			{#if selected}
+				<input type="hidden" name="vote_id" value={myVote?.id} />
+			{:else}
+				<input type="hidden" name="value" value={option} />
+			{/if}
+			<button
+				type="submit"
+				disabled={submitting}
+				aria-pressed={selected}
+				class="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors disabled:opacity-50
+					{selected
+					? OPTION_META[option].active
+					: 'border-line text-ink-muted hover:border-moss/40 hover:text-moss'}"
+			>
+				<span aria-hidden="true">{OPTION_META[option].glyph}</span>
+				<span>{OPTION_META[option].label}</span>
+			</button>
+		</form>
+	{/each}
+</div>

@@ -17,5 +17,7 @@
 		items={data.parkingLotItems}
 		phases={data.phases}
 		tripSlug={data.trip.slug}
+		votesByItem={data.votesByItem}
+		members={data.members}
 	/>
 </main>

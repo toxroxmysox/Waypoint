@@ -1,87 +1,239 @@
 # SPEC_BACKLOG
 
-Deferred work captured during M1. Each entry notes what it is, why it was deferred, and the target milestone. Before starting anything here, amend `SPEC.md` per the CLAUDE.md scope-change protocol.
+Deferred and future work, organized by domain. Each domain lists what's **shipped** today and what's **backlog** (not yet built). Backlog entries note what/why/target.
+
+Before starting anything here, amend `SPEC.md` per the CLAUDE.md scope-change protocol. When promoting an entry into a milestone, cut it from this file in the same commit that amends `SPEC.md`. Entries are removed only when built or during an explicit backlog audit — never auto-pruned for sitting too long.
+
+Domains mirror the bounded contexts in `CONTEXT.md` §"Bounded Contexts", plus three proposed new ones (Documents, Tasks, Trip Memory) and a cross-cutting Integrations group.
 
 ---
 
-## Next / Previous Day Navigation
-- **What:** On the day detail screen, arrows (or swipe) to jump to the adjacent day in the same trip without bouncing back to the phase list.
-- **Why deferred:** Not in M1 acceptance. Pure polish; current phase -> day list flow is usable.
-- **Target:** M6 Polish.
-- **Notes:** Wrap-around behavior undecided. Probably clamp at trip boundaries rather than wrap.
+## Itinerary
 
-## Multi-Day Lodging Items
-- **What:** A single lodging item that spans a date range instead of repeating one item per night, with per-day rendering on each day's detail view.
-- **Why deferred:** SPEC.md models items as belonging to a single day. Changing that touches the data model, day-detail rendering, and the item form. Too invasive for M1.
-- **Target:** Needs a spec amendment. Likely M4 Execution (when lodging is actively in use) or pulled forward if the May dogfood trip makes the current model painful.
-- **Notes:** Resolved in v3 design alignment (2026-05-29). Items now have an `end_date` field for multi-day spanning. See SPEC.md Section 5 items collection.
+*The core planning model: Trips, Phases, Days, Items, Parking Lot.*
 
-## Tri-State Booking Pill
-- **What:** Booking status cycles `not booked` -> `partially booked` -> `booked` (currently a boolean).
-- **Why deferred:** M1 ships a boolean. Multi-leg transit and grouped lodging are where the middle state actually matters, and those land in M3/M4.
-- **Target:** M3 Money (booking lives next to cost).
-- **Notes:** Migration will widen the column. UI already has space for a pill-shaped control.
+**Shipped:**
+- Trips, Phases (auto-bucket days by date overlap), Days (multi-phase), Items (7 types: lodging, transportation, flight, activity, meal, note, checklist)
+- Anchor times, derived Time Slots, Sort Order (gap-based drag-reorder)
+- Item status lifecycle (unplanned ↔ planned → done | considered)
+- Parking lot (unplanned items, phase-scoped)
+- Day view timeline (anchor-pinned + untimed flow, drag interactions)
+- Multi-day items via `end_date` (#41 — hotel/rental spans, `MultiDayBanner`)
+- Next/previous day navigation (`DayNav`, swipeable)
+- Clone (date-offset shift)
 
-## App Icon Artwork Refresh
-- **What:** Regenerate `static/icons/icon-192.png` and `icon-512.png` (and the `apple-touch-icon` they back) in the new paper/ink/moss palette so the home-screen icon matches the in-app design system.
-- **Why deferred:** M1.5a updated the meta `theme-color` and manifest colors but left the existing PNGs in place — new artwork is a design task, not a code change.
-- **Target:** M6 Polish (or sooner if Scott wants the home-screen install to look right before the China dogfood).
-- **Notes:** Maskable variant should keep safe area; consider a moss-on-paper monogram or a simple waypoint glyph. Update both sizes plus any future favicon.
+**Backlog:**
 
----
+### Trip Goal *(v4)*
+- **What:** A trip-level aspiration too vague to be an item ("try paella," "do a wine tasting"). No phase, location, or time. Items can address a goal. The *capture* half of the group-input cluster.
+- **Why deferred:** Not in v3 scope. Every item requires a phase; goals are phase-less by definition.
+- **Target:** v4. **Notes:** CONTEXT.md glossary. Grill together with the Swipe-Quiz (Collaboration) — capture vs. harvest halves of the same flow.
 
-## From M2 — Collaboration
+### Tri-State Booking Pill
+- **What:** Booking status cycles `not booked` → `partially booked` → `booked` (currently boolean).
+- **Why deferred:** Boolean shipped first. Middle state matters for multi-leg transit and grouped lodging.
+- **Target:** v4. **Notes:** Migration widens the column; UI has pill space. Feeds the booking to-do view (Tasks domain).
 
-### Invite resend action
-- **What:** "Resend invite email" button on the pending invites list. Currently the inviter must revoke and re-create to trigger a new email.
-- **Why deferred:** Uncommon path; revoke + re-create works.
-- **Target:** M4 Polish.
-
-### Role downgrade (co-owner → traveler)
-- **What:** The promote endpoint only upgrades traveler → co-owner. Downgrade is missing.
-- **Why deferred:** Not needed for initial dogfood trips where Scott is the only owner.
-- **Target:** M4.
-
-### Notification dedup / batching
-- **What:** Multiple comments in quick succession generate one notification per comment. Add a debounce window (e.g. 5 minutes) so a comment storm becomes one digest notification.
-- **Why deferred:** Not a problem at small trip scale.
-- **Target:** M3 or M4 based on dogfood feedback.
-
-### Notification realtime update
-- **What:** The bell unread count reflects page-load state only. New notifications arriving while the page is open don't update the badge until a full reload.
-- **Why deferred:** Polling or SSE adds complexity; single-user trips rarely need it.
-- **Target:** M4 Execution (when offline/realtime work happens anyway).
-
-### Traveler auto-approve full E2E test (test-suggestions.mjs test 6)
-- **What:** Test 6 in `backend/test-suggestions.mjs` is SKIPped because it requires PB admin credentials to set `auto_approve_suggestions = true` mid-test. The logic is exercised manually but not in CI.
-- **Why deferred:** Needs `PB_ADMIN_EMAIL` + `PB_ADMIN_PASSWORD` in `.env.local`.
-- **Target:** M3 pre-flight — add creds to env, un-skip test.
-
-### Edit-and-approve UI in inbox
-- **What:** The backend `/api/suggestions/review` endpoint accepts a `payload` override for edit-and-approve, but the inbox UI just passes the original traveler payload. No edit form is exposed.
-- **Why deferred:** Backend is ready; frontend work is polish.
-- **Target:** M4 Polish.
-
-### Comment edit / delete
-- **What:** Comments are immutable once posted.
-- **Why deferred:** Per SPEC intent. Most collaborative tools don't allow retroactive comment edits to preserve audit trail.
-- **Target:** Only pull in if dogfood reveals real friction.
+### Flight type vs. transportation-subtype ambiguity
+- **What:** `flight` is a valid item type (migration 0027, full field config) but `ItemForm.svelte` omits it from the type-pill list; flight is also reachable as a `transportation` subtype (which wires `FlightLookup`). Two paths to the same thing.
+- **Why deferred:** Both work; not blocking.
+- **Target:** Resolve when touching ItemForm. Decision: pick one canonical path.
 
 ---
 
----
+## Collaboration
 
-## v4 Concepts
+*Multi-user coordination and group decision-making.*
 
-### Trip Goal
-- **What:** A trip-level aspiration that isn't specific enough to be an item: "try paella," "do a wine tasting." No phase, location, or time. One or more items can address a goal. Enables a quick-planning minigame for capturing group wishes early.
-- **Why deferred:** Not in v3 scope. Every item requires a phase in v3; goals are phase-less by definition.
+**Shipped:**
+- Trip Members, Roles (owner / co_owner / traveler / viewer)
+- Invites (Resend email, code, 7-day expiry), Placeholder members + Claim
+- Suggestions (review queue, auto-approve setting)
+- Comments (item-scoped) — **this is the agreed ceiling for messaging; see scope note**
+- Notifications (in-app only: suggestion_added, comment_added, member_joined)
+- Vote model (`votes` collection, `VoteButtons.svelte`) — values: Love +2 / Like +1 / Flexible 0 / Dislike −2
+
+**Scope decision — messaging stays minimal.** No trip-level discussion thread, no text decision log. Status transitions (unplanned → planned) *are* the decision record. Rationale: groups will keep using WhatsApp/iMessage; earn the right to compete before trying to replace. Revisit only on real dogfood demand.
+
+**Backlog:**
+
+### Item Voting UI ([#30](https://github.com/toxroxmysox/Waypoint/issues/30))
+- **What:** Vote buttons on item detail, avatar stacks on cards (no numeric score), parking lot sorted by aggregate vote score.
+- **Status:** Model + PB collection exist; frontend not built. Issue is planned/afk.
 - **Target:** v4.
-- **Notes:** See CONTEXT.md glossary entry for Trip Goal.
+
+### Swipe-Quiz Voting Experience *(v4)*
+- **What:** Tinder-style card stack that walks a traveler through planned + unplanned items one at a time, swiping Love/Like/Flexible/Dislike. The *harvest* half of group input.
+- **Why deferred:** Only the vote model is specced. Swipe-deck interaction (card stack, session scope, order, multi-traveler reconciliation, gestures) is undesigned.
+- **Target:** v4. Needs a grill; rides on #30. **Open question:** operates on a phase, a day, the whole trip, or just the parking lot?
+
+### Collaboration polish (small, well-specified)
+- **Invite resend** — "resend invite email" button (currently revoke + recreate). Target: v4.
+- **Role downgrade** — promote endpoint only upgrades traveler → co_owner; downgrade missing. Target: v4.
+- **Notification dedup / batching** — debounce comment storms into one digest notification. Target: dogfood-driven.
+- **Notification realtime** — bell count is page-load only; new notifications don't update the badge live. Target: when offline/realtime work happens anyway.
+- **Edit-and-approve inbox UI** — backend `/api/suggestions/review` accepts a `payload` override; UI exposes no edit form. Target: v4 polish.
+- **Comment edit / delete** — comments immutable by design; only pull in on real friction.
+- **Traveler auto-approve E2E test** — test 6 in `test-suggestions.mjs` SKIPped (needs PB admin creds in `.env.local`). Target: add creds, un-skip.
 
 ---
 
-## How to use this file
-- Add entries here instead of silently piling them into SPEC.md.
-- When promoting an item into a milestone, cut it from this file in the same commit that amends SPEC.md.
-- If an entry sits here for two milestones without being pulled in, delete it -- if it mattered, it would have been pulled by now.
+## Money
+
+*Financial tracking. The most complete domain after Itinerary.*
+
+**Shipped:**
+- Expenses (who paid, split modes), Settlements, Budgets (per_day / total)
+- Debt Simplification (greedy creditor/debtor matching)
+
+**Backlog:**
+- **Multi-currency — OFF THE TABLE** (CLAUDE.md). Single-currency by design. Recorded here so it isn't re-proposed.
+- No other gaps identified. Domain considered feature-complete for now.
+
+---
+
+## Trip Mode
+
+*The live-trip experience. Active only when trip status = active.*
+
+**Shipped:**
+- Now tab (3 states: mid-event, between-things/FREE TIME, day-wrapped)
+- Today timeline (past dimmed, current highlighted, auto-scroll, tap-to-edit)
+- Add button (add item to today / add expense)
+- Mode switching (derived activation + symmetric pills), ongoing-state detection
+
+**Backlog (v4 concepts — deferred from V3_PRD §5, none grilled):**
+- **Inline contextual parking lot** — collapsed "ideas waiting" card between time-slot headers on the timeline.
+- **Trip Mode Quick Actions** — Add expense / Quick note / Photo log buttons (Photo log → Trip Memory; Quick note → Tasks/Memory).
+- **Ideas from Free Time** — parking lot surfaced via a tap on the FREE TIME card.
+- **Note Before Bed** — end-of-day prompt feeding the closeout archive and Trip Memory.
+- **Day Wrapped Stats** — items / distance / spent summary on the day-wrapped state.
+
+---
+
+## Archive & Portability
+
+*Trip lifecycle beyond active use.*
+
+**Shipped:**
+- Public Archive (token-gated, PII-stripped, configurable publish delay)
+- Export (JSON), Import, Clone, Closeout wizard
+
+**Backlog:**
+- No new gaps. Trip Memory (new domain) will extend what the archive *shares* from plan-only to plan + memory.
+
+---
+
+## Vault *(module)*
+
+*Encrypted storage for sensitive trip data. A technical capability, not a domain.*
+
+**Shipped:**
+- AES-GCM encrypted entries (booking codes, passwords), PBKDF2 key derivation, trip-scoped password. Lossy if password forgotten.
+
+**Backlog:**
+- **Sensitive-file routing** — coordinate with the Documents domain: a file flagged "sensitive" (passport scan) routes into the encrypted store; the Vault view shows encrypted files alongside text entries. See Documents fork below.
+
+---
+
+## Documents *(NEW domain)*
+
+*File attachments — booking PDFs, tickets, passport scans, insurance docs. The "email folder of confirmations" the current stack relies on. Nothing exists today; PocketBase native file storage is unused.*
+
+**Shipped:** Nothing.
+
+**Backlog:**
+
+### File attachments on items
+- **What:** Attach files (PDF, image) to any item. The file lives as one record on the item.
+- **Target:** v4.
+
+### Trip Documents aggregate view
+- **What:** A read-only section listing all item attachments across the trip in one place. A *view* over item attachments — not a copy. One record, two surfaces (item + documents list).
+- **Target:** v4, with attachments.
+
+### Encryption fork — do NOT route plain documents through the Vault
+- **Decision:** Attachments are **plain stored files by default.** An optional "sensitive" flag routes a single file into the encrypted Vault store. Rationale: the Vault is lossy-if-password-forgotten — a boarding pass you can't open offline at the gate is a worse failure than no app. Default-plain keeps execution-critical docs always accessible; sensitive opt-in covers passport scans.
+- **Offline:** Plain attachments must be available offline in Trip Mode (service-worker cached) — the primary execution use case.
+
+---
+
+## Tasks *(NEW domain — generalizes checklists, packing, grocery, booking to-do)*
+
+*One primitive: a checkable thing, optionally owned by a member, optionally with an execution context (a time or place). The three "lists" are views of this one model — do not ship them as three separate features.*
+
+**Shipped (partial, as the legacy `checklist` item type):**
+- `checklist` item type + `checklist_items` collection + `parent_item` self-relation. Currently shoehorned into the Item model (no anchor times, no location, no multi-day) — the odd type out.
+
+**Backlog:**
+
+### Task model + per-person assignments
+- **What:** A Task: title, checked state, optional `owner` (member), optional execution context (time and/or place). Absorbs `checklist` (resolves [#45](https://github.com/toxroxmysox/Waypoint/issues/45) — checklist stops being a janky item type) and gives assignments for free ("who's booking the Airbnb, who's driving").
+- **Target:** v4. **Notes:** This single model is the high-leverage move — three list features collapse into one domain.
+
+### View: Packing list
+- **What:** Manual entries, per-person assignable. Optionally weather-aware (see Integrations → Weather).
+- **Target:** v4.
+
+### View: Booking to-do
+- **What:** Auto-filled from planned-but-unbooked items + manual add. Checking one off can flip the item's booking status (Tri-State Booking Pill, Itinerary).
+- **Target:** v4.
+
+### View: Grocery list (the edge case)
+- **What:** A community list executed at a specific place/time (when someone goes to the store). I.e. a Task with a location/time trigger and shared (not per-person) ownership.
+- **Target:** v4. **Notes:** Generalizes to "location/time-triggered checklist" — same primitive, just a place trigger.
+
+---
+
+## Trip Memory *(NEW domain — explore further)*
+
+*Captures what the trip actually felt like, not just the plan. Post-trip sharing is in the mission, but today "sharing" = a read-only archive of the plan, not a memory.*
+
+**Shipped:** Nothing.
+
+**Backlog (needs a grill / decision before scoping):**
+- **Photo capture & journal notes** — per-day or per-item photos and free-text reflections.
+- **Note Before Bed** (also listed under Trip Mode) — end-of-day prompt that feeds the journal.
+- **Archive extension** — public archive shares plan + memory, not just plan.
+- **Open questions:** Where do photos live (PB file storage vs. external)? Journaling scope? Boundary against "native apps off the table"? Decision/ADR first.
+
+---
+
+## Integrations *(cross-cutting)*
+
+**Shipped:**
+- Google Places (New) — autocomplete + details, session tokens
+- AeroDataBox — flight lookup
+- Resend — invite/transactional email
+- Umami — self-hosted analytics
+
+**Backlog:**
+
+### Calendar feed (subscribe, not export)
+- **What:** A stable `webcal://` subscribed feed per trip; each event keyed by item id as its `UID`. Subscribe once → auto-syncs forever; edits/deletes propagate with zero further taps. Works for Google Calendar + iCloud.
+- **Why a feed, not `.ics` export:** A one-time export creates the duplicate/delete problem. A subscribed feed meets all constraints (no dupes, no manual delete, one tap). A download-`.ics` button can exist as a fallback.
+- **Target:** v4.
+
+### Weather (Open-Meteo)
+- **What:** Free, open-source, no API key (fits open-source-first). Planning-side: feeds the packing list. Execution-side: forecast on the Now tab.
+- **Target:** v4. Widget, not a domain.
+
+### Maps deep-links ("Open in Maps")
+- **What:** Deep-link out to the device's map app (`maps://` / `https://maps.google.com/?q=`) from an item's stored Places coords. NOT an embedded map (embeds are off the table) — a link out.
+- **Target:** v4. Execution glue.
+
+### Email digest (not push)
+- **What:** Weekly "here's what changed on your trip" email via Resend. The realistic engagement lever for non-technical friends who won't open the PWA unprompted (push notifications are off the table).
+- **Target:** v4.
+
+---
+
+## Misc / Polish
+
+- **App Icon Artwork Refresh** — regenerate `icon-192.png` / `icon-512.png` + apple-touch-icon in the paper/ink/moss palette. Related: open bug [#38](https://github.com/toxroxmysox/Waypoint/issues/38) (iOS wrong icon). Maskable variant keeps safe area.
+
+---
+
+## Off the table (recorded so they aren't re-proposed)
+
+Per CLAUDE.md: multi-currency, push notifications, embedded maps, real-time co-editing, native apps, AI-generated itineraries. Plus (this session): trip-level messaging/discussion beyond item comments.

@@ -66,10 +66,13 @@ export interface Comment {
 	author_role?: string;
 }
 
+export type VoteValue = 'love' | 'like' | 'flexible' | 'dislike';
+
 export interface Vote {
 	id: string;
 	trip: string;
 	item: string;
 	member: string;
+	value: VoteValue;
 	created: string;
 }
