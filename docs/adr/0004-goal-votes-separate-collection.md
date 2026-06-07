@@ -1,4 +1,4 @@
-# ADR-0003: Goal votes use a separate `goal_votes` collection, not a polymorphic `votes` table
+# ADR-0004: Goal votes use a separate `goal_votes` collection, not a polymorphic `votes` table
 
 **Status:** Accepted
 **Date:** 2026-06-07
