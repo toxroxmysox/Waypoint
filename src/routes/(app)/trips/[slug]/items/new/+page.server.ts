@@ -68,6 +68,8 @@ export const load: PageServerLoad = async ({ url, locals, parent }) => {
 		members,
 		preselectedDay: dayId || '',
 		preselectedPhase,
+		tripStartDate: String(trip.start_date || '').split(/[T ]/)[0],
+		tripEndDate: String(trip.end_date || '').split(/[T ]/)[0],
 		submitAsSuggestion,
 		prefill
 	};
@@ -103,6 +105,7 @@ export const actions: Actions = {
 		const googlePlaceId = data.get('google_place_id')?.toString() || '';
 		const startTime = data.get('start_time')?.toString() || '';
 		const endTime = data.get('end_time')?.toString() || '';
+		const endDateRaw = (data.get('end_date')?.toString() || '').split(/[T ]/)[0];
 		const booked = data.get('booked') === 'on';
 		const reservationUrl = data.get('reservation_url')?.toString() || '';
 		const freeCancellation = data.get('free_cancellation') === 'on';
@@ -137,10 +140,21 @@ export const actions: Actions = {
 		if (day) {
 			try {
 				const dayRec = await locals.pb.collection('days').getOne(day);
-				dayDate = String(dayRec.date || '');
+				dayDate = String(dayRec.date || '').split(/[T ]/)[0];
 			} catch {
 				dayDate = '';
 			}
+		}
+
+		// Multi-day span: only valid when a day is set and end is strictly after
+		// the start day and within the trip. Otherwise the field is inert/cleared.
+		const tripEnd = String(trip.end_date || '').split(/[T ]/)[0];
+		let endDate = '';
+		if (day && dayDate && endDateRaw && endDateRaw > dayDate) {
+			if (tripEnd && endDateRaw > tripEnd) {
+				return fail(400, { error: 'End date is after the trip ends.' });
+			}
+			endDate = endDateRaw;
 		}
 
 		const payload = {
@@ -156,7 +170,8 @@ export const actions: Actions = {
 			location_coords: locationCoords,
 			google_place_id: googlePlaceId,
 			start_time: combineDateTime(dayDate, startTime),
-			end_time: combineDateTime(dayDate, endTime),
+			end_time: combineDateTime(endDate || dayDate, endTime),
+			end_date: endDate ? `${endDate} 00:00:00.000Z` : '',
 			booked,
 			confirmation_codes: confirmationCodes,
 			reservation_url: reservationUrl,
