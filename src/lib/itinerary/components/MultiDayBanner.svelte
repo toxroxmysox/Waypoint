@@ -22,15 +22,24 @@
 	const range = $derived(itemDateRange(item, days));
 	const info = $derived(nightInfo(item, days, dayDate));
 
+	// Lodging keeps hotel language (Check in/out); everything else gets neutral
+	// start/end labels — not every multi-day item is a hotel.
+	const isLodging = $derived(item.type === 'lodging');
+	const startLabel = $derived(isLodging ? 'Check in' : 'Starts');
+	const endLabel = $derived(isLodging ? 'Check out' : 'Ends');
+
 	const context = $derived.by(() => {
 		if (!range) return '';
 		if (dayDate === range.start) {
-			return item.start_time ? `Check in · ${formatTime(item.start_time)}` : 'Check in';
+			return item.start_time ? `${startLabel} · ${formatTime(item.start_time)}` : startLabel;
 		}
 		if (dayDate === range.end) {
-			return item.end_time ? `Check out · ${formatTime(item.end_time)}` : 'Check out';
+			return item.end_time ? `${endLabel} · ${formatTime(item.end_time)}` : endLabel;
 		}
-		return info ? `night ${info.night} of ${info.total}` : '';
+		// Middle days: 'night X of N' only reads right for lodging. For other spans
+		// the date range + Ongoing pill already convey it — skip the night count.
+		if (isLodging && info) return `night ${info.night} of ${info.total}`;
+		return '';
 	});
 </script>
 

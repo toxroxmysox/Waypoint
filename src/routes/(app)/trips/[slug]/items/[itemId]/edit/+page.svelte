@@ -93,6 +93,7 @@
 				tripEndDate: data.tripEndDate
 			}}
 			bind:dirty
+			typeEditable={true}
 		/>
 
 		<div class="sticky bottom-20 md-desktop:bottom-4 z-sticky bg-paper -mx-4 px-4 pt-2 pb-2">

@@ -124,37 +124,29 @@ Domains mirror the bounded contexts in `CONTEXT.md` §"Bounded Contexts", plus t
 
 ---
 
-## Vault *(module)*
+## Vault *(module — RETIRED v4)*
 
-*Encrypted storage for sensitive trip data. A technical capability, not a domain.*
+*Was client-side-encrypted storage for sensitive text (booking codes, passwords). **Removed in v4** — see ADR-0005. Encryption with a trip-shared password protected only against the operator/at-rest, not against fellow members, and a new app hasn't earned the trust to win a security contest against LastPass. The nav slot becomes [[Trip Documents]]; booking codes live on Item `confirmation_codes`.*
 
-**Shipped:**
-- AES-GCM encrypted entries (booking codes, passwords), PBKDF2 key derivation, trip-scoped password. Lossy if password forgotten.
-
-**Backlog:**
-- **Sensitive-file routing** — coordinate with the Documents domain: a file flagged "sensitive" (passport scan) routes into the encrypted store; the Vault view shows encrypted files alongside text entries. See Documents fork below.
+**Removal scope (v4):** drop `vault_entries` collection (deliberate exception to append-only migrations — no production data), remove `crypto.ts`, `vault-password.ts`, `/api/vault/unlock`, vault route. Tracked with the Documents work.
 
 ---
 
-## Documents *(NEW domain)*
+## Documents *(NEW domain — grilled 2026-06-07)*
 
-*File attachments — booking PDFs, tickets, passport scans, insurance docs. The "email folder of confirmations" the current stack relies on. Nothing exists today; PocketBase native file storage is unused.*
+*File/image artifacts — booking PDFs, tickets, tour vouchers, boarding passes. The "email folder of confirmations" the current stack relies on. Nothing exists today; PocketBase native file storage is unused.*
+
+**Full design:** `docs/V4_DOCUMENTS_PRD.md`. Decision record: `docs/adr/0005-retire-vault-no-client-side-encryption.md`. Glossary: [[Document]], [[Trip Documents]] in `CONTEXT.md`.
 
 **Shipped:** Nothing.
 
-**Backlog:**
+**Backlog (all v4 — design firm, awaiting plan→issues):**
 
-### File attachments on items
-- **What:** Attach files (PDF, image) to any item. The file lives as one record on the item.
-- **Target:** v4.
-
-### Trip Documents aggregate view
-- **What:** A read-only section listing all item attachments across the trip in one place. A *view* over item attachments — not a copy. One record, two surfaces (item + documents list).
-- **Target:** v4, with attachments.
-
-### Encryption fork — do NOT route plain documents through the Vault
-- **Decision:** Attachments are **plain stored files by default.** An optional "sensitive" flag routes a single file into the encrypted Vault store. Rationale: the Vault is lossy-if-password-forgotten — a boarding pass you can't open offline at the gate is a worse failure than no app. Default-plain keeps execution-critical docs always accessible; sensitive opt-in covers passport scans.
-- **Offline:** Plain attachments must be available offline in Trip Mode (service-worker cached) — the primary execution use case.
+### Documents domain
+- **What:** Plain (unencrypted) artifacts (PDF/image), one `documents` collection. Parent scope {Item | Trip}, no Phase. One file per record, many per item. Membership-gated; no encryption, no sensitive flag (see ADR-0005). Added via file-picker upload **or clipboard paste** (screenshots). Types PDF+images, 10 MB cap, no count cap. Text codes stay on Item `confirmation_codes`.
+- **Trip Documents aggregate view:** read-only union of all Documents, grouped by Item Type + a Trip-level section. Takes the **retired Vault's nav slot**. Per-item Documents section on item detail.
+- **Offline:** automatic precache of the **active trip's** Documents (service-worker); cache-on-view for planning mode.
+- **Permissions:** upload = non-viewer members (no review queue); delete = uploader or owner/co_owner; viewers read-only.
 
 ---
 
