@@ -178,6 +178,7 @@
 			location_coords: data.item.location_coords ?? null,
 			google_place_id: data.item.google_place_id ?? '',
 			booked: data.item.booked ?? false,
+			requires_booking: data.item.requires_booking ?? false,
 			reservation_url: data.item.reservation_url ?? '',
 			free_cancellation: data.item.free_cancellation ?? false,
 			cost_estimate_usd: data.item.cost_estimate_usd ?? 0,

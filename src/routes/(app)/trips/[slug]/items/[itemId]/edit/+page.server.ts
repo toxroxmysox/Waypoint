@@ -64,6 +64,7 @@ export const actions: Actions = {
 		const endTime = data.get('end_time')?.toString() || '';
 		const endDateRaw = (data.get('end_date')?.toString() || '').split(/[T ]/)[0];
 		const booked = data.get('booked') === 'on';
+		const requiresBooking = data.get('requires_booking') === 'on';
 		const reservationUrl = data.get('reservation_url')?.toString() || '';
 		const freeCancellation = data.get('free_cancellation') === 'on';
 		const costEstimate = parseFloat(data.get('cost_estimate_usd')?.toString() || '0') || 0;
@@ -143,6 +144,7 @@ export const actions: Actions = {
 				end_time: combineDateTime(endDate || dayDate, endTime),
 				end_date: endDate ? `${endDate} 00:00:00.000Z` : '',
 				booked,
+				requires_booking: requiresBooking,
 				confirmation_codes: confirmationCodes,
 				reservation_url: reservationUrl,
 				free_cancellation: freeCancellation,

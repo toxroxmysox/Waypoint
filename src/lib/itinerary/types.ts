@@ -73,6 +73,7 @@ export interface Item extends RecordModel {
 	assigned_to: string[];
 	sort_order: number;
 	parent_item: string;
+	requires_booking: boolean;
 	created_by: string;
 }
 

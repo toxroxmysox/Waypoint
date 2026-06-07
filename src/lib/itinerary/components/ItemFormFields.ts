@@ -17,6 +17,7 @@ export interface ItemFormData {
 	location_coords: unknown;
 	google_place_id: string;
 	booked: boolean;
+	requires_booking: boolean;
 	reservation_url: string;
 	free_cancellation: boolean;
 	cost_estimate_usd: number;

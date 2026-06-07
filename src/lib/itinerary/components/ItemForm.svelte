@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getFieldConfig } from '$lib/itinerary/item-fields';
+	import { defaultRequiresBooking } from '$lib/itinerary/booking-projection';
 	import type { ItemType, ConfirmationCode } from '$lib/types';
 	import Card from '$lib/ui/Card.svelte';
 	import SectionH from '$lib/ui/SectionH.svelte';
@@ -31,6 +32,13 @@
 
 	let selectedType = $state<ItemType>(untrack(() => initialData.type));
 	let selectedSubtype = $state(untrack(() => initialData.subtype));
+
+	// requires_booking — drives the Booking Smart List (#50). On create, follow
+	// the per-type default as the type changes; on edit, preserve the stored value.
+	let requiresBooking = $state(untrack(() => initialData.requires_booking));
+	$effect(() => {
+		if (mode === 'create') requiresBooking = defaultRequiresBooking(selectedType);
+	});
 	let config = $derived(getFieldConfig(selectedType));
 	let fields = $derived(config.visibility);
 
@@ -487,6 +495,10 @@
 		<Card>
 			<div class="p-4 space-y-3">
 				<SectionH>Booking</SectionH>
+				<label class="flex items-center gap-2">
+					<input type="checkbox" name="requires_booking" bind:checked={requiresBooking} class="border-line rounded" />
+					<span class="text-ink-soft text-sm">Needs a reservation</span>
+				</label>
 				<label class="flex items-center gap-2">
 					<input type="checkbox" name="booked" checked={initialData.booked} class="border-line rounded" />
 					<span class="text-ink-soft text-sm">Booked</span>
