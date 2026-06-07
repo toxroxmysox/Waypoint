@@ -7,6 +7,7 @@ export interface FieldVisibility {
 	subtypes: string[];
 	location: boolean;
 	times: boolean;
+	endDate: boolean;
 	booking: boolean;
 	costs: boolean;
 	confirmationCodes: boolean;
@@ -20,6 +21,7 @@ const itemFieldConfig: Record<ItemType, FieldVisibility> = {
 		subtypes: ['hotel', 'airbnb', 'resort', 'other'],
 		location: true,
 		times: true,
+		endDate: true,
 		booking: true,
 		costs: true,
 		confirmationCodes: true,
@@ -31,6 +33,7 @@ const itemFieldConfig: Record<ItemType, FieldVisibility> = {
 		subtypes: ['train', 'bus', 'car', 'other'],
 		location: true,
 		times: true,
+		endDate: true,
 		booking: true,
 		costs: true,
 		confirmationCodes: true,
@@ -42,6 +45,7 @@ const itemFieldConfig: Record<ItemType, FieldVisibility> = {
 		subtypes: ['tour', 'museum', 'outdoor', 'entertainment', 'shopping', 'nightlife', 'spa', 'other'],
 		location: true,
 		times: true,
+		endDate: true,
 		booking: true,
 		costs: true,
 		confirmationCodes: true,
@@ -53,6 +57,7 @@ const itemFieldConfig: Record<ItemType, FieldVisibility> = {
 		subtypes: ['breakfast', 'lunch', 'dinner', 'snack', 'coffee', 'drinks', 'other'],
 		location: true,
 		times: true,
+		endDate: false,
 		booking: false,
 		costs: true,
 		confirmationCodes: false,
@@ -64,6 +69,7 @@ const itemFieldConfig: Record<ItemType, FieldVisibility> = {
 		subtypes: [],
 		location: false,
 		times: false,
+		endDate: true,
 		booking: false,
 		costs: false,
 		confirmationCodes: false,
@@ -75,6 +81,7 @@ const itemFieldConfig: Record<ItemType, FieldVisibility> = {
 		subtypes: [],
 		location: false,
 		times: false,
+		endDate: false,
 		booking: false,
 		costs: false,
 		confirmationCodes: false,
@@ -86,6 +93,7 @@ const itemFieldConfig: Record<ItemType, FieldVisibility> = {
 		subtypes: [],
 		location: true,
 		times: true,
+		endDate: true,
 		booking: true,
 		costs: true,
 		confirmationCodes: true,
@@ -176,6 +184,7 @@ export function buildEmptyFormData(type: ItemType): ItemFormData {
 		phase: '',
 		start_time: '',
 		end_time: '',
+		end_date: '',
 		location_name: '',
 		location_address: '',
 		location_coords: null,
