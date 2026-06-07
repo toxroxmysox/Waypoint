@@ -1,19 +1,26 @@
 <script lang="ts">
-	import type { Item, Phase } from '$lib/types';
+	import type { Item, Phase, Vote, TripMember } from '$lib/types';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import Card from '$lib/ui/Card.svelte';
+	import VoteStacks from '$lib/collaboration/components/VoteStacks.svelte';
 	import { titleCase } from '$lib/shell/format';
 
 	let {
 		items,
 		phases,
-		tripSlug
+		tripSlug,
+		votesByItem = {},
+		members = []
 	}: {
 		items: Item[];
 		phases: Phase[];
 		tripSlug: string;
+		votesByItem?: Record<string, Vote[]>;
+		members?: TripMember[];
 	} = $props();
 
+	// Items arrive pre-sorted (vote score, then sort_order). Keep the unplanned filter
+	// for callers that pass a mixed list, but preserve incoming order.
 	const unplannedItems = $derived(items.filter((i) => i.status === 'unplanned'));
 </script>
 
@@ -29,6 +36,11 @@
 						<p class="text-ink truncate text-sm" title={item.title}>{item.title}</p>
 						{#if item.location_name}
 							<p class="text-ink-muted truncate text-xs">{item.location_name}</p>
+						{/if}
+						{#if votesByItem[item.id]?.length}
+							<div class="mt-1.5">
+								<VoteStacks votes={votesByItem[item.id]} {members} size={18} />
+							</div>
 						{/if}
 					</div>
 					<span class="bg-paper text-ink-muted shrink-0 rounded px-1.5 py-0.5 text-[11px]">

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Item } from '$lib/types';
+	import type { Item, Vote, TripMember } from '$lib/types';
 	import { buildTimeline, detectOverlaps } from '$lib/itinerary/timeline';
 	import TimelineItemCard from './TimelineItemCard.svelte';
 
@@ -8,6 +8,8 @@
 		tripSlug,
 		dayId,
 		draggedItemId = null,
+		votesByItem = {},
+		members = [],
 		onDragStart = () => {},
 		onDragOver = () => {},
 		onDropTimeline = () => {},
@@ -17,6 +19,8 @@
 		tripSlug: string;
 		dayId: string;
 		draggedItemId?: string | null;
+		votesByItem?: Record<string, Vote[]>;
+		members?: TripMember[];
 		onDragStart?: (itemId: string) => void;
 		onDragOver?: (before: number | null, after: number | null) => void;
 		onDropTimeline?: () => void;
@@ -71,6 +75,8 @@
 						anchored={entry.anchored}
 						overlapping={overlaps.has(entry.item.id)}
 						draggable={!entry.anchored}
+						votes={votesByItem[entry.item.id] ?? []}
+						{members}
 					/>
 				</div>
 			{/if}

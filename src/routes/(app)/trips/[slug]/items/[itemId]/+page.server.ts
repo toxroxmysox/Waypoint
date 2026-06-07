@@ -1,6 +1,7 @@
 import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Item, ChecklistItem, TripMember, Vote, Comment } from '$lib/types';
+import { VOTE_OPTIONS, type VoteValue } from '$lib/collaboration/voting';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, membership, phases, days } = await parent();
@@ -213,17 +214,35 @@ export const actions: Actions = {
 		}
 	},
 
-	vote: async ({ params, locals }) => {
+	vote: async ({ request, params, locals }) => {
+		const data = await request.formData();
+		const value = data.get('value')?.toString() ?? '';
+		if (!VOTE_OPTIONS.includes(value as VoteValue)) {
+			return fail(400, { error: 'Invalid vote.' });
+		}
+
 		try {
 			const targetItem = await locals.pb.collection('items').getOne(params.itemId);
 			const membership = await locals.pb
 				.collection('trip_members')
 				.getFirstListItem<TripMember>(`trip = "${targetItem.trip}" && user = "${locals.user!.id}"`);
-			await locals.pb.collection('votes').create({
-				trip: targetItem.trip,
-				item: targetItem.id,
-				member: membership.id
-			});
+
+			// One vote per member per item (unique index): change = update, not insert.
+			const existing = await locals.pb
+				.collection('votes')
+				.getFirstListItem<Vote>(`item = "${targetItem.id}" && member = "${membership.id}"`)
+				.catch(() => null);
+
+			if (existing) {
+				await locals.pb.collection('votes').update(existing.id, { value });
+			} else {
+				await locals.pb.collection('votes').create({
+					trip: targetItem.trip,
+					item: targetItem.id,
+					member: membership.id,
+					value
+				});
+			}
 			return { success: true };
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : 'Failed to vote.';

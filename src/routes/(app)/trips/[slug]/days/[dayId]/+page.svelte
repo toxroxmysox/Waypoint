@@ -161,6 +161,8 @@
 					items={data.dayItems}
 					tripSlug={data.trip.slug}
 					dayId={data.day.id}
+					votesByItem={data.votesByItem}
+					members={data.members}
 					{draggedItemId}
 					{onDragStart}
 					{onDragOver}
