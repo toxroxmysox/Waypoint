@@ -2,14 +2,14 @@
 
 > Owner: Scott Vanden Warsen
 > Created: 2026-05-23
-> Source: UI_AUDIT.md (53 findings + 2 server errors across two audit passes)
+> Source: UI audit, 53 findings + 2 server errors across two audit passes (audit report archived — see git history for `UI_AUDIT.md`)
 > Gate: Traverse City October 2026 trip
 
 ---
 
 ## Scope
 
-v2 is **UI/UX polish only**. No new features, no data model changes, no new routes. Every item traces back to a finding in UI_AUDIT.md. The app is feature-complete (M1–M6 shipped); this pass makes it feel finished.
+v2 is **UI/UX polish only**. No new features, no data model changes, no new routes. Every item traces back to a finding in the UI audit. The app is feature-complete (M1–M6 shipped); this pass makes it feel finished.
 
 ### What v2 is NOT
 
@@ -322,7 +322,7 @@ Progress tracked in this file — mark each WP with completion date when done.
 
 ## Exclusions (deferred to v3+ or backlog)
 
-These items from UI_AUDIT.md are explicitly **not** in v2 scope:
+These items from the UI audit are explicitly **not** in v2 scope:
 
 | ID | What | Why deferred |
 |----|------|-------------|
