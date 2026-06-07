@@ -62,12 +62,13 @@
 </script>
 
 <div class="flex flex-col gap-2">
-	<div class="flex gap-2">
+	<div class="flex flex-col gap-2 sm:flex-row">
 		<input
 			type="text"
 			bind:value={flightNumber}
 			placeholder="e.g. AA1234"
-			class="border-line bg-surface text-ink w-full rounded-md border px-3 py-2 text-sm uppercase"
+			aria-label="Flight number"
+			class="border-line bg-surface text-ink w-full rounded-md border px-3 py-2 text-sm uppercase sm:flex-1"
 			oninput={(e) => {
 				e.currentTarget.value = e.currentTarget.value.toUpperCase();
 				flightNumber = e.currentTarget.value;
@@ -76,7 +77,8 @@
 		<input
 			type="date"
 			bind:value={flightDate}
-			class="border-line bg-surface text-ink rounded-md border px-3 py-2 text-sm"
+			aria-label="Flight date"
+			class="border-line bg-surface text-ink w-full rounded-md border px-3 py-2 text-sm sm:w-auto"
 		/>
 	</div>
 	<Button
