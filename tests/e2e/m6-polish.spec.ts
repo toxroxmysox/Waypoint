@@ -55,21 +55,9 @@ test.describe('M6 Polish', () => {
 		await expect(page.getByText('Print itinerary').filter({ visible: true }).first()).toBeVisible();
 	});
 
-	test('checklist template picker appears for checklist type', async ({ page }) => {
-		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/items/new`);
-		await page.waitForURL('**/items/new**');
-
-		const checklistBtn = page
-			.getByRole('button', { name: 'Checklist' })
-			.filter({ visible: true })
-			.first();
-		await checklistBtn.click();
-
-		await expect(
-			page.getByText('Start from template').filter({ visible: true }).first()
-		).toBeVisible();
-	});
+	// NOTE: the "checklist template picker" test was removed when the checklist
+	// item-type was retired (ADR-0003 / #48). Checklists are now a standalone
+	// primitive surfaced via Itinerary › Lists — see lists-surface.spec.ts.
 
 	test('responsive: bottom nav visible at mobile width', async ({ page }) => {
 		await page.setViewportSize({ width: 375, height: 812 });
