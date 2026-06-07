@@ -60,8 +60,9 @@ test.describe('M3 Money', () => {
 
 		try {
 			await page.goto(`${BASE}/trips/${tripSlug}/expenses`);
-			await expect(page.getByText(/no expenses yet/i)).toBeVisible({ timeout: 10000 });
-			await expect(page.getByRole('button', { name: /add expense/i })).toBeVisible();
+			// Dual-tree layout → scope content/form locators to the visible subtree.
+			await expect(page.getByText(/no expenses yet/i).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
+			await expect(page.getByRole('button', { name: /add expense/i }).filter({ visible: true }).first()).toBeVisible();
 		} finally {
 			await ctx.close();
 		}
@@ -71,22 +72,25 @@ test.describe('M3 Money', () => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 
 		try {
+			// Add-expense is a mobile-first FAB + bottom-sheet flow; exercise it at the
+			// project's standard 375px mobile width.
+			await page.setViewportSize({ width: 375, height: 812 });
 			await page.goto(`${BASE}/trips/${tripSlug}/expenses`);
 
 			// Open Add Expense sheet via FAB
-			await page.getByRole('button', { name: /add expense/i }).click();
-			await expect(page.getByText(/amount/i)).toBeVisible({ timeout: 5000 });
+			await page.getByRole('button', { name: /add expense/i }).filter({ visible: true }).first().click();
+			await expect(page.getByText(/amount/i).filter({ visible: true }).first()).toBeVisible({ timeout: 5000 });
 
 			// Fill the form
-			await page.fill('input[name="amount_usd"]', '42.50');
-			await page.fill('input[name="description"]', 'E2E Test Dinner');
+			await page.locator('input[name="amount_usd"]:visible').first().fill('42.50');
+			await page.locator('input[name="description"]:visible').first().fill('E2E Test Dinner');
 
 			// Submit (the form's submit button, not the FAB)
-			await page.getByRole('button', { name: 'Add Expense', exact: true }).click();
+			await page.getByRole('button', { name: 'Add Expense', exact: true }).filter({ visible: true }).first().click();
 
 			// Expense should appear in list
-			await expect(page.getByText('E2E Test Dinner')).toBeVisible({ timeout: 10000 });
-			await expect(page.getByText('$42.50')).toBeVisible();
+			await expect(page.getByText('E2E Test Dinner').filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
+			await expect(page.getByText('$42.50').filter({ visible: true }).first()).toBeVisible();
 		} finally {
 			await ctx.close();
 		}
@@ -99,19 +103,19 @@ test.describe('M3 Money', () => {
 			await page.goto(`${BASE}/trips/${tripSlug}/budget`);
 
 			// Category labels visible
-			await expect(page.getByText('Lodging')).toBeVisible({ timeout: 10000 });
-			await expect(page.getByText('Food')).toBeVisible();
-			await expect(page.getByText('Transport')).toBeVisible();
+			await expect(page.getByText('Lodging').filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
+			await expect(page.getByText('Food').filter({ visible: true }).first()).toBeVisible();
+			await expect(page.getByText('Transport').filter({ visible: true }).first()).toBeVisible();
 
 			// Grand total header visible
-			await expect(page.getByText(/estimated total/i)).toBeVisible();
+			await expect(page.getByText(/estimated total/i).filter({ visible: true }).first()).toBeVisible();
 
 			// Save button visible for owner
-			await expect(page.getByRole('button', { name: /save budget/i })).toBeVisible();
+			await expect(page.getByRole('button', { name: /save budget/i }).filter({ visible: true }).first()).toBeVisible();
 
 			// Click Save Budget
-			await page.getByRole('button', { name: /save budget/i }).click();
-			await expect(page.getByText(/budget saved/i)).toBeVisible({ timeout: 5000 });
+			await page.getByRole('button', { name: /save budget/i }).filter({ visible: true }).first().click();
+			await expect(page.getByText(/budget saved/i).filter({ visible: true }).first()).toBeVisible({ timeout: 5000 });
 		} finally {
 			await ctx.close();
 		}
@@ -121,16 +125,18 @@ test.describe('M3 Money', () => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 
 		try {
+			// Mobile-first flow (settle-up bottom sheet); 375px, see add-expense test.
+			await page.setViewportSize({ width: 375, height: 812 });
 			await page.goto(`${BASE}/trips/${tripSlug}/expenses`);
 
 			// After adding an expense in a prior test, either settle up button or
 			// "all squared up" banner should be visible (depends on split config).
 			// At minimum the expense list should not be empty.
-			await expect(page.getByText('E2E Test Dinner')).toBeVisible({ timeout: 10000 });
+			await expect(page.getByText('E2E Test Dinner').filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
 
 			// If there are debts, the Settle Up button is shown.
-			const settleBtn = page.getByRole('button', { name: /settle up/i });
-			const squaredUp = page.getByText(/all squared up/i);
+			const settleBtn = page.getByRole('button', { name: /settle up/i }).filter({ visible: true }).first();
+			const squaredUp = page.getByText(/all squared up/i).filter({ visible: true }).first();
 
 			const hasSettle = await settleBtn.isVisible().catch(() => false);
 			const hasSquared = await squaredUp.isVisible().catch(() => false);
@@ -141,7 +147,7 @@ test.describe('M3 Money', () => {
 				await settleBtn.click();
 				// Settle Up sheet should open — use .first() because both
 				// the button label and a <p> contain "payment(s) needed"
-				await expect(page.getByText(/payment.*needed/i).first()).toBeVisible({ timeout: 5000 });
+				await expect(page.getByText(/payment.*needed/i).filter({ visible: true }).first()).toBeVisible({ timeout: 5000 });
 			}
 		} finally {
 			await ctx.close();
@@ -156,7 +162,11 @@ test.describe('M3 Money', () => {
 			await page.goto(`${BASE}/trips/${tripSlug}/expenses`);
 			// Wait for page to load — either expenses exist or the empty state shows
 			await expect(
-				page.getByText('E2E Test Dinner').or(page.getByText(/no expenses yet/i))
+				page
+					.getByText('E2E Test Dinner')
+					.filter({ visible: true })
+					.or(page.getByText(/no expenses yet/i).filter({ visible: true }))
+					.first()
 			).toBeVisible({ timeout: 10000 });
 
 			const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
@@ -173,7 +183,7 @@ test.describe('M3 Money', () => {
 		try {
 			await page.setViewportSize({ width: 375, height: 812 });
 			await page.goto(`${BASE}/trips/${tripSlug}/budget`);
-			await expect(page.getByText('Lodging')).toBeVisible({ timeout: 10000 });
+			await expect(page.getByText('Lodging').filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
 
 			const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
 			const viewportWidth = await page.evaluate(() => window.innerWidth);

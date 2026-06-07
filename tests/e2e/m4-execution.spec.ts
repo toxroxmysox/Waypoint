@@ -1,72 +1,71 @@
 import { test, expect } from '@playwright/test';
 
-const BASE = 'http://localhost:5173';
+// playwright.config.ts boots `npm run build && npm run preview` on :4173.
+const BASE = 'http://localhost:4173';
+
+// The first trip belonging to E2E_TEST_EMAIL is active (today ∈ trip dates), so it
+// loads in *trip mode* — the nav surfaces Now/Today/Add/Vault, NOT a "More" tab.
+// Secondary pages live at known routes, so navigate by URL (mode- and viewport-
+// independent) rather than clicking nav chrome that only exists in one mode.
+async function openTripSlug(page: import('@playwright/test').Page): Promise<string> {
+	await page.goto(`${BASE}/trips`);
+	await page.locator('a[href*="/trips/"]').first().click();
+	await page.waitForURL('**/trips/**');
+	return page.url().split('/trips/')[1].split(/[/?#]/)[0];
+}
 
 test.describe('M4 Execution', () => {
 	test.beforeEach(async ({ page }) => {
-		// Dev login
+		// Dev login (param-less → falls back to E2E_TEST_EMAIL).
 		await page.goto(`${BASE}/api/dev/login`);
 		await page.waitForURL('**/trips');
 	});
 
 	test('vote button renders on item detail', async ({ page }) => {
-		await page.goto(`${BASE}/trips`);
-		const tripCard = page.locator('a[href*="/trips/"]').first();
-		await tripCard.click();
-		await page.waitForURL('**/trips/**');
+		const slug = await openTripSlug(page);
 
-		// Navigate to a day
-		const dayLink = page.locator('a[href*="/days/"]').first();
+		// The trip layout is dual-tree (one CSS-hidden); scope to the visible subtree.
+		const dayLink = page.locator(`a[href*="/trips/${slug}/days/"]:visible`).first();
 		if (await dayLink.isVisible()) {
 			await dayLink.click();
 			await page.waitForURL('**/days/**');
 
-			// Click an existing item link (exclude /items/new which is the "add" link)
-			const itemLink = page.locator('a[href*="/items/"]:not([href*="/items/new"])').first();
+			// Click an existing item link (exclude /items/new and /edit).
+			const itemLink = page
+				.locator(`a[href*="/items/"]:not([href*="/items/new"]):not([href*="/edit"]):visible`)
+				.first();
 			if (await itemLink.isVisible()) {
 				await itemLink.click();
 				await page.waitForURL('**/items/**');
 
-				// Vote button should exist (aria-label="Vote for this option" or "Remove vote")
-				const voteBtn = page.getByLabel('Vote for this option');
-				await expect(voteBtn.or(page.getByLabel('Remove vote'))).toBeVisible();
+				// Vote control is a group of weighted option buttons (#30); assert the group.
+				await expect(
+					page.getByRole('group', { name: 'Vote on this item' }).filter({ visible: true }).first()
+				).toBeVisible();
 			}
 		}
 	});
 
 	test('vault locked screen renders', async ({ page }) => {
-		await page.goto(`${BASE}/trips`);
-		const tripCard = page.locator('a[href*="/trips/"]').first();
-		await tripCard.click();
-
-		// Navigate to More > Vault
-		await page.getByText('More').click();
-		await page.getByText('Vault').click();
+		const slug = await openTripSlug(page);
+		await page.goto(`${BASE}/trips/${slug}/vault`);
 		await page.waitForURL('**/vault');
 
-		// Should show either locked or no-password state
-		const locked = page.getByText('Vault locked');
-		const noPassword = page.getByText('Vault not set up');
-		await expect(locked.or(noPassword)).toBeVisible();
+		// Should show either locked or no-password state.
+		const locked = page.getByText('Vault locked').filter({ visible: true });
+		const noPassword = page.getByText('Vault not set up').filter({ visible: true });
+		await expect(locked.or(noPassword).first()).toBeVisible();
 	});
 
 	test('trip mode today view renders', async ({ page }) => {
-		await page.goto(`${BASE}/trips`);
-		const tripCard = page.locator('a[href*="/trips/"]').first();
-		await tripCard.click();
-		await page.waitForURL('**/trips/**');
+		const slug = await openTripSlug(page);
+		await page.goto(`${BASE}/trips/${slug}/today`);
+		await page.waitForURL('**/today');
 
-		// Click Trip Mode button
-		const tripModeBtn = page.getByText('Trip Mode');
-		if (await tripModeBtn.isVisible()) {
-			await tripModeBtn.click();
-			await page.waitForURL('**/today');
-
-			// Should see Today or no-itinerary message
-			const todayHeader = page.getByRole('heading', { level: 2 });
-			const noItinerary = page.getByText('No itinerary for today');
-			await expect(todayHeader.first().or(noItinerary)).toBeVisible();
-		}
+		// Should see Today content or a no-itinerary message.
+		const todayHeader = page.getByRole('heading', { level: 2 }).filter({ visible: true });
+		const noItinerary = page.getByText('No itinerary for today').filter({ visible: true });
+		await expect(todayHeader.first().or(noItinerary).first()).toBeVisible();
 	});
 
 	test('A2HS banner shows and dismisses', async ({ page }) => {
@@ -75,25 +74,19 @@ test.describe('M4 Execution', () => {
 		await page.evaluate(() => localStorage.removeItem('waypoint-a2hs-dismissed'));
 		await page.reload();
 
-		// Banner may or may not show depending on browser (Chrome shows, others may not)
-		// Just verify the page loads without errors
+		// Banner may or may not show depending on browser (Chrome shows, others may not).
+		// Just verify the page loads without errors (/trips is single-tree).
 		await expect(page.getByRole('heading', { name: 'Waypoint' })).toBeVisible({ timeout: 5000 });
 	});
 
 	test('mobile responsive — vault at 375px', async ({ page }) => {
 		await page.setViewportSize({ width: 375, height: 812 });
-		await page.goto(`${BASE}/trips`);
-		const tripCard = page.locator('a[href*="/trips/"]').first();
-		await tripCard.click();
-		await page.waitForURL('**/trips/**');
-
-		await page.locator('nav').getByText('More').click();
-		await page.waitForURL('**/more');
-		await page.getByText('Vault').click();
+		const slug = await openTripSlug(page);
+		await page.goto(`${BASE}/trips/${slug}/vault`);
 		await page.waitForURL('**/vault');
 
-		// Verify layout isn't broken at mobile width
-		const main = page.locator('main');
+		// Verify layout isn't broken at mobile width (mobile subtree is the visible one).
+		const main = page.locator('main:visible').first();
 		const box = await main.boundingBox();
 		expect(box).toBeTruthy();
 		expect(box!.width).toBeLessThanOrEqual(375);
@@ -101,19 +94,13 @@ test.describe('M4 Execution', () => {
 
 	test('mobile responsive — trip mode at 375px', async ({ page }) => {
 		await page.setViewportSize({ width: 375, height: 812 });
-		await page.goto(`${BASE}/trips`);
-		const tripCard = page.locator('a[href*="/trips/"]').first();
-		await tripCard.click();
+		const slug = await openTripSlug(page);
+		await page.goto(`${BASE}/trips/${slug}/today`);
+		await page.waitForURL('**/today');
 
-		const tripModeBtn = page.getByText('Trip Mode');
-		if (await tripModeBtn.isVisible()) {
-			await tripModeBtn.click();
-			await page.waitForURL('**/today');
-
-			const main = page.locator('main');
-			const box = await main.boundingBox();
-			expect(box).toBeTruthy();
-			expect(box!.width).toBeLessThanOrEqual(375);
-		}
+		const main = page.locator('main:visible').first();
+		const box = await main.boundingBox();
+		expect(box).toBeTruthy();
+		expect(box!.width).toBeLessThanOrEqual(375);
 	});
 });

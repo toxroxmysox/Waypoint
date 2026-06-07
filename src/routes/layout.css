@@ -75,11 +75,18 @@
 	--shadow-card-strong:
 		0 1px 0 rgba(28, 27, 24, 0.04), 0 8px 24px rgba(28, 27, 24, 0.06);
 
-	--z-dropdown: 20;
-	--z-sticky:   30;
-	--z-nav:      40;
-	--z-modal:    50;
-	--z-overlay:  60;
+	/*
+	 * Tailwind v4 derives z-index utilities from the `--z-index-*` namespace, NOT
+	 * `--z-*`. These were `--z-dropdown` etc., which generated NO utilities — so every
+	 * `z-modal`/`z-nav`/`z-overlay`/`z-sticky`/`z-dropdown` class was a silent no-op and
+	 * stacking fell back to DOM order. That let the BottomNav (rendered after the page
+	 * content) paint over open BottomSheets and steal submit-button clicks.
+	 */
+	--z-index-dropdown: 20;
+	--z-index-sticky:   30;
+	--z-index-nav:      40;
+	--z-index-modal:    50;
+	--z-index-overlay:  60;
 }
 
 /* Page baseline. Paper background, ink text, Inter UI. */

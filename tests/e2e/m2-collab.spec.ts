@@ -64,13 +64,17 @@ test.describe('M2 Collaboration', () => {
 		const { page: travelerPage, ctx: travelerCtx } = await devLogin(browser, EMAILS.traveler);
 
 		try {
-			// Owner sees Inbox on the More page.
+			// Owner sees Inbox on the More page (dual-tree → scope to the visible subtree).
 			await ownerPage.goto(`${BASE}/trips/${tripSlug}/more`);
-			await expect(ownerPage.getByRole('link', { name: /inbox/i })).toBeVisible({ timeout: 10000 });
+			await expect(
+				ownerPage.getByRole('link', { name: /inbox/i }).filter({ visible: true }).first()
+			).toBeVisible({ timeout: 10000 });
 
 			// Traveler does NOT see Inbox on the More page.
 			await travelerPage.goto(`${BASE}/trips/${tripSlug}/more`);
-			await expect(travelerPage.getByRole('link', { name: /inbox/i })).not.toBeVisible({ timeout: 5000 });
+			await expect(
+				travelerPage.getByRole('link', { name: /inbox/i }).filter({ visible: true })
+			).not.toBeVisible({ timeout: 5000 });
 		} finally {
 			await ownerCtx.close();
 			await travelerCtx.close();
@@ -85,12 +89,14 @@ test.describe('M2 Collaboration', () => {
 			await page.goto(`${BASE}/trips/${tripSlug}/items/new`);
 
 			// The "You're a traveler" notice should be visible since auto_approve=false.
-			await expect(page.getByText(/traveler/i)).toBeVisible({ timeout: 10000 });
-			// Notice text contains "suggestion" — use first() since the submit button also matches /suggestion/i.
-			await expect(page.getByText(/suggestion/i).first()).toBeVisible();
+			await expect(page.getByText(/traveler/i).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
+			// Notice text contains "suggestion" — first visible since the submit button also matches /suggestion/i.
+			await expect(page.getByText(/suggestion/i).filter({ visible: true }).first()).toBeVisible();
 
 			// The submit button should say "Submit suggestion" not "Create item".
-			await expect(page.getByRole('button', { name: /submit suggestion/i })).toBeVisible();
+			await expect(
+				page.getByRole('button', { name: /submit suggestion/i }).filter({ visible: true }).first()
+			).toBeVisible();
 		} finally {
 			await ctx.close();
 		}
@@ -102,7 +108,9 @@ test.describe('M2 Collaboration', () => {
 		try {
 			await page.goto(`${BASE}/trips/${tripSlug}/inbox`);
 			// Inbox page loads without error.
-			await expect(page.getByRole('heading', { name: /inbox/i, level: 1 })).toBeVisible({ timeout: 10000 });
+			await expect(
+				page.getByRole('heading', { name: /inbox/i, level: 1 }).filter({ visible: true }).first()
+			).toBeVisible({ timeout: 10000 });
 		} finally {
 			await ctx.close();
 		}
@@ -113,7 +121,9 @@ test.describe('M2 Collaboration', () => {
 
 		try {
 			await page.goto(`${BASE}/trips/${tripSlug}`);
-			await expect(page.getByRole('button', { name: /notifications/i })).toBeVisible({ timeout: 10000 });
+			await expect(
+				page.getByRole('button', { name: /notifications/i }).filter({ visible: true }).first()
+			).toBeVisible({ timeout: 10000 });
 		} finally {
 			await ctx.close();
 		}
