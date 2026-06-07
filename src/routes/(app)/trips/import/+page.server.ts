@@ -110,6 +110,7 @@ export const actions: Actions = {
 					end_date: item.end_date || '',
 					status: item.status || 'planned',
 					booked: item.booked || false,
+					requires_booking: item.requires_booking || false,
 					confirmation_codes: item.confirmation_codes || [],
 					cost_estimate_usd: item.cost_estimate_usd || 0,
 					cost_actual_usd: item.cost_actual_usd || 0,
@@ -117,6 +118,28 @@ export const actions: Actions = {
 					notes: item.notes || '',
 					order: 0
 				});
+			}
+
+			// Checklists + tasks (ADR-0003 §7). Re-link phase via phase_name;
+			// trip-level when null. `assignee` is not imported (was stripped on export).
+			for (const [ci, cl] of (importData.checklists || []).entries()) {
+				const phaseId = cl.phase_name ? phaseMap.get(cl.phase_name) || '' : '';
+				const newChecklist = await locals.pb.collection('checklists').create({
+					trip: trip.id,
+					phase: phaseId,
+					item: '',
+					title: cl.title,
+					kind: 'manual',
+					order: ci
+				});
+				for (const [ti, task] of (cl.tasks || []).entries()) {
+					await locals.pb.collection('tasks').create({
+						checklist: newChecklist.id,
+						title: task.title,
+						checked: task.checked ?? false,
+						order: ti
+					});
+				}
 			}
 
 			redirect(303, `/trips/${slug}`);

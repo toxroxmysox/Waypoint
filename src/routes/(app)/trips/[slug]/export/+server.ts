@@ -1,5 +1,5 @@
 import type { RequestHandler } from './$types';
-import type { Trip, Phase, Day, Item, TripBudget } from '$lib/types';
+import type { Trip, Phase, Day, Item, Checklist, Task, TripBudget } from '$lib/types';
 import { buildTripExport } from '$lib/portability/export';
 
 export const GET: RequestHandler = async ({ params, locals }) => {
@@ -30,6 +30,19 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 		})
 	]);
 
+	// Trip/phase-scoped manual checklists + their tasks (ADR-0003 §7).
+	const checklists = await locals.pb.collection('checklists').getFullList<Checklist>({
+		filter: `trip = "${trip.id}" && kind = "manual" && item = ""`,
+		sort: 'order'
+	});
+	const checklistTasks =
+		checklists.length > 0
+			? await locals.pb.collection('tasks').getFullList<Task>({
+					filter: checklists.map((c) => `checklist = "${c.id}"`).join(' || '),
+					sort: 'order'
+				})
+			: [];
+
 	let budget = null;
 	try {
 		const tripBudget = await locals.pb
@@ -42,7 +55,7 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 		// No budget
 	}
 
-	const exportData = buildTripExport(trip, phases, days, items, budget);
+	const exportData = buildTripExport(trip, phases, days, items, budget, checklists, checklistTasks);
 	const filename = `waypoint-${trip.slug}-${new Date().toISOString().split('T')[0]}.json`;
 
 	return new Response(JSON.stringify(exportData, null, 2), {

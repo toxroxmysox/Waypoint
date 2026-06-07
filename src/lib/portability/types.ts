@@ -45,11 +45,19 @@ export interface TripExport {
 		end_date: string | null;
 		status: string;
 		booked: boolean;
+		requires_booking: boolean;
 		confirmation_codes: Array<{ label: string; value: string }>;
 		cost_estimate_usd: number;
 		cost_actual_usd: number;
 		reservation_url: string;
 		notes: string;
+	}>;
+	// Trip/phase-scoped manual checklists (ADR-0003 §7). `assignee` is stripped
+	// on export — trip-scoped member ids won't resolve on import.
+	checklists: Array<{
+		title: string;
+		phase_name: string | null;
+		tasks: Array<{ title: string; checked: boolean }>;
 	}>;
 	budget: {
 		categories: Array<{
