@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatCountdown, formatTime, formatTimeRange } from './format';
+import { formatCountdown, formatTime, formatTimeRange, formatDateRange } from './format';
 
 describe('formatCountdown', () => {
 	it('returns "< 1m" for 0 or negative minutes', () => {
@@ -35,5 +35,15 @@ describe('formatTime with real-dated stored values', () => {
 		expect(formatTimeRange('2026-06-08 17:30:00.000Z', '2026-06-08 19:00:00.000Z')).toBe(
 			'5:30 PM – 7:00 PM'
 		);
+	});
+});
+
+describe('formatDateRange', () => {
+	it('formats a start→end span as abbreviated month/day', () => {
+		expect(formatDateRange('2026-06-18', '2026-06-22')).toBe('Jun 18 → Jun 22');
+	});
+	it('returns empty string when either side is missing', () => {
+		expect(formatDateRange('', '2026-06-22')).toBe('');
+		expect(formatDateRange('2026-06-18', '')).toBe('');
 	});
 });
