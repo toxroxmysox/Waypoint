@@ -51,6 +51,7 @@ export const actions: Actions = {
 	update: async ({ request, params, locals }) => {
 		const data = await request.formData();
 
+		const type = data.get('type')?.toString() || '';
 		const subtype = data.get('subtype')?.toString() || '';
 		const title = data.get('title')?.toString().trim();
 		const description = data.get('description')?.toString() || '';
@@ -93,10 +94,12 @@ export const actions: Actions = {
 
 		try {
 			const item = await locals.pb.collection('items').getOne(params.itemId);
-			const type = item['type'] as string;
+			// Type is now editable in the form (parity with create). Fall back to the
+			// stored type if the form somehow omits it.
+			const resolvedType = type || (item['type'] as string);
 
-			if (booked && (type === 'meal' || type === 'note')) {
-				return fail(400, { error: `${type} items cannot be marked as booked.` });
+			if (booked && (resolvedType === 'meal' || resolvedType === 'note')) {
+				return fail(400, { error: `${resolvedType} items cannot be marked as booked.` });
 			}
 
 			// Status logic: only override to planned/unplanned based on day presence;
@@ -135,6 +138,7 @@ export const actions: Actions = {
 			}
 
 			await locals.pb.collection('items').update(params.itemId, {
+				type: resolvedType,
 				subtype,
 				title,
 				description,
