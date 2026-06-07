@@ -2,28 +2,33 @@
 	import { enhance } from '$app/forms';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import InlineQuickAdd from '$lib/itinerary/components/InlineQuickAdd.svelte';
-	import { titleCase, formatTime } from '$lib/shell/format';
-	import type { Item } from '$lib/types';
+	import { formatTime, formatDateRange } from '$lib/shell/format';
+	import { itemDateRange } from '$lib/itinerary/multi-day';
+	import type { Item, Day } from '$lib/types';
 
 	let {
 		item,
 		tripId,
 		dayId,
-		phaseId
+		phaseId,
+		days = []
 	}: {
 		item: Item;
 		tripId: string;
 		dayId: string;
 		phaseId: string;
+		days?: Day[];
 	} = $props();
 
 	let localState = $state<'pending' | 'done' | 'skipped' | 'replacing'>('pending');
 	let submitting = $state(false);
+	let editingEnd = $state(false);
 
 	const isDone = $derived(item.status === 'done' || localState === 'done');
 	const isSkipped = $derived(localState === 'skipped');
 	const isReplacing = $derived(localState === 'replacing');
 	const isResolved = $derived(isDone || isSkipped);
+	const range = $derived(itemDateRange(item, days));
 </script>
 
 <div class="border-border border-b last:border-b-0">
@@ -39,6 +44,38 @@
 			</p>
 			{#if item.start_time}
 				<p class="text-ink-muted text-xs">{formatTime(item.start_time)}</p>
+			{/if}
+			{#if range}
+				<button
+					type="button"
+					onclick={() => (editingEnd = !editingEnd)}
+					class="text-ink-muted text-xs hover:underline"
+				>
+					{formatDateRange(range.start, range.end)} · adjust
+				</button>
+				{#if editingEnd}
+					<form
+						method="POST"
+						action="?/trimEnd"
+						use:enhance={() => {
+							return async ({ result, update }) => {
+								if (result.type === 'success') editingEnd = false;
+								await update();
+							};
+						}}
+						class="mt-1 flex items-center gap-1"
+					>
+						<input type="hidden" name="item_id" value={item.id} />
+						<input
+							type="date"
+							name="end_date"
+							value={range.end}
+							min={range.start}
+							class="border-line bg-surface text-ink rounded border px-1.5 py-1 text-xs"
+						/>
+						<button type="submit" class="text-sky text-xs font-medium">Save</button>
+					</form>
+				{/if}
 			{/if}
 		</div>
 

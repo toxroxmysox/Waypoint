@@ -7,12 +7,14 @@
 		day,
 		items,
 		phases,
-		tripId
+		tripId,
+		days = []
 	}: {
 		day: Day;
 		items: Item[];
 		phases: Phase[];
 		tripId: string;
+		days?: Day[];
 	} = $props();
 
 	const phaseMap = $derived(new Map(phases.map((p) => [p.id, p])));
@@ -84,6 +86,7 @@
 				{tripId}
 				dayId={day.id}
 				phaseId={day.phases?.[0] || ''}
+				{days}
 			/>
 		{/each}
 	{/if}

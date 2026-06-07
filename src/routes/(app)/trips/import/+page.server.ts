@@ -107,6 +107,7 @@ export const actions: Actions = {
 					end_time: item.end_time || null,
 					start_tz: item.start_tz || '',
 					end_tz: item.end_tz || '',
+					end_date: item.end_date || '',
 					status: item.status || 'planned',
 					booked: item.booked || false,
 					confirmation_codes: item.confirmation_codes || [],

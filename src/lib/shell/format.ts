@@ -37,3 +37,15 @@ export function formatCountdown(minutes: number): string {
 	if (m === 0) return `${h}h`;
 	return `${h}h ${m}m`;
 }
+
+/** "Jun 18 → Jun 22" from two 'YYYY-MM-DD' (or stored datetime) strings. */
+export function formatDateRange(start: string, end: string): string {
+	if (!start || !end) return '';
+	const fmt = (s: string) =>
+		new Date(`${s.split(/[T ]/)[0]}T00:00:00Z`).toLocaleDateString('en-US', {
+			month: 'short',
+			day: 'numeric',
+			timeZone: 'UTC'
+		});
+	return `${fmt(start)} → ${fmt(end)}`;
+}

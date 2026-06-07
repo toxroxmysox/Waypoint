@@ -35,12 +35,15 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		item: {
 			...item,
 			start_time: datetimeToTime(item.start_time ?? ''),
-			end_time: datetimeToTime(item.end_time ?? '')
+			end_time: datetimeToTime(item.end_time ?? ''),
+			end_date: String(item.end_date ?? '').split(/[T ]/)[0]
 		},
 		checklistItems,
 		members,
 		phases,
-		days
+		days,
+		tripStartDate: String(trip.start_date || '').split(/[T ]/)[0],
+		tripEndDate: String(trip.end_date || '').split(/[T ]/)[0]
 	};
 };
 
@@ -67,6 +70,7 @@ export const actions: Actions = {
 		const googlePlaceId = data.get('google_place_id')?.toString() || '';
 		const startTime = data.get('start_time')?.toString() || '';
 		const endTime = data.get('end_time')?.toString() || '';
+		const endDateRaw = (data.get('end_date')?.toString() || '').split(/[T ]/)[0];
 		const booked = data.get('booked') === 'on';
 		const reservationUrl = data.get('reservation_url')?.toString() || '';
 		const freeCancellation = data.get('free_cancellation') === 'on';
@@ -110,10 +114,24 @@ export const actions: Actions = {
 			if (day) {
 				try {
 					const dayRec = await locals.pb.collection('days').getOne(day);
-					dayDate = String(dayRec.date || '');
+					dayDate = String(dayRec.date || '').split(/[T ]/)[0];
 				} catch {
 					dayDate = '';
 				}
+			}
+
+			// Multi-day span: cleared when unscheduled; else must be after the
+			// start day and within the trip.
+			const trip = await locals.pb
+				.collection('trips')
+				.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+			const tripEnd = String(trip.end_date || '').split(/[T ]/)[0];
+			let endDate = '';
+			if (resolvedStatus !== 'unplanned' && day && dayDate && endDateRaw && endDateRaw > dayDate) {
+				if (tripEnd && endDateRaw > tripEnd) {
+					return fail(400, { error: 'End date is after the trip ends.' });
+				}
+				endDate = endDateRaw;
 			}
 
 			await locals.pb.collection('items').update(params.itemId, {
@@ -127,7 +145,8 @@ export const actions: Actions = {
 				location_coords: locationCoords,
 				google_place_id: googlePlaceId,
 				start_time: combineDateTime(dayDate, startTime),
-				end_time: combineDateTime(dayDate, endTime),
+				end_time: combineDateTime(endDate || dayDate, endTime),
+				end_date: endDate ? `${endDate} 00:00:00.000Z` : '',
 				booked,
 				confirmation_codes: confirmationCodes,
 				reservation_url: reservationUrl,

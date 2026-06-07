@@ -164,6 +164,7 @@
 			phase: data.item.phase ?? '',
 			start_time: data.item.start_time ?? '',
 			end_time: data.item.end_time ?? '',
+			end_date: data.item.end_date ?? '',
 			location_name: data.item.location_name ?? '',
 			location_address: data.item.location_address ?? '',
 			location_coords: data.item.location_coords ?? null,
@@ -180,7 +181,9 @@
 		context={{
 			days: data.days ?? [],
 			phases: data.phases ?? [],
-			members: data.members
+			members: data.members,
+			tripStartDate: '',
+			tripEndDate: ''
 		}}
 	/>
 

@@ -101,7 +101,9 @@
 				phases: data.phases,
 				members: data.members,
 				preselectedDay: data.preselectedDay,
-				preselectedPhase: data.preselectedPhase
+				preselectedPhase: data.preselectedPhase,
+				tripStartDate: data.tripStartDate,
+				tripEndDate: data.tripEndDate
 			}}
 			bind:dirty
 			typeEditable={true}

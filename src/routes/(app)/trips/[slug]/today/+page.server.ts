@@ -25,13 +25,19 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 
 	const items = todayAndUpcomingIds.length > 0
 		? await locals.pb.collection('items').getFullList<Item>({
-				filter: todayAndUpcomingIds.map((id) => `day = "${id}"`).join(' || '),
+				filter: `(${todayAndUpcomingIds.map((id) => `day = "${id}"`).join(' || ')}) && end_date = ""`,
 				sort: 'day,start_time,sort_order'
 			})
 		: [];
 
+	const multiDayItems = await locals.pb.collection('items').getFullList<Item>({
+		filter: `trip = "${trip.id}" && end_date != ""`,
+		sort: 'day'
+	});
+
 	return {
 		items,
+		multiDayItems,
 		now: now.toISOString()
 	};
 };

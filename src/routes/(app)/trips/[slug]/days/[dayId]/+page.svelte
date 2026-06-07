@@ -12,6 +12,7 @@
 	import DayTimeline from '$lib/itinerary/components/DayTimeline.svelte';
 	import ParkingLotSection from '$lib/itinerary/components/ParkingLotSection.svelte';
 	import DragDropTimeline from '$lib/itinerary/components/DragDropTimeline.svelte';
+	import MultiDayBanner from '$lib/itinerary/components/MultiDayBanner.svelte';
 
 	let { data, form } = $props();
 
@@ -120,6 +121,19 @@
 			{/if}
 		</div>
 	</Card>
+
+	{#if data.spanningItems.length > 0}
+		<div class="space-y-2">
+			{#each data.spanningItems as item (item.id)}
+				<MultiDayBanner
+					{item}
+					days={data.allDays}
+					dayDate={data.day.date.split(/[T ]/)[0]}
+					tripSlug={data.trip.slug}
+				/>
+			{/each}
+		</div>
+	{/if}
 
 	<DragDropTimeline
 		dayItems={data.dayItems}

@@ -194,6 +194,19 @@ describe('buildEmptyFormData', () => {
 	});
 });
 
+describe('endDate visibility', () => {
+	it('is on for span-capable types', () => {
+		for (const t of ['lodging', 'transportation', 'flight', 'activity', 'note'] as ItemType[]) {
+			expect(getFieldConfig(t).visibility.endDate).toBe(true);
+		}
+	});
+	it('is off for meal and checklist', () => {
+		for (const t of ['meal', 'checklist'] as ItemType[]) {
+			expect(getFieldConfig(t).visibility.endDate).toBe(false);
+		}
+	});
+});
+
 describe('config exhaustiveness', () => {
 	it('every ItemType has a complete config with all four sections', () => {
 		for (const type of ALL_TYPES) {

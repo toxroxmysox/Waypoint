@@ -9,6 +9,8 @@
 	import { formatTime } from '$lib/shell/format';
 	import { untrack } from 'svelte';
 	import type { Notification } from '$lib/types';
+	import MultiDayBanner from '$lib/itinerary/components/MultiDayBanner.svelte';
+	import { spanningItemsForDate } from '$lib/itinerary/multi-day';
 
 	let { data } = $props();
 
@@ -17,6 +19,11 @@
 
 	const now = new Date(untrack(() => data.now));
 	const tripMode = $derived(getTripModeState(data.items, data.days, now));
+
+	const todayDate = $derived(tripMode.now.today ? tripMode.now.today.date.split(/[T ]/)[0] : '');
+	const spanningToday = $derived(
+		todayDate ? spanningItemsForDate(data.multiDayItems, data.days, todayDate) : []
+	);
 
 	function dayLabel(dateStr: string): string {
 		return new Date(dateStr.replace(' ', 'T')).toLocaleDateString('en-US', {
@@ -55,6 +62,20 @@
 		</Card>
 	{:else}
 		<h2 class="font-display text-ink text-xl font-semibold">{dayLabel(tripMode.now.today.date)}</h2>
+
+		{#if spanningToday.length > 0}
+			<div class="space-y-2">
+				{#each spanningToday as item (item.id)}
+					<MultiDayBanner
+						{item}
+						days={data.days}
+						dayDate={todayDate}
+						tripSlug={data.trip.slug}
+						ongoing={true}
+					/>
+				{/each}
+			</div>
+		{/if}
 
 		<TodayTimeline
 			items={tripMode.now.todayItems}
