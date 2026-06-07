@@ -191,6 +191,28 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 	item.set('created_by', memberIds.owner);
 	e.app.save(item);
 
+	// Second item — vote-create tests target this one so they don't collide with
+	// the seeded fixture vote on `item` (unique index on votes(item, member)).
+	const item2 = new Record(itemsCol);
+	item2.set('trip', trip.id);
+	item2.set('phase', phase.id);
+	item2.set('day', day.id);
+	item2.set('type', 'activity');
+	item2.set('title', 'Test Activity 2');
+	item2.set('created_by', memberIds.owner);
+	e.app.save(item2);
+
+	// Seed a vote owned by the owner on `item`, so the harness has a fixture
+	// record for list/view/update/delete. update/delete are owner-only by rule
+	// (member.user = @request.auth.id). Direct save bypasses the create hook.
+	const votesCol = e.app.findCollectionByNameOrId('votes');
+	const vote = new Record(votesCol);
+	vote.set('trip', trip.id);
+	vote.set('item', item.id);
+	vote.set('member', memberIds.owner);
+	vote.set('value', 'like');
+	e.app.save(vote);
+
 	// Create a checklist item under it.
 	const checklistCol = e.app.findCollectionByNameOrId('checklist_items');
 	const checklistItem = new Record(checklistCol);
@@ -224,6 +246,8 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 		phaseId: phase.id,
 		dayId: day.id,
 		itemId: item.id,
+		itemId2: item2.id,
+		voteId: vote.id,
 		checklistItemId: checklistItem.id,
 		pendingInviteId: invite.id,
 		pendingInviteCode: inviteCode,

@@ -2,7 +2,7 @@
 
 Source of truth for who can do what against the API. Generated and verified by `backend/test-rules.mjs`. Update this file when rules change; the harness will fail if the documented intent diverges from observed behavior.
 
-Last reviewed: 2026-04-26 (M2b — pending_invites added; first hook-based role gating).
+Last reviewed: 2026-06-06 (#30 — votes collection added to the harness; own-vote update/delete gating).
 
 ---
 
@@ -98,6 +98,17 @@ The harness expectations table at the bottom of `test-rules.mjs` is updated alon
 `backend/test-invites.mjs` (`pnpm test:invites`) covers the invite endpoints (create role-gating, payload validation, lookup, accept happy + edge paths, revoke gating). Run alongside `pnpm test:rules` from M2b on.
 
 ---
+
+## Votes (#30)
+
+The `votes` collection (created 0024, `value` + `updateRule` added 0029) is exercised by the harness as of #30:
+
+| Collection | list | view | create | update | delete |
+|---|---|---|---|---|---|
+| `votes` | member | member | member | own vote only | own vote only |
+
+- **create** — `MEMBER_VIA_TRIP`. A `votes.pb.js` `onRecordCreateRequest` hook additionally enforces vote-as-yourself (`member.user === auth` and `member.trip === record.trip`). The harness votes as each role's own membership on a second fixture item so the unique `(item, member)` index isn't tripped.
+- **update / delete** — `MEMBER_VIA_TRIP && member.user = @request.auth.id`. A member can only change or remove **their own** vote. The fixture vote belongs to the owner, so co_owner/traveler/viewer get `404` (the rule filters the record out of their view, so it reads as not-found). Changing a vote is an update (the unique index makes a re-vote an update, not an insert).
 
 ## Notes & gotchas
 

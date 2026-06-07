@@ -28,7 +28,7 @@ const EMAILS = {
 };
 
 const ROLES = ['owner', 'co_owner', 'traveler', 'viewer', 'non_member'];
-const COLLECTIONS = ['users', 'trips', 'trip_members', 'phases', 'days', 'items', 'checklist_items', 'pending_invites'];
+const COLLECTIONS = ['users', 'trips', 'trip_members', 'phases', 'days', 'items', 'checklist_items', 'pending_invites', 'votes'];
 
 async function pbRequest(method, path, opts = {}) {
 	const headers = { 'Content-Type': 'application/json' };
@@ -83,6 +83,8 @@ function fixtureRecordId(fixture, collection) {
 			return fixture.checklistItemId;
 		case 'pending_invites':
 			return fixture.pendingInviteId;
+		case 'votes':
+			return fixture.voteId;
 		default:
 			throw new Error('unknown collection ' + collection);
 	}
@@ -224,6 +226,19 @@ const EXPECT = {
 			viewer: 'deny',
 			non_member: 'deny'
 		}
+	},
+	// votes (#30):
+	//   list/view: any member can see the trip's votes
+	//   create: any member can vote (createBody votes as the acting member, on a
+	//           second item so it doesn't collide with the seeded fixture vote)
+	//   update/delete: own vote only (rule: member.user = @request.auth.id). The
+	//           fixture vote belongs to the owner, so only owner passes — SELF_ONLY.
+	votes: {
+		list: ALLOW_MEMBERS_DENY_NONMEMBER,
+		view: ALLOW_MEMBERS_DENY_NONMEMBER,
+		create: ALLOW_MEMBERS_DENY_NONMEMBER,
+		update: SELF_ONLY,
+		delete: SELF_ONLY
 	}
 };
 
@@ -280,6 +295,17 @@ function createBody(collection, role, fixture) {
 				code: `harness-code-${stamp}`,
 				expires_at: '2027-01-01 00:00:00.000Z'
 			};
+		case 'votes':
+			// Vote as the acting member on itemId2 (distinct from the fixture vote's
+			// item) so members don't trip the unique (item, member) index. The
+			// votes.pb.js create hook requires member.user === auth, which holds
+			// since each role votes as its own membership.
+			return {
+				trip: fixture.tripId,
+				item: fixture.itemId2,
+				member: fixture.memberIds[role] || fixture.memberIds.owner,
+				value: 'like'
+			};
 		default:
 			throw new Error('no body for ' + collection);
 	}
@@ -305,6 +331,8 @@ function updateBody(collection) {
 			// updateRule = null, so any field works; PB will reject before
 			// validating the payload.
 			return { role: 'viewer' };
+		case 'votes':
+			return { value: 'love' };
 		default:
 			throw new Error('no body for ' + collection);
 	}
