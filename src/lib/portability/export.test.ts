@@ -49,7 +49,7 @@ describe('buildTripExport', () => {
 			{ id: 'd1', trip: 'trip1', phases: ['p1'], date: '2026-06-01', notes: '', collectionId: '', collectionName: 'days', created: '', updated: '' }
 		];
 		const items: Item[] = [
-			{ id: 'i1', trip: 'trip1', phase: 'p1', day: 'd1', type: 'activity', subtype: '', title: 'Sagrada Familia', description: '', location_name: '', location_address: '', location_coords: null, google_place_id: '', start_time: '', end_time: '', start_tz: '', end_tz: '', status: 'done', booked: true, booked_by: '', paid_by: '', confirmation_codes: [], reservation_url: '', free_cancellation: false, cost_estimate_usd: 0, cost_actual_usd: 0, assigned_to: [], sort_order: 0, parent_item: '', created_by: '', collectionId: '', collectionName: 'items', created: '', updated: '' } as Item
+			{ id: 'i1', trip: 'trip1', phase: 'p1', day: 'd1', type: 'activity', subtype: '', title: 'Sagrada Familia', description: '', location_name: '', location_address: '', location_coords: null, google_place_id: '', start_time: '', end_time: '', start_tz: '', end_tz: '', end_date: '', status: 'done', booked: true, booked_by: '', paid_by: '', confirmation_codes: [], reservation_url: '', free_cancellation: false, cost_estimate_usd: 0, cost_actual_usd: 0, assigned_to: [], sort_order: 0, parent_item: '', created_by: '', collectionId: '', collectionName: 'items', created: '', updated: '' } as Item
 		];
 
 		const result = buildTripExport(makeTrip(), phases, days, items, null);
@@ -68,6 +68,26 @@ describe('buildTripExport', () => {
 		expect(result.trip).not.toHaveProperty('public_share_token');
 		expect(result.trip).not.toHaveProperty('id');
 		expect(result.trip).not.toHaveProperty('created_by');
+	});
+
+	it('includes end_date for multi-day items', () => {
+		const result = buildTripExport(
+			makeTrip(),
+			[],
+			[{ id: 'd1', date: '2026-06-18 00:00:00.000Z' } as Day],
+			[
+				{
+					id: 'i1',
+					day: 'd1',
+					type: 'lodging',
+					title: 'Hotel',
+					status: 'planned',
+					end_date: '2026-06-22 00:00:00.000Z'
+				} as Item
+			],
+			null
+		);
+		expect(result.items[0].end_date).toBe('2026-06-22 00:00:00.000Z');
 	});
 
 	it('includes budget when provided', () => {

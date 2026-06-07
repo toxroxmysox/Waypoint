@@ -147,6 +147,7 @@ export const actions: Actions = {
 						google_place_id: item.google_place_id,
 						start_time: item.start_time,
 						end_time: item.end_time,
+						end_date: item.end_date ? shiftDate(item.end_date) : '',
 						status: 'planned',
 						booked: false,
 						confirmation_codes: [],
