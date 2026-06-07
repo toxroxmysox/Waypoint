@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-const BASE = 'http://localhost:5173';
+// playwright.config.ts boots `npm run build && npm run preview` on :4173.
+const BASE = 'http://localhost:4173';
 
 async function goToActiveTrip(page: import('@playwright/test').Page) {
 	const activeTrip = page.locator('a[href*="/trips/"]').first();

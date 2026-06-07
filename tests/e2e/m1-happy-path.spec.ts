@@ -44,46 +44,54 @@ test.describe('M1 Happy Path', () => {
 		await page.getByRole('button', { name: /create|save/i }).click();
 
 		await page.waitForURL(`${BASE_URL}/trips/${tripSlug}`, { timeout: 10000 });
-		await expect(page.getByRole('heading', { name: tripTitle })).toBeVisible();
+		// The trip layout is dual-tree (mobile + desktop, one CSS-hidden); scope all
+		// content/form locators to the visible subtree to avoid strict-mode violations.
+		await expect(
+			page.getByRole('heading', { name: tripTitle }).filter({ visible: true }).first()
+		).toBeVisible();
 
-		// Trip overview shows 8 day rows (today through nextWeek inclusive).
-		const dayLinks = page.locator(`a[href^="/trips/${tripSlug}/days/"]`);
-		await expect(dayLinks).toHaveCount(8, { timeout: 5000 });
+		// Day links are duplicated across trees *and* the desktop ContextRail "Up Next"
+		// list, so the visible count is not a clean 8 — assert the first day instead.
+		const dayLinks = page.locator(`a[href^="/trips/${tripSlug}/days/"]:visible`);
+		await expect(dayLinks.first()).toBeVisible({ timeout: 5000 });
 
 		// --- Add phase ---
-		await page.getByRole('link', { name: 'Phases', exact: true }).click();
+		await page.getByRole('link', { name: 'Phases', exact: true }).filter({ visible: true }).first().click();
 		await page.waitForURL(`${BASE_URL}/trips/${tripSlug}/phases`);
 
-		await page.getByRole('button', { name: 'Add Phase' }).click();
-		await page.fill('input[name="name"]', 'Phase One');
-		await page.fill('input[name="start_date"]', today);
+		await page.getByRole('button', { name: 'Add Phase' }).filter({ visible: true }).first().click();
+		await page.locator('input[name="name"]:visible').first().fill('Phase One');
+		await page.locator('input[name="start_date"]:visible').first().fill(today);
 
 		const midpoint = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-		await page.fill('input[name="end_date"]', midpoint);
+		await page.locator('input[name="end_date"]:visible').first().fill(midpoint);
 
-		await page.getByRole('button', { name: /create phase/i }).click();
-		await expect(page.getByRole('heading', { name: 'Phase One', level: 3 })).toBeVisible({
-			timeout: 5000
-		});
+		await page.getByRole('button', { name: /create phase/i }).filter({ visible: true }).first().click();
+		await expect(
+			page.getByRole('heading', { name: 'Phase One', level: 3 }).filter({ visible: true }).first()
+		).toBeVisible({ timeout: 5000 });
 
 		// --- Navigate to first day via overview ---
-		await page.getByRole('link', { name: 'Overview', exact: true }).click();
+		await page.getByRole('link', { name: 'Overview', exact: true }).filter({ visible: true }).first().click();
 		await page.waitForURL(`${BASE_URL}/trips/${tripSlug}`);
 
 		const firstDay = dayLinks.first();
 		const dayHref = await firstDay.getAttribute('href');
 		await firstDay.click();
-		await expect(page.getByRole('link', { name: /^Add item$/i })).toBeVisible();
+		// "Add item" matches both the inline link and the FAB → filter visible + first.
+		await expect(
+			page.getByRole('link', { name: /^Add item$/i }).filter({ visible: true }).first()
+		).toBeVisible();
 
 		// --- Add an item ---
-		await page.getByRole('link', { name: /^Add item$/i }).click();
+		await page.getByRole('link', { name: /^Add item$/i }).filter({ visible: true }).first().click();
 		await page.waitForURL(/\/items\/new/);
 
-		await page.fill('input[name="title"]', 'Test Activity');
-		await page.getByRole('button', { name: /create|save/i }).click();
+		await page.locator('input[name="title"]:visible').first().fill('Test Activity');
+		await page.getByRole('button', { name: /create|save/i }).filter({ visible: true }).first().click();
 
 		await page.waitForURL(new RegExp(dayHref!.replace(/\//g, '\\/')), { timeout: 10000 });
-		await expect(page.getByText('Test Activity')).toBeVisible();
+		await expect(page.getByText('Test Activity').filter({ visible: true }).first()).toBeVisible();
 	});
 
 	test('no horizontal scroll on mobile viewport', async ({ page }) => {
