@@ -13,7 +13,9 @@
 
 	import VoteButtons from '$lib/collaboration/components/VoteButtons.svelte';
 	import MoveItemSheet from '$lib/itinerary/components/MoveItemSheet.svelte';
-	import type { Comment } from '$lib/types';
+	import TaskRow from '$lib/itinerary/components/TaskRow.svelte';
+	import AssignMemberSheet from '$lib/itinerary/components/AssignMemberSheet.svelte';
+	import type { Comment, Task } from '$lib/types';
 
 	let { data, form } = $props();
 
@@ -49,6 +51,16 @@
 			? `/trips/${data.trip.slug}/days/${data.itemDay.id}`
 			: `/trips/${data.trip.slug}`
 	);
+
+	// Inline checklist (ledger, issue #55)
+	const doneCount = $derived(data.tasks.filter((t) => t.checked).length);
+	let assignOpen = $state(false);
+	let activeTask = $state<Task | null>(null);
+
+	function openAssign(task: Task) {
+		activeTask = task;
+		assignOpen = true;
+	}
 </script>
 
 <NavBar title={data.item.title} subtitle={data.trip.title} back {backHref}>
@@ -211,126 +223,88 @@
 		</Card>
 	{/if}
 
-	<!-- Checklist (ADR-0003 inline item checklist — the grocery case) -->
-	<Card>
-		<div class="p-4">
-			{#if data.checklist}
-				<SectionH>
-					{#snippet right()}
-						<span class="font-mono">
-							{data.tasks.filter((t) => t.checked).length}/{data.tasks.length}
-						</span>
-					{/snippet}
-					{data.checklist.title}
-				</SectionH>
+	<!-- Inline item checklist — ledger (ADR-0003 grocery case · #55) -->
+	{#if data.checklist}
+		<div>
+			<div class="mb-2.5 flex items-center justify-between px-0.5">
+				<h2 class="font-display text-ink text-base font-semibold">{data.checklist.title}</h2>
+				<span class="text-ink-muted font-mono text-xs tabular-nums">
+					<span class="text-ink font-semibold">{doneCount}</span>/{data.tasks.length}
+				</span>
+			</div>
 
-				{#if data.tasks.length > 0}
-					<div class="mt-2 space-y-1">
-						{#each data.tasks as task (task.id)}
-							<div class="flex items-center gap-1">
-								<form method="POST" action="?/toggleTask" use:enhance>
-									<input type="hidden" name="task_id" value={task.id} />
-									<button
-										type="submit"
-										class="flex items-center"
-										aria-label={task.checked ? 'Uncheck' : 'Check'}
-									>
-										<span
-											class="flex h-5 w-5 items-center justify-center rounded border
-												{task.checked
-												? 'border-ink bg-ink text-paper'
-												: 'border-line bg-surface hover:border-ink-muted'}"
-										>
-											{#if task.checked}
-												<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-													<path d="M5 13l4 4L19 7" />
-												</svg>
-											{/if}
-										</span>
-									</button>
-								</form>
-								<span
-									class="flex-1 px-2 text-sm {task.checked
-										? 'text-ink-muted line-through'
-										: 'text-ink-soft'}"
-								>
-									{task.title}
-								</span>
-								<form method="POST" action="?/assignTask" use:enhance>
-									<input type="hidden" name="task_id" value={task.id} />
-									<select
-										name="assignee"
-										aria-label="Assign task"
-										onchange={(e) => e.currentTarget.form?.requestSubmit()}
-										class="border-line bg-surface text-ink-muted max-w-[7rem] truncate rounded border px-1 py-0.5 text-xs"
-									>
-										<option value="" selected={!task.assignee}>Unassigned</option>
-										{#each data.members as m}
-											<option value={m.id} selected={m.id === task.assignee}>{memberName(m.id)}</option>
-										{/each}
-									</select>
-								</form>
-								<form method="POST" action="?/deleteTask" use:enhance>
-									<input type="hidden" name="task_id" value={task.id} />
-									<button
-										type="submit"
-										class="text-ink-muted hover:bg-clay/10 hover:text-clay rounded p-1"
-										title="Delete"
-										aria-label="Delete"
-									>
-										<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-											<path d="M6 18L18 6M6 6l12 12" />
-										</svg>
-									</button>
-								</form>
-							</div>
-						{/each}
-					</div>
-				{:else}
-					<p class="text-ink-muted mt-2 text-xs italic">No tasks yet.</p>
-				{/if}
+			<Card>
+				<div class="px-4">
+					{#each data.tasks as task, i (task.id)}
+						<TaskRow
+							taskId={task.id}
+							title={task.title}
+							checked={task.checked}
+							toggleAction="?/toggleTask"
+							assigneeInitial={task.assignee ? memberName(task.assignee).slice(0, 1) : null}
+							assigneeAlt={task.assignee ? memberName(task.assignee) : ''}
+							onAssign={() => openAssign(task)}
+							divider={i < data.tasks.length - 1}
+						/>
+					{/each}
+					{#if data.tasks.length === 0}
+						<p class="text-ink-muted py-3 text-xs italic">Nothing on this list.</p>
+					{/if}
+				</div>
 
-				<form
-					method="POST"
-					action="?/addTask"
-					use:enhance={() =>
-						async ({ result, update, formElement }) => {
-							await update({ reset: false });
-							if (result.type === 'success') {
-								formElement.reset();
-							}
-						}}
-					class="mt-3 flex gap-2"
-				>
-					<input type="hidden" name="checklist_id" value={data.checklist.id} />
-					<input
-						type="text"
-						name="title"
-						required
-						placeholder="Add task…"
-						class="border-line bg-surface text-ink flex-1 rounded-md border px-2 py-1.5 text-sm"
-					/>
-					<Button type="submit" variant="primary" size="sm">Add</Button>
-				</form>
-
-				<form method="POST" action="?/deleteChecklist" use:enhance class="mt-3">
-					<input type="hidden" name="checklist_id" value={data.checklist.id} />
-					<button
-						type="submit"
-						class="text-ink-muted hover:text-clay text-xs"
+				<div class="border-line border-t px-4">
+					<form
+						method="POST"
+						action="?/addTask"
+						use:enhance={() =>
+							async ({ result, update, formElement }) => {
+								await update({ reset: false });
+								if (result.type === 'success') formElement.reset();
+							}}
+						class="flex items-center gap-3 py-2.5"
 					>
-						Remove checklist
-					</button>
-				</form>
-			{:else}
+						<input type="hidden" name="checklist_id" value={data.checklist.id} />
+						<span
+							class="border-moss text-moss flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] border-[1.5px] border-dashed"
+						>
+							<svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+								<path d="M6 2.5v7M2.5 6h7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+							</svg>
+						</span>
+						<input
+							type="text"
+							name="title"
+							required
+							placeholder="Add an item"
+							class="text-ink placeholder:text-moss flex-1 bg-transparent text-sm font-medium focus:outline-none"
+						/>
+					</form>
+				</div>
+			</Card>
+
+			<div class="text-ink-muted mt-3 flex items-center gap-1.5 px-1">
+				<svg width="13" height="13" viewBox="0 0 20 20" fill="none">
+					<path d="M10 2L11.5 7L16 8L11.5 9L10 14L8.5 9L4 8L8.5 7L10 2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+				</svg>
+				<span class="font-display text-[11px] italic">This list lives on the item — it travels with it.</span>
+			</div>
+
+			<form method="POST" action="?/deleteChecklist" use:enhance class="mt-2 px-1">
+				<input type="hidden" name="checklist_id" value={data.checklist.id} />
+				<button type="submit" class="text-ink-muted hover:text-clay text-xs"> Remove checklist </button>
+			</form>
+		</div>
+	{:else}
+		<Card>
+			<div class="p-4">
 				<SectionH>Checklist</SectionH>
 				<p class="text-ink-muted mt-2 text-xs">Track packing, groceries, or to-dos for this item.</p>
 				<form method="POST" action="?/attachChecklist" use:enhance class="mt-3">
-					<Button type="submit" variant="primary" size="sm">Add checklist</Button>
+					<Button type="submit" variant="moss" size="sm">Add checklist</Button>
 				</form>
-			{/if}
-		</div>
-	</Card>
+			</div>
+		</Card>
+	{/if}
 
 	<!-- Comment thread -->
 	<Card>
@@ -463,3 +437,15 @@
 	currentPhase={data.item.phase}
 	actionUrl={itemUrl}
 />
+
+{#if activeTask}
+	<AssignMemberSheet
+		bind:open={assignOpen}
+		members={data.members}
+		taskId={activeTask.id}
+		taskTitle={activeTask.title}
+		currentAssignee={activeTask.assignee ?? ''}
+		assignAction="?/assignTask"
+		deleteAction="?/deleteTask"
+	/>
+{/if}

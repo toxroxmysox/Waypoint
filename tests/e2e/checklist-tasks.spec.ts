@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
 // 0030 migration) runs separately.
 const BASE = 'http://localhost:4173';
 
-test.describe('Inline item checklist (#48)', () => {
+test.describe('Inline item checklist (#48 primitive · #55 ledger)', () => {
 	test.skip(!process.env.E2E_TEST_EMAIL, 'Set E2E_TEST_EMAIL to run E2E tests');
 
 	test.beforeEach(async ({ page }) => {
@@ -56,18 +56,22 @@ test.describe('Inline item checklist (#48)', () => {
 		await expect(addChecklist).toBeVisible();
 		await addChecklist.click();
 
-		// Add a grocery task.
-		const taskInput = page.getByPlaceholder(/Add task/).filter({ visible: true }).first();
+		// Add a grocery task via the ledger "Add an item" footer (Enter submits the row).
+		const taskInput = page.getByPlaceholder('Add an item').filter({ visible: true }).first();
 		await expect(taskInput).toBeVisible();
 		await taskInput.fill('Apples');
-		// Submit via Enter — the trip-mode bottom nav also has an "Add" button, so a
-		// by-name button click is ambiguous. The required input submits its form.
 		await taskInput.press('Enter');
 		await expect(page.getByText('Apples').filter({ visible: true }).first()).toBeVisible();
 
-		// Check it off → the row's control flips to "Uncheck" and progress shows 1/1.
-		await page.getByRole('button', { name: 'Check', exact: true }).filter({ visible: true }).first().click();
-		await expect(page.getByRole('button', { name: 'Uncheck' }).filter({ visible: true }).first()).toBeVisible();
-		await expect(page.getByText('1/1').filter({ visible: true }).first()).toBeVisible();
+		// Check it off → the ledger checkbox flips to "Uncheck task".
+		await page.getByRole('button', { name: 'Check task' }).filter({ visible: true }).first().click();
+		await expect(page.getByRole('button', { name: 'Uncheck task' }).filter({ visible: true }).first()).toBeVisible();
+
+		// Assign via the ⋯ overflow → member sheet → Done.
+		await page.getByRole('button', { name: 'Assign or remove task' }).filter({ visible: true }).first().click();
+		await expect(page.getByRole('heading', { name: 'Assign a member' })).toBeVisible();
+		await page.getByRole('radio').filter({ visible: true }).first().click();
+		await page.getByRole('button', { name: 'Done' }).filter({ visible: true }).first().click();
+		await expect(page.getByRole('heading', { name: 'Assign a member' })).toBeHidden();
 	});
 });
