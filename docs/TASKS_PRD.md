@@ -4,6 +4,7 @@
 > Created: 2026-06-07
 > Status: Draft
 > Context: Issues #45 (closes), #41 · ADR-0003 · CONTEXT.md (Checklist, Task, Smart List, Booking Readiness)
+> Design: `design/lists-checklists/` — `Waypoint Lists - Final Pass.html` is the visual spec (art direction **B "Ledger"**); `README.md` is the dev handoff; `source-jsx/` is the reference source. Implementation issues #48–#53.
 
 ---
 
@@ -80,17 +81,28 @@ Booking stays an **orthogonal binary** `booked` flag. The Tri-State Booking Pill
 
 ## 5. UI / Surfacing
 
-**Itinerary sub-nav** gains a third tab beside Overview / Phases: **Lists** (`src/routes/(app)/trips/[slug]/+page.svelte:64` `SubTabs`).
+**Design source of truth:** `design/lists-checklists/Waypoint Lists - Final Pass.html` (all five screens × mobile + tablet, interactive). The decisions below are locked; defer to the handoff for pixel-level layout math, spacing, and state logic.
 
-- **Lists index** — cards for every trip/phase Checklist + the auto-present booking Smart List (visually distinct as system-maintained). Each card: title, scope chip (Trip or `PhaseChip`), progress `n/m`, assignee avatar stack. "New list" affordance.
-- **Checklist detail (manual)** — task rows (checkbox + title + optional assignee avatar); checked rows de-emphasized; inline "Add task"; row overflow → assign member.
-- **Smart List detail** — projected read-only rows; check = mark Item booked; no add/rename/assign.
-- **Overview preview** — under each phase's days, a compact one-line preview of that phase's / the trip's checklists ("Packing · 3/12") linking through. Lightweight; must not crowd the day-centric layout.
-- **Inline item checklist** — the grocery case: a checklist embedded on an Item detail page using the same Task-row component.
+**Art direction: B "Ledger"** — a unified ruled-list aesthetic: square checkboxes, monogram dots, JetBrains-Mono numerals, progress donuts. Two affordances carried over from direction C: **in-place strikethrough** for checked rows (strike + dim to `ink-muted`, row does *not* move unless "Done last" is on) and a **Hide-done** toggle. Earlier 3-direction exploration preserved in `Art Direction Variations.html` (reference only — build B).
+
+**One accent per context.** This is a **Planning** surface → **moss** (`#3E5A3A`) for checks, progress, active states. **Gold** (`#C89B3C`) is reserved exclusively for the auto/Booking signal (the Smart List + its "AUTO" chip). **Never use clay here** — clay is Trip Mode only.
+
+**Itinerary sub-nav** gains a third tab beside Overview / Phases: **Lists** (`src/routes/(app)/trips/[slug]/+page.svelte:64` `SubTabs`). No new primary nav tab — Planning Mode stays four tabs; Lists lives entirely under Itinerary.
+> **Sub-tab styling — code wins.** The prototype shows the active sub-tab with a moss underline; shipped `SubTabs.svelte` uses an **ink** underline (`border-ink`). Keep the shipped ink treatment unless design approves changing it app-wide. This is the one place the prototype diverges from shipped reality.
+
+The five screens (→ owning issue):
+
+- **Lists index** (`/trips/[slug]/lists`) — *#49.* One Card, ruled rows. The booking Smart List is **pinned first, visually distinct** (3px gold left border, gold-tint wash, sparkle mark, "AUTO" chip, "N left"). Checklist rows: monogram (trip-level = compass-star on neutral `surface-2`; phase-scoped = phase letter in phase color) + title + subtitle (scope) + avatar stack + progress donut. "New list" row (dashed moss). Tablet swaps bottom-nav for the 232px SideRail.
+- **Checklist detail (manual)** (`/trips/[slug]/lists/[listId]`) — *#49.* Stat strip (donut + scope chip + "N left") → controls row (**segmented "In order / Done last"** + **"Hide done" toggle pill**) → Card of task rows (square checkbox + text + ⋯ overflow → Assign + single assignee avatar) → inline "Add task". *In order* = original; *Done last* = open rows first then done; *Hide done* filters checked out of the visible set. Sort pref may persist; hide-done is ephemeral.
+- **Smart List detail** (`/trips/[slug]/lists/booking`, reserved slug, not a stored list) — *#50.* Gold lens banner → ruled rows (square checkbox = mark booked · TypeIcon tile · title + mono meta line · blue "Open ›" to source Item). Read-only lens: no assignee, notes, add-row, or rename. Check → optimistic `booked=true`, brief "Booked" pill, fade ~300ms, leaves the projection.
+- **Overview preview** (`/trips/[slug]/+page.svelte`, modify) — *#51.* Whole-trip lists once at top under a tracked header; under each phase's days a quiet "Lists" sub-group of **mini list cards** (`surface-2`, 20px donut + title + mono "3/12" + chevron). **Do not collapse days** — condense each day to a tight single line but keep them all visible; never hide behind "+N more".
+- **Inline item checklist (grocery case)** (`/trips/[slug]/items/[itemId]`, modify) — *#48.* The same task rows as the detail screen, embedded under a "Shopping list" section on Item detail, **with assignees but no sort/hide controls** (`showControls=false`). The checklist carries no dates/times/location — execution context belongs to the parent Item.
+
+**Reuse, don't rebuild** (`$lib/ui/*`): `Card`, `Pill`, `PhaseChip`, `Avatar`, `SubTabs`, `NavBar`, `Button`, `SectionH`, `BottomSheet`, `TypeIcon`, `StarIcons`, `Skeleton`. **New atoms** to build under `src/lib/itinerary/components/` (translate from `source-jsx/`, no shipped equivalent): `TaskRow`, `ChecklistBody`, `ProgressDonut`, `SortSegmented`, `TogglePill`, `AutoChip`, `SmartRow`, `MiniListCard`, list index rows, `AssignMemberSheet` (wraps `BottomSheet` mobile / centered modal tablet).
 
 **Trip Mode** — Tasks are **checkable** in Trip Mode (check off packing while traveling). Creating/renaming lists stays Planning Mode.
 
-Mobile-first 375px. Existing design system (paper/ink/moss/clay/gold; Fraunces/Inter/JetBrains Mono); bottom-sheets on mobile; skeletons, not spinners. *(Design mock prompt produced separately and being handled externally.)*
+Mobile-first 375px; bottom-nav → SideRail at 900px, sheets → centered modals at tablet+. Existing design tokens in `src/routes/layout.css` (paper/ink/moss/gold; Fraunces/Inter/JetBrains Mono) — reference the token, never the prototype's literal hex. Bottom-sheets on mobile; **skeletons, not spinners** (spinner only inside a submitting button). Empty states editorial (Fraunces italic, one next step). Assign affordance = bottom sheet (mobile) / centered modal (tablet+).
 
 ---
 
