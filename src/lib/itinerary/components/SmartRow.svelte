@@ -48,7 +48,7 @@
 		}}
 	>
 		<input type="hidden" name="item_id" value={itemId} />
-		<button type="submit" class="flex items-center" aria-label="Mark booked">
+		<button type="submit" class="flex items-center" aria-label="Mark booked" aria-pressed={pending}>
 			<span
 				class="flex h-[21px] w-[21px] shrink-0 items-center justify-center rounded-[5px] border-[1.5px] transition-colors
 					{pending ? 'border-moss bg-moss text-paper' : 'border-line bg-surface'}"

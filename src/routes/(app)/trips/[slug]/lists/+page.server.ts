@@ -1,28 +1,19 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Checklist, Task, TripMember } from '$lib/types';
+import type { Checklist, TripMember } from '$lib/types';
+import { fetchManualChecklists, rollupChecklists } from '$lib/itinerary/checklist-loaders';
 
 export const load: PageServerLoad = async ({ parent, locals }) => {
 	const { trip } = await parent();
 
 	// Trip- and phase-scoped manual checklists (item-scoped ones live on their
-	// Item, not the Lists surface). Attachment level is derived: phase set =
-	// phase-level, else trip-level.
-	const checklists = await locals.pb.collection('checklists').getFullList<Checklist>({
-		filter: `trip = "${trip.id}" && kind = "manual" && item = ""`,
-		sort: 'order'
-	});
-
-	const [members, tasks, bookingCount] = await Promise.all([
+	// Item, not the Lists surface).
+	const [{ checklists, tasks }, members, bookingCount] = await Promise.all([
+		fetchManualChecklists(locals.pb, trip.id),
 		locals.pb.collection('trip_members').getFullList<TripMember>({
 			filter: `trip = "${trip.id}"`,
 			expand: 'user'
 		}),
-		checklists.length > 0
-			? locals.pb.collection('tasks').getFullList<Task>({
-					filter: checklists.map((c) => `checklist = "${c.id}"`).join(' || ')
-				})
-			: Promise.resolve([] as Task[]),
 		locals.pb
 			.collection('items')
 			.getList(1, 1, {
@@ -32,20 +23,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 			.catch(() => 0)
 	]);
 
-	// Roll up per-checklist progress + distinct assignees.
-	const lists = checklists.map((c) => {
-		const own = tasks.filter((t) => t.checklist === c.id);
-		const assigneeIds = [...new Set(own.filter((t) => t.assignee).map((t) => t.assignee))];
-		return {
-			id: c.id,
-			title: c.title,
-			phase: c.phase,
-			done: own.filter((t) => t.checked).length,
-			total: own.length,
-			assigneeIds
-		};
-	});
-
+	const lists = rollupChecklists(checklists, tasks);
 	return { lists, members, bookingCount };
 };
 

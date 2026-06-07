@@ -20,7 +20,7 @@
 
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8">
 	<!-- Lens banner -->
-	<div class="border-gold mb-3.5 flex gap-3 rounded-xl border bg-[rgba(200,155,60,0.09)] px-3.5 py-3">
+	<div class="border-gold bg-gold-tint mb-3.5 flex gap-3 rounded-xl border px-3.5 py-3">
 		<span class="mt-0.5 shrink-0">
 			<svg width="15" height="15" viewBox="0 0 20 20" fill="none">
 				<path d="M10 2L11.5 7L16 8L11.5 9L10 14L8.5 9L4 8L8.5 7L10 2z" fill="var(--color-gold-deep)" />

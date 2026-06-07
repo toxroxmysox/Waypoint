@@ -57,7 +57,7 @@
 		<!-- Booking smart list — pinned first, system-maintained (content lands in #50) -->
 		<a
 			href="{listsBase}/booking"
-			class="border-gold border-l-[3px] {data.lists.length > 0 ? 'border-line border-b' : ''} flex items-center gap-3 bg-[rgba(200,155,60,0.07)] px-[15px] py-[13px]"
+			class="border-gold bg-gold-tint border-l-[3px] {data.lists.length > 0 ? 'border-line border-b' : ''} flex items-center gap-3 px-[15px] py-[13px]"
 		>
 			<span class="border-gold bg-gold-tint flex h-7 w-7 shrink-0 items-center justify-center rounded-full border">
 				<svg width="13" height="13" viewBox="0 0 20 20" fill="none">
@@ -111,7 +111,7 @@
 
 <BottomSheet bind:open={createOpen} title="New list">
 	{#if form?.error}
-		<p class="text-clay mb-3 text-sm">{form.error}</p>
+		<p class="text-error mb-3 text-sm">{form.error}</p>
 	{/if}
 	<form
 		method="POST"

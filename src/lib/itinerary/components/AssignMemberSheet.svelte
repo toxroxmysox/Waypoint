@@ -8,6 +8,7 @@
 	import BottomSheet from '$lib/ui/BottomSheet.svelte';
 	import Avatar from '$lib/ui/Avatar.svelte';
 	import Button from '$lib/ui/Button.svelte';
+	import { memberDisplayName, memberInitial } from '$lib/itinerary/member-name';
 	import type { TripMember } from '$lib/types';
 
 	let {
@@ -36,16 +37,6 @@
 		selected = currentAssignee;
 	});
 
-	function memberName(m: TripMember): string {
-		return (
-			m.display_name ||
-			m.expand?.user?.name ||
-			m.expand?.user?.email ||
-			m.placeholder_name ||
-			'Unknown'
-		);
-	}
-
 	const closeOnDone = () => async ({ update }: { update: () => Promise<void> }) => {
 		await update();
 		open = false;
@@ -65,8 +56,8 @@
 				onclick={() => (selected = m.id)}
 				class="flex items-center gap-3 rounded-[10px] px-2.5 py-2.5 text-left {on ? 'bg-moss-tint' : ''}"
 			>
-				<Avatar initial={memberName(m).slice(0, 1)} alt={memberName(m)} size={32} />
-				<span class="text-ink flex-1 text-sm font-semibold">{memberName(m)}</span>
+				<Avatar initial={memberInitial(m)} alt={memberDisplayName(m)} size={32} />
+				<span class="text-ink flex-1 text-sm font-semibold">{memberDisplayName(m)}</span>
 				<span
 					class="flex h-5 w-5 items-center justify-center rounded-full border-[1.5px] {on
 						? 'border-moss bg-moss text-paper'

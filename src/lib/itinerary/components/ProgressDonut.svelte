@@ -21,8 +21,13 @@
 	const countSize = $derived(Math.round(size * 0.26));
 </script>
 
-<span class="relative inline-flex shrink-0" style="width:{size}px;height:{size}px;">
-	<svg width={size} height={size} style="transform:rotate(-90deg);">
+<span
+	class="relative inline-flex shrink-0"
+	style="width:{size}px;height:{size}px;"
+	role="img"
+	aria-label="{done} of {total} done"
+>
+	<svg width={size} height={size} style="transform:rotate(-90deg);" aria-hidden="true">
 		<circle
 			cx={size / 2}
 			cy={size / 2}

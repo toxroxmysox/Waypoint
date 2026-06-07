@@ -2,6 +2,7 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Day, Item, Checklist, Task, TripMember } from '$lib/types';
 import { tripNow, tripTz } from '$lib/shell/trip-time';
+import { fetchManualChecklists } from '$lib/itinerary/checklist-loaders';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
 	const { trip, days } = await parent();
@@ -38,17 +39,7 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 
 	// Trip Mode checklists (#52): read + check only. Trip/phase-scoped manual
 	// lists (e.g. packing); item-scoped grocery lists stay on their Item.
-	const lists = await locals.pb.collection('checklists').getFullList<Checklist>({
-		filter: `trip = "${trip.id}" && kind = "manual" && item = ""`,
-		sort: 'order'
-	});
-	const listTasks =
-		lists.length > 0
-			? await locals.pb.collection('tasks').getFullList<Task>({
-					filter: lists.map((c) => `checklist = "${c.id}"`).join(' || '),
-					sort: 'order'
-				})
-			: [];
+	const { checklists: lists, tasks: listTasks } = await fetchManualChecklists(locals.pb, trip.id);
 	const checklists = lists.map((c) => ({
 		id: c.id,
 		title: c.title,
@@ -82,7 +73,8 @@ export const actions: Actions = {
 		try {
 			const task = await locals.pb.collection('tasks').getOne<Task>(taskId);
 			const checklist = await locals.pb.collection('checklists').getOne<Checklist>(task.checklist);
-			if (checklist.trip !== trip.id) return fail(403, { error: 'Not authorized.' });
+			// Trip Mode only surfaces trip/phase-scoped lists; reject item-scoped tasks.
+			if (checklist.trip !== trip.id || checklist.item) return fail(403, { error: 'Not authorized.' });
 			await locals.pb.collection('tasks').update(taskId, { checked: !task.checked });
 			return { success: true };
 		} catch (err: unknown) {

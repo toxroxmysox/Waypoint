@@ -1,7 +1,8 @@
 import { fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Phase, Day, Item, Checklist, Task } from '$lib/types';
+import type { Phase, Day, Item } from '$lib/types';
 import { cloneChecklistPayloads } from '$lib/itinerary/clone-checklists';
+import { fetchManualChecklists } from '$lib/itinerary/checklist-loaders';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
 	const { trip, membership, phases } = await parent();
@@ -167,15 +168,11 @@ export const actions: Actions = {
 			// Checklists (templates): copy trip/phase-scoped manual lists with
 			// checked reset + assignee dropped; booking Smart List + item-scoped
 			// lists are skipped (ADR-0003 §7).
-			const sourceChecklists = await locals.pb.collection('checklists').getFullList<Checklist>({
-				filter: `trip = "${sourceTripRecord.id}" && kind = "manual" && item = ""`,
-				sort: 'order'
-			});
+			const { checklists: sourceChecklists, tasks: sourceTasks } = await fetchManualChecklists(
+				locals.pb,
+				sourceTripRecord.id
+			);
 			if (sourceChecklists.length > 0) {
-				const sourceTasks = await locals.pb.collection('tasks').getFullList<Task>({
-					filter: sourceChecklists.map((c) => `checklist = "${c.id}"`).join(' || '),
-					sort: 'order'
-				});
 				const payloads = cloneChecklistPayloads(
 					sourceChecklists,
 					sourceTasks,

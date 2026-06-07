@@ -13,7 +13,7 @@
 
 	import VoteButtons from '$lib/collaboration/components/VoteButtons.svelte';
 	import MoveItemSheet from '$lib/itinerary/components/MoveItemSheet.svelte';
-	import TaskRow from '$lib/itinerary/components/TaskRow.svelte';
+	import ChecklistBody from '$lib/itinerary/components/ChecklistBody.svelte';
 	import AssignMemberSheet from '$lib/itinerary/components/AssignMemberSheet.svelte';
 	import type { Comment, Task } from '$lib/types';
 
@@ -33,18 +33,6 @@
 	let commentSubmitting = $state(false);
 	let optimisticComments = $state<Comment[]>([]);
 	let allComments = $derived([...data.comments, ...optimisticComments]);
-
-	function memberName(memberId: string): string {
-		const member = data.members.find((m) => m.id === memberId);
-		if (!member) return 'Unknown';
-		return (
-			member.display_name ||
-			member.expand?.user?.name ||
-			member.expand?.user?.email ||
-			member.placeholder_name ||
-			'Unknown'
-		);
-	}
 
 	let backHref = $derived(
 		data.itemDay
@@ -234,54 +222,16 @@
 				</span>
 			</div>
 
-			<Card>
-				<div class="px-4">
-					{#each data.tasks as task, i (task.id)}
-						<TaskRow
-							taskId={task.id}
-							title={task.title}
-							checked={task.checked}
-							toggleAction="?/toggleTask"
-							assigneeInitial={task.assignee ? memberName(task.assignee).slice(0, 1) : null}
-							assigneeAlt={task.assignee ? memberName(task.assignee) : ''}
-							onAssign={() => openAssign(task)}
-							divider={i < data.tasks.length - 1}
-						/>
-					{/each}
-					{#if data.tasks.length === 0}
-						<p class="text-ink-muted py-3 text-xs italic">Nothing on this list.</p>
-					{/if}
-				</div>
-
-				<div class="border-line border-t px-4">
-					<form
-						method="POST"
-						action="?/addTask"
-						use:enhance={() =>
-							async ({ result, update, formElement }) => {
-								await update({ reset: false });
-								if (result.type === 'success') formElement.reset();
-							}}
-						class="flex items-center gap-3 py-2.5"
-					>
-						<input type="hidden" name="checklist_id" value={data.checklist.id} />
-						<span
-							class="border-moss text-moss flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] border-[1.5px] border-dashed"
-						>
-							<svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-								<path d="M6 2.5v7M2.5 6h7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-							</svg>
-						</span>
-						<input
-							type="text"
-							name="title"
-							required
-							placeholder="Add an item"
-							class="text-ink placeholder:text-moss flex-1 bg-transparent text-sm font-medium focus:outline-none"
-						/>
-					</form>
-				</div>
-			</Card>
+			<ChecklistBody
+				tasks={data.tasks}
+				members={data.members}
+				checklistId={data.checklist.id}
+				toggleAction="?/toggleTask"
+				addAction="?/addTask"
+				showControls={false}
+				addLabel="Add an item"
+				onAssign={openAssign}
+			/>
 
 			<div class="text-ink-muted mt-3 flex items-center gap-1.5 px-1">
 				<svg width="13" height="13" viewBox="0 0 20 20" fill="none">
