@@ -68,5 +68,10 @@ test.describe('Itinerary › Lists (#49)', () => {
 		await page.goto(`${BASE}/trips/${tripSlug}/lists`);
 		await expect(page.getByText('Packing').filter({ visible: true }).first()).toBeVisible();
 		await expect(page.getByText('Whole trip').filter({ visible: true }).first()).toBeVisible();
+
+		// --- Overview previews the trip-scoped list (#51) ---
+		await page.goto(`${BASE}/trips/${tripSlug}`);
+		await expect(page.getByText('Whole-trip lists').filter({ visible: true }).first()).toBeVisible();
+		await expect(page.getByText('Packing').filter({ visible: true }).first()).toBeVisible();
 	});
 });

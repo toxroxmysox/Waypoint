@@ -8,6 +8,7 @@
 	import SubTabs from '$lib/ui/SubTabs.svelte';
 	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
 	import PhaseChip from '$lib/ui/PhaseChip.svelte';
+	import MiniListCard from '$lib/itinerary/components/MiniListCard.svelte';
 	import { titleCase } from '$lib/shell/format';
 	import { untrack } from 'svelte';
 	import type { Notification } from '$lib/types';
@@ -48,6 +49,12 @@
 	}
 
 	let firstDayId = $derived(data.days[0]?.id);
+
+	// Checklist previews (#51)
+	let tripLists = $derived((data.lists ?? []).filter((l) => !l.phase));
+	function listsForPhase(phaseId: string) {
+		return (data.lists ?? []).filter((l) => l.phase === phaseId);
+	}
 </script>
 
 <NavBar
@@ -101,11 +108,29 @@
 		</div>
 	</Card>
 
+	{#if tripLists.length > 0}
+		<!-- Whole-trip checklist previews (#51) -->
+		<section class="space-y-1.5">
+			<div class="text-ink-muted flex items-center gap-1.5 px-0.5 text-[9.5px] font-bold tracking-[0.14em] uppercase">
+				<svg width="9" height="9" viewBox="0 0 20 20" fill="none">
+					<path d="M10 2L11.5 7L16 8L11.5 9L10 14L8.5 9L4 8L8.5 7L10 2z" fill="currentColor" />
+				</svg>
+				Whole-trip lists
+			</div>
+			<div class="grid gap-1.5">
+				{#each tripLists as l (l.id)}
+					<MiniListCard title={l.title} done={l.done} total={l.total} href="/trips/{data.trip.slug}/lists/{l.id}" />
+				{/each}
+			</div>
+		</section>
+	{/if}
+
 	{#if data.phases.length > 0}
 		<!-- Phases with nested days -->
 		{@const orphanDays = data.days.filter((d) => !data.phases.some((p) => (d.phases ?? []).includes(p.id)))}
 		{#each data.phases as phase}
 			{@const pDays = daysInPhase(phase)}
+			{@const pLists = listsForPhase(phase.id)}
 			<section class="space-y-1.5">
 				<div class="flex items-center justify-between">
 					<div class="flex items-center gap-2">
@@ -128,6 +153,21 @@
 								</div>
 							</Card>
 						{/each}
+					</div>
+				{/if}
+				{#if pLists.length > 0}
+					<div class="space-y-1.5 pt-1">
+						<div class="text-ink-muted flex items-center gap-1.5 px-0.5 text-[9.5px] font-bold tracking-[0.14em] uppercase">
+							<svg width="8" height="8" viewBox="0 0 20 20" fill="none">
+								<path d="M10 2L11.5 7L16 8L11.5 9L10 14L8.5 9L4 8L8.5 7L10 2z" fill="currentColor" />
+							</svg>
+							Lists
+						</div>
+						<div class="grid gap-1.5">
+							{#each pLists as l (l.id)}
+								<MiniListCard title={l.title} done={l.done} total={l.total} href="/trips/{data.trip.slug}/lists/{l.id}" />
+							{/each}
+						</div>
 					</div>
 				{/if}
 			</section>
