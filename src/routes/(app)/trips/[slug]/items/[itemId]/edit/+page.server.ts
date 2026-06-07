@@ -1,6 +1,6 @@
 import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Item, ChecklistItem, TripMember } from '$lib/types';
+import type { Item, TripMember } from '$lib/types';
 import { datetimeToTime } from '$lib/shell/format';
 import { combineDateTime } from '$lib/shell/trip-time';
 
@@ -18,18 +18,10 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		error(404, 'Item not found');
 	}
 
-	const [checklistItems, members] = await Promise.all([
-		item.type === 'checklist'
-			? locals.pb.collection('checklist_items').getFullList<ChecklistItem>({
-					filter: `item = "${item.id}"`,
-					sort: 'order'
-				})
-			: Promise.resolve([]),
-		locals.pb.collection('trip_members').getFullList<TripMember>({
-			filter: `trip = "${trip.id}"`,
-			expand: 'user'
-		})
-	]);
+	const members = await locals.pb.collection('trip_members').getFullList<TripMember>({
+		filter: `trip = "${trip.id}"`,
+		expand: 'user'
+	});
 
 	return {
 		item: {
@@ -38,7 +30,6 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 			end_time: datetimeToTime(item.end_time ?? ''),
 			end_date: String(item.end_date ?? '').split(/[T ]/)[0]
 		},
-		checklistItems,
 		members,
 		phases,
 		days,

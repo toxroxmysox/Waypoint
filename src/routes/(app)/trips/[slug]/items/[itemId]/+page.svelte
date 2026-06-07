@@ -211,40 +211,37 @@
 		</Card>
 	{/if}
 
-	<!-- Checklist -->
-	{#if data.item.type === 'checklist'}
-		<Card>
-			<div class="p-4">
+	<!-- Checklist (ADR-0003 inline item checklist — the grocery case) -->
+	<Card>
+		<div class="p-4">
+			{#if data.checklist}
 				<SectionH>
 					{#snippet right()}
-						{#if data.checklistItems.length > 0}
-							<span class="font-mono"
-								>{data.checklistItems.filter((ci) => ci.checked_by).length}/{data.checklistItems
-									.length}</span
-							>
-						{/if}
+						<span class="font-mono">
+							{data.tasks.filter((t) => t.checked).length}/{data.tasks.length}
+						</span>
 					{/snippet}
-					Checklist
+					{data.checklist.title}
 				</SectionH>
 
-				{#if data.checklistItems.length > 0}
+				{#if data.tasks.length > 0}
 					<div class="mt-2 space-y-1">
-						{#each data.checklistItems as ci, i}
+						{#each data.tasks as task (task.id)}
 							<div class="flex items-center gap-1">
-								<form method="POST" action="?/toggleChecklistItem" use:enhance>
-									<input type="hidden" name="ci_id" value={ci.id} />
+								<form method="POST" action="?/toggleTask" use:enhance>
+									<input type="hidden" name="task_id" value={task.id} />
 									<button
 										type="submit"
 										class="flex items-center"
-										aria-label={ci.checked_by ? 'Uncheck' : 'Check'}
+										aria-label={task.checked ? 'Uncheck' : 'Check'}
 									>
 										<span
 											class="flex h-5 w-5 items-center justify-center rounded border
-												{ci.checked_by
+												{task.checked
 												? 'border-ink bg-ink text-paper'
 												: 'border-line bg-surface hover:border-ink-muted'}"
 										>
-											{#if ci.checked_by}
+											{#if task.checked}
 												<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
 													<path d="M5 13l4 4L19 7" />
 												</svg>
@@ -253,46 +250,28 @@
 									</button>
 								</form>
 								<span
-									class="flex-1 px-2 text-sm {ci.checked_by
+									class="flex-1 px-2 text-sm {task.checked
 										? 'text-ink-muted line-through'
 										: 'text-ink-soft'}"
 								>
-									{ci.text}
+									{task.title}
 								</span>
-								{#if i > 0}
-									<form method="POST" action="?/reorderChecklistItem" use:enhance>
-										<input type="hidden" name="ci_id" value={ci.id} />
-										<input type="hidden" name="direction" value="up" />
-										<button
-											type="submit"
-											class="text-ink-muted hover:bg-surface-2 hover:text-ink-soft rounded p-1"
-											title="Move up"
-											aria-label="Move up"
-										>
-											<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-												<path d="M5 15l7-7 7 7" />
-											</svg>
-										</button>
-									</form>
-								{/if}
-								{#if i < data.checklistItems.length - 1}
-									<form method="POST" action="?/reorderChecklistItem" use:enhance>
-										<input type="hidden" name="ci_id" value={ci.id} />
-										<input type="hidden" name="direction" value="down" />
-										<button
-											type="submit"
-											class="text-ink-muted hover:bg-surface-2 hover:text-ink-soft rounded p-1"
-											title="Move down"
-											aria-label="Move down"
-										>
-											<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-												<path d="M19 9l-7 7-7-7" />
-											</svg>
-										</button>
-									</form>
-								{/if}
-								<form method="POST" action="?/deleteChecklistItem" use:enhance>
-									<input type="hidden" name="ci_id" value={ci.id} />
+								<form method="POST" action="?/assignTask" use:enhance>
+									<input type="hidden" name="task_id" value={task.id} />
+									<select
+										name="assignee"
+										aria-label="Assign task"
+										onchange={(e) => e.currentTarget.form?.requestSubmit()}
+										class="border-line bg-surface text-ink-muted max-w-[7rem] truncate rounded border px-1 py-0.5 text-xs"
+									>
+										<option value="" selected={!task.assignee}>Unassigned</option>
+										{#each data.members as m}
+											<option value={m.id} selected={m.id === task.assignee}>{memberName(m.id)}</option>
+										{/each}
+									</select>
+								</form>
+								<form method="POST" action="?/deleteTask" use:enhance>
+									<input type="hidden" name="task_id" value={task.id} />
 									<button
 										type="submit"
 										class="text-ink-muted hover:bg-clay/10 hover:text-clay rounded p-1"
@@ -308,12 +287,12 @@
 						{/each}
 					</div>
 				{:else}
-					<p class="text-ink-muted mt-2 text-xs italic">No items yet.</p>
+					<p class="text-ink-muted mt-2 text-xs italic">No tasks yet.</p>
 				{/if}
 
 				<form
 					method="POST"
-					action="?/addChecklistItem"
+					action="?/addTask"
 					use:enhance={() =>
 						async ({ result, update, formElement }) => {
 							await update({ reset: false });
@@ -323,18 +302,35 @@
 						}}
 					class="mt-3 flex gap-2"
 				>
+					<input type="hidden" name="checklist_id" value={data.checklist.id} />
 					<input
 						type="text"
-						name="text"
+						name="title"
 						required
-						placeholder="Add item…"
+						placeholder="Add task…"
 						class="border-line bg-surface text-ink flex-1 rounded-md border px-2 py-1.5 text-sm"
 					/>
 					<Button type="submit" variant="primary" size="sm">Add</Button>
 				</form>
-			</div>
-		</Card>
-	{/if}
+
+				<form method="POST" action="?/deleteChecklist" use:enhance class="mt-3">
+					<input type="hidden" name="checklist_id" value={data.checklist.id} />
+					<button
+						type="submit"
+						class="text-ink-muted hover:text-clay text-xs"
+					>
+						Remove checklist
+					</button>
+				</form>
+			{:else}
+				<SectionH>Checklist</SectionH>
+				<p class="text-ink-muted mt-2 text-xs">Track packing, groceries, or to-dos for this item.</p>
+				<form method="POST" action="?/attachChecklist" use:enhance class="mt-3">
+					<Button type="submit" variant="primary" size="sm">Add checklist</Button>
+				</form>
+			{/if}
+		</div>
+	</Card>
 
 	<!-- Comment thread -->
 	<Card>

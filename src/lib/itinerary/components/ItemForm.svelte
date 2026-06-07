@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { getFieldConfig } from '$lib/itinerary/item-fields';
-	import { checklistTemplates } from '$lib/itinerary/checklist-templates';
 	import type { ItemType, ConfirmationCode } from '$lib/types';
 	import Card from '$lib/ui/Card.svelte';
 	import SectionH from '$lib/ui/SectionH.svelte';
@@ -108,15 +107,6 @@
 		if (v && !/^https?:\/\//i.test(v)) {
 			el.value = `https://${v}`;
 		}
-	}
-
-	let showTemplatePicker = $state(false);
-
-	function applyTemplate(templateItems: string[]) {
-		descriptionValue = templateItems.map((t) => `- [ ] ${t}`).join('\n');
-		if (!titleValue) document.getElementById('title')?.focus();
-		showTemplatePicker = false;
-		markDirty();
 	}
 
 	let itemDay = $derived(
@@ -272,7 +262,7 @@
 				<fieldset>
 					<legend class="text-ink-soft block text-sm font-medium">Type</legend>
 					<div class="mt-1 flex flex-wrap gap-2">
-						{#each (['lodging', 'transportation', 'flight', 'activity', 'meal', 'note', 'checklist'] as const) as type}
+						{#each (['lodging', 'transportation', 'flight', 'activity', 'meal', 'note'] as const) as type}
 							{@const typeLabel = getFieldConfig(type).labels.typeLabel}
 							{@const active = selectedType === type}
 							<button
@@ -340,42 +330,10 @@
 
 			<div>
 				<label for="description" class="text-ink-soft block text-sm font-medium">Description</label>
-				{#if typeEditable && selectedType === 'checklist' && !showTemplatePicker}
-					<button
-						type="button"
-						onclick={() => (showTemplatePicker = true)}
-						class="text-sky mt-1 mb-1 text-xs font-medium hover:underline"
-					>
-						Start from template
-					</button>
-				{/if}
-				{#if showTemplatePicker}
-					<div class="bg-surface-2 border-line mt-1 mb-2 rounded-md border p-3 space-y-2">
-						{#each checklistTemplates as tmpl}
-							<button
-								type="button"
-								onclick={() => applyTemplate(tmpl.items)}
-								class="border-line hover:bg-surface flex w-full items-start gap-2 rounded-md border px-3 py-2 text-left text-sm transition-colors"
-							>
-								<div>
-									<p class="text-ink font-medium">{tmpl.name}</p>
-									<p class="text-ink-muted text-xs">{tmpl.description}</p>
-								</div>
-							</button>
-						{/each}
-						<button
-							type="button"
-							onclick={() => (showTemplatePicker = false)}
-							class="text-ink-muted text-xs hover:underline"
-						>
-							Cancel
-						</button>
-					</div>
-				{/if}
 				<textarea
 					id="description"
 					name="description"
-					rows={selectedType === 'checklist' ? 6 : 2}
+					rows={2}
 					bind:value={descriptionValue}
 					class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 				></textarea>

@@ -1,6 +1,6 @@
 import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Item, ChecklistItem, TripMember, Vote, Comment } from '$lib/types';
+import type { Item, Checklist, Task, TripMember, Vote, Comment } from '$lib/types';
 import { VOTE_OPTIONS, type VoteValue } from '$lib/collaboration/voting';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
@@ -17,10 +17,16 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		error(404, 'Item not found');
 	}
 
-	const [checklistItems, members, rawComments, votes, alternates] = await Promise.all([
-		item.type === 'checklist'
-			? locals.pb.collection('checklist_items').getFullList<ChecklistItem>({
-					filter: `item = "${item.id}"`,
+	// ADR-0003 — item-scoped manual Checklist rendered inline (the grocery case).
+	const checklist = await locals.pb
+		.collection('checklists')
+		.getFirstListItem<Checklist>(`item = "${item.id}" && kind = "manual"`)
+		.catch(() => null);
+
+	const [tasks, members, rawComments, votes, alternates] = await Promise.all([
+		checklist
+			? locals.pb.collection('tasks').getFullList<Task>({
+					filter: `checklist = "${checklist.id}"`,
 					sort: 'order'
 				})
 			: Promise.resolve([]),
@@ -59,13 +65,34 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 
 	const myVote = votes.find((v) => v.member === membership.id) ?? null;
 
-	return { item, checklistItems, members, comments, votes, myVote, alternates, itemDay: day, itemPhase: phase };
+	return { item, checklist, tasks, members, comments, votes, myVote, alternates, itemDay: day, itemPhase: phase };
 };
 
 async function getMembership(locals: App.Locals, tripId: string): Promise<TripMember> {
 	return locals.pb
 		.collection('trip_members')
 		.getFirstListItem<TripMember>(`trip = "${tripId}" && user = "${locals.user!.id}"`);
+}
+
+// Tasks sit outside the Suggestion pipeline (ADR-0003): traveler+ mutate freely,
+// viewers are read-only. PB rules are membership-scoped, so the viewer gate lives
+// here at the app layer.
+async function isViewer(locals: App.Locals, tripId: string): Promise<boolean> {
+	const membership = await getMembership(locals, tripId);
+	return membership.role === 'viewer';
+}
+
+// Resolve a task with its parent checklist and assert it belongs to this item.
+// Returns null when the task isn't attached to this item's checklist (tampering).
+async function loadTaskInItem(
+	locals: App.Locals,
+	item: Item,
+	taskId: string
+): Promise<{ task: Task; checklist: Checklist } | null> {
+	const task = await locals.pb.collection('tasks').getOne<Task>(taskId);
+	const checklist = await locals.pb.collection('checklists').getOne<Checklist>(task.checklist);
+	if (checklist.item !== item.id || checklist.trip !== item.trip) return null;
+	return { task, checklist };
 }
 
 export const actions: Actions = {
@@ -86,55 +113,102 @@ export const actions: Actions = {
 		}
 	},
 
-	addChecklistItem: async ({ request, params, locals }) => {
-		const item = await locals.pb.collection('items').getOne(params.itemId);
+	// Attach a manual Checklist to this Item (the inline grocery case). One per
+	// item for v1 — no-op if one already exists.
+	attachChecklist: async ({ request, params, locals }) => {
+		const item = await locals.pb.collection('items').getOne<Item>(params.itemId);
+		if (await isViewer(locals, item.trip)) return fail(403, { error: 'Viewers cannot modify checklists.' });
+
 		const formData = await request.formData();
-		const text = formData.get('text')?.toString().trim();
-		if (!text) return fail(400, { error: 'Text required.' });
+		const title = formData.get('title')?.toString().trim() || 'Checklist';
 
 		try {
-			const existing = await locals.pb.collection('checklist_items').getFullList({
-				filter: `item = "${item.id}"`,
-				sort: '-order',
-				fields: 'order'
-			});
-			const nextOrder = existing.length > 0 ? Number(existing[0]['order']) + 1 : 0;
+			const existing = await locals.pb
+				.collection('checklists')
+				.getFirstListItem<Checklist>(`item = "${item.id}" && kind = "manual"`)
+				.catch(() => null);
+			if (existing) return { success: true };
 
-			await locals.pb.collection('checklist_items').create({
+			await locals.pb.collection('checklists').create({
+				trip: item.trip,
+				phase: item.phase || '',
 				item: item.id,
-				text,
-				order: nextOrder
+				title,
+				kind: 'manual',
+				order: 0
 			});
 			return { success: true };
 		} catch (err: unknown) {
-			const message = err instanceof Error ? err.message : 'Failed to add item.';
+			const message = err instanceof Error ? err.message : 'Failed to add checklist.';
 			return fail(500, { error: message });
 		}
 	},
 
-	toggleChecklistItem: async ({ request, params, locals }) => {
-		const item = await locals.pb.collection('items').getOne(params.itemId);
+	deleteChecklist: async ({ request, params, locals }) => {
+		const item = await locals.pb.collection('items').getOne<Item>(params.itemId);
+		if (await isViewer(locals, item.trip)) return fail(403, { error: 'Viewers cannot modify checklists.' });
+
 		const formData = await request.formData();
-		const ciId = formData.get('ci_id')?.toString();
-		if (!ciId) return fail(400, { error: 'Missing id.' });
+		const checklistId = formData.get('checklist_id')?.toString();
+		if (!checklistId) return fail(400, { error: 'Missing id.' });
 
 		try {
-			const ci = await locals.pb.collection('checklist_items').getOne(ciId);
-			if (ci['item'] !== params.itemId) return fail(403, { error: 'Not authorized.' });
-			const isChecked = !!ci['checked_by'];
+			const checklist = await locals.pb.collection('checklists').getOne<Checklist>(checklistId);
+			if (checklist.item !== item.id) return fail(403, { error: 'Not authorized.' });
+			await locals.pb.collection('checklists').delete(checklistId); // tasks cascade
+			return { success: true };
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : 'Failed to delete checklist.';
+			return fail(500, { error: message });
+		}
+	},
 
-			if (isChecked) {
-				await locals.pb.collection('checklist_items').update(ciId, {
-					checked_by: null,
-					checked_at: null
-				});
-			} else {
-				const member = await getMembership(locals, item['trip'] as string);
-				await locals.pb.collection('checklist_items').update(ciId, {
-					checked_by: member.id,
-					checked_at: new Date().toISOString()
-				});
-			}
+	addTask: async ({ request, params, locals }) => {
+		const item = await locals.pb.collection('items').getOne<Item>(params.itemId);
+		if (await isViewer(locals, item.trip)) return fail(403, { error: 'Viewers cannot modify checklists.' });
+
+		const formData = await request.formData();
+		const checklistId = formData.get('checklist_id')?.toString();
+		const title = formData.get('title')?.toString().trim();
+		if (!checklistId) return fail(400, { error: 'Missing checklist.' });
+		if (!title) return fail(400, { error: 'Title required.' });
+
+		try {
+			const checklist = await locals.pb.collection('checklists').getOne<Checklist>(checklistId);
+			if (checklist.item !== item.id) return fail(403, { error: 'Not authorized.' });
+
+			const existing = await locals.pb.collection('tasks').getFullList<Task>({
+				filter: `checklist = "${checklist.id}"`,
+				sort: '-order',
+				fields: 'order'
+			});
+			const nextOrder = existing.length > 0 ? Number(existing[0].order) + 1 : 0;
+
+			await locals.pb.collection('tasks').create({
+				checklist: checklist.id,
+				title,
+				checked: false,
+				order: nextOrder
+			});
+			return { success: true };
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : 'Failed to add task.';
+			return fail(500, { error: message });
+		}
+	},
+
+	toggleTask: async ({ request, params, locals }) => {
+		const item = await locals.pb.collection('items').getOne<Item>(params.itemId);
+		if (await isViewer(locals, item.trip)) return fail(403, { error: 'Viewers cannot modify checklists.' });
+
+		const formData = await request.formData();
+		const taskId = formData.get('task_id')?.toString();
+		if (!taskId) return fail(400, { error: 'Missing id.' });
+
+		try {
+			const found = await loadTaskInItem(locals, item, taskId);
+			if (!found) return fail(403, { error: 'Not authorized.' });
+			await locals.pb.collection('tasks').update(taskId, { checked: !found.task.checked });
 			return { success: true };
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : 'Failed to toggle.';
@@ -142,15 +216,46 @@ export const actions: Actions = {
 		}
 	},
 
-	deleteChecklistItem: async ({ request, locals, params }) => {
+	assignTask: async ({ request, params, locals }) => {
+		const item = await locals.pb.collection('items').getOne<Item>(params.itemId);
+		if (await isViewer(locals, item.trip)) return fail(403, { error: 'Viewers cannot modify checklists.' });
+
 		const formData = await request.formData();
-		const ciId = formData.get('ci_id')?.toString();
-		if (!ciId) return fail(400, { error: 'Missing id.' });
+		const taskId = formData.get('task_id')?.toString();
+		const assignee = formData.get('assignee')?.toString() ?? '';
+		if (!taskId) return fail(400, { error: 'Missing id.' });
 
 		try {
-			const ci = await locals.pb.collection('checklist_items').getOne(ciId);
-			if (ci['item'] !== params.itemId) return fail(403, { error: 'Not authorized.' });
-			await locals.pb.collection('checklist_items').delete(ciId);
+			const found = await loadTaskInItem(locals, item, taskId);
+			if (!found) return fail(403, { error: 'Not authorized.' });
+			// Empty string clears the relation. Otherwise the value must be a member of this trip.
+			if (assignee) {
+				const member = await locals.pb
+					.collection('trip_members')
+					.getFirstListItem<TripMember>(`id = "${assignee}" && trip = "${item.trip}"`)
+					.catch(() => null);
+				if (!member) return fail(400, { error: 'Invalid assignee.' });
+			}
+			await locals.pb.collection('tasks').update(taskId, { assignee: assignee || null });
+			return { success: true };
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : 'Failed to assign.';
+			return fail(500, { error: message });
+		}
+	},
+
+	deleteTask: async ({ request, locals, params }) => {
+		const item = await locals.pb.collection('items').getOne<Item>(params.itemId);
+		if (await isViewer(locals, item.trip)) return fail(403, { error: 'Viewers cannot modify checklists.' });
+
+		const formData = await request.formData();
+		const taskId = formData.get('task_id')?.toString();
+		if (!taskId) return fail(400, { error: 'Missing id.' });
+
+		try {
+			const found = await loadTaskInItem(locals, item, taskId);
+			if (!found) return fail(403, { error: 'Not authorized.' });
+			await locals.pb.collection('tasks').delete(taskId);
 			return { success: true };
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : 'Failed to delete.';
@@ -181,37 +286,6 @@ export const actions: Actions = {
 		}
 
 		return { commentSuccess: true };
-	},
-
-	reorderChecklistItem: async ({ request, params, locals }) => {
-		const item = await locals.pb.collection('items').getOne(params.itemId);
-		const formData = await request.formData();
-		const ciId = formData.get('ci_id')?.toString();
-		const direction = formData.get('direction')?.toString();
-		if (!ciId || !direction) return fail(400, { error: 'Missing params.' });
-
-		try {
-			const all = await locals.pb.collection('checklist_items').getFullList({
-				filter: `item = "${item.id}"`,
-				sort: 'order'
-			});
-			const idx = all.findIndex((c) => c.id === ciId);
-			if (idx === -1) return fail(404, { error: 'Not found.' });
-
-			const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
-			if (swapIdx < 0 || swapIdx >= all.length) return { success: true };
-
-			const a = Number(all[idx]['order']);
-			const b = Number(all[swapIdx]['order']);
-			await Promise.all([
-				locals.pb.collection('checklist_items').update(all[idx].id, { order: b }),
-				locals.pb.collection('checklist_items').update(all[swapIdx].id, { order: a })
-			]);
-			return { success: true };
-		} catch (err: unknown) {
-			const message = err instanceof Error ? err.message : 'Failed to reorder.';
-			return fail(500, { error: message });
-		}
 	},
 
 	vote: async ({ request, params, locals }) => {
