@@ -3,9 +3,10 @@ import type { Actions, PageServerLoad } from './$types';
 import type { Day, Item, Vote } from '$lib/types';
 import { phasesForDay } from '$lib/itinerary/phases';
 import { rebalance, insertBetween, GAP } from '$lib/itinerary/sort-order';
+import { spanningItemsForDate } from '$lib/itinerary/multi-day';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
-	const { trip, phases } = await parent();
+	const { trip, phases, days } = await parent();
 
 	let day: Day;
 	try {
@@ -19,9 +20,17 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	}
 
 	const items = await locals.pb.collection('items').getFullList<Item>({
-		filter: `day = "${day.id}"`,
+		filter: `day = "${day.id}" && end_date = ""`,
 		sort: 'sort_order'
 	});
+
+	// Multi-day items that span this calendar date (rendered as banners, not timeline).
+	const dayDate = day.date.split(/[T ]/)[0];
+	const allMultiDay = await locals.pb.collection('items').getFullList<Item>({
+		filter: `trip = "${trip.id}" && end_date != ""`,
+		sort: 'day'
+	});
+	const spanningItems = spanningItemsForDate(allMultiDay, days as Day[], dayDate);
 
 	const itemIds = items.map((i) => i.id);
 	const votes =
@@ -47,7 +56,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 				})
 			: [];
 
-	return { day, dayItems: items, dayPhases, voteCounts, parkingLotItems };
+	return { day, dayItems: items, dayPhases, voteCounts, parkingLotItems, spanningItems, allDays: days };
 };
 
 export const actions: Actions = {
