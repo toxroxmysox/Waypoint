@@ -89,6 +89,7 @@
 			items={itemsForDay(currentDay)}
 			phases={data.phases}
 			tripId={data.trip.id}
+			days={data.days}
 		/>
 
 		<div class="mt-4 flex justify-between">

@@ -46,6 +46,21 @@ export const actions: Actions = {
 		}
 	},
 
+	trimEnd: async ({ request, locals }) => {
+		const data = await request.formData();
+		const itemId = data.get('item_id')?.toString();
+		const endDate = (data.get('end_date')?.toString() || '').split(/[T ]/)[0];
+		if (!itemId) return fail(400, { error: 'Missing item ID.' });
+		try {
+			await locals.pb.collection('items').update(itemId, {
+				end_date: endDate ? `${endDate} 00:00:00.000Z` : ''
+			});
+			return { success: true };
+		} catch (err: unknown) {
+			return fail(500, { error: err instanceof Error ? err.message : 'Failed to update end date.' });
+		}
+	},
+
 	addReplacement: async ({ request, locals }) => {
 		const data = await request.formData();
 		const tripId = data.get('trip_id')?.toString();
