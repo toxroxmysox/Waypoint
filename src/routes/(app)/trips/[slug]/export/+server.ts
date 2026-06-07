@@ -1,6 +1,7 @@
 import type { RequestHandler } from './$types';
 import type { Trip, Phase, Day, Item, TripBudget } from '$lib/types';
 import { buildTripExport } from '$lib/portability/export';
+import { fetchManualChecklists } from '$lib/itinerary/checklist-loaders';
 
 export const GET: RequestHandler = async ({ params, locals }) => {
 	if (!locals.user) {
@@ -30,6 +31,9 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 		})
 	]);
 
+	// Trip/phase-scoped manual checklists + their tasks (ADR-0003 §7).
+	const { checklists, tasks: checklistTasks } = await fetchManualChecklists(locals.pb, trip.id);
+
 	let budget = null;
 	try {
 		const tripBudget = await locals.pb
@@ -42,7 +46,7 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 		// No budget
 	}
 
-	const exportData = buildTripExport(trip, phases, days, items, budget);
+	const exportData = buildTripExport(trip, phases, days, items, budget, checklists, checklistTasks);
 	const filename = `waypoint-${trip.slug}-${new Date().toISOString().split('T')[0]}.json`;
 
 	return new Response(JSON.stringify(exportData, null, 2), {

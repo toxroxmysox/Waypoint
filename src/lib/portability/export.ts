@@ -1,11 +1,13 @@
-import type { Trip, Phase, Day, Item, TripExport } from '$lib/types';
+import type { Trip, Phase, Day, Item, Checklist, Task, TripExport } from '$lib/types';
 
 export function buildTripExport(
 	trip: Trip,
 	phases: Phase[],
 	days: Day[],
 	items: Item[],
-	budget: TripExport['budget']
+	budget: TripExport['budget'],
+	checklists: Checklist[] = [],
+	checklistTasks: Task[] = []
 ): TripExport {
 	const phaseMap = new Map(phases.map((p) => [p.id, p]));
 	const dayMap = new Map(days.map((d) => [d.id, d]));
@@ -65,6 +67,7 @@ export function buildTripExport(
 				end_date: item.end_date || null,
 				status: item.status,
 				booked: item.booked,
+				requires_booking: item.requires_booking ?? false,
 				confirmation_codes: item.confirmation_codes || [],
 				cost_estimate_usd: item.cost_estimate_usd || 0,
 				cost_actual_usd: item.cost_actual_usd || 0,
@@ -72,6 +75,17 @@ export function buildTripExport(
 				notes: ''
 			};
 		}),
+		// Only trip/phase-scoped manual lists; item-scoped lists can't re-link on
+		// import (items carry no stable id). `assignee` is dropped here.
+		checklists: checklists
+			.filter((c) => c.kind === 'manual' && !c.item)
+			.map((c) => ({
+				title: c.title,
+				phase_name: c.phase ? (phaseMap.get(c.phase)?.name ?? null) : null,
+				tasks: checklistTasks
+					.filter((t) => t.checklist === c.id)
+					.map((t) => ({ title: t.title, checked: t.checked }))
+			})),
 		budget
 	};
 }

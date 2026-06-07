@@ -73,6 +73,7 @@ export interface Item extends RecordModel {
 	assigned_to: string[];
 	sort_order: number;
 	parent_item: string;
+	requires_booking: boolean;
 	created_by: string;
 }
 
@@ -81,5 +82,26 @@ export interface ChecklistItem extends RecordModel {
 	text: string;
 	checked_by: string;
 	checked_at: string;
+	order: number;
+}
+
+// ADR-0003 — standalone primitive. Attachment level is derived, never stored:
+// item set → item-level; else phase set → phase-level; else trip-level.
+export type ChecklistKind = 'manual' | 'booking';
+
+export interface Checklist extends RecordModel {
+	trip: string;
+	phase: string;
+	item: string;
+	title: string;
+	kind: ChecklistKind;
+	order: number;
+}
+
+export interface Task extends RecordModel {
+	checklist: string;
+	title: string;
+	checked: boolean;
+	assignee: string;
 	order: number;
 }

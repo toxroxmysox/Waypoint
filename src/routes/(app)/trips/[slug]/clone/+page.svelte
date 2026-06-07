@@ -11,7 +11,7 @@
 	let loading = $state(false);
 	let error = $derived(form?.error ?? '');
 
-	const itemTypes = ['lodging', 'transportation', 'activity', 'meal', 'note', 'checklist'] as const;
+	const itemTypes = ['lodging', 'transportation', 'activity', 'meal', 'note'] as const;
 
 	const sourceStartStr = $derived(data.sourceTrip.start_date.split(/[T ]/)[0]);
 	const sourceEndStr = $derived(data.sourceTrip.end_date.split(/[T ]/)[0]);

@@ -1,6 +1,7 @@
 import type { ItemType } from '$lib/types';
 import type { ItemFormData } from './components/ItemFormFields';
 import { titleCase } from '$lib/shell/format';
+import { defaultRequiresBooking } from './booking-projection';
 
 export interface FieldVisibility {
 	subtype: boolean;
@@ -194,6 +195,7 @@ export function buildEmptyFormData(type: ItemType): ItemFormData {
 		free_cancellation: defaults.free_cancellation,
 		cost_estimate_usd: defaults.cost_estimate_usd,
 		cost_actual_usd: defaults.cost_actual_usd,
+		requires_booking: defaultRequiresBooking(type),
 		confirmation_codes: [],
 		assigned_to: [],
 		status: defaults.status
