@@ -39,6 +39,13 @@
 	let descriptionValue = $state(untrack(() => initialData.description));
 	let startTimeValue = $state(untrack(() => initialData.start_time));
 	let endTimeValue = $state(untrack(() => initialData.end_time));
+	let endDateValue = $state(untrack(() => initialData.end_date));
+	let selectedDay = $state(
+		untrack(() => (mode === 'create' ? (context.preselectedDay ?? '') : initialData.day))
+	);
+	let selectedDayDate = $derived(
+		context.days.find((d) => d.id === selectedDay)?.date.split(/[T ]/)[0] ?? ''
+	);
 	let locationNameValue = $state(untrack(() => initialData.location_name));
 	let locationAddressValue = $state(untrack(() => initialData.location_address));
 	let locationCoords = $state(
@@ -396,14 +403,12 @@
 					<select
 						id="day"
 						name="day"
+						bind:value={selectedDay}
 						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 					>
 						<option value="">Unscheduled</option>
 						{#each context.days as d}
-							<option
-								value={d.id}
-								selected={d.id === (mode === 'create' ? (context.preselectedDay ?? '') : initialData.day)}
-							>
+							<option value={d.id}>
 								{new Date(d.date.replace(' ', 'T')).toLocaleDateString('en-US', {
 									weekday: 'short',
 									month: 'short',
@@ -459,6 +464,28 @@
 						/>
 					</div>
 				</div>
+			{/if}
+
+			{#if fields.endDate && selectedDay}
+				<div>
+					<label for="end_date" class="text-ink-soft block text-sm font-medium">
+						End date <span class="text-ink-muted font-normal">(multi-day)</span>
+					</label>
+					<input
+						type="date"
+						id="end_date"
+						name="end_date"
+						bind:value={endDateValue}
+						min={selectedDayDate}
+						max={context.tripEndDate}
+						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+					/>
+					<p class="text-ink-muted mt-1 text-xs">
+						Leave empty for a single-day item. End time above applies to the end date.
+					</p>
+				</div>
+			{:else if fields.endDate}
+				<input type="hidden" name="end_date" value="" />
 			{/if}
 		</div>
 	</Card>
