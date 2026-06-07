@@ -23,6 +23,15 @@ migrate(
 		votes.updateRule = MEMBER_VIA_TRIP + ' && member.user = @request.auth.id';
 
 		app.save(votes);
+
+		// Backfill rows from the binary-upvote era (0024) so no pre-existing vote is
+		// left with an empty required `value`. An old upvote was a positive signal →
+		// map to `like`. No-op on a fresh table.
+		const legacy = app.findRecordsByFilter('votes', "value = ''", '', 0, 0);
+		for (const v of legacy) {
+			v.set('value', 'like');
+			app.save(v);
+		}
 	},
 	(app) => {
 		const votes = app.findCollectionByNameOrId('votes');

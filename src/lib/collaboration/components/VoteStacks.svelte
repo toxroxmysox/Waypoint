@@ -33,7 +33,7 @@
 {#if activeOptions.length > 0}
 	<div class="flex flex-wrap items-center gap-x-3 gap-y-1.5" aria-label="Votes">
 		{#each activeOptions as option (option)}
-			<div class="flex items-center gap-1">
+			<div class="flex items-center gap-1" aria-label="{grouped[option].length} {option}">
 				<span class="text-xs font-semibold {OPTION_META[option].tint}" aria-hidden="true"
 					>{OPTION_META[option].glyph}</span
 				>
