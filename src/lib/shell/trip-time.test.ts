@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { tripNow, tripToday, tripTz, combineDateTime } from './trip-time';
+import { tripNow, tripToday, tripTz, combineDateTime, isValidTimeZone } from './trip-time';
 
 describe('tripTz', () => {
 	it('returns the trip timezone when set', () => {
@@ -8,6 +8,24 @@ describe('tripTz', () => {
 	it('falls back to UTC when blank', () => {
 		expect(tripTz({ timezone: '' })).toBe('UTC');
 		expect(tripTz({ timezone: undefined as unknown as string })).toBe('UTC');
+	});
+	it('falls back to UTC when the stored value is not a valid IANA zone', () => {
+		// Regression: a city name like "Chengdu" was stored as a timezone and
+		// crashed the entire /trips load with a RangeError from Intl.
+		expect(tripTz({ timezone: 'Chengdu' })).toBe('UTC');
+		expect(tripTz({ timezone: 'Not/AZone' })).toBe('UTC');
+	});
+});
+
+describe('isValidTimeZone', () => {
+	it('accepts canonical IANA zones', () => {
+		expect(isValidTimeZone('Europe/Madrid')).toBe(true);
+		expect(isValidTimeZone('UTC')).toBe(true);
+	});
+	it('rejects bare city names and garbage', () => {
+		expect(isValidTimeZone('Chengdu')).toBe(false);
+		expect(isValidTimeZone('')).toBe(false);
+		expect(isValidTimeZone('Not/AZone')).toBe(false);
 	});
 });
 

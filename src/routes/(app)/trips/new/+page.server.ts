@@ -1,5 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
+import { isValidTimeZone } from '$lib/shell/trip-time';
 
 export const load: PageServerLoad = async () => {
 	return {};
@@ -29,6 +30,9 @@ export const actions: Actions = {
 		if (!startDate || !endDate) return fail(400, { error: 'Start and end dates are required.' });
 		if (new Date(startDate) > new Date(endDate)) {
 			return fail(400, { error: 'Start date must be before end date.' });
+		}
+		if (!isValidTimeZone(timezone)) {
+			return fail(400, { error: `"${timezone}" is not a valid timezone.` });
 		}
 
 		// Generate slug from title, append suffix on collision

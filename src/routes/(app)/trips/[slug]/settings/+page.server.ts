@@ -2,6 +2,7 @@ import { fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { TripMember } from '$lib/types';
 import { hashVaultPassword } from '$lib/vault/vault-password';
+import { isValidTimeZone } from '$lib/shell/trip-time';
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { trip, membership } = await parent();
@@ -22,6 +23,9 @@ export const actions: Actions = {
 		if (!startDate || !endDate) return fail(400, { error: 'Start and end dates are required.' });
 		if (new Date(startDate) > new Date(endDate)) {
 			return fail(400, { error: 'Start date must be before end date.' });
+		}
+		if (timezone && !isValidTimeZone(timezone)) {
+			return fail(400, { error: `"${timezone}" is not a valid timezone.` });
 		}
 
 		try {

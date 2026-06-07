@@ -1,6 +1,22 @@
-/** Resolve the effective timezone for a trip, defaulting to UTC when unset. */
+/** True when `tz` is a valid IANA timezone identifier accepted by Intl. */
+export function isValidTimeZone(tz: string): boolean {
+	if (!tz || !tz.trim()) return false;
+	try {
+		new Intl.DateTimeFormat('en-US', { timeZone: tz });
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * Resolve the effective timezone for a trip, defaulting to UTC when unset or
+ * invalid. Stored values are not trusted: a bad value (e.g. a bare city name)
+ * would otherwise throw a RangeError from Intl and crash every consumer.
+ */
 export function tripTz(trip: { timezone?: string }): string {
-	return trip.timezone && trip.timezone.trim() ? trip.timezone : 'UTC';
+	const tz = trip.timezone?.trim();
+	return tz && isValidTimeZone(tz) ? tz : 'UTC';
 }
 
 /**
