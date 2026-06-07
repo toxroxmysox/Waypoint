@@ -10,6 +10,7 @@
 			title: string;
 			start_time: string;
 			end_time: string;
+			end_date: string;
 			start_tz: string;
 			end_tz: string;
 			location_name: string;
@@ -42,12 +43,19 @@
 				return;
 			}
 
+			// Overnight / red-eye flights land on a later calendar date than they
+			// depart — surface that as a multi-day end_date so the form prefills it.
+			const depDate = flight.departure?.scheduledTime?.local?.split('T')[0] ?? flightDate;
+			const arrDate = flight.arrival?.scheduledTime?.local?.split('T')[0] ?? '';
+			const endDate = arrDate && depDate && arrDate > depDate ? arrDate : '';
+
 			onSelect({
 				title: `${flight.airline?.name ?? ''} ${flightNumber}`.trim(),
 				start_time:
 					flight.departure?.scheduledTime?.local?.split('T')[1]?.slice(0, 5) ?? '',
 				end_time:
 					flight.arrival?.scheduledTime?.local?.split('T')[1]?.slice(0, 5) ?? '',
+				end_date: endDate,
 				start_tz: flight.departure?.airport?.timeZone ?? '',
 				end_tz: flight.arrival?.airport?.timeZone ?? '',
 				location_name: `${flight.departure?.airport?.name ?? ''} (${flight.departure?.airport?.iata ?? ''})`,

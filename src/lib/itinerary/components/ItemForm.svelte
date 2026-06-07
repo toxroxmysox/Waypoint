@@ -70,6 +70,7 @@
 		title: string;
 		start_time: string;
 		end_time: string;
+		end_date: string;
 		start_tz: string;
 		end_tz: string;
 		location_name: string;
@@ -79,6 +80,8 @@
 		descriptionValue = flight.description;
 		startTimeValue = flight.start_time;
 		endTimeValue = flight.end_time;
+		// Red-eye arrivals prefill the multi-day end date (shown once a day is picked).
+		if (flight.end_date) endDateValue = flight.end_date;
 		locationNameValue = flight.location_name;
 		markDirty();
 	}
