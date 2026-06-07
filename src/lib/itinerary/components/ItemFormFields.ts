@@ -11,6 +11,7 @@ export interface ItemFormData {
 	phase: string;
 	start_time: string;
 	end_time: string;
+	end_date: string;
 	location_name: string;
 	location_address: string;
 	location_coords: unknown;
@@ -31,5 +32,7 @@ export interface ItemFormContext {
 	members: TripMember[];
 	preselectedDay?: string;
 	preselectedPhase?: string;
+	tripStartDate: string;
+	tripEndDate: string;
 }
 

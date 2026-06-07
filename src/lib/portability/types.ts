@@ -42,6 +42,7 @@ export interface TripExport {
 		end_time: string | null;
 		start_tz: string;
 		end_tz: string;
+		end_date: string | null;
 		status: string;
 		booked: boolean;
 		confirmation_codes: Array<{ label: string; value: string }>;
