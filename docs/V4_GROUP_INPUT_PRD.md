@@ -315,6 +315,118 @@ permissions, the delete rule) — noted as a pre-ship task, not a v4-now test de
 - **Goals empty state** and onboarding into the capture minigame.
 - **Completion-screen** content beyond the agreed elements (stats? streaks?).
 
+## Design Prompts
+
+Two self-contained prompts for a fresh Claude design-brainstorm session, split along the two features
+(both built on the shared `SwipeDeck`). Each bakes in the firm constraints above and leaves only the
+"Open for Ideation" items open. Ask for 2–3 distinct directions, mobile-first, 375px shown first.
+
+### Prompt 1 — Swipe-Quiz (harvest) + the shared SwipeDeck interaction
+
+```
+You're designing the UI/UX for a mobile-first trip-planning web app (SvelteKit + PocketBase,
+collaborative — multiple members plan one trip). I want 2–3 distinct design directions, not one
+answer. Mobile-first; show me how each reads at 375px wide before anything else.
+
+THE FEATURE — "Swipe-Quiz": a Tinder-style card stack that walks ONE member, async and solo, through
+the trip items they haven't voted on yet, casting one vote per card. The deck drains to empty. This is
+about harvesting preference across ~40 items fast, because tapping into each item one-by-one never gets
+enough votes to be useful.
+
+This card-deck is a SHARED SUBSTRATE — the same component is reused by a second feature (a goal-capture
+wizard), so design the deck as a reusable interaction language, then show the Swipe-Quiz wrapped around it.
+
+FIRM RULES (do not redesign these — design AROUND them):
+- Vote has exactly 4 options: Love, Like, Flexible, Dislike.
+- Gestures: swipe right = Like, left = Dislike, up = Love (strongest preference = upward).
+  Flexible is a BUTTON only — never a down-swipe (down-swipe is intentionally unused to avoid
+  fighting page scroll; "Flexible/meh" is the lowest-energy tap).
+- All four options must ALSO be real buttons — the whole thing must be fully usable with no gestures
+  at all (desktop + keyboard + screen reader, WCAG 2.1 AA). Swipes are accelerators over the buttons.
+- Blind voting by DEFAULT (rate your honest gut, unanchored). Plus an optional "peek mode" toggle that
+  reveals how others voted (avatar stacks) while you swipe.
+- Scope is user-chosen: one phase OR the whole trip. Finishing a phase offers the next phase (a
+  sequential walk) without backing out to a menu.
+- Each card is a trip item (planned or unplanned).
+
+OPEN QUESTIONS I WANT EXPLORED (this is the point of the exercise):
+- Card-stack visuals & swipe physics: how does the up=Love gesture read and feel distinct from
+  right=Like? What are the swipe affordances (color wash, edge labels, snap-back)?
+- How the 4th option (Flexible button) coexists with the 3 swipe gestures without feeling bolted-on.
+- Peek-mode visual treatment — how avatar stacks appear without anchoring/cluttering the card.
+- Progress indicator — how does "the deck is draining" feel motivating without being a stress bar?
+- Mis-swipe undo / rewind — is there one? how invoked?
+- Completion screen when the deck empties: a personal summary ("you rated 12 items"), an offer to
+  continue to the next phase, and a "jump to the phase parking lot" link to see how your swipes
+  reordered the live rankings. What else earns its place — stats? streaks? Keep it tasteful.
+- Entry point: where does a member launch the Swipe-Quiz from in the app? (open — propose options).
+
+CONTEXT/STYLE: collaborative trip planner, warm and a little playful (it's a "minigame"), but it's a
+real planning tool, not a game — restraint over gimmick. Bottom sheets on mobile, centered modals on
+tablet+. Skeleton loading where layout is known.
+
+Deliver: 2–3 directions, each with the card anatomy, the gesture/button layout, peek-mode treatment,
+progress + completion, and a quick note on the accessibility/no-gesture path for that direction.
+```
+
+### Prompt 2 — Trip Goals capture minigame + Goals tab
+
+```
+You're designing the UI/UX for a mobile-first collaborative trip-planning web app (SvelteKit +
+PocketBase). I want 2–3 distinct design directions, mobile-first; show me 375px first.
+
+THE FEATURE — "Trip Goals": a place to capture vague group aspirations BEFORE they're concrete plans
+("try real paella", "do a wine tasting"). Goals are phase-less, time-less wishes. They live in their
+own sub-tab under Itinerary (tabs: Overview · Phases · Checklists · Goals). Goals are votable and rank
+by aggregate vote score; later, real itinerary items get linked to a goal so you can trace
+"we wanted paella → Tapas at Bar Pinotxo → done ✓".
+
+THREE SURFACES TO DESIGN:
+
+1. THE GOALS TAB (the home). A list of all goals ranked by aggregate vote score, each showing: title,
+   who created it (authorship = implicit "I want this"), avatar stacks of who voted, and a derived
+   STATUS badge (unplanned / planned / done / considered). At the top: an "add / review wishes" entry
+   that launches the capture wizard. Design the list AND its empty state (a brand-new trip has zero
+   goals — how do we onboard the first member into adding wishes?).
+
+2. THE CAPTURE WIZARD (a card deck — REUSES a shared Tinder-style SwipeDeck component, see rules
+   below). It interleaves two card types in one varied flow:
+   - PROMPT card: a context-injected question ("a food you must try in Spain?", "an experience you'd
+     regret missing?"). The member types 0..n wishes (each becomes a goal) then taps "next"; skip is
+     allowed. (Prompt cards advance on "next" — the one asymmetry; the other card type auto-advances.)
+   - REACTION card: an existing goal the member hasn't voted on and didn't create — they vote on it.
+   The deck adapts: a new trip's first member sees mostly prompt cards; later members get prompts woven
+   through other people's goals. It drains to a "you're all caught up" completion screen, resumable
+   later as others add goals.
+
+3. GOAL DETAIL / TRACEABILITY view: the goal, its derived status, and its list of linked items each
+   with their own status — so you can trace the wish down to the plans addressing it. Plus a "link an
+   item" picker.
+
+FIRM RULES (design around, don't redesign):
+- Voting is the same 4-option model as the rest of the app: Love / Like / Flexible / Dislike, via
+  3 swipes (right=Like, left=Dislike, up=Love) + Flexible as a button, all four also real buttons for
+  WCAG 2.1 AA keyboard/screen-reader use. Blind-by-default + optional peek toggle.
+- A member can't vote on a goal they created (reaction cards only ever show others' goals).
+- Status is mostly DERIVED from linked items, not hand-set — design the badge to read as automatic.
+- Prompts are a small curated set (~6–8) with light location context injection, degrading to generic
+  when the trip has no destination yet.
+
+OPEN QUESTIONS I WANT EXPLORED:
+- How a single wizard makes "add a wish" and "react to a goal" cards feel like one cohesive flow rather
+  than two chores — the visual/interaction distinction between the two card types.
+- The Goals-tab list density & how the derived-status badge + avatar stacks + authorship coexist
+  without clutter at 375px.
+- The empty state / first-run onboarding into the wizard.
+- Traceability view layout — making the goal→items→status chain legible.
+- Completion screen content beyond "you're all caught up".
+
+CONTEXT/STYLE: collaborative, warm, lightly playful (it's a "minigame") but a real planning tool —
+restraint over gimmick. Bottom sheets on mobile, centered modals tablet+, skeleton loading.
+
+Deliver 2–3 directions covering all three surfaces, each starting from the 375px mobile view.
+```
+
 ## Further Notes
 
 - **ADR candidate:** "Goal votes use a separate `goal_votes` collection rather than a polymorphic
