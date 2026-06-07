@@ -11,6 +11,7 @@
 	import type { Notification } from '$lib/types';
 	import MultiDayBanner from '$lib/itinerary/components/MultiDayBanner.svelte';
 	import { spanningItemsForDate } from '$lib/itinerary/multi-day';
+	import TaskRow from '$lib/itinerary/components/TaskRow.svelte';
 
 	let { data } = $props();
 
@@ -111,5 +112,40 @@
 				{/if}
 			</div>
 		{/if}
+	{/if}
+
+	<!-- Trip Mode checklists (#52): read + check only, no create/rename/assign -->
+	{#if data.checklists.length > 0}
+		<div class="border-line border-t pt-4 space-y-4">
+			{#each data.checklists as cl (cl.id)}
+				{@const done = cl.tasks.filter((t) => t.checked).length}
+				<section class="space-y-2">
+					<SectionH>
+						{#snippet right()}
+							<span class="font-mono text-xs">{done}/{cl.tasks.length}</span>
+						{/snippet}
+						{cl.title}
+					</SectionH>
+					{#if cl.tasks.length > 0}
+						<Card>
+							<div class="px-4">
+								{#each cl.tasks as task, i (task.id)}
+									<TaskRow
+										taskId={task.id}
+										title={task.title}
+										checked={task.checked}
+										toggleAction="?/toggleTask"
+										assignable={false}
+										divider={i < cl.tasks.length - 1}
+									/>
+								{/each}
+							</div>
+						</Card>
+					{:else}
+						<p class="text-ink-muted text-xs italic">Nothing on this list.</p>
+					{/if}
+				</section>
+			{/each}
+		</div>
 	{/if}
 </main>
