@@ -12,6 +12,41 @@
 
 ---
 
+## Resolutions — design-handoff grill (2026-06-07)
+
+The Trip-Goals + Swipe-Quiz design handoff (`design_handoff_trip_goals/`) was grilled against this PRD.
+These decisions **supersede** any conflicting inline text below and close the open-ideation blockers
+needed to slice into issues:
+
+1. **Goal votes stay a separate `goal_votes` collection** (hold ADR-0004). The handoff's "one `votes`
+   collection" line is a designer simplification — the deck **engine** is target-agnostic, but the
+   **persistence loaders split**: goal cards write `goal_votes`, item cards write `votes`.
+2. **Item↔goal link is the `trip_goals.items` relation field** — no `goal_links` join collection
+   (the handoff's `goal_links` reference is a misread).
+3. **Pass label.** The `dislike` option is surfaced as **"Pass"** (matches production
+   `VoteButtons.svelte`); the value id stays `dislike`. Glossary corrected.
+4. **Wish persistence: per-add.** A typed wish becomes a `trip_goal` immediately (optimistic), not on
+   wizard completion. Rewind/undo **deletes** the just-created goal (allowed: creator + zero votes).
+   Partial sessions survive app-close — no required completion.
+5. **Swipe-Quiz is phase-scoped only (v4).** Whole-trip sweep is **deferred**. Entry = a launch card on
+   the **Phases sub-tab** (not inside an individual phase's parking lot). Finishing a phase prompts the
+   next phase if one exists; each phase is its own fresh phase-scoped deck.
+6. **Closeout goal-review is deferred OUT of this milestone** — it rides with a future closeout
+   deep-dive + design pass. (US13–15 and the "Closeout integration" decisions block below are deferred,
+   not in scope for v4 slicing.) Goals still auto-derive status from linked items without it.
+7. **Goal delete** lives as a rule-gated action on the **goal-detail** screen
+   (`(creator AND zero goal_votes) OR owner/co_owner`), plus the wizard rewind-delete path. No
+   swipe-to-delete on the Goals tab row.
+8. **Card order (both decks):** sort by **vote quantity desc** (count of existing votes, not weighted
+   score), ties + zero-vote items by **creation time, oldest first**. The capture deck additionally
+   **alternates 1:1** reaction-card / prompt-card, degrading to all-prompts (new trip) or all-reactions
+   (prompts spent). Deterministic given inputs → `buildDeck` stays unit-testable.
+
+**Still open (non-blocking, polish):** deck skeleton-loading treatment (not drawn); tablet reflow of the
+centered modal; completion-screen extras beyond the personal spread.
+
+---
+
 ## Problem Statement
 
 Trip planning starts with vague group wishes ("I want to try real paella," "we should do a wine
@@ -41,7 +76,8 @@ Two separate, minigame-flavored features sharing the existing Vote infrastructur
 
 2. **Swipe-Quiz (harvest).** A Tinder-style card stack that walks one member through the items they
    haven't voted on yet, casting a Vote per card. Independent and async per member — no coordination.
-   Drains to empty. Scope is user-chosen (one Phase or whole trip), with a phase-by-phase walk.
+   Drains to empty. **Phase-scoped (v4)** — launched from the Phases sub-tab, finishing one phase
+   offers the next. (Whole-trip sweep deferred — see Resolution 5.)
 
 Both reuse `voting.ts` and the four-option Vote model (Love/Like/Flexible/Dislike). Votes never roll
 up across the goal↔item link — goal votes and item votes are orthogonal signals.
@@ -95,8 +131,8 @@ up across the goal↔item link — goal votes and item votes are orthogonal sign
     already rated and the deck visibly drains toward done.
 19. As a trip member, I want both planned and unplanned items in the deck, so that I can weigh in
     whether I'm planning early (mostly ideas) or late (mostly committed).
-20. As a trip member, I want to choose whether I'm swiping one phase or the whole trip, so that I can
-    do a bounded sitting or a full sweep depending on my energy.
+20. As a trip member, I want to swipe through one phase at a time, so that I can do a bounded sitting.
+    *(v4: phase-scoped only; whole-trip sweep deferred — Resolution 5.)*
 21. As a trip member finishing a phase, I want to be offered the next phase, so that I can keep going
     in a natural sequence without backing out to a menu.
 22. As a trip member, I want to swipe right=Like, left=Dislike, up=Love, so that the common reactions
@@ -189,7 +225,10 @@ up across the goal↔item link — goal votes and item votes are orthogonal sign
 - Traveler goals deliberately **skip the suggestion queue**, unlike traveler item contributions —
   goals are low-stakes wishes, not itinerary commitments.
 
-### Closeout integration
+### Closeout integration — DEFERRED out of v4 (see Resolution 6)
+
+> Moved to a future closeout deep-dive + design pass. Retained here for that effort; not in scope for
+> v4 issue-slicing. US13–15 are likewise deferred.
 
 - New **goal-review step** runs *after* the per-phase unplanned-item review.
 - Surfaces **only unresolved goals** — hides auto-`done` and all-`considered` goals to avoid
