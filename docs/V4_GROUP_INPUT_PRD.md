@@ -314,9 +314,14 @@ with no UI/IO — ideal for Vitest, mirroring existing `voting.test.ts`, `sort-o
 - **`swipe-deck.ts`** (Vitest). Cover: unvoted-only filter; planned+unplanned inclusion; phase vs
   whole-trip scope; drain-to-empty; next-phase hand-off ordering. Prior art: `sort-order.test.ts`.
 
-Not unit-targeted for now (per session decision): `goal_votes` PB rules and a swipe E2E. The rules
-*will* still need coverage in the `test:rules` matrix before ship (can't-vote-own-goal, role
-permissions, the delete rule) — noted as a pre-ship task, not a v4-now test deliverable.
+**`trip_goals` + `goal_votes` PB rules (`test:rules` matrix)** are now in-scope, built test-first with
+their collections: `trip_goals` cells in #75, `goal_votes` cells + the can't-vote-own-goal negative
+case + the tightened delete rule in #77 (extends `backend/test-rules.mjs`; prior art: the `votes`
+block). Covers role permissions, can't-vote-own-goal, and the `(creator AND zero votes) OR owner`
+delete rule.
+
+Still not unit-targeted: a swipe-deck **E2E** (the `swipe-deck.ts` logic is covered by Vitest above;
+a full gesture E2E is deferred).
 
 ---
 
