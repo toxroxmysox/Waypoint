@@ -284,7 +284,11 @@ Unique constraint on (item, member). One vote per member per item. Updating a vo
 
 A settlement is treated as a reverse-flow expense for balance calculation.
 
-### `vault_entries`
+### `vault_entries` — **RETIRED (M7, 2026-06-07)**
+
+> Removed entirely and replaced by the `documents` collection. See `docs/V4_DOCUMENTS_PRD.md` and
+> ADR-0005. Schema below kept for historical reference only; do not build against it.
+
 | Field | Type | Notes |
 |---|---|---|
 | trip | relation→trips, required | |
@@ -544,6 +548,20 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 - Dark mode
 - Print-friendly itinerary view (for the "print Excel pages" backup pattern from forum reviews)
 
+### M7 — Documents & Vault retirement
+
+> Scope change registered 2026-06-07. Full spec: `docs/V4_DOCUMENTS_PRD.md` (ready-for-agent).
+> Decision record: `docs/adr/0005-retire-vault-no-client-side-encryption.md`.
+
+- **Retire Vault entirely** — delete `vault_entries` collection, `vault_password_hash`, `crypto.ts`,
+  `vault-password.ts`, `/api/vault/unlock`, and the vault route/screens. (Deliberate exception to the
+  append-only migration rule — no production data.) Supersedes all `vault_entries`/Vault references in
+  Sections 4, 5, 8, 9 below.
+- **New `documents` domain** — plain (unencrypted) PDF/image artifacts, membership-gated, one file per
+  record, attached to an Item or the Trip. Takes the retired Vault nav slot (Planning + Trip Mode).
+- **Offline:** active-trip Document files auto-precached by the service worker; planning = cache-on-view.
+- See the PRD for data model, permissions, views, offline, and the design grill decisions.
+
 ---
 
 ## 8. Screen Inventory
@@ -733,5 +751,6 @@ v1 = M1 through M5. Considered done when:
 
 | Date | Summary | Reference |
 |---|---|---|
+| 2026-06-07 | **M7 — Documents & Vault retirement registered.** Vault (`vault_entries`, `vault_password_hash`, client-side crypto, vault route) retired entirely; new `documents` domain (plain PDF/image artifacts, membership-gated, Item/Trip-scoped, offline-precached for active trip) takes its nav slot. Design handoff (*The Ledger*) grilled into the PRD. Supersedes Vault refs in §§4, 5, 8, 9. | docs/V4_DOCUMENTS_PRD.md, ADR-0005 |
 | 2026-05-29 | **v3 design alignment.** Slot → anchor time + time slot (derived). Status lifecycle expanded: unplanned → planned → done/considered. Flight promoted to first-class item type with AeroDataBox integration. Votes redesigned: Love/Like/Flexible/Dislike with avatar stacks, no visible score. Rank and parking_lot_scope removed — parking lot is now a filtered view (status = unplanned). Multi-day items via end_date. Phase colors removed (mode accent instead). Three modes → two modes + archive view. Closeout rewritten for new status lifecycle. Suggestion two-gate model (approved → unplanned, not planned). Ferry removed from transportation subtypes. | CONTEXT.md, GitHub #11 |
 | 2026-04-25 | Design system adopted. Paper/ink/moss/clay/gold/sky palette, Fraunces/Inter/JetBrains Mono fonts. | M1.5 milestone |
