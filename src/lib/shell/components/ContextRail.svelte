@@ -212,5 +212,26 @@
 				</div>
 			{/if}
 		</div>
-	{/if}
-</aside>
+
+		{:else if activeContext === 'documents'}
+			<!-- Documents summary — file count + per-type breakdown (PRD D3). Sourced
+			     from the documents page load via page.data. -->
+			{@const summary = page.data.documentSummary as { total: number; breakdown: { label: string; count: number }[] } | undefined}
+			<div class="space-y-2 px-5 py-4">
+				<h3 class="text-ink-soft text-xs font-semibold uppercase tracking-wider">Documents</h3>
+				<p class="text-ink-muted text-xs">
+					{summary?.total ?? 0} {(summary?.total ?? 0) === 1 ? 'file' : 'files'} on this trip.
+				</p>
+				{#if summary && summary.breakdown.length > 0}
+					<div class="space-y-1.5 pt-1">
+						{#each summary.breakdown as row}
+							<div class="flex items-center gap-2 text-xs">
+								<span class="text-ink-soft flex-1 truncate">{row.label}</span>
+								<span class="text-ink-muted font-mono tabular-nums">{row.count}</span>
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</div>
+		{/if}
+	</aside>
