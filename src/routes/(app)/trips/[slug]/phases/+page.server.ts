@@ -1,9 +1,32 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
+import type { Item, Phase, Vote } from '$lib/types';
 
-export const load: PageServerLoad = async ({ parent }) => {
-	const { trip, phases } = await parent();
-	return { trip, phases };
+export const load: PageServerLoad = async ({ locals, parent }) => {
+	const { trip, membership, phases } = await parent();
+
+	// Launch-card data: how many items the member hasn't rated yet, and the first
+	// phase (in order) that still has unrated cards to kick the deck off from.
+	const items = await locals.pb.collection('items').getFullList<Item>({
+		filter: `trip = "${trip.id}" && (status = "planned" || status = "unplanned")`,
+		fields: 'id,phase'
+	});
+	const myVotes = await locals.pb.collection('votes').getFullList<Vote>({
+		filter: `trip = "${trip.id}" && member = "${membership.id}"`,
+		fields: 'item'
+	});
+	const votedItemIds = new Set(myVotes.map((v) => v.item));
+
+	const unratedByPhase: Record<string, number> = {};
+	let unratedTotal = 0;
+	for (const it of items) {
+		if (votedItemIds.has(it.id)) continue;
+		unratedByPhase[it.phase] = (unratedByPhase[it.phase] ?? 0) + 1;
+		unratedTotal++;
+	}
+	const launchPhaseId = (phases as Phase[]).find((p) => (unratedByPhase[p.id] ?? 0) > 0)?.id ?? null;
+
+	return { trip, phases, unratedTotal, launchPhaseId };
 };
 
 export const actions: Actions = {
