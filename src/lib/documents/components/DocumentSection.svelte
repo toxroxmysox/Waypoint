@@ -3,7 +3,9 @@
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import DocumentRow from './DocumentRow.svelte';
 	import DocumentUpload from './DocumentUpload.svelte';
+	import DocumentPaste from './DocumentPaste.svelte';
 	import DocumentLightbox from './DocumentLightbox.svelte';
+	import { isRenderableImage } from '$lib/documents/files';
 	import type { DocumentView } from '$lib/documents/types';
 
 	let {
@@ -29,7 +31,13 @@
 		return privileged || doc.uploaded_by === membershipId;
 	}
 
-	let activeDoc = $state<DocumentView | null>(null);
+	// Swipe gallery = the renderable images in this section, in display order.
+	const gallery = $derived(docs.filter((d) => isRenderableImage(d.file)));
+	let lightboxIndex = $state<number | null>(null);
+	function openLightbox(d: DocumentView) {
+		const i = gallery.indexOf(d);
+		if (i >= 0) lightboxIndex = i;
+	}
 </script>
 
 <Card>
@@ -61,21 +69,24 @@
 						{doc}
 						canDelete={canDelete(doc)}
 						{deleteAction}
-						onView={(d) => (activeDoc = d)}
+						onView={openLightbox}
 					/>
 				{/each}
 			</div>
 		{/if}
 
 		{#if canUpload}
-			<DocumentUpload
-				action={uploadAction}
-				{itemId}
-				label="Upload"
-				hint="PDF or image · up to 20 MB"
-			/>
+			<div class="space-y-2">
+				<DocumentUpload
+					action={uploadAction}
+					{itemId}
+					label="Upload"
+					hint="PDF or image · up to 20 MB"
+				/>
+				<DocumentPaste action={uploadAction} {itemId} />
+			</div>
 		{/if}
 	</div>
 </Card>
 
-<DocumentLightbox bind:doc={activeDoc} />
+<DocumentLightbox bind:index={lightboxIndex} {gallery} canDelete={canDelete} {deleteAction} />
