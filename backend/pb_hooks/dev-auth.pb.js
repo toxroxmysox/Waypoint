@@ -216,6 +216,8 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 	// Seed a trip goal authored by the traveler (#75). Trip-scoped, phase-less.
 	// Authored by traveler so the harness can exercise the delete rule's "creator"
 	// branch (traveler can delete their own goal even though they aren't an owner).
+	// Kept at ZERO goal_votes — the trip_goals delete matrix asserts traveler
+	// (creator + zero votes) can delete it (#77 tightening leaves this case allow).
 	const goalsCol = e.app.findCollectionByNameOrId('trip_goals');
 	const goal = new Record(goalsCol);
 	goal.set('trip', trip.id);
@@ -224,6 +226,59 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 	goal.set('manual_status', 'unplanned');
 	goal.set('sort_order', 0);
 	e.app.save(goal);
+
+	// #77 goal_votes fixtures. Three more goals to cover the voting rules:
+	//   - goalOwner  : authored by owner, carries one existing vote (the issue's
+	//                  "owner-authored goal with ≥1 vote"). Used to assert the
+	//                  can't-vote-your-own-goal rule (owner voting goalOwner → deny).
+	//   - goalCoOwner: authored by co_owner; hosts the OWNER-owned goal_vote that
+	//                  serves as the goal_votes fixture record (list/view/update/
+	//                  delete are SELF_ONLY, so only owner passes). Owner voting a
+	//                  co_owner goal is rule-legal (not their own goal).
+	//   - goalNeutral: authored by the viewer, zero seeded votes — the create-matrix
+	//                  target. owner/co_owner/traveler all can vote it (none authored
+	//                  it, none is a viewer); viewer denies on role + own-goal.
+	const goalOwner = new Record(goalsCol);
+	goalOwner.set('trip', trip.id);
+	goalOwner.set('title', 'Owner Goal (voted)');
+	goalOwner.set('created_by', memberIds.owner);
+	goalOwner.set('manual_status', 'unplanned');
+	goalOwner.set('sort_order', 1);
+	e.app.save(goalOwner);
+
+	const goalCoOwner = new Record(goalsCol);
+	goalCoOwner.set('trip', trip.id);
+	goalCoOwner.set('title', 'Co-owner Goal');
+	goalCoOwner.set('created_by', memberIds.co_owner);
+	goalCoOwner.set('manual_status', 'unplanned');
+	goalCoOwner.set('sort_order', 2);
+	e.app.save(goalCoOwner);
+
+	const goalNeutral = new Record(goalsCol);
+	goalNeutral.set('trip', trip.id);
+	goalNeutral.set('title', 'Neutral Goal');
+	goalNeutral.set('created_by', memberIds.viewer);
+	goalNeutral.set('manual_status', 'unplanned');
+	goalNeutral.set('sort_order', 3);
+	e.app.save(goalNeutral);
+
+	// Existing vote on the owner's goal (cast by the traveler) — satisfies the
+	// "owner-authored goal with ≥1 vote" fixture requirement. Direct save bypasses
+	// the create rule.
+	const goalVotesCol = e.app.findCollectionByNameOrId('goal_votes');
+	const goalVoteSeed = new Record(goalVotesCol);
+	goalVoteSeed.set('goal', goalOwner.id);
+	goalVoteSeed.set('member', memberIds.traveler);
+	goalVoteSeed.set('value', 'like');
+	e.app.save(goalVoteSeed);
+
+	// The OWNER-owned goal_vote on the co_owner's goal — the goal_votes fixture
+	// record for list/view/update/delete (SELF_ONLY → only owner passes).
+	const goalVoteOwner = new Record(goalVotesCol);
+	goalVoteOwner.set('goal', goalCoOwner.id);
+	goalVoteOwner.set('member', memberIds.owner);
+	goalVoteOwner.set('value', 'love');
+	e.app.save(goalVoteOwner);
 
 	// Create a checklist item under it.
 	const checklistCol = e.app.findCollectionByNameOrId('checklist_items');
@@ -280,6 +335,10 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 		itemId2: item2.id,
 		voteId: vote.id,
 		goalId: goal.id,
+		goalOwnerId: goalOwner.id,
+		goalCoOwnerId: goalCoOwner.id,
+		goalNeutralId: goalNeutral.id,
+		goalVoteId: goalVoteOwner.id,
 		checklistItemId: checklistItem.id,
 		pendingInviteId: invite.id,
 		pendingInviteCode: inviteCode,

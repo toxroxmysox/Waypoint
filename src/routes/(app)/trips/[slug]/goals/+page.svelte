@@ -6,6 +6,8 @@
 	import Button from '$lib/ui/Button.svelte';
 	import Avatar from '$lib/ui/Avatar.svelte';
 	import BottomSheet from '$lib/ui/BottomSheet.svelte';
+	import GoalSentimentStacks from '$lib/collaboration/components/GoalSentimentStacks.svelte';
+	import GoalVoteResultsSheet from '$lib/collaboration/components/GoalVoteResultsSheet.svelte';
 	import { memberDisplayName, memberInitial } from '$lib/itinerary/member-name';
 	import { untrack } from 'svelte';
 	import type { TripGoal } from '$lib/types';
@@ -14,6 +16,16 @@
 
 	let createOpen = $state(false);
 	let creating = $state(false);
+
+	// Vote-results sheet — opened by tapping a goal's sentiment stacks.
+	let resultsOpen = $state(false);
+	let resultsGoal = $state<TripGoal | null>(null);
+	const votesByGoal = $derived(data.votesByGoal ?? {});
+
+	function openResults(goal: TripGoal) {
+		resultsGoal = goal;
+		resultsOpen = true;
+	}
 
 	// Optimistic list: seed from server, append the new wish on submit, then
 	// reconcile against the re-loaded data once the action resolves.
@@ -69,6 +81,15 @@
 							<div class="text-ink-soft mt-0.5 truncate text-[12px]">{goal.description}</div>
 						{/if}
 						<div class="text-ink-muted mt-0.5 text-[11px]">{memberDisplayName(author)}</div>
+						{#if votesByGoal[goal.id]?.length}
+							<div class="mt-1.5">
+								<GoalSentimentStacks
+									votes={votesByGoal[goal.id]}
+									members={data.members}
+									onOpen={() => openResults(goal)}
+								/>
+							</div>
+						{/if}
 					</div>
 				</div>
 			{/each}
@@ -98,6 +119,13 @@
 		</p>
 	{/if}
 </main>
+
+<GoalVoteResultsSheet
+	bind:open={resultsOpen}
+	title={resultsGoal?.title ?? 'Votes'}
+	votes={resultsGoal ? (votesByGoal[resultsGoal.id] ?? []) : []}
+	members={data.members}
+/>
 
 <BottomSheet bind:open={createOpen} title="Add a wish">
 	{#if form?.error}

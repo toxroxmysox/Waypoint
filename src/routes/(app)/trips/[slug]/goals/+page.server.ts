@@ -1,19 +1,41 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { TripGoal, TripMember } from '$lib/types';
+import type { TripGoal, TripMember, GoalVote } from '$lib/types';
 
 export const load: PageServerLoad = async ({ parent, locals }) => {
 	const { trip } = await parent();
 
-	// Phase-less, trip-scoped. Ordered by sort_order for now (vote-score ordering
-	// lands with goal_votes in #77). created_by is expanded for author avatar/name.
+	// Phase-less, trip-scoped. created_by is expanded for author avatar/name.
 	const goals = await locals.pb.collection('trip_goals').getFullList<TripGoal>({
 		filter: `trip = "${trip.id}"`,
 		sort: 'sort_order',
 		expand: 'created_by.user'
 	});
 
-	return { goals };
+	const goalIds = goals.map((g) => g.id);
+	const [goalVotes, members] = await Promise.all([
+		goalIds.length > 0
+			? locals.pb.collection('goal_votes').getFullList<GoalVote>({
+					filter: goalIds.map((id) => `goal = "${id}"`).join(' || ')
+				})
+			: Promise.resolve([] as GoalVote[]),
+		locals.pb.collection('trip_members').getFullList<TripMember>({
+			filter: `trip = "${trip.id}"`
+		})
+	]);
+
+	const votesByGoal: Record<string, GoalVote[]> = {};
+	for (const v of goalVotes) (votesByGoal[v.goal] ??= []).push(v);
+
+	// #77 — rank the Goals tab by ATTENTION: vote quantity (not weighted score)
+	// desc, ties and zero-vote goals by creation time oldest-first (Resolution 8).
+	const sortedGoals = [...goals].sort((a, b) => {
+		const diff = (votesByGoal[b.id]?.length ?? 0) - (votesByGoal[a.id]?.length ?? 0);
+		if (diff !== 0) return diff;
+		return (a.created ?? '').localeCompare(b.created ?? '');
+	});
+
+	return { goals: sortedGoals, votesByGoal, members };
 };
 
 export const actions: Actions = {
