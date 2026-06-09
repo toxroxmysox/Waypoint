@@ -1,5 +1,6 @@
 import type { Item, Day } from '$lib/types';
 import type { DayGroup, TripModeState } from './types';
+import { buildTimeline } from '$lib/itinerary/timeline';
 
 function parseDateTime(dt: string): Date {
 	if (!dt) return new Date(0);
@@ -55,7 +56,14 @@ function groupItemsByDay(items: Item[], days: Day[]): DayGroup[] {
 	}
 	return days
 		.filter((d) => dayMap.has(d.id))
-		.map((d) => ({ day: d, items: sortBySortOrder(dayMap.get(d.id)!) }));
+		// #81: order chronologically (timed by start_time, untimed woven by
+		// sort_order) to match the itinerary day view, which uses buildTimeline.
+		// sortBySortOrder alone rendered the "Next 3 Days" list out of order.
+		.map((d) => ({ day: d, items: orderLikeItinerary(dayMap.get(d.id)!) }));
+}
+
+function orderLikeItinerary(items: Item[]): Item[] {
+	return buildTimeline(items).flatMap((e) => (e.kind === 'item' ? [e.item] : []));
 }
 
 export function getTripModeState(items: Item[], days: Day[], now: Date): TripModeState {

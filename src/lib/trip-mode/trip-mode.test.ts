@@ -251,6 +251,28 @@ describe('getTripModeState', () => {
 			expect(state.timeline.upcomingDays[0].items.map(i => i.id)).toEqual(['c', 'b', 'a']);
 		});
 
+		it('#81: orders each day group chronologically by time like the itinerary, not by sort_order', () => {
+			// Dogfood "Next 3 Days": items whose sort_order does not match their
+			// time-of-day rendered jumbled (6PM, 8AM, 6PM, 8AM, 7AM) while the
+			// itinerary day view showed them chronological.
+			const days = [makeDay({ id: 'day2', date: '2026-10-16 00:00:00.000Z' })];
+			const items = [
+				makeItem({ id: 'taco', day: 'day2', sort_order: 1, start_time: '2026-10-16 18:00:00.000Z' }),
+				makeItem({ id: 'wrapup', day: 'day2', sort_order: 2, start_time: '2026-10-16 08:00:00.000Z' }),
+				makeItem({ id: 'oyo', day: 'day2', sort_order: 3, start_time: '2026-10-16 18:00:00.000Z' }),
+				makeItem({ id: 'colab', day: 'day2', sort_order: 4, start_time: '2026-10-16 08:00:00.000Z' }),
+				makeItem({ id: 'copilot', day: 'day2', sort_order: 5, start_time: '2026-10-16 07:00:00.000Z' })
+			];
+			const state = getTripModeState(items, days, oct15);
+			expect(state.timeline.upcomingDays[0].items.map((i) => i.id)).toEqual([
+				'copilot',
+				'wrapup',
+				'colab',
+				'taco',
+				'oyo'
+			]);
+		});
+
 		it('returns empty upcomingDays when no future days exist', () => {
 			const days = [
 				makeDay({ id: 'day1', date: '2026-10-15 00:00:00.000Z' })
