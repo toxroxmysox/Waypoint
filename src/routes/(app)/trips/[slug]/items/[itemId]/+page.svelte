@@ -15,6 +15,7 @@
 	import MoveItemSheet from '$lib/itinerary/components/MoveItemSheet.svelte';
 	import ChecklistBody from '$lib/itinerary/components/ChecklistBody.svelte';
 	import AssignMemberSheet from '$lib/itinerary/components/AssignMemberSheet.svelte';
+	import DocumentSection from '$lib/documents/components/DocumentSection.svelte';
 	import type { Comment, Task } from '$lib/types';
 
 	let { data, form } = $props();
@@ -27,6 +28,8 @@
 	const isAlternate = $derived(data.item.sort_order > 0);
 	const isPrimary = $derived(data.item.sort_order === 0 && data.alternates.length > 0);
 	const itemUrl = $derived(`/trips/${data.trip.slug}/items/${data.item.id}`);
+	const docCount = $derived(data.documents.length);
+	const typeLabel = $derived(getFieldConfig(data.item.type).labels.typeLabel.toLowerCase());
 
 	// Comments
 	let commentText = $state('');
@@ -183,6 +186,18 @@
 			tripEndDate: ''
 		}}
 	/>
+
+	<!-- Documents — artifacts attached to this item (codes stay on the item above). -->
+	<DocumentSection
+		docs={data.documents}
+		itemId={data.item.id}
+		membershipId={data.membership.id}
+		role={data.membership.role}
+	/>
+
+	{#if form?.uploadError}
+		<p class="text-clay px-1 text-sm">{form.uploadError}</p>
+	{/if}
 
 	{#if data.alternates.length > 0}
 		<Card>
@@ -349,6 +364,13 @@
 				Delete
 			</button>
 		{:else}
+			<p class="text-ink-soft mt-2 text-sm">
+				{#if docCount > 0}
+					Delete this {typeLabel} and its {docCount} document{docCount === 1 ? '' : 's'}? This can't be undone.
+				{:else}
+					Delete this {typeLabel}? This can't be undone.
+				{/if}
+			</p>
 			<form
 				method="POST"
 				action="?/delete"

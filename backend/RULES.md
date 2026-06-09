@@ -2,7 +2,7 @@
 
 Source of truth for who can do what against the API. Generated and verified by `backend/test-rules.mjs`. Update this file when rules change; the harness will fail if the documented intent diverges from observed behavior.
 
-Last reviewed: 2026-06-06 (#30 — votes collection added to the harness; own-vote update/delete gating).
+Last reviewed: 2026-06-08 (#70 — documents collection added to the harness; viewer-no-create + uploader-or-owner delete gating). Prior: #30 — votes.
 
 ---
 
@@ -109,6 +109,19 @@ The `votes` collection (created 0024, `value` + `updateRule` added 0029) is exer
 
 - **create** — `MEMBER_VIA_TRIP`. A `votes.pb.js` `onRecordCreateRequest` hook additionally enforces vote-as-yourself (`member.user === auth` and `member.trip === record.trip`). The harness votes as each role's own membership on a second fixture item so the unique `(item, member)` index isn't tripped.
 - **update / delete** — `MEMBER_VIA_TRIP && member.user = @request.auth.id`. A member can only change or remove **their own** vote. The fixture vote belongs to the owner, so co_owner/traveler/viewer get `404` (the rule filters the record out of their view, so it reads as not-found). Changing a vote is an update (the unique index makes a re-vote an update, not an insert).
+
+## Documents (#70)
+
+The `documents` collection (created 0032) is exercised by the harness as of #70:
+
+| Collection | list | view | create | update | delete |
+|---|---|---|---|---|---|
+| `documents` | member | member | member except viewer | — (none) | uploader or owner/co_owner |
+
+- **create** — `MEMBER_VIA_TRIP`. A `documents.pb.js` `onRecordCreateRequest` hook blocks **viewers** and pins `uploaded_by` to the caller's membership (mirrors `expenses.created_by`). The `file` field requires a single PDF/image ≤ 20 MB (`mimeTypes` + `maxSize`); the harness uploads a valid 1x1 PNG via multipart so each role's result reflects the permission gate, not a payload-validation 400.
+- **update** — `updateRule = null`. Documents are immutable artifacts in v4 (no edit UI); every role is denied.
+- **delete** — `MEMBER_VIA_TRIP` by rule; the `documents.pb.js` `onRecordDeleteRequest` hook narrows it to the **uploader OR owner/co_owner**. The fixture document is uploaded by the owner, so owner + co_owner pass while traveler/viewer are denied. (Owner override vs. the old vault uploader-only rule — ADR-0005 / PRD §Permissions.)
+- **files are `protected: true`** — downloads require a short-lived file token. The app mints tokens server-side and proxies bytes through `/trips/[slug]/documents/[docId]/file`, so tokens never reach the client and the future service worker can precache same-origin bytes.
 
 ## Notes & gotchas
 
