@@ -58,7 +58,12 @@ migrate(
 					protected: true
 				},
 				{ type: 'text', name: 'caption', required: false, max: 500 },
-				{ type: 'relation', name: 'uploaded_by', required: true, collectionId: tripMembers.id, maxSelect: 1 }
+				{ type: 'relation', name: 'uploaded_by', required: true, collectionId: tripMembers.id, maxSelect: 1 },
+				// System timestamps. The app sorts documents newest-first ('-created')
+				// on the aggregate + item-detail surfaces and renders relative upload
+				// times — both require these autodate fields to exist.
+				{ type: 'autodate', name: 'created', onCreate: true, onUpdate: false },
+				{ type: 'autodate', name: 'updated', onCreate: true, onUpdate: true }
 			],
 			indexes: [
 				'CREATE INDEX idx_documents_trip ON documents (trip)',
