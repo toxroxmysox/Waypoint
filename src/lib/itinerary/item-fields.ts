@@ -198,7 +198,8 @@ export function buildEmptyFormData(type: ItemType): ItemFormData {
 		requires_booking: defaultRequiresBooking(type),
 		confirmation_codes: [],
 		assigned_to: [],
-		status: defaults.status
+		status: defaults.status,
+		linked_goal_ids: []
 	};
 }
 

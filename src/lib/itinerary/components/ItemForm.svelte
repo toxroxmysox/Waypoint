@@ -630,4 +630,29 @@
 			</div>
 		</Card>
 	{/if}
+
+	{#if context.goals && context.goals.length > 0}
+		<Card>
+			<div class="p-4">
+				<fieldset>
+					<legend class="text-moss text-[11px] font-bold tracking-[0.2em] uppercase">Addresses goal(s)</legend>
+					<p class="text-ink-muted mt-1 text-xs">Link this plan to the wishes it helps make happen.</p>
+					<div class="mt-2 space-y-1">
+						{#each context.goals as goal}
+							<label class="flex items-center gap-2">
+								<input
+									type="checkbox"
+									name="goals"
+									value={goal.id}
+									checked={initialData.linked_goal_ids.includes(goal.id)}
+									class="border-line rounded"
+								/>
+								<span class="text-ink-soft text-sm">{goal.title}</span>
+							</label>
+						{/each}
+					</div>
+				</fieldset>
+			</div>
+		</Card>
+	{/if}
 {/if}

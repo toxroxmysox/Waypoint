@@ -100,6 +100,7 @@
 				days: data.days,
 				phases: data.phases,
 				members: data.members,
+				goals: data.goals,
 				preselectedDay: data.preselectedDay,
 				preselectedPhase: data.preselectedPhase,
 				tripStartDate: data.tripStartDate,
