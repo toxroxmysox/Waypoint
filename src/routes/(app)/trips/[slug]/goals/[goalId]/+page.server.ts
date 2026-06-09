@@ -43,9 +43,16 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		goal.manual_status
 	);
 
-	// Delete rule (the goal_votes clause lands in #77): creator OR owner/co_owner.
+	// Delete rule (matches trip_goals.pb.js, #77): (creator AND zero goal_votes) OR owner/co_owner.
 	const isOwner = membership.role === 'owner' || membership.role === 'co_owner';
-	const canDelete = isOwner || goal.created_by === membership.id;
+	let canDelete = isOwner;
+	if (!canDelete && goal.created_by === membership.id) {
+		// Creator may delete only while the goal has no votes.
+		const votes = await locals.pb
+			.collection('goal_votes')
+			.getList(1, 1, { filter: `goal = "${goal.id}"` });
+		canDelete = votes.totalItems === 0;
+	}
 
 	return {
 		goal,

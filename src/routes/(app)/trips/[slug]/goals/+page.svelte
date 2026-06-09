@@ -69,21 +69,26 @@
 		<Card>
 			{#each goals as goal, i (goal.id)}
 				{@const author = authorOf(goal)}
-				<a
-					href="/trips/{data.trip.slug}/goals/{goal.id}"
-					class="hover:bg-surface-2 flex items-center gap-3 px-[15px] py-[13px] {i < goals.length - 1
+				<div
+					class="relative hover:bg-surface-2 flex items-center gap-3 px-[15px] py-[13px] {i < goals.length - 1
 						? 'border-line border-b'
 						: ''}"
 				>
 					<Avatar initial={memberInitial(author)} alt={memberDisplayName(author)} size={28} />
 					<div class="min-w-0 flex-1">
-						<div class="text-ink text-[14.5px] font-semibold">{goal.title}</div>
+						<div class="text-ink text-[14.5px] font-semibold">
+							<!-- Stretched link: the ::after covers the whole row for navigation, while the
+							     sentiment-stacks button below sits above it (relative z-10) and stays tappable. -->
+							<a href="/trips/{data.trip.slug}/goals/{goal.id}" class="after:absolute after:inset-0"
+								>{goal.title}</a
+							>
+						</div>
 						{#if goal.description}
 							<div class="text-ink-soft mt-0.5 truncate text-[12px]">{goal.description}</div>
 						{/if}
 						<div class="text-ink-muted mt-0.5 text-[11px]">{memberDisplayName(author)}</div>
 						{#if votesByGoal[goal.id]?.length}
-							<div class="mt-1.5">
+							<div class="relative z-10 mt-1.5 w-fit">
 								<GoalSentimentStacks
 									votes={votesByGoal[goal.id]}
 									members={data.members}
@@ -92,7 +97,7 @@
 							</div>
 						{/if}
 					</div>
-				</a>
+				</div>
 			{/each}
 		</Card>
 	{/if}
