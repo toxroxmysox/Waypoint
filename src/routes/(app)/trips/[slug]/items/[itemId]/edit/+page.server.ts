@@ -1,8 +1,9 @@
 import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Item, TripMember } from '$lib/types';
+import type { Item, TripGoal, TripMember } from '$lib/types';
 import { datetimeToTime } from '$lib/shell/format';
 import { combineDateTime } from '$lib/shell/trip-time';
+import { syncGoalLinks } from '$lib/itinerary/goal-links';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, phases, days } = await parent();
@@ -23,14 +24,25 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		expand: 'user'
 	});
 
+	// #78 — goals for the "Addresses goal(s)" multi-select, plus which of them
+	// currently link this item (the link is stored goal-side on trip_goals.items).
+	const goals = await locals.pb.collection('trip_goals').getFullList<TripGoal>({
+		filter: `trip = "${trip.id}"`,
+		sort: 'sort_order',
+		fields: 'id,title,items'
+	});
+	const linkedGoalIds = goals.filter((g) => (g.items ?? []).includes(item.id)).map((g) => g.id);
+
 	return {
 		item: {
 			...item,
 			start_time: datetimeToTime(item.start_time ?? ''),
 			end_time: datetimeToTime(item.end_time ?? ''),
-			end_date: String(item.end_date ?? '').split(/[T ]/)[0]
+			end_date: String(item.end_date ?? '').split(/[T ]/)[0],
+			linked_goal_ids: linkedGoalIds
 		},
 		members,
+		goals: goals.map((g) => ({ id: g.id, title: g.title })),
 		phases,
 		days,
 		tripStartDate: String(trip.start_date || '').split(/[T ]/)[0],
@@ -81,6 +93,8 @@ export const actions: Actions = {
 			.filter((c) => c.label || c.value);
 
 		const assignedTo = data.getAll('assigned_to').map((v) => v.toString());
+		// #78 — goals this item addresses (reconciled goal-side after the update).
+		const goalIds = data.getAll('goals').map((v) => v.toString());
 
 		if (!title) return fail(400, { error: 'Title is required.' });
 
@@ -153,6 +167,9 @@ export const actions: Actions = {
 				assigned_to: assignedTo,
 				status: resolvedStatus
 			});
+
+			// Reconcile goal links (add to newly-selected goals, remove from de-selected).
+			await syncGoalLinks(locals.pb, trip.id, params.itemId, goalIds);
 
 			redirect(303, `/trips/${params.slug}/items/${params.itemId}`);
 		} catch (err: unknown) {

@@ -69,8 +69,9 @@
 		<Card>
 			{#each goals as goal, i (goal.id)}
 				{@const author = authorOf(goal)}
-				<div
-					class="flex items-center gap-3 px-[15px] py-[13px] {i < goals.length - 1
+				<a
+					href="/trips/{data.trip.slug}/goals/{goal.id}"
+					class="hover:bg-surface-2 flex items-center gap-3 px-[15px] py-[13px] {i < goals.length - 1
 						? 'border-line border-b'
 						: ''}"
 				>
@@ -91,7 +92,7 @@
 							</div>
 						{/if}
 					</div>
-				</div>
+				</a>
 			{/each}
 		</Card>
 	{/if}

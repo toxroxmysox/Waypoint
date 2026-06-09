@@ -2,6 +2,13 @@ import type { ItemType, ConfirmationCode, Day, Phase, TripMember } from '$lib/ty
 
 export type ItemFormMode = 'create' | 'edit' | 'view';
 
+// #78 — a goal this item can be linked to (the "Addresses goal(s)" multi-select).
+// The link is stored goal-side; the form just collects the selected goal ids.
+export interface GoalOption {
+	id: string;
+	title: string;
+}
+
 export interface ItemFormData {
 	type: ItemType;
 	subtype: string;
@@ -25,12 +32,14 @@ export interface ItemFormData {
 	confirmation_codes: ConfirmationCode[];
 	assigned_to: string[];
 	status: string;
+	linked_goal_ids: string[];
 }
 
 export interface ItemFormContext {
 	days: Day[];
 	phases: Phase[];
 	members: TripMember[];
+	goals?: GoalOption[];
 	preselectedDay?: string;
 	preselectedPhase?: string;
 	tripStartDate: string;

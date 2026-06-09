@@ -50,7 +50,8 @@
 		cost_actual_usd: data.item.cost_actual_usd ?? 0,
 		confirmation_codes: data.item.confirmation_codes ?? [],
 		assigned_to: data.item.assigned_to ?? [],
-		status: data.item.status ?? 'planned'
+		status: data.item.status ?? 'planned',
+		linked_goal_ids: data.item.linked_goal_ids ?? []
 	}));
 </script>
 
@@ -90,6 +91,7 @@
 				days: data.days,
 				phases: data.phases,
 				members: data.members,
+				goals: data.goals,
 				tripStartDate: data.tripStartDate,
 				tripEndDate: data.tripEndDate
 			}}

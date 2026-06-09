@@ -1,9 +1,10 @@
 import { fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Day, TripMember } from '$lib/types';
+import type { Day, TripGoal, TripMember } from '$lib/types';
 import { datetimeToTime } from '$lib/shell/format';
 import { combineDateTime } from '$lib/shell/trip-time';
 import { nextSortOrder } from '$lib/itinerary/sort-order';
+import { syncGoalLinks } from '$lib/itinerary/goal-links';
 
 const PB_BASE = process.env.PUBLIC_PB_URL || 'http://127.0.0.1:8090';
 
@@ -28,6 +29,14 @@ export const load: PageServerLoad = async ({ url, locals, parent }) => {
 	const members = await locals.pb.collection('trip_members').getFullList<TripMember>({
 		filter: `trip = "${trip.id}"`,
 		expand: 'user'
+	});
+
+	// #78 — goals for the "Addresses goal(s)" multi-select. The link is written
+	// goal-side on create; viewers never reach this form.
+	const goals = await locals.pb.collection('trip_goals').getFullList<TripGoal>({
+		filter: `trip = "${trip.id}"`,
+		sort: 'sort_order',
+		fields: 'id,title'
 	});
 
 	// Pre-fill from suggestion if editing for approval.
@@ -66,6 +75,7 @@ export const load: PageServerLoad = async ({ url, locals, parent }) => {
 		phases,
 		days,
 		members,
+		goals,
 		preselectedDay: dayId || '',
 		preselectedPhase,
 		tripStartDate: String(trip.start_date || '').split(/[T ]/)[0],
@@ -127,6 +137,9 @@ export const actions: Actions = {
 
 		// Parse assigned_to
 		const assignedTo = data.getAll('assigned_to').map((v) => v.toString());
+
+		// #78 — goals this item addresses (written goal-side, after the item exists).
+		const goalIds = data.getAll('goals').map((v) => v.toString());
 
 		if (!title) return fail(400, { error: 'Title is required.' });
 
@@ -240,12 +253,17 @@ export const actions: Actions = {
 			});
 			const nextOrder = nextSortOrder(existingItems.map((i) => Number(i.sort_order)));
 
-			await locals.pb.collection('items').create({
+			const created = await locals.pb.collection('items').create<{ id: string }>({
 				...payload,
 				sort_order: nextOrder,
 				created_by: membership.id,
 				status: day ? 'planned' : 'unplanned'
 			});
+
+			// Link the new item to the goals it addresses (goal-side write).
+			if (goalIds.length > 0) {
+				await syncGoalLinks(locals.pb, trip.id, created.id, goalIds);
+			}
 
 			// Redirect back to day view if came from a day, otherwise trip overview
 			if (day) {
