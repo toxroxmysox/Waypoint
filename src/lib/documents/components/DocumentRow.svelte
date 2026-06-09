@@ -3,6 +3,7 @@
 	import Avatar from '$lib/ui/Avatar.svelte';
 	import type { DocumentView } from '$lib/documents/types';
 	import { documentLabel, isRenderableImage, relativeTime } from '$lib/documents/files';
+	import { isCached } from '$lib/documents/offline-cache';
 
 	let {
 		doc,
@@ -27,6 +28,19 @@
 	let menuOpen = $state(false);
 	let confirming = $state(false);
 	let deleting = $state(false);
+
+	// Truthful offline tick: this file's bytes are actually in Cache Storage
+	// (caches.match) — not an assumption. Absent = not cached yet (PRD S5/D5).
+	let cached = $state(false);
+	$effect(() => {
+		let alive = true;
+		isCached(doc.file_href).then((hit) => {
+			if (alive) cached = hit;
+		});
+		return () => {
+			alive = false;
+		};
+	});
 
 	function view() {
 		// Renderable images open in the in-app lightbox; PDFs/HEIC open natively.
@@ -79,6 +93,15 @@
 			{#if showItemName && doc.item_title}
 				<span aria-hidden="true">·</span>
 				<span class="truncate italic">{doc.item_title}</span>
+			{/if}
+			{#if cached}
+				<span class="text-moss/85 inline-flex shrink-0 items-center" title="Saved offline" aria-label="Saved offline">
+					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+						<polyline points="7 10 12 15 17 10" />
+						<line x1="12" y1="15" x2="12" y2="3" />
+					</svg>
+				</span>
 			{/if}
 		</div>
 	</div>

@@ -3,6 +3,14 @@
 // (precache request). Browser-only — guarded for SSR.
 
 /**
+ * Matches a document file endpoint path: `/trips/<slug>/documents/<id>/file`.
+ * Shared by the service worker (to cache-first these bytes) and tested here.
+ */
+export function isDocumentFilePath(pathname: string): boolean {
+	return /^\/trips\/[^/]+\/documents\/[^/]+\/file$/.test(pathname);
+}
+
+/**
  * True when this file's bytes are already in any cache (`caches.match`). This is
  * the single source of truth for the offline tick + "Saved offline" chip — never
  * an assumption. Absent = not cached yet (PRD: no "syncing" state).

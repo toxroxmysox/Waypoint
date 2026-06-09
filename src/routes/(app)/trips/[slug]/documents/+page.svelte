@@ -9,6 +9,7 @@
 	import DocumentAddSheet from '$lib/documents/components/DocumentAddSheet.svelte';
 	import { groupDocuments } from '$lib/documents/grouping';
 	import { isRenderableImage } from '$lib/documents/files';
+	import { precacheDocuments } from '$lib/documents/offline-cache';
 	import { isTripActive } from '$lib/trip-mode/activation';
 	import type { DocumentView } from '$lib/documents/types';
 
@@ -36,6 +37,18 @@
 		lightboxGallery = renderable;
 		lightboxIndex = i;
 	}
+
+	// Active trip → precache every document's bytes while the user (presumably)
+	// still has signal (PRD: automatic precache, no manual pin). Each href is
+	// requested once; new uploads are picked up as the list grows.
+	const requested = new Set<string>();
+	$effect(() => {
+		if (!onTrip) return;
+		const fresh = data.documents.map((d) => d.file_href).filter((u) => !requested.has(u));
+		if (!fresh.length) return;
+		fresh.forEach((u) => requested.add(u));
+		precacheDocuments(fresh);
+	});
 
 	// The Trip Mode central Add navigates here with ?action=add — open the sheet
 	// and strip the param so a refresh doesn't reopen it.
