@@ -23,10 +23,13 @@
 		showKeys = false,
 		title = 'Swipe',
 		subtitle = '',
+		kindOf,
 		onvote,
 		onrewind,
+		onrewindPrompt,
 		onclose,
 		face,
+		promptControls,
 		detail,
 		complete
 	}: {
@@ -40,10 +43,19 @@
 		showKeys?: boolean;
 		title?: string;
 		subtitle?: string;
+		/**
+		 * Per-card kind. Defaults all cards to 'vote' (the harvest deck). The capture
+		 * wizard interleaves 'prompt' cards: no drag/vote, advance via promptControls.
+		 */
+		kindOf?: (card: C) => 'vote' | 'prompt';
 		onvote?: (card: C, value: VoteValue) => void;
 		onrewind?: (card: C) => void;
+		/** Rewinding back onto a prompt card — lets the consumer undo its wishes. */
+		onrewindPrompt?: (card: C) => void;
 		onclose?: () => void;
 		face: Snippet<[C]>;
+		/** Controls for a prompt card (replaces the compass rose); `advance` moves on. */
+		promptControls?: Snippet<[C, { advance: () => void }]>;
 		detail?: Snippet<[C, { vote: (v: VoteValue) => void }]>;
 		complete?: Snippet<
 			[{ spread: Record<VoteValue, number>; rated: number; total: number; reset: () => void }]
@@ -61,7 +73,8 @@
 		fromRot: number;
 	} | null>(null);
 	let votes = $state<Record<string, VoteValue>>({});
-	let history = $state<{ id: string; vote: VoteValue }[]>([]);
+	// `vote: null` marks a prompt-card advance (no vote cast) so rewind stays uniform.
+	let history = $state<{ id: string; vote: VoteValue | null }[]>([]);
 	// svelte-ignore state_referenced_locally
 	let peek = $state(initialPeek);
 	let live = $state('');
@@ -79,6 +92,7 @@
 	const total = $derived(cards.length);
 	const card = $derived<C | null>(cards[idx] ?? null);
 	const done = $derived(idx >= total);
+	const isPrompt = $derived(!!card && kindOf?.(card) === 'prompt');
 	const liveIntent = $derived(drag.active ? voteFromIntent(drag.dx, drag.dy) : null);
 
 	const spread = $derived.by(() => {
@@ -106,6 +120,7 @@
 		const i = liveIdxRef.current; // live index from ref, not reactive idx
 		const c = cards[i];
 		if (!c) return;
+		if (kindOf?.(c) === 'prompt') return; // prompt cards never vote (defensive)
 		animatingRef.current = true;
 		// Capture where the card was at release so the fly-off continues from there
 		// (not a snap back to center). For button/keyboard votes drag is 0 → center.
@@ -127,18 +142,37 @@
 		}, 400);
 	}
 
+	// Advance a prompt card on "next"/"skip" — no vote cast, but recorded in history
+	// so a later rewind lands back on it (and the consumer can undo its wishes).
+	function advancePrompt() {
+		if (animatingRef.current) return;
+		const i = liveIdxRef.current;
+		const c = cards[i];
+		if (!c) return;
+		history = [...history, { id: c.id, vote: null }];
+		live = `${Math.max(0, total - i - 1)} left.`;
+		drag = { dx: 0, dy: 0, active: false };
+		liveIdxRef.current = i + 1;
+		idx = i + 1;
+	}
+
 	function undo() {
 		if (animatingRef.current || history.length === 0) return;
 		const last = history[history.length - 1];
 		history = history.slice(0, -1);
-		const next = { ...votes };
-		delete next[last.id];
-		votes = next;
 		const i = Math.max(0, liveIdxRef.current - 1);
 		liveIdxRef.current = i;
 		idx = i;
 		live = 'Rewound.';
-		onrewind?.(cards[i]);
+		if (last.vote === null) {
+			// Rewound onto a prompt card — let the consumer delete its created wishes.
+			onrewindPrompt?.(cards[i]);
+		} else {
+			const next = { ...votes };
+			delete next[last.id];
+			votes = next;
+			onrewind?.(cards[i]);
+		}
 	}
 
 	function reset() {
@@ -153,6 +187,8 @@
 	// ── keyboard (always on) ──────────────────────────────────────────────
 	function onKey(e: KeyboardEvent) {
 		if (done || !card) return;
+		// Prompt cards own their inputs — never hijack arrows/space/backspace as votes.
+		if (isPrompt) return;
 		const map: Record<string, VoteValue> = {
 			ArrowUp: 'love',
 			ArrowRight: 'like',
@@ -175,7 +211,7 @@
 	// ── drag (vote cards only) ────────────────────────────────────────────
 	let start: { x: number; y: number } | null = null;
 	function onDown(e: PointerEvent) {
-		if (buttonsOnly || !card || animatingRef.current) return;
+		if (buttonsOnly || isPrompt || !card || animatingRef.current) return;
 		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
 		start = { x: e.clientX, y: e.clientY };
 		drag = { dx: 0, dy: 0, active: true };
@@ -313,7 +349,7 @@
 						onpointerup={onUp}
 						onpointercancel={onUp}
 						class="bg-surface border-line relative touch-none overflow-hidden rounded-[20px] border shadow-modal select-none"
-						class:cursor-grab={!buttonsOnly}
+						class:cursor-grab={!buttonsOnly && !isPrompt}
 						style={cardStyle}
 						role="group"
 						aria-roledescription="vote card"
@@ -382,7 +418,8 @@
 
 						<div class="relative z-[4] p-5">
 							{@render face(card)}
-							<!-- footer: peek + details -->
+							<!-- footer: peek + details (vote cards only — prompts own their UI) -->
+							{#if !isPrompt}
 							<div
 								class="border-line mt-4 flex min-h-[30px] items-center gap-2.5 border-t border-dashed pt-3.5"
 							>
@@ -411,6 +448,7 @@
 									</button>
 								{/if}
 							</div>
+						{/if}
 						</div>
 					</div>
 				</div>
@@ -433,13 +471,19 @@
 	<!-- controls -->
 	{#if !done && card}
 		<div class="flex-none px-4 pt-3 pb-4">
-			<CompassRose onvote={commit} />
-			{#if showKeys}
-				<div class="text-ink-muted mt-3 flex flex-wrap justify-center gap-3.5 text-[11.5px]">
-					<span>↑ Love</span><span>→ Like</span><span>← Pass</span><span>F Flexible</span><span
-						>U Rewind</span
-					>
-				</div>
+			{#if isPrompt}
+				{#if promptControls}
+					{@render promptControls(card, { advance: advancePrompt })}
+				{/if}
+			{:else}
+				<CompassRose onvote={commit} />
+				{#if showKeys}
+					<div class="text-ink-muted mt-3 flex flex-wrap justify-center gap-3.5 text-[11.5px]">
+						<span>↑ Love</span><span>→ Like</span><span>← Pass</span><span>F Flexible</span><span
+							>U Rewind</span
+						>
+					</div>
+				{/if}
 			{/if}
 		</div>
 	{/if}

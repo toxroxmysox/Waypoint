@@ -1,61 +1,89 @@
-# HANDOFF — Avatars (#59)
+# HANDOFF — Issue #79: Trip Goals capture wizard (prompt + reaction cards on SwipeDeck)
 
-Planning/grill session, 2026-06-09. Output = decisions + docs + issues. **No build.**
+## What shipped
 
-## The reframe
+The goal-capture **wizard** at `/trips/[slug]/goals/capture`, built on the shipped
+`SwipeDeck` engine. One deck interleaves two card kinds:
 
-#59 is *not* "add avatars." The storage already exists: `users.avatar` (`FileField`, 5 MB, jpeg/png/webp)
-has been on the schema since migration **0001**, and `Avatar.svelte` already supports an `img` prop with
-an initials fallback. It was never wired up because **`users` is self-only readable** (0014) — a
-co-traveler literally can't read another member's avatar through the API. The whole issue is breaking
-that wall.
+- **Prompt card** — a location-injected question; the member types **0..n wishes**, each
+  persisted **per-add** as a `trip_goal` authored by them. Advances on a single adaptive
+  button (the one asymmetry vs. auto-advancing vote cards). Skip allowed.
+- **Reaction card** — a goal the member didn't create and hasn't voted on; casts a
+  `goal_vote` via the same swipe/compass interaction as the harvest deck; auto-advances.
 
-## Decisions locked
+Cards **alternate 1:1** (reaction/prompt), degrading to all-prompts (new trip) or
+all-reactions (prompts spent), draining to a "you're all caught up" completion with
+**wishes-added · goals-rated** tallies. No migration — reuses `trip_goals` + `goal_votes`.
 
-| # | Decision | Rationale |
-|---|---|---|
-| D1 | **Storage:** PB file on `users.avatar` (existing). External/Gravatar rejected. | Local-first; the field already exists. |
-| D2 | **Avatar is user-level only — no per-trip override.** No avatar column on `trip_members`. | An avatar is identity; `display_name` stays the per-trip thing. Read path leaves an override door open. |
-| D3 | **Placeholders render initials only.** On Claim, `member.user` is set → claimer's avatar appears automatically. | No upload-on-behalf, no consent question, no `trip_members` file field. |
-| D4 | **Read path: loosen `users.viewRule` self-only → co-traveler** ("shares a trip"); `list` stays self-only; email stays hidden. Co-travelers `expand:user`, read name+avatar. **No proxy, no superuser, no denormalization.** | Co-membership is the trust boundary. PB hides password/tokenKey regardless; email gated separately. |
-| D5 | **Upload surface: new global `/account` ("Profile")** route, entry from `/trips` home. Edits avatar + `user.name`. | OTP-only auth, no account page existed; user-level identity belongs outside any trip. |
-| D6 | **Image pipeline:** recenter+zoom cropper → canvas center-crop → **512² webp** → upload. Server caps backstop. | Framing control + ~30 KB files; hand-rolled, no heavy dep. |
-| D7 | **Fallback:** existing initials chip everywhere absent. | `Avatar.svelte` already does it. |
-| D8 | **Email NOT newly exposed.** `emailVisibility` stays off — only name + avatar cross-readable. | Most conservative version that still ships the avatar. |
+## Files
 
-## Superseded mid-grill
+**Pure engine (Vitest-tested):**
+- `src/lib/collaboration/swipe-deck.ts` — added `buildCaptureDeck(reactions, promptIds)`:
+  pure 1:1 interleave, reactions ordered by Resolution 8 (vote-qty desc, oldest-first via
+  the now-shared `byVoteQtyThenOldest` comparator). `buildDeck` behavior unchanged.
+- `src/lib/collaboration/swipe-deck.test.ts` — +9 tests (alternation, both degrade modes,
+  stream-drain, ordering, no-mutation).
+- `src/lib/itinerary/goal-prompts.ts` — curated 8-prompt core set + `locationPhrase` /
+  `buildGoalPrompts` (location injection from `location_summary`/`countries`, degrades to
+  generic when blank).
+- `src/lib/itinerary/goal-prompts.test.ts` — +8 tests (injection, degrade, country fold).
 
-Earlier picks of a **file proxy** / **PB-hook superuser endpoint** were discarded once the read-path
-reframe (D4) landed: opening the `users` row to co-travelers makes the proxy unnecessary. The hook
-endpoint survives only as the **fallback** if the nested rule won't evaluate (see risk below).
+**Engine component (backward-compatible):**
+- `src/lib/collaboration/components/swipe/SwipeDeck.svelte` — added prompt-card support:
+  `kindOf` prop (defaults all cards to `'vote'` → harvest unchanged), `promptControls`
+  snippet (replaces the compass rose for prompt cards), `onrewindPrompt` callback, and
+  `history` now records prompt advances (`vote: null`) so **rewind stays uniform** across
+  mixed cards. Drag/keyboard vote-intercept disabled on prompt cards; footer (peek/details)
+  hidden. **The harvest deck's vote path is untouched** (the default branch).
 
-## Open technical risk (carried into #103)
+**Route + UI:**
+- `src/routes/(app)/trips/[slug]/goals/capture/+page.server.ts` — load (reaction
+  eligibility = not-own + not-voted; vote counts; shuffled location prompts; interleave) +
+  actions `addWish` / `deleteWish` (comma-list, for rewind) / `vote` / `unvote` (goal_votes,
+  mirroring the harvest item-vote actions).
+- `src/routes/(app)/trips/[slug]/goals/capture/+page.svelte` — the wizard: prompt-card face
+  (input + per-add chips + adaptive "Add N & continue / Continue / Skip" label), reaction
+  face (goal title + author), completion tallies, "Go again" (remounts the deck via a key +
+  `invalidateAll`). Background persistence via hidden progressive-enhancement forms.
+- `src/routes/(app)/trips/[slug]/goals/+page.svelte` — added the "Add & review wishes"
+  wizard entry at the top of the Goals tab.
 
-The view rule is a **two-level nested back-relation**
-(`trip_members_via_user.trip.trip_members_via_trip.user ?= @request.auth.id`) — deeper than anything in
-the codebase today (all current rules use one level). PB 0.27 *should* handle it; **unproven.** #103
-must prove it in `test-rules.mjs`. Fallback: `pb_hooks` superuser avatar endpoint. The *decision* holds
-regardless of mechanism.
+## Verification
 
-## Docs written (in this PR)
+- `pnpm check` — **0 errors** (the 6 `PUBLIC_PB_URL` errors on first run were a missing
+  worktree `.env.local`, since copied; gitignored).
+- `pnpm test:unit --run` — **280 passed / 24 files** (incl. 17 new). Harvest deck tests green.
+- **375px preview** (authed e2e trip, location "Barcelona, Spain"): prompt card renders;
+  location injection works ("A place in **Barcelona, Spain**…"); typing a wish + Enter
+  creates a moss chip and **persists a `trip_goal`** server-side (verified via PB); the
+  primary label is count-reflecting ("Add 1 & continue" → "Continue"). Console clean.
 
-- `CONTEXT.md` — new **[[Avatar]]** glossary entry (user-level; co-traveler trust boundary; initials fallback).
-- `docs/AVATARS_PRD.md` — full PRD (problem, decided rules, data model = no new collection/field, read path, `/account`, privacy, acceptance).
-- `docs/adr/0006-users-readable-by-co-travelers.md` — ADR for reversing the documented `users` self-only stance.
+## ⚠️ Design checkpoint (flagged per the brief)
 
-## Issues filed (all `enhancement` + `afk` + `planned`, parent #59)
+**The prompt-card primary action sits ~28px below the mobile fold** (controls at y≈798–840 in
+an 812px viewport). Cause: the deck's `min-h-[100dvh]` lives **inside `AppShell`**, which adds
+the `ModePill` (active trips) above and the `BottomNav` below — so the focused minigame fights
+the app chrome. **This is shared with the harvest Swipe-Quiz deck** (identical structure), so
+it's a pre-existing condition, not a regression — but the wizard makes it visible. Decision
+worth a design pass: should both minigames become a **true full-screen takeover** (suppress
+`BottomNav`/`ModePill` via a layout reset) rather than rendering inside the tab chrome? That's
+a cross-cutting layout call affecting harvest too, so I did **not** unilaterally change it here.
 
-| # | Slice | Blocked by |
-|---|---|---|
-| **#103** | Co-traveler read rule on `users` (name+avatar) + harness + RULES.md | — |
-| **#104** | `/account` profile page — self upload, crop, name edit | — |
-| **#105** | Display wire-up tracer (helper + members list) | #103 |
-| **#106** | Display fan-out (vote stacks, assignees, goals, comments) | #105 |
+Secondary, lower-stakes: the "Add N & continue" multi-flush currently counts
+comma/newline-separated input segments (so "paella, wine" → "Add 2"); the richer
+type-several-then-continue feel from the PRD ("Add 2 & continue") is approximated, not a
+dedicated multi-row composer. Confirm the intended prompt-card input affordance in the same pass.
 
-#103 and #104 can start immediately and in parallel. Graph: 1→3→4; 2 independent.
+## Not done here (by scope)
 
-## Follow-ups (not filed — deliberate)
+- **Live reaction-card seeding** needed a foreign-authored goal, which requires a second
+  trip member (superuser-gated; the mint was correctly denied). The reaction path is covered
+  by Vitest (interleave) + shares the proven harvest `SwipeDeck` engine and vote-action
+  pattern. Worth a quick manual pass on a real multi-member trip before merge.
+- Gesture E2E for the deck remains deferred (PRD "Testing Decisions").
 
-- Per-trip avatar override (deferred; D2).
-- Exposing co-traveler email (decoupled from avatar; D8).
-- `SPEC.md` amendment on milestone promotion (per CLAUDE.md scope protocol) — a planning step, not an AFK issue.
+## Test-data note
+
+Verification mutated the shared local dev PB: set `location_summary`/`countries` on e2e trip
+`u3u6t7236x49n78` and created one `trip_goal` ("See the Sagrada Família at sunset"). Harmless
+e2e scratch data; delete if it bothers you.

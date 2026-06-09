@@ -61,12 +61,18 @@ function isEligible(item: DeckCandidate, votedItemIds: Set<string>): boolean {
 	return ELIGIBLE_STATUSES.has(item.status) && !votedItemIds.has(item.id);
 }
 
+/**
+ * Resolution-8 comparator: vote-quantity desc, ties + zero-vote by creation
+ * oldest-first. Shared by the harvest deck and the capture deck's reaction lane.
+ */
+function byVoteQtyThenOldest(a: { voteCount: number; created: string }, b: { voteCount: number; created: string }): number {
+	if (b.voteCount !== a.voteCount) return b.voteCount - a.voteCount;
+	return a.created < b.created ? -1 : a.created > b.created ? 1 : 0;
+}
+
 /** Order: vote-quantity desc, then creation oldest-first. Pure (no mutation). */
 function orderCards(items: DeckCandidate[]): DeckCandidate[] {
-	return [...items].sort((a, b) => {
-		if (b.voteCount !== a.voteCount) return b.voteCount - a.voteCount;
-		return a.created < b.created ? -1 : a.created > b.created ? 1 : 0;
-	});
+	return [...items].sort(byVoteQtyThenOldest);
 }
 
 export function buildDeck(
@@ -94,4 +100,56 @@ export function buildDeck(
 	}
 
 	return { queue, nextPhaseId };
+}
+
+// ── Capture deck (goal wizard) ─────────────────────────────────────────────
+//
+// The capture wizard runs on the same SwipeDeck substrate but interleaves two
+// card kinds: REACTION cards (vote on others' goals → goal_votes) and PROMPT
+// cards (type 0..n wishes → trip_goals). Resolution 8: cards alternate 1:1
+// reaction/prompt, degrading to all-prompts (a new trip's first member, no
+// reactions) or all-reactions (prompts spent). Deterministic given inputs →
+// unit-testable, exactly like buildDeck.
+
+/**
+ * A goal eligible to react to: one the member hasn't voted on and didn't create
+ * (eligibility filtered by the loader). `voteCount` is all-members; `created` is
+ * PB's fixed-width sortable string. Ordered here by Resolution 8.
+ */
+export interface ReactionCandidate {
+	id: string;
+	voteCount: number;
+	created: string;
+}
+
+/** A built card: a reaction (goal id) or a prompt (prompt id). */
+export type CaptureCard = { kind: 'reaction'; id: string } | { kind: 'prompt'; id: string };
+
+/**
+ * Interleave reaction + prompt cards 1:1, starting with a reaction. When one
+ * stream empties the other drains continuously (→ all-prompts / all-reactions).
+ * Reactions are ordered by Resolution 8; prompts keep the caller's order (the
+ * caller shuffles + does once-per-session dedup). Pure, no mutation.
+ */
+export function buildCaptureDeck(reactions: ReactionCandidate[], promptIds: string[]): CaptureCard[] {
+	const ordered = [...reactions].sort(byVoteQtyThenOldest);
+	const deck: CaptureCard[] = [];
+	let ri = 0;
+	let pi = 0;
+	let wantReaction = true; // alternation starts on a reaction
+	while (ri < ordered.length || pi < promptIds.length) {
+		if (wantReaction && ri < ordered.length) {
+			deck.push({ kind: 'reaction', id: ordered[ri++].id });
+		} else if (!wantReaction && pi < promptIds.length) {
+			deck.push({ kind: 'prompt', id: promptIds[pi++] });
+		} else if (ri < ordered.length) {
+			// prompt stream spent → drain reactions
+			deck.push({ kind: 'reaction', id: ordered[ri++].id });
+		} else {
+			// reaction stream spent → drain prompts
+			deck.push({ kind: 'prompt', id: promptIds[pi++] });
+		}
+		wantReaction = !wantReaction;
+	}
+	return deck;
 }
