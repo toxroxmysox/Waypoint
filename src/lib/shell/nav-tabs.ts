@@ -22,8 +22,8 @@ export function getNavConfig(slug: string, mode: TripViewMode): NavConfig {
 			tabs: [
 				{ id: 'now', label: 'Now', href: `/trips/${slug}/now`, icon: 'clock' },
 				{ id: 'today', label: 'Today', href: `/trips/${slug}/today`, icon: 'sun' },
-				{ id: 'add', label: 'Add', href: '', icon: 'plus', oversized: true, action: 'add-sheet' },
-				{ id: 'vault', label: 'Vault', href: `/trips/${slug}/vault`, icon: 'lock' }
+				{ id: 'add', label: 'Add', href: '', icon: 'plus', oversized: true, action: 'add-sheet' }
+				// Documents tab (#71) lands in the vacated Vault slot here.
 			]
 		};
 	}
@@ -42,7 +42,6 @@ export function getActiveTab(pathname: string, mode: TripViewMode): string {
 	if (mode === 'trip') {
 		if (pathname.includes('/now')) return 'now';
 		if (pathname.includes('/today')) return 'today';
-		if (pathname.includes('/vault')) return 'vault';
 		return 'now';
 	}
 	if (pathname.includes('/expenses') || pathname.includes('/budget')) return 'money';

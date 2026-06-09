@@ -8,7 +8,7 @@ function makeTrip(): Trip {
 		slug: 't', title: 'Trip', start_date: '2026-06-01', end_date: '2026-06-07',
 		timezone: 'UTC', location_summary: '', countries: [], cover_image: '', photo_album_url: '',
 		archive_enabled: true, archive_publish_after_days: 7, public_share_token: 'tok',
-		vault_password_hash: 'secret', auto_approve_suggestions: true, created_by: 'u', archived: true
+		auto_approve_suggestions: true, created_by: 'u', archived: true
 	} as Trip;
 }
 
@@ -48,9 +48,7 @@ describe('buildArchiveView (#53 — Public Archive excludes checklists)', () => 
 		expect(serialized).not.toContain('secret');
 	});
 
-	it('does not leak the vault hash or share token', () => {
-		const serialized = JSON.stringify(view);
-		expect(serialized).not.toContain('vault_password_hash');
+	it('does not leak the share token', () => {
 		expect(view.trip).not.toHaveProperty('public_share_token');
 	});
 });

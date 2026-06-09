@@ -121,62 +121,6 @@
 
 	<Card>
 		<div class="p-4 space-y-3">
-			<h2 class="text-ink text-sm font-semibold">Vault Password</h2>
-			<div class="border-clay/20 bg-clay/5 rounded-md p-3">
-				<p class="text-clay text-xs font-semibold">No recovery</p>
-				<p class="text-ink-muted mt-1 text-xs">
-					If you forget the vault password, encrypted entries cannot be recovered. There is no reset mechanism.
-				</p>
-			</div>
-
-			{#if form?.vaultError}
-				<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{form.vaultError}</div>
-			{/if}
-			{#if form?.vaultSuccess}
-				<div class="border-moss/30 bg-moss-tint text-moss rounded-md border p-3 text-sm">Vault password set.</div>
-			{/if}
-
-			<form
-				method="POST"
-				action="?/setVaultPassword"
-				use:enhance
-				class="space-y-3"
-			>
-				<div>
-					<label for="vault_password" class="text-ink-soft block text-sm font-medium">
-						{data.hasVaultPassword ? 'Change password' : 'Set password'}
-					</label>
-					<input
-						type="password"
-						id="vault_password"
-						name="vault_password"
-						required
-						minlength={4}
-						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
-						placeholder="Enter vault password"
-					/>
-				</div>
-				<div>
-					<label for="vault_password_confirm" class="text-ink-soft block text-sm font-medium">Confirm</label>
-					<input
-						type="password"
-						id="vault_password_confirm"
-						name="vault_password_confirm"
-						required
-						minlength={4}
-						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
-						placeholder="Confirm password"
-					/>
-				</div>
-				<Button type="submit" variant="ghost" size="sm">
-					{data.hasVaultPassword ? 'Update password' : 'Set password'}
-				</Button>
-			</form>
-		</div>
-	</Card>
-
-	<Card>
-		<div class="p-4 space-y-3">
 			<h2 class="text-ink text-sm font-semibold">Public Archive</h2>
 			<p class="text-ink-muted text-xs">
 				When enabled, a public read-only link is generated after the trip is archived.

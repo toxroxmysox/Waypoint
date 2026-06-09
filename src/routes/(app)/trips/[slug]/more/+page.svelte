@@ -85,22 +85,6 @@
 		</div>
 	</Card>
 
-	<Card href="/trips/{data.trip.slug}/vault">
-		<div class="flex items-center gap-3 p-4">
-			<svg class="text-ink-soft shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-				<rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-				<path d="M7 11V7a5 5 0 0 1 10 0v4" />
-			</svg>
-			<div class="min-w-0 flex-1">
-				<p class="text-ink text-sm font-semibold">Vault</p>
-				<p class="text-ink-muted text-[12px]">Encrypted trip documents</p>
-			</div>
-			<svg class="text-ink-muted shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-				<path d="m9 18 6-6-6-6" />
-			</svg>
-		</div>
-	</Card>
-
 	{#if isOwnerOrCoOwner}
 		<Card href="/trips/{data.trip.slug}/clone">
 			<div class="flex items-center gap-3 p-4">

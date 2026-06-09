@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
 const BASE = 'http://localhost:4173';
 
 // The first trip belonging to E2E_TEST_EMAIL is active (today ∈ trip dates), so it
-// loads in *trip mode* — the nav surfaces Now/Today/Add/Vault, NOT a "More" tab.
+// loads in *trip mode* — the nav surfaces Now/Today/Add/Documents, NOT a "More" tab.
 // Secondary pages live at known routes, so navigate by URL (mode- and viewport-
 // independent) rather than clicking nav chrome that only exists in one mode.
 async function openTripSlug(page: import('@playwright/test').Page): Promise<string> {
@@ -46,17 +46,6 @@ test.describe('M4 Execution', () => {
 		}
 	});
 
-	test('vault locked screen renders', async ({ page }) => {
-		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/vault`);
-		await page.waitForURL('**/vault');
-
-		// Should show either locked or no-password state.
-		const locked = page.getByText('Vault locked').filter({ visible: true });
-		const noPassword = page.getByText('Vault not set up').filter({ visible: true });
-		await expect(locked.or(noPassword).first()).toBeVisible();
-	});
-
 	test('trip mode today view renders', async ({ page }) => {
 		const slug = await openTripSlug(page);
 		await page.goto(`${BASE}/trips/${slug}/today`);
@@ -77,19 +66,6 @@ test.describe('M4 Execution', () => {
 		// Banner may or may not show depending on browser (Chrome shows, others may not).
 		// Just verify the page loads without errors (/trips is single-tree).
 		await expect(page.getByRole('heading', { name: 'Waypoint' })).toBeVisible({ timeout: 5000 });
-	});
-
-	test('mobile responsive — vault at 375px', async ({ page }) => {
-		await page.setViewportSize({ width: 375, height: 812 });
-		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/vault`);
-		await page.waitForURL('**/vault');
-
-		// Verify layout isn't broken at mobile width (mobile subtree is the visible one).
-		const main = page.locator('main:visible').first();
-		const box = await main.boundingBox();
-		expect(box).toBeTruthy();
-		expect(box!.width).toBeLessThanOrEqual(375);
 	});
 
 	test('mobile responsive — trip mode at 375px', async ({ page }) => {
