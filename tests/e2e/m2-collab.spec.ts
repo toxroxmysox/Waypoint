@@ -14,7 +14,10 @@ import { test, expect, type Browser } from '@playwright/test';
 //   - Mobile responsive at 375px: inbox, members, comments, bell
 
 const BASE = 'http://localhost:4173';
-const PB_BASE = 'http://127.0.0.1:8090';
+// Direct-PB calls (auth-bypass + rules-fixture) target the same instance the
+// app talks to. Configurable so the suite can run against an isolated PB
+// (e.g. a clean per-run instance in CI) without editing the spec.
+const PB_BASE = process.env.PUBLIC_PB_URL ?? 'http://127.0.0.1:8090';
 
 const EMAILS = {
 	owner: 'rules-owner@e2e.test',
@@ -32,6 +35,12 @@ async function devLogin(browser: Browser, email: string) {
 	return { ctx, page };
 }
 
+// Per-file fixture slug: m2-collab and m3-money both seed the rules-fixture, and
+// the fixture tears its trip down by slug. With a shared slug, one file's
+// teardown (running in a parallel worker) wipes the other's trip mid-run. An
+// isolated slug per file keeps each suite deterministic.
+const FIXTURE_SLUG = 'e2e-rules-test-m2';
+
 async function setupFixture(email: string): Promise<void> {
 	// Auth bypass to get token.
 	const bypassRes = await fetch(`${PB_BASE}/api/dev/auth-bypass`, {
@@ -41,19 +50,18 @@ async function setupFixture(email: string): Promise<void> {
 	});
 	const { token } = (await bypassRes.json()) as { token: string };
 
-	// Create fixture (slug is always 'e2e-rules-test').
+	// Create fixture under this file's isolated slug.
 	await fetch(`${PB_BASE}/api/dev/rules-fixture`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-		body: JSON.stringify({ emails: EMAILS })
+		body: JSON.stringify({ emails: EMAILS, slug: FIXTURE_SLUG })
 	});
 }
 
 test.describe('M2 Collaboration', () => {
 	test.skip(!process.env.E2E_TEST_EMAIL, 'Set E2E_TEST_EMAIL to run E2E tests');
 
-	// The rules-fixture always uses this slug (defined in dev-auth.pb.js).
-	const tripSlug = 'e2e-rules-test';
+	const tripSlug = FIXTURE_SLUG;
 
 	test.beforeAll(async () => {
 		await setupFixture(EMAILS.owner);
