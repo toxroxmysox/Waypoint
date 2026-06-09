@@ -1,0 +1,218 @@
+import { describe, it, expect } from 'vitest';
+import {
+	buildDeck,
+	voteFromIntent,
+	COMMIT_PX,
+	type DeckCandidate,
+	type DeckScope
+} from './swipe-deck';
+
+/**
+ * Minimal candidate factory. `created` uses PB's fixed-width sortable format so
+ * lexicographic compare == chronological.
+ */
+function cand(p: Partial<DeckCandidate> & { id: string }): DeckCandidate {
+	return {
+		phase: 'p1',
+		status: 'unplanned',
+		created: '2026-01-01 00:00:00.000Z',
+		voteCount: 0,
+		...p
+	};
+}
+
+const scope = (phaseId: string, phaseOrder: string[]): DeckScope => ({ phaseId, phaseOrder });
+
+describe('buildDeck — unvoted-only filter', () => {
+	it('drops items the member has already voted on', () => {
+		const items = [cand({ id: 'a' }), cand({ id: 'b' }), cand({ id: 'c' })];
+		const { queue } = buildDeck(items, [{ item: 'b' }], scope('p1', ['p1']));
+		expect(queue.map((i) => i.id)).toEqual(['a', 'c']);
+	});
+
+	it('returns every item when the member has voted on none', () => {
+		const items = [cand({ id: 'a' }), cand({ id: 'b' })];
+		const { queue } = buildDeck(items, [], scope('p1', ['p1']));
+		expect(queue.map((i) => i.id)).toEqual(['a', 'b']);
+	});
+});
+
+describe('buildDeck — status eligibility', () => {
+	it('includes planned and unplanned, excludes done and considered', () => {
+		const items = [
+			cand({ id: 'planned', status: 'planned' }),
+			cand({ id: 'unplanned', status: 'unplanned' }),
+			cand({ id: 'done', status: 'done' }),
+			cand({ id: 'considered', status: 'considered' })
+		];
+		const { queue } = buildDeck(items, [], scope('p1', ['p1']));
+		expect(queue.map((i) => i.id).sort()).toEqual(['planned', 'unplanned']);
+	});
+});
+
+describe('buildDeck — phase scope', () => {
+	it('only includes items in the scoped phase', () => {
+		const items = [
+			cand({ id: 'a', phase: 'p1' }),
+			cand({ id: 'b', phase: 'p2' }),
+			cand({ id: 'c', phase: 'p1' })
+		];
+		const { queue } = buildDeck(items, [], scope('p1', ['p1', 'p2']));
+		expect(queue.map((i) => i.id)).toEqual(['a', 'c']);
+	});
+});
+
+describe('buildDeck — order (vote-qty desc, then oldest-first)', () => {
+	it('orders by vote quantity descending', () => {
+		const items = [
+			cand({ id: 'low', voteCount: 1 }),
+			cand({ id: 'high', voteCount: 5 }),
+			cand({ id: 'mid', voteCount: 3 })
+		];
+		const { queue } = buildDeck(items, [], scope('p1', ['p1']));
+		expect(queue.map((i) => i.id)).toEqual(['high', 'mid', 'low']);
+	});
+
+	it('breaks vote-quantity ties by creation time, oldest first', () => {
+		const items = [
+			cand({ id: 'newer', voteCount: 2, created: '2026-03-01 00:00:00.000Z' }),
+			cand({ id: 'older', voteCount: 2, created: '2026-01-01 00:00:00.000Z' }),
+			cand({ id: 'middle', voteCount: 2, created: '2026-02-01 00:00:00.000Z' })
+		];
+		const { queue } = buildDeck(items, [], scope('p1', ['p1']));
+		expect(queue.map((i) => i.id)).toEqual(['older', 'middle', 'newer']);
+	});
+
+	it('orders zero-vote items by oldest-first', () => {
+		const items = [
+			cand({ id: 'b', voteCount: 0, created: '2026-02-01 00:00:00.000Z' }),
+			cand({ id: 'a', voteCount: 0, created: '2026-01-01 00:00:00.000Z' })
+		];
+		const { queue } = buildDeck(items, [], scope('p1', ['p1']));
+		expect(queue.map((i) => i.id)).toEqual(['a', 'b']);
+	});
+
+	it('does not mutate the input array', () => {
+		const items = [cand({ id: 'low', voteCount: 1 }), cand({ id: 'high', voteCount: 5 })];
+		const before = items.map((i) => i.id);
+		buildDeck(items, [], scope('p1', ['p1']));
+		expect(items.map((i) => i.id)).toEqual(before);
+	});
+});
+
+describe('buildDeck — drain to empty', () => {
+	it('returns an empty queue when every scoped item is voted', () => {
+		const items = [cand({ id: 'a' }), cand({ id: 'b' })];
+		const { queue } = buildDeck(items, [{ item: 'a' }, { item: 'b' }], scope('p1', ['p1']));
+		expect(queue).toEqual([]);
+	});
+
+	it('returns an empty queue when the phase has no eligible items', () => {
+		const items = [cand({ id: 'a', phase: 'p2' })];
+		const { queue } = buildDeck(items, [], scope('p1', ['p1', 'p2']));
+		expect(queue).toEqual([]);
+	});
+});
+
+describe('buildDeck — next-phase hand-off', () => {
+	it('hands off to the next phase in order that has unvoted cards', () => {
+		const items = [cand({ id: 'a', phase: 'p1' }), cand({ id: 'b', phase: 'p2' })];
+		const { nextPhaseId } = buildDeck(items, [], scope('p1', ['p1', 'p2', 'p3']));
+		expect(nextPhaseId).toBe('p2');
+	});
+
+	it('skips phases with no unvoted cards', () => {
+		const items = [
+			cand({ id: 'a', phase: 'p1' }),
+			cand({ id: 'b', phase: 'p2' }), // already voted → p2 has nothing
+			cand({ id: 'c', phase: 'p3' })
+		];
+		const { nextPhaseId } = buildDeck(items, [{ item: 'b' }], scope('p1', ['p1', 'p2', 'p3']));
+		expect(nextPhaseId).toBe('p3');
+	});
+
+	it('skips phases whose only items are ineligible by status', () => {
+		const items = [
+			cand({ id: 'a', phase: 'p1' }),
+			cand({ id: 'b', phase: 'p2', status: 'done' }),
+			cand({ id: 'c', phase: 'p3' })
+		];
+		const { nextPhaseId } = buildDeck(items, [], scope('p1', ['p1', 'p2', 'p3']));
+		expect(nextPhaseId).toBe('p3');
+	});
+
+	it('returns null when no later phase has unvoted cards', () => {
+		const items = [cand({ id: 'a', phase: 'p1' })];
+		const { nextPhaseId } = buildDeck(items, [], scope('p1', ['p1', 'p2']));
+		expect(nextPhaseId).toBeNull();
+	});
+
+	it('returns null when the scoped phase is last in order', () => {
+		const items = [cand({ id: 'a', phase: 'p2' })];
+		const { nextPhaseId } = buildDeck(items, [], scope('p2', ['p1', 'p2']));
+		expect(nextPhaseId).toBeNull();
+	});
+
+	it('never hands off to an earlier phase', () => {
+		const items = [cand({ id: 'a', phase: 'p1' }), cand({ id: 'b', phase: 'p2' })];
+		const { nextPhaseId } = buildDeck(items, [], scope('p2', ['p1', 'p2']));
+		expect(nextPhaseId).toBeNull();
+	});
+});
+
+describe('buildDeck — single card', () => {
+	it('builds a one-card queue', () => {
+		const items = [cand({ id: 'only' })];
+		const { queue, nextPhaseId } = buildDeck(items, [], scope('p1', ['p1']));
+		expect(queue.map((i) => i.id)).toEqual(['only']);
+		expect(nextPhaseId).toBeNull();
+	});
+});
+
+describe('voteFromIntent — gesture map', () => {
+	it('right is Like', () => {
+		expect(voteFromIntent(100, 0)).toBe('like');
+	});
+
+	it('left is Pass (dislike)', () => {
+		expect(voteFromIntent(-100, 0)).toBe('dislike');
+	});
+
+	it('up is Love when clearly vertical', () => {
+		expect(voteFromIntent(0, -100)).toBe('love');
+	});
+
+	it('down is dead — never a vote', () => {
+		expect(voteFromIntent(0, 100)).toBeNull();
+		expect(voteFromIntent(10, 100)).toBeNull();
+	});
+
+	it('up wins only when |dy| > |dx| * 0.8', () => {
+		// steep enough → love
+		expect(voteFromIntent(50, -100)).toBe('love');
+		// shallow up-right → horizontal wins (like)
+		expect(voteFromIntent(100, -50)).toBe('like');
+	});
+
+	it('a mostly-horizontal drag resolves to like/dislike, not love', () => {
+		expect(voteFromIntent(100, -70)).toBe('like');
+		expect(voteFromIntent(-100, -70)).toBe('dislike');
+	});
+
+	it('never returns flexible (button-only)', () => {
+		const samples = [
+			[100, 0],
+			[-100, 0],
+			[0, -100],
+			[0, 100],
+			[60, -60]
+		] as const;
+		for (const [dx, dy] of samples) {
+			expect(voteFromIntent(dx, dy)).not.toBe('flexible');
+		}
+	});
+
+	it('exposes the ~88px commit threshold', () => {
+		expect(COMMIT_PX).toBe(88);
+	});
+});

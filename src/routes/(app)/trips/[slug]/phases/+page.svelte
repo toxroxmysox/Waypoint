@@ -51,6 +51,20 @@
 		<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{error}</div>
 	{/if}
 
+	{#if data.unratedTotal > 0 && data.launchPhaseId}
+		<a
+			href="/trips/{data.trip.slug}/swipe/{data.launchPhaseId}"
+			class="bg-moss text-paper hover:bg-moss-soft flex items-center gap-3 rounded-lg px-4 py-3 shadow-card transition-colors"
+		>
+			<span aria-hidden="true" class="text-xl">♥</span>
+			<span class="min-w-0 flex-1">
+				<span class="block text-sm font-semibold">Swipe through {data.unratedTotal} unrated</span>
+				<span class="text-paper/80 block text-xs">Rate items fast, one phase at a time</span>
+			</span>
+			<span aria-hidden="true" class="text-lg">›</span>
+		</a>
+	{/if}
+
 	<div class="flex items-center justify-between">
 		<SectionH>
 			{data.phases.length} Phase{data.phases.length !== 1 ? 's' : ''}
