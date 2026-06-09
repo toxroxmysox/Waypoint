@@ -138,9 +138,11 @@ Domains mirror the bounded contexts in `CONTEXT.md` §"Bounded Contexts", plus t
 
 **Full design:** `docs/V4_DOCUMENTS_PRD.md`. Decision record: `docs/adr/0005-retire-vault-no-client-side-encryption.md`. Glossary: [[Document]], [[Trip Documents]] in `CONTEXT.md`.
 
-**Shipped:** Nothing.
+**Shipped (2026-06-08):** S0 retire Vault (#69), S1 attach/view/delete on item (#70), S2 Trip Documents aggregate + trip-scoped upload (#71). Vault fully removed (migration 0031). `documents` collection (0032, + autodate fix 0041).
 
-**Backlog (all v4 — design firm, awaiting plan→issues):**
+**Backlog (remaining v4 slices):** S3 clipboard paste (#73), S4 preview surfaces (#72), S5 offline precache (#74).
+
+**Original design notes (kept for the remaining slices):**
 
 ### Documents domain
 - **What:** Plain (unencrypted) artifacts (PDF/image), one `documents` collection. Parent scope {Item | Trip}, no Phase. One file per record, many per item. Membership-gated; no encryption, no sensitive flag (see ADR-0005). Added via file-picker upload **or clipboard paste** (screenshots). Types PDF+images, 10 MB cap, no count cap. Text codes stay on Item `confirmation_codes`.

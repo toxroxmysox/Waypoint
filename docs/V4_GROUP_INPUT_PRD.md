@@ -42,8 +42,17 @@ needed to slice into issues:
    **alternates 1:1** reaction-card / prompt-card, degrading to all-prompts (new trip) or all-reactions
    (prompts spent). Deterministic given inputs → `buildDeck` stays unit-testable.
 
-**Still open (non-blocking, polish):** deck skeleton-loading treatment (not drawn); tablet reflow of the
-centered modal; completion-screen extras beyond the personal spread.
+**Build resolutions (2026-06-08 — #76 SwipeDeck grill + build; closes the former "still open" items):**
+
+1. **Pass label** locked (was flagged open in the engine handoff) — matches shipped `VoteButtons` + migration 0029.
+2. **`buildDeck` vote-quantity** input comes from loader-decorated `voteCount` on each item (keeps the 3-arg signature pure/testable); `myVotes` only drives the unvoted filter.
+3. **Eligible statuses = `planned` + `unplanned` only** — `done`/`considered` are closeout-only and never appear in the deck.
+4. **No skeleton** — the deck mounts with the first card, or an "All caught up" empty state at zero unvoted items.
+5. **Completion = the three agreed elements only** (rose spread + continue-to-next-phase + jump-to-parking-lot); no streaks/stats.
+6. **Tablet+ = centered modal**, mobile = bottom sheet (`min-width: 900px` check); same compass.
+7. **Next-phase hand-off skips empty phases** — the next phase in order that still has unvoted eligible cards (null if none).
+
+Live HITL tweaks locked at the 375px checkpoint: fly-from-release-position; a commit-threshold cue (colored ring + ✓ chip past 88px); physics from the prototype (88px commit / ×0.8 up-bias / ×0.22 down rubber-band / `cubic-bezier(.16,1,.3,1)` / 400ms fly). Shipped: PR #96 (commit `0bdc4a1`). The capture-wizard deck (#79) inherits all of this; `trip_goals.created` was added (migration 0041) so the capture deck's oldest-first tiebreak works.
 
 ---
 
