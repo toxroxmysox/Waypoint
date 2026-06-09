@@ -44,5 +44,9 @@ export const load: PageServerLoad = async ({ locals }) => {
 		return end < today;
 	});
 
-	return { active, upcoming, past };
+	// Header identity → links to /account (the Profile surface, #104).
+	const u = locals.user!;
+	const avatarUrl = u.avatar ? locals.pb.files.getURL(u, u.avatar) : '';
+
+	return { active, upcoming, past, profileName: u.name, avatarUrl };
 };

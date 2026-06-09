@@ -3,6 +3,7 @@
 	import Card from '$lib/ui/Card.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
 	import Button from '$lib/ui/Button.svelte';
+	import Avatar from '$lib/ui/Avatar.svelte';
 	import FAB from '$lib/shell/components/FAB.svelte';
 
 	let { data } = $props();
@@ -23,14 +24,24 @@
 
 <NavBar title="Waypoint">
 	{#snippet right()}
-		<form method="POST" action="/logout">
-			<button
-				type="submit"
-				class="text-ink-muted hover:text-ink-soft text-[12px] font-medium"
+		<div class="flex items-center gap-3">
+			<form method="POST" action="/logout">
+				<button
+					type="submit"
+					class="text-ink-muted hover:text-ink-soft text-[12px] font-medium"
+				>
+					Sign out
+				</button>
+			</form>
+			<a
+				href="/account"
+				class="hover:opacity-80"
+				aria-label="Profile"
+				data-sveltekit-preload-data="hover"
 			>
-				Sign out
-			</button>
-		</form>
+				<Avatar img={data.avatarUrl} initial={(data.profileName || '?').slice(0, 1)} alt={data.profileName} size={32} />
+			</a>
+		</div>
 	{/snippet}
 </NavBar>
 

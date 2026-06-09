@@ -59,3 +59,53 @@ regardless of mechanism.
 - Per-trip avatar override (deferred; D2).
 - Exposing co-traveler email (decoupled from avatar; D8).
 - `SPEC.md` amendment on milestone promotion (per CLAUDE.md scope protocol) — a planning step, not an AFK issue.
+
+---
+
+# HANDOFF — #104 `/account` Profile page (build)
+
+Build session, 2026-06-09. Output = code + PR. **Done, verified, not merged.** Implements D5 + D6 above.
+
+## Scope delivered
+
+The global `/account` ("Profile") route — first user-level settings surface. Self-edits only, covered by the
+existing `users.updateRule = self-only`. **No migration** (`users.avatar` exists since 0001; server caps are
+the backstop behind the client pipeline). #104 is the **upload surface only** — the `users.viewRule` change
+and the collaboration display wire-up are #103/#105/#106.
+
+- **Avatar upload** → hand-rolled recenter (drag) + zoom over a circular-masked viewport → offscreen canvas
+  center-crop → **512² webp** → `PATCH users` (self) via form action. No cropper dependency.
+- **Avatar remove** (clears `users.avatar`).
+- **Display name** edit (`users.name`).
+- **Entry point**: avatar link in the `/trips` home header.
+
+## Files
+
+| File | What |
+|---|---|
+| `src/lib/account/avatar-crop.ts` | Pure crop geometry (`computeCropRect`/`coverScale`/`maxOffset`) + `cropToWebp` (canvas → 512² webp). |
+| `src/lib/account/avatar-crop.test.ts` | Vitest for the geometry. |
+| `src/lib/account/components/AvatarCropper.svelte` | Crop-sheet **content**: circular viewport, pointer drag, zoom slider, Save/Cancel. |
+| `src/routes/(app)/account/+page.server.ts` | `load` (fresh user + avatar URL) + actions `updateName`/`updateAvatar`/`removeAvatar`. |
+| `src/routes/(app)/account/+page.svelte` | Profile page: avatar card (skeleton while saving, in-context errors, toast), name form; owns the `BottomSheet`. |
+| `src/routes/(app)/trips/+page.{server.ts,svelte}` | Header avatar → `/account`; load returns `profileName` + `avatarUrl`. |
+| `tests/e2e/account-profile.spec.ts` | Playwright: reachability, name persist, upload→crop→render→remove, 375px. |
+
+## Verification
+
+- `pnpm check` — clean (747 files, 0 errors).
+- `pnpm test:unit` — 271 pass (incl. crop geometry).
+- `pnpm test:e2e` — 46 pass / 1 skipped (incl. 4 new `/account` tests). Real-browser run confirms the sheet
+  opens on pick, closes on save, the avatar round-trips as a **512² webp**, and remove returns the initials fallback.
+- Visual: verified at 375px.
+
+## Notes for the reviewer
+
+- **Progressive enhancement:** real form actions, no client `fetch`. With JS the picked file is cropped and the
+  webp swapped into the payload via `use:enhance`; without JS a `<noscript>` form posts the raw file (PB mime/size caps gate it).
+- **Decision:** `BottomSheet` lives in the **page** (two-layer `bind:open`), `AvatarCropper` is pure content
+  emitting `onCropped`/`onCancel`. A first cut chained `bind:open` three deep; restructured for clarity.
+- **`load` re-fetches the user** (`getOne`) rather than reading `locals.user`: on a POST, `authRefresh` runs before
+  the action, so `locals.user` is pre-update when `load` re-runs in the same request.
+- **Dev note:** this fresh worktree had no `.env.local`; copied from the main worktree so `$env/static/public`
+  resolves `PUBLIC_PB_URL` (gitignored, not committed). No `.wolf/` dir exists here despite `CLAUDE.md` referencing one.
