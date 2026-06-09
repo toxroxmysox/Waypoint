@@ -35,17 +35,26 @@ routerAdd('POST', '/api/dev/auth-bypass', (e) => {
 		throw new ForbiddenError('Email not whitelisted for bypass');
 	}
 
+	// Find-or-create. The create path must tolerate a concurrent winner: when the
+	// E2E suite runs in parallel workers, several can race to create the same
+	// whitelisted user — all miss the lookup, all try to insert, and PB rejects
+	// the losers with validation_not_unique. Catch that and re-fetch the record
+	// the winner created, so the bypass is idempotent under concurrency.
 	let user;
 	try {
 		user = e.app.findAuthRecordByEmail('users', data.email);
 	} catch (_) {
-		const users = e.app.findCollectionByNameOrId('users');
-		user = new Record(users);
-		user.setEmail(data.email);
-		user.setPassword($security.randomString(40));
-		user.set('name', 'E2E Test User');
-		user.set('verified', true);
-		e.app.save(user);
+		try {
+			const users = e.app.findCollectionByNameOrId('users');
+			user = new Record(users);
+			user.setEmail(data.email);
+			user.setPassword($security.randomString(40));
+			user.set('name', 'E2E Test User');
+			user.set('verified', true);
+			e.app.save(user);
+		} catch (saveErr) {
+			user = e.app.findAuthRecordByEmail('users', data.email);
+		}
 	}
 
 	const token = user.newAuthToken();
@@ -54,6 +63,68 @@ routerAdd('POST', '/api/dev/auth-bypass', (e) => {
 		token: token,
 		record: user
 	});
+});
+
+// POST /api/dev/seed-baseline-trip — ensure E2E_TEST_EMAIL owns one *active*
+// trip (today ∈ dates → trip mode) under a fixed slug. Specs that "open the
+// first trip" depend on such a trip existing; on a clean DB nothing guarantees
+// it (the trip the M1 spec creates may not have run yet), so they race. This
+// gives a deterministic baseline. Idempotent: find-or-create by slug.
+//
+// Called once from Playwright globalSetup. Returns { tripId, slug }.
+routerAdd('POST', '/api/dev/seed-baseline-trip', (e) => {
+	if ($os.getenv('WAYPOINT_DEV_MODE') !== 'true') {
+		throw new BadRequestError('Dev fixtures are not enabled');
+	}
+	const email = $os.getenv('E2E_TEST_EMAIL') || '';
+	if (!email) throw new BadRequestError('E2E_TEST_EMAIL is not set');
+
+	const slug = 'e2e-active-trip';
+
+	// Already seeded → return it (idempotent across re-runs against the same DB).
+	try {
+		const existing = e.app.findFirstRecordByFilter('trips', 'slug = {:slug}', { slug: slug });
+		if (existing) return e.json(200, { tripId: existing.id, slug: slug });
+	} catch (_) {
+		// Not found; create below.
+	}
+
+	// Find-or-create the owner, tolerating a concurrent create (see auth-bypass).
+	let user;
+	try {
+		user = e.app.findAuthRecordByEmail('users', email);
+	} catch (_) {
+		try {
+			const usersCol = e.app.findCollectionByNameOrId('users');
+			user = new Record(usersCol);
+			user.setEmail(email);
+			user.setPassword($security.randomString(40));
+			user.set('name', 'E2E Test User');
+			user.set('verified', true);
+			e.app.save(user);
+		} catch (saveErr) {
+			user = e.app.findAuthRecordByEmail('users', email);
+		}
+	}
+
+	// Active window (yesterday → +7d) so today ∈ dates → the app loads it in
+	// trip mode. Mirror the fields the rules-fixture trip sets; the trips
+	// after-create hook adds the owner member and generates day records.
+	const toPbDate = (d) => d.toISOString().replace('T', ' ').replace('Z', '') + 'Z';
+	const start = new Date(Date.now() - 24 * 60 * 60 * 1000);
+	const end = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+	const tripsCol = e.app.findCollectionByNameOrId('trips');
+	const trip = new Record(tripsCol);
+	trip.set('slug', slug);
+	trip.set('title', 'E2E Active Trip');
+	trip.set('start_date', toPbDate(start));
+	trip.set('end_date', toPbDate(end));
+	trip.set('timezone', 'UTC');
+	trip.set('created_by', user.id);
+	e.app.save(trip);
+
+	return e.json(200, { tripId: trip.id, slug: slug });
 });
 
 // POST /api/dev/rules-fixture — create a fresh test trip with one member per
@@ -106,19 +177,29 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 		try {
 			user = e.app.findAuthRecordByEmail('users', email);
 		} catch (_) {
-			user = new Record(usersCol);
-			user.setEmail(email);
-			user.setPassword($security.randomString(40));
-			user.set('name', 'E2E ' + role);
-			user.set('verified', true);
-			e.app.save(user);
+			// Same concurrent-create race as auth-bypass: a parallel worker may have
+			// created this user between our lookup and insert. Re-fetch on collision.
+			try {
+				user = new Record(usersCol);
+				user.setEmail(email);
+				user.setPassword($security.randomString(40));
+				user.set('name', 'E2E ' + role);
+				user.set('verified', true);
+				e.app.save(user);
+			} catch (saveErr) {
+				user = e.app.findAuthRecordByEmail('users', email);
+			}
 		}
 		userIds[role] = user.id;
 	}
 
 	// Tear down any existing fixture trip (cascade-deletes phases, days,
 	// items, checklist_items, trip_members via cascadeDelete=true on relations).
-	const slug = 'e2e-rules-test';
+	// Slug is caller-supplied so each spec file owns an isolated fixture trip:
+	// spec files run in parallel workers, and a shared slug means one file's
+	// teardown wipes another file's trip (and its expenses) mid-run. Defaults to
+	// the legacy shared slug for callers that don't pass one.
+	const slug = (info.body && info.body['slug']) || 'e2e-rules-test';
 	try {
 		const existing = e.app.findFirstRecordByFilter('trips', 'slug = {:slug}', { slug: slug });
 		if (existing) e.app.delete(existing);
