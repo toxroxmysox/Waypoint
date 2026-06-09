@@ -247,6 +247,60 @@ describe('getNowViewState', () => {
 	});
 });
 
+describe('multi-day spanning items (#82 / #83)', () => {
+	// Reproduces the dogfood scenario: an Avis rental car is a multi-day item
+	// (picked up 8:00 AM Jun 8, returned Jun 12) running in the background, while
+	// "Work Meetings" (10:00 AM – 5:00 PM today) is the genuinely-current event.
+	// now = Jun 8, 1:34 PM.
+	const now = new Date('2026-06-08T13:34:00.000Z');
+	const avis = () =>
+		makeItem({
+			id: 'avis',
+			title: 'Avis Rental Car Pickup',
+			start_time: '2026-06-08 08:00:00.000Z',
+			end_time: '2026-06-12 08:00:00.000Z',
+			end_date: '2026-06-12'
+		} as Partial<Item>);
+	const workMeetings = () =>
+		makeItem({
+			id: 'work',
+			title: 'Work Meetings',
+			start_time: '2026-06-08 10:00:00.000Z',
+			end_time: '2026-06-08 17:00:00.000Z'
+		});
+
+	it('#82: picks the same-day event as current, not the multi-day spanning item', () => {
+		const result = getNowViewState([avis(), workMeetings()], now, true);
+		expect(result.kind).toBe('mid-event');
+		if (result.kind === 'mid-event') {
+			expect(result.currentItem.id).toBe('work');
+		}
+	});
+
+	it('#83: counts minutes remaining to the same-day event end, not the multi-day item end', () => {
+		const result = getNowViewState([avis(), workMeetings()], now, true);
+		// 13:34 -> 17:00 = 3h 26m = 206 min (NOT ~92h to the Jun 12 rental return).
+		if (result.kind === 'mid-event') {
+			expect(result.minutesRemaining).toBe(206);
+		}
+	});
+
+	it('#82: a multi-day spanning item alone does not make the day "mid-event"', () => {
+		// Only the rental is "ongoing"; a later same-day item exists, so the view
+		// should be free-time/between-things, not a 92h "right now" countdown.
+		const later = makeItem({
+			id: 'dinner',
+			start_time: '2026-06-08 18:30:00.000Z',
+			end_time: '2026-06-08 20:00:00.000Z'
+		});
+		const result = getNowViewState([avis(), later], now, true);
+		expect(result.kind).toBe('between-things');
+		if (result.kind === 'between-things') {
+			expect(result.nextItem.id).toBe('dinner');
+		}
+	});
+});
+
 describe('now-state with real stored datetimes (regression for 1970 bug)', () => {
 	it('reaches mid-event when an item spans the current trip-local moment', () => {
 		// Instant: 2026-06-08T16:00:00Z. Madrid wall clock = 18:00 Jun 8.

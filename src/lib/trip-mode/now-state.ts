@@ -6,8 +6,21 @@ function parseDateTime(dt: string): Date {
 	return new Date(dt.replace(' ', 'T'));
 }
 
+/**
+ * Multi-day items (e.g. a rental car spanning several days, lodging) carry an
+ * `end_date`. They run in the background and are surfaced separately as ongoing
+ * banners (mirroring Today, whose timeline loads only `end_date = ""` items).
+ * They must not be treated as the discrete "right now" event — otherwise their
+ * far-future `end_time` both hijacks the current-item pick (#82) and drives a
+ * trip-length "92h remaining" countdown (#83).
+ */
+function isMultiDay(i: Item): boolean {
+	return !!i.end_date && i.end_date.trim() !== '';
+}
+
 function findCurrentItem(items: Item[], now: Date): Item | null {
 	const ongoing = items.filter((i) => {
+		if (isMultiDay(i)) return false;
 		if (!i.start_time || !i.end_time) return false;
 		const start = parseDateTime(i.start_time).getTime();
 		const end = parseDateTime(i.end_time).getTime();

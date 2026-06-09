@@ -10,6 +10,7 @@
 	import type { TripViewMode } from '$lib/trip-mode/activation';
 	import { getNavConfig } from '$lib/shell/nav-tabs';
 	import { tripToday, tripTz } from '$lib/shell/trip-time';
+	import { goto } from '$app/navigation';
 
 	let {
 		children,
@@ -43,7 +44,12 @@
 	const navConfig = $derived(getNavConfig(slug, mode));
 
 	function toggleMode() {
-		userOverride = mode === 'trip' ? 'planning' : 'trip';
+		const next: TripViewMode = mode === 'trip' ? 'planning' : 'trip';
+		userOverride = next;
+		// #80: switching modes must also navigate to that mode's home — Trip view
+		// lands on Now, Edit plan lands on the itinerary. Without this the toggle
+		// only swapped the nav tabs while leaving the user on the current page.
+		goto(next === 'trip' ? `/trips/${slug}/now` : `/trips/${slug}`);
 	}
 
 	let addSheetOpen = $state(false);
