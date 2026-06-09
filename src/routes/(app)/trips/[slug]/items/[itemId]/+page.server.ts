@@ -133,10 +133,13 @@ export const actions: Actions = {
 			return fail(400, { uploadError: 'Choose a file to upload.' });
 		}
 
+		const caption = formData.get('caption')?.toString().trim() ?? '';
+
 		try {
 			const fd = new FormData();
 			fd.set('trip', item.trip);
 			fd.set('item', item.id);
+			if (caption) fd.set('caption', caption);
 			fd.set('file', file);
 			await locals.pb.collection('documents').create(fd);
 			return { uploadSuccess: true };

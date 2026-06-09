@@ -3,6 +3,7 @@
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import DocumentRow from './DocumentRow.svelte';
 	import DocumentUpload from './DocumentUpload.svelte';
+	import DocumentPaste from './DocumentPaste.svelte';
 	import DocumentLightbox from './DocumentLightbox.svelte';
 	import type { DocumentView } from '$lib/documents/types';
 
@@ -68,12 +69,15 @@
 		{/if}
 
 		{#if canUpload}
-			<DocumentUpload
-				action={uploadAction}
-				{itemId}
-				label="Upload"
-				hint="PDF or image · up to 20 MB"
-			/>
+			<div class="space-y-2">
+				<DocumentUpload
+					action={uploadAction}
+					{itemId}
+					label="Upload"
+					hint="PDF or image · up to 20 MB"
+				/>
+				<DocumentPaste action={uploadAction} {itemId} />
+			</div>
 		{/if}
 	</div>
 </Card>

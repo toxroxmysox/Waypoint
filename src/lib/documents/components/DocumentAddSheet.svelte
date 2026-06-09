@@ -1,6 +1,7 @@
 <script lang="ts">
 	import BottomSheet from '$lib/ui/BottomSheet.svelte';
 	import DocumentUpload from './DocumentUpload.svelte';
+	import DocumentPaste from './DocumentPaste.svelte';
 
 	let {
 		open = $bindable(false),
@@ -46,5 +47,13 @@
 			hint="PDF or image · up to 20 MB"
 			onUploaded={done}
 		/>
+
+		<div class="flex items-center gap-3">
+			<span class="bg-line h-px flex-1"></span>
+			<span class="text-ink-muted text-[12px]">or</span>
+			<span class="bg-line h-px flex-1"></span>
+		</div>
+
+		<DocumentPaste action={uploadAction} itemId={scope} listen={open} onUploaded={done} />
 	</div>
 </BottomSheet>
