@@ -105,3 +105,19 @@ export interface Task extends RecordModel {
 	assignee: string;
 	order: number;
 }
+
+// #75 — Trip Goal. Trip-scoped, phase-less aspiration; sibling to phases, not an
+// item. `manual_status` is only authoritative when `items` is empty (status
+// derivation lands in #78). V4_GROUP_INPUT_PRD "Domain model — Trip Goal".
+export type GoalStatus = 'unplanned' | 'planned' | 'done' | 'considered';
+
+export interface TripGoal extends RecordModel {
+	trip: string;
+	title: string;
+	description: string;
+	created_by: string;
+	manual_status: GoalStatus;
+	sort_order: number;
+	items: string[];
+	expand?: { created_by?: import('../collaboration/types').TripMember };
+}

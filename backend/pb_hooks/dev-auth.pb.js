@@ -213,6 +213,18 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 	vote.set('value', 'like');
 	e.app.save(vote);
 
+	// Seed a trip goal authored by the traveler (#75). Trip-scoped, phase-less.
+	// Authored by traveler so the harness can exercise the delete rule's "creator"
+	// branch (traveler can delete their own goal even though they aren't an owner).
+	const goalsCol = e.app.findCollectionByNameOrId('trip_goals');
+	const goal = new Record(goalsCol);
+	goal.set('trip', trip.id);
+	goal.set('title', 'Test Goal');
+	goal.set('created_by', memberIds.traveler);
+	goal.set('manual_status', 'unplanned');
+	goal.set('sort_order', 0);
+	e.app.save(goal);
+
 	// Create a checklist item under it.
 	const checklistCol = e.app.findCollectionByNameOrId('checklist_items');
 	const checklistItem = new Record(checklistCol);
@@ -248,6 +260,7 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 		itemId: item.id,
 		itemId2: item2.id,
 		voteId: vote.id,
+		goalId: goal.id,
 		checklistItemId: checklistItem.id,
 		pendingInviteId: invite.id,
 		pendingInviteCode: inviteCode,

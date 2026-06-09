@@ -28,7 +28,7 @@ const EMAILS = {
 };
 
 const ROLES = ['owner', 'co_owner', 'traveler', 'viewer', 'non_member'];
-const COLLECTIONS = ['users', 'trips', 'trip_members', 'phases', 'days', 'items', 'checklist_items', 'pending_invites', 'votes'];
+const COLLECTIONS = ['users', 'trips', 'trip_members', 'phases', 'days', 'items', 'checklist_items', 'pending_invites', 'votes', 'trip_goals'];
 
 async function pbRequest(method, path, opts = {}) {
 	const headers = { 'Content-Type': 'application/json' };
@@ -85,6 +85,8 @@ function fixtureRecordId(fixture, collection) {
 			return fixture.pendingInviteId;
 		case 'votes':
 			return fixture.voteId;
+		case 'trip_goals':
+			return fixture.goalId;
 		default:
 			throw new Error('unknown collection ' + collection);
 	}
@@ -239,6 +241,26 @@ const EXPECT = {
 		create: ALLOW_MEMBERS_DENY_NONMEMBER,
 		update: SELF_ONLY,
 		delete: SELF_ONLY
+	},
+	// trip_goals (#75):
+	//   list/view: any member can see the trip's goals
+	//   create: owner·co_owner·traveler — viewers read-only, no suggestion queue.
+	//           Rule-enforced: createBody authors as the acting member, and the
+	//           createRule requires `created_by.user = auth && created_by.role !=
+	//           "viewer"` (created_by is a single relation, so the role check is
+	//           unambiguous). viewer + non_member therefore deny.
+	//   update (edit): same role set. Rule is membership; trip_goals.pb.js rejects
+	//           viewers (their own role can't be correlated in a single rule).
+	//   delete: creator OR owner/co_owner. The fixture goal is authored by the
+	//           traveler, so traveler passes as creator; owner/co_owner pass by
+	//           role; viewer denies. (The "AND zero goal_votes" clause lands in
+	//           #77 with the goal_votes collection.)
+	trip_goals: {
+		list: ALLOW_MEMBERS_DENY_NONMEMBER,
+		view: ALLOW_MEMBERS_DENY_NONMEMBER,
+		create: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' },
+		update: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' },
+		delete: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' }
 	}
 };
 
@@ -306,6 +328,18 @@ function createBody(collection, role, fixture) {
 				member: fixture.memberIds[role] || fixture.memberIds.owner,
 				value: 'like'
 			};
+		case 'trip_goals':
+			// Author as the acting member's own membership. The createRule gates on
+			// created_by.role (single relation), so viewer denies and owner/
+			// co_owner/traveler pass. non_member has no membership → falls back to
+			// owner, whose user != the non_member auth, so the rule denies.
+			return {
+				trip: fixture.tripId,
+				title: `Harness goal ${role} ${stamp}`,
+				created_by: fixture.memberIds[role] || fixture.memberIds.owner,
+				manual_status: 'unplanned',
+				sort_order: 99
+			};
 		default:
 			throw new Error('no body for ' + collection);
 	}
@@ -333,6 +367,8 @@ function updateBody(collection) {
 			return { role: 'viewer' };
 		case 'votes':
 			return { value: 'love' };
+		case 'trip_goals':
+			return { title: 'Harness goal updated' };
 		default:
 			throw new Error('no body for ' + collection);
 	}
