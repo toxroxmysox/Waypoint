@@ -43,7 +43,8 @@
 	{ id: 'upcoming', label: 'Next 3 Days', href: `/trips/${data.trip.slug}/today/upcoming` }
 ]} />
 
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-6">
+<!-- #84: reserve the home-indicator safe area so the fixed bottom nav doesn't clip the last items -->
+<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-[calc(2rem+env(safe-area-inset-bottom))] space-y-6">
 	{#if tripMode.timeline.upcomingDays.length === 0}
 		<Card>
 			<div class="p-6 text-center">
