@@ -41,7 +41,8 @@
 	tabs={[
 		{ id: 'overview', label: 'Overview', href: `/trips/${data.trip.slug}` },
 		{ id: 'phases', label: 'Phases', href: `/trips/${data.trip.slug}/phases` },
-		{ id: 'lists', label: 'Lists', href: `/trips/${data.trip.slug}/lists` }
+		{ id: 'lists', label: 'Lists', href: `/trips/${data.trip.slug}/lists` },
+		{ id: 'goals', label: 'Goals', href: `/trips/${data.trip.slug}/goals` }
 	]}
 />
 

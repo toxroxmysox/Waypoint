@@ -43,7 +43,8 @@
 <SubTabs tabs={[
 	{ id: 'overview', label: 'Overview', href: `/trips/${data.trip.slug}` },
 	{ id: 'phases', label: 'Phases', href: `/trips/${data.trip.slug}/phases` },
-	{ id: 'lists', label: 'Lists', href: `/trips/${data.trip.slug}/lists` }
+	{ id: 'lists', label: 'Lists', href: `/trips/${data.trip.slug}/lists` },
+	{ id: 'goals', label: 'Goals', href: `/trips/${data.trip.slug}/goals` }
 ]} />
 
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-4">

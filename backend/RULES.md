@@ -110,6 +110,18 @@ The `votes` collection (created 0024, `value` + `updateRule` added 0029) is exer
 - **create** — `MEMBER_VIA_TRIP`. A `votes.pb.js` `onRecordCreateRequest` hook additionally enforces vote-as-yourself (`member.user === auth` and `member.trip === record.trip`). The harness votes as each role's own membership on a second fixture item so the unique `(item, member)` index isn't tripped.
 - **update / delete** — `MEMBER_VIA_TRIP && member.user = @request.auth.id`. A member can only change or remove **their own** vote. The fixture vote belongs to the owner, so co_owner/traveler/viewer get `404` (the rule filters the record out of their view, so it reads as not-found). Changing a vote is an update (the unique index makes a re-vote an update, not an insert).
 
+## Trip Goals (#75)
+
+The `trip_goals` collection (created 0040) is exercised by the harness as of #75. Goals are trip-scoped, phase-less wishes; create/edit are open to owner·co_owner·traveler with **no suggestion queue** (viewers are read-only), and delete is `creator OR owner/co_owner`.
+
+| Collection | list | view | create | update | delete |
+|---|---|---|---|---|---|
+| `trip_goals` | member | member | non-viewer member (rule) | non-viewer member (hook) | creator or owner/co_owner (hook) |
+
+- **create** — `MEMBER_VIA_TRIP && created_by.user = @request.auth.id && created_by.role != "viewer"`. Fully rule-expressible because `created_by` is a *single* relation: `created_by.role` correlates the author's role unambiguously (no multi-relation `?=` aliasing), and `created_by.user = auth` forces self-authorship. Viewers and non-members deny.
+- **update (edit)** — rule is `MEMBER_VIA_TRIP`; `trip_goals.pb.js` `onRecordUpdateRequest` rejects viewers (`403`). The acting editor isn't necessarily the author, so their own role can't be correlated in one rule expression — hence the hook (same reasoning as the invites delete-hook).
+- **delete** — rule is `MEMBER_VIA_TRIP`; `trip_goals.pb.js` `onRecordDeleteRequest` allows only the creator (`record.created_by === acting member id`) or an owner/co_owner. The fixture goal is authored by the **traveler**, so traveler passes as creator, owner/co_owner pass by role, and viewer/non-member deny. The **`AND zero goal_votes`** tightening on the creator branch lands in #77 with the `goal_votes` collection.
+
 ## Notes & gotchas
 
 - **`view` denials look like 404s**, not 403s. The harness encodes both as "denied" but reports the exact code so we can spot when PB upgrades and changes behavior.
