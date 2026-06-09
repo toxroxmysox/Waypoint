@@ -1,61 +1,79 @@
-# HANDOFF — Avatars (#59)
+# HANDOFF — #103 co-traveler read rule on `users` (name + avatar)
 
-Planning/grill session, 2026-06-09. Output = decisions + docs + issues. **No build.**
+Implementation session, 2026-06-09. Backend slice of Avatars (#59), per `docs/AVATARS_PRD.md`
++ `docs/adr/0006-users-readable-by-co-travelers.md`. **PR opened, not merged.**
 
-## The reframe
+## What shipped
 
-#59 is *not* "add avatars." The storage already exists: `users.avatar` (`FileField`, 5 MB, jpeg/png/webp)
-has been on the schema since migration **0001**, and `Avatar.svelte` already supports an `img` prop with
-an initials fallback. It was never wired up because **`users` is self-only readable** (0014) — a
-co-traveler literally can't read another member's avatar through the API. The whole issue is breaking
-that wall.
+Loosened **only** `users.viewRule` from self-only → co-traveler so a member can read another
+member's `name` + `avatar` through `expand:user`. The rest of the `users` rules are untouched.
 
-## Decisions locked
+| File | Change |
+|---|---|
+| `backend/pb_migrations/0043_users_viewable_by_cotravelers.js` | **New** append-only migration. Sets `users.viewRule` to the co-traveler expression. Down restores `id = @request.auth.id` (0014's prior state). |
+| `backend/test-rules.mjs` | `EXPECT.users.view` → `ALLOW_MEMBERS_DENY_NONMEMBER`; added `runUsersCrossReadCases` + `printUsersCrossReadReport` for field-level visibility. |
+| `backend/RULES.md` | `users` view row → co-traveler; added `co_traveler` identity expr; added a #103/ADR-0006 section; superseded the "cross-member lookup goes through `trip_members`" note for name+avatar. |
 
-| # | Decision | Rationale |
-|---|---|---|
-| D1 | **Storage:** PB file on `users.avatar` (existing). External/Gravatar rejected. | Local-first; the field already exists. |
-| D2 | **Avatar is user-level only — no per-trip override.** No avatar column on `trip_members`. | An avatar is identity; `display_name` stays the per-trip thing. Read path leaves an override door open. |
-| D3 | **Placeholders render initials only.** On Claim, `member.user` is set → claimer's avatar appears automatically. | No upload-on-behalf, no consent question, no `trip_members` file field. |
-| D4 | **Read path: loosen `users.viewRule` self-only → co-traveler** ("shares a trip"); `list` stays self-only; email stays hidden. Co-travelers `expand:user`, read name+avatar. **No proxy, no superuser, no denormalization.** | Co-membership is the trust boundary. PB hides password/tokenKey regardless; email gated separately. |
-| D5 | **Upload surface: new global `/account` ("Profile")** route, entry from `/trips` home. Edits avatar + `user.name`. | OTP-only auth, no account page existed; user-level identity belongs outside any trip. |
-| D6 | **Image pipeline:** recenter+zoom cropper → canvas center-crop → **512² webp** → upload. Server caps backstop. | Framing control + ~30 KB files; hand-rolled, no heavy dep. |
-| D7 | **Fallback:** existing initials chip everywhere absent. | `Avatar.svelte` already does it. |
-| D8 | **Email NOT newly exposed.** `emailVisibility` stays off — only name + avatar cross-readable. | Most conservative version that still ships the avatar. |
+Rule text:
+```
+users.viewRule:
+  @request.auth.id != "" && trip_members_via_user.trip.trip_members_via_trip.user ?= @request.auth.id
+```
 
-## Superseded mid-grill
+## The headline result — the nested rule WORKS; no fallback needed
 
-Earlier picks of a **file proxy** / **PB-hook superuser endpoint** were discarded once the read-path
-reframe (D4) landed: opening the `users` row to co-travelers makes the proxy unnecessary. The hook
-endpoint survives only as the **fallback** if the nested rule won't evaluate (see risk below).
+The expression is a **two-level nested back-relation**, deeper than anything else in the codebase
+(every other rule stops at one level). The PRD/ADR flagged it as unproven in PB 0.27 and specified a
+`pb_hooks` superuser-avatar endpoint as fallback. **It evaluates correctly in PB 0.27.2** — proven
+in the harness, so the fallback was **not** implemented (the ADR decision holds; only the mechanism
+question is now resolved in favour of the rule).
 
-## Open technical risk (carried into #103)
+## Proof (TDD red → green)
 
-The view rule is a **two-level nested back-relation**
-(`trip_members_via_user.trip.trip_members_via_trip.user ?= @request.auth.id`) — deeper than anything in
-the codebase today (all current rules use one level). PB 0.27 *should* handle it; **unproven.** #103
-must prove it in `test-rules.mjs`. Fallback: `pb_hooks` superuser avatar endpoint. The *decision* holds
-regardless of mechanism.
+Ran an isolated PB (0.27.2) from this worktree on `:8091`, fresh DB, against `test-rules.mjs`.
 
-## Docs written (in this PR)
+- **RED** (migrations 0001–0042, no 0043): `users.view` for co_owner/traveler/viewer = `deny/404`;
+  cross-read `name`/`avatar` not visible — the new expectations failed, as expected.
+- **GREEN** (with 0043): all #103 cells pass:
+  - `users.view`: owner/co_owner/traveler/viewer → `allow/200`; non_member + anon → `deny/404`.
+  - `users.list`: stays self-only (every role sees only its own row).
+  - Cross-read payload (co_owner reading owner's row): `name` populated ✓, `avatar` key present ✓,
+    `email` blanked ✓, `password` absent ✓, `tokenKey` absent ✓.
+- **Reversibility**: `migrate down 1` → `id = @request.auth.id`; `migrate up` → co-traveler. Clean.
 
-- `CONTEXT.md` — new **[[Avatar]]** glossary entry (user-level; co-traveler trust boundary; initials fallback).
-- `docs/AVATARS_PRD.md` — full PRD (problem, decided rules, data model = no new collection/field, read path, `/account`, privacy, acceptance).
-- `docs/adr/0006-users-readable-by-co-travelers.md` — ADR for reversing the documented `users` self-only stance.
+Reproduce:
+```
+cp /Users/Scott/Waypoint/backend/pocketbase backend/pocketbase   # PB 0.27.2, gitignored
+WT=$PWD
+WAYPOINT_DEV_MODE=true \
+E2E_TEST_EMAILS="rules-owner@e2e.test,rules-coowner@e2e.test,rules-traveler@e2e.test,rules-viewer@e2e.test,rules-nonmember@e2e.test" \
+  backend/pocketbase serve --dir /tmp/wt103-pbdata --http 127.0.0.1:8091 --hooksWatch=false \
+  --hooksDir "$WT/backend/pb_hooks" --migrationsDir "$WT/backend/pb_migrations"
+PUBLIC_PB_URL=http://127.0.0.1:8091 node backend/test-rules.mjs
+```
 
-## Issues filed (all `enhancement` + `afk` + `planned`, parent #59)
+## Verification status
 
-| # | Slice | Blocked by |
-|---|---|---|
-| **#103** | Co-traveler read rule on `users` (name+avatar) + harness + RULES.md | — |
-| **#104** | `/account` profile page — self upload, crop, name edit | — |
-| **#105** | Display wire-up tracer (helper + members list) | #103 |
-| **#106** | Display fan-out (vote stacks, assignees, goals, comments) | #105 |
+- `pnpm test:rules`: **368/372 green.** All 12 #103 cells (5 matrix + 7 cross-read) pass.
+- `pnpm check`: **green** (0 errors). My diff touches no Svelte/TS — required `.env` with
+  `PUBLIC_PB_URL` for `svelte-kit sync` to type `$env/static/public` (env artifact of a fresh
+  worktree, not a code issue).
 
-#103 and #104 can start immediately and in parallel. Graph: 1→3→4; 2 independent.
+## ⚠ Pre-existing, OUT-OF-SCOPE failure (not introduced here)
 
-## Follow-ups (not filed — deliberate)
+The 4 remaining red cells are `trip_members.delete` (owner/co_owner/traveler/viewer all
+`deny/HTTP 400`). **Pre-existing on main** — reproduces on a fresh DB with the *unmodified* harness
+(also seen in the RED run before 0043). Root cause: the delete phase targets `memberIds.owner`, but
+the rules-fixture pins many **required, non-cascade** child relations to the owner member
+(`items.created_by`, `votes.member`, `trip_goals.created_by`, `goal_votes.member`,
+`documents.uploaded_by`) → PB refuses with *"record is not part of a required relation reference."*
+The owner member is structurally undeletable in the fixture. Accumulated as collections were added
+(#70, #77). A background task chip was spawned to fix the fixture/expectations + update RULES.md.
 
-- Per-trip avatar override (deferred; D2).
-- Exposing co-traveler email (decoupled from avatar; D8).
-- `SPEC.md` amendment on milestone promotion (per CLAUDE.md scope protocol) — a planning step, not an AFK issue.
+## Notes for the next agent
+
+- This is the **backend slice only**. The remaining #59 work (the `/account` upload page,
+  `memberAvatarUrl(member)` helper, and wiring `img=` into the `<Avatar>` call sites in the PRD
+  table) is **not** in this PR.
+- `backend/pocketbase` binary, `.env`, `pb_data` are all gitignored — not committed.
+- Local-only test scaffolding leftovers: `/tmp/wt103-pbdata`, `/tmp/wt103-*.log`.

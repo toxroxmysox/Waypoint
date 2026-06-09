@@ -189,9 +189,22 @@ const SELF_ONLY = {
 };
 
 const EXPECT = {
+	// users (#103 / ADR-0006):
+	//   list:   SELF_ONLY — no user enumeration. listRule stays `id = auth.id`,
+	//           so every role's list returns only their own row; the fixture
+	//           record (owner's user row) is absent from everyone else's page.
+	//   view:   co-traveler — viewRule loosens to "the caller shares a trip with
+	//           the target user" (a two-level nested back-relation, migration
+	//           0043). The fixture view target is owner's user row, so every
+	//           member of the fixture trip (owner/co_owner/traveler/viewer) may
+	//           view it; non_member (and anon) deny. Field-level visibility
+	//           (name+avatar yes, email+secrets no) is asserted separately in
+	//           runUsersCrossReadCases.
+	//   create/update/delete: unchanged from 0014 (create/delete admin-only,
+	//           update self-only).
 	users: {
 		list: SELF_ONLY,
-		view: SELF_ONLY,
+		view: ALLOW_MEMBERS_DENY_NONMEMBER,
 		create: DENY_ALL,
 		update: SELF_ONLY,
 		delete: DENY_ALL
@@ -619,6 +632,67 @@ function printNovelReport() {
 	}
 }
 
+// #103 / ADR-0006 — co-traveler cross-read of the `users` row. The fixed
+// (collection, op, role) matrix proves co_owner/traveler/viewer can *view* the
+// owner's row and non_member can't, but it only inspects HTTP status. These
+// cases additionally assert the PAYLOAD's field-level visibility — the crux of
+// the ADR: a loosened view rule must expose `name` + `avatar` to a co-traveler
+// while still hiding `email` (emailVisibility off) and the auth secrets
+// (`password`/`tokenKey`, always stripped by PB on auth collections). Each is
+// recorded under the `users` collection with a custom op label.
+const USERS_CROSSREAD_OPS = [
+	'crossread_view',
+	'crossread_nonmember',
+	'crossread_name_visible',
+	'crossread_avatar_visible',
+	'crossread_email_hidden',
+	'crossread_password_hidden',
+	'crossread_tokenkey_hidden'
+];
+
+async function runUsersCrossReadCases(tokens, fixture) {
+	const ownerUserId = fixture.userIds.owner;
+
+	// A co-traveler (co_owner) reads the owner's users row through their OWN authed
+	// token — the read path the avatar wire-up depends on (expand:user).
+	const view = await pbRequest('GET', `/api/collections/users/records/${ownerUserId}`, {
+		token: tokens.co_owner
+	});
+	recordResult('users', 'crossread_view', 'co_owner', 'allow', classifyView(view.status), view.status);
+
+	// A non-member must NOT be able to read it (404, existence not leaked).
+	const denied = await pbRequest('GET', `/api/collections/users/records/${ownerUserId}`, {
+		token: tokens.non_member
+	});
+	recordResult('users', 'crossread_nonmember', 'non_member', 'deny', classifyView(denied.status), denied.status);
+
+	// Field-level visibility on the co-traveler payload. The fixture sets the
+	// owner's `name` to "E2E owner"; `avatar` is an (empty) file field — the KEY
+	// must be present and cross-readable even when no file is set. `email` must be
+	// blanked (PB omits/empties it when emailVisibility is off and the caller
+	// isn't the record owner/superuser); `password`/`tokenKey` are never serialized.
+	const p = view.data || {};
+	const nameVisible = typeof p.name === 'string' && p.name.length > 0;
+	const avatarVisible = Object.prototype.hasOwnProperty.call(p, 'avatar');
+	const emailHidden = !p.email; // absent or empty string both satisfy "not exposed"
+	const passwordHidden = !Object.prototype.hasOwnProperty.call(p, 'password');
+	const tokenKeyHidden = !Object.prototype.hasOwnProperty.call(p, 'tokenKey');
+
+	recordResult('users', 'crossread_name_visible', 'co_owner', 'yes', nameVisible ? 'yes' : 'no', view.status);
+	recordResult('users', 'crossread_avatar_visible', 'co_owner', 'yes', avatarVisible ? 'yes' : 'no', view.status);
+	recordResult('users', 'crossread_email_hidden', 'co_owner', 'yes', emailHidden ? 'yes' : 'no', view.status);
+	recordResult('users', 'crossread_password_hidden', 'co_owner', 'yes', passwordHidden ? 'yes' : 'no', view.status);
+	recordResult('users', 'crossread_tokenkey_hidden', 'co_owner', 'yes', tokenKeyHidden ? 'yes' : 'no', view.status);
+}
+
+function printUsersCrossReadReport() {
+	console.log('\n[#103 users cross-read — co-traveler name+avatar, email+secrets hidden]');
+	for (const r of results.filter((x) => USERS_CROSSREAD_OPS.includes(x.op))) {
+		const mark = r.passed ? 'PASS' : 'FAIL';
+		console.log(`  ${mark} users.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+	}
+}
+
 function printReport() {
 	const ops = ['list', 'view', 'create', 'update', 'delete'];
 	const allRoles = [...ROLES, 'anon'];
@@ -691,8 +765,13 @@ async function main() {
 	console.log('Novel #77 cases: vote-own-goal + tightened delete');
 	await runGoalVotesNovelCases(tokens);
 
+	console.log('#103 cases: co-traveler users cross-read (name+avatar, no email/secrets)');
+	fixture = await setupFixture();
+	await runUsersCrossReadCases(tokens, fixture);
+
 	printReport();
 	printNovelReport();
+	printUsersCrossReadReport();
 
 	const failed = results.some((r) => !r.passed);
 	exit(failed ? 1 : 0);

@@ -2,7 +2,7 @@
 
 Source of truth for who can do what against the API. Generated and verified by `backend/test-rules.mjs`. Update this file when rules change; the harness will fail if the documented intent diverges from observed behavior.
 
-Last reviewed: 2026-06-08 (#70 — documents collection added to the harness; viewer-no-create + uploader-or-owner delete gating). Prior: #30 — votes.
+Last reviewed: 2026-06-09 (#103 / ADR-0006 — `users.viewRule` loosened from self-only to co-traveler so members read each other's name + avatar; `listRule` stays self-only, `emailVisibility` off). Prior: #70 — documents collection added to the harness.
 
 ---
 
@@ -29,7 +29,7 @@ Role-agnostic. Any member of a trip can do anything to that trip's data; non-mem
 
 | Collection | list | view | create | update | delete |
 |---|---|---|---|---|---|
-| `users` | self only | self only | null (OTP hook) | self only | null (no API) |
+| `users` | self only | **co-traveler** (name+avatar) | null (OTP hook) | self only | null (no API) |
 | `trips` | member | member | authed | member | member |
 | `trip_members` | member of trip | member of trip | null (hooks/admin) | member of trip | member of trip |
 | `phases` | member of trip | member of trip | member of trip | member of trip | member of trip |
@@ -48,7 +48,7 @@ Role-agnostic. Any member of a trip can do anything to that trip's data; non-mem
 - `pending_invites.create` — invite creation goes through `POST /api/invites/create`, which validates the inviter's role per SPEC §3 (travelers can only invite traveler/viewer; viewers cannot invite at all) and generates `code` + `expires_at` server-side. Direct API POST would let any member set arbitrary codes / lifetimes / inviter ids.
 - `pending_invites.update` — invites are immutable. To change a role or extend expiry, revoke and re-invite. Keeps the audit trail honest.
 
-**Identity expressions used in 0014:**
+**Identity expressions used in 0014 (+ 0043):**
 
 ```
 self_only        = id = @request.auth.id
@@ -56,9 +56,12 @@ authed           = @request.auth.id != ""
 member           = @request.auth.id != "" && trip_members_via_trip.user ?= @request.auth.id
 member_via_trip  = @request.auth.id != "" && trip.trip_members_via_trip.user ?= @request.auth.id
 member_via_item  = @request.auth.id != "" && item.trip.trip_members_via_trip.user ?= @request.auth.id
+co_traveler      = @request.auth.id != "" && trip_members_via_user.trip.trip_members_via_trip.user ?= @request.auth.id   (0043, users.viewRule)
 ```
 
 The `?=` operator in PB is "any of the multi-relation values matches". Required because `trip_members_via_trip` is a back-relation (multiple rows per trip).
+
+`co_traveler` (0043) is a **two-level nested back-relation** — deeper than any other rule here. From the target `users` row: `trip_members_via_user` is its memberships; `.trip.trip_members_via_trip.user ?= @request.auth.id` asks whether any of those trips also has a membership for the caller → the caller shares a trip with the target. PB 0.27 evaluates it correctly (proven in `test-rules.mjs` #103 cross-read cases); the ADR-0006 `pb_hooks` superuser-avatar fallback was **not** needed.
 
 ---
 
@@ -135,13 +138,26 @@ The `documents` collection (created 0032) is exercised by the harness as of #70:
 - **delete** — `MEMBER_VIA_TRIP` by rule; the `documents.pb.js` `onRecordDeleteRequest` hook narrows it to the **uploader OR owner/co_owner**. The fixture document is uploaded by the owner, so owner + co_owner pass while traveler/viewer are denied. (Owner override vs. the old vault uploader-only rule — ADR-0005 / PRD §Permissions.)
 - **files are `protected: true`** — downloads require a short-lived file token. The app mints tokens server-side and proxies bytes through `/trips/[slug]/documents/[docId]/file`, so tokens never reach the client and the future service worker can precache same-origin bytes.
 
+## Users — co-traveler read (#103 / ADR-0006)
+
+Migration `0043_users_viewable_by_cotravelers.js` loosens **only** `users.viewRule` from self-only to **co-traveler**, so the avatar wire-up (#59) can read a member's `name` + `avatar` through `expand:user`. Everything else 0014 set on `users` is unchanged.
+
+| Collection | list | view | create | update | delete |
+|---|---|---|---|---|---|
+| `users` | self only | co-traveler (share a trip) | null (OTP hook) | self only | null (no API) |
+
+- **view** — `co_traveler` (see identity expressions above). The harness's `view` matrix targets the **owner's** `users` row: owner/co_owner/traveler/viewer (all members of the fixture trip) view it → allow; non_member + anon → 404. The two-level nested back-relation is proven to evaluate in PB 0.27 — the ADR-0006 `pb_hooks` superuser-avatar fallback was not needed.
+- **list** — stays **self-only** (`id = @request.auth.id`). No user enumeration: every role's `list` returns only their own row.
+- **field-level visibility** — asserted by `runUsersCrossReadCases` in `test-rules.mjs`: a co-traveler's payload exposes `name` (populated) and `avatar` (key present, cross-readable) but **not** `email` (blanked — `emailVisibility` off), `password`, or `tokenKey` (PB always strips auth secrets). Email is **not** newly exposed by this change.
+- **create / update / delete** — unchanged: create/delete admin-only (OTP hook / no API), update self-only (`/account` self-edit).
+
 ## Notes & gotchas
 
 - **`view` denials look like 404s**, not 403s. The harness encodes both as "denied" but reports the exact code so we can spot when PB upgrades and changes behavior.
 - **`list` denials don't 404 — they return 200 with an empty page.** The harness asserts the fixture record id is absent from the result set rather than checking a status code.
 - **Anon doesn't get 401.** Unauthenticated requests against rule-protected endpoints fall through the same rule check as everyone else; since every rule starts with `@request.auth.id != ""`, anon always lands in the "deny" bucket (200 empty list / 404 view / 403 or 400 write). The harness expects `deny` for anon across the board.
 - **Anon write may surface as 400 instead of 403.** When a rule denies a create payload that also fails server-side validation (e.g. trips.create with no `created_by`), PB returns the validation error, not the rule error. Both classify as `deny`.
-- **Auth-collection `view` quirk**: PB's auth collection view rule is also gated by superuser-or-self for the auth fields (password hash, tokenKey). With `viewRule = id = @request.auth.id` we get a clean self-only view. Cross-member lookup (e.g. avatar of a co-traveler) goes through `trip_members.display_name` instead, not through reading other users' rows.
+- **Auth-collection `view` quirk**: PB's auth collection view rule is also gated by superuser-or-self for the auth fields (password hash, tokenKey). ~~With `viewRule = id = @request.auth.id` we get a clean self-only view. Cross-member lookup (e.g. avatar of a co-traveler) goes through `trip_members.display_name` instead, not through reading other users' rows.~~ **Superseded by #103 / ADR-0006:** `users.viewRule` is now `co_traveler`, so a member reads a co-traveler's `users` row directly (for the avatar wire-up). `password`/`tokenKey` are still always stripped, and `email` stays hidden because `emailVisibility` is off — only `name` + `avatar` (+ `verified`) cross-read. `display_name` on `trip_members` remains the per-trip nickname; the cross-user **identity** (name + avatar) is read from `users` via `expand:user`.
 - **Back-relation requires the field to exist on the foreign side.** `trip_members.user` (relation to users) gives us `users.trip_members_via_user`. If a relation field is renamed or removed the back-relation name changes — update rule expressions in lockstep.
 - **Multi-relation membership uses `?=`.** Single-relation would use `=`. The `trip_members_via_trip` back-relation is a list, hence `?=`.
 - **`bindBody` doesn't unmarshal nested JSON.** A `DynamicModel` with nested object fields silently reads as empty in PB 0.27. For nested request bodies, read `e.requestInfo().body['key']` directly. The `/api/dev/rules-fixture` endpoint hit this; documented inline.
