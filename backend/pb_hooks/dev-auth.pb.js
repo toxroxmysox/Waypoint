@@ -253,6 +253,25 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 	invite.set('expires_at', expiresAt);
 	e.app.save(invite);
 
+	// Seed a trip-scoped document owned by the owner so the harness has a fixture
+	// record for list/view/delete (#70). The file field requires a real file
+	// matching its mimeTypes (PDF + images), so attach a valid 1x1 PNG. Direct
+	// save bypasses the documents create hook (which only pins uploaded_by).
+	const documentsCol = e.app.findCollectionByNameOrId('documents');
+	const png1x1 = new Uint8Array([
+		0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+		0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4,
+		0x89, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x62, 0x00, 0x01, 0x00, 0x00,
+		0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae,
+		0x42, 0x60, 0x82
+	]);
+	const docFile = $filesystem.fileFromBytes(png1x1, 'fixture.png');
+	const document = new Record(documentsCol);
+	document.set('trip', trip.id);
+	document.set('uploaded_by', memberIds.owner);
+	document.set('file', docFile);
+	e.app.save(document);
+
 	return e.json(200, {
 		tripId: trip.id,
 		phaseId: phase.id,
@@ -264,6 +283,7 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 		checklistItemId: checklistItem.id,
 		pendingInviteId: invite.id,
 		pendingInviteCode: inviteCode,
+		documentId: document.id,
 		memberIds: memberIds,
 		userIds: userIds
 	});

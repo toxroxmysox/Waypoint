@@ -16,7 +16,6 @@ export interface Trip extends RecordModel {
 	auto_approve_suggestions: boolean;
 	created_by: string;
 	archived: boolean;
-	vault_password_hash: string;
 }
 
 export interface Phase extends RecordModel {

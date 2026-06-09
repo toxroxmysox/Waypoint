@@ -21,7 +21,6 @@ function makeTrip(overrides: Partial<Trip> = {}): Trip {
 		archive_enabled: false,
 		archive_publish_after_days: 7,
 		public_share_token: '',
-		vault_password_hash: '',
 		auto_approve_suggestions: true,
 		created_by: 'user1',
 		archived: false,
@@ -61,10 +60,9 @@ describe('buildTripExport', () => {
 
 	it('strips sensitive fields', () => {
 		const result = buildTripExport(
-			makeTrip({ vault_password_hash: 'secret:hash', public_share_token: 'tok123' }),
+			makeTrip({ public_share_token: 'tok123' }),
 			[], [], [], null
 		);
-		expect(result.trip).not.toHaveProperty('vault_password_hash');
 		expect(result.trip).not.toHaveProperty('public_share_token');
 		expect(result.trip).not.toHaveProperty('id');
 		expect(result.trip).not.toHaveProperty('created_by');

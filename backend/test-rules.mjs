@@ -28,13 +28,39 @@ const EMAILS = {
 };
 
 const ROLES = ['owner', 'co_owner', 'traveler', 'viewer', 'non_member'];
-const COLLECTIONS = ['users', 'trips', 'trip_members', 'phases', 'days', 'items', 'checklist_items', 'pending_invites', 'votes', 'trip_goals'];
+const COLLECTIONS = ['users', 'trips', 'trip_members', 'phases', 'days', 'items', 'checklist_items', 'pending_invites', 'votes', 'trip_goals', 'documents'];
+
+// Collections whose create requires a multipart body (a file field). `documents`
+// (#70) takes a single file; the harness uploads a valid 1x1 PNG so PB's
+// mimeTypes/maxSize validation passes and the create result reflects the
+// permission rule + hook, not a payload-validation 400.
+const MULTIPART_CREATE = new Set(['documents']);
+const PNG_1x1 = new Uint8Array([
+	0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+	0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4,
+	0x89, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x62, 0x00, 0x01, 0x00, 0x00,
+	0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae,
+	0x42, 0x60, 0x82
+]);
+
+function documentsCreateForm(fixture) {
+	const form = new FormData();
+	form.set('trip', fixture.tripId);
+	form.set('file', new Blob([PNG_1x1], { type: 'image/png' }), 'harness.png');
+	return form;
+}
 
 async function pbRequest(method, path, opts = {}) {
-	const headers = { 'Content-Type': 'application/json' };
+	const headers = {};
 	if (opts.token) headers.Authorization = opts.token;
 	const init = { method, headers };
-	if (opts.body !== undefined) init.body = JSON.stringify(opts.body);
+	if (opts.form !== undefined) {
+		// Let fetch set the multipart boundary + Content-Type.
+		init.body = opts.form;
+	} else if (opts.body !== undefined) {
+		headers['Content-Type'] = 'application/json';
+		init.body = JSON.stringify(opts.body);
+	}
 	const res = await fetch(PB_URL + path, init);
 	let data = null;
 	try {
@@ -87,6 +113,8 @@ function fixtureRecordId(fixture, collection) {
 			return fixture.voteId;
 		case 'trip_goals':
 			return fixture.goalId;
+		case 'documents':
+			return fixture.documentId;
 		default:
 			throw new Error('unknown collection ' + collection);
 	}
@@ -261,6 +289,23 @@ const EXPECT = {
 		create: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' },
 		update: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' },
 		delete: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' }
+	},
+	// documents (#70):
+	//   list/view: any member sees the trip's documents.
+	//   create: any member EXCEPT viewers (documents.pb.js blocks viewers;
+	//           uploaded_by is auto-pinned to the caller). Each role uploads a
+	//           valid PNG via multipart so the result reflects the gate, not a
+	//           payload error.
+	//   update: none — updateRule is null (v4 documents are immutable artifacts).
+	//   delete: uploader OR owner/co_owner (documents.pb.js). The fixture document
+	//           is uploaded by the owner, so owner + co_owner pass; traveler and
+	//           viewer (neither uploader nor privileged) are denied.
+	documents: {
+		list: ALLOW_MEMBERS_DENY_NONMEMBER,
+		view: ALLOW_MEMBERS_DENY_NONMEMBER,
+		create: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' },
+		update: DENY_ALL,
+		delete: { owner: 'allow', co_owner: 'allow', traveler: 'deny', viewer: 'deny', non_member: 'deny' }
 	}
 };
 
@@ -369,6 +414,9 @@ function updateBody(collection) {
 			return { value: 'love' };
 		case 'trip_goals':
 			return { title: 'Harness goal updated' };
+		case 'documents':
+			// updateRule is null, so PB rejects before validating the payload.
+			return { caption: 'Harness updated' };
 		default:
 			throw new Error('no body for ' + collection);
 	}
@@ -404,16 +452,18 @@ async function runViewPhase(tokens, fixture) {
 
 async function runCreatePhase(tokens, fixture) {
 	for (const col of COLLECTIONS) {
+		const multipart = MULTIPART_CREATE.has(col);
 		for (const role of ROLES) {
-			const r = await pbRequest('POST', `/api/collections/${col}/records`, {
-				token: tokens[role],
-				body: createBody(col, role, fixture)
-			});
+			const opts = multipart
+				? { token: tokens[role], form: documentsCreateForm(fixture) }
+				: { token: tokens[role], body: createBody(col, role, fixture) };
+			const r = await pbRequest('POST', `/api/collections/${col}/records`, opts);
 			recordResult(col, 'create', role, EXPECT[col].create[role], classifyWrite(r.status), r.status);
 		}
-		const r = await pbRequest('POST', `/api/collections/${col}/records`, {
-			body: createBody(col, 'owner', fixture)
-		});
+		const anonOpts = multipart
+			? { form: documentsCreateForm(fixture) }
+			: { body: createBody(col, 'owner', fixture) };
+		const r = await pbRequest('POST', `/api/collections/${col}/records`, anonOpts);
 		recordResult(col, 'create', 'anon', 'deny', classifyWrite(r.status), r.status);
 	}
 }
