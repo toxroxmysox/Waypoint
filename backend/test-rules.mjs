@@ -28,7 +28,7 @@ const EMAILS = {
 };
 
 const ROLES = ['owner', 'co_owner', 'traveler', 'viewer', 'non_member'];
-const COLLECTIONS = ['users', 'trips', 'trip_members', 'phases', 'days', 'items', 'checklist_items', 'pending_invites', 'votes', 'trip_goals', 'documents'];
+const COLLECTIONS = ['users', 'trips', 'trip_members', 'phases', 'days', 'items', 'checklist_items', 'pending_invites', 'votes', 'trip_goals', 'goal_votes', 'documents'];
 
 // Collections whose create requires a multipart body (a file field). `documents`
 // (#70) takes a single file; the harness uploads a valid 1x1 PNG so PB's
@@ -113,6 +113,8 @@ function fixtureRecordId(fixture, collection) {
 			return fixture.voteId;
 		case 'trip_goals':
 			return fixture.goalId;
+		case 'goal_votes':
+			return fixture.goalVoteId;
 		case 'documents':
 			return fixture.documentId;
 		default:
@@ -290,6 +292,24 @@ const EXPECT = {
 		update: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' },
 		delete: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' }
 	},
+	// goal_votes (#77 — ADR-0004 separate collection, parallel to votes):
+	//   list/view: any member can see the trip's goal votes.
+	//   create: owner·co_owner·traveler may vote on a goal they did NOT create;
+	//           viewers cannot (role) and non_member/anon are not members. The
+	//           createBody targets the viewer-authored `goalNeutral`, so none of
+	//           owner/co_owner/traveler is its creator — all three pass; viewer
+	//           denies on both role and the can't-vote-own rule. (The can't-vote-
+	//           your-own-goal negative case is asserted separately — see
+	//           runGoalVotesNovelCases.)
+	//   update/delete: own vote only. The fixture goal_vote belongs to the owner
+	//           (on the co_owner's goal), so only owner passes — SELF_ONLY.
+	goal_votes: {
+		list: ALLOW_MEMBERS_DENY_NONMEMBER,
+		view: ALLOW_MEMBERS_DENY_NONMEMBER,
+		create: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' },
+		update: SELF_ONLY,
+		delete: SELF_ONLY
+	},
 	// documents (#70):
 	//   list/view: any member sees the trip's documents.
 	//   create: any member EXCEPT viewers (documents.pb.js blocks viewers;
@@ -373,6 +393,17 @@ function createBody(collection, role, fixture) {
 				member: fixture.memberIds[role] || fixture.memberIds.owner,
 				value: 'like'
 			};
+		case 'goal_votes':
+			// Vote as the acting member on the viewer-authored `goalNeutral`, which
+			// none of owner/co_owner/traveler created — so the can't-vote-own rule
+			// passes for them and they vote successfully; viewer denies on role.
+			// non_member has no membership → falls back to owner, whose user != the
+			// non_member auth, so member.user = auth fails → deny.
+			return {
+				goal: fixture.goalNeutralId,
+				member: fixture.memberIds[role] || fixture.memberIds.owner,
+				value: 'like'
+			};
 		case 'trip_goals':
 			// Author as the acting member's own membership. The createRule gates on
 			// created_by.role (single relation), so viewer denies and owner/
@@ -411,6 +442,8 @@ function updateBody(collection) {
 			// validating the payload.
 			return { role: 'viewer' };
 		case 'votes':
+			return { value: 'love' };
+		case 'goal_votes':
 			return { value: 'love' };
 		case 'trip_goals':
 			return { title: 'Harness goal updated' };
@@ -518,6 +551,74 @@ async function runDeletePhase(tokens) {
 	}
 }
 
+// Novel #77 rules the fixed (collection, op, role) matrix can't express: the
+// can't-vote-your-own-goal create rule, and the tightened goal-delete "creator
+// AND zero goal_votes" clause. Each sub-case uses its own fresh fixture. Results
+// are recorded with custom op labels (collected in NOVEL_OPS for the report).
+const NOVEL_OPS = [
+	'create_own_goal',
+	'create_other_goal',
+	'delete_creator_zero',
+	'delete_creator_voted',
+	'delete_owner_voted'
+];
+
+async function runGoalVotesNovelCases(tokens) {
+	// 1a. Can't vote your own goal — owner votes the owner-authored goalOwner → deny.
+	let fixture = await setupFixture();
+	const ownGoal = await pbRequest('POST', '/api/collections/goal_votes/records', {
+		token: tokens.owner,
+		body: { goal: fixture.goalOwnerId, member: fixture.memberIds.owner, value: 'like' }
+	});
+	recordResult('goal_votes', 'create_own_goal', 'owner', 'deny', classifyWrite(ownGoal.status), ownGoal.status);
+
+	// 1b. Control: owner votes a goal they did NOT author (goalNeutral) → allow.
+	const otherGoal = await pbRequest('POST', '/api/collections/goal_votes/records', {
+		token: tokens.owner,
+		body: { goal: fixture.goalNeutralId, member: fixture.memberIds.owner, value: 'like' }
+	});
+	recordResult('goal_votes', 'create_other_goal', 'owner', 'allow', classifyWrite(otherGoal.status), otherGoal.status);
+
+	// 2a. Control: traveler deletes their own goal while it has zero votes → allow.
+	fixture = await setupFixture();
+	const delZero = await pbRequest('DELETE', `/api/collections/trip_goals/records/${fixture.goalId}`, {
+		token: tokens.traveler
+	});
+	recordResult('trip_goals', 'delete_creator_zero', 'traveler', 'allow', classifyWrite(delZero.status), delZero.status);
+
+	// 2b. Tightening: once a vote exists on the traveler's goal (cast by the owner,
+	//     legal — not the owner's own goal), the traveler-creator can no longer
+	//     delete it → deny.
+	fixture = await setupFixture();
+	await pbRequest('POST', '/api/collections/goal_votes/records', {
+		token: tokens.owner,
+		body: { goal: fixture.goalId, member: fixture.memberIds.owner, value: 'like' }
+	});
+	const delVoted = await pbRequest('DELETE', `/api/collections/trip_goals/records/${fixture.goalId}`, {
+		token: tokens.traveler
+	});
+	recordResult('trip_goals', 'delete_creator_voted', 'traveler', 'deny', classifyWrite(delVoted.status), delVoted.status);
+
+	// 2c. ...but an owner may still delete a voted goal regardless.
+	fixture = await setupFixture();
+	await pbRequest('POST', '/api/collections/goal_votes/records', {
+		token: tokens.owner,
+		body: { goal: fixture.goalId, member: fixture.memberIds.owner, value: 'like' }
+	});
+	const delOwner = await pbRequest('DELETE', `/api/collections/trip_goals/records/${fixture.goalId}`, {
+		token: tokens.owner
+	});
+	recordResult('trip_goals', 'delete_owner_voted', 'owner', 'allow', classifyWrite(delOwner.status), delOwner.status);
+}
+
+function printNovelReport() {
+	console.log('\n[novel #77 rules]');
+	for (const r of results.filter((x) => NOVEL_OPS.includes(x.op))) {
+		const mark = r.passed ? 'PASS' : 'FAIL';
+		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+	}
+}
+
 function printReport() {
 	const ops = ['list', 'view', 'create', 'update', 'delete'];
 	const allRoles = [...ROLES, 'anon'];
@@ -587,7 +688,11 @@ async function main() {
 	console.log('Phase 5/5: delete');
 	await runDeletePhase(tokens);
 
+	console.log('Novel #77 cases: vote-own-goal + tightened delete');
+	await runGoalVotesNovelCases(tokens);
+
 	printReport();
+	printNovelReport();
 
 	const failed = results.some((r) => !r.passed);
 	exit(failed ? 1 : 0);

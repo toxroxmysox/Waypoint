@@ -76,3 +76,14 @@ export interface Vote {
 	value: VoteValue;
 	created: string;
 }
+
+// #77 — a vote on a Trip Goal. Parallels `Vote` (ADR-0004: separate collection,
+// not polymorphic). No `trip` field — trip is reachable via `goal`. Shares
+// `VoteValue` + voting.ts grouping/scoring with item votes.
+export interface GoalVote {
+	id: string;
+	goal: string;
+	member: string;
+	value: VoteValue;
+	created: string;
+}

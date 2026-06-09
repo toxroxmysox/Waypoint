@@ -118,5 +118,8 @@ export interface TripGoal extends RecordModel {
 	manual_status: GoalStatus;
 	sort_order: number;
 	items: string[];
+	// Autodate (added 0041). Drives the Goals-tab oldest-first vote tiebreak (#77).
+	created: string;
+	updated: string;
 	expand?: { created_by?: import('../collaboration/types').TripMember };
 }
