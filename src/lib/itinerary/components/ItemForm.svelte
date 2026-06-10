@@ -636,7 +636,7 @@
 			<div class="p-4">
 				<fieldset>
 					<legend class="text-moss text-[11px] font-bold tracking-[0.2em] uppercase">Addresses goal(s)</legend>
-					<p class="text-ink-muted mt-1 text-xs">Link this plan to the wishes it helps make happen.</p>
+					<p class="text-ink-muted mt-1 text-xs">Link this plan to the goals it helps make happen.</p>
 					<div class="mt-2 space-y-1">
 						{#each context.goals as goal}
 							<label class="flex items-center gap-2">

@@ -106,7 +106,7 @@ export function buildDeck(
 //
 // The capture wizard runs on the same SwipeDeck substrate but interleaves two
 // card kinds: REACTION cards (vote on others' goals → goal_votes) and PROMPT
-// cards (type 0..n wishes → trip_goals). Resolution 8: cards alternate 1:1
+// cards (type 0..n goals → trip_goals). Resolution 8: cards alternate 1:1
 // reaction/prompt, degrading to all-prompts (a new trip's first member, no
 // reactions) or all-reactions (prompts spent). Deterministic given inputs →
 // unit-testable, exactly like buildDeck.

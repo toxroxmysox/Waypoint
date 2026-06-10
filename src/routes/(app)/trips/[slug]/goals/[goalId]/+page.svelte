@@ -66,7 +66,7 @@
 	<div>
 		<div class="text-ink-muted flex items-center gap-2 text-[12px]">
 			<Avatar initial={memberInitial(author)} alt={memberDisplayName(author)} size={22} />
-			<span>{memberDisplayName(author)}'s wish</span>
+			<span>{memberDisplayName(author)}'s goal</span>
 		</div>
 		<h1 class="font-display text-ink mt-2 text-[24px] font-semibold leading-tight">{goal.title}</h1>
 		{#if goal.description}

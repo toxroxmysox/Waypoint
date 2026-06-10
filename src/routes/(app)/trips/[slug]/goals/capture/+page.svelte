@@ -24,28 +24,28 @@
 		return () => mq.removeEventListener('change', sync);
 	});
 
-	// ── wizard tallies / per-prompt wish bookkeeping ──────────────────────
-	let wishesAdded = $state(0);
+	// ── wizard tallies / per-prompt goal bookkeeping ──────────────────────
+	let goalsAdded = $state(0);
 	let promptInput = $state('');
-	// Per prompt-card id: the wish titles (optimistic chips) and the saved goal ids
+	// Per prompt-card id: the goal titles (optimistic chips) and the saved goal ids
 	// (for rewind-delete). Keyed by the card id so each prompt undoes only its own.
-	let wishTitlesByCard = $state<Record<string, string[]>>({});
-	let wishIdsByCard = $state<Record<string, string[]>>({});
+	let goalTitlesByCard = $state<Record<string, string[]>>({});
+	let goalIdsByCard = $state<Record<string, string[]>>({});
 	let pendingAddCardId = '';
 	// Bumped by "Go again" to remount the deck (its internal idx is private state).
 	let runKey = $state(0);
 
 	async function goAgain() {
 		await invalidateAll(); // rebuild the deck — now excludes goals just voted on
-		wishesAdded = 0;
-		wishTitlesByCard = {};
-		wishIdsByCard = {};
+		goalsAdded = 0;
+		goalTitlesByCard = {};
+		goalIdsByCard = {};
 		promptInput = '';
 		runKey += 1;
 	}
 
-	// Pending unflushed input → wishes (comma/newline separated → "Add N & continue").
-	const pendingWishes = $derived(
+	// Pending unflushed input → goals (comma/newline separated → "Add N & continue").
+	const pendingGoals = $derived(
 		promptInput
 			.split(/[,\n]/)
 			.map((s) => s.trim())
@@ -53,8 +53,8 @@
 	);
 
 	// ── background persistence forms ──────────────────────────────────────
-	let addWishForm = $state<HTMLFormElement | null>(null);
-	let deleteWishForm = $state<HTMLFormElement | null>(null);
+	let addGoalForm = $state<HTMLFormElement | null>(null);
+	let deleteGoalForm = $state<HTMLFormElement | null>(null);
 	let voteForm = $state<HTMLFormElement | null>(null);
 	let unvoteForm = $state<HTMLFormElement | null>(null);
 
@@ -67,15 +67,15 @@
 
 	function addOne(cardId: string, title: string) {
 		const t = title.trim();
-		if (!t || !addWishForm) return;
+		if (!t || !addGoalForm) return;
 		pendingAddCardId = cardId;
-		wishesAdded += 1; // optimistic
-		wishTitlesByCard = { ...wishTitlesByCard, [cardId]: [...(wishTitlesByCard[cardId] ?? []), t] };
-		setFields(addWishForm, { title: t });
+		goalsAdded += 1; // optimistic
+		goalTitlesByCard = { ...goalTitlesByCard, [cardId]: [...(goalTitlesByCard[cardId] ?? []), t] };
+		setFields(addGoalForm, { title: t });
 	}
 
 	function flush(cardId: string) {
-		for (const w of pendingWishes) addOne(cardId, w);
+		for (const w of pendingGoals) addOne(cardId, w);
 		promptInput = '';
 	}
 
@@ -94,12 +94,12 @@
 	}
 	function persistRewindPrompt(card: WizardCard) {
 		if (card.kind !== 'prompt') return;
-		const ids = wishIdsByCard[card.id] ?? [];
-		const titles = wishTitlesByCard[card.id] ?? [];
-		if (ids.length && deleteWishForm) setFields(deleteWishForm, { goals: ids.join(',') });
-		wishesAdded = Math.max(0, wishesAdded - titles.length);
-		wishIdsByCard = { ...wishIdsByCard, [card.id]: [] };
-		wishTitlesByCard = { ...wishTitlesByCard, [card.id]: [] };
+		const ids = goalIdsByCard[card.id] ?? [];
+		const titles = goalTitlesByCard[card.id] ?? [];
+		if (ids.length && deleteGoalForm) setFields(deleteGoalForm, { goals: ids.join(',') });
+		goalsAdded = Math.max(0, goalsAdded - titles.length);
+		goalIdsByCard = { ...goalIdsByCard, [card.id]: [] };
+		goalTitlesByCard = { ...goalTitlesByCard, [card.id]: [] };
 		promptInput = '';
 	}
 
@@ -113,28 +113,28 @@
 
 <!-- background persistence (progressive-enhancement form actions, fired by the deck) -->
 <form
-	bind:this={addWishForm}
+	bind:this={addGoalForm}
 	method="POST"
-	action="?/addWish"
+	action="?/addGoal"
 	class="hidden"
 	use:enhance={() =>
 		async ({ result }) => {
 			if (result.type === 'success' && result.data?.goalId) {
 				const cid = pendingAddCardId;
 				const gid = String(result.data.goalId);
-				wishIdsByCard = { ...wishIdsByCard, [cid]: [...(wishIdsByCard[cid] ?? []), gid] };
+				goalIdsByCard = { ...goalIdsByCard, [cid]: [...(goalIdsByCard[cid] ?? []), gid] };
 			} else if (result.type === 'failure') {
-				wishesAdded = Math.max(0, wishesAdded - 1);
-				toast.show('Wish did not save — check your connection.', 'error');
+				goalsAdded = Math.max(0, goalsAdded - 1);
+				toast.show('Goal did not save — check your connection.', 'error');
 			}
 		}}
 >
 	<input type="hidden" name="title" value="" />
 </form>
 <form
-	bind:this={deleteWishForm}
+	bind:this={deleteGoalForm}
 	method="POST"
-	action="?/deleteWish"
+	action="?/deleteGoal"
 	class="hidden"
 	use:enhance={() => async () => {}}
 >
@@ -173,7 +173,7 @@
 				<div class="text-moss mb-4 text-4xl" aria-hidden="true">✓</div>
 				<h1 class="font-display text-ink mb-2 text-2xl italic">You're all caught up.</h1>
 				<p class="text-ink-soft mb-6 max-w-xs text-sm">
-					No new wishes to react to. Check back as the group adds more.
+					No new goals to react to. Check back as the group adds more.
 				</p>
 				<div class="flex w-full max-w-[280px] flex-col gap-2.5">
 					<Button onclick={() => goto(goalsHref)}>See the goal list</Button>
@@ -186,7 +186,7 @@
 				othersByCard={data.votesByGoal as unknown as Record<string, Vote[]>}
 				members={data.members}
 				kindOf={(c) => (c.kind === 'prompt' ? 'prompt' : 'vote')}
-				title="Add & review wishes"
+				title="Add & review goals"
 				subtitle={data.trip.location_summary || 'Goals'}
 				detailLayout={isWide ? 'modal' : 'sheet'}
 				autoFocus={isWide}
@@ -199,7 +199,7 @@
 					{#if card.kind === 'prompt'}
 						<div class="min-h-[180px]">
 							<div class="text-moss mb-3 inline-flex items-center gap-1.5 text-[11.5px] font-semibold tracking-wide uppercase">
-								<span aria-hidden="true">✎</span> Your wish
+								<span aria-hidden="true">✎</span> Your goal
 							</div>
 							<h2 class="font-display text-ink text-[21px] leading-snug font-semibold">
 								{card.text}
@@ -209,16 +209,16 @@
 								bind:value={promptInput}
 								onkeydown={(e) => onPromptKey(e, card.id)}
 								onpointerdown={(e) => e.stopPropagation()}
-								placeholder="Type a wish, press enter…"
+								placeholder="Type a goal, press enter…"
 								class="border-line bg-surface text-ink mt-4 w-full rounded-lg border px-3 py-2.5 text-sm"
 							/>
-							{#if (wishTitlesByCard[card.id] ?? []).length}
+							{#if (goalTitlesByCard[card.id] ?? []).length}
 								<div class="mt-3 flex flex-wrap gap-1.5">
-									{#each wishTitlesByCard[card.id] as wish, i (i)}
+									{#each goalTitlesByCard[card.id] as title, i (i)}
 										<span
 											class="bg-moss-tint text-moss border-moss/30 inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium"
 										>
-											<span aria-hidden="true">✓</span>{wish}
+											<span aria-hidden="true">✓</span>{title}
 										</span>
 									{/each}
 								</div>
@@ -228,7 +228,7 @@
 						{@const author = card.goal.expand?.created_by ?? null}
 						<div class="min-h-[180px]">
 							<div class="text-ink-muted mb-3 inline-flex items-center gap-1.5 text-[11.5px] font-semibold tracking-wide uppercase">
-								<span aria-hidden="true">♡</span> A group wish
+								<span aria-hidden="true">♡</span> A group goal
 							</div>
 							<h2 class="font-display text-ink text-[21px] leading-snug font-semibold">
 								{card.goal.title}
@@ -250,14 +250,14 @@
 					<button
 						type="button"
 						onclick={() => nextPrompt(card, advance)}
-						class="w-full rounded-full px-4 py-3 text-sm font-semibold {pendingWishes.length > 0 ||
-						(wishTitlesByCard[card.id] ?? []).length > 0
+						class="w-full rounded-full px-4 py-3 text-sm font-semibold {pendingGoals.length > 0 ||
+						(goalTitlesByCard[card.id] ?? []).length > 0
 							? 'bg-moss text-paper'
 							: 'border-line bg-surface text-ink-soft border'}"
 					>
-						{pendingWishes.length > 0
-							? `Add ${pendingWishes.length} & continue`
-							: (wishTitlesByCard[card.id] ?? []).length > 0
+						{pendingGoals.length > 0
+							? `Add ${pendingGoals.length} & continue`
+							: (goalTitlesByCard[card.id] ?? []).length > 0
 								? 'Continue'
 								: 'Skip this prompt'}
 					</button>
@@ -268,8 +268,8 @@
 						<div class="text-moss mb-4 text-4xl" aria-hidden="true">✦</div>
 						<div class="font-display text-ink mb-2 text-2xl italic">You're all caught up.</div>
 						<p class="text-ink-soft mb-5 max-w-[260px] text-sm leading-relaxed">
-							{wishesAdded}
-							{wishesAdded === 1 ? 'wish' : 'wishes'} added · {rated}
+							{goalsAdded}
+							{goalsAdded === 1 ? 'goal' : 'goals'} added · {rated}
 							{rated === 1 ? 'goal' : 'goals'} rated.
 						</p>
 						<div class="flex w-full max-w-[280px] flex-col gap-2.5">

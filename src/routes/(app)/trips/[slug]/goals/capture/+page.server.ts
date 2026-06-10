@@ -73,9 +73,9 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 };
 
 export const actions: Actions = {
-	// Per-add wish persistence (Resolution 4): a typed wish becomes a trip_goal
+	// Per-add goal persistence (Resolution 4): a typed goal becomes a trip_goal
 	// immediately, authored by the caller. Mirrors the Goals-tab create action.
-	addWish: async ({ request, locals, params }) => {
+	addGoal: async ({ request, locals, params }) => {
 		const trip = await locals.pb
 			.collection('trips')
 			.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
@@ -87,7 +87,7 @@ export const actions: Actions = {
 
 		const data = await request.formData();
 		const title = data.get('title')?.toString().trim();
-		if (!title) return fail(400, { error: 'A wish needs a title.' });
+		if (!title) return fail(400, { error: 'A goal needs a title.' });
 
 		try {
 			const existing = await locals.pb.collection('trip_goals').getFullList({
@@ -107,16 +107,16 @@ export const actions: Actions = {
 			});
 			return { success: true, goalId: created.id };
 		} catch (err: unknown) {
-			const message = err instanceof Error ? err.message : 'Failed to add wish.';
+			const message = err instanceof Error ? err.message : 'Failed to add goal.';
 			return fail(500, { error: message });
 		}
 	},
 
-	// Rewind across a created wish DELETES it (Resolution 4 — allowed: creator +
+	// Rewind across a created goal DELETES it (Resolution 4 — allowed: creator +
 	// zero votes; PB rules enforce). Deleted by id, optimistically client-tracked.
-	deleteWish: async ({ request, locals }) => {
+	deleteGoal: async ({ request, locals }) => {
 		const data = await request.formData();
-		// Comma-separated: rewinding one prompt card can undo several wishes at once.
+		// Comma-separated: rewinding one prompt card can undo several goals at once.
 		const ids = (data.get('goals')?.toString() ?? '')
 			.split(',')
 			.map((s) => s.trim())
@@ -126,7 +126,7 @@ export const actions: Actions = {
 			for (const id of ids) await locals.pb.collection('trip_goals').delete(id);
 			return { success: true };
 		} catch (err: unknown) {
-			const message = err instanceof Error ? err.message : 'Failed to undo wish.';
+			const message = err instanceof Error ? err.message : 'Failed to undo goal.';
 			return fail(400, { error: message });
 		}
 	},

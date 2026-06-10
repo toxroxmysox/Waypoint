@@ -50,7 +50,7 @@
 		kindOf?: (card: C) => 'vote' | 'prompt';
 		onvote?: (card: C, value: VoteValue) => void;
 		onrewind?: (card: C) => void;
-		/** Rewinding back onto a prompt card — lets the consumer undo its wishes. */
+		/** Rewinding back onto a prompt card — lets the consumer undo its goals. */
 		onrewindPrompt?: (card: C) => void;
 		onclose?: () => void;
 		face: Snippet<[C]>;
@@ -143,7 +143,7 @@
 	}
 
 	// Advance a prompt card on "next"/"skip" — no vote cast, but recorded in history
-	// so a later rewind lands back on it (and the consumer can undo its wishes).
+	// so a later rewind lands back on it (and the consumer can undo its goals).
 	function advancePrompt() {
 		if (animatingRef.current) return;
 		const i = liveIdxRef.current;
@@ -165,7 +165,7 @@
 		idx = i;
 		live = 'Rewound.';
 		if (last.vote === null) {
-			// Rewound onto a prompt card — let the consumer delete its created wishes.
+			// Rewound onto a prompt card — let the consumer delete its created goals.
 			onrewindPrompt?.(cards[i]);
 		} else {
 			const next = { ...votes };
