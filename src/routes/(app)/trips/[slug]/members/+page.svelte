@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { validateForm } from '$lib/shell/actions/validate-form';
 	import NavBar from '$lib/ui/NavBar.svelte';
+	import Avatar from '$lib/ui/Avatar.svelte';
 	import Card from '$lib/ui/Card.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
 	import Button from '$lib/ui/Button.svelte';
@@ -76,6 +77,7 @@
 			<ul class="divide-line divide-y">
 				{#each data.members as m (m.id)}
 					<li class="flex items-center justify-between gap-3 px-4 py-3">
+						<Avatar img={m.avatarUrl} initial={m.displayLabel} alt={m.displayLabel} size={36} />
 						<div class="min-w-0 flex-1">
 							<div class="flex items-center gap-2">
 								<span class="text-ink truncate text-sm font-semibold">{m.displayLabel}</span>
