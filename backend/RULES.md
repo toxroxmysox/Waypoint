@@ -115,7 +115,7 @@ The `votes` collection (created 0024, `value` + `updateRule` added 0029) is exer
 
 ## Trip Goals (#75)
 
-The `trip_goals` collection (created 0040) is exercised by the harness as of #75. Goals are trip-scoped, phase-less wishes; create/edit are open to owner·co_owner·traveler with **no suggestion queue** (viewers are read-only), and delete is `creator OR owner/co_owner`.
+The `trip_goals` collection (created 0040) is exercised by the harness as of #75. Goals are trip-scoped, phase-less aspirations; create/edit are open to owner·co_owner·traveler with **no suggestion queue** (viewers are read-only), and delete is `creator OR owner/co_owner`.
 
 | Collection | list | view | create | update | delete |
 |---|---|---|---|---|---|

@@ -27,7 +27,7 @@
 		resultsOpen = true;
 	}
 
-	// Optimistic list: seed from server, append the new wish on submit, then
+	// Optimistic list: seed from server, append the new goal on submit, then
 	// reconcile against the re-loaded data once the action resolves.
 	let goals = $state<TripGoal[]>(untrack(() => data.goals ?? []));
 	$effect(() => {
@@ -73,8 +73,8 @@
 		>
 			<span class="bg-moss text-paper flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg" aria-hidden="true">✦</span>
 			<span class="min-w-0 flex-1">
-				<span class="text-ink block text-[14.5px] font-semibold">Add &amp; review wishes</span>
-				<span class="text-ink-soft block text-[12px]">Brain-dump your wishes and react to the group's</span>
+				<span class="text-ink block text-[14.5px] font-semibold">Add &amp; review goals</span>
+				<span class="text-ink-soft block text-[12px]">Brain-dump your goals and react to the group's</span>
 			</span>
 			<span class="text-moss" aria-hidden="true">›</span>
 		</a>
@@ -130,7 +130,7 @@
 					<path d="M7 2.5v9M2.5 7h9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
 				</svg>
 			</span>
-			<span class="text-[13.5px] font-semibold">Add a wish</span>
+			<span class="text-[13.5px] font-semibold">Add a goal</span>
 		</button>
 	{/if}
 
@@ -148,7 +148,7 @@
 	members={data.members}
 />
 
-<BottomSheet bind:open={createOpen} title="Add a wish">
+<BottomSheet bind:open={createOpen} title="Add a goal">
 	{#if form?.error}
 		<p class="text-error mb-3 text-sm">{form.error}</p>
 	{/if}
@@ -210,7 +210,7 @@
 			></textarea>
 		</div>
 		<Button type="submit" variant="moss" size="md" class="w-full" disabled={creating}>
-			{creating ? 'Adding…' : 'Add wish'}
+			{creating ? 'Adding…' : 'Add goal'}
 		</Button>
 	</form>
 </BottomSheet>

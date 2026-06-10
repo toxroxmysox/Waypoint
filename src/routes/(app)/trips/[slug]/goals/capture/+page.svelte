@@ -24,10 +24,10 @@
 		return () => mq.removeEventListener('change', sync);
 	});
 
-	// ── wizard tallies / per-prompt wish bookkeeping ──────────────────────
+	// ── wizard tallies / per-prompt goal bookkeeping ──────────────────────
 	let wishesAdded = $state(0);
 	let promptInput = $state('');
-	// Per prompt-card id: the wish titles (optimistic chips) and the saved goal ids
+	// Per prompt-card id: the goal titles (optimistic chips) and the saved goal ids
 	// (for rewind-delete). Keyed by the card id so each prompt undoes only its own.
 	let wishTitlesByCard = $state<Record<string, string[]>>({});
 	let wishIdsByCard = $state<Record<string, string[]>>({});
@@ -44,7 +44,7 @@
 		runKey += 1;
 	}
 
-	// Pending unflushed input → wishes (comma/newline separated → "Add N & continue").
+	// Pending unflushed input → goals (comma/newline separated → "Add N & continue").
 	const pendingWishes = $derived(
 		promptInput
 			.split(/[,\n]/)
@@ -125,7 +125,7 @@
 				wishIdsByCard = { ...wishIdsByCard, [cid]: [...(wishIdsByCard[cid] ?? []), gid] };
 			} else if (result.type === 'failure') {
 				wishesAdded = Math.max(0, wishesAdded - 1);
-				toast.show('Wish did not save — check your connection.', 'error');
+				toast.show('Goal did not save — check your connection.', 'error');
 			}
 		}}
 >
@@ -173,7 +173,7 @@
 				<div class="text-moss mb-4 text-4xl" aria-hidden="true">✓</div>
 				<h1 class="font-display text-ink mb-2 text-2xl italic">You're all caught up.</h1>
 				<p class="text-ink-soft mb-6 max-w-xs text-sm">
-					No new wishes to react to. Check back as the group adds more.
+					No new goals to react to. Check back as the group adds more.
 				</p>
 				<div class="flex w-full max-w-[280px] flex-col gap-2.5">
 					<Button onclick={() => goto(goalsHref)}>See the goal list</Button>
@@ -186,7 +186,7 @@
 				othersByCard={data.votesByGoal as unknown as Record<string, Vote[]>}
 				members={data.members}
 				kindOf={(c) => (c.kind === 'prompt' ? 'prompt' : 'vote')}
-				title="Add & review wishes"
+				title="Add & review goals"
 				subtitle={data.trip.location_summary || 'Goals'}
 				detailLayout={isWide ? 'modal' : 'sheet'}
 				autoFocus={isWide}
@@ -199,7 +199,7 @@
 					{#if card.kind === 'prompt'}
 						<div class="min-h-[180px]">
 							<div class="text-moss mb-3 inline-flex items-center gap-1.5 text-[11.5px] font-semibold tracking-wide uppercase">
-								<span aria-hidden="true">✎</span> Your wish
+								<span aria-hidden="true">✎</span> Your goal
 							</div>
 							<h2 class="font-display text-ink text-[21px] leading-snug font-semibold">
 								{card.text}
@@ -209,7 +209,7 @@
 								bind:value={promptInput}
 								onkeydown={(e) => onPromptKey(e, card.id)}
 								onpointerdown={(e) => e.stopPropagation()}
-								placeholder="Type a wish, press enter…"
+								placeholder="Type a goal, press enter…"
 								class="border-line bg-surface text-ink mt-4 w-full rounded-lg border px-3 py-2.5 text-sm"
 							/>
 							{#if (wishTitlesByCard[card.id] ?? []).length}
@@ -228,7 +228,7 @@
 						{@const author = card.goal.expand?.created_by ?? null}
 						<div class="min-h-[180px]">
 							<div class="text-ink-muted mb-3 inline-flex items-center gap-1.5 text-[11.5px] font-semibold tracking-wide uppercase">
-								<span aria-hidden="true">♡</span> A group wish
+								<span aria-hidden="true">♡</span> A group goal
 							</div>
 							<h2 class="font-display text-ink text-[21px] leading-snug font-semibold">
 								{card.goal.title}
@@ -269,7 +269,7 @@
 						<div class="font-display text-ink mb-2 text-2xl italic">You're all caught up.</div>
 						<p class="text-ink-soft mb-5 max-w-[260px] text-sm leading-relaxed">
 							{wishesAdded}
-							{wishesAdded === 1 ? 'wish' : 'wishes'} added · {rated}
+							{wishesAdded === 1 ? 'goal' : 'goals'} added · {rated}
 							{rated === 1 ? 'goal' : 'goals'} rated.
 						</p>
 						<div class="flex w-full max-w-[280px] flex-col gap-2.5">
