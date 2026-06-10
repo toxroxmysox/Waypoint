@@ -3,6 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 import type { Item, Phase, Day, Vote, TripMember } from '$lib/types';
 import { VOTE_OPTIONS, type VoteValue } from '$lib/collaboration/voting';
 import { buildDeck, type DeckCandidate } from '$lib/collaboration/swipe-deck';
+import { withAvatarUrls } from '$lib/collaboration/member-avatar';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, membership, phases, days } = await parent();
@@ -26,7 +27,8 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 				})
 			: Promise.resolve([] as Vote[]),
 		locals.pb.collection('trip_members').getFullList<TripMember>({
-			filter: `trip = "${trip.id}"`
+			filter: `trip = "${trip.id}"`,
+			expand: 'user'
 		})
 	]);
 
@@ -85,7 +87,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		phase,
 		cards,
 		votesByItem,
-		members,
+		members: withAvatarUrls(locals.pb, members),
 		dayLabel,
 		initialByUser,
 		nextPhase,

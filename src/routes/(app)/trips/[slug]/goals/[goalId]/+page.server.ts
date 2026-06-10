@@ -2,6 +2,7 @@ import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Item, ItemStatus, TripGoal, TripMember } from '$lib/types';
 import { deriveGoalStatus } from '$lib/itinerary/goal-status';
+import { memberAvatarUrl } from '$lib/collaboration/member-avatar';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, membership } = await parent();
@@ -54,8 +55,13 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		canDelete = votes.totalItems === 0;
 	}
 
+	// Author chip avatar — created_by is expanded with its user (see getOne above).
+	const authorMember = goal.expand?.created_by as TripMember | undefined;
+	const authorAvatar = authorMember ? memberAvatarUrl(locals.pb, authorMember) : '';
+
 	return {
 		goal,
+		authorAvatar,
 		linkedItems,
 		linkCandidates,
 		derivedStatus,

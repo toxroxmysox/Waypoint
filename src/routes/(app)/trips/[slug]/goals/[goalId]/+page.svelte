@@ -65,7 +65,7 @@
 	<!-- Byline → title (firm order, V4 PRD handoff screen D). -->
 	<div>
 		<div class="text-ink-muted flex items-center gap-2 text-[12px]">
-			<Avatar initial={memberInitial(author)} alt={memberDisplayName(author)} size={22} />
+			<Avatar img={data.authorAvatar} initial={memberInitial(author)} alt={memberDisplayName(author)} size={22} />
 			<span>{memberDisplayName(author)}'s goal</span>
 		</div>
 		<h1 class="font-display text-ink mt-2 text-[24px] font-semibold leading-tight">{goal.title}</h1>

@@ -15,6 +15,7 @@
 	import MoveItemSheet from '$lib/itinerary/components/MoveItemSheet.svelte';
 	import ChecklistBody from '$lib/itinerary/components/ChecklistBody.svelte';
 	import AssignMemberSheet from '$lib/itinerary/components/AssignMemberSheet.svelte';
+	import Avatar from '$lib/ui/Avatar.svelte';
 	import DocumentSection from '$lib/documents/components/DocumentSection.svelte';
 	import type { Comment, Task } from '$lib/types';
 
@@ -284,6 +285,7 @@
 				<div class="space-y-3">
 					{#each allComments as c (c.id)}
 						<div class="flex gap-2">
+							<Avatar img={c.author_avatar} initial={c.author_name || 'Unknown'} alt={c.author_name || 'Unknown'} size={28} />
 							<div class="min-w-0 flex-1">
 								<div class="flex flex-wrap items-baseline gap-1.5">
 									<span class="text-ink text-sm font-semibold">{c.author_name || 'Unknown'}</span>
@@ -322,7 +324,9 @@
 						status: 'approved',
 						created: new Date().toISOString(),
 						author_name: data.membership?.display_name || data.membership?.placeholder_name || 'You',
-						author_role: data.membership?.role || ''
+						author_role: data.membership?.role || '',
+						// Own avatar resolves on reload (membership isn't avatar-enriched here).
+						author_avatar: ''
 					};
 					optimisticComments = [...optimisticComments, optimistic];
 					commentText = '';

@@ -4,6 +4,7 @@ import type { Day, Item, Vote, TripMember } from '$lib/types';
 import { phasesForDay } from '$lib/itinerary/phases';
 import { rebalance, insertBetween, GAP } from '$lib/itinerary/sort-order';
 import { spanningItemsForDate } from '$lib/itinerary/multi-day';
+import { withAvatarUrls } from '$lib/collaboration/member-avatar';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, phases, days } = await parent();
@@ -40,7 +41,8 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 				})
 			: Promise.resolve([] as Vote[]),
 		locals.pb.collection('trip_members').getFullList<TripMember>({
-			filter: `trip = "${trip.id}"`
+			filter: `trip = "${trip.id}"`,
+			expand: 'user'
 		})
 	]);
 
@@ -58,7 +60,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 				})
 			: [];
 
-	return { day, dayItems: items, dayPhases, votesByItem, members, parkingLotItems, spanningItems, allDays: days };
+	return { day, dayItems: items, dayPhases, votesByItem, members: withAvatarUrls(locals.pb, members), parkingLotItems, spanningItems, allDays: days };
 };
 
 export const actions: Actions = {

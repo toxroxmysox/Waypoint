@@ -23,7 +23,7 @@
 		onAssign
 	}: {
 		tasks: Task[];
-		members: TripMember[];
+		members: Array<TripMember & { avatarUrl?: string }>;
 		checklistId: string;
 		toggleAction: string;
 		addAction: string;
@@ -35,7 +35,7 @@
 	let sort = $state<'order' | 'last'>('order');
 	let hideDone = $state(false);
 
-	function memberFor(id: string): TripMember | undefined {
+	function memberFor(id: string): (TripMember & { avatarUrl?: string }) | undefined {
 		return members.find((m) => m.id === id);
 	}
 
@@ -72,6 +72,7 @@
 				{toggleAction}
 				assigneeInitial={task.assignee ? memberInitial(memberFor(task.assignee)) : null}
 				assigneeAlt={task.assignee ? memberDisplayName(memberFor(task.assignee)) : ''}
+				assigneeImg={task.assignee ? (memberFor(task.assignee)?.avatarUrl ?? '') : ''}
 				onAssign={() => onAssign?.(task)}
 				divider={i < visibleTasks.length - 1}
 			/>

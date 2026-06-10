@@ -9,7 +9,7 @@
 		size = 20
 	}: {
 		votes?: Vote[];
-		members?: TripMember[];
+		members?: Array<TripMember & { avatarUrl?: string }>;
 		size?: number;
 	} = $props();
 
@@ -26,6 +26,8 @@
 		return m?.display_name || m?.placeholder_name || '?';
 	};
 
+	const memberAvatar = (id: string) => members.find((mm) => mm.id === id)?.avatarUrl ?? '';
+
 	const grouped = $derived(groupVotesByOption(votes));
 	const activeOptions = $derived(VOTE_OPTIONS.filter((o) => grouped[o].length > 0));
 </script>
@@ -40,7 +42,7 @@
 				<div class="flex -space-x-1.5">
 					{#each grouped[option] as v (v.id)}
 						<span class="ring-surface rounded-full ring-2" title={memberName(v.member)}>
-							<Avatar initial={memberName(v.member)} alt={memberName(v.member)} {size} />
+							<Avatar img={memberAvatar(v.member)} initial={memberName(v.member)} alt={memberName(v.member)} {size} />
 						</span>
 					{/each}
 				</div>

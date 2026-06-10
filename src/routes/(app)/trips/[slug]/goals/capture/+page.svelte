@@ -226,6 +226,7 @@
 						</div>
 					{:else}
 						{@const author = card.goal.expand?.created_by ?? null}
+						{@const authorImg = data.members.find((m) => m.id === card.goal.created_by)?.avatarUrl ?? ''}
 						<div class="min-h-[180px]">
 							<div class="text-ink-muted mb-3 inline-flex items-center gap-1.5 text-[11.5px] font-semibold tracking-wide uppercase">
 								<span aria-hidden="true">♡</span> A group goal
@@ -237,7 +238,7 @@
 								<p class="text-ink-soft mt-2 text-[13px] leading-relaxed">{card.goal.description}</p>
 							{/if}
 							<div class="text-ink-muted mt-4 flex items-center gap-2 text-[12px]">
-								<Avatar initial={memberInitial(author)} alt={memberDisplayName(author)} size={22} />
+								<Avatar img={authorImg} initial={memberInitial(author)} alt={memberDisplayName(author)} size={22} />
 								<span>Added by {memberDisplayName(author)}</span>
 							</div>
 						</div>

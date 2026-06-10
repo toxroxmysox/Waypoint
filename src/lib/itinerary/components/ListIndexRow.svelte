@@ -20,7 +20,7 @@
 		phaseName?: string | null;
 		done: number;
 		total: number;
-		assignees?: Array<{ initial: string; name: string }>;
+		assignees?: Array<{ initial: string; name: string; img?: string }>;
 		href: string;
 		divider?: boolean;
 	} = $props();
@@ -59,7 +59,7 @@
 					class="ring-surface inline-flex rounded-full ring-[1.5px]"
 					style="margin-left:{i === 0 ? 0 : -6}px;"
 				>
-					<Avatar initial={a.initial} alt={a.name} size={19} />
+					<Avatar img={a.img} initial={a.initial} alt={a.name} size={19} />
 				</span>
 			{/each}
 			{#if extra > 0}

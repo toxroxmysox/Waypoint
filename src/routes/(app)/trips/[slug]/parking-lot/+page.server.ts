@@ -1,6 +1,7 @@
 import type { PageServerLoad } from './$types';
 import type { Item, Phase, Vote, TripMember } from '$lib/types';
 import { scoreVotes, sortByVoteScore } from '$lib/collaboration/voting';
+import { withAvatarUrls } from '$lib/collaboration/member-avatar';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
 	const { trip, phases } = await parent();
@@ -18,7 +19,8 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 				})
 			: Promise.resolve([] as Vote[]),
 		locals.pb.collection('trip_members').getFullList<TripMember>({
-			filter: `trip = "${trip.id}"`
+			filter: `trip = "${trip.id}"`,
+			expand: 'user'
 		})
 	]);
 
@@ -34,7 +36,7 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 	return {
 		parkingLotItems: sortedItems,
 		votesByItem,
-		members,
+		members: withAvatarUrls(locals.pb, members),
 		phases: phases as Phase[]
 	};
 };

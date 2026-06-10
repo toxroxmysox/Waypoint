@@ -4,6 +4,7 @@ import type { TripGoal, GoalVote, TripMember } from '$lib/types';
 import { VOTE_OPTIONS, type VoteValue } from '$lib/collaboration/voting';
 import { buildCaptureDeck, type ReactionCandidate } from '$lib/collaboration/swipe-deck';
 import { buildGoalPrompts } from '$lib/itinerary/goal-prompts';
+import { withAvatarUrls } from '$lib/collaboration/member-avatar';
 
 /** Fisher–Yates — prompts are "shown once per session, shuffled" (per page load). */
 function shuffle<T>(arr: T[]): T[] {
@@ -37,7 +38,8 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 				})
 			: Promise.resolve([] as GoalVote[]),
 		locals.pb.collection('trip_members').getFullList<TripMember>({
-			filter: `trip = "${trip.id}"`
+			filter: `trip = "${trip.id}"`,
+			expand: 'user'
 		})
 	]);
 
@@ -69,7 +71,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 			: { id: `prompt:${c.id}`, kind: 'prompt', promptId: c.id, text: promptText.get(c.id) ?? '' }
 	);
 
-	return { cards, votesByGoal, members };
+	return { cards, votesByGoal, members: withAvatarUrls(locals.pb, members) };
 };
 
 export const actions: Actions = {

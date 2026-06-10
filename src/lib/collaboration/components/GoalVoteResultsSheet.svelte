@@ -13,7 +13,7 @@
 		open: boolean;
 		title?: string;
 		votes?: GoalVote[];
-		members?: TripMember[];
+		members?: Array<TripMember & { avatarUrl?: string }>;
 	} = $props();
 
 	// `dislike` surfaces to members as "Pass" (the harvest/swipe vocabulary); the
@@ -36,6 +36,8 @@
 		return m?.display_name || m?.placeholder_name || '?';
 	};
 
+	const memberAvatar = (id: string) => members.find((mm) => mm.id === id)?.avatarUrl ?? '';
+
 	// voting.ts groups by VoteValue; GoalVote is structurally compatible (id +
 	// member + value) — reuse it unforked (ADR-0004) rather than a parallel impl.
 	const grouped = $derived(groupVotesByOption(votes as unknown as Vote[]));
@@ -57,7 +59,7 @@
 						<div class="flex -space-x-1.5 pt-0.5">
 							{#each voters as v (v.id)}
 								<span class="ring-surface rounded-full ring-2" title={memberName(v.member)}>
-									<Avatar initial={memberName(v.member)} alt={memberName(v.member)} size={22} />
+									<Avatar img={memberAvatar(v.member)} initial={memberName(v.member)} alt={memberName(v.member)} size={22} />
 								</span>
 							{/each}
 						</div>

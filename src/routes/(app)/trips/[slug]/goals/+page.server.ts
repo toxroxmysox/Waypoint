@@ -1,6 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { TripGoal, TripMember, GoalVote } from '$lib/types';
+import { withAvatarUrls } from '$lib/collaboration/member-avatar';
 
 export const load: PageServerLoad = async ({ parent, locals }) => {
 	const { trip } = await parent();
@@ -20,7 +21,8 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 				})
 			: Promise.resolve([] as GoalVote[]),
 		locals.pb.collection('trip_members').getFullList<TripMember>({
-			filter: `trip = "${trip.id}"`
+			filter: `trip = "${trip.id}"`,
+			expand: 'user'
 		})
 	]);
 
@@ -35,7 +37,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 		return (a.created ?? '').localeCompare(b.created ?? '');
 	});
 
-	return { goals: sortedGoals, votesByGoal, members };
+	return { goals: sortedGoals, votesByGoal, members: withAvatarUrls(locals.pb, members) };
 };
 
 export const actions: Actions = {

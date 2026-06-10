@@ -9,7 +9,7 @@
 	import ListIndexRow from '$lib/itinerary/components/ListIndexRow.svelte';
 	import AutoChip from '$lib/itinerary/components/AutoChip.svelte';
 	import { memberDisplayName, memberInitial } from '$lib/itinerary/member-name';
-	import type { Phase, TripMember } from '$lib/types';
+	import type { Phase } from '$lib/types';
 
 	let { data, form } = $props();
 
@@ -24,8 +24,8 @@
 
 	function assigneesFor(ids: string[]) {
 		return ids.map((id) => {
-			const m = data.members.find((x: TripMember) => x.id === id);
-			return { initial: memberInitial(m), name: memberDisplayName(m) };
+			const m = data.members.find((x) => x.id === id);
+			return { initial: memberInitial(m), name: memberDisplayName(m), img: m?.avatarUrl ?? '' };
 		});
 	}
 </script>
