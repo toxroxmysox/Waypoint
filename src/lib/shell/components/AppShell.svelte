@@ -19,7 +19,8 @@
 		trip,
 		phases = [],
 		days = [],
-		parkingLotItems = []
+		parkingLotItems = [],
+		immersive = false
 	}: {
 		children: Snippet;
 		slug: string;
@@ -28,6 +29,9 @@
 		phases?: Phase[];
 		days?: Day[];
 		parkingLotItems?: Item[];
+		// Full-screen takeover (swipe minigames): the deck owns the screen, app
+		// chrome (mode pill, bottom nav, side/context rails) is suppressed.
+		immersive?: boolean;
 	} = $props();
 
 	const active = $derived(trip ? isTripActive(trip) : false);
@@ -65,37 +69,42 @@
 	}
 </script>
 
-<!-- Mobile: content + bottom nav -->
-<div class="md-desktop:hidden">
-	{#if active}
-		<div class="px-4 pt-3 pb-1">
-			<ModePill {mode} onToggle={toggleMode} />
-		</div>
-	{/if}
+{#if immersive}
+	<!-- Full-screen takeover (swipe minigames): the deck owns the viewport, no app chrome. -->
 	{@render children()}
-	<BottomNav config={navConfig} onAction={handleNavAction} />
-	<div class="h-16"></div>
-</div>
-
-<!-- Desktop: side rail + content + context rail -->
-<div class="hidden md-desktop:block">
-	<SideRail
-		{slug}
-		{role}
-		tripName={trip?.title ?? ''}
-		{phases}
-		config={navConfig}
-		{active}
-		onToggleMode={toggleMode}
-		{mode}
-		onAction={handleNavAction}
-	/>
-	<div class="md-desktop:ml-[72px] lg-desktop:ml-[240px] lg-desktop:mr-[320px]">
+{:else}
+	<!-- Mobile: content + bottom nav -->
+	<div class="md-desktop:hidden">
+		{#if active}
+			<div class="px-4 pt-3 pb-1">
+				<ModePill {mode} onToggle={toggleMode} />
+			</div>
+		{/if}
 		{@render children()}
+		<BottomNav config={navConfig} onAction={handleNavAction} />
+		<div class="h-16"></div>
 	</div>
-	<ContextRail {slug} {trip} {phases} {days} {parkingLotItems} />
-</div>
 
-{#if trip}
-	<AddSheet bind:open={addSheetOpen} slug={trip.slug} {todayDayId} />
+	<!-- Desktop: side rail + content + context rail -->
+	<div class="hidden md-desktop:block">
+		<SideRail
+			{slug}
+			{role}
+			tripName={trip?.title ?? ''}
+			{phases}
+			config={navConfig}
+			{active}
+			onToggleMode={toggleMode}
+			{mode}
+			onAction={handleNavAction}
+		/>
+		<div class="md-desktop:ml-[72px] lg-desktop:ml-[240px] lg-desktop:mr-[320px]">
+			{@render children()}
+		</div>
+		<ContextRail {slug} {trip} {phases} {days} {parkingLotItems} />
+	</div>
+
+	{#if trip}
+		<AddSheet bind:open={addSheetOpen} slug={trip.slug} {todayDayId} />
+	{/if}
 {/if}
