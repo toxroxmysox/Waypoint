@@ -104,9 +104,9 @@ Domains mirror the bounded contexts in `CONTEXT.md` §"Bounded Contexts", plus t
 
 **Backlog (v4 concepts — deferred from V3_PRD §5, none grilled):**
 - **Inline contextual parking lot** — collapsed "ideas waiting" card between time-slot headers on the timeline.
-- **Trip Mode Quick Actions** — Add expense / Quick note / Photo log buttons (Photo log → Trip Memory; Quick note → Tasks/Memory).
+- **Trip Mode Quick Actions** — Add expense / Quick note / Photo log buttons (Photo log → the [[Memory]] composer, see `docs/TRIP_MEMORY_PRD.md`; Quick note → Tasks/Memory).
 - **Ideas from Free Time** — parking lot surfaced via a tap on the FREE TIME card.
-- **Note Before Bed** — end-of-day prompt feeding the closeout archive and Trip Memory.
+- **Note Before Bed** — end-of-day prompt → the [[Memory]] composer (one photo + one thought). **Grilled & specced in `docs/TRIP_MEMORY_PRD.md`** (Trip Memory context); reviewed at Closeout.
 - **Day Wrapped Stats** — items / distance / spent summary on the day-wrapped state.
 
 ---
@@ -120,7 +120,7 @@ Domains mirror the bounded contexts in `CONTEXT.md` §"Bounded Contexts", plus t
 - Export (JSON), Import, Clone, Closeout wizard
 
 **Backlog:**
-- No new gaps. Trip Memory (new domain) will extend what the archive *shares* from plan-only to plan + memory.
+- **Archive stays plan-only — resolved (Trip Memory grill, 2026-06-09).** The earlier idea of "extend the archive to plan + memory" was **rejected**: [[Memory]] records are for the travelers, never the public (no tractable PII-strip for images). Memories are reviewed member-only at **Closeout**, not exposed in the [[Public Archive]]. See `docs/TRIP_MEMORY_PRD.md` / `docs/adr/0007-trip-memory-separate-capped-context.md`. The deferred cross-trip *private* "living record of all trips" is a separate future grill.
 
 ---
 
@@ -179,17 +179,25 @@ Domains mirror the bounded contexts in `CONTEXT.md` §"Bounded Contexts", plus t
 
 ---
 
-## Trip Memory *(NEW domain — explore further)*
+## Trip Memory *(NEW context — grilled 2026-06-09, PRD shelved)*
 
-*Captures what the trip actually felt like, not just the plan. Post-trip sharing is in the mission, but today "sharing" = a read-only archive of the plan, not a memory.*
+*Captures what the trip actually felt like, not just the plan. Each member captures **one photo + one short thought, per day** — a curated highlight, not a journal. For the travelers, reviewed together at Closeout; never public.*
+
+**Full design:** `docs/TRIP_MEMORY_PRD.md`. Decision record: `docs/adr/0007-trip-memory-separate-capped-context.md`. Glossary: [[Memory]], [[Note Before Bed]] in `CONTEXT.md`; new bounded context #6.
 
 **Shipped:** Nothing.
 
-**Backlog (needs a grill / decision before scoping):**
-- **Photo capture & journal notes** — per-day or per-item photos and free-text reflections.
-- **Note Before Bed** (also listed under Trip Mode) — end-of-day prompt that feeds the journal.
-- **Archive extension** — public archive shares plan + memory, not just plan.
-- **Open questions:** Where do photos live (PB file storage vs. external)? Journaling scope? Boundary against "native apps off the table"? Decision/ADR first.
+**Status:** Grilled and fully specced; kept as a **firm PRD on the backlog, not sliced into issues** (issues are perishable — slice at milestone promotion, the Documents precedent). Not promoted into a milestone; `SPEC.md` untouched.
+
+**Decisions (see PRD/ADR for full rationale):**
+- **Memory ≠ Document** — separate entity/collection/context. Documents = used *during* the trip; Memory = remembering it *after*. Scope by entry point, no OCR.
+- **Hard cap: one photo + one thought, per member, per day** (unique `(day, author)` index). The cap *is* the boundary that keeps this from becoming Apple Photos / Day One.
+- **Member-only, excluded from the Public Archive** (archive stays plan-only — resolves the deferred "Documents/memory in archive" question too).
+- **Capture:** Note Before Bed (Trip Mode, end of day) + live composer + retroactively in Closeout. **Review:** Trip Mode Today + Closeout. **No standalone gallery** (that's the deferred cross-trip "living record" product).
+- **Storage:** PB file storage now, NAS later (reversible config, no ADR; cap kills the scale worry).
+
+**Remaining (shelved, not issues yet):**
+- **HEIC transcoding** — designed in the PRD as a *shared* Memory+Documents capability (client-side WASM, pre-upload); retires the HEIC caveat for both domains. Pull off the shelf at promotion.
 
 ---
 
