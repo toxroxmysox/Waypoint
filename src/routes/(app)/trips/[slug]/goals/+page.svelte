@@ -65,6 +65,21 @@
 		</span>
 	</div>
 
+	{#if canAdd}
+		<!-- Wizard entry (#79): the capture minigame launches from the top of the list. -->
+		<a
+			href="/trips/{data.trip.slug}/goals/capture"
+			class="border-moss/40 bg-moss-tint mb-3 flex items-center gap-3 rounded-[14px] border px-[15px] py-3"
+		>
+			<span class="bg-moss text-paper flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg" aria-hidden="true">✦</span>
+			<span class="min-w-0 flex-1">
+				<span class="text-ink block text-[14.5px] font-semibold">Add &amp; review wishes</span>
+				<span class="text-ink-soft block text-[12px]">Brain-dump your wishes and react to the group's</span>
+			</span>
+			<span class="text-moss" aria-hidden="true">›</span>
+		</a>
+	{/if}
+
 	{#if goals.length > 0}
 		<Card>
 			{#each goals as goal, i (goal.id)}

@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
 	buildDeck,
+	buildCaptureDeck,
 	voteFromIntent,
 	COMMIT_PX,
 	type DeckCandidate,
-	type DeckScope
+	type DeckScope,
+	type ReactionCandidate
 } from './swipe-deck';
 
 /**
@@ -166,6 +168,92 @@ describe('buildDeck — single card', () => {
 		const { queue, nextPhaseId } = buildDeck(items, [], scope('p1', ['p1']));
 		expect(queue.map((i) => i.id)).toEqual(['only']);
 		expect(nextPhaseId).toBeNull();
+	});
+});
+
+describe('buildCaptureDeck — interleave reaction/prompt 1:1', () => {
+	const react = (p: Partial<ReactionCandidate> & { id: string }): ReactionCandidate => ({
+		voteCount: 0,
+		created: '2026-01-01 00:00:00.000Z',
+		...p
+	});
+
+	it('alternates reaction/prompt starting with a reaction when both streams are equal', () => {
+		const deck = buildCaptureDeck([react({ id: 'r1' }), react({ id: 'r2' })], ['p1', 'p2']);
+		expect(deck).toEqual([
+			{ kind: 'reaction', id: 'r1' },
+			{ kind: 'prompt', id: 'p1' },
+			{ kind: 'reaction', id: 'r2' },
+			{ kind: 'prompt', id: 'p2' }
+		]);
+	});
+
+	it('orders reaction cards by vote-qty desc then oldest-first (Resolution 8)', () => {
+		const deck = buildCaptureDeck(
+			[
+				react({ id: 'low', voteCount: 1 }),
+				react({ id: 'high', voteCount: 5 }),
+				react({ id: 'tieNew', voteCount: 3, created: '2026-03-01 00:00:00.000Z' }),
+				react({ id: 'tieOld', voteCount: 3, created: '2026-01-01 00:00:00.000Z' })
+			],
+			[]
+		);
+		expect(deck.map((c) => c.id)).toEqual(['high', 'tieOld', 'tieNew', 'low']);
+	});
+
+	it('degrades to all-prompts for a new trip (no reactions)', () => {
+		const deck = buildCaptureDeck([], ['p1', 'p2', 'p3']);
+		expect(deck).toEqual([
+			{ kind: 'prompt', id: 'p1' },
+			{ kind: 'prompt', id: 'p2' },
+			{ kind: 'prompt', id: 'p3' }
+		]);
+	});
+
+	it('degrades to all-reactions once prompts are spent', () => {
+		const deck = buildCaptureDeck([react({ id: 'r1' }), react({ id: 'r2' }), react({ id: 'r3' })], []);
+		expect(deck.map((c) => c.kind)).toEqual(['reaction', 'reaction', 'reaction']);
+	});
+
+	it('drains the longer stream after the shorter one empties — extra reactions trail', () => {
+		const deck = buildCaptureDeck(
+			[react({ id: 'r1' }), react({ id: 'r2' }), react({ id: 'r3' }), react({ id: 'r4' })],
+			['p1']
+		);
+		expect(deck).toEqual([
+			{ kind: 'reaction', id: 'r1' },
+			{ kind: 'prompt', id: 'p1' },
+			{ kind: 'reaction', id: 'r2' },
+			{ kind: 'reaction', id: 'r3' },
+			{ kind: 'reaction', id: 'r4' }
+		]);
+	});
+
+	it('drains the longer stream after the shorter one empties — extra prompts trail', () => {
+		const deck = buildCaptureDeck([react({ id: 'r1' })], ['p1', 'p2', 'p3']);
+		expect(deck).toEqual([
+			{ kind: 'reaction', id: 'r1' },
+			{ kind: 'prompt', id: 'p1' },
+			{ kind: 'prompt', id: 'p2' },
+			{ kind: 'prompt', id: 'p3' }
+		]);
+	});
+
+	it('preserves the given prompt order (caller shuffles)', () => {
+		const deck = buildCaptureDeck([], ['z', 'a', 'm']);
+		expect(deck.map((c) => c.id)).toEqual(['z', 'a', 'm']);
+	});
+
+	it('returns an empty deck when both streams are empty', () => {
+		expect(buildCaptureDeck([], [])).toEqual([]);
+	});
+
+	it('does not mutate the input arrays', () => {
+		const reactions = [react({ id: 'low', voteCount: 1 }), react({ id: 'high', voteCount: 5 })];
+		const prompts = ['p1', 'p2'];
+		buildCaptureDeck(reactions, prompts);
+		expect(reactions.map((r) => r.id)).toEqual(['low', 'high']);
+		expect(prompts).toEqual(['p1', 'p2']);
 	});
 });
 
