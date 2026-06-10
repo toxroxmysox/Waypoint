@@ -1,6 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { TripMember, PendingInvite, User } from '$lib/types';
+import { memberAvatarUrl } from '$lib/collaboration/member-avatar';
 import { PUBLIC_PB_URL } from '$env/static/public';
 
 // Hydrated row for the members list. Display name resolution:
@@ -10,6 +11,7 @@ type MemberRow = TripMember & {
 	displayLabel: string;
 	emailLabel: string;
 	isPlaceholder: boolean;
+	avatarUrl: string;
 };
 
 type PendingRow = PendingInvite & {
@@ -22,19 +24,22 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 
 	const members = await locals.pb.collection('trip_members').getFullList<TripMember>({
 		filter: `trip = "${trip.id}"`,
-		sort: 'id'
+		sort: 'id',
+		expand: 'user'
 	});
 
 	const authUser = (locals.user ?? null) as User | null;
 
 	const memberRows: MemberRow[] = members.map((m) => {
+		const avatarUrl = memberAvatarUrl(locals.pb, m);
 		const isPlaceholder = !m.user;
 		if (isPlaceholder) {
 			return {
 				...m,
 				displayLabel: m.display_name || m.placeholder_name || '(placeholder)',
 				emailLabel: m.placeholder_email || '',
-				isPlaceholder: true
+				isPlaceholder: true,
+				avatarUrl
 			};
 		}
 		if (authUser && m.user === authUser.id) {
@@ -42,14 +47,16 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 				...m,
 				displayLabel: m.display_name || authUser.name || authUser.email || '(you)',
 				emailLabel: authUser.email || '',
-				isPlaceholder: false
+				isPlaceholder: false,
+				avatarUrl
 			};
 		}
 		return {
 			...m,
 			displayLabel: m.display_name || '(member)',
 			emailLabel: '',
-			isPlaceholder: false
+			isPlaceholder: false,
+			avatarUrl
 		};
 	});
 
