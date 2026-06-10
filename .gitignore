@@ -41,3 +41,8 @@ backend/pocketbase
 .wolf/
 *_STATUS.md
 TEST_PLAN.md
+
+# Session artifacts (per-session handoffs/briefs — never commit)
+HANDOFF.md
+handoff-issue*.md
+BRIEF.md
