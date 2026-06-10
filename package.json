@@ -15,6 +15,8 @@
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run && npm run test:e2e",
 		"test:e2e": "playwright test",
+		"test:e2e:clean": "bash scripts/e2e-isolated.sh",
+		"clean:dev-trips": "node scripts/clean-dev-trips.mjs",
 		"test:rules": "node backend/test-rules.mjs",
 		"test:invites": "node backend/test-invites.mjs",
 		"test:members": "node backend/test-members.mjs",
