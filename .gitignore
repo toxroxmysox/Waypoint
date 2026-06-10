@@ -44,5 +44,5 @@ TEST_PLAN.md
 
 # Session artifacts (per-session handoffs/briefs — never commit)
 HANDOFF.md
-handoff-issue*.md
+handoff*.md
 BRIEF.md
