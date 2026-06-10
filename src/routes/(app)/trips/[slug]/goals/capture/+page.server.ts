@@ -75,7 +75,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 export const actions: Actions = {
 	// Per-add goal persistence (Resolution 4): a typed goal becomes a trip_goal
 	// immediately, authored by the caller. Mirrors the Goals-tab create action.
-	addWish: async ({ request, locals, params }) => {
+	addGoal: async ({ request, locals, params }) => {
 		const trip = await locals.pb
 			.collection('trips')
 			.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
@@ -114,7 +114,7 @@ export const actions: Actions = {
 
 	// Rewind across a created goal DELETES it (Resolution 4 — allowed: creator +
 	// zero votes; PB rules enforce). Deleted by id, optimistically client-tracked.
-	deleteWish: async ({ request, locals }) => {
+	deleteGoal: async ({ request, locals }) => {
 		const data = await request.formData();
 		// Comma-separated: rewinding one prompt card can undo several goals at once.
 		const ids = (data.get('goals')?.toString() ?? '')
