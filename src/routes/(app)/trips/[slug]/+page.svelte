@@ -9,6 +9,8 @@
 	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
 	import PhaseChip from '$lib/ui/PhaseChip.svelte';
 	import MiniListCard from '$lib/itinerary/components/MiniListCard.svelte';
+	import DayCard from '$lib/itinerary/components/DayCard.svelte';
+	import DayMetricToggle from '$lib/itinerary/components/DayMetricToggle.svelte';
 	import { titleCase } from '$lib/shell/format';
 	import { untrack } from 'svelte';
 	import type { Notification } from '$lib/types';
@@ -39,16 +41,8 @@
 		return data.days.filter((d: Day) => (d.phases ?? []).includes(phase.id));
 	}
 
-	function dayLabel(d: Day): string {
-		return new Date(d.date.replace(' ', 'T')).toLocaleDateString('en-US', {
-			weekday: 'short',
-			month: 'short',
-			day: 'numeric',
-			timeZone: 'UTC'
-		});
-	}
-
 	let firstDayId = $derived(data.days[0]?.id);
+	let today = new Date().toISOString().split('T')[0];
 
 	// Checklist previews (#51)
 	let tripLists = $derived((data.lists ?? []).filter((l) => !l.phase));
@@ -126,6 +120,13 @@
 		</section>
 	{/if}
 
+	{#if data.days.length > 0}
+		<div class="flex items-center justify-between px-0.5">
+			<span class="text-ink-muted text-[9.5px] font-bold tracking-[0.14em] uppercase">Itinerary</span>
+			<DayMetricToggle />
+		</div>
+	{/if}
+
 	{#if data.phases.length > 0}
 		<!-- Phases with nested days -->
 		{@const orphanDays = data.days.filter((d) => !data.phases.some((p) => (d.phases ?? []).includes(p.id)))}
@@ -148,11 +149,12 @@
 				{#if pDays.length > 0}
 					<div class="space-y-1">
 						{#each pDays as day}
-							<Card href="/trips/{data.trip.slug}/days/{day.id}">
-								<div class="flex items-center justify-between px-3 py-3">
-									<span class="text-ink text-sm">{dayLabel(day)}</span>
-								</div>
-							</Card>
+							<DayCard
+								{day}
+								href="/trips/{data.trip.slug}/days/{day.id}"
+								summary={data.daySummaries[day.id]}
+								{today}
+							/>
 						{/each}
 					</div>
 				{/if}
@@ -178,11 +180,12 @@
 				<SectionH>Unassigned days</SectionH>
 				<div class="space-y-1">
 					{#each orphanDays as day}
-						<Card href="/trips/{data.trip.slug}/days/{day.id}">
-							<div class="flex items-center justify-between px-3 py-3">
-								<span class="text-ink text-sm">{dayLabel(day)}</span>
-							</div>
-						</Card>
+						<DayCard
+							{day}
+							href="/trips/{data.trip.slug}/days/{day.id}"
+							summary={data.daySummaries[day.id]}
+							{today}
+						/>
 					{/each}
 				</div>
 			</section>
@@ -193,11 +196,12 @@
 			<SectionH>Days</SectionH>
 			<div class="space-y-1">
 				{#each data.days as day}
-					<Card href="/trips/{data.trip.slug}/days/{day.id}">
-						<div class="flex items-center justify-between px-3 py-3">
-							<span class="text-ink text-sm">{dayLabel(day)}</span>
-						</div>
-					</Card>
+					<DayCard
+						{day}
+						href="/trips/{data.trip.slug}/days/{day.id}"
+						summary={data.daySummaries[day.id]}
+						{today}
+					/>
 				{/each}
 			</div>
 		</section>

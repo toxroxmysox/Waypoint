@@ -6,24 +6,19 @@
 	import Button from '$lib/ui/Button.svelte';
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
+	import DayCard from '$lib/itinerary/components/DayCard.svelte';
+	import DayMetricToggle from '$lib/itinerary/components/DayMetricToggle.svelte';
 	import { toast } from '$lib/shell/stores/toast';
 	import { titleCase } from '$lib/shell/format';
 
 	let { data, form } = $props();
 
+	let today = new Date().toISOString().split('T')[0];
+
 	let editing = $state(false);
 	let loading = $state(false);
 	let error = $derived(form?.error ?? '');
 	const parkingLotItems = $derived(data.phaseItems.filter((it) => it.status === 'unplanned'));
-
-	function dayLabel(d: Day): string {
-		return new Date(d.date.replace(' ', 'T')).toLocaleDateString('en-US', {
-			weekday: 'short',
-			month: 'short',
-			day: 'numeric',
-			timeZone: 'UTC'
-		});
-	}
 
 	function daysNightsLabel(start: string, end: string): string {
 		const s = new Date(start.substring(0, 10) + 'T00:00:00.000Z');
@@ -176,21 +171,23 @@
 	{/if}
 
 	<section class="space-y-1.5">
-		<SectionH>Days ({data.phaseDays.length})</SectionH>
+		<div class="flex items-center justify-between">
+			<SectionH>Days ({data.phaseDays.length})</SectionH>
+			{#if data.phaseDays.length > 0}
+				<DayMetricToggle />
+			{/if}
+		</div>
 		{#if data.phaseDays.length === 0}
 			<p class="text-ink-muted text-sm italic">No days fall within this phase's date range.</p>
 		{:else}
 			<div class="space-y-1">
 				{#each data.phaseDays as day}
-					{@const dayItems = data.phaseItems.filter((it) => it.day === day.id)}
-					<Card href="/trips/{data.trip.slug}/days/{day.id}">
-						<div class="flex items-center justify-between px-3 py-2">
-							<span class="text-ink text-sm">{dayLabel(day)}</span>
-							{#if dayItems.length > 0}
-								<span class="text-ink-muted font-mono text-[11.5px]">{dayItems.length} items</span>
-							{/if}
-						</div>
-					</Card>
+					<DayCard
+						{day}
+						href="/trips/{data.trip.slug}/days/{day.id}"
+						summary={data.daySummaries[day.id]}
+						{today}
+					/>
 				{/each}
 			</div>
 		{/if}

@@ -1,6 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Phase, Day, Item } from '$lib/types';
+import { summarizeDays } from '$lib/itinerary/day-card';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip } = await parent();
@@ -32,7 +33,11 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 
 	const days = allDays.filter((d) => (d.phases ?? []).includes(phase.id));
 
-	return { phase, phaseDays: days, phaseItems: items };
+	// Same day-card summaries as the overview (#65), from the items already
+	// loaded for this phase — count + booked + budget + stay chip, one source.
+	const daySummaries = summarizeDays(items, days);
+
+	return { phase, phaseDays: days, phaseItems: items, daySummaries };
 };
 
 export const actions: Actions = {
