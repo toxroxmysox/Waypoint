@@ -1,98 +1,74 @@
 <script lang="ts">
+	import { dndzone, type DndEvent } from 'svelte-dnd-action';
+	import { flip } from 'svelte/animate';
 	import type { Item, Vote, TripMember } from '$lib/types';
-	import { buildTimeline, detectOverlaps } from '$lib/itinerary/timeline';
+	import { buildTimelineFlat, detectOverlaps } from '$lib/itinerary/timeline';
 	import TimelineItemCard from './TimelineItemCard.svelte';
 
 	let {
 		items,
 		tripSlug,
 		dayId,
-		draggedItemId = null,
+		dragDisabled = true,
 		votesByItem = {},
 		members = [],
-		onDragStart = () => {},
-		onDragOver = () => {},
-		onDropTimeline = () => {},
-		onDragEnd = () => {},
+		startDrag = () => {},
+		onConsider = () => {},
+		onFinalize = () => {}
 	}: {
 		items: Item[];
 		tripSlug: string;
 		dayId: string;
-		draggedItemId?: string | null;
+		dragDisabled?: boolean;
 		votesByItem?: Record<string, Vote[]>;
 		members?: TripMember[];
-		onDragStart?: (itemId: string) => void;
-		onDragOver?: (before: number | null, after: number | null) => void;
-		onDropTimeline?: () => void;
-		onDragEnd?: () => void;
+		startDrag?: () => void;
+		onConsider?: (e: CustomEvent<DndEvent<Item>>) => void;
+		onFinalize?: (e: CustomEvent<DndEvent<Item>>) => void;
 	} = $props();
 
-	const timeline = $derived(buildTimeline(items));
+	// Per-item slot label + anchored flag, keyed for O(1) lookup. `items` already
+	// arrives in display order from the orchestrator; this maps 1:1.
+	const flatById = $derived(new Map(buildTimelineFlat(items).map((e) => [e.item.id, e])));
 	const overlaps = $derived(detectOverlaps(items));
+	const FLIP_MS = 150;
 </script>
 
-{#if timeline.length === 0}
-	<a
-		href="/trips/{tripSlug}/items/new?day={dayId}"
-		class="border-line text-ink-muted hover:border-ink-muted hover:text-ink-soft block rounded-lg border border-dashed px-3 py-2 text-xs"
-	>
-		Empty. Tap to add one.
-	</a>
-{:else}
-	<div class="space-y-2">
-		{#each timeline as entry, i}
-			{#if entry.kind === 'divider'}
+<section
+	class="min-h-[3rem] space-y-2"
+	use:dndzone={{ items, dragDisabled, type: 'itinerary-item', flipDurationMs: FLIP_MS, dropTargetStyle: {} }}
+	onconsider={onConsider}
+	onfinalize={onFinalize}
+>
+	{#each items as item (item.id)}
+		{@const meta = flatById.get(item.id)}
+		<div animate:flip={{ duration: FLIP_MS }}>
+			{#if meta?.slotLabel}
 				<div class="flex items-center gap-3 py-1">
 					<div class="border-line flex-1 border-t"></div>
-					<span class="text-ink-muted text-[11px] font-medium uppercase tracking-wider">{entry.label}</span>
+					<span class="text-ink-muted text-[11px] font-medium tracking-wider uppercase">{meta.slotLabel}</span>
 					<div class="border-line flex-1 border-t"></div>
 				</div>
-			{:else if entry.kind === 'item'}
-				{@const prevEntry = i > 0 ? timeline[i - 1] : null}
-				{@const prevOrder = prevEntry?.kind === 'item' ? prevEntry.item.sort_order : null}
-				<!-- Drop zone before this item (only when dragging an untimed item) -->
-				{#if draggedItemId && !entry.anchored}
-					<div
-						class="rounded transition-all"
-						class:h-1={draggedItemId === entry.item.id}
-						class:h-8={draggedItemId !== entry.item.id}
-						class:bg-moss-tint={draggedItemId !== entry.item.id}
-						role="none"
-						ondragover={(e) => { e.preventDefault(); onDragOver(prevOrder, entry.item.sort_order); }}
-						ondrop={() => onDropTimeline()}
-					></div>
-				{/if}
-				<div
-					role="listitem"
-					draggable={!entry.anchored}
-					ondragstart={() => !entry.anchored && onDragStart(entry.item.id)}
-					ondragend={() => onDragEnd()}
-					class:opacity-50={draggedItemId === entry.item.id}
-				>
-					<TimelineItemCard
-						item={entry.item}
-						{tripSlug}
-						anchored={entry.anchored}
-						overlapping={overlaps.has(entry.item.id)}
-						draggable={!entry.anchored}
-						votes={votesByItem[entry.item.id] ?? []}
-						{members}
-					/>
-				</div>
 			{/if}
-		{/each}
+			<TimelineItemCard
+				{item}
+				{tripSlug}
+				anchored={meta?.anchored ?? false}
+				overlapping={overlaps.has(item.id)}
+				draggable={true}
+				votes={votesByItem[item.id] ?? []}
+				{members}
+				{startDrag}
+			/>
+		</div>
+	{/each}
+</section>
 
-		<!-- Drop zone after last item -->
-		{#if draggedItemId}
-			{@const lastItem = [...timeline].reverse().find(e => e.kind === 'item' && !e.anchored)}
-			{#if lastItem?.kind === 'item'}
-				<div
-					class="h-8 rounded bg-moss-tint transition-all"
-					role="none"
-					ondragover={(e) => { e.preventDefault(); onDragOver(lastItem.item.sort_order, null); }}
-					ondrop={() => onDropTimeline()}
-				></div>
-			{/if}
-		{/if}
-	</div>
+{#if items.length === 0}
+	<a
+		href="/trips/{tripSlug}/items/new?day={dayId}"
+		class="border-line text-ink-muted hover:border-ink-muted hover:text-ink-soft mt-2 block rounded-lg border border-dashed px-3 py-2 text-xs"
+	>
+		Empty. Tap to add one — or drag an idea here.
+	</a>
 {/if}

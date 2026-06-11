@@ -112,6 +112,14 @@ body {
 	outline-offset: 2px;
 }
 
+/* Suppress the iOS long-press callout ("Open in New Tab") on internal app cards
+   that double as drag sources, and stop the press from selecting text. #60. */
+.no-callout {
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
 /* Visually hidden but accessible to screen readers. */
 .sr-only {
 	position: absolute;
