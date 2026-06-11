@@ -14,6 +14,7 @@
 		votesByItem = {},
 		members = [],
 		dndEnabled = false,
+		collapsed = false,
 		dragDisabled = true,
 		startDrag = () => {},
 		pullUp = () => {},
@@ -27,6 +28,12 @@
 		members?: TripMember[];
 		/** Turns the section into a svelte-dnd-action drop zone + drag source (#60). */
 		dndEnabled?: boolean;
+		/**
+		 * Collapsed divider mode (#87): the zone stays mounted and droppable, but each
+		 * item renders as a zero-height placeholder so DOM children still map 1:1 to the
+		 * bound array. Keeps the parking lot a drop target while the cards are hidden.
+		 */
+		collapsed?: boolean;
 		dragDisabled?: boolean;
 		startDrag?: () => void;
 		/** Tap-to-plan from the pull-up chevron (appends the idea to the day). */
@@ -52,15 +59,25 @@
 </script>
 
 {#if dndEnabled}
-	<!-- Drop zone: always rendered (even empty) so the first item can be parked. -->
+	<!-- Drop zone: always rendered (even empty/collapsed) so the first item can be
+	     parked. When collapsed, items become zero-height placeholders — the zone is
+	     still a drop target but the cards are hidden behind the divider (#87). -->
 	<section
-		class="min-h-[3rem] space-y-1.5"
+		class={collapsed ? 'min-h-[2.5rem]' : 'min-h-[3rem] space-y-1.5'}
 		use:dndzone={{ items, dragDisabled, type: 'itinerary-item', flipDurationMs: FLIP_MS, dropTargetStyle: {} }}
 		onconsider={onConsider}
 		onfinalize={onFinalize}
 	>
 		{#each items as item (item.id)}
-			<div animate:flip={{ duration: FLIP_MS }} class="no-callout flex items-stretch gap-1">
+			<!-- The flip wrapper must be the only keyed child. When collapsed it renders
+			     empty + zero-height: still a 1:1 DOM child for svelte-dnd-action, but the
+			     card is hidden behind the divider (#87). -->
+			<div
+				animate:flip={{ duration: FLIP_MS }}
+				class={collapsed ? 'no-callout h-0 overflow-hidden' : 'no-callout flex items-stretch gap-1'}
+				aria-hidden={collapsed}
+			>
+				{#if !collapsed}
 				<!-- Slot: drag handle (sibling of the link → no navigation) -->
 				<button
 					type="button"
@@ -108,10 +125,15 @@
 						<polyline points="18 15 12 9 6 15" />
 					</svg>
 				</button>
+				{/if}
 			</div>
 		{/each}
 	</section>
-	{#if items.length === 0}
+	{#if collapsed}
+		{#if items.length === 0}
+			<p class="text-ink-muted px-2 py-2 text-center text-xs italic">Drop here to unschedule.</p>
+		{/if}
+	{:else if items.length === 0}
 		<p class="text-ink-muted mt-1.5 px-2 py-3 text-center text-xs italic">Drag an item here to unschedule it.</p>
 	{/if}
 {:else if unplannedItems.length === 0}

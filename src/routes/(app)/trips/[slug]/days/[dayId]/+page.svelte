@@ -10,7 +10,7 @@
 	import DayNav from '$lib/shell/components/DayNav.svelte';
 	import PhaseChip from '$lib/ui/PhaseChip.svelte';
 	import DayTimeline from '$lib/itinerary/components/DayTimeline.svelte';
-	import ParkingLotSection from '$lib/itinerary/components/ParkingLotSection.svelte';
+	import ParkingDivider from '$lib/itinerary/components/ParkingDivider.svelte';
 	import DragDropTimeline from '$lib/itinerary/components/DragDropTimeline.svelte';
 	import MultiDayBanner from '$lib/itinerary/components/MultiDayBanner.svelte';
 
@@ -137,12 +137,15 @@
 
 	<DragDropTimeline
 		dayItems={data.dayItems}
-		parkingLotItems={data.parkingLotItems}
+		parkingByPhase={data.dayPhases.map((p) => ({
+			phaseId: p.id,
+			items: data.parkingLotItems.filter((i) => i.phase === p.id)
+		}))}
 		dayPhaseIds={data.dayPhases.map((p) => p.id)}
 		tripSlug={data.trip.slug}
 		dayId={data.day.id}
 	>
-		{#snippet children({ timelineItems, parkingItems, timelineDragDisabled, parkingDragDisabled, startDrag, pullUp, onTimelineConsider, onTimelineFinalize, onParkingConsider, onParkingFinalize })}
+		{#snippet children({ timelineItems, timelineDragDisabled, startDrag, pullUp, onTimelineConsider, onTimelineFinalize, parkingZones })}
 			<!-- Items -->
 			<section class="space-y-1.5">
 				<SectionH>
@@ -171,23 +174,28 @@
 				/>
 			</section>
 
-			<!-- Parking lot (mobile/tablet) — always a drop target, even when empty. -->
-			<section class="space-y-1.5 lg-desktop:hidden">
-				<SectionH>Parking Lot</SectionH>
-				<ParkingLotSection
-					items={parkingItems}
-					phases={data.dayPhases}
-					tripSlug={data.trip.slug}
-					votesByItem={data.votesByItem}
-					members={data.members}
-					dndEnabled={true}
-					dragDisabled={parkingDragDisabled}
-					{startDrag}
-					{pullUp}
-					onConsider={onParkingConsider}
-					onFinalize={onParkingFinalize}
-				/>
-			</section>
+			<!-- Parking lot (mobile/tablet) — a collapsed divider per phase, always a
+			     drop target even when empty/collapsed. On a boundary day the two phases
+			     get separate zones so a cross-phase pull is rejected (#87). -->
+			<div class="space-y-2 lg-desktop:hidden">
+				{#each parkingZones as zone (zone.phaseId)}
+					<ParkingDivider
+						items={zone.items}
+						phases={data.dayPhases}
+						tripSlug={data.trip.slug}
+						phaseName={data.dayPhases.length > 1
+							? (data.dayPhases.find((p) => p.id === zone.phaseId)?.name ?? null)
+							: null}
+						votesByItem={data.votesByItem}
+						members={data.members}
+						dragDisabled={zone.dragDisabled}
+						{startDrag}
+						{pullUp}
+						onConsider={zone.onConsider}
+						onFinalize={zone.onFinalize}
+					/>
+				{/each}
+			</div>
 		{/snippet}
 	</DragDropTimeline>
 </main>

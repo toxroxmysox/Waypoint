@@ -85,6 +85,24 @@ describe('resolveDrop', () => {
 			);
 			expect(action).toEqual({ kind: 'reject' });
 		});
+
+		// #87: per-phase day zones scope the pull to a SINGLE phase's id set, which is
+		// what makes the reject branch UI-reachable. Dragging an idea out of one
+		// phase's parking zone into another phase's zone resolves against the target
+		// zone's phase only — a foreign-phase idea is rejected (snaps back).
+		it('rejects an idea pulled into a foreign phase zone (per-phase split)', () => {
+			const action = resolveDrop(
+				ctx({ source: 'parking', target: 'timeline', item: { phase: 'p1', start_time: '' }, dayPhases: ['p2'] })
+			);
+			expect(action).toEqual({ kind: 'reject' });
+		});
+
+		it('allows an idea pulled within its own phase zone (per-phase split)', () => {
+			const action = resolveDrop(
+				ctx({ source: 'parking', target: 'timeline', item: { phase: 'p1', start_time: '' }, before: null, after: 100, dayPhases: ['p1'] })
+			);
+			expect(action).toEqual({ kind: 'pull', before: null, after: 100 });
+		});
 	});
 
 	describe('timeline → timeline (reorder / snapback)', () => {
