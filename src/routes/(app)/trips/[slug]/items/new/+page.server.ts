@@ -121,7 +121,6 @@ export const actions: Actions = {
 		const reservationUrl = data.get('reservation_url')?.toString() || '';
 		const freeCancellation = data.get('free_cancellation') === 'on';
 		const costEstimate = parseFloat(data.get('cost_estimate_usd')?.toString() || '0') || 0;
-		const costActual = parseFloat(data.get('cost_actual_usd')?.toString() || '0') || 0;
 		const parentItem = data.get('parent_item')?.toString() || '';
 		const suggestionId = data.get('suggestion_id')?.toString() || '';
 
@@ -192,7 +191,6 @@ export const actions: Actions = {
 			reservation_url: reservationUrl,
 			free_cancellation: freeCancellation,
 			cost_estimate_usd: costEstimate,
-			cost_actual_usd: costActual,
 			assigned_to: assignedTo,
 			parent_item: parentItem || ''
 		};

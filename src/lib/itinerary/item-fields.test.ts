@@ -54,10 +54,9 @@ describe('getFieldConfig', () => {
 			expect(validation.title.maxLength).toBe(200);
 		});
 
-		it('costs have min 0', () => {
+		it('cost has min 0', () => {
 			const { validation } = getFieldConfig('activity');
 			expect(validation.cost_estimate_usd.min).toBe(0);
-			expect(validation.cost_actual_usd.min).toBe(0);
 		});
 
 		it('reservation_url has url pattern', () => {
@@ -71,7 +70,6 @@ describe('getFieldConfig', () => {
 				expect(validation.title.required).toBe(true);
 				expect(validation.title.maxLength).toBe(200);
 				expect(validation.cost_estimate_usd.min).toBe(0);
-				expect(validation.cost_actual_usd.min).toBe(0);
 				expect(validation.reservation_url.pattern).toBe('url');
 			}
 		});
@@ -93,10 +91,9 @@ describe('getFieldConfig', () => {
 			expect(defaults.free_cancellation).toBe(false);
 		});
 
-		it('costs default to 0', () => {
+		it('cost defaults to 0', () => {
 			const { defaults } = getFieldConfig('meal');
 			expect(defaults.cost_estimate_usd).toBe(0);
-			expect(defaults.cost_actual_usd).toBe(0);
 		});
 
 		it('subtype defaults to empty string for types with no subtypes', () => {
@@ -161,7 +158,6 @@ describe('buildEmptyFormData', () => {
 		expect(data.booked).toBe(false);
 		expect(data.free_cancellation).toBe(false);
 		expect(data.cost_estimate_usd).toBe(0);
-		expect(data.cost_actual_usd).toBe(0);
 	});
 
 	it('initializes string fields as empty strings', () => {
