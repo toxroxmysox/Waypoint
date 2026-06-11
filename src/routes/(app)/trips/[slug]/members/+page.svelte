@@ -380,7 +380,7 @@
 		</section>
 	{/if}
 
-	<!-- Share join links (#118) — owner/co_owner only, open trips only -->
+	<!-- Share join links (#118, #152) — non-viewer members, open trips only -->
 	{#if data.canManageJoinLinks}
 		<section class="space-y-3">
 			<h2 class="text-ink-soft text-xs font-semibold tracking-wider uppercase">Share a join link</h2>

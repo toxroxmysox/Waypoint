@@ -892,7 +892,8 @@ const JOIN_LINK_OPS = [
 	'joined_role_traveler',
 	'accept_viewer_ok',
 	'joined_role_viewer',
-	'nonowner_manage_denied',
+	'traveler_manage_ok',
+	'viewer_manage_denied',
 	'revoke_ok',
 	'revoked_lookup_404',
 	'revoked_accept_denied',
@@ -989,12 +990,23 @@ async function runJoinLinkNovelCases(tokens) {
 	});
 	recordResult('join_tokens', 'joined_role_viewer', 'viewer', 'viewer', viewMem.data?.role || 'none', viewMem.status);
 
-	// 7. Management gating — the freshly-joined traveler (non-owner) cannot revoke.
-	const gateRes = await pbRequest('POST', '/api/join/revoke', {
+	// 7. Management authority (#152) — a TRAVELER may now manage links (parity with
+	// email invites); a VIEWER still may not. The freshly-joined traveler (step 5)
+	// revokes the TRAVELER link — already consumed, and step 8 re-revokes it — so
+	// this allow leaves the viewer link untouched for the clamp/picker cases below.
+	// The viewer (step 6) is then refused, pinning the boundary; a denied revoke
+	// throws before mutating, so the viewer link stays live.
+	const travManage = await pbRequest('POST', '/api/join/revoke', {
 		token: tokens.non_member,
+		body: { trip_id: tripId, role: 'traveler' }
+	});
+	recordResult('join_tokens', 'traveler_manage_ok', 'traveler', 'allow', classifyWrite(travManage.status), travManage.status);
+
+	const viewerManage = await pbRequest('POST', '/api/join/revoke', {
+		token: tokens.viewer,
 		body: { trip_id: tripId, role: 'viewer' }
 	});
-	recordResult('join_tokens', 'nonowner_manage_denied', 'traveler', 'deny', classifyWrite(gateRes.status), gateRes.status);
+	recordResult('join_tokens', 'viewer_manage_denied', 'viewer', 'deny', classifyWrite(viewerManage.status), viewerManage.status);
 
 	// 8. Revoke — the old traveler token 404s on lookup and is refused on accept.
 	const revRes = await pbRequest('POST', '/api/join/revoke', {

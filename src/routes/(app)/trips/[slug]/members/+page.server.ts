@@ -126,8 +126,8 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 	});
 
 	// #118 — shared join links. Live (non-revoked) links for this trip, one per
-	// role at most. Only owner/co_owner manage them; the section is hidden for
-	// everyone else, but the data is cheap and the listRule already gates it.
+	// role at most. Non-viewer members manage them (#152); the section is hidden
+	// for viewers, but the data is cheap and the listRule already gates it.
 	let joinLinks: JoinLinkRow[] = [];
 	try {
 		const tokens = await locals.pb.collection('join_tokens').getFullList<JoinToken>({
@@ -149,8 +149,9 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 	const isOwner = membership.role === 'owner' || membership.role === 'co_owner';
 	const canInvite = isOwner || membership.role === 'traveler';
 	const canAddPlaceholder = canInvite;
-	// Join links are owner/co_owner-managed; trip must be open (not closed/archived).
-	const canManageJoinLinks = isOwner && !trip.archived;
+	// #152 — join links are managed by any non-viewer member (owner, co_owner,
+	// traveler), matching email-invite authority; trip must be open (not archived).
+	const canManageJoinLinks = canInvite && !trip.archived;
 	// Active owners only — a tombstoned owner must not prop up the sole-owner count.
 	const ownerCount = members.filter((m) => m.role === 'owner' && !m.removed_at).length;
 

@@ -1,9 +1,9 @@
 /// <reference path="../pb_data/types.d.ts" />
 // #118 — shared Join Link endpoints (MEMBERSHIP_LIFECYCLE_PRD §#118).
 // Five router endpoints, no record hooks:
-//   POST /api/join/create  — auth, owner/co_owner: mint a (trip, role) link
-//   POST /api/join/rotate  — auth, owner/co_owner: new token on the link (old 404s)
-//   POST /api/join/revoke  — auth, owner/co_owner: soft-disable the link
+//   POST /api/join/create  — auth, non-viewer member: mint a (trip, role) link
+//   POST /api/join/rotate  — auth, non-viewer member: new token on the link (old 404s)
+//   POST /api/join/revoke  — auth, non-viewer member: soft-disable the link
 //   POST /api/join/lookup  — anon: minimal pre-auth context (title + dates + role)
 //   POST /api/join/accept  — auth: join at the link role (claim + clamp invariant)
 //
@@ -20,7 +20,7 @@
 // Member tombstone (user="" && placeholder_email="") is never matched.
 
 // --- POST /api/join/create -------------------------------------------------
-// Auth, owner/co_owner. Body: { trip_id, role, expires_days? }.
+// Auth, non-viewer member. Body: { trip_id, role, expires_days? }.
 //   - role capped at traveler (traveler | viewer only — never co_owner).
 //   - one live link per (trip, role): a non-revoked existing link 400s ("rotate
 //     or revoke first"); a revoked one is reused (re-armed) to respect the unique
@@ -54,8 +54,11 @@ routerAdd('POST', '/api/join/create', (e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 	const callerRole = callerMember.getString('role');
-	if (callerRole !== 'owner' && callerRole !== 'co_owner') {
-		throw new ForbiddenError('Only owners and co-owners can manage join links');
+	// #152 — non-viewer members may manage links (owner, co_owner, traveler),
+	// matching email-invite authority. Role ceiling unchanged: create still
+	// rejects any role but traveler|viewer, so a traveler can't mint a co_owner link.
+	if (callerRole === 'viewer') {
+		throw new ForbiddenError('Viewers cannot manage join links');
 	}
 
 	// Trip must exist and not be closed (archived). Live only in planning/active.
@@ -135,7 +138,7 @@ routerAdd('POST', '/api/join/create', (e) => {
 });
 
 // --- POST /api/join/rotate -------------------------------------------------
-// Auth, owner/co_owner. Body: { trip_id, role }. Generates a new token on the
+// Auth, non-viewer member. Body: { trip_id, role }. Generates a new token on the
 // existing (trip, role) link (the old token value no longer matches → 404),
 // un-revokes it, and re-clamps expiry to trip end if needed. Keeps the existing
 // expiry window otherwise.
@@ -160,8 +163,11 @@ routerAdd('POST', '/api/join/rotate', (e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 	const callerRole = callerMember.getString('role');
-	if (callerRole !== 'owner' && callerRole !== 'co_owner') {
-		throw new ForbiddenError('Only owners and co-owners can manage join links');
+	// #152 — non-viewer members may manage links (owner, co_owner, traveler),
+	// matching email-invite authority. Role ceiling unchanged: create still
+	// rejects any role but traveler|viewer, so a traveler can't mint a co_owner link.
+	if (callerRole === 'viewer') {
+		throw new ForbiddenError('Viewers cannot manage join links');
 	}
 
 	let trip;
@@ -210,7 +216,7 @@ routerAdd('POST', '/api/join/rotate', (e) => {
 });
 
 // --- POST /api/join/revoke -------------------------------------------------
-// Auth, owner/co_owner. Body: { trip_id, role }. Soft-disables the link (the
+// Auth, non-viewer member. Body: { trip_id, role }. Soft-disables the link (the
 // row stays so the (trip, role) slot can be re-armed by create/rotate).
 routerAdd('POST', '/api/join/revoke', (e) => {
 	const auth = e.auth;
@@ -233,8 +239,11 @@ routerAdd('POST', '/api/join/revoke', (e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 	const callerRole = callerMember.getString('role');
-	if (callerRole !== 'owner' && callerRole !== 'co_owner') {
-		throw new ForbiddenError('Only owners and co-owners can manage join links');
+	// #152 — non-viewer members may manage links (owner, co_owner, traveler),
+	// matching email-invite authority. Role ceiling unchanged: create still
+	// rejects any role but traveler|viewer, so a traveler can't mint a co_owner link.
+	if (callerRole === 'viewer') {
+		throw new ForbiddenError('Viewers cannot manage join links');
 	}
 
 	let link;
