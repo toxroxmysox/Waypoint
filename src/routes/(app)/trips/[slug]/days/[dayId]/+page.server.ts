@@ -139,19 +139,59 @@ export const actions: Actions = {
 		const itemId = data.get('item_id')?.toString();
 		if (!itemId) return fail(400, { error: 'Missing item ID.' });
 
-		const dayItems = await locals.pb.collection('items').getFullList({
-			filter: `day = "${params.dayId}"`,
-			sort: '-sort_order',
-			fields: 'sort_order'
-		});
-		const newOrder = dayItems.length > 0 ? Number(dayItems[0].sort_order) + GAP : GAP;
+		// Position-aware pull (#60): drop neighbors come from the dnd flat list.
+		// No neighbors → append to the day's tail (legacy behavior).
+		const beforeRaw = data.get('before_order')?.toString();
+		const afterRaw = data.get('after_order')?.toString();
+		const before = beforeRaw && !isNaN(Number(beforeRaw)) ? Number(beforeRaw) : null;
+		const after = afterRaw && !isNaN(Number(afterRaw)) ? Number(afterRaw) : null;
+
+		const newOrder = before === null && after === null ? null : insertBetween(before, after);
 
 		try {
-			await locals.pb.collection('items').update(itemId, {
-				day: params.dayId,
-				status: 'planned',
-				sort_order: newOrder
-			});
+			if (before === null && after === null) {
+				// Append to the end of the day.
+				const tail = await locals.pb.collection('items').getFullList({
+					filter: `day = "${params.dayId}"`,
+					sort: '-sort_order',
+					fields: 'sort_order'
+				});
+				await locals.pb.collection('items').update(itemId, {
+					day: params.dayId,
+					status: 'planned',
+					sort_order: tail.length > 0 ? Number(tail[0].sort_order) + GAP : GAP
+				});
+			} else if (newOrder === null) {
+				// Gap collapsed — rebalance the day with the pulled item spliced in.
+				const dayItems = await locals.pb.collection('items').getFullList<Item>({
+					filter: `day = "${params.dayId}"`,
+					sort: 'sort_order',
+					fields: 'id,sort_order'
+				});
+				const orderedIds = dayItems.map((i) => i.id);
+				let insertIdx = orderedIds.length;
+				if (after !== null) {
+					const afterIdx = dayItems.findIndex((i) => i.sort_order === after);
+					if (afterIdx >= 0) insertIdx = afterIdx;
+				} else if (before !== null) {
+					const beforeIdx = dayItems.findIndex((i) => i.sort_order === before);
+					if (beforeIdx >= 0) insertIdx = beforeIdx + 1;
+				}
+				orderedIds.splice(insertIdx, 0, itemId);
+				const updates = rebalance(orderedIds);
+				await Promise.all(
+					updates.map((u) =>
+						locals.pb.collection('items').update(u.id, { sort_order: u.sort_order })
+					)
+				);
+				await locals.pb.collection('items').update(itemId, { day: params.dayId, status: 'planned' });
+			} else {
+				await locals.pb.collection('items').update(itemId, {
+					day: params.dayId,
+					status: 'planned',
+					sort_order: newOrder
+				});
+			}
 			return { success: true };
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : 'Failed to add item to day.';
@@ -165,10 +205,14 @@ export const actions: Actions = {
 		if (!itemId) return fail(400, { error: 'Missing item ID.' });
 
 		try {
+			// Eject → unschedule (#60): drop the day, mark unplanned, and STRIP the
+			// time so "unscheduled" means unscheduled (no silent re-anchor later).
 			await locals.pb.collection('items').update(itemId, {
 				day: '',
 				status: 'unplanned',
-				sort_order: 0
+				sort_order: 0,
+				start_time: '',
+				end_time: ''
 			});
 			return { success: true };
 		} catch (err: unknown) {

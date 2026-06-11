@@ -138,10 +138,11 @@
 	<DragDropTimeline
 		dayItems={data.dayItems}
 		parkingLotItems={data.parkingLotItems}
+		dayPhaseIds={data.dayPhases.map((p) => p.id)}
 		tripSlug={data.trip.slug}
 		dayId={data.day.id}
 	>
-		{#snippet children({ draggedItemId, onDragStart, onDragOver, onDropTimeline, onDropParking, onDragEnd })}
+		{#snippet children({ timelineItems, parkingItems, timelineDragDisabled, parkingDragDisabled, startDrag, pullUp, onTimelineConsider, onTimelineFinalize, onParkingConsider, onParkingFinalize })}
 			<!-- Items -->
 			<section class="space-y-1.5">
 				<SectionH>
@@ -158,35 +159,35 @@
 				</SectionH>
 
 				<DayTimeline
-					items={data.dayItems}
+					items={timelineItems}
 					tripSlug={data.trip.slug}
 					dayId={data.day.id}
 					votesByItem={data.votesByItem}
 					members={data.members}
-					{draggedItemId}
-					{onDragStart}
-					{onDragOver}
-					{onDropTimeline}
-					{onDragEnd}
+					dragDisabled={timelineDragDisabled}
+					{startDrag}
+					onConsider={onTimelineConsider}
+					onFinalize={onTimelineFinalize}
 				/>
 			</section>
 
-			<!-- Parking lot (mobile) -->
-			{#if data.parkingLotItems && data.parkingLotItems.length > 0}
-				<section
-					class="space-y-1.5 lg-desktop:hidden"
-					role="none"
-					ondragover={(e) => e.preventDefault()}
-					ondrop={() => onDropParking()}
-				>
-					<SectionH>Ideas</SectionH>
-					<ParkingLotSection
-						items={data.parkingLotItems}
-						phases={data.dayPhases}
-						tripSlug={data.trip.slug}
-					/>
-				</section>
-			{/if}
+			<!-- Parking lot (mobile/tablet) — always a drop target, even when empty. -->
+			<section class="space-y-1.5 lg-desktop:hidden">
+				<SectionH>Parking Lot</SectionH>
+				<ParkingLotSection
+					items={parkingItems}
+					phases={data.dayPhases}
+					tripSlug={data.trip.slug}
+					votesByItem={data.votesByItem}
+					members={data.members}
+					dndEnabled={true}
+					dragDisabled={parkingDragDisabled}
+					{startDrag}
+					{pullUp}
+					onConsider={onParkingConsider}
+					onFinalize={onParkingFinalize}
+				/>
+			</section>
 		{/snippet}
 	</DragDropTimeline>
 </main>

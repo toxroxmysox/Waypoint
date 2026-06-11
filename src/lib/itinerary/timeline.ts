@@ -104,6 +104,46 @@ function insertDividers(entries: TimelineEntry[]): TimelineEntry[] {
 	return result;
 }
 
+export interface FlatTimelineEntry {
+	item: Item;
+	anchored: boolean;
+	slotLabel: 'Morning' | 'Afternoon' | 'Evening' | null;
+}
+
+/**
+ * The day's items as a flat 1:1 list for `svelte-dnd-action` (#60). Same display
+ * order as `buildTimeline` (which reuses `orderDayItems`, the #120 shared core),
+ * but with the Morning/Afternoon/Evening divider rows folded into a per-item
+ * `slotLabel` on the first item of each slot — so DOM children map 1:1 to the
+ * bound array. Untimed items carry no label and `anchored: false`.
+ */
+export function buildTimelineFlat(items: Item[]): FlatTimelineEntry[] {
+	const entries = buildTimeline(items);
+	const result: FlatTimelineEntry[] = [];
+	let pendingLabel: 'Morning' | 'Afternoon' | 'Evening' | null = null;
+	let labeledFirstSlot = false;
+
+	for (const entry of entries) {
+		if (entry.kind === 'divider') {
+			pendingLabel = entry.label;
+			continue;
+		}
+		let slotLabel: FlatTimelineEntry['slotLabel'] = null;
+		if (entry.anchored && entry.item.start_time) {
+			if (pendingLabel) {
+				slotLabel = pendingLabel;
+				pendingLabel = null;
+			} else if (!labeledFirstSlot) {
+				slotLabel = SLOT_LABELS[getTimeSlot(entry.item.start_time)];
+			}
+			labeledFirstSlot = true;
+		}
+		result.push({ item: entry.item, anchored: entry.anchored, slotLabel });
+	}
+
+	return result;
+}
+
 export function detectOverlaps(items: Item[]): Set<string> {
 	const timed = items
 		.filter((i) => i.start_time && i.end_time)
