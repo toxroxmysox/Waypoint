@@ -116,7 +116,6 @@ const itemTypeLabels: Record<ItemType, string> = {
 export interface FieldValidation {
 	title: { required: boolean; maxLength: number };
 	cost_estimate_usd: { min: number };
-	cost_actual_usd: { min: number };
 	reservation_url: { pattern: 'url' };
 }
 
@@ -126,7 +125,6 @@ export interface FieldDefaults {
 	booked: boolean;
 	free_cancellation: boolean;
 	cost_estimate_usd: number;
-	cost_actual_usd: number;
 }
 
 export interface FieldLabels {
@@ -146,7 +144,6 @@ export interface FieldConfig {
 const SHARED_VALIDATION: FieldValidation = {
 	title: { required: true, maxLength: 200 },
 	cost_estimate_usd: { min: 0 },
-	cost_actual_usd: { min: 0 },
 	reservation_url: { pattern: 'url' }
 };
 
@@ -163,8 +160,7 @@ export function getFieldConfig(type: ItemType): FieldConfig {
 			status: 'planned',
 			booked: false,
 			free_cancellation: false,
-			cost_estimate_usd: 0,
-			cost_actual_usd: 0
+			cost_estimate_usd: 0
 		},
 		labels: {
 			typeLabel: itemTypeLabels[type],
@@ -194,7 +190,6 @@ export function buildEmptyFormData(type: ItemType): ItemFormData {
 		reservation_url: '',
 		free_cancellation: defaults.free_cancellation,
 		cost_estimate_usd: defaults.cost_estimate_usd,
-		cost_actual_usd: defaults.cost_actual_usd,
 		requires_booking: defaultRequiresBooking(type),
 		confirmation_codes: [],
 		assigned_to: [],

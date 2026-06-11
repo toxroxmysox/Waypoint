@@ -174,7 +174,6 @@
 			reservation_url: data.item.reservation_url ?? '',
 			free_cancellation: data.item.free_cancellation ?? false,
 			cost_estimate_usd: data.item.cost_estimate_usd ?? 0,
-			cost_actual_usd: data.item.cost_actual_usd ?? 0,
 			confirmation_codes: data.item.confirmation_codes ?? [],
 			assigned_to: data.item.assigned_to ?? [],
 			status: data.item.status ?? 'planned',
