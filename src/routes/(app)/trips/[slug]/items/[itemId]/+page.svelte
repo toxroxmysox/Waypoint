@@ -159,6 +159,31 @@
 		</a>
 	{/if}
 
+	<!-- #129 — Goals this item addresses. The link lives goal-side
+	     (trip_goals.items); rendered read-only here, each row navigates to the
+	     goal. Section omitted entirely when this item links no goals. -->
+	{#if data.linkedGoals.length > 0}
+		<Card>
+			<div class="p-4">
+				<SectionH>Goals</SectionH>
+				<div class="mt-2 -mx-1">
+					{#each data.linkedGoals as goal (goal.id)}
+						<a
+							href="/trips/{data.trip.slug}/goals/{goal.id}"
+							class="hover:bg-surface-2 flex items-center gap-2 rounded-md px-1 py-2"
+						>
+							<span class="text-moss shrink-0" aria-hidden="true">✦</span>
+							<span class="text-ink min-w-0 flex-1 truncate text-sm font-medium">{goal.title}</span>
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-ink-muted shrink-0">
+								<path d="m9 18 6-6-6-6" />
+							</svg>
+						</a>
+					{/each}
+				</div>
+			</div>
+		</Card>
+	{/if}
+
 	<!-- Documents — artifacts attached to this item (codes stay on the item above). -->
 	<DocumentSection
 		docs={data.documents}

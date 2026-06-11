@@ -1,6 +1,6 @@
 import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Item, Checklist, Task, TripMember, Vote, Comment, Document, Expense } from '$lib/types';
+import type { Item, Checklist, Task, TripMember, Vote, Comment, Document, Expense, TripGoal } from '$lib/types';
 import { VOTE_OPTIONS, type VoteValue } from '$lib/collaboration/voting';
 import { toDocumentView } from '$lib/documents/view';
 import { memberAvatarUrl, withAvatarUrls } from '$lib/collaboration/member-avatar';
@@ -25,7 +25,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		.getFirstListItem<Checklist>(`item = "${item.id}" && kind = "manual"`)
 		.catch(() => null);
 
-	const [tasks, members, rawComments, votes, rawDocuments, linkedExpenses] = await Promise.all([
+	const [tasks, members, rawComments, votes, rawDocuments, linkedExpenses, tripGoals] = await Promise.all([
 		checklist
 			? locals.pb.collection('tasks').getFullList<Task>({
 					filter: `checklist = "${checklist.id}"`,
@@ -56,8 +56,19 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		locals.pb.collection('expenses').getFullList<Expense>({
 			filter: `linked_item = "${item.id}"`,
 			fields: 'id'
-		}).catch(() => [] as Expense[])
+		}).catch(() => [] as Expense[]),
+		// #129 — Goals peek (back-link). The link lives goal-side on
+		// `trip_goals.items`; fetch the trip's goals and keep the ones whose
+		// relation contains this item (JS filter mirrors syncGoalLinks — goals
+		// per trip are few, sidesteps PB relation-filter syntax).
+		locals.pb.collection('trip_goals').getFullList<TripGoal>({
+			filter: `trip = "${trip.id}"`,
+			fields: 'id,title,items',
+			sort: 'sort_order'
+		}).catch(() => [] as TripGoal[])
 	]);
+
+	const linkedGoals = tripGoals.filter((g) => (g.items ?? []).includes(item.id));
 
 	const documents = rawDocuments.map((d) => toDocumentView(d, trip.slug, item));
 
@@ -77,7 +88,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 
 	const myVote = votes.find((v) => v.member === membership.id) ?? null;
 
-	return { item, checklist, tasks, members: withAvatarUrls(locals.pb, members), comments, votes, myVote, documents, itemDay: day, itemPhase: phase, linkedExpenseCount: linkedExpenses.length };
+	return { item, checklist, tasks, members: withAvatarUrls(locals.pb, members), comments, votes, myVote, documents, itemDay: day, itemPhase: phase, linkedExpenseCount: linkedExpenses.length, linkedGoals };
 };
 
 async function getMembership(locals: App.Locals, tripId: string): Promise<TripMember> {
