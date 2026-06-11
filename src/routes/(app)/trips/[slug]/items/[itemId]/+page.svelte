@@ -140,6 +140,23 @@
 		}}
 	/>
 
+	<!-- #128 — Cost/Booking nav: only when ≥1 expense links this item. Lands on the
+	     expenses list filtered to this item (multiplicity-safe — never one record). -->
+	{#if data.linkedExpenseCount > 0}
+		<a
+			href="/trips/{data.trip.slug}/expenses?item={data.item.id}"
+			class="border-line bg-surface hover:bg-surface-2 flex items-center justify-between rounded-lg border px-4 py-3"
+		>
+			<span class="text-ink text-sm font-medium">View in expenses</span>
+			<span class="text-ink-muted flex items-center gap-2 text-xs">
+				{data.linkedExpenseCount} linked
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="m9 18 6-6-6-6" />
+				</svg>
+			</span>
+		</a>
+	{/if}
+
 	<!-- Documents — artifacts attached to this item (codes stay on the item above). -->
 	<DocumentSection
 		docs={data.documents}

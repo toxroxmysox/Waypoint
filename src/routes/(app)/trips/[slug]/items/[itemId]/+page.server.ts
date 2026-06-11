@@ -1,6 +1,6 @@
 import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Item, Checklist, Task, TripMember, Vote, Comment, Document } from '$lib/types';
+import type { Item, Checklist, Task, TripMember, Vote, Comment, Document, Expense } from '$lib/types';
 import { VOTE_OPTIONS, type VoteValue } from '$lib/collaboration/voting';
 import { toDocumentView } from '$lib/documents/view';
 import { memberAvatarUrl, withAvatarUrls } from '$lib/collaboration/member-avatar';
@@ -25,7 +25,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		.getFirstListItem<Checklist>(`item = "${item.id}" && kind = "manual"`)
 		.catch(() => null);
 
-	const [tasks, members, rawComments, votes, rawDocuments] = await Promise.all([
+	const [tasks, members, rawComments, votes, rawDocuments, linkedExpenses] = await Promise.all([
 		checklist
 			? locals.pb.collection('tasks').getFullList<Task>({
 					filter: `checklist = "${checklist.id}"`,
@@ -50,7 +50,13 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 			filter: `item = "${item.id}"`,
 			sort: '-created',
 			expand: 'uploaded_by'
-		}).catch(() => [] as Document[])
+		}).catch(() => [] as Document[]),
+		// #128 — does any expense link this item? Drives the conditional "View in
+		// expenses" affordance. id-only fetch; the count is all the detail needs.
+		locals.pb.collection('expenses').getFullList<Expense>({
+			filter: `linked_item = "${item.id}"`,
+			fields: 'id'
+		}).catch(() => [] as Expense[])
 	]);
 
 	const documents = rawDocuments.map((d) => toDocumentView(d, trip.slug, item));
@@ -71,7 +77,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 
 	const myVote = votes.find((v) => v.member === membership.id) ?? null;
 
-	return { item, checklist, tasks, members: withAvatarUrls(locals.pb, members), comments, votes, myVote, documents, itemDay: day, itemPhase: phase };
+	return { item, checklist, tasks, members: withAvatarUrls(locals.pb, members), comments, votes, myVote, documents, itemDay: day, itemPhase: phase, linkedExpenseCount: linkedExpenses.length };
 };
 
 async function getMembership(locals: App.Locals, tripId: string): Promise<TripMember> {
