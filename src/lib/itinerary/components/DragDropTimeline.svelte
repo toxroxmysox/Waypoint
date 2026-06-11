@@ -6,16 +6,30 @@
 	import { buildTimelineFlat } from '$lib/itinerary/timeline';
 	import { neighborsForMove, resolveDrop, type OrderedRef } from '$lib/itinerary/drag-reorder';
 
+	interface ParkingZoneInput {
+		phaseId: string;
+		items: Item[];
+	}
+
+	interface ParkingZone {
+		phaseId: string;
+		items: Item[];
+		dragDisabled: boolean;
+		onConsider: (e: CustomEvent<DndEvent<Item>>) => void;
+		onFinalize: (e: CustomEvent<DndEvent<Item>>) => void;
+	}
+
 	let {
 		dayItems,
-		parkingLotItems = [],
+		parkingByPhase = [],
 		dayPhaseIds = [],
 		tripSlug,
 		dayId,
 		children
 	}: {
 		dayItems: Item[];
-		parkingLotItems?: Item[];
+		/** One entry per phase the day belongs to (two on a boundary day). #87. */
+		parkingByPhase?: ParkingZoneInput[];
 		dayPhaseIds?: string[];
 		tripSlug: string;
 		dayId: string;
@@ -23,15 +37,13 @@
 			[
 				{
 					timelineItems: Item[];
-					parkingItems: Item[];
 					timelineDragDisabled: boolean;
-					parkingDragDisabled: boolean;
 					startDrag: () => void;
 					pullUp: (itemId: string) => void;
 					onTimelineConsider: (e: CustomEvent<DndEvent<Item>>) => void;
 					onTimelineFinalize: (e: CustomEvent<DndEvent<Item>>) => void;
-					onParkingConsider: (e: CustomEvent<DndEvent<Item>>) => void;
-					onParkingFinalize: (e: CustomEvent<DndEvent<Item>>) => void;
+					/** One drop zone per phase — the day page renders a divider for each. */
+					parkingZones: ParkingZone[];
 				}
 			]
 		>;
@@ -45,20 +57,24 @@
 	// Working copies svelte-dnd-action mutates during a drag. Re-seed from server
 	// truth whenever page data changes (after a form action invalidates the load).
 	let timelineItems = $state<Item[]>([]);
-	let parkingItems = $state<Item[]>([]);
+	let parkingItemsByPhase = $state<Record<string, Item[]>>({});
 	$effect(() => {
 		timelineItems = ordered(dayItems);
 	});
 	$effect(() => {
-		parkingItems = [...parkingLotItems];
+		const next: Record<string, Item[]> = {};
+		for (const zone of parkingByPhase) next[zone.phaseId] = [...zone.items];
+		parkingItemsByPhase = next;
 	});
 
-	// Re-seed both zones to server truth (used for snapback / reject reverts).
+	// Re-seed both surfaces to server truth (used for snapback / reject reverts).
 	// queued so it wins the race against the other zone's finalize handler.
 	function reseed() {
 		queueMicrotask(() => {
 			timelineItems = ordered(dayItems);
-			parkingItems = [...parkingLotItems];
+			const next: Record<string, Item[]> = {};
+			for (const zone of parkingByPhase) next[zone.phaseId] = [...zone.items];
+			parkingItemsByPhase = next;
 		});
 	}
 
@@ -73,8 +89,8 @@
 	let formBefore = $state('');
 	let formAfter = $state('');
 
-	// A handle press enables BOTH zones — svelte-dnd-action grabs whatever item
-	// is under the pointer (which lives in exactly one zone).
+	// A handle press enables every zone — svelte-dnd-action grabs whatever item is
+	// under the pointer (which lives in exactly one zone).
 	function startDrag() {
 		timelineDragDisabled = false;
 		parkingDragDisabled = false;
@@ -147,26 +163,57 @@
 		reDisable(e.detail.info.source);
 	}
 
-	function onParkingConsider(e: CustomEvent<DndEvent<Item>>) {
-		parkingItems = e.detail.items;
+	function onParkingConsider(phaseId: string, e: CustomEvent<DndEvent<Item>>) {
+		parkingItemsByPhase[phaseId] = e.detail.items;
 		reDisableOnKeyboardStop(e.detail.info);
 	}
 
-	function onParkingFinalize(e: CustomEvent<DndEvent<Item>>) {
+	function onParkingFinalize(phaseId: string, e: CustomEvent<DndEvent<Item>>) {
 		const next = e.detail.items;
 		const movedId = e.detail.info.id;
-		parkingItems = next;
+		parkingItemsByPhase[phaseId] = next;
 
-		const wasInParking = parkingLotItems.some((i) => i.id === movedId);
-		const nowInParking = next.some((i) => i.id === movedId);
-		if (nowInParking && !wasInParking) {
-			// Ejected from the timeline → park it (server strips the time).
-			submit(pushForm, movedId, null, null);
+		const landedHere = next.some((i) => i.id === movedId);
+		if (landedHere) {
+			const fromTimeline = dayItems.some((i) => i.id === movedId);
+			const wasHere = (parkingByPhase.find((z) => z.phaseId === phaseId)?.items ?? []).some(
+				(i) => i.id === movedId
+			);
+			const moved = next.find((i) => i.id === movedId);
+
+			if (fromTimeline) {
+				// Ejected from the timeline → park it (server strips the time).
+				submit(pushForm, movedId, null, null);
+			} else if (!wasHere && moved) {
+				// Dragged in from ANOTHER phase's zone. Resolve against THIS zone's phase
+				// only — a foreign-phase idea hits resolveDrop's `reject` branch (phase is
+				// sticky), so it snaps back. This is the cross-phase reject made reachable
+				// by splitting one zone into per-phase zones (#87).
+				const action = resolveDrop({
+					source: 'parking',
+					target: 'timeline',
+					item: { phase: moved.phase, start_time: moved.start_time },
+					before: null,
+					after: null,
+					dayPhases: [phaseId]
+				});
+				if (action.kind === 'reject') reseed();
+			}
+			// Same-zone reorder (wasHere && !fromTimeline) is visual-only this slice;
+			// persistence is the Phase Detail reorder home (#88).
 		}
-		// Parking-internal reorder (wasInParking && nowInParking) is visual-only in
-		// this slice; persistence is the Phase Detail reorder home (#88).
 		reDisable(e.detail.info.source);
 	}
+
+	const parkingZones = $derived<ParkingZone[]>(
+		parkingByPhase.map((zone) => ({
+			phaseId: zone.phaseId,
+			items: parkingItemsByPhase[zone.phaseId] ?? [],
+			dragDisabled: parkingDragDisabled,
+			onConsider: (e: CustomEvent<DndEvent<Item>>) => onParkingConsider(zone.phaseId, e),
+			onFinalize: (e: CustomEvent<DndEvent<Item>>) => onParkingFinalize(zone.phaseId, e)
+		}))
+	);
 </script>
 
 <!-- Hidden forms for the existing server actions. enhance() invalidates the load
@@ -187,13 +234,10 @@
 
 {@render children({
 	timelineItems,
-	parkingItems,
 	timelineDragDisabled,
-	parkingDragDisabled,
 	startDrag,
 	pullUp,
 	onTimelineConsider,
 	onTimelineFinalize,
-	onParkingConsider,
-	onParkingFinalize
+	parkingZones
 })}
