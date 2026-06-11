@@ -17,6 +17,9 @@ importers:
       pocketbase:
         specifier: ^0.26.8
         version: 0.26.8
+      svelte-dnd-action:
+        specifier: ^0.9.69
+        version: 0.9.69(svelte@5.55.4(@typescript-eslint/types@8.58.2))
       sveltekit-superforms:
         specifier: ^2.30.1
         version: 2.30.1(@sveltejs/kit@2.57.1(@sveltejs/vite-plugin-svelte@7.0.0(svelte@5.55.4(@typescript-eslint/types@8.58.2))(vite@8.0.8(@types/node@24.12.2)(jiti@2.6.1)))(svelte@5.55.4(@typescript-eslint/types@8.58.2))(typescript@6.0.2)(vite@8.0.8(@types/node@24.12.2)(jiti@2.6.1)))(@types/json-schema@7.0.15)(svelte@5.55.4(@typescript-eslint/types@8.58.2))(typescript@6.0.2)
@@ -1632,6 +1635,11 @@ packages:
       svelte: ^4.0.0 || ^5.0.0-next.0
       typescript: '>=5.0.0'
 
+  svelte-dnd-action@0.9.69:
+    resolution: {integrity: sha512-NAmSOH7htJoYraTQvr+q5whlIuVoq88vEuHr4NcFgscDRUxfWPPxgie2OoxepBCQCikrXZV4pqV86aun60wVyw==}
+    peerDependencies:
+      svelte: '>=3.23.0 || ^5.0.0-next.0'
+
   svelte-eslint-parser@1.6.0:
     resolution: {integrity: sha512-qoB1ehychT6OxEtQAqc/guSqLS20SlA53Uijl7x375s8nlUT0lb9ol/gzraEEatQwsyPTJo87s2CmKL9Xab+Uw==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0, pnpm: 10.30.3}
@@ -3221,6 +3229,10 @@ snapshots:
       typescript: 6.0.2
     transitivePeerDependencies:
       - picomatch
+
+  svelte-dnd-action@0.9.69(svelte@5.55.4(@typescript-eslint/types@8.58.2)):
+    dependencies:
+      svelte: 5.55.4(@typescript-eslint/types@8.58.2)
 
   svelte-eslint-parser@1.6.0(svelte@5.55.4(@typescript-eslint/types@8.58.2)):
     dependencies:

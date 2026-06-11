@@ -10,7 +10,84 @@
 
 ---
 
-## ⚠️ REVISED 2026-06-07 — read before executing
+## ⚠️ EXECUTION REVISION 2026-06-11 (#60) — SUPERSEDES everything below
+
+Revised against `docs/PHASE_REDESIGN_PRD.md` + `gh issue view 60` before execution.
+The task list below (Tasks 0–10) is kept as **reference sketch**; the authoritative
+ordered build for this session is here. Where they disagree, this wins.
+
+### Scope of THIS session (#60 — touch-drag foundation)
+
+WIRED:
+- `resolveDrop()` — complete pure deep module, **all 6 branches**, Vitest every branch.
+  The single source of drag semantics. Components/actions are thin around it.
+- `buildTimelineFlat()` — flat 1:1 list, reuses `buildTimeline` (→ `orderDayItems`,
+  the #120 shared core). No reordering reimplemented.
+- `neighborsForMove()` — pure before/after `sort_order` helper.
+- `svelte-dnd-action` on the day timeline + a **single, always-present** mobile
+  parking drop zone (replaces native HTML5 DnD).
+- Handle-only drag (handle lifted OUT of the card `<a>`), iOS callout suppression,
+  touch + mouse + keyboard.
+- Server actions: `pushToParking` clears `start_time`/`end_time`; `pullToPlan`
+  position-aware (before/after).
+- Wires the #126 inert handle + pull-up affordances in `ParkingLotSection`.
+
+DEFERRED to #87/#88 (flagged in handoff):
+- The collapsed **"Parking lot · N"** day divider (tap-to-expand).
+- **Per-phase** drop-target splitting on boundary days (one droppable per phase).
+  This session passes the day's full phase-id set to `resolveDrop`; the parking
+  zone is one zone. Because the day load unions parking items across all the day's
+  phases, every shown idea's phase ∈ dayPhases, so `resolveDrop`'s `reject` branch
+  is tested but not UI-exercised yet (#87 splits the zone and exercises it).
+- **Parking-internal reorder persistence.** `resolveDrop` returns `reorder` for
+  parking→parking (module complete), but the day page does NOT persist it (Phase
+  Detail is the canonical idea-reorder home, #88). Visual-only this session.
+
+### `resolveDrop()` — signature + branch table
+
+```ts
+type Zone = 'timeline' | 'parking';
+interface DropContext {
+  source: Zone;
+  target: Zone;
+  item: { phase: string; start_time: string }; // the moved item
+  before: number | null;   // neighbor sort_order at drop pos
+  after: number | null;
+  dayPhases: string[];     // phase ids the TARGET day belongs to
+}
+type DropAction =
+  | { kind: 'reorder';  before: number | null; after: number | null }
+  | { kind: 'pull';     before: number | null; after: number | null }
+  | { kind: 'push' }
+  | { kind: 'reject' }
+  | { kind: 'snapback' };
+```
+
+| source   | target   | condition                          | action     | meaning                          |
+|----------|----------|------------------------------------|------------|----------------------------------|
+| timeline | parking  | —                                  | `push`     | eject → unschedule (strip time)  |
+| parking  | timeline | `item.phase ∈ dayPhases`           | `pull`     | schedule idea at drop position   |
+| parking  | timeline | `item.phase ∉ dayPhases`           | `reject`   | phase is sticky — refuse pull    |
+| timeline | timeline | `item.start_time` truthy (timed)   | `snapback` | clock pins it — revert reorder   |
+| timeline | timeline | untimed                            | `reorder`  | reorder by `sort_order`          |
+| parking  | parking  | —                                  | `reorder`  | (module complete; UI defers #88) |
+
+### Build order (TDD)
+1. `resolveDrop` + test (all branches).
+2. `buildTimelineFlat` + test (append to `timeline.test.ts`).
+3. `neighborsForMove` + test (new `drag-reorder.ts`).
+4. Server actions: `pushToParking` strips time; `pullToPlan` position-aware.
+5. `.no-callout` utility; lift handle out of `<a>` in `TimelineItemCard` + `ParkingLotSection`.
+6. Rewrite `DragDropTimeline` orchestrator (two zones, delegates to `resolveDrop`).
+7. `DayTimeline` → `dndzone`; `ParkingLotSection` → optional `dndzone` drop mode.
+8. Wire day page (`+page.svelte`): always-render parking zone; new snippet surface.
+9. `pnpm check` + `pnpm test:unit`; preview at 375px.
+
+`resolveDrop` lives in `src/lib/itinerary/drag-reorder.ts` alongside `neighborsForMove`.
+
+---
+
+## ⚠️ REVISED 2026-06-07 — read before executing (pre-phase, partially stale)
 
 This plan was written before the parking-lot IA grill. The PRD supersedes it on four points:
 

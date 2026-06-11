@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildTimeline } from './timeline';
+import { buildTimeline, buildTimelineFlat } from './timeline';
 import type { TimelineEntry, TimelineItemEntry } from './timeline';
 import type { Item } from '$lib/types';
 import type { RecordModel } from 'pocketbase';
@@ -142,5 +142,56 @@ describe('detectOverlaps', () => {
 			makeItem({ id: 'b', start_time: '2026-06-15 09:30:00.000Z' }),
 		];
 		expect(detectOverlaps(items)).toEqual(new Set());
+	});
+});
+
+describe('buildTimelineFlat', () => {
+	it('returns untimed items in sort_order with no anchors or labels', () => {
+		const flat = buildTimelineFlat([
+			makeItem({ id: 'a', sort_order: 200 }),
+			makeItem({ id: 'b', sort_order: 100 }),
+		]);
+		expect(flat.map((e) => e.item.id)).toEqual(['b', 'a']);
+		expect(flat.every((e) => !e.anchored)).toBe(true);
+		expect(flat.every((e) => e.slotLabel === null)).toBe(true);
+	});
+
+	it('maps 1:1 with no divider entries (folds dividers into slotLabel)', () => {
+		const items = [
+			makeItem({ id: 'm', start_time: '2026-06-15 09:00:00.000Z', sort_order: 100 }),
+			makeItem({ id: 'e', start_time: '2026-06-15 19:00:00.000Z', sort_order: 200 }),
+		];
+		const flat = buildTimelineFlat(items);
+		// buildTimeline would insert a divider entry; flat must not — one entry per item.
+		expect(flat).toHaveLength(2);
+		expect(flat.map((e) => e.item.id)).toEqual(['m', 'e']);
+	});
+
+	it('labels the first item of each time slot and marks timed items anchored', () => {
+		const items = [
+			makeItem({ id: 'm', start_time: '2026-06-15 09:00:00.000Z', sort_order: 100 }),
+			makeItem({ id: 'e', start_time: '2026-06-15 19:00:00.000Z', sort_order: 200 }),
+		];
+		const flat = buildTimelineFlat(items);
+		expect(flat.find((e) => e.item.id === 'm')?.slotLabel).toBe('Morning');
+		expect(flat.find((e) => e.item.id === 'e')?.slotLabel).toBe('Evening');
+		expect(flat.every((e) => e.anchored)).toBe(true);
+	});
+
+	it('interleaves an untimed item between timed anchors without labeling it', () => {
+		const items = [
+			makeItem({ id: 't1', start_time: '2026-06-15 09:00:00.000Z', sort_order: 100 }),
+			makeItem({ id: 'u', sort_order: 150 }),
+			makeItem({ id: 't2', start_time: '2026-06-15 11:00:00.000Z', sort_order: 200 }),
+		];
+		const flat = buildTimelineFlat(items);
+		expect(flat.map((e) => e.item.id)).toEqual(['t1', 'u', 't2']);
+		const u = flat.find((e) => e.item.id === 'u');
+		expect(u?.anchored).toBe(false);
+		expect(u?.slotLabel).toBe(null);
+	});
+
+	it('returns an empty list for no items', () => {
+		expect(buildTimelineFlat([])).toEqual([]);
 	});
 });
