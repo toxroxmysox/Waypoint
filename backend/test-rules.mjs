@@ -122,6 +122,17 @@ function fixtureRecordId(fixture, collection) {
 	}
 }
 
+// #133: the delete phase needs a CHILDLESS trip_members target. The owner member
+// (fixtureRecordId) is referenced required+non-cascade by item/vote/goal/invite/
+// document FKs, so a raw delete 400s on the constraint rather than the rule —
+// the 4 perennial delete-reds. The `spare` member authors nothing, so deleting
+// it exercises the actual delete RULE. All other collections delete their normal
+// fixture record.
+function deleteTargetId(fixture, collection) {
+	if (collection === 'trip_members') return fixture.memberIds.spare;
+	return fixtureRecordId(fixture, collection);
+}
+
 // Outcome classifiers. PB encodes denials inconsistently (404 vs 403 vs 400),
 // so we collapse to allow / deny / auth_error and report the raw status alongside.
 function classifyList(status, items, fixtureId) {
@@ -541,21 +552,21 @@ async function runDeletePhase(tokens) {
 		let fixture = await setupFixture();
 		for (const role of ROLES) {
 			if (exp[role] !== 'deny') continue;
-			const fid = fixtureRecordId(fixture, col);
+			const fid = deleteTargetId(fixture, col);
 			const r = await pbRequest('DELETE', `/api/collections/${col}/records/${fid}`, {
 				token: tokens[role]
 			});
 			recordResult(col, 'delete', role, 'deny', classifyWrite(r.status), r.status);
 		}
 		// anon
-		const fidAnon = fixtureRecordId(fixture, col);
+		const fidAnon = deleteTargetId(fixture, col);
 		const ranon = await pbRequest('DELETE', `/api/collections/${col}/records/${fidAnon}`);
 		recordResult(col, 'delete', 'anon', 'deny', classifyWrite(ranon.status), ranon.status);
 
 		for (const role of ROLES) {
 			if (exp[role] !== 'allow') continue;
 			fixture = await setupFixture();
-			const fid = fixtureRecordId(fixture, col);
+			const fid = deleteTargetId(fixture, col);
 			const r = await pbRequest('DELETE', `/api/collections/${col}/records/${fid}`, {
 				token: tokens[role]
 			});
@@ -763,6 +774,113 @@ function printUsersCrossReadReport() {
 	}
 }
 
+// #133 — soft-remove tombstone. The fixed matrix can't express endpoint-driven
+// removal, so these cases drive /api/members/remove and assert the load-bearing
+// invariants: money survives, the row is retained as a tombstone, and a tombstone
+// is invisible to the active-roster and name-only claim-picker queries (the
+// highest-risk #118 cross-issue guard).
+const MEMBER_REMOVAL_OPS = [
+	'remove_with_expense_ok',
+	'member_tombstoned',
+	'money_survived',
+	'roster_excludes_tombstone',
+	'tombstone_retained',
+	'nameonly_picker_excludes',
+	'nameonly_present_unguarded'
+];
+
+function filterQuery(tripId, extra) {
+	return encodeURIComponent(`trip="${tripId}"${extra}`);
+}
+
+async function runMemberRemovalNovelCases(tokens) {
+	// --- Money survives removal (Resolution 10) + removing a member who authored
+	// money succeeds (the issue's headline acceptance).
+	let fixture = await setupFixture();
+	const exp = await pbRequest('POST', '/api/collections/expenses/records', {
+		token: tokens.traveler,
+		body: {
+			trip: fixture.tripId,
+			amount_usd: 50,
+			description: 'Harness expense (#133)',
+			date: '2026-06-02 00:00:00.000Z',
+			split_mode: 'equal',
+			split_data: { members: [fixture.memberIds.traveler, fixture.memberIds.owner] }
+		}
+	});
+	const expenseId = exp.data?.id;
+	const paidBy = exp.data?.paid_by; // defaults to caller (traveler member)
+
+	const rm = await pbRequest('POST', '/api/members/remove', {
+		token: tokens.owner,
+		body: { member_id: fixture.memberIds.traveler }
+	});
+	recordResult('trip_members', 'remove_with_expense_ok', 'owner', 'allow', classifyWrite(rm.status), rm.status);
+
+	// Row RETAINED as a tombstone: removed_at set, user cleared.
+	const mem = await pbRequest('GET', `/api/collections/trip_members/records/${fixture.memberIds.traveler}`, {
+		token: tokens.owner
+	});
+	const tomb = mem.status === 200 && !!mem.data?.removed_at && mem.data?.user === '';
+	recordResult('trip_members', 'member_tombstoned', 'owner', 'yes', tomb ? 'yes' : 'no', mem.status);
+
+	// The expense survives, still attributed to the now-departed traveler.
+	const expAfter = await pbRequest('GET', `/api/collections/expenses/records/${expenseId}`, {
+		token: tokens.owner
+	});
+	const survived = expAfter.status === 200 && expAfter.data?.paid_by === paidBy;
+	recordResult('expenses', 'money_survived', 'owner', 'yes', survived ? 'yes' : 'no', expAfter.status);
+
+	// Active roster (removed_at="") omits the tombstone; the unguarded query keeps it.
+	const guarded = await pbRequest(
+		'GET',
+		`/api/collections/trip_members/records?perPage=200&filter=${filterQuery(fixture.tripId, ' && removed_at=""')}`,
+		{ token: tokens.owner }
+	);
+	const inGuarded = (guarded.data?.items || []).some((r) => r.id === fixture.memberIds.traveler);
+	recordResult('trip_members', 'roster_excludes_tombstone', 'owner', 'yes', !inGuarded ? 'yes' : 'no', guarded.status);
+
+	const all = await pbRequest(
+		'GET',
+		`/api/collections/trip_members/records?perPage=200&filter=${filterQuery(fixture.tripId, '')}`,
+		{ token: tokens.owner }
+	);
+	const inAll = (all.data?.items || []).some((r) => r.id === fixture.memberIds.traveler);
+	recordResult('trip_members', 'tombstone_retained', 'owner', 'yes', inAll ? 'yes' : 'no', all.status);
+
+	// --- Name-only claim picker (highest-risk #118 guard). Remove the name-only
+	// spare (user="" && placeholder_email=""), then prove the guarded picker omits
+	// it while the pre-#133 unguarded query still matches it.
+	fixture = await setupFixture();
+	await pbRequest('POST', '/api/members/remove', {
+		token: tokens.owner,
+		body: { member_id: fixture.memberIds.spare }
+	});
+	const pickerGuarded = await pbRequest(
+		'GET',
+		`/api/collections/trip_members/records?perPage=200&filter=${filterQuery(fixture.tripId, ' && user="" && placeholder_email="" && removed_at=""')}`,
+		{ token: tokens.owner }
+	);
+	const inPickerGuarded = (pickerGuarded.data?.items || []).some((r) => r.id === fixture.memberIds.spare);
+	recordResult('trip_members', 'nameonly_picker_excludes', 'owner', 'yes', !inPickerGuarded ? 'yes' : 'no', pickerGuarded.status);
+
+	const pickerRaw = await pbRequest(
+		'GET',
+		`/api/collections/trip_members/records?perPage=200&filter=${filterQuery(fixture.tripId, ' && user="" && placeholder_email=""')}`,
+		{ token: tokens.owner }
+	);
+	const inPickerRaw = (pickerRaw.data?.items || []).some((r) => r.id === fixture.memberIds.spare);
+	recordResult('trip_members', 'nameonly_present_unguarded', 'owner', 'yes', inPickerRaw ? 'yes' : 'no', pickerRaw.status);
+}
+
+function printMemberRemovalReport() {
+	console.log('\n[#133 soft-remove tombstone — money survives, tombstone invisible to roster/claim]');
+	for (const r of results.filter((x) => MEMBER_REMOVAL_OPS.includes(x.op))) {
+		const mark = r.passed ? 'PASS' : 'FAIL';
+		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+	}
+}
+
 function printReport() {
 	const ops = ['list', 'view', 'create', 'update', 'delete'];
 	const allRoles = [...ROLES, 'anon'];
@@ -843,10 +961,14 @@ async function main() {
 	fixture = await setupFixture();
 	await runSuggestionsMemberReadCases(tokens, fixture);
 
+	console.log('#133 cases: soft-remove tombstone (money survives, tombstone invisible)');
+	await runMemberRemovalNovelCases(tokens);
+
 	printReport();
 	printNovelReport();
 	printUsersCrossReadReport();
 	printSuggestionsReport();
+	printMemberRemovalReport();
 
 	const failed = results.some((r) => !r.passed);
 	exit(failed ? 1 : 0);

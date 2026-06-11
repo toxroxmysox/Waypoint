@@ -242,6 +242,20 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 		memberIds[role] = member.id;
 	}
 
+	// #133: a CHILDLESS spare member (placeholder, no user, authors nothing) — the
+	// trip_members.delete rule target. The owner member is referenced by item/
+	// vote/goal/invite/document FKs, so deleting it 400s on the constraint, not
+	// the rule (the 4 perennial delete-reds). The harness deletes this spare
+	// instead so the matrix tests the RULE, not the FK. Soft-removal (#133) is
+	// exercised separately in runMemberRemovalNovelCases.
+	const spare = new Record(tripMembersCol);
+	spare.set('trip', trip.id);
+	spare.set('role', 'traveler');
+	spare.set('placeholder_name', 'Spare Delete Target');
+	spare.set('display_name', 'Spare Delete Target');
+	e.app.save(spare);
+	memberIds.spare = spare.id;
+
 	// Create a phase covering the whole trip.
 	const phasesCol = e.app.findCollectionByNameOrId('phases');
 	const phase = new Record(phasesCol);
