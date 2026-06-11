@@ -113,7 +113,9 @@ routerAdd('POST', '/api/members/claim', (e) => {
 
 	// #133 guard: a tombstone (user="" && claimable_by="") would otherwise slip
 	// past the claimable_by check below — a Departed Member is never claimable.
-	if (member.get('removed_at')) {
+	// NB getString, not get: PB's JSVM returns a (truthy) DateTime object for an
+	// empty date field, so get('removed_at') is never falsy.
+	if (member.getString('removed_at')) {
 		throw new BadRequestError('This membership has been removed and cannot be claimed');
 	}
 
@@ -372,7 +374,9 @@ routerAdd('POST', '/api/members/remove', (e) => {
 		throw new NotFoundError('Member not found');
 	}
 
-	const alreadyRemoved = !!target.get('removed_at');
+	// getString, not get: PB's JSVM returns a truthy DateTime object for an empty
+	// date field, so !!get('removed_at') would always be true and skip the stamp.
+	const alreadyRemoved = target.getString('removed_at') !== '';
 	const tripId = target.get('trip');
 
 	// Frozen on a closed trip (Resolution 14) — symmetric with the join window.
@@ -451,7 +455,7 @@ routerAdd('POST', '/api/members/remove', (e) => {
 		if (reassignMember.get('trip') !== tripId) {
 			throw new BadRequestError('Reassignment target is not in this trip');
 		}
-		if (reassignMember.get('removed_at')) {
+		if (reassignMember.getString('removed_at')) {
 			throw new BadRequestError('Cannot reassign to a removed member');
 		}
 	}
