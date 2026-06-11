@@ -34,19 +34,22 @@ test.describe('M6 Polish', () => {
 		await expect(page.locator('input[name="include_phases"]:visible').first()).toBeVisible();
 	});
 
-	test('parking lot link visible on More page', async ({ page }) => {
+	// #86: the trip-wide Parking Lot page is retired (Parking Lot is phase-scoped).
+	// The More menu must no longer link to it.
+	test('parking lot link is gone from More page (#86)', async ({ page }) => {
 		const slug = await openTripSlug(page);
 		await page.goto(`${BASE}/trips/${slug}/more`);
-		await expect(page.getByText('Parking lot').filter({ visible: true }).first()).toBeVisible();
+		// Wait for the menu to render via a sibling card that stays.
+		await expect(page.getByText('Print itinerary').filter({ visible: true }).first()).toBeVisible();
+		await expect(page.getByText('Parking lot')).toHaveCount(0);
 	});
 
-	test('parking lot page loads', async ({ page }) => {
+	// #86: the old /parking-lot route redirects to the phases list.
+	test('trip-wide /parking-lot redirects to phases list (#86)', async ({ page }) => {
 		const slug = await openTripSlug(page);
 		await page.goto(`${BASE}/trips/${slug}/parking-lot`);
-		await page.waitForURL('**/parking-lot');
-
-		const heading = page.getByText('Parking Lot').filter({ visible: true }).first();
-		await expect(heading).toBeVisible();
+		await page.waitForURL(`**/trips/${slug}/phases`);
+		expect(page.url()).toContain(`/trips/${slug}/phases`);
 	});
 
 	test('print itinerary button visible on More page', async ({ page }) => {
