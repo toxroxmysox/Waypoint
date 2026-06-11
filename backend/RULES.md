@@ -151,6 +151,31 @@ Migration `0043_users_viewable_by_cotravelers.js` loosens **only** `users.viewRu
 - **field-level visibility** — asserted by `runUsersCrossReadCases` in `test-rules.mjs`: a co-traveler's payload exposes `name` (populated) and `avatar` (key present, cross-readable) but **not** `email` (blanked — `emailVisibility` off), `password`, or `tokenKey` (PB always strips auth secrets). Email is **not** newly exposed by this change.
 - **create / update / delete** — unchanged: create/delete admin-only (OTP hook / no API), update self-only (`/account` self-edit).
 
+## Shared join links (#118 / #152)
+
+The `join_tokens` collection (#118) backs the shared-link join flow. Management
+(create / rotate / revoke) and the join itself run through `pb_hooks/join.pb.js`
+router endpoints, not direct record writes — the harness asserts the resulting
+status per `runJoinLinkNovelCases` in `test-rules.mjs`.
+
+| Endpoint | Authority | Role ceiling |
+|---|---|---|
+| `POST /api/join/create` · `rotate` · `revoke` | non-viewer member (owner · co_owner · traveler) | link role is `traveler\|viewer` only — never co_owner |
+| `POST /api/join/lookup` | anon-OK (minimal pre-auth context) | — |
+| `POST /api/join/accept` | auth | claim clamps to the lower of (placeholder role, link role) |
+
+- **management authority (#152)** — widened from owner/co_owner to **any non-viewer
+  member**, matching email-invite authority (a traveler who can send a traveler/
+  viewer invite can also mint/rotate/revoke a traveler/viewer link). The hook gate
+  is now a single `callerRole === 'viewer'` deny. Harness: `traveler_manage_ok`
+  (traveler revokes a link → allow) and `viewer_manage_denied` (viewer revoke →
+  deny) pin both sides of the boundary.
+- **role ceiling is unchanged** — `create` still rejects any role but `traveler`/
+  `viewer`, so a traveler cannot mint a `co_owner` link (no such link role exists).
+  Harness: `create_co_owner_denied`. The `accept` clamp blocks escalation on claim.
+- **viewers stay read-only** — no link management in the hook or the members-page UI
+  (`canManageJoinLinks = canInvite && !trip.archived`).
+
 ## Notes & gotchas
 
 - **`view` denials look like 404s**, not 403s. The harness encodes both as "denied" but reports the exact code so we can spot when PB upgrades and changes behavior.
