@@ -99,7 +99,9 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		dayLabel,
 		initialByUser,
 		nextPhase,
-		parkingLotHref: `/trips/${trip.slug}/parking-lot`
+		// Phase Detail is the parking-lot home (#86 retired the trip-wide page);
+		// the button label says "phase parking lot", so point at this phase.
+		parkingLotHref: `/trips/${trip.slug}/phases/${phase.id}`
 	};
 };
 
