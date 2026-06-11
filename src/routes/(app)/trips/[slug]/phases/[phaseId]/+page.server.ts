@@ -1,7 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Phase, Day, Item, TripMember } from '$lib/types';
-import { nextSortOrder } from '$lib/itinerary/sort-order';
+import { nextSortOrder, insertBetween, reorderUpdates } from '$lib/itinerary/sort-order';
 import { summarizeDays } from '$lib/itinerary/day-card';
 
 const IDEA_TYPES = ['activity', 'meal', 'lodging', 'transportation', 'flight', 'note'] as const;
@@ -133,5 +133,58 @@ export const actions: Actions = {
 		// Success: no redirect — progressive enhancement re-runs load, so the idea
 		// shows in the parking lot immediately on the same screen.
 		return { ideaAdded: true };
+	},
+
+	// #88 — persist drag-reorder of ideas within THIS phase's parking lot. Phase
+	// Detail is the canonical idea-reorder home (#60 left parking→parking visual-
+	// only on the day page). Only `sort_order` changes: status, phase, and day are
+	// untouched. Neighbor orders come from the client's drop position via
+	// neighborsForMove; the action consumes the shared insertBetween/reorderUpdates.
+	reorder: async ({ request, params, locals }) => {
+		const data = await request.formData();
+		const itemId = data.get('item_id')?.toString();
+		if (!itemId) return fail(400, { error: 'Missing item ID.' });
+
+		const beforeRaw = data.get('before_order')?.toString();
+		const afterRaw = data.get('after_order')?.toString();
+		const before = beforeRaw && !isNaN(Number(beforeRaw)) ? Number(beforeRaw) : null;
+		const after = afterRaw && !isNaN(Number(afterRaw)) ? Number(afterRaw) : null;
+
+		try {
+			// Guard: only an unplanned, day-less idea in this phase may be reordered
+			// here. Anything else (a planned item, another phase) is rejected so a
+			// reorder can never quietly re-home an item.
+			const moved = await locals.pb.collection('items').getOne<Item>(itemId);
+			if (moved.phase !== params.phaseId || moved.status !== 'unplanned' || moved.day !== '') {
+				return fail(400, { error: 'Only this phase’s ideas can be reordered.' });
+			}
+
+			// Fast path: a gap is available → a single sort_order update.
+			const direct = insertBetween(before, after);
+			if (direct !== null) {
+				await locals.pb.collection('items').update(itemId, { sort_order: direct });
+				return { success: true };
+			}
+
+			// Gap collapsed → rebalance this phase's unplanned ideas as one block.
+			const ideas = await locals.pb.collection('items').getFullList<Item>({
+				filter: `phase = "${params.phaseId}" && status = "unplanned" && day = ""`,
+				sort: 'sort_order',
+				fields: 'id,sort_order'
+			});
+			const updates = reorderUpdates(
+				ideas.map((i) => ({ id: i.id, sort_order: Number(i.sort_order) })),
+				itemId,
+				before,
+				after
+			);
+			await Promise.all(
+				updates.map((u) => locals.pb.collection('items').update(u.id, { sort_order: u.sort_order }))
+			);
+			return { success: true };
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : 'Failed to reorder.';
+			return fail(500, { error: message });
+		}
 	}
 };

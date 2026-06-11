@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { nextSortOrder, insertBetween, rebalance, GAP } from './sort-order';
+import { nextSortOrder, insertBetween, rebalance, reorderUpdates, GAP } from './sort-order';
 
 describe('nextSortOrder', () => {
 	it('returns GAP for empty list', () => {
@@ -66,5 +66,54 @@ describe('rebalance', () => {
 
 	it('handles empty list', () => {
 		expect(rebalance([])).toEqual([]);
+	});
+});
+
+describe('reorderUpdates', () => {
+	// Models reordering a phase's unplanned ideas (#88): the moved idea lands
+	// between two neighbor sort_orders; only sort_order changes.
+	const ideas = (...pairs: [string, number][]) =>
+		pairs.map(([id, sort_order]) => ({ id, sort_order }));
+
+	it('returns a single-item update when a gap is available (drop in middle)', () => {
+		const list = ideas(['a', 100], ['b', 200], ['c', 300]);
+		// 'c' dragged between 'a' and 'b' → midpoint of 100/200.
+		expect(reorderUpdates(list, 'c', 100, 200)).toEqual([{ id: 'c', sort_order: 150 }]);
+	});
+
+	it('inserts at the head (before = null)', () => {
+		const list = ideas(['a', 100], ['b', 200]);
+		expect(reorderUpdates(list, 'b', null, 100)).toEqual([{ id: 'b', sort_order: 50 }]);
+	});
+
+	it('inserts at the tail (after = null)', () => {
+		const list = ideas(['a', 100], ['b', 200]);
+		expect(reorderUpdates(list, 'a', 200, null)).toEqual([{ id: 'a', sort_order: 300 }]);
+	});
+
+	it('rebalances the whole list when the gap collapses, moved item in the middle', () => {
+		// No room between 100 and 101 → full rebalance with 'c' spliced before 'b'.
+		const list = ideas(['a', 100], ['b', 101], ['c', 300]);
+		expect(reorderUpdates(list, 'c', 100, 101)).toEqual([
+			{ id: 'a', sort_order: GAP },
+			{ id: 'c', sort_order: GAP * 2 },
+			{ id: 'b', sort_order: GAP * 3 }
+		]);
+	});
+
+	it('rebalances with the moved item at the tail when the gap collapses last', () => {
+		// 'a' dragged between adjacent 'b'/'c' (200/201) → no room, full rebalance.
+		const list = ideas(['a', 100], ['b', 200], ['c', 201]);
+		expect(reorderUpdates(list, 'a', 200, 201)).toEqual([
+			{ id: 'b', sort_order: GAP },
+			{ id: 'a', sort_order: GAP * 2 },
+			{ id: 'c', sort_order: GAP * 3 }
+		]);
+	});
+
+	it('is a no-op-shaped single update for a single-item list', () => {
+		expect(reorderUpdates(ideas(['a', 100]), 'a', null, null)).toEqual([
+			{ id: 'a', sort_order: GAP }
+		]);
 	});
 });

@@ -4,8 +4,8 @@
 	import Card from '$lib/ui/Card.svelte';
 	import Button from '$lib/ui/Button.svelte';
 	import SectionH from '$lib/ui/SectionH.svelte';
-	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import DayCard from '$lib/itinerary/components/DayCard.svelte';
+	import PhaseParkingReorder from '$lib/itinerary/components/PhaseParkingReorder.svelte';
 	import DayMetricToggle from '$lib/itinerary/components/DayMetricToggle.svelte';
 	import { toast } from '$lib/shell/stores/toast';
 	import { titleCase } from '$lib/shell/format';
@@ -222,19 +222,8 @@
 		{/if}
 
 		{#if parkingLotItems.length > 0}
-			{#each parkingLotItems as item (item.id)}
-				<Card href="/trips/{data.trip.slug}/items/{item.id}">
-					<div class="flex items-center gap-3 px-3 py-2">
-						<TypeIcon type={item.type} size={18} />
-						<div class="min-w-0 flex-1">
-							<p class="text-ink truncate text-sm">{item.title}</p>
-						</div>
-						<span class="bg-paper text-ink-muted shrink-0 rounded px-1.5 py-0.5 text-[11px]">
-							{titleCase(item.type)}
-						</span>
-					</div>
-				</Card>
-			{/each}
+			<!-- #88 — drag-reorder ideas; persists sort_order among this phase's unplanned items. -->
+			<PhaseParkingReorder items={parkingLotItems} tripSlug={data.trip.slug} />
 		{:else if !addingIdea}
 			<p class="text-ink-muted text-sm italic">No ideas yet. Add one to start a parking lot for this phase.</p>
 		{/if}
