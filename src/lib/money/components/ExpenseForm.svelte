@@ -13,9 +13,21 @@
 		expense?: Expense | null;
 		form: Record<string, unknown> | null;
 		onclose: () => void;
+		// #128 — when this expense's linked_item is set, the page resolves the item
+		// and passes its detail href + title so we can render a "View item" link.
+		linkedItemHref?: string;
+		linkedItemTitle?: string;
 	}
 
-	let { members, membershipId, expense = null, form: formProp, onclose }: Props = $props();
+	let {
+		members,
+		membershipId,
+		expense = null,
+		form: formProp,
+		onclose,
+		linkedItemHref = '',
+		linkedItemTitle = ''
+	}: Props = $props();
 
 	let isEdit = $derived(expense !== null);
 	let submitting = $state(false);
@@ -92,6 +104,25 @@
 >
 	{#if isEdit && expense}
 		<input type="hidden" name="expense_id" value={expense.id} />
+	{/if}
+
+	<!-- #128 — back-link to the linked item's detail when one is set. -->
+	{#if isEdit && linkedItemHref}
+		<a
+			href={linkedItemHref}
+			class="mb-4 flex items-center justify-between rounded-md border border-line bg-surface-2 px-3 py-2"
+		>
+			<span class="min-w-0">
+				<span class="block text-xs text-ink-muted">Linked item</span>
+				<span class="block truncate text-sm font-medium text-ink">{linkedItemTitle || 'View item'}</span>
+			</span>
+			<span class="flex flex-shrink-0 items-center gap-1 text-xs font-medium text-moss">
+				View item
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="m9 18 6-6-6-6" />
+				</svg>
+			</span>
+		</a>
 	{/if}
 
 	<div class="mb-4">

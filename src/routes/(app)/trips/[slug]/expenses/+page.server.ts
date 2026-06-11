@@ -2,8 +2,13 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Expense, Settlement, TripMember, Item, TripBudget } from '$lib/types';
 
-export const load: PageServerLoad = async ({ parent, locals }) => {
+export const load: PageServerLoad = async ({ parent, locals, url }) => {
 	const { trip, membership } = await parent();
+
+	// #128 — optional ?item=<id> deep-link from item detail. Filtering itself
+	// happens client-side over the full list; here we just resolve the title for
+	// the filter banner (and null it out if the id isn't a real item this trip).
+	const filterItemId = url.searchParams.get('item') ?? '';
 
 	const [expenses, settlements, members, items] = await Promise.all([
 		locals.pb.collection('expenses').getFullList<Expense>({
@@ -40,7 +45,20 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 		spentByCategory[cat] = (spentByCategory[cat] ?? 0) + exp.amount_usd;
 	}
 
-	return { trip, membership, expenses, settlements, members, items, budget, spentByCategory };
+	const filterItem = filterItemId ? items.find((i) => i.id === filterItemId) ?? null : null;
+
+	return {
+		trip,
+		membership,
+		expenses,
+		settlements,
+		members,
+		items,
+		budget,
+		spentByCategory,
+		filterItemId: filterItem ? filterItemId : '',
+		filterItemTitle: filterItem?.title ?? ''
+	};
 };
 
 export const actions: Actions = {
