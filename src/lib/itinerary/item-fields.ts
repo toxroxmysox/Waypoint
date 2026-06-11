@@ -182,6 +182,8 @@ export function buildEmptyFormData(type: ItemType): ItemFormData {
 		start_time: '',
 		end_time: '',
 		end_date: '',
+		start_tz: '',
+		end_tz: '',
 		location_name: '',
 		location_address: '',
 		location_coords: null,

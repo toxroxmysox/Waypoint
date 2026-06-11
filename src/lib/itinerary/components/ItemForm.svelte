@@ -47,6 +47,10 @@
 	let startTimeValue = $state(untrack(() => initialData.start_time));
 	let endTimeValue = $state(untrack(() => initialData.end_time));
 	let endDateValue = $state(untrack(() => initialData.end_date));
+	// #130 — flight timezones: stored-not-shown. Carried through submission via
+	// hidden inputs (flight-only); set by FlightLookup, preserved on edit.
+	let startTzValue = $state(untrack(() => initialData.start_tz));
+	let endTzValue = $state(untrack(() => initialData.end_tz));
 	let selectedDay = $state(
 		untrack(() => (mode === 'create' ? (context.preselectedDay ?? '') : initialData.day))
 	);
@@ -90,6 +94,9 @@
 		// Red-eye arrivals prefill the multi-day end date (shown once a day is picked).
 		if (flight.end_date) endDateValue = flight.end_date;
 		locationNameValue = flight.location_name;
+		// #130 — capture tz for storage only; never surfaced.
+		startTzValue = flight.start_tz;
+		endTzValue = flight.end_tz;
 		markDirty();
 	}
 
@@ -306,6 +313,9 @@
 				<div>
 					<div class="text-ink-soft text-sm font-medium mb-1">Flight lookup</div>
 					<FlightLookup onSelect={handleFlightSelect} />
+					<!-- #130 — flight tz: stored-not-shown. No visible field; carried for persistence only. -->
+					<input type="hidden" name="start_tz" value={startTzValue} />
+					<input type="hidden" name="end_tz" value={endTzValue} />
 				</div>
 			{/if}
 
