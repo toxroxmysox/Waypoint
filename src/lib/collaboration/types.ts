@@ -28,6 +28,18 @@ export interface PendingInvite extends RecordModel {
 	expires_at: string;
 }
 
+// #118 — shared Join Link. Role is capped at traveler (never co_owner/owner).
+export type JoinLinkRole = 'traveler' | 'viewer';
+
+export interface JoinToken extends RecordModel {
+	trip: string;
+	role: JoinLinkRole;
+	token: string;
+	expires_at: string;
+	revoked: boolean;
+	created_by: string;
+}
+
 export type SuggestionStatus = 'pending' | 'approved' | 'rejected';
 export type SuggestionTargetType = 'new_item' | 'comment';
 

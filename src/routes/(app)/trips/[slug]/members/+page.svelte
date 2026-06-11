@@ -17,6 +17,39 @@
 	let promoting = $state<string | null>(null);
 	let removing = $state<string | null>(null);
 	let showPlaceholderForm = $state(false);
+	// #118 join links
+	let joinLinkBusy = $state<string | null>(null);
+	let copiedRole = $state<string | null>(null);
+
+	const joinLinkForm = $derived(
+		(form?.joinLink ?? null) as { success?: boolean; action?: string; error?: string } | null
+	);
+	const joinLinkError = $derived(joinLinkForm?.error ?? '');
+
+	// The two link slots, in display order. Merge live links onto the fixed roles
+	// so each role shows either its link or a "create" affordance.
+	const joinRoles: ('traveler' | 'viewer')[] = ['traveler', 'viewer'];
+	const joinLinkByRole = $derived(
+		new Map((data.joinLinks ?? []).map((l) => [l.role, l]))
+	);
+
+	function joinUrl(token: string): string {
+		if (typeof window === 'undefined') return `/join/${token}`;
+		return `${window.location.origin}/join/${token}`;
+	}
+
+	async function copyJoinLink(role: string, token: string) {
+		try {
+			await navigator.clipboard.writeText(joinUrl(token));
+			copiedRole = role;
+			toast.show('Link copied');
+			setTimeout(() => {
+				if (copiedRole === role) copiedRole = null;
+			}, 2000);
+		} catch {
+			toast.show('Could not copy — long-press to copy the link');
+		}
+	}
 
 	const allowedRoles = $derived<InviteRole[]>(
 		data.isOwner ? ['co_owner', 'traveler', 'viewer'] : ['traveler', 'viewer']
@@ -343,6 +376,143 @@
 						{inviteLoading ? 'Sending…' : 'Send invite'}
 					</Button>
 				</form>
+			</Card>
+		</section>
+	{/if}
+
+	<!-- Share join links (#118) — owner/co_owner only, open trips only -->
+	{#if data.canManageJoinLinks}
+		<section class="space-y-3">
+			<h2 class="text-ink-soft text-xs font-semibold tracking-wider uppercase">Share a join link</h2>
+			<p class="text-ink-muted text-xs">
+				Anyone with the link can join this trip at the chosen role after verifying their email. Co-owners
+				stay on the email-invite path.
+			</p>
+			{#if joinLinkError}
+				<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">
+					{joinLinkError}
+				</div>
+			{/if}
+			<Card>
+				<ul class="divide-line divide-y">
+					{#each joinRoles as role (role)}
+						{@const link = joinLinkByRole.get(role)}
+						<li class="space-y-2 px-4 py-3">
+							<div class="flex items-center justify-between gap-2">
+								<Pill variant={rolePillVariant(role)} size="sm">{roleLabel[role]}</Pill>
+								{#if link}
+									<span class="text-ink-muted text-xs">
+										{#if link.expired}
+											<span class="text-clay font-semibold">Expired</span>
+										{:else if link.expiresAtLabel}
+											expires {link.expiresAtLabel}
+										{/if}
+									</span>
+								{/if}
+							</div>
+
+							{#if link}
+								<div class="flex items-center gap-2">
+									<input
+										type="text"
+										readonly
+										value={joinUrl(link.token)}
+										class="border-line bg-surface-2 text-ink-soft min-w-0 flex-1 truncate rounded-md border px-2 py-1.5 font-mono text-xs"
+										onclick={(e) => e.currentTarget.select()}
+									/>
+									<button
+										type="button"
+										onclick={() => copyJoinLink(role, link.token)}
+										class="text-moss hover:text-moss/80 shrink-0 text-xs font-semibold"
+									>
+										{copiedRole === role ? 'Copied' : 'Copy'}
+									</button>
+								</div>
+								<div class="flex items-center gap-4">
+									<form
+										method="POST"
+										action="?/rotateJoinLink"
+										use:enhance={() => {
+											joinLinkBusy = role + ':rotate';
+											return async ({ update, result }) => {
+												joinLinkBusy = null;
+												if (result.type === 'success') toast.show('Link rotated — old link disabled');
+												await update();
+											};
+										}}
+									>
+										<input type="hidden" name="role" value={role} />
+										<button
+											type="submit"
+											disabled={joinLinkBusy === role + ':rotate'}
+											class="text-ink-soft hover:text-ink disabled:text-ink-muted text-xs font-medium"
+										>
+											{joinLinkBusy === role + ':rotate' ? '…' : 'Rotate'}
+										</button>
+									</form>
+									<form
+										method="POST"
+										action="?/revokeJoinLink"
+										use:enhance={() => {
+											joinLinkBusy = role + ':revoke';
+											return async ({ update, result }) => {
+												joinLinkBusy = null;
+												if (result.type === 'success') toast.show('Link revoked');
+												await update();
+											};
+										}}
+									>
+										<input type="hidden" name="role" value={role} />
+										<button
+											type="submit"
+											disabled={joinLinkBusy === role + ':revoke'}
+											class="text-clay hover:text-clay/80 disabled:text-ink-muted text-xs font-semibold"
+										>
+											{joinLinkBusy === role + ':revoke' ? '…' : 'Revoke'}
+										</button>
+									</form>
+								</div>
+							{:else}
+								<form
+									method="POST"
+									action="?/createJoinLink"
+									use:enhance={() => {
+										joinLinkBusy = role + ':create';
+										return async ({ update, result }) => {
+											joinLinkBusy = null;
+											if (result.type === 'success') toast.show('Join link created');
+											await update();
+										};
+									}}
+									class="flex items-end gap-2"
+								>
+									<input type="hidden" name="role" value={role} />
+									<div class="flex-1">
+										<label for="exp-{role}" class="text-ink-muted block text-xs">Expires in (days)</label>
+										<input
+											type="number"
+											id="exp-{role}"
+											name="expires_days"
+											min="1"
+											max="365"
+											value="30"
+											class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-2 py-1.5 text-sm"
+										/>
+									</div>
+									<Button
+										type="submit"
+										disabled={joinLinkBusy === role + ':create'}
+										loading={joinLinkBusy === role + ':create'}
+										variant="ghost"
+										size="md"
+									>
+										Create link
+									</Button>
+								</form>
+							{/if}
+						</li>
+					{/each}
+				</ul>
 			</Card>
 		</section>
 	{/if}

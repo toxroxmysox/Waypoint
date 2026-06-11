@@ -881,6 +881,209 @@ function printMemberRemovalReport() {
 	}
 }
 
+// --- #118 shared Join Link novel cases -------------------------------------
+const JOIN_LINK_OPS = [
+	'create_co_owner_denied',
+	'create_traveler_ok',
+	'create_viewer_ok',
+	'create_duplicate_denied',
+	'anon_lookup_minimal',
+	'accept_traveler_ok',
+	'joined_role_traveler',
+	'accept_viewer_ok',
+	'joined_role_viewer',
+	'nonowner_manage_denied',
+	'revoke_ok',
+	'revoked_lookup_404',
+	'revoked_accept_denied',
+	'clamp_claim_ok',
+	'clamp_role_viewer',
+	'picker_includes_live',
+	'picker_excludes_tombstone',
+	'closed_create_denied',
+	'expired_lookup_flag',
+	'expired_accept_denied'
+];
+
+async function runJoinLinkNovelCases(tokens) {
+	// A FUTURE-dated trip — join-link expiry is capped at trip end, so a link on
+	// the standard (past-dated) fixture trip is born expired. We exploit that on
+	// purpose for the expiry cells at the end, but the happy-path joins need a
+	// live window.
+	const fixture = await setupFixture();
+	const ownerUserId = fixture.userIds.owner;
+
+	const slug = 'e2e-joinlink-' + Date.now();
+	const tripRes = await pbRequest('POST', '/api/collections/trips/records', {
+		token: tokens.owner,
+		body: {
+			slug,
+			title: 'Join Link Test Trip',
+			start_date: '2026-06-15 00:00:00.000Z',
+			end_date: '2026-06-25 00:00:00.000Z',
+			timezone: 'UTC',
+			created_by: ownerUserId
+		}
+	});
+	const tripId = tripRes.data?.id;
+
+	// 1. Role cap — a co_owner join link is never mintable (Resolution 1/8).
+	const capRes = await pbRequest('POST', '/api/join/create', {
+		token: tokens.owner,
+		body: { trip_id: tripId, role: 'co_owner' }
+	});
+	recordResult('join_tokens', 'create_co_owner_denied', 'owner', 'deny', classifyWrite(capRes.status), capRes.status);
+
+	// 2. Owner mints a traveler link and a viewer link (both may be live at once).
+	const travCreate = await pbRequest('POST', '/api/join/create', {
+		token: tokens.owner,
+		body: { trip_id: tripId, role: 'traveler' }
+	});
+	recordResult('join_tokens', 'create_traveler_ok', 'owner', 'allow', classifyWrite(travCreate.status), travCreate.status);
+	const travToken = travCreate.data?.token;
+
+	const viewCreate = await pbRequest('POST', '/api/join/create', {
+		token: tokens.owner,
+		body: { trip_id: tripId, role: 'viewer' }
+	});
+	recordResult('join_tokens', 'create_viewer_ok', 'owner', 'allow', classifyWrite(viewCreate.status), viewCreate.status);
+	const viewToken = viewCreate.data?.token;
+
+	// 3. One link per (trip, role) — a second traveler create is refused.
+	const dupRes = await pbRequest('POST', '/api/join/create', {
+		token: tokens.owner,
+		body: { trip_id: tripId, role: 'traveler' }
+	});
+	recordResult('join_tokens', 'create_duplicate_denied', 'owner', 'deny', classifyWrite(dupRes.status), dupRes.status);
+
+	// 4. Anon pre-auth lookup — title + dates + role ONLY, no roster (Resolution 6).
+	const anonLookup = await pbRequest('POST', '/api/join/lookup', { body: { token: travToken } });
+	const minimalOk =
+		anonLookup.status === 200 &&
+		anonLookup.data?.role === 'traveler' &&
+		!!anonLookup.data?.trip_title &&
+		!!anonLookup.data?.start_date &&
+		anonLookup.data?.expired === false &&
+		(anonLookup.data?.unclaimed_placeholders || []).length === 0;
+	recordResult('join_tokens', 'anon_lookup_minimal', 'anon', 'yes', minimalOk ? 'yes' : 'no', anonLookup.status);
+
+	// 5. Join at the traveler role — a stranger lands as a traveler.
+	const joinTrav = await pbRequest('POST', '/api/join/accept', {
+		token: tokens.non_member,
+		body: { token: travToken }
+	});
+	recordResult('join_tokens', 'accept_traveler_ok', 'non_member', 'allow', classifyWrite(joinTrav.status), joinTrav.status);
+	const travMem = await pbRequest('GET', `/api/collections/trip_members/records/${joinTrav.data?.member_id}`, {
+		token: tokens.owner
+	});
+	recordResult('join_tokens', 'joined_role_traveler', 'non_member', 'traveler', travMem.data?.role || 'none', travMem.status);
+
+	// 6. Join at the viewer role — a different stranger lands as a viewer.
+	const joinView = await pbRequest('POST', '/api/join/accept', {
+		token: tokens.viewer,
+		body: { token: viewToken }
+	});
+	recordResult('join_tokens', 'accept_viewer_ok', 'viewer', 'allow', classifyWrite(joinView.status), joinView.status);
+	const viewMem = await pbRequest('GET', `/api/collections/trip_members/records/${joinView.data?.member_id}`, {
+		token: tokens.owner
+	});
+	recordResult('join_tokens', 'joined_role_viewer', 'viewer', 'viewer', viewMem.data?.role || 'none', viewMem.status);
+
+	// 7. Management gating — the freshly-joined traveler (non-owner) cannot revoke.
+	const gateRes = await pbRequest('POST', '/api/join/revoke', {
+		token: tokens.non_member,
+		body: { trip_id: tripId, role: 'viewer' }
+	});
+	recordResult('join_tokens', 'nonowner_manage_denied', 'traveler', 'deny', classifyWrite(gateRes.status), gateRes.status);
+
+	// 8. Revoke — the old traveler token 404s on lookup and is refused on accept.
+	const revRes = await pbRequest('POST', '/api/join/revoke', {
+		token: tokens.owner,
+		body: { trip_id: tripId, role: 'traveler' }
+	});
+	recordResult('join_tokens', 'revoke_ok', 'owner', 'allow', classifyWrite(revRes.status), revRes.status);
+	const revLookup = await pbRequest('POST', '/api/join/lookup', { body: { token: travToken } });
+	recordResult('join_tokens', 'revoked_lookup_404', 'anon', 'yes', revLookup.status === 404 ? 'yes' : 'no', revLookup.status);
+	const revAccept = await pbRequest('POST', '/api/join/accept', {
+		token: tokens.co_owner,
+		body: { token: travToken }
+	});
+	recordResult('join_tokens', 'revoked_accept_denied', 'co_owner', 'deny', classifyWrite(revAccept.status), revAccept.status);
+
+	// 9. Clamp invariant — a name-only co_owner placeholder claimed through the
+	// VIEWER link lands as a viewer (never above the link cap).
+	const clampPh = await pbRequest('POST', '/api/members/add-placeholder', {
+		token: tokens.owner,
+		body: { trip_id: tripId, display_name: 'Clamp Target', role: 'co_owner' }
+	});
+	const clampJoin = await pbRequest('POST', '/api/join/accept', {
+		token: tokens.co_owner,
+		body: { token: viewToken, claim_placeholder: clampPh.data?.member_id }
+	});
+	recordResult('join_tokens', 'clamp_claim_ok', 'co_owner', 'allow', classifyWrite(clampJoin.status), clampJoin.status);
+	const clampMem = await pbRequest('GET', `/api/collections/trip_members/records/${clampPh.data?.member_id}`, {
+		token: tokens.owner
+	});
+	recordResult('join_tokens', 'clamp_role_viewer', 'co_owner', 'viewer', clampMem.data?.role || 'none', clampMem.status);
+
+	// 10. Tombstone exclusion from the claim picker — a live name-only placeholder
+	// is offered; a Departed Member (#133) is not.
+	const liveph = await pbRequest('POST', '/api/members/add-placeholder', {
+		token: tokens.owner,
+		body: { trip_id: tripId, display_name: 'Live Spare', role: 'traveler' }
+	});
+	const tombph = await pbRequest('POST', '/api/members/add-placeholder', {
+		token: tokens.owner,
+		body: { trip_id: tripId, display_name: 'Tomb Spare', role: 'traveler' }
+	});
+	await pbRequest('POST', '/api/members/remove', {
+		token: tokens.owner,
+		body: { member_id: tombph.data?.member_id }
+	});
+	const authLookup = await pbRequest('POST', '/api/join/lookup', {
+		token: tokens.owner,
+		body: { token: viewToken }
+	});
+	const picker = authLookup.data?.unclaimed_placeholders || [];
+	const hasLive = picker.some((p) => p.member_id === liveph.data?.member_id);
+	const hasTomb = picker.some((p) => p.member_id === tombph.data?.member_id);
+	recordResult('join_tokens', 'picker_includes_live', 'owner', 'yes', hasLive ? 'yes' : 'no', authLookup.status);
+	recordResult('join_tokens', 'picker_excludes_tombstone', 'owner', 'yes', !hasTomb ? 'yes' : 'no', authLookup.status);
+
+	// 11. Closed trip — archiving the trip disables link creation (Resolution 3).
+	await pbRequest('PATCH', `/api/collections/trips/records/${tripId}`, {
+		token: tokens.owner,
+		body: { archived: true }
+	});
+	const closedCreate = await pbRequest('POST', '/api/join/create', {
+		token: tokens.owner,
+		body: { trip_id: tripId, role: 'viewer' }
+	});
+	recordResult('join_tokens', 'closed_create_denied', 'owner', 'deny', classifyWrite(closedCreate.status), closedCreate.status);
+
+	// 12. Expiry — a link on the past-dated fixture trip is born expired (cap = trip
+	// end). Lookup flags it; accept refuses it.
+	const expLink = await pbRequest('POST', '/api/join/create', {
+		token: tokens.owner,
+		body: { trip_id: fixture.tripId, role: 'viewer' }
+	});
+	const expLookup = await pbRequest('POST', '/api/join/lookup', { body: { token: expLink.data?.token } });
+	recordResult('join_tokens', 'expired_lookup_flag', 'anon', 'yes', expLookup.data?.expired === true ? 'yes' : 'no', expLookup.status);
+	const expAccept = await pbRequest('POST', '/api/join/accept', {
+		token: tokens.non_member,
+		body: { token: expLink.data?.token }
+	});
+	recordResult('join_tokens', 'expired_accept_denied', 'non_member', 'deny', classifyWrite(expAccept.status), expAccept.status);
+}
+
+function printJoinLinkReport() {
+	console.log('\n[#118 shared join link — role cap, join-at-role, revoke/expiry, clamp, tombstone exclusion]');
+	for (const r of results.filter((x) => JOIN_LINK_OPS.includes(x.op))) {
+		const mark = r.passed ? 'PASS' : 'FAIL';
+		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+	}
+}
+
 function printReport() {
 	const ops = ['list', 'view', 'create', 'update', 'delete'];
 	const allRoles = [...ROLES, 'anon'];
@@ -964,11 +1167,15 @@ async function main() {
 	console.log('#133 cases: soft-remove tombstone (money survives, tombstone invisible)');
 	await runMemberRemovalNovelCases(tokens);
 
+	console.log('#118 cases: shared join link (role cap, join-at-role, revoke/expiry, clamp, tombstone)');
+	await runJoinLinkNovelCases(tokens);
+
 	printReport();
 	printNovelReport();
 	printUsersCrossReadReport();
 	printSuggestionsReport();
 	printMemberRemovalReport();
+	printJoinLinkReport();
 
 	const failed = results.some((r) => !r.passed);
 	exit(failed ? 1 : 0);
