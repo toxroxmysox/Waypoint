@@ -19,6 +19,10 @@ export interface ItemFormData {
 	start_time: string;
 	end_time: string;
 	end_date: string;
+	// #130 — flight-only, stored-not-shown. Captured from FlightLookup, never
+	// rendered or manually edited. Threaded through submission via hidden inputs.
+	start_tz: string;
+	end_tz: string;
 	location_name: string;
 	location_address: string;
 	location_coords: unknown;

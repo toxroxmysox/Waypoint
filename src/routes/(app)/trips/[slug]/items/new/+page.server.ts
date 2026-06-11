@@ -116,6 +116,10 @@ export const actions: Actions = {
 		const startTime = data.get('start_time')?.toString() || '';
 		const endTime = data.get('end_time')?.toString() || '';
 		const endDateRaw = (data.get('end_date')?.toString() || '').split(/[T ]/)[0];
+		// #130 — flight timezones: stored-not-shown. Only flights submit these
+		// (hidden inputs render flight-only); non-flight items stay untouched.
+		const startTz = type === 'flight' ? data.get('start_tz')?.toString() || '' : '';
+		const endTz = type === 'flight' ? data.get('end_tz')?.toString() || '' : '';
 		const booked = data.get('booked') === 'on';
 		const requiresBooking = data.get('requires_booking') === 'on';
 		const reservationUrl = data.get('reservation_url')?.toString() || '';
@@ -185,6 +189,8 @@ export const actions: Actions = {
 			start_time: combineDateTime(dayDate, startTime),
 			end_time: combineDateTime(endDate || dayDate, endTime),
 			end_date: endDate ? `${endDate} 00:00:00.000Z` : '',
+			start_tz: startTz,
+			end_tz: endTz,
 			booked,
 			requires_booking: requiresBooking,
 			confirmation_codes: confirmationCodes,
