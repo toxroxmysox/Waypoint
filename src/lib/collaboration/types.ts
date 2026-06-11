@@ -11,6 +11,10 @@ export interface TripMember extends RecordModel {
 	display_name: string;
 	role: MemberRole;
 	joined_at: string;
+	/** #133: empty = active member; non-empty = Departed Member tombstone. */
+	removed_at: string;
+	/** Set by the M2c auto-merge hook when a placeholder is claimable. */
+	claimable_by?: string;
 }
 
 export type InviteRole = 'co_owner' | 'traveler' | 'viewer';

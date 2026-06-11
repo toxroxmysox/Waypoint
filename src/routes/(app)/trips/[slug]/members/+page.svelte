@@ -147,6 +147,34 @@
 		</Card>
 	</section>
 
+	<!-- Former members (#133 tombstones) -->
+	{#if data.formerMembers.length > 0}
+		<section class="space-y-3">
+			<h2 class="text-ink-soft text-xs font-semibold tracking-wider uppercase">
+				Former members ({data.formerMembers.length})
+			</h2>
+			<Card>
+				<ul class="divide-line divide-y">
+					{#each data.formerMembers as m (m.id)}
+						<li class="flex items-center justify-between gap-3 px-4 py-3 opacity-75">
+							<Avatar departed alt={m.displayLabel} size={36} />
+							<div class="min-w-0 flex-1">
+								<div class="text-ink-soft truncate text-sm font-medium">{m.displayLabel}</div>
+								<div class="text-ink-muted truncate text-xs">
+									Removed{m.removedAtLabel ? ` · ${m.removedAtLabel}` : ''}
+								</div>
+							</div>
+							<Pill variant="default" size="sm">Departed</Pill>
+						</li>
+					{/each}
+				</ul>
+			</Card>
+			<p class="text-ink-muted text-xs">
+				Removed members keep their name on past expenses and records. Their money history is never deleted.
+			</p>
+		</section>
+	{/if}
+
 	<!-- Add placeholder -->
 	{#if data.canAddPlaceholder}
 		<section class="space-y-3">
