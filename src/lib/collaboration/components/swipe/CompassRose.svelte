@@ -46,7 +46,7 @@
 	<!-- still center: the brand star sits behind the rose -->
 	<span
 		aria-hidden="true"
-		class="text-moss-soft col-start-2 row-start-2 flex h-[30px] w-[30px] items-center justify-center"
+		class="text-moss-soft col-start-2 row-start-2 flex h-[30px] w-[30px] items-center justify-center justify-self-center"
 	>
 		<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
 			<path d="M12 2 L13.6 10.4 L22 12 L13.6 13.6 L12 22 L10.4 13.6 L2 12 L10.4 10.4 Z" />

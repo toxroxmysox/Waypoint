@@ -470,7 +470,7 @@
 
 	<!-- controls -->
 	{#if !done && card}
-		<div class="flex-none px-4 pt-3 pb-4">
+		<div class="flex-none px-4 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))]">
 			{#if isPrompt}
 				{#if promptControls}
 					{@render promptControls(card, { advance: advancePrompt })}
