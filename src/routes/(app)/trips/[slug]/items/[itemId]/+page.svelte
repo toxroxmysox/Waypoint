@@ -36,7 +36,8 @@
 	let commentText = $state('');
 	let commentSubmitting = $state(false);
 	let optimisticComments = $state<Comment[]>([]);
-	let allComments = $derived([...data.comments, ...optimisticComments]);
+	// Newest first: pending optimistic comments on top of the (-created) server list.
+	let allComments = $derived([...optimisticComments, ...data.comments]);
 
 	let backHref = $derived(
 		data.itemDay
@@ -328,12 +329,15 @@
 						// Own avatar resolves on reload (membership isn't avatar-enriched here).
 						author_avatar: ''
 					};
-					optimisticComments = [...optimisticComments, optimistic];
+					optimisticComments = [optimistic, ...optimisticComments];
 					commentText = '';
 					commentSubmitting = true;
-					return async ({ update }) => {
+					return async ({ result, update }) => {
 						commentSubmitting = false;
 						await update({ reset: false });
+						// Reloaded data.comments now contains the real record (#122
+						// made member reads work) — drop the optimistic copy.
+						if (result.type === 'success') optimisticComments = [];
 					};
 				}}
 				class="flex gap-2 pt-1"
