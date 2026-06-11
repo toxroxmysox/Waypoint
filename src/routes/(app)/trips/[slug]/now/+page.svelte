@@ -1,4 +1,8 @@
 <script lang="ts">
+	// INTERIM view — Slice A (#153) delivers the state machine + loader only.
+	// Slice B (#154) replaces this with the weighted Focus layout (slim banners,
+	// muted "later today" tier, tail row, checklists). This mapping keeps the page
+	// functional against the new NowViewState shape until then.
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import { getNowViewState } from '$lib/trip-mode/now-state';
 	import NowMidEvent from '$lib/trip-mode/components/NowMidEvent.svelte';
@@ -10,33 +14,36 @@
 	let { data } = $props();
 
 	const now = new Date(untrack(() => data.now));
-	const viewState = $derived(
-		getNowViewState(data.todayItems, now, data.hasToday)
-	);
+	const state = $derived(getNowViewState(data.todayItems, now, data.hasToday));
+	const focus = $derived(state.focus);
 </script>
 
 <NavBar title="Now" subtitle={data.trip.title} subtitleStyle="tagline" />
 
 <main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8">
-	{#if viewState.kind === 'mid-event'}
+	{#if focus.kind === 'mid-event'}
 		<NowMidEvent
-			currentItem={viewState.currentItem}
-			nextItem={viewState.nextItem}
-			tomorrowFirstItem={data.tomorrowFirstItem}
-			minutesRemaining={viewState.minutesRemaining}
+			currentItem={focus.currentItem}
+			nextItem={state.forwardItems[0] ?? null}
+			tomorrowFirstItem={null}
+			minutesRemaining={focus.minutesRemaining}
 			slug={data.trip.slug}
 		/>
-	{:else if viewState.kind === 'between-things'}
+	{:else if focus.kind === 'free-time'}
 		<NowBetweenThings
-			nextItem={viewState.nextItem}
-			minutesUntilNext={viewState.minutesUntilNext}
+			nextItem={focus.nextItem}
+			minutesUntilNext={focus.minutesUntilNext}
 			slug={data.trip.slug}
 		/>
-	{:else if viewState.kind === 'day-wrapped'}
-		<NowDayWrapped
-			completedCount={viewState.completedCount}
-			totalCount={viewState.totalCount}
-		/>
+	{:else if focus.kind === 'wrapped-summary'}
+		<NowDayWrapped completedCount={focus.completedCount} totalCount={focus.totalCount} />
+	{:else if focus.kind === 'nothing-else-planned'}
+		<Card>
+			<div class="p-6 text-center">
+				<p class="text-ink-soft font-semibold">Nothing else planned</p>
+				<p class="text-ink-muted mt-1 text-sm">The rest of today is open.</p>
+			</div>
+		</Card>
 	{:else}
 		<Card>
 			<div class="p-6 text-center">
