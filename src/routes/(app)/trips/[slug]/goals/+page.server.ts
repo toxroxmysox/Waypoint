@@ -21,7 +21,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 				})
 			: Promise.resolve([] as GoalVote[]),
 		locals.pb.collection('trip_members').getFullList<TripMember>({
-			filter: `trip = "${trip.id}"`,
+			filter: `trip = "${trip.id}" && removed_at = ""`,
 			expand: 'user'
 		})
 	]);
@@ -48,7 +48,7 @@ export const actions: Actions = {
 
 		const membership = await locals.pb
 			.collection('trip_members')
-			.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}"`);
+			.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`);
 		if (membership.role === 'viewer') return fail(403, { error: 'Viewers cannot add goals.' });
 
 		const data = await request.formData();

@@ -33,7 +33,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 				})
 			: Promise.resolve([]),
 		locals.pb.collection('trip_members').getFullList<TripMember>({
-			filter: `trip = "${trip.id}"`,
+			filter: `trip = "${trip.id}" && removed_at = ""`,
 			expand: 'user'
 		}),
 		// Comments, newest first (#122).
@@ -77,7 +77,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 async function getMembership(locals: App.Locals, tripId: string): Promise<TripMember> {
 	return locals.pb
 		.collection('trip_members')
-		.getFirstListItem<TripMember>(`trip = "${tripId}" && user = "${locals.user!.id}"`);
+		.getFirstListItem<TripMember>(`trip = "${tripId}" && user = "${locals.user!.id}" && removed_at = ""`);
 }
 
 // Tasks sit outside the Suggestion pipeline (ADR-0003): traveler+ mutate freely,
@@ -291,7 +291,7 @@ export const actions: Actions = {
 			if (assignee) {
 				const member = await locals.pb
 					.collection('trip_members')
-					.getFirstListItem<TripMember>(`id = "${assignee}" && trip = "${item.trip}"`)
+					.getFirstListItem<TripMember>(`id = "${assignee}" && trip = "${item.trip}" && removed_at = ""`)
 					.catch(() => null);
 				if (!member) return fail(400, { error: 'Invalid assignee.' });
 			}
@@ -358,7 +358,7 @@ export const actions: Actions = {
 			const targetItem = await locals.pb.collection('items').getOne(params.itemId);
 			const membership = await locals.pb
 				.collection('trip_members')
-				.getFirstListItem<TripMember>(`trip = "${targetItem.trip}" && user = "${locals.user!.id}"`);
+				.getFirstListItem<TripMember>(`trip = "${targetItem.trip}" && user = "${locals.user!.id}" && removed_at = ""`);
 
 			// One vote per member per item (unique index): change = update, not insert.
 			const existing = await locals.pb

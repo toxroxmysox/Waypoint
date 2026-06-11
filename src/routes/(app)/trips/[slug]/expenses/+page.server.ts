@@ -16,7 +16,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 			sort: '-date,-id'
 		}),
 		locals.pb.collection('trip_members').getFullList<TripMember>({
-			filter: `trip = "${trip.id}"`,
+			filter: `trip = "${trip.id}" && removed_at = ""`,
 			sort: 'id'
 		}),
 		locals.pb.collection('items').getFullList<Item>({
@@ -75,7 +75,7 @@ export const actions: Actions = {
 
 			const membership = await locals.pb
 				.collection('trip_members')
-				.getFirstListItem(`trip = "${trip.id}" && user = "${locals.pb.authStore.record?.id}"`);
+				.getFirstListItem(`trip = "${trip.id}" && user = "${locals.pb.authStore.record?.id}" && removed_at = ""`);
 
 			await locals.pb.collection('expenses').create({
 				trip: trip.id,
@@ -114,7 +114,7 @@ export const actions: Actions = {
 
 			const membership = await locals.pb
 				.collection('trip_members')
-				.getFirstListItem(`trip = "${trip.id}" && user = "${locals.pb.authStore.record?.id}"`);
+				.getFirstListItem(`trip = "${trip.id}" && user = "${locals.pb.authStore.record?.id}" && removed_at = ""`);
 
 			await locals.pb.collection('settlements').create({
 				trip: trip.id,

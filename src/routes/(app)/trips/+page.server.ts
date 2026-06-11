@@ -5,7 +5,9 @@ import { tripToday, tripTz } from '$lib/shell/trip-time';
 export const load: PageServerLoad = async ({ locals }) => {
 	// Get all trip memberships for the current user
 	const memberships = await locals.pb.collection('trip_members').getFullList<TripMember>({
-		filter: `user = "${locals.user!.id}"`,
+		// #133: a Departed Member's `user` is cleared, so a removed trip already
+		// drops off this list; guard explicitly to keep the invariant total.
+		filter: `user = "${locals.user!.id}" && removed_at = ""`,
 		expand: 'trip'
 	});
 

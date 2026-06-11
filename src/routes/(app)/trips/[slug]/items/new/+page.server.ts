@@ -27,7 +27,7 @@ export const load: PageServerLoad = async ({ url, locals, parent }) => {
 
 	// Load trip members for assigned_to selector
 	const members = await locals.pb.collection('trip_members').getFullList<TripMember>({
-		filter: `trip = "${trip.id}"`,
+		filter: `trip = "${trip.id}" && removed_at = ""`,
 		expand: 'user'
 	});
 
@@ -92,7 +92,7 @@ export const actions: Actions = {
 			.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
 		const membership = await locals.pb
 			.collection('trip_members')
-			.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}"`);
+			.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`);
 		const data = await request.formData();
 
 		const type = data.get('type')?.toString() || 'activity';

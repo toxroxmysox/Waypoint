@@ -14,7 +14,7 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 
 	await locals.pb
 		.collection('trip_members')
-		.getFirstListItem(`trip = "${trip.id}" && user = "${locals.user.id}"`);
+		.getFirstListItem(`trip = "${trip.id}" && user = "${locals.user.id}" && removed_at = ""`);
 
 	const [phases, days, items] = await Promise.all([
 		locals.pb.collection('phases').getFullList<Phase>({

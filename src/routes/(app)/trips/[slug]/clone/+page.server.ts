@@ -131,7 +131,7 @@ export const actions: Actions = {
 				});
 				const membership = await locals.pb
 					.collection('trip_members')
-					.getFirstListItem(`trip = "${newTrip.id}" && user = "${locals.user!.id}"`);
+					.getFirstListItem(`trip = "${newTrip.id}" && user = "${locals.user!.id}" && removed_at = ""`);
 
 				for (const item of sourceItems) {
 					if (!includeItemTypes.includes(item.type)) continue;

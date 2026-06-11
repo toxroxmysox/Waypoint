@@ -12,7 +12,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 	const [{ checklists, tasks }, members, bookingCount] = await Promise.all([
 		fetchManualChecklists(locals.pb, trip.id),
 		locals.pb.collection('trip_members').getFullList<TripMember>({
-			filter: `trip = "${trip.id}"`,
+			filter: `trip = "${trip.id}" && removed_at = ""`,
 			expand: 'user'
 		}),
 		locals.pb
@@ -36,7 +36,7 @@ export const actions: Actions = {
 
 		const membership = await locals.pb
 			.collection('trip_members')
-			.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}"`);
+			.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`);
 		if (membership.role === 'viewer') return fail(403, { error: 'Viewers cannot create lists.' });
 
 		const data = await request.formData();
