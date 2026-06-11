@@ -17,7 +17,9 @@ onRecordAfterCreateSuccess((e) => {
 	try {
 		rows = e.app.findRecordsByFilter(
 			'trip_members',
-			'placeholder_email = {:email} && user = ""',
+			// #133 guard: a tombstone also has user="" — exclude removed rows so a
+			// Departed Member never re-arms as a claimable placeholder.
+			'placeholder_email = {:email} && user = "" && removed_at = ""',
 			'',
 			0,
 			0,
@@ -52,7 +54,8 @@ routerAdd('GET', '/api/members/my-claims', (e) => {
 	try {
 		rows = e.app.findRecordsByFilter(
 			'trip_members',
-			'claimable_by = {:uid}',
+			// #133 guard: never surface a tombstone as a pending claim.
+			'claimable_by = {:uid} && removed_at = ""',
 			'',
 			0,
 			0,
@@ -106,6 +109,12 @@ routerAdd('POST', '/api/members/claim', (e) => {
 		member = e.app.findRecordById('trip_members', memberId);
 	} catch (_) {
 		throw new NotFoundError('Member record not found');
+	}
+
+	// #133 guard: a tombstone (user="" && claimable_by="") would otherwise slip
+	// past the claimable_by check below — a Departed Member is never claimable.
+	if (member.get('removed_at')) {
+		throw new BadRequestError('This membership has been removed and cannot be claimed');
 	}
 
 	if (member.get('user')) {
@@ -174,7 +183,7 @@ routerAdd('POST', '/api/members/add-placeholder', (e) => {
 	try {
 		callerMember = e.app.findFirstRecordByFilter(
 			'trip_members',
-			'trip = {:tripId} && user = {:uid}',
+			'trip = {:tripId} && user = {:uid} && removed_at = ""',
 			{ tripId: tripId, uid: authRecord.id }
 		);
 	} catch (_) {
@@ -204,7 +213,9 @@ routerAdd('POST', '/api/members/add-placeholder', (e) => {
 				try {
 					existingMember = e.app.findFirstRecordByFilter(
 						'trip_members',
-						'trip = {:tripId} && user = {:uid}',
+						// #133: a departed member (user="") is not an active duplicate —
+						// they may be re-added as a fresh placeholder.
+						'trip = {:tripId} && user = {:uid} && removed_at = ""',
 						{ tripId: tripId, uid: existingUser.id }
 					);
 				} catch (_) {
@@ -227,7 +238,9 @@ routerAdd('POST', '/api/members/add-placeholder', (e) => {
 		try {
 			existingPlaceholder = e.app.findFirstRecordByFilter(
 				'trip_members',
-				'trip = {:tripId} && placeholder_email = {:email}',
+				// #133: a tombstone's placeholder_email is cleared, but guard anyway —
+				// only an active placeholder counts as a duplicate.
+				'trip = {:tripId} && placeholder_email = {:email} && removed_at = ""',
 				{ tripId: tripId, email: placeholderEmail }
 			);
 		} catch (_) {
@@ -289,7 +302,7 @@ routerAdd('POST', '/api/members/promote', (e) => {
 	try {
 		callerMember = e.app.findFirstRecordByFilter(
 			'trip_members',
-			'trip = {:tripId} && user = {:uid}',
+			'trip = {:tripId} && user = {:uid} && removed_at = ""',
 			{ tripId: tripId, uid: authRecord.id }
 		);
 	} catch (_) {
@@ -316,10 +329,31 @@ routerAdd('POST', '/api/members/promote', (e) => {
 });
 
 // ---------------------------------------------------------------------------
-// POST /api/members/remove
-// Remove a member from the trip. Caller must be owner or co_owner.
-// Cannot remove the sole owner.
-// Body: { member_id }
+// POST /api/members/remove — soft-remove tombstone (#133, ADR-0008).
+//
+// Removal does NOT delete the trip_members row. It snapshots the resolved
+// display name into display_name (so "Bob paid $40" still renders), clears
+// `user` (severing access — no membership rule matches a cleared user id, so
+// zero collection rules change), clears the claim hooks, and stamps removed_at.
+// The row is RETAINED as a Departed Member tombstone.
+//
+// Body: { member_id, disposition?, reassign_to? }
+//   disposition: 'keep' (default) | 'reassign' | 'cascade'
+//     keep     — children stay pointing at the tombstone (default; only path for money).
+//     reassign — rewrite the departed member's authored records to reassign_to.
+//     cascade  — delete the departed member's NON-MONEY authored content.
+//   reassign_to: target member id (required when disposition = 'reassign').
+//
+// Invariants (PRD Resolutions 10/12/13/14):
+//   - Money (expenses, settlements) is NEVER cascade-deleted — keep or reassign.
+//   - Votes (votes, goal_votes) ALWAYS drop. The retained row means their
+//     member-relation cascadeDelete won't fire on its own, so we drop explicitly.
+//   - Self-leave is tombstone-only (forced keep).
+//   - Frozen on a closed (archived) trip.
+//
+// Caller must be owner/co_owner to remove someone else; any member may self-leave
+// (except the sole owner). All helpers are inlined inside the callback — PB's
+// goja sandbox can't see file-scope functions.
 // ---------------------------------------------------------------------------
 routerAdd('POST', '/api/members/remove', (e) => {
 	const authRecord = e.auth;
@@ -338,32 +372,48 @@ routerAdd('POST', '/api/members/remove', (e) => {
 		throw new NotFoundError('Member not found');
 	}
 
+	const alreadyRemoved = !!target.get('removed_at');
 	const tripId = target.get('trip');
 
-	// Verify caller is owner/co_owner of the same trip.
-	let callerMember;
+	// Frozen on a closed trip (Resolution 14) — symmetric with the join window.
+	let trip;
 	try {
-		callerMember = e.app.findFirstRecordByFilter(
-			'trip_members',
-			'trip = {:tripId} && user = {:uid}',
-			{ tripId: tripId, uid: authRecord.id }
-		);
+		trip = e.app.findRecordById('trips', tripId);
 	} catch (_) {
-		throw new ForbiddenError('You are not a member of this trip');
+		throw new NotFoundError('Trip not found');
+	}
+	if (trip.get('archived')) {
+		throw new ForbiddenError('This trip is closed; its roster is frozen');
 	}
 
-	const callerRole = callerMember.get('role');
-	if (callerRole !== 'owner' && callerRole !== 'co_owner') {
-		throw new ForbiddenError('Only owners and co-owners can remove members');
+	const isSelfLeave = !!target.get('user') && target.get('user') === authRecord.id;
+
+	// Authority: self-leave is open to any member; removing someone else is
+	// owner/co_owner only. (A tombstoned caller has user="" so never matches.)
+	if (!isSelfLeave) {
+		let callerMember;
+		try {
+			callerMember = e.app.findFirstRecordByFilter(
+				'trip_members',
+				'trip = {:tripId} && user = {:uid} && removed_at = ""',
+				{ tripId: tripId, uid: authRecord.id }
+			);
+		} catch (_) {
+			throw new ForbiddenError('You are not a member of this trip');
+		}
+		const callerRole = callerMember.get('role');
+		if (callerRole !== 'owner' && callerRole !== 'co_owner') {
+			throw new ForbiddenError('Only owners and co-owners can remove members');
+		}
 	}
 
-	// Cannot remove the sole owner.
+	// Cannot remove the sole (active) owner.
 	if (target.get('role') === 'owner') {
 		let ownerCount = 0;
 		try {
 			const owners = e.app.findRecordsByFilter(
 				'trip_members',
-				'trip = {:tripId} && role = "owner"',
+				'trip = {:tripId} && role = "owner" && removed_at = ""',
 				'',
 				0,
 				0,
@@ -378,11 +428,176 @@ routerAdd('POST', '/api/members/remove', (e) => {
 		}
 	}
 
+	// Disposition. Self-leave is forced to keep (Resolution 13): a leaver can't
+	// dump their debts on others or delete records the group shares.
+	let disposition = ((info.body && info.body['disposition']) || 'keep').toString();
+	const reassignTo = ((info.body && info.body['reassign_to']) || '').toString();
+	if (isSelfLeave) disposition = 'keep';
+	if (disposition !== 'keep' && disposition !== 'reassign' && disposition !== 'cascade') {
+		throw new BadRequestError('disposition must be keep, reassign, or cascade');
+	}
+
+	if (disposition === 'reassign') {
+		if (!reassignTo) throw new BadRequestError('reassign_to is required for reassign');
+		if (reassignTo === target.id) {
+			throw new BadRequestError('Cannot reassign to the member being removed');
+		}
+		let reassignMember;
+		try {
+			reassignMember = e.app.findRecordById('trip_members', reassignTo);
+		} catch (_) {
+			throw new NotFoundError('Reassignment target not found');
+		}
+		if (reassignMember.get('trip') !== tripId) {
+			throw new BadRequestError('Reassignment target is not in this trip');
+		}
+		if (reassignMember.get('removed_at')) {
+			throw new BadRequestError('Cannot reassign to a removed member');
+		}
+	}
+
+	// --- Always drop the departed member's votes (Resolution 12). The row is
+	// retained, so votes.member / goal_votes.member cascadeDelete won't fire —
+	// drop them explicitly.
+	for (const col of ['votes', 'goal_votes']) {
+		let rows = [];
+		try {
+			rows = e.app.findRecordsByFilter(col, 'member = {:mid}', '', 0, 0, { mid: target.id });
+		} catch (_) {}
+		for (const r of rows) {
+			try {
+				e.app.delete(r);
+			} catch (_) {}
+		}
+	}
+
+	// Inlined relation helpers (goja: must live inside the callback).
+	// Rewrite a single-relation field from the departed member to `toId`
+	// ('' clears it).
+	const rewriteSingle = (col, field, toId) => {
+		let rows = [];
+		try {
+			rows = e.app.findRecordsByFilter(col, field + ' = {:mid}', '', 0, 0, { mid: target.id });
+		} catch (_) {
+			return;
+		}
+		for (const r of rows) {
+			r.set(field, toId);
+			try {
+				e.app.save(r);
+			} catch (err) {
+				console.log('members.remove: ' + col + '.' + field + ' rewrite failed for ' + r.id + ': ' + err);
+			}
+		}
+	};
+	// Rewrite a multi-relation field (items.assigned_to): drop the departed id,
+	// add `toId` when non-empty (deduped).
+	const rewriteMulti = (col, field, toId) => {
+		let rows = [];
+		try {
+			rows = e.app.findRecordsByFilter(col, field + ' ~ {:mid}', '', 0, 0, { mid: target.id });
+		} catch (_) {
+			return;
+		}
+		for (const r of rows) {
+			const cur = r.get(field) || [];
+			const next = [];
+			for (const id of cur) {
+				if (id !== target.id) next.push(id);
+			}
+			if (toId && next.indexOf(toId) === -1) next.push(toId);
+			r.set(field, next);
+			try {
+				e.app.save(r);
+			} catch (err) {
+				console.log('members.remove: ' + col + '.' + field + ' multi-rewrite failed for ' + r.id + ': ' + err);
+			}
+		}
+	};
+	// Delete every row of `col` whose `field` points at the departed member.
+	const deleteWhere = (col, field) => {
+		let rows = [];
+		try {
+			rows = e.app.findRecordsByFilter(col, field + ' = {:mid}', '', 0, 0, { mid: target.id });
+		} catch (_) {
+			return;
+		}
+		for (const r of rows) {
+			try {
+				e.app.delete(r);
+			} catch (err) {
+				console.log('members.remove: ' + col + ' delete failed for ' + r.id + ': ' + err);
+			}
+		}
+	};
+
+	if (disposition === 'reassign') {
+		// Money — never deleted; identity transfers to the reassignment target.
+		rewriteSingle('expenses', 'paid_by', reassignTo);
+		rewriteSingle('expenses', 'created_by', reassignTo);
+		rewriteSingle('settlements', 'from_member', reassignTo);
+		rewriteSingle('settlements', 'to_member', reassignTo);
+		rewriteSingle('settlements', 'created_by', reassignTo);
+		// Non-money authored records.
+		rewriteSingle('suggestions', 'author', reassignTo);
+		rewriteSingle('suggestions', 'reviewed_by', reassignTo);
+		rewriteSingle('trip_goals', 'created_by', reassignTo);
+		rewriteSingle('documents', 'uploaded_by', reassignTo);
+		rewriteSingle('items', 'created_by', reassignTo);
+		rewriteSingle('items', 'paid_by', reassignTo);
+		rewriteSingle('items', 'booked_by', reassignTo);
+		rewriteMulti('items', 'assigned_to', reassignTo);
+		rewriteSingle('tasks', 'assignee', reassignTo);
+	} else if (disposition === 'cascade') {
+		// Money is NEVER cascaded (Resolution 10) — expenses/settlements stay,
+		// pointing at the retained tombstone. Only non-money authored content drops.
+		deleteWhere('suggestions', 'author'); // includes comments (target_type='comment')
+		deleteWhere('trip_goals', 'created_by'); // cascadeDelete drops their goal_votes
+		deleteWhere('documents', 'uploaded_by');
+		// Optional authorship on records that stay — null it out.
+		rewriteSingle('suggestions', 'reviewed_by', '');
+		rewriteSingle('items', 'created_by', '');
+		rewriteSingle('items', 'paid_by', '');
+		rewriteSingle('items', 'booked_by', '');
+		rewriteMulti('items', 'assigned_to', '');
+		rewriteSingle('tasks', 'assignee', '');
+	}
+	// disposition === 'keep': children keep pointing at the tombstone — nothing to do.
+
+	// --- Tombstone the membership row. Snapshot the resolved display name into
+	// display_name (ADR-0008 snapshot target), then sever access + clear claim
+	// hooks and stamp removed_at. The row is RETAINED.
+	const now = new Date().toISOString().replace('T', ' ').replace('Z', '') + 'Z';
+	let snapName = (target.get('display_name') || '').trim();
+	if (!snapName) {
+		const uid = target.get('user');
+		if (uid) {
+			try {
+				const u = e.app.findRecordById('users', uid);
+				snapName = (u.get('name') || u.email() || '').trim();
+			} catch (_) {}
+		}
+	}
+	if (!snapName) snapName = (target.get('placeholder_name') || '').trim();
+	if (!snapName) snapName = 'Former member';
+
+	target.set('display_name', snapName);
+	target.set('user', '');
+	target.set('claimable_by', '');
+	target.set('placeholder_email', '');
+	target.set('placeholder_name', '');
+	if (!alreadyRemoved) target.set('removed_at', now);
+
 	try {
-		e.app.delete(target);
+		e.app.save(target);
 	} catch (err) {
 		throw new BadRequestError('Failed to remove member: ' + err);
 	}
 
-	return e.json(200, { ok: true });
+	return e.json(200, {
+		ok: true,
+		member_id: target.id,
+		removed_at: target.get('removed_at'),
+		disposition: disposition
+	});
 });
