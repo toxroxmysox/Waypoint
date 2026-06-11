@@ -37,10 +37,14 @@ needed to slice into issues:
 7. **Goal delete** lives as a rule-gated action on the **goal-detail** screen
    (`(creator AND zero goal_votes) OR owner/co_owner`), plus the wizard rewind-delete path. No
    swipe-to-delete on the Goals tab row.
-8. **Card order (both decks):** sort by **vote quantity desc** (count of existing votes, not weighted
-   score), ties + zero-vote items by **creation time, oldest first**. The capture deck additionally
-   **alternates 1:1** reaction-card / prompt-card, degrading to all-prompts (new trip) or all-reactions
-   (prompts spent). Deterministic given inputs → `buildDeck` stays unit-testable.
+8. **Card order.** ~~sort by vote quantity desc, ties + zero-vote oldest-first~~ **Superseded for the
+   harvest deck by #120 (2026-06-10, reporter = original decision-maker):** the Swipe-Quiz deck now
+   leads with **planned items in itinerary order** (day date asc; within a day, timed by start_time,
+   untimed by sort_order — mirrors `buildTimeline`), then an **unplanned tail by vote quantity desc**,
+   ties + zero-vote items by **creation time, oldest first**. The **capture deck** keeps the original
+   vote-qty-desc / oldest-first order and additionally **alternates 1:1** reaction-card / prompt-card,
+   degrading to all-prompts (new trip) or all-reactions (prompts spent). Deterministic given inputs →
+   `buildDeck` stays unit-testable.
 
 **Build resolutions (2026-06-08 — #76 SwipeDeck grill + build; closes the former "still open" items):**
 
