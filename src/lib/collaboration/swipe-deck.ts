@@ -1,4 +1,5 @@
 import type { ItemStatus } from '$lib/itinerary/types';
+import { orderDayItems } from '$lib/itinerary/timeline';
 import type { VoteValue } from './types';
 
 /** px a drag must travel past to commit a vote (else it springs back). */
@@ -23,8 +24,11 @@ export function voteFromIntent(dx: number, dy: number): Exclude<VoteValue, 'flex
  * The pure deck builder behind the Swipe-Quiz harvest (and the shared SwipeDeck
  * substrate). No UI, no IO — see `swipe-deck.test.ts`.
  *
- * Resolution 8: order = vote-quantity desc (count of *all* members' votes, not
- * weighted score), ties + zero-vote by creation time oldest-first.
+ * Order (#120 — supersedes Resolution 8's ordering): planned items FIRST in
+ * itinerary order (day date asc; within a day, timed by start_time, untimed by
+ * sort_order — same as `buildTimeline`), then the unplanned tail by
+ * vote-quantity desc (count of *all* members' votes, not weighted score), ties
+ * + zero-vote by creation time oldest-first.
  * Eligibility: in-scope phase, status planned|unplanned (done/considered are
  * closeout-only), not already voted by the current member.
  */
@@ -34,7 +38,8 @@ const ELIGIBLE_STATUSES: ReadonlySet<ItemStatus> = new Set<ItemStatus>(['planned
 
 /**
  * A trip item, narrowed to what the deck needs, decorated by the loader with the
- * all-members vote count. `created` is PB's fixed-width sortable string.
+ * all-members vote count plus the itinerary-position fields the order needs.
+ * `created` is PB's fixed-width sortable string.
  */
 export interface DeckCandidate {
 	id: string;
@@ -43,6 +48,12 @@ export interface DeckCandidate {
 	created: string;
 	/** Count of every member's votes on this item (not the weighted score). */
 	voteCount: number;
+	/** Owning day's date (PB sortable string; "" when unscheduled). Drives planned itinerary order. */
+	dayDate: string;
+	/** Anchor time ("" when untimed). */
+	start_time: string;
+	/** Manual order within a day. */
+	sort_order: number;
 }
 
 /** Phase-scoped only in v4; `phaseOrder` drives the next-phase hand-off. */
@@ -63,16 +74,46 @@ function isEligible(item: DeckCandidate, votedItemIds: Set<string>): boolean {
 
 /**
  * Resolution-8 comparator: vote-quantity desc, ties + zero-vote by creation
- * oldest-first. Shared by the harvest deck and the capture deck's reaction lane.
+ * oldest-first. Drives the unplanned tail here, and the capture deck's reaction lane.
  */
 function byVoteQtyThenOldest(a: { voteCount: number; created: string }, b: { voteCount: number; created: string }): number {
 	if (b.voteCount !== a.voteCount) return b.voteCount - a.voteCount;
 	return a.created < b.created ? -1 : a.created > b.created ? 1 : 0;
 }
 
-/** Order: vote-quantity desc, then creation oldest-first. Pure (no mutation). */
+/** Day dates ascending; an unset day ("" — PB stores empty, never null) trails dated days. */
+function byDayDate(a: string, b: string): number {
+	if (a === b) return 0;
+	if (!a) return 1;
+	if (!b) return -1;
+	return a < b ? -1 : 1;
+}
+
+/**
+ * Planned items in itinerary order: group by owning day, days ascending (unset
+ * trailing), then each day woven by `orderDayItems` (timed by time, untimed by
+ * sort_order). Pure (no mutation).
+ */
+function orderPlanned(planned: DeckCandidate[]): DeckCandidate[] {
+	const byDay = new Map<string, DeckCandidate[]>();
+	for (const item of planned) {
+		const group = byDay.get(item.dayDate);
+		if (group) group.push(item);
+		else byDay.set(item.dayDate, [item]);
+	}
+	return [...byDay.keys()]
+		.sort(byDayDate)
+		.flatMap((date) => orderDayItems(byDay.get(date)!));
+}
+
+/**
+ * Deck order (#120): planned items first in itinerary order, then unplanned by
+ * vote-quantity desc / creation oldest-first. Pure (no mutation).
+ */
 function orderCards(items: DeckCandidate[]): DeckCandidate[] {
-	return [...items].sort(byVoteQtyThenOldest);
+	const planned = items.filter((i) => i.status === 'planned');
+	const unplanned = items.filter((i) => i.status === 'unplanned');
+	return [...orderPlanned(planned), ...unplanned.sort(byVoteQtyThenOldest)];
 }
 
 export function buildDeck(

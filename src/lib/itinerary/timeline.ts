@@ -31,9 +31,20 @@ const SLOT_LABELS: Record<string, 'Morning' | 'Afternoon' | 'Evening'> = {
 	evening: 'Evening',
 };
 
-export function buildTimeline(items: Item[]): TimelineEntry[] {
-	if (items.length === 0) return [];
+/** The minimum an item needs for single-day itinerary ordering. */
+export interface DayOrderable {
+	start_time: string;
+	sort_order: number;
+}
 
+/**
+ * Flat itinerary order for one day's items (no dividers): timed items by
+ * start_time, untimed items woven in by sort_order — an untimed item lands
+ * before the first anchor whose sort_order it precedes, otherwise trails. Pure
+ * (no mutation). Shared by `buildTimeline` and the Swipe-Quiz deck's
+ * planned-item ordering (#120) so both present a day the same way.
+ */
+export function orderDayItems<T extends DayOrderable>(items: T[]): T[] {
 	const anchored = items
 		.filter((i) => i.start_time)
 		.sort((a, b) => parseTime(a.start_time).getTime() - parseTime(b.start_time).getTime());
@@ -42,31 +53,35 @@ export function buildTimeline(items: Item[]): TimelineEntry[] {
 		.filter((i) => !i.start_time)
 		.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
-	if (anchored.length === 0) {
-		return untimed.map((item) => ({ kind: 'item' as const, item, anchored: false }));
-	}
-
-	const result: TimelineEntry[] = [];
+	const result: T[] = [];
 	let untimedIdx = 0;
 
-	for (let i = 0; i < anchored.length; i++) {
-		const anchor = anchored[i];
+	for (const anchor of anchored) {
 		const anchorOrder = anchor.sort_order ?? 0;
-
 		while (untimedIdx < untimed.length && (untimed[untimedIdx].sort_order ?? 0) < anchorOrder) {
-			result.push({ kind: 'item', item: untimed[untimedIdx], anchored: false });
-			untimedIdx++;
+			result.push(untimed[untimedIdx++]);
 		}
-
-		result.push({ kind: 'item', item: anchor, anchored: true });
+		result.push(anchor);
 	}
 
 	while (untimedIdx < untimed.length) {
-		result.push({ kind: 'item', item: untimed[untimedIdx], anchored: false });
-		untimedIdx++;
+		result.push(untimed[untimedIdx++]);
 	}
 
-	return insertDividers(result);
+	return result;
+}
+
+export function buildTimeline(items: Item[]): TimelineEntry[] {
+	if (items.length === 0) return [];
+
+	const ordered = orderDayItems(items);
+	const entries: TimelineEntry[] = ordered.map((item) => ({
+		kind: 'item' as const,
+		item,
+		anchored: !!item.start_time
+	}));
+
+	return insertDividers(entries);
 }
 
 function insertDividers(entries: TimelineEntry[]): TimelineEntry[] {
