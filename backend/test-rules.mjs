@@ -685,6 +685,76 @@ async function runUsersCrossReadCases(tokens, fixture) {
 	recordResult('users', 'crossread_tokenkey_hidden', 'co_owner', 'yes', tokenKeyHidden ? 'yes' : 'no', view.status);
 }
 
+// #122 — suggestions member-read. Comments live in `suggestions`; writes go
+// through hook endpoints (admin context) so the fixed matrix can't cover this
+// collection (create/update/delete rules are null by design). These cases pin
+// the two #122 regressions: the listRule/viewRule back-relation
+// (`trip.trip_members_via_trip.user`, was the invalid `members_via_trip`) and
+// the `created` autodate field (`sort=created` 400'd without it). A comment is
+// authored by the owner via /api/comments/add; the co_owner — a co-member who
+// is NOT the author — must be able to list (sorted by created) and view it,
+// while non_member and anon are denied.
+const SUGGESTIONS_OPS = [
+	'comment_add',
+	'member_list_sorted',
+	'member_view',
+	'created_present',
+	'nonmember_list',
+	'anon_list'
+];
+
+async function runSuggestionsMemberReadCases(tokens, fixture) {
+	// Owner authors a comment on the fixture item via the hook endpoint.
+	const add = await pbRequest('POST', '/api/comments/add', {
+		token: tokens.owner,
+		body: { item_id: fixture.itemId, comment_text: 'Harness comment (#122)' }
+	});
+	recordResult('suggestions', 'comment_add', 'owner', 'allow', classifyWrite(add.status), add.status);
+	const commentId = add.data?.comment_id;
+
+	// A co-member (not the author) lists suggestions sorted by created — both
+	// the rule fix and the autodate field must hold for this to pass (a missing
+	// `created` field makes the sort 400).
+	const list = await pbRequest('GET', '/api/collections/suggestions/records?perPage=200&sort=created', {
+		token: tokens.co_owner
+	});
+	recordResult(
+		'suggestions',
+		'member_list_sorted',
+		'co_owner',
+		'allow',
+		classifyList(list.status, list.data?.items, commentId),
+		list.status
+	);
+
+	// ...and views the record directly.
+	const view = await pbRequest('GET', `/api/collections/suggestions/records/${commentId}`, {
+		token: tokens.co_owner
+	});
+	recordResult('suggestions', 'member_view', 'co_owner', 'allow', classifyView(view.status), view.status);
+
+	// The autodate field is populated on the payload.
+	const createdPresent = typeof view.data?.created === 'string' && view.data.created.length > 0;
+	recordResult('suggestions', 'created_present', 'co_owner', 'yes', createdPresent ? 'yes' : 'no', view.status);
+
+	// Non-members and anon stay locked out.
+	const nm = await pbRequest('GET', '/api/collections/suggestions/records?perPage=200&sort=created', {
+		token: tokens.non_member
+	});
+	recordResult('suggestions', 'nonmember_list', 'non_member', 'deny', classifyList(nm.status, nm.data?.items, commentId), nm.status);
+
+	const anon = await pbRequest('GET', '/api/collections/suggestions/records?perPage=200&sort=created');
+	recordResult('suggestions', 'anon_list', 'anon', 'deny', classifyList(anon.status, anon.data?.items, commentId), anon.status);
+}
+
+function printSuggestionsReport() {
+	console.log('\n[#122 suggestions member-read — co-member reads a comment, sort=created works]');
+	for (const r of results.filter((x) => SUGGESTIONS_OPS.includes(x.op))) {
+		const mark = r.passed ? 'PASS' : 'FAIL';
+		console.log(`  ${mark} suggestions.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+	}
+}
+
 function printUsersCrossReadReport() {
 	console.log('\n[#103 users cross-read — co-traveler name+avatar, email+secrets hidden]');
 	for (const r of results.filter((x) => USERS_CROSSREAD_OPS.includes(x.op))) {
@@ -769,9 +839,14 @@ async function main() {
 	fixture = await setupFixture();
 	await runUsersCrossReadCases(tokens, fixture);
 
+	console.log('#122 cases: suggestions member-read (comment visible to co-member, sort=created)');
+	fixture = await setupFixture();
+	await runSuggestionsMemberReadCases(tokens, fixture);
+
 	printReport();
 	printNovelReport();
 	printUsersCrossReadReport();
+	printSuggestionsReport();
 
 	const failed = results.some((r) => !r.passed);
 	exit(failed ? 1 : 0);

@@ -28,7 +28,6 @@ export interface ItemFormData {
 	reservation_url: string;
 	free_cancellation: boolean;
 	cost_estimate_usd: number;
-	cost_actual_usd: number;
 	confirmation_codes: ConfirmationCode[];
 	assigned_to: string[];
 	status: string;

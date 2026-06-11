@@ -127,6 +127,24 @@
 			? context.phases.find((p) => p.id === initialData.phase) ?? null
 			: null
 	);
+
+	// Detail "When" row = date · start–end (no tz). §3 of CARD_CONTENT_SPEC.
+	let scheduleDate = $derived(
+		itemDay
+			? new Date(itemDay.date.replace(' ', 'T')).toLocaleDateString('en-US', {
+					weekday: 'long',
+					month: 'long',
+					day: 'numeric',
+					timeZone: 'UTC'
+				})
+			: ''
+	);
+	let scheduleTimes = $derived(
+		fields.times && initialData.start_time
+			? `${formatTime(initialData.start_time)}${initialData.end_time ? ` – ${formatTime(initialData.end_time)}` : ''}`
+			: ''
+	);
+	let whenRow = $derived([scheduleDate, scheduleTimes].filter(Boolean).join(' · '));
 </script>
 
 {#if mode === 'view'}
@@ -134,28 +152,13 @@
 		<Card>
 			<div class="p-4 space-y-2">
 				<SectionH>Schedule</SectionH>
-				{#if itemDay}
-					<p class="text-ink text-sm">
-						{new Date(itemDay.date.replace(' ', 'T')).toLocaleDateString('en-US', {
-							weekday: 'long',
-							month: 'long',
-							day: 'numeric',
-							timeZone: 'UTC'
-						})}
-
-					</p>
+				{#if whenRow}
+					<p class="text-ink text-sm">{whenRow}</p>
 				{/if}
 				{#if itemPhase}
 					<p class="text-ink-muted flex items-center gap-1.5 text-sm">
 						<PhaseChip name={itemPhase.name} size={16} />
 						{itemPhase.name}
-					</p>
-				{/if}
-				{#if fields.times && initialData.start_time}
-					<p class="font-mono text-ink text-sm">
-						{formatTime(initialData.start_time)}{initialData.end_time
-							? ` – ${formatTime(initialData.end_time)}`
-							: ''}
 					</p>
 				{/if}
 			</div>
@@ -207,28 +210,13 @@
 		</Card>
 	{/if}
 
-	{#if fields.costs && (initialData.cost_estimate_usd || initialData.cost_actual_usd)}
+	{#if fields.costs && initialData.cost_estimate_usd}
 		<Card>
 			<div class="p-4">
-				<SectionH>Costs</SectionH>
-				<div class="mt-2 grid grid-cols-2 gap-4">
-					{#if initialData.cost_estimate_usd}
-						<div>
-							<p class="text-ink-muted text-[11px] uppercase tracking-wide">Estimate</p>
-							<p class="font-mono text-ink text-sm font-semibold">
-								${initialData.cost_estimate_usd.toFixed(2)}
-							</p>
-						</div>
-					{/if}
-					{#if initialData.cost_actual_usd}
-						<div>
-							<p class="text-ink-muted text-[11px] uppercase tracking-wide">Actual</p>
-							<p class="font-mono text-ink text-sm font-semibold">
-								${initialData.cost_actual_usd.toFixed(2)}
-							</p>
-						</div>
-					{/if}
-				</div>
+				<SectionH>Cost</SectionH>
+				<p class="font-mono text-ink mt-2 text-sm font-semibold">
+					${initialData.cost_estimate_usd.toFixed(2)}
+				</p>
 			</div>
 		</Card>
 	{/if}
@@ -570,32 +558,18 @@
 	{#if fields.costs}
 		<Card>
 			<div class="p-4">
-				<SectionH>Costs</SectionH>
-				<div class="mt-2 grid grid-cols-2 gap-3">
-					<div>
-						<label for="cost_estimate_usd" class="text-ink-soft block text-sm font-medium">Estimate (USD)</label>
-						<input
-							type="number"
-							id="cost_estimate_usd"
-							name="cost_estimate_usd"
-							step="0.01"
-							min="0"
-							value={initialData.cost_estimate_usd || ''}
-							class="border-line bg-surface text-ink font-mono mt-1 block w-full rounded-md border px-3 py-2 text-sm"
-						/>
-					</div>
-					<div>
-						<label for="cost_actual_usd" class="text-ink-soft block text-sm font-medium">Actual (USD)</label>
-						<input
-							type="number"
-							id="cost_actual_usd"
-							name="cost_actual_usd"
-							step="0.01"
-							min="0"
-							value={initialData.cost_actual_usd || ''}
-							class="border-line bg-surface text-ink font-mono mt-1 block w-full rounded-md border px-3 py-2 text-sm"
-						/>
-					</div>
+				<SectionH>Cost</SectionH>
+				<div class="mt-2">
+					<label for="cost_estimate_usd" class="text-ink-soft block text-sm font-medium">Cost (USD)</label>
+					<input
+						type="number"
+						id="cost_estimate_usd"
+						name="cost_estimate_usd"
+						step="0.01"
+						min="0"
+						value={initialData.cost_estimate_usd || ''}
+						class="border-line bg-surface text-ink font-mono mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+					/>
 				</div>
 			</div>
 		</Card>

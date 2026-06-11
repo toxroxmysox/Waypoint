@@ -42,12 +42,20 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		if (v.member === membership.id) myVotes.push({ item: v.item });
 	}
 
+	// Owning day's date for itinerary-ordering the planned head (#120). "" when
+	// the item has no day (PB stores empty, never null) → sorts after dated days.
+	const dateByDay: Record<string, string> = {};
+	for (const d of days as Day[]) dateByDay[d.id] = d.date;
+
 	const candidates: DeckCandidate[] = items.map((i) => ({
 		id: i.id,
 		phase: i.phase,
 		status: i.status,
 		created: i.created,
-		voteCount: voteCountByItem[i.id] ?? 0
+		voteCount: voteCountByItem[i.id] ?? 0,
+		dayDate: dateByDay[i.day] ?? '',
+		start_time: i.start_time,
+		sort_order: i.sort_order
 	}));
 
 	const phaseOrder = (phases as Phase[]).map((p) => p.id);
@@ -91,7 +99,9 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		dayLabel,
 		initialByUser,
 		nextPhase,
-		parkingLotHref: `/trips/${trip.slug}/parking-lot`
+		// Phase Detail is the parking-lot home (#86 retired the trip-wide page);
+		// the button label says "phase parking lot", so point at this phase.
+		parkingLotHref: `/trips/${trip.slug}/phases/${phase.id}`
 	};
 };
 
