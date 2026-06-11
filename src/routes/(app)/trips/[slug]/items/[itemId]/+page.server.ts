@@ -36,9 +36,10 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 			filter: `trip = "${trip.id}"`,
 			expand: 'user'
 		}),
+		// Comments, newest first (#122).
 		locals.pb.collection('suggestions').getFullList<Comment>({
 			filter: `target_item = "${item.id}" && target_type = "comment" && status = "approved"`,
-			sort: 'created',
+			sort: '-created',
 			expand: 'author.user'
 		}).catch(() => [] as Comment[]),
 		locals.pb.collection('votes').getFullList<Vote>({
