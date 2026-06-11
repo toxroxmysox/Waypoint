@@ -152,6 +152,26 @@
 			: ''
 	);
 	let whenRow = $derived([scheduleDate, scheduleTimes].filter(Boolean).join(' · '));
+
+	// #131 — Open in Maps: link OUT to the device map app (embedded maps off the
+	// table per CLAUDE.md). Prefer google_place_id, fall back to location_coords,
+	// then location_address. Google Maps universal URL (api=1) opens the Maps app
+	// on iOS and the browser on desktop. Empty → no affordance.
+	let mapsUrl = $derived.by(() => {
+		const placeId = initialData.google_place_id;
+		const coords = initialData.location_coords as { lat: number; lng: number } | null;
+		if (placeId) {
+			const q = encodeURIComponent(initialData.location_name || initialData.location_address || placeId);
+			return `https://www.google.com/maps/search/?api=1&query=${q}&query_place_id=${encodeURIComponent(placeId)}`;
+		}
+		if (coords && typeof coords.lat === 'number' && typeof coords.lng === 'number') {
+			return `https://www.google.com/maps/search/?api=1&query=${coords.lat},${coords.lng}`;
+		}
+		if (initialData.location_address) {
+			return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(initialData.location_address)}`;
+		}
+		return '';
+	});
 </script>
 
 {#if mode === 'view'}
@@ -181,6 +201,20 @@
 				{/if}
 				{#if initialData.location_address}
 					<p class="text-ink-soft text-sm">{initialData.location_address}</p>
+				{/if}
+				{#if mapsUrl}
+					<a
+						href={mapsUrl}
+						target="_blank"
+						rel="noopener"
+						class="text-sky inline-flex items-center gap-1.5 pt-1 text-sm font-medium hover:underline"
+					>
+						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
+							<circle cx="12" cy="10" r="3" />
+						</svg>
+						Open in Maps
+					</a>
 				{/if}
 			</div>
 		</Card>
