@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { STATUS_MATURITY, deriveGoalStatus } from './goal-status';
-import type { ItemStatus } from './types';
+import type { GoalStatus, ItemStatus } from './types';
 
 describe('STATUS_MATURITY', () => {
 	it('ranks the total order done > planned > unplanned > considered', () => {
@@ -61,5 +61,32 @@ describe('deriveGoalStatus — has links (most-mature wins, manual ignored)', ()
 		const copy = [...links];
 		deriveGoalStatus(links, 'unplanned');
 		expect(links).toEqual(copy);
+	});
+});
+
+describe('deriveGoalStatus — off-enum / empty status clamps to considered (#149)', () => {
+	// Malformed PB data (status '' or outside the enum) must never escape as a
+	// STATUS_META key. Unknown maturity clamps to the lowest rung so garbage can
+	// never outrank a genuine status.
+	it('clamps an empty-string linked status', () => {
+		expect(deriveGoalStatus([''] as unknown as ItemStatus[], 'planned')).toBe('considered');
+	});
+
+	it('clamps an unknown linked status', () => {
+		expect(deriveGoalStatus(['booked'] as unknown as ItemStatus[], 'done')).toBe('considered');
+	});
+
+	it('never lets a malformed status outrank valid linked statuses', () => {
+		expect(deriveGoalStatus(['', 'planned'] as unknown as ItemStatus[], 'considered')).toBe(
+			'planned'
+		);
+		expect(deriveGoalStatus(['unplanned', ''] as unknown as ItemStatus[], 'done')).toBe(
+			'unplanned'
+		);
+	});
+
+	it('clamps an off-enum manual_status on the zero-link fallback path', () => {
+		expect(deriveGoalStatus([], '' as unknown as GoalStatus)).toBe('considered');
+		expect(deriveGoalStatus([], 'wish' as unknown as GoalStatus)).toBe('considered');
 	});
 });
