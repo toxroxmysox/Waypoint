@@ -39,6 +39,12 @@
 	function authorOf(goal: TripGoal) {
 		return goal.expand?.created_by ?? null;
 	}
+
+	// The author's avatar comes from the enriched members list (created_by is a
+	// trip member); '' → Avatar renders the initials chip.
+	function authorAvatar(goal: TripGoal): string {
+		return data.members.find((m) => m.id === goal.created_by)?.avatarUrl ?? '';
+	}
 </script>
 
 <NavBar
@@ -89,7 +95,7 @@
 						? 'border-line border-b'
 						: ''}"
 				>
-					<Avatar initial={memberInitial(author)} alt={memberDisplayName(author)} size={28} />
+					<Avatar img={authorAvatar(goal)} initial={memberInitial(author)} alt={memberDisplayName(author)} size={28} />
 					<div class="min-w-0 flex-1">
 						<div class="text-ink text-[14.5px] font-semibold">
 							<!-- Stretched link: the ::after covers the whole row for navigation, while the

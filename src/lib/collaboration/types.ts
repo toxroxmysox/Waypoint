@@ -64,6 +64,7 @@ export interface Comment {
 	expand?: { author?: TripMember };
 	author_name?: string;
 	author_role?: string;
+	author_avatar?: string;
 }
 
 export type VoteValue = 'love' | 'like' | 'flexible' | 'dislike';

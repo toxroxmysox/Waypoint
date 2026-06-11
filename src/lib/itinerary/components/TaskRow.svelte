@@ -17,6 +17,7 @@
 		toggleAction,
 		assigneeInitial = null,
 		assigneeAlt = '',
+		assigneeImg = '',
 		assignable = true,
 		divider = true,
 		onAssign
@@ -27,6 +28,7 @@
 		toggleAction: string;
 		assigneeInitial?: string | null;
 		assigneeAlt?: string;
+		assigneeImg?: string;
 		assignable?: boolean;
 		divider?: boolean;
 		onAssign?: () => void;
@@ -76,7 +78,7 @@
 		</button>
 		{#if assigneeInitial}
 			<span class="shrink-0 transition-opacity" style="opacity:{checked ? 0.4 : 1};">
-				<Avatar initial={assigneeInitial} alt={assigneeAlt} size={24} />
+				<Avatar img={assigneeImg} initial={assigneeInitial} alt={assigneeAlt} size={24} />
 			</span>
 		{:else}
 			<span class="border-line h-6 w-6 shrink-0 rounded-full border-[1.5px] border-dashed"></span>

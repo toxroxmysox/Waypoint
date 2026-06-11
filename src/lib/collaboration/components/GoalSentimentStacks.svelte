@@ -8,7 +8,7 @@
 		onOpen
 	}: {
 		votes?: GoalVote[];
-		members?: TripMember[];
+		members?: Array<TripMember & { avatarUrl?: string }>;
 		onOpen?: () => void;
 	} = $props();
 
@@ -16,6 +16,8 @@
 		const m = members.find((mm) => mm.id === id);
 		return m?.display_name || m?.placeholder_name || '?';
 	};
+
+	const memberAvatar = (id: string) => members.find((mm) => mm.id === id)?.avatarUrl ?? '';
 
 	// Row-level split: LIKED = Love + Like, PASSED = Pass (dislike). Flexible is
 	// neither — it only surfaces in the full results sheet. The number is never
@@ -41,7 +43,7 @@
 				<span class="flex -space-x-1.5">
 					{#each liked as v (v.id)}
 						<span class="ring-surface rounded-full ring-2" title={memberName(v.member)}>
-							<Avatar initial={memberName(v.member)} alt={memberName(v.member)} size={18} />
+							<Avatar img={memberAvatar(v.member)} initial={memberName(v.member)} alt={memberName(v.member)} size={18} />
 						</span>
 					{/each}
 				</span>
@@ -53,7 +55,7 @@
 				<span class="flex -space-x-1.5">
 					{#each passed as v (v.id)}
 						<span class="ring-surface rounded-full ring-2" title={memberName(v.member)}>
-							<Avatar initial={memberName(v.member)} alt={memberName(v.member)} size={18} />
+							<Avatar img={memberAvatar(v.member)} initial={memberName(v.member)} alt={memberName(v.member)} size={18} />
 						</span>
 					{/each}
 				</span>

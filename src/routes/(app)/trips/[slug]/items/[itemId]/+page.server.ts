@@ -3,6 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 import type { Item, Checklist, Task, TripMember, Vote, Comment, Document } from '$lib/types';
 import { VOTE_OPTIONS, type VoteValue } from '$lib/collaboration/voting';
 import { toDocumentView } from '$lib/documents/view';
+import { memberAvatarUrl, withAvatarUrls } from '$lib/collaboration/member-avatar';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, membership, phases, days } = await parent();
@@ -38,7 +39,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		locals.pb.collection('suggestions').getFullList<Comment>({
 			filter: `target_item = "${item.id}" && target_type = "comment" && status = "approved"`,
 			sort: 'created',
-			expand: 'author'
+			expand: 'author.user'
 		}).catch(() => [] as Comment[]),
 		locals.pb.collection('votes').getFullList<Vote>({
 			filter: `item = "${item.id}"`
@@ -65,7 +66,8 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		return {
 			...c,
 			author_name: authorMember?.display_name || authorMember?.placeholder_name || 'Unknown',
-			author_role: authorMember?.role ?? ''
+			author_role: authorMember?.role ?? '',
+			author_avatar: authorMember ? memberAvatarUrl(locals.pb, authorMember) : ''
 		};
 	});
 
@@ -74,7 +76,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 
 	const myVote = votes.find((v) => v.member === membership.id) ?? null;
 
-	return { item, checklist, tasks, members, comments, votes, myVote, alternates, documents, itemDay: day, itemPhase: phase };
+	return { item, checklist, tasks, members: withAvatarUrls(locals.pb, members), comments, votes, myVote, alternates, documents, itemDay: day, itemPhase: phase };
 };
 
 async function getMembership(locals: App.Locals, tripId: string): Promise<TripMember> {

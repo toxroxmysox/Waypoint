@@ -21,7 +21,7 @@
 		deleteAction
 	}: {
 		open?: boolean;
-		members: TripMember[];
+		members: Array<TripMember & { avatarUrl?: string }>;
 		taskId: string;
 		taskTitle: string;
 		currentAssignee?: string;
@@ -56,7 +56,7 @@
 				onclick={() => (selected = m.id)}
 				class="flex items-center gap-3 rounded-[10px] px-2.5 py-2.5 text-left {on ? 'bg-moss-tint' : ''}"
 			>
-				<Avatar initial={memberInitial(m)} alt={memberDisplayName(m)} size={32} />
+				<Avatar img={m.avatarUrl} initial={memberInitial(m)} alt={memberDisplayName(m)} size={32} />
 				<span class="text-ink flex-1 text-sm font-semibold">{memberDisplayName(m)}</span>
 				<span
 					class="flex h-5 w-5 items-center justify-center rounded-full border-[1.5px] {on

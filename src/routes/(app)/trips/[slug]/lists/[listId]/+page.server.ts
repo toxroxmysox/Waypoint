@@ -1,6 +1,7 @@
 import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Checklist, Task, TripMember } from '$lib/types';
+import { withAvatarUrls } from '$lib/collaboration/member-avatar';
 
 export const load: PageServerLoad = async ({ params, parent, locals }) => {
 	const { trip } = await parent();
@@ -26,7 +27,7 @@ export const load: PageServerLoad = async ({ params, parent, locals }) => {
 		})
 	]);
 
-	return { checklist, tasks, members };
+	return { checklist, tasks, members: withAvatarUrls(locals.pb, members) };
 };
 
 async function getTrip(locals: App.Locals, slug: string) {
