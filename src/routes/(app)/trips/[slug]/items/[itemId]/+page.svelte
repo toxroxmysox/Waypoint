@@ -8,7 +8,6 @@
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import { titleCase } from '$lib/shell/format';
-	import { toast } from '$lib/shell/stores/toast';
 	import ItemForm from '$lib/itinerary/components/ItemForm.svelte';
 
 	import VoteButtons from '$lib/collaboration/components/VoteButtons.svelte';
@@ -24,10 +23,6 @@
 	let confirmDelete = $state(false);
 	let deleting = $state(false);
 	let moveSheetOpen = $state(false);
-	let promoteLoading = $state(false);
-	let demoteLoading = $state(false);
-	const isAlternate = $derived(data.item.sort_order > 0);
-	const isPrimary = $derived(data.item.sort_order === 0 && data.alternates.length > 0);
 	const itemUrl = $derived(`/trips/${data.trip.slug}/items/${data.item.id}`);
 	const docCount = $derived(data.documents.length);
 	const typeLabel = $derived(getFieldConfig(data.item.type).labels.typeLabel.toLowerCase());
@@ -100,50 +95,6 @@
 					</h2>
 					<div class="mt-3 flex items-center gap-3">
 						<VoteButtons myVote={data.myVote} {itemUrl} />
-						{#if isAlternate}
-							<form
-								method="POST"
-								action="?/promote"
-								use:enhance={() => {
-									promoteLoading = true;
-									return async ({ update, result }) => {
-										promoteLoading = false;
-										if (result.type === 'success') toast.show('Item promoted');
-										await update();
-									};
-								}}
-							>
-								<button
-									type="submit"
-									disabled={promoteLoading}
-									class="border-moss/40 text-moss hover:bg-moss/10 rounded-full border px-3 py-1 text-xs font-semibold"
-								>
-									{promoteLoading ? '...' : 'Promote to primary'}
-								</button>
-							</form>
-						{/if}
-						{#if isPrimary}
-							<form
-								method="POST"
-								action="?/demote"
-								use:enhance={() => {
-									demoteLoading = true;
-									return async ({ update, result }) => {
-										demoteLoading = false;
-										if (result.type === 'success') toast.show('Item demoted');
-										await update();
-									};
-								}}
-							>
-								<button
-									type="submit"
-									disabled={demoteLoading}
-									class="border-clay/40 text-clay hover:bg-clay/10 rounded-full border px-3 py-1 text-xs font-semibold"
-								>
-									{demoteLoading ? '...' : 'Demote'}
-								</button>
-							</form>
-						{/if}
 					</div>
 				</div>
 			</div>
@@ -200,34 +151,6 @@
 
 	{#if form?.uploadError}
 		<p class="text-clay px-1 text-sm">{form.uploadError}</p>
-	{/if}
-
-	{#if data.alternates.length > 0}
-		<Card>
-			<div class="p-4 space-y-2">
-				<SectionH>
-					{#snippet right()}
-						<span class="text-ink-muted text-xs">{data.alternates.length} alternate{data.alternates.length === 1 ? '' : 's'}</span>
-					{/snippet}
-					Alternates
-				</SectionH>
-				{#each data.alternates as alt}
-					<a
-						href="/trips/{data.trip.slug}/items/{alt.id}"
-						class="border-line hover:border-ink-muted flex items-center gap-3 rounded-lg border p-3"
-					>
-						<TypeIcon type={alt.type} sub={alt.subtype} size={28} />
-						<div class="min-w-0 flex-1">
-							<p class="text-ink text-sm font-semibold truncate">{alt.title}</p>
-							{#if alt.location_name}
-								<p class="text-ink-muted text-[12px] truncate">{alt.location_name}</p>
-							{/if}
-						</div>
-						<span class="text-ink-muted text-[11px]">#{alt.sort_order}</span>
-					</a>
-				{/each}
-			</div>
-		</Card>
 	{/if}
 
 	<!-- Inline item checklist — ledger (ADR-0003 grocery case · #55) -->
