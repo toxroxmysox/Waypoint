@@ -27,8 +27,26 @@ export interface TripModeState {
 	timeline: Timeline;
 }
 
-export type NowViewState =
-	| { kind: 'mid-event'; currentItem: Item; nextItem: Item | null; tomorrowFirstItem: Item | null; minutesRemaining: number }
-	| { kind: 'between-things'; nextItem: Item; minutesUntilNext: number }
-	| { kind: 'day-wrapped'; completedCount: number; totalCount: number }
-	| { kind: 'no-day' };
+/**
+ * The single always-on Focus block at the top of the Now view (#121/#153). Its
+ * content varies by state; the view (#154) renders weight/detail, this only
+ * derives which state is live.
+ */
+export type NowFocus =
+	| { kind: 'no-day' }
+	| { kind: 'mid-event'; currentItem: Item; minutesRemaining: number }
+	| { kind: 'free-time'; nextItem: Item; minutesUntilNext: number }
+	| { kind: 'nothing-else-planned' }
+	| { kind: 'wrapped-summary'; completedCount: number; totalCount: number };
+
+/**
+ * Full Now derivation: one Focus + a forward, today-only item list (items still
+ * ahead; past hidden; multi-day excluded — those surface as banners via the
+ * loader). In free-time, `focus.nextItem === forwardItems[0]`; the view decides
+ * weight. In mid-event the ongoing item is the Focus and is NOT duplicated in
+ * the list.
+ */
+export interface NowViewState {
+	focus: NowFocus;
+	forwardItems: Item[];
+}
