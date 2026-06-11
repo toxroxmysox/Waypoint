@@ -34,6 +34,16 @@ Domains mirror the bounded contexts in `CONTEXT.md` §"Bounded Contexts", plus t
 - **Why deferred:** Boolean shipped first. Middle state matters for multi-leg transit and grouped lodging.
 - **Target:** v4. **Notes:** Migration widens the column; UI has pill space. Feeds the booking to-do view (Tasks domain).
 
+### Linked goals in item detail
+- **What:** Render the [[Trip Goal]]s an item is linked to on the item detail page. The link is captured (form "Addresses goal(s)" → `syncGoalLinks`, stored goal-side on `trip_goals.items`) but detail hardcodes `linked_goal_ids: []` and shows nothing.
+- **Why deferred:** Add-render over real data; carved out of the card-content spec to keep the redesign build lean.
+- **Target:** v4. **Notes:** `docs/CARD_CONTENT_SPEC.md` §6c. Needs the detail loader to fetch the back-link; do it "smart, no clutter."
+
+### Flight timezone capture
+- **What:** Persist `start_tz`/`end_tz` on flight items. `FlightLookup` (AeroDataBox) already returns them; `handleFlightSelect` currently drops them on the floor (no state, no hidden input). Capture only — **never shown in the UI** (deliberate; needed for correct cross-zone time handling, not display).
+- **Why deferred:** ~2 hidden inputs + persist; not blocking.
+- **Target:** v4. **Notes:** `docs/CARD_CONTENT_SPEC.md` §6b. Flight-only, no manual field.
+
 ### Flight type vs. transportation-subtype ambiguity
 - **What:** `flight` is a valid item type (migration 0027, full field config) but `ItemForm.svelte` omits it from the type-pill list; flight is also reachable as a `transportation` subtype (which wires `FlightLookup`). Two paths to the same thing.
 - **Why deferred:** Both work; not blocking.
@@ -88,7 +98,11 @@ Domains mirror the bounded contexts in `CONTEXT.md` §"Bounded Contexts", plus t
 
 **Backlog:**
 - **Multi-currency — OFF THE TABLE** (CLAUDE.md). Single-currency by design. Recorded here so it isn't re-proposed.
-- No other gaps identified. Domain considered feature-complete for now.
+
+### Item ↔ Expense two-way navigation
+- **What:** Make the `expenses.linked_item` relation navigable in **both** directions. Today it's captured on expense create but rendered nowhere. (a) Item detail: a conditional "View in expenses" affordance on the Cost slot, present only when ≥1 expense links the item, jumping to the **expenses list filtered to that item** (multiplicity-safe — an item can have 0..N linked expenses). (b) Expense row: a "View item" link back to the linked item.
+- **Why deferred:** Carved out of the card-content spec so the redesign ships the single Cost number first. Needs a loader query + render slot on each side.
+- **Target:** v4. **Notes:** `docs/CARD_CONTENT_SPEC.md` §1 / Deferred follow-ups. Keeps the link two-way without a second source of truth for "paid" (payment stays on [[Expense]]).
 
 ---
 
