@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { TripMember, PendingInvite, User } from '$lib/types';
+import type { TripMember, PendingInvite, User, JoinToken } from '$lib/types';
 import { memberAvatarUrl } from '$lib/collaboration/member-avatar';
 import { PUBLIC_PB_URL } from '$env/static/public';
 
@@ -19,6 +19,14 @@ type MemberRow = TripMember & {
 type PendingRow = PendingInvite & {
 	inviterLabel: string;
 	expiresAtLabel: string;
+};
+
+type JoinLinkRow = {
+	id: string;
+	role: JoinToken['role'];
+	token: string;
+	expiresAtLabel: string;
+	expired: boolean;
 };
 
 export const load: PageServerLoad = async ({ parent, locals }) => {
@@ -117,9 +125,32 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 		};
 	});
 
+	// #118 — shared join links. Live (non-revoked) links for this trip, one per
+	// role at most. Only owner/co_owner manage them; the section is hidden for
+	// everyone else, but the data is cheap and the listRule already gates it.
+	let joinLinks: JoinLinkRow[] = [];
+	try {
+		const tokens = await locals.pb.collection('join_tokens').getFullList<JoinToken>({
+			filter: `trip = "${trip.id}" && revoked = false`,
+			sort: 'role'
+		});
+		const now = new Date();
+		joinLinks = tokens.map((t) => ({
+			id: t.id,
+			role: t.role,
+			token: t.token,
+			expiresAtLabel: t.expires_at ? t.expires_at.split(' ')[0] : '',
+			expired: t.expires_at ? new Date(t.expires_at) < now : false
+		}));
+	} catch {
+		// listRule denies non-members; surface empty.
+	}
+
 	const isOwner = membership.role === 'owner' || membership.role === 'co_owner';
 	const canInvite = isOwner || membership.role === 'traveler';
 	const canAddPlaceholder = canInvite;
+	// Join links are owner/co_owner-managed; trip must be open (not closed/archived).
+	const canManageJoinLinks = isOwner && !trip.archived;
 	// Active owners only — a tombstoned owner must not prop up the sole-owner count.
 	const ownerCount = members.filter((m) => m.role === 'owner' && !m.removed_at).length;
 
@@ -129,9 +160,11 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 		members: activeMembers,
 		formerMembers,
 		pending: pendingRows,
+		joinLinks,
 		isOwner,
 		canInvite,
 		canAddPlaceholder,
+		canManageJoinLinks,
 		ownerCount
 	};
 };
@@ -272,6 +305,66 @@ export const actions: Actions = {
 		}
 
 		return { action: { success: true } };
+	},
+
+	// --- #118 join-link management. All three go through the join hook (role cap
+	// + owner gating + token generation live server-side). ---
+	createJoinLink: async ({ request, locals, params }) => {
+		const data = await request.formData();
+		const role = data.get('role')?.toString() || '';
+		const expiresDays = data.get('expires_days')?.toString() || '';
+
+		try {
+			const trip = await locals.pb
+				.collection('trips')
+				.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+			await locals.pb.send('/api/join/create', {
+				method: 'POST',
+				body: { trip_id: trip.id, role, expires_days: expiresDays || undefined }
+			});
+			return { joinLink: { success: true, action: 'create' } };
+		} catch (err: unknown) {
+			const message = extractErrorMessage(err) || 'Failed to create join link.';
+			return fail(400, { joinLink: { error: message } });
+		}
+	},
+
+	rotateJoinLink: async ({ request, locals, params }) => {
+		const data = await request.formData();
+		const role = data.get('role')?.toString() || '';
+
+		try {
+			const trip = await locals.pb
+				.collection('trips')
+				.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+			await locals.pb.send('/api/join/rotate', {
+				method: 'POST',
+				body: { trip_id: trip.id, role }
+			});
+			return { joinLink: { success: true, action: 'rotate' } };
+		} catch (err: unknown) {
+			const message = extractErrorMessage(err) || 'Failed to rotate join link.';
+			return fail(400, { joinLink: { error: message } });
+		}
+	},
+
+	revokeJoinLink: async ({ request, locals, params }) => {
+		const data = await request.formData();
+		const role = data.get('role')?.toString() || '';
+
+		try {
+			const trip = await locals.pb
+				.collection('trips')
+				.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+			await locals.pb.send('/api/join/revoke', {
+				method: 'POST',
+				body: { trip_id: trip.id, role }
+			});
+			return { joinLink: { success: true, action: 'revoke' } };
+		} catch (err: unknown) {
+			const message = extractErrorMessage(err) || 'Failed to revoke join link.';
+			return fail(400, { joinLink: { error: message } });
+		}
 	}
 };
 
