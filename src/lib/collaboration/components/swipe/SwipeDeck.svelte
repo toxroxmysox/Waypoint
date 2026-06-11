@@ -3,6 +3,7 @@
 	import type { Vote, TripMember } from '$lib/types';
 	import { type VoteValue } from '$lib/collaboration/voting';
 	import { voteFromIntent, COMMIT_PX } from '$lib/collaboration/swipe-deck';
+	import { haptic } from '$lib/utils/haptics';
 	import { VOTE_META } from './vote-meta';
 	import RadialProgress from './RadialProgress.svelte';
 	import CompassRose from './CompassRose.svelte';
@@ -135,6 +136,10 @@
 		drag = { dx: 0, dy: 0, active: false };
 		liveIdxRef.current = i + 1;
 		idx = i + 1;
+		// Vote accepted — the swipe-deck commit. Every vote path (drag release,
+		// keyboard, compass button, detail sheet) funnels through here. Fires on
+		// Android; silent no-op on iOS (no Vibration API). See $lib/utils/haptics.
+		haptic('commit');
 		onvote?.(c, vote);
 		setTimeout(() => {
 			fly = null;
