@@ -25,7 +25,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		.getFirstListItem<Checklist>(`item = "${item.id}" && kind = "manual"`)
 		.catch(() => null);
 
-	const [tasks, members, rawComments, votes, alternates, rawDocuments] = await Promise.all([
+	const [tasks, members, rawComments, votes, rawDocuments] = await Promise.all([
 		checklist
 			? locals.pb.collection('tasks').getFullList<Task>({
 					filter: `checklist = "${checklist.id}"`,
@@ -36,20 +36,15 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 			filter: `trip = "${trip.id}"`,
 			expand: 'user'
 		}),
+		// Comments, newest first (#122).
 		locals.pb.collection('suggestions').getFullList<Comment>({
 			filter: `target_item = "${item.id}" && target_type = "comment" && status = "approved"`,
-			sort: 'created',
+			sort: '-created',
 			expand: 'author.user'
 		}).catch(() => [] as Comment[]),
 		locals.pb.collection('votes').getFullList<Vote>({
 			filter: `item = "${item.id}"`
 		}),
-		item.day
-			? locals.pb.collection('items').getFullList<Item>({
-					filter: `day = "${item.day}" && id != "${item.id}"`,
-					sort: 'sort_order'
-				})
-			: Promise.resolve([]),
 		// Item-scoped documents, newest first.
 		locals.pb.collection('documents').getFullList<Document>({
 			filter: `item = "${item.id}"`,
@@ -76,7 +71,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 
 	const myVote = votes.find((v) => v.member === membership.id) ?? null;
 
-	return { item, checklist, tasks, members: withAvatarUrls(locals.pb, members), comments, votes, myVote, alternates, documents, itemDay: day, itemPhase: phase };
+	return { item, checklist, tasks, members: withAvatarUrls(locals.pb, members), comments, votes, myVote, documents, itemDay: day, itemPhase: phase };
 };
 
 async function getMembership(locals: App.Locals, tripId: string): Promise<TripMember> {
@@ -399,52 +394,6 @@ export const actions: Actions = {
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : 'Failed to remove vote.';
 			return fail(400, { error: message });
-		}
-	},
-
-	promote: async ({ params, locals }) => {
-		try {
-			const targetItem = await locals.pb.collection('items').getOne<Item>(params.itemId);
-			if (targetItem.sort_order === 0) return fail(400, { error: 'Item is already primary.' });
-
-			// Find the current primary (sort_order 0) for this day
-			const primaries = await locals.pb.collection('items').getFullList<Item>({
-				filter: `day = "${targetItem.day}" && sort_order = 0 && id != "${targetItem.id}"`
-			});
-
-			// Swap: demote current primary, promote this item
-			for (const p of primaries) {
-				await locals.pb.collection('items').update(p.id, { sort_order: targetItem.sort_order });
-			}
-			await locals.pb.collection('items').update(targetItem.id, { sort_order: 0 });
-
-			return { success: true };
-		} catch (err: unknown) {
-			if (isRedirect(err)) throw err;
-			const message = err instanceof Error ? err.message : 'Failed to promote.';
-			return fail(500, { error: message });
-		}
-	},
-
-	demote: async ({ params, locals }) => {
-		try {
-			const targetItem = await locals.pb.collection('items').getOne<Item>(params.itemId);
-			if (targetItem.sort_order !== 0) return fail(400, { error: 'Item is not primary.' });
-
-			// Find the highest sort_order alternate
-			const alts = await locals.pb.collection('items').getFullList<Item>({
-				filter: `day = "${targetItem.day}" && sort_order > 0 && id != "${targetItem.id}"`,
-				sort: 'sort_order'
-			});
-
-			const nextSortOrder = alts.length > 0 ? alts[alts.length - 1].sort_order + 1 : 1;
-			await locals.pb.collection('items').update(targetItem.id, { sort_order: nextSortOrder });
-
-			return { success: true };
-		} catch (err: unknown) {
-			if (isRedirect(err)) throw err;
-			const message = err instanceof Error ? err.message : 'Failed to demote.';
-			return fail(500, { error: message });
 		}
 	},
 

@@ -1,7 +1,10 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Phase, Day, Item } from '$lib/types';
+import type { Phase, Day, Item, TripMember } from '$lib/types';
+import { nextSortOrder } from '$lib/itinerary/sort-order';
 import { summarizeDays } from '$lib/itinerary/day-card';
+
+const IDEA_TYPES = ['activity', 'meal', 'lodging', 'transportation', 'flight', 'note'] as const;
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip } = await parent();
@@ -79,5 +82,56 @@ export const actions: Actions = {
 		}
 
 		throw redirect(303, `/trips/${params.slug}/phases`);
+	},
+
+	// #57 — capture an idea straight into this phase's parking lot: an unplanned,
+	// phase-scoped, day-less item. No day is ever required or implied (status =
+	// day ? planned : unplanned — here there is no day, so unplanned).
+	addIdea: async ({ request, params, locals }) => {
+		const trip = await locals.pb
+			.collection('trips')
+			.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+
+		const phase = await locals.pb.collection('phases').getOne<Phase>(params.phaseId);
+		if (phase.trip !== trip.id) return fail(404, { ideaError: 'Phase not found.' });
+
+		const membership = await locals.pb
+			.collection('trip_members')
+			.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}"`);
+
+		const data = await request.formData();
+		const title = data.get('title')?.toString().trim();
+		const typeRaw = data.get('type')?.toString() || 'activity';
+		const type = (IDEA_TYPES as readonly string[]).includes(typeRaw) ? typeRaw : 'activity';
+
+		if (!title) return fail(400, { ideaError: 'Give the idea a title.' });
+
+		try {
+			// Order among this phase's existing ideas (day-less unplanned items).
+			const existing = await locals.pb.collection('items').getFullList({
+				filter: `trip = "${trip.id}" && phase = "${phase.id}" && status = "unplanned"`,
+				fields: 'sort_order'
+			});
+			const sort_order = nextSortOrder(existing.map((i) => Number(i.sort_order)));
+
+			await locals.pb.collection('items').create({
+				trip: trip.id,
+				phase: phase.id,
+				day: '',
+				type,
+				title,
+				status: 'unplanned',
+				requires_booking: type === 'lodging' || type === 'flight' || type === 'transportation',
+				sort_order,
+				created_by: membership.id
+			});
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : 'Failed to add idea.';
+			return fail(500, { ideaError: message });
+		}
+
+		// Success: no redirect — progressive enhancement re-runs load, so the idea
+		// shows in the parking lot immediately on the same screen.
+		return { ideaAdded: true };
 	}
 };

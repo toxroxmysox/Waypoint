@@ -19,6 +19,9 @@ function cand(p: Partial<DeckCandidate> & { id: string }): DeckCandidate {
 		status: 'unplanned',
 		created: '2026-01-01 00:00:00.000Z',
 		voteCount: 0,
+		dayDate: '',
+		start_time: '',
+		sort_order: 0,
 		...p
 	};
 }
@@ -64,38 +67,104 @@ describe('buildDeck — phase scope', () => {
 	});
 });
 
-describe('buildDeck — order (vote-qty desc, then oldest-first)', () => {
-	it('orders by vote quantity descending', () => {
+describe('buildDeck — order: planned first by itinerary, then unplanned by votes (#120)', () => {
+	it('puts every planned card before every unplanned card, regardless of votes', () => {
+		// Unplanned with many votes must still trail a planned card with none.
 		const items = [
-			cand({ id: 'low', voteCount: 1 }),
-			cand({ id: 'high', voteCount: 5 }),
-			cand({ id: 'mid', voteCount: 3 })
+			cand({ id: 'u-popular', status: 'unplanned', voteCount: 9 }),
+			cand({ id: 'p-quiet', status: 'planned', dayDate: '2026-05-01', voteCount: 0 })
+		];
+		const { queue } = buildDeck(items, [], scope('p1', ['p1']));
+		expect(queue.map((i) => i.id)).toEqual(['p-quiet', 'u-popular']);
+	});
+
+	it('orders planned cards across days by date ascending', () => {
+		const items = [
+			cand({ id: 'd3', status: 'planned', dayDate: '2026-05-03' }),
+			cand({ id: 'd1', status: 'planned', dayDate: '2026-05-01' }),
+			cand({ id: 'd2', status: 'planned', dayDate: '2026-05-02' })
+		];
+		const { queue } = buildDeck(items, [], scope('p1', ['p1']));
+		expect(queue.map((i) => i.id)).toEqual(['d1', 'd2', 'd3']);
+	});
+
+	it('orders planned cards within a day like the timeline (timed by start_time, untimed woven by sort_order)', () => {
+		const items = [
+			cand({ id: 'pm', status: 'planned', dayDate: '2026-05-01', start_time: '2026-05-01 15:00:00.000Z', sort_order: 5 }),
+			cand({ id: 'am', status: 'planned', dayDate: '2026-05-01', start_time: '2026-05-01 09:00:00.000Z', sort_order: 5 }),
+			cand({ id: 'untimed-early', status: 'planned', dayDate: '2026-05-01', start_time: '', sort_order: 1 }),
+			cand({ id: 'untimed-late', status: 'planned', dayDate: '2026-05-01', start_time: '', sort_order: 99 })
+		];
+		const { queue } = buildDeck(items, [], scope('p1', ['p1']));
+		// untimed-early (order 1) precedes the first anchor; both anchors by time; untimed-late (order 99) trails.
+		expect(queue.map((i) => i.id)).toEqual(['untimed-early', 'am', 'pm', 'untimed-late']);
+	});
+
+	it('orders an all-untimed planned day by sort_order ascending', () => {
+		const items = [
+			cand({ id: 'c', status: 'planned', dayDate: '2026-05-01', sort_order: 3 }),
+			cand({ id: 'a', status: 'planned', dayDate: '2026-05-01', sort_order: 1 }),
+			cand({ id: 'b', status: 'planned', dayDate: '2026-05-01', sort_order: 2 })
+		];
+		const { queue } = buildDeck(items, [], scope('p1', ['p1']));
+		expect(queue.map((i) => i.id)).toEqual(['a', 'b', 'c']);
+	});
+
+	it('sorts planned cards with an unset day date (PB stores "") after dated planned cards, still before unplanned', () => {
+		const items = [
+			cand({ id: 'p-noday', status: 'planned', dayDate: '' }),
+			cand({ id: 'p-day1', status: 'planned', dayDate: '2026-05-01' }),
+			cand({ id: 'u', status: 'unplanned', voteCount: 9 })
+		];
+		const { queue } = buildDeck(items, [], scope('p1', ['p1']));
+		expect(queue.map((i) => i.id)).toEqual(['p-day1', 'p-noday', 'u']);
+	});
+
+	it('orders the unplanned tail by vote quantity descending', () => {
+		const items = [
+			cand({ id: 'low', status: 'unplanned', voteCount: 1 }),
+			cand({ id: 'high', status: 'unplanned', voteCount: 5 }),
+			cand({ id: 'mid', status: 'unplanned', voteCount: 3 })
 		];
 		const { queue } = buildDeck(items, [], scope('p1', ['p1']));
 		expect(queue.map((i) => i.id)).toEqual(['high', 'mid', 'low']);
 	});
 
-	it('breaks vote-quantity ties by creation time, oldest first', () => {
+	it('breaks unplanned vote-quantity ties by creation time, oldest first', () => {
 		const items = [
-			cand({ id: 'newer', voteCount: 2, created: '2026-03-01 00:00:00.000Z' }),
-			cand({ id: 'older', voteCount: 2, created: '2026-01-01 00:00:00.000Z' }),
-			cand({ id: 'middle', voteCount: 2, created: '2026-02-01 00:00:00.000Z' })
+			cand({ id: 'newer', status: 'unplanned', voteCount: 2, created: '2026-03-01 00:00:00.000Z' }),
+			cand({ id: 'older', status: 'unplanned', voteCount: 2, created: '2026-01-01 00:00:00.000Z' }),
+			cand({ id: 'middle', status: 'unplanned', voteCount: 2, created: '2026-02-01 00:00:00.000Z' })
 		];
 		const { queue } = buildDeck(items, [], scope('p1', ['p1']));
 		expect(queue.map((i) => i.id)).toEqual(['older', 'middle', 'newer']);
 	});
 
-	it('orders zero-vote items by oldest-first', () => {
+	it('orders zero-vote unplanned items by oldest-first', () => {
 		const items = [
-			cand({ id: 'b', voteCount: 0, created: '2026-02-01 00:00:00.000Z' }),
-			cand({ id: 'a', voteCount: 0, created: '2026-01-01 00:00:00.000Z' })
+			cand({ id: 'b', status: 'unplanned', voteCount: 0, created: '2026-02-01 00:00:00.000Z' }),
+			cand({ id: 'a', status: 'unplanned', voteCount: 0, created: '2026-01-01 00:00:00.000Z' })
 		];
 		const { queue } = buildDeck(items, [], scope('p1', ['p1']));
 		expect(queue.map((i) => i.id)).toEqual(['a', 'b']);
 	});
 
+	it('builds a mixed deck: planned in itinerary order, then unplanned by votes', () => {
+		const items = [
+			cand({ id: 'u1', status: 'unplanned', voteCount: 5 }),
+			cand({ id: 'p-day2', status: 'planned', dayDate: '2026-05-02', start_time: '2026-05-02 10:00:00.000Z' }),
+			cand({ id: 'u2', status: 'unplanned', voteCount: 2 }),
+			cand({ id: 'p-day1', status: 'planned', dayDate: '2026-05-01', sort_order: 0 })
+		];
+		const { queue } = buildDeck(items, [], scope('p1', ['p1']));
+		expect(queue.map((i) => i.id)).toEqual(['p-day1', 'p-day2', 'u1', 'u2']);
+	});
+
 	it('does not mutate the input array', () => {
-		const items = [cand({ id: 'low', voteCount: 1 }), cand({ id: 'high', voteCount: 5 })];
+		const items = [
+			cand({ id: 'u', status: 'unplanned', voteCount: 1 }),
+			cand({ id: 'p', status: 'planned', dayDate: '2026-05-01' })
+		];
 		const before = items.map((i) => i.id);
 		buildDeck(items, [], scope('p1', ['p1']));
 		expect(items.map((i) => i.id)).toEqual(before);

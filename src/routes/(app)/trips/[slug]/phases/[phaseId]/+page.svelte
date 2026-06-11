@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import type { Day } from '$lib/types';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
 	import Button from '$lib/ui/Button.svelte';
@@ -19,6 +18,14 @@
 	let loading = $state(false);
 	let error = $derived(form?.error ?? '');
 	const parkingLotItems = $derived(data.phaseItems.filter((it) => it.status === 'unplanned'));
+
+	// #57 — quick-add an idea into this phase's parking lot.
+	let addingIdea = $state(false);
+	let savingIdea = $state(false);
+	let ideaTitle = $state('');
+	let ideaType = $state('activity');
+	let ideaError = $derived(form?.ideaError ?? '');
+	const ideaTypes = ['activity', 'meal', 'lodging', 'transportation', 'flight', 'note'] as const;
 
 	function daysNightsLabel(start: string, end: string): string {
 		const s = new Date(start.substring(0, 10) + 'T00:00:00.000Z');
@@ -151,9 +158,70 @@
 		</Card>
 	{/if}
 
-	{#if parkingLotItems.length > 0}
-		<section class="space-y-1.5">
+	<section class="space-y-1.5">
+		<div class="flex items-center justify-between gap-2">
 			<SectionH>Parking lot ({parkingLotItems.length})</SectionH>
+			<Button onclick={() => (addingIdea = !addingIdea)} variant="ghost" size="sm">
+				{addingIdea ? 'Cancel' : '+ Add idea'}
+			</Button>
+		</div>
+
+		{#if addingIdea}
+			<Card>
+				<form
+					method="POST"
+					action="?/addIdea"
+					use:enhance={() => {
+						savingIdea = true;
+						return async ({ result, update }) => {
+							savingIdea = false;
+							if (result.type === 'success') {
+								addingIdea = false;
+								ideaTitle = '';
+								ideaType = 'activity';
+								toast.show('Idea added to parking lot');
+							}
+							await update();
+						};
+					}}
+					class="p-3 space-y-3"
+				>
+					{#if ideaError}
+						<p role="alert" class="text-error-deep text-sm">{ideaError}</p>
+					{/if}
+					<div>
+						<label for="idea-title" class="text-ink-soft block text-sm font-medium">Idea</label>
+						<input
+							type="text"
+							id="idea-title"
+							name="title"
+							required
+							bind:value={ideaTitle}
+							placeholder="e.g. Tapas crawl in Seville"
+							class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+						/>
+					</div>
+					<div>
+						<label for="idea-type" class="text-ink-soft block text-sm font-medium">Type</label>
+						<select
+							id="idea-type"
+							name="type"
+							bind:value={ideaType}
+							class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+						>
+							{#each ideaTypes as t}
+								<option value={t}>{titleCase(t)}</option>
+							{/each}
+						</select>
+					</div>
+					<Button type="submit" disabled={savingIdea} loading={savingIdea} variant="moss" size="md" class="w-full">
+						{savingIdea ? 'Adding…' : 'Add to parking lot'}
+					</Button>
+				</form>
+			</Card>
+		{/if}
+
+		{#if parkingLotItems.length > 0}
 			{#each parkingLotItems as item (item.id)}
 				<Card href="/trips/{data.trip.slug}/items/{item.id}">
 					<div class="flex items-center gap-3 px-3 py-2">
@@ -167,8 +235,10 @@
 					</div>
 				</Card>
 			{/each}
-		</section>
-	{/if}
+		{:else if !addingIdea}
+			<p class="text-ink-muted text-sm italic">No ideas yet. Add one to start a parking lot for this phase.</p>
+		{/if}
+	</section>
 
 	<section class="space-y-1.5">
 		<div class="flex items-center justify-between">

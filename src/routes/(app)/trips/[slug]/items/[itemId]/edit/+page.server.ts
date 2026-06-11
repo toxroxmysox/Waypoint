@@ -80,7 +80,6 @@ export const actions: Actions = {
 		const reservationUrl = data.get('reservation_url')?.toString() || '';
 		const freeCancellation = data.get('free_cancellation') === 'on';
 		const costEstimate = parseFloat(data.get('cost_estimate_usd')?.toString() || '0') || 0;
-		const costActual = parseFloat(data.get('cost_actual_usd')?.toString() || '0') || 0;
 		const status = data.get('status')?.toString() || 'planned';
 
 		const codeLabels = data.getAll('confirmation_code_label');
@@ -163,7 +162,6 @@ export const actions: Actions = {
 				reservation_url: reservationUrl,
 				free_cancellation: freeCancellation,
 				cost_estimate_usd: costEstimate,
-				cost_actual_usd: costActual,
 				assigned_to: assignedTo,
 				status: resolvedStatus
 			});
