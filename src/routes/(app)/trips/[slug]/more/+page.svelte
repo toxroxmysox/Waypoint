@@ -111,7 +111,7 @@
 			</svg>
 			<div class="min-w-0 flex-1">
 				<p class="text-ink text-sm font-semibold">Parking lot</p>
-				<p class="text-ink-muted text-[12px]">Alternate and considered items</p>
+				<p class="text-ink-muted text-[12px]">Unplanned and considered items</p>
 			</div>
 			<svg class="text-ink-muted shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 				<path d="m9 18 6-6-6-6" />
