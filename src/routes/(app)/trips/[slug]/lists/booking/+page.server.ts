@@ -68,7 +68,7 @@ export const actions: Actions = {
 
 		const membership = await locals.pb
 			.collection('trip_members')
-			.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}"`);
+			.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`);
 		if (membership.role === 'viewer') return fail(403, { error: 'Viewers cannot book items.' });
 
 		const data = await request.formData();

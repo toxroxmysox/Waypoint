@@ -48,7 +48,7 @@ routerAdd('POST', '/api/invites/create', (e) => {
 	try {
 		requesterMember = e.app.findFirstRecordByFilter(
 			'trip_members',
-			'trip = {:tripId} && user = {:userId}',
+			'trip = {:tripId} && user = {:userId} && removed_at = ""', // #133 guard
 			{ tripId: tripId, userId: auth.id }
 		);
 	} catch (_) {
@@ -71,7 +71,7 @@ routerAdd('POST', '/api/invites/create', (e) => {
 	try {
 		existingByEmail = e.app.findFirstRecordByFilter(
 			'trip_members',
-			'trip = {:tripId} && placeholder_email = {:email}',
+			'trip = {:tripId} && placeholder_email = {:email} && removed_at = ""', // #133 guard
 			{ tripId: tripId, email: email }
 		);
 	} catch (_) {
@@ -93,7 +93,7 @@ routerAdd('POST', '/api/invites/create', (e) => {
 		try {
 			alreadyMember = e.app.findFirstRecordByFilter(
 				'trip_members',
-				'trip = {:tripId} && user = {:userId}',
+				'trip = {:tripId} && user = {:userId} && removed_at = ""', // #133 guard
 				{ tripId: tripId, userId: existingUser.id }
 			);
 		} catch (_) {
@@ -211,7 +211,10 @@ routerAdd('POST', '/api/invites/lookup', (e) => {
 	try {
 		placeholders = e.app.findRecordsByFilter(
 			'trip_members',
-			'trip = {:tripId} && user = "" && placeholder_email = ""',
+			// #133 (highest-risk cross-issue guard): a Departed Member tombstone
+			// ALSO matches user="" && placeholder_email="". Without removed_at=""
+			// a removed member would reappear as a name-only claimable slot.
+			'trip = {:tripId} && user = "" && placeholder_email = "" && removed_at = ""',
 			'',
 			0,
 			0,
@@ -282,7 +285,7 @@ routerAdd('POST', '/api/invites/accept', (e) => {
 	try {
 		existingMember = e.app.findFirstRecordByFilter(
 			'trip_members',
-			'trip = {:tripId} && user = {:userId}',
+			'trip = {:tripId} && user = {:userId} && removed_at = ""', // #133 guard
 			{ tripId: tripId, userId: auth.id }
 		);
 	} catch (_) {
@@ -316,6 +319,12 @@ routerAdd('POST', '/api/invites/accept', (e) => {
 		if (target.getString('trip') !== tripId) {
 			throw new BadRequestError('Placeholder does not belong to this trip');
 		}
+		// #133: a Departed Member tombstone (user="" && placeholder_email="") would
+		// otherwise pass the unclaimed checks below and be resurrected by a direct
+		// claim_placeholder id. Reject it at the claim point.
+		if (target.getString('removed_at')) {
+			throw new BadRequestError('This member has been removed and cannot be claimed');
+		}
 		// Validate: actually unclaimed (no user, no placeholder_email).
 		if (target.getString('user')) {
 			throw new BadRequestError('This placeholder has already been claimed');
@@ -346,7 +355,7 @@ routerAdd('POST', '/api/invites/accept', (e) => {
 	try {
 		placeholder = e.app.findFirstRecordByFilter(
 			'trip_members',
-			'trip = {:tripId} && placeholder_email = {:email}',
+			'trip = {:tripId} && placeholder_email = {:email} && removed_at = ""', // #133 guard
 			{ tripId: tripId, email: inviteEmail }
 		);
 	} catch (_) {
@@ -406,7 +415,7 @@ onRecordDeleteRequest((e) => {
 	try {
 		requesterMember = e.app.findFirstRecordByFilter(
 			'trip_members',
-			'trip = {:tripId} && user = {:userId}',
+			'trip = {:tripId} && user = {:userId} && removed_at = ""', // #133 guard
 			{ tripId: tripId, userId: auth.id }
 		);
 	} catch (_) {

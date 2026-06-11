@@ -17,7 +17,11 @@ export const load: LayoutServerLoad = async ({ params, locals }) => {
 	try {
 		membership = await locals.pb
 			.collection('trip_members')
-			.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}"`);
+			.getFirstListItem<TripMember>(
+				// #133: a Departed Member's `user` is cleared on removal, but guard the
+				// access gate explicitly — a tombstone must never resolve as a member.
+				`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`
+			);
 	} catch {
 		error(403, 'You are not a member of this trip');
 	}

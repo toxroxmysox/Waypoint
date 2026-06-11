@@ -22,7 +22,7 @@ export const load: PageServerLoad = async ({ params, parent, locals }) => {
 			sort: 'order'
 		}),
 		locals.pb.collection('trip_members').getFullList<TripMember>({
-			filter: `trip = "${trip.id}"`,
+			filter: `trip = "${trip.id}" && removed_at = ""`,
 			expand: 'user'
 		})
 	]);
@@ -37,7 +37,7 @@ async function getTrip(locals: App.Locals, slug: string) {
 async function isViewer(locals: App.Locals, tripId: string): Promise<boolean> {
 	const membership = await locals.pb
 		.collection('trip_members')
-		.getFirstListItem<TripMember>(`trip = "${tripId}" && user = "${locals.user!.id}"`);
+		.getFirstListItem<TripMember>(`trip = "${tripId}" && user = "${locals.user!.id}" && removed_at = ""`);
 	return membership.role === 'viewer';
 }
 
@@ -112,7 +112,7 @@ export const actions: Actions = {
 			if (assignee) {
 				const member = await locals.pb
 					.collection('trip_members')
-					.getFirstListItem<TripMember>(`id = "${assignee}" && trip = "${trip.id}"`)
+					.getFirstListItem<TripMember>(`id = "${assignee}" && trip = "${trip.id}" && removed_at = ""`)
 					.catch(() => null);
 				if (!member) return fail(400, { error: 'Invalid assignee.' });
 			}

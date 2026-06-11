@@ -27,7 +27,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 				})
 			: Promise.resolve([] as Vote[]),
 		locals.pb.collection('trip_members').getFullList<TripMember>({
-			filter: `trip = "${trip.id}"`,
+			filter: `trip = "${trip.id}" && removed_at = ""`,
 			expand: 'user'
 		})
 	]);
@@ -118,7 +118,7 @@ export const actions: Actions = {
 			const item = await locals.pb.collection('items').getOne<Item>(itemId);
 			const membership = await locals.pb
 				.collection('trip_members')
-				.getFirstListItem<TripMember>(`trip = "${item.trip}" && user = "${locals.user!.id}"`);
+				.getFirstListItem<TripMember>(`trip = "${item.trip}" && user = "${locals.user!.id}" && removed_at = ""`);
 
 			const existing = await locals.pb
 				.collection('votes')
@@ -150,7 +150,7 @@ export const actions: Actions = {
 			const item = await locals.pb.collection('items').getOne<Item>(itemId);
 			const membership = await locals.pb
 				.collection('trip_members')
-				.getFirstListItem<TripMember>(`trip = "${item.trip}" && user = "${locals.user!.id}"`);
+				.getFirstListItem<TripMember>(`trip = "${item.trip}" && user = "${locals.user!.id}" && removed_at = ""`);
 			const existing = await locals.pb
 				.collection('votes')
 				.getFirstListItem<Vote>(`item = "${item.id}" && member = "${membership.id}"`)

@@ -41,7 +41,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 				})
 			: Promise.resolve([] as Vote[]),
 		locals.pb.collection('trip_members').getFullList<TripMember>({
-			filter: `trip = "${trip.id}"`,
+			filter: `trip = "${trip.id}" && removed_at = ""`,
 			expand: 'user'
 		})
 	]);

@@ -103,7 +103,7 @@ export const actions: Actions = {
 
 			const membership = await locals.pb
 				.collection('trip_members')
-				.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}"`);
+				.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`);
 			if (membership.role !== 'owner' && membership.role !== 'co_owner') {
 				return fail(403, { error: 'Only trip owners can archive.' });
 			}

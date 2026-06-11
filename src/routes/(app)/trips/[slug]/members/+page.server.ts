@@ -11,6 +11,8 @@ type MemberRow = TripMember & {
 	displayLabel: string;
 	emailLabel: string;
 	isPlaceholder: boolean;
+	isDeparted: boolean;
+	removedAtLabel: string;
 	avatarUrl: string;
 };
 
@@ -22,6 +24,9 @@ type PendingRow = PendingInvite & {
 export const load: PageServerLoad = async ({ parent, locals }) => {
 	const { trip, membership } = await parent();
 
+	// The roster page is the one surface that intentionally fetches tombstones
+	// too — every OTHER trip_members query guards with `removed_at = ""` (#133).
+	// We fetch all and split into active vs former below.
 	const members = await locals.pb.collection('trip_members').getFullList<TripMember>({
 		filter: `trip = "${trip.id}"`,
 		sort: 'id',
@@ -32,6 +37,19 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 
 	const memberRows: MemberRow[] = members.map((m) => {
 		const avatarUrl = memberAvatarUrl(locals.pb, m);
+		// #133: a Departed Member tombstone (removed_at set). `user` is cleared, so
+		// the snapshotted display_name is the only name we have.
+		if (m.removed_at) {
+			return {
+				...m,
+				displayLabel: m.display_name || '(removed member)',
+				emailLabel: '',
+				isPlaceholder: false,
+				isDeparted: true,
+				removedAtLabel: m.removed_at.split(' ')[0],
+				avatarUrl
+			};
+		}
 		const isPlaceholder = !m.user;
 		if (isPlaceholder) {
 			return {
@@ -39,6 +57,8 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 				displayLabel: m.display_name || m.placeholder_name || '(placeholder)',
 				emailLabel: m.placeholder_email || '',
 				isPlaceholder: true,
+				isDeparted: false,
+				removedAtLabel: '',
 				avatarUrl
 			};
 		}
@@ -48,6 +68,8 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 				displayLabel: m.display_name || authUser.name || authUser.email || '(you)',
 				emailLabel: authUser.email || '',
 				isPlaceholder: false,
+				isDeparted: false,
+				removedAtLabel: '',
 				avatarUrl
 			};
 		}
@@ -56,9 +78,14 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 			displayLabel: m.display_name || '(member)',
 			emailLabel: '',
 			isPlaceholder: false,
+			isDeparted: false,
+			removedAtLabel: '',
 			avatarUrl
 		};
 	});
+
+	const activeMembers = memberRows.filter((m) => !m.isDeparted);
+	const formerMembers = memberRows.filter((m) => m.isDeparted);
 
 	let pending: PendingInvite[] = [];
 	try {
@@ -93,12 +120,14 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 	const isOwner = membership.role === 'owner' || membership.role === 'co_owner';
 	const canInvite = isOwner || membership.role === 'traveler';
 	const canAddPlaceholder = canInvite;
-	const ownerCount = members.filter((m) => m.role === 'owner').length;
+	// Active owners only — a tombstoned owner must not prop up the sole-owner count.
+	const ownerCount = members.filter((m) => m.role === 'owner' && !m.removed_at).length;
 
 	return {
 		trip,
 		membership,
-		members: memberRows,
+		members: activeMembers,
+		formerMembers,
 		pending: pendingRows,
 		isOwner,
 		canInvite,
