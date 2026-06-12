@@ -84,10 +84,12 @@
 	let reorderForm = $state<HTMLFormElement | undefined>();
 	let pullForm = $state<HTMLFormElement | undefined>();
 	let pushForm = $state<HTMLFormElement | undefined>();
+	let parkingReorderForm = $state<HTMLFormElement | undefined>();
 
 	let formItemId = $state('');
 	let formBefore = $state('');
 	let formAfter = $state('');
+	let formParkingPhaseId = $state('');
 
 	// A handle press enables every zone — svelte-dnd-action grabs whatever item is
 	// under the pointer (which lives in exactly one zone).
@@ -198,9 +200,29 @@
 					dayPhases: [phaseId]
 				});
 				if (action.kind === 'reject') reseed();
+			} else if (moved) {
+				// Same-zone reorder (#160): persist through the owning phase's Phase
+				// Detail `reorder` action — the canonical idea-reorder home (#88) — so
+				// its guard and phase-scoped rebalance are reused, never forked. The
+				// zone holds the phase's full idea list, so neighbors here match what
+				// that action's rebalance fetches.
+				const { before, after } = neighborsForMove(refs(next), movedId);
+				const action = resolveDrop({
+					source: 'parking',
+					target: 'parking',
+					item: { phase: moved.phase, start_time: moved.start_time },
+					before,
+					after,
+					dayPhases: [phaseId]
+				});
+				if (action.kind === 'reorder') {
+					formParkingPhaseId = phaseId;
+					submit(parkingReorderForm, movedId, action.before, action.after);
+				} else {
+					// No other action is reachable parking→parking, but stay defensive.
+					reseed();
+				}
 			}
-			// Same-zone reorder (wasHere && !fromTimeline) is visual-only this slice;
-			// persistence is the Phase Detail reorder home (#88).
 		}
 		reDisable(e.detail.info.source);
 	}
@@ -230,6 +252,20 @@
 </form>
 <form bind:this={pushForm} method="POST" action="?/pushToParking" use:enhance class="hidden">
 	<input type="hidden" name="item_id" value={formItemId} />
+</form>
+<!-- Parking→parking reorder posts cross-route to the zone's phase (#160) — the
+     Phase Detail action guards (this phase, unplanned, day-less) and rebalances
+     the phase's ideas; enhance still invalidates this page's load on success. -->
+<form
+	bind:this={parkingReorderForm}
+	method="POST"
+	action="/trips/{tripSlug}/phases/{formParkingPhaseId}?/reorder"
+	use:enhance
+	class="hidden"
+>
+	<input type="hidden" name="item_id" value={formItemId} />
+	<input type="hidden" name="before_order" value={formBefore} />
+	<input type="hidden" name="after_order" value={formAfter} />
 </form>
 
 {@render children({
