@@ -9,19 +9,23 @@
 		slug,
 		trip,
 		phases = [],
-		days = [],
-		parkingLotItems = []
+		days = []
 	}: {
 		slug: string;
 		trip?: Trip;
 		phases?: Phase[];
 		days?: Day[];
-		parkingLotItems?: Item[];
 	} = $props();
 
 	let activeContext = $derived(getActiveSection(page.url.pathname));
 
 	const isDayPage = $derived(page.url.pathname.includes('/days/'));
+
+	// Phase-scoped "Ideas" (#159): the day page's load supplies parkingLotItems
+	// filtered to that day's phases; it reaches the rail via merged page data
+	// (same plumb as documentSummary below) because the trip layout loader can't
+	// see dayId. No other route returns this key, so it's empty off day pages.
+	const parkingLotItems = $derived((page.data.parkingLotItems as Item[] | undefined) ?? []);
 
 	const today = $derived(tripToday(tripTz(trip ?? {})));
 
