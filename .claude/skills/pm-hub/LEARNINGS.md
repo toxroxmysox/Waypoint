@@ -12,6 +12,7 @@ Rules of this file:
 | date | wave | PRs | seam-bugs | verify-failures | escaped | escalations |
 |------|------|-----|-----------|-----------------|---------|-------------|
 | 2026-06-11 | skill-adoption | 1 | 0 | 0 | 0 | 0 |
+| 2026-06-12 | C: parking-scope | 2 | 0 | 0 | 0 | 1 |
 
 ## Debriefs
 
@@ -22,6 +23,12 @@ Rules of this file:
 - Ceremony: <step that cost time and caught nothing — or "all earned">
 - Root cause (only if escaped > 0): <which step failed>
 -->
+
+### 2026-06-12 wave C: parking-scope (#159 + #160)
+- Caught-for-a-session: none — both PRs matched AC exactly and self-verified green.
+- Seam tip (worth keeping): `git diff --name-only <PRtip>..main` lists the PR's OWN files, so #164's `DragDropTimeline.svelte` looked overlapped. The real check is `git diff <merge-base>..main -- <file>` — empty there = main never touched it = no seam. That distinction turned a 2-file "collision" into a confirmed clean merge in one command.
+- Boundary: clean. The lone "escalation" was harness-forced (auto-mode classifier blocks direct-to-main push), NOT a judgment call — Scott chose to allowlist `Bash(git push origin main)` so future waves deploy promptless. Not a recurring escalation; shouldn't inflate the metric next wave.
+- Ceremony all earned: fresh-PB rules run correctly skipped (no hooks/migrations/deps); live-drag for #164 correctly NOT re-run (session Playwright-proved it; re-running mutates the dnd-test trip). Visual smoke paid off — confirmed the `page.data.parkingLotItems` contract live.
 
 ### 2026-06-11 wave: skill-adoption
 - Caught-for-a-session: handoff-pm-hub.md was stale + didn't point at the skill (the build session flagged it deferred); folded it into a lean pointer + live-state file.
