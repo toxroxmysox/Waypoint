@@ -11,6 +11,7 @@ Rules of this file:
 
 | date | wave | PRs | seam-bugs | verify-failures | escaped | escalations |
 |------|------|-----|-----------|-----------------|---------|-------------|
+| 2026-06-11 | skill-adoption | 1 | 0 | 0 | 0 | 0 |
 
 ## Debriefs
 
@@ -21,6 +22,12 @@ Rules of this file:
 - Ceremony: <step that cost time and caught nothing — or "all earned">
 - Root cause (only if escaped > 0): <which step failed>
 -->
+
+### 2026-06-11 wave: skill-adoption
+- Caught-for-a-session: handoff-pm-hub.md was stale + didn't point at the skill (the build session flagged it deferred); folded it into a lean pointer + live-state file.
+- Boundary: clean — docs-only adoption, no scope crossed, no real-data touched.
+- Ceremony: the metrics table is the verdict-flagged risk; too early to judge — first review (after wave 5) decides whether it ever changed a decision, else cut per the skill's own instruction.
+- Note: log starts here; prior session waves (phase-redesign, membership, Now slice A, bug fixes) predate the practice and aren't backfilled.
 
 ## Reviews
 
