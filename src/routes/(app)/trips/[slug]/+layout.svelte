@@ -21,7 +21,6 @@
 	trip={data.trip}
 	phases={data.phases}
 	days={data.days}
-	parkingLotItems={data.parkingLotItems}
 	{immersive}
 >
 	{@render children()}

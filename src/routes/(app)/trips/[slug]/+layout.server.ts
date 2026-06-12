@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
-import type { Trip, TripMember, Phase, Day, Notification, Item } from '$lib/types';
+import type { Trip, TripMember, Phase, Day, Notification } from '$lib/types';
 
 export const load: LayoutServerLoad = async ({ params, locals }) => {
 	let trip: Trip;
@@ -26,7 +26,10 @@ export const load: LayoutServerLoad = async ({ params, locals }) => {
 		error(403, 'You are not a member of this trip');
 	}
 
-	const [phases, days, notifications, parkingLotItems] = await Promise.all([
+	// Parking Lot is phase-scoped (glossary) — no trip-wide unplanned query here.
+	// The ContextRail "Ideas" list reads the day page's phase-scoped parkingLotItems
+	// via merged page data (#159); this loader can't see dayId anyway.
+	const [phases, days, notifications] = await Promise.all([
 		locals.pb.collection('phases').getFullList<Phase>({
 			filter: `trip = "${trip.id}"`,
 			sort: 'order'
@@ -39,14 +42,10 @@ export const load: LayoutServerLoad = async ({ params, locals }) => {
 			filter: `recipient = "${membership.id}"`,
 			sort: '-id',
 			perPage: 30
-		}).catch(() => [] as Notification[]),
-		locals.pb.collection('items').getFullList<Item>({
-			filter: `trip = "${trip.id}" && status = "unplanned"`,
-			sort: 'sort_order'
-		}).catch(() => [] as Item[])
+		}).catch(() => [] as Notification[])
 	]);
 
 	const unreadCount = notifications.filter((n) => !n.read_at).length;
 
-	return { trip, membership, phases, days, notifications, unreadCount, parkingLotItems };
+	return { trip, membership, phases, days, notifications, unreadCount };
 };

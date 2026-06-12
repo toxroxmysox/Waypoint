@@ -5,7 +5,7 @@
 	import ModePill from './ModePill.svelte';
 	import AddSheet from '$lib/trip-mode/components/AddSheet.svelte';
 	import type { Snippet } from 'svelte';
-	import type { MemberRole, Phase, Day, Trip, Item } from '$lib/types';
+	import type { MemberRole, Phase, Day, Trip } from '$lib/types';
 	import { isTripActive } from '$lib/trip-mode/activation';
 	import type { TripViewMode } from '$lib/trip-mode/activation';
 	import { getNavConfig } from '$lib/shell/nav-tabs';
@@ -19,7 +19,6 @@
 		trip,
 		phases = [],
 		days = [],
-		parkingLotItems = [],
 		immersive = false
 	}: {
 		children: Snippet;
@@ -28,7 +27,6 @@
 		trip?: Trip;
 		phases?: Phase[];
 		days?: Day[];
-		parkingLotItems?: Item[];
 		// Full-screen takeover (swipe minigames): the deck owns the screen, app
 		// chrome (mode pill, bottom nav, side/context rails) is suppressed.
 		immersive?: boolean;
@@ -101,7 +99,7 @@
 		<div class="md-desktop:ml-[72px] lg-desktop:ml-[240px] lg-desktop:mr-[320px]">
 			{@render children()}
 		</div>
-		<ContextRail {slug} {trip} {phases} {days} {parkingLotItems} />
+		<ContextRail {slug} {trip} {phases} {days} />
 	</div>
 
 	{#if trip}
