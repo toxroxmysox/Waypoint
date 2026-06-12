@@ -19,6 +19,13 @@ export const STATUS_MATURITY: Record<GoalStatus, number> = {
 	considered: 0
 };
 
+// #149 — malformed PB data (status '' or off-enum) must never escape this
+// module: consumers index STATUS_META with the result. Unknown maturity clamps
+// to the lowest rung so garbage can never outrank a genuine status.
+function clampStatus(status: string): GoalStatus {
+	return status in STATUS_MATURITY ? (status as GoalStatus) : 'considered';
+}
+
 /**
  * Derive a goal's effective status from its linked items.
  *
@@ -29,8 +36,8 @@ export function deriveGoalStatus(
 	linkedItemStatuses: ItemStatus[],
 	manualStatus: GoalStatus
 ): GoalStatus {
-	if (linkedItemStatuses.length === 0) return manualStatus;
-	return linkedItemStatuses.reduce((best, status) =>
-		STATUS_MATURITY[status] > STATUS_MATURITY[best] ? status : best
-	);
+	if (linkedItemStatuses.length === 0) return clampStatus(manualStatus);
+	return linkedItemStatuses
+		.map(clampStatus)
+		.reduce((best, status) => (STATUS_MATURITY[status] > STATUS_MATURITY[best] ? status : best));
 }
