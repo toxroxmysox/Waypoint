@@ -1,9 +1,14 @@
+import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import type { Day, Item } from '$lib/types';
 import { tripNow, tripTz } from '$lib/shell/trip-time';
+import { isTripActive } from '$lib/trip-mode/activation';
 
-export const load: PageServerLoad = async ({ locals, parent }) => {
+export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, days } = await parent();
+
+	// Trip Mode is only reachable on an active trip (#204) — see now/+page.server.ts.
+	if (!isTripActive(trip)) redirect(303, `/trips/${params.slug}`);
 
 	const now = tripNow(tripTz(trip));
 	const upcomingDayIds: string[] = [];

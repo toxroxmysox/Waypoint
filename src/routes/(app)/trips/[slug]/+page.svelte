@@ -12,10 +12,15 @@
 	import DayCard from '$lib/itinerary/components/DayCard.svelte';
 	import DayMetricToggle from '$lib/itinerary/components/DayMetricToggle.svelte';
 	import { titleCase } from '$lib/shell/format';
+	import { isTripActive } from '$lib/trip-mode/activation';
 	import { untrack } from 'svelte';
 	import type { Notification } from '$lib/types';
 
 	let { data } = $props();
+
+	// Trip Mode chip only shows on an active trip, and lands on /now to match the
+	// mode pill — one mode, one home (#204).
+	const tripActive = $derived(isTripActive(data.trip));
 
 	let notifications = $state<Notification[]>(untrack(() => data.notifications ?? []));
 	let unreadCount = $state(untrack(() => data.unreadCount ?? 0));
@@ -89,16 +94,18 @@
 				<Pill variant={data.membership.role === 'owner' ? 'ink' : 'default'} size="sm">
 					{titleCase(data.membership.role)}
 				</Pill>
-				<a
-					href="/trips/{data.trip.slug}/today"
-					class="bg-clay text-paper inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
-				>
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<circle cx="12" cy="12" r="10" />
-						<polyline points="12 6 12 12 16 14" />
-					</svg>
-					Trip Mode
-				</a>
+				{#if tripActive}
+					<a
+						href="/trips/{data.trip.slug}/now"
+						class="bg-clay text-paper inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
+					>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<circle cx="12" cy="12" r="10" />
+							<polyline points="12 6 12 12 16 14" />
+						</svg>
+						Trip Mode
+					</a>
+				{/if}
 			</div>
 		</div>
 	</Card>

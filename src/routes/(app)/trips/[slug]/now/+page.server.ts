@@ -1,11 +1,17 @@
-import { fail } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Day, Item, Checklist, Task, TripMember } from '$lib/types';
 import { tripNow, tripTz } from '$lib/shell/trip-time';
+import { isTripActive } from '$lib/trip-mode/activation';
 import { fetchManualChecklists } from '$lib/itinerary/checklist-loaders';
 
-export const load: PageServerLoad = async ({ locals, parent }) => {
+export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, days } = await parent();
+
+	// Trip Mode is only reachable on an active trip (#204). A deep link on a
+	// planning or past trip would otherwise render trip-mode views under the
+	// planning bottom-nav — redirect to the trip home instead.
+	if (!isTripActive(trip)) redirect(303, `/trips/${params.slug}`);
 
 	const now = tripNow(tripTz(trip));
 	const todayStr = now.toISOString().split('T')[0];
