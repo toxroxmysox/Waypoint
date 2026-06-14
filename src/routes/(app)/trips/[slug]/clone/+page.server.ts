@@ -69,6 +69,10 @@ export const actions: Actions = {
 		try {
 			const newTrip = await locals.pb.collection('trips').create({
 				title,
+				// trips.created_by is required (migration 0002) AND the trips.pb.js hook
+				// reads it to auto-create the owner trip_members — omitting it both 400s
+				// the create ("Cannot be blank") and leaves the trip member-less.
+				created_by: locals.user!.id,
 				slug: generateSlug(title) + '-' + Date.now().toString(36),
 				start_date: startDate + ' 00:00:00.000Z',
 				end_date: endDate + ' 00:00:00.000Z',
@@ -81,12 +85,11 @@ export const actions: Actions = {
 				archived: false
 			});
 
-			await locals.pb.collection('trip_members').create({
-				trip: newTrip.id,
-				user: locals.user!.id,
-				role: 'owner',
-				joined_at: new Date().toISOString()
-			});
+			// NOTE: do NOT create the owner trip_members here. The trips.pb.js create
+			// hook already creates the owner membership for the trip's creator — a manual
+			// create duplicates it and violates idx_trip_members_unique(trip,user) →
+			// "Failed to create record". Same hook-duplication class as the day-seeding
+			// bug (#173): the hook owns it; we just fetch it below for item created_by.
 
 			const phaseIdMap = new Map<string, string>();
 			if (includePhases) {
