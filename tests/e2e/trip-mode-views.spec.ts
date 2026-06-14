@@ -24,9 +24,15 @@ test.describe('Trip Mode Views', () => {
 		// Should NOT show the old stub text
 		await expect(page.getByText('Coming soon')).not.toBeVisible();
 
-		// Should show one of the four valid state indicators (find any visible match)
+		// Should show one of the valid Focus states (find any visible match).
+		// "Nothing else planned" joined the matrix with #121's always-on Focus
+		// (empty forward list before the 8pm trip-local cutoff).
 		await expect(
-			page.locator(':visible', { hasText: /Right now|Free time|Day wrapped|No itinerary for today/ }).first()
+			page
+				.locator(':visible', {
+					hasText: /Right now|Free time|Day wrapped|Nothing else planned|No itinerary for today/
+				})
+				.first()
 		).toBeVisible();
 	});
 

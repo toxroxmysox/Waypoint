@@ -1,5 +1,6 @@
-import type { PageServerLoad } from './$types';
-import type { Day, Item } from '$lib/types';
+import { fail } from '@sveltejs/kit';
+import type { Actions, PageServerLoad } from './$types';
+import type { Day, Item, Checklist, Task, TripMember } from '$lib/types';
 import { tripNow, tripTz } from '$lib/shell/trip-time';
 import { fetchManualChecklists } from '$lib/itinerary/checklist-loaders';
 
@@ -50,4 +51,36 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 		hasToday: today !== null,
 		now: now.toISOString()
 	};
+};
+
+export const actions: Actions = {
+	// Check-only toggle for Trip Mode (#154 Slice B), mirroring Today's action.
+	// Membership-gated, viewer read-only.
+	toggleTask: async ({ request, params, locals }) => {
+		const trip = await locals.pb
+			.collection('trips')
+			.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+
+		const membership = await locals.pb
+			.collection('trip_members')
+			.getFirstListItem<TripMember>(
+				`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`
+			);
+		if (membership.role === 'viewer') return fail(403, { error: 'Viewers cannot check tasks.' });
+
+		const data = await request.formData();
+		const taskId = data.get('task_id')?.toString();
+		if (!taskId) return fail(400, { error: 'Missing id.' });
+
+		try {
+			const task = await locals.pb.collection('tasks').getOne<Task>(taskId);
+			const checklist = await locals.pb.collection('checklists').getOne<Checklist>(task.checklist);
+			// Trip Mode only surfaces trip/phase-scoped lists; reject item-scoped tasks.
+			if (checklist.trip !== trip.id || checklist.item) return fail(403, { error: 'Not authorized.' });
+			await locals.pb.collection('tasks').update(taskId, { checked: !task.checked });
+			return { success: true };
+		} catch (err: unknown) {
+			return fail(500, { error: err instanceof Error ? err.message : 'Failed to toggle.' });
+		}
+	}
 };
