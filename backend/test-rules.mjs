@@ -198,6 +198,16 @@ const SELF_ONLY = {
 	viewer: 'deny',
 	non_member: 'deny'
 };
+// #175 — owner/co_owner only (travelers + viewers denied). Used for items and
+// phases write ops: the role gate lives in items.pb.js / phases.pb.js (the rule
+// stays at membership), resolving the caller's actual trip_members role.
+const OWNER_COOWNER_ONLY = {
+	owner: 'allow',
+	co_owner: 'allow',
+	traveler: 'deny',
+	viewer: 'deny',
+	non_member: 'deny'
+};
 
 const EXPECT = {
 	// users (#103 / ADR-0006):
@@ -234,12 +244,21 @@ const EXPECT = {
 		update: ALLOW_MEMBERS_DENY_NONMEMBER,
 		delete: ALLOW_MEMBERS_DENY_NONMEMBER
 	},
+	// phases (#175):
+	//   list/view: any member sees the trip's phases.
+	//   create/update/delete: owner·co_owner only. Phases are trip-structure
+	//           (SPEC §4 — same tier as trip metadata). phases.pb.js role hooks
+	//           resolve the caller's membership and reject travelers + viewers;
+	//           the rule stays at membership (no created_by, and the caller's role
+	//           can't be correlated in a rule for update/delete). The fixture phase
+	//           is owner-authored in admin context, so traveler/viewer attempting
+	//           to mutate it deny on role; owner/co_owner pass.
 	phases: {
 		list: ALLOW_MEMBERS_DENY_NONMEMBER,
 		view: ALLOW_MEMBERS_DENY_NONMEMBER,
-		create: ALLOW_MEMBERS_DENY_NONMEMBER,
-		update: ALLOW_MEMBERS_DENY_NONMEMBER,
-		delete: ALLOW_MEMBERS_DENY_NONMEMBER
+		create: OWNER_COOWNER_ONLY,
+		update: OWNER_COOWNER_ONLY,
+		delete: OWNER_COOWNER_ONLY
 	},
 	days: {
 		list: ALLOW_MEMBERS_DENY_NONMEMBER,
@@ -248,12 +267,22 @@ const EXPECT = {
 		update: ALLOW_MEMBERS_DENY_NONMEMBER,
 		delete: DENY_ALL
 	},
+	// items (#175):
+	//   list/view: any member sees the trip's items.
+	//   create: owner·co_owner only. Travelers *suggest* (route through
+	//           /api/suggestions/create, admin context — bypasses this gate);
+	//           viewers are read-only. items.pb.js resolves the caller's actual
+	//           membership and rejects non-owner/co_owner regardless of the
+	//           created_by the client sends.
+	//   update/delete: owner·co_owner only (items.pb.js). The fixture item is
+	//           owner-authored, so traveler/viewer attempting to edit or delete it
+	//           deny on the caller's role; owner/co_owner pass.
 	items: {
 		list: ALLOW_MEMBERS_DENY_NONMEMBER,
 		view: ALLOW_MEMBERS_DENY_NONMEMBER,
-		create: ALLOW_MEMBERS_DENY_NONMEMBER,
-		update: ALLOW_MEMBERS_DENY_NONMEMBER,
-		delete: ALLOW_MEMBERS_DENY_NONMEMBER
+		create: OWNER_COOWNER_ONLY,
+		update: OWNER_COOWNER_ONLY,
+		delete: OWNER_COOWNER_ONLY
 	},
 	checklist_items: {
 		list: ALLOW_MEMBERS_DENY_NONMEMBER,

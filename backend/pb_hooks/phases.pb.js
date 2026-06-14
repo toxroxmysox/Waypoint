@@ -10,6 +10,97 @@
 // called a file-scope `rebucketDays()` helper, which threw a silently-
 // swallowed ReferenceError after e.next() — so days were never bucketed.
 
+// ---------------------------------------------------------------------------
+// #175 — role gate. Phases are trip-structure: SPEC §4 puts them at the same
+// tier as "Create/edit trip metadata" — owner/co_owner only. Travelers and
+// viewers are read-only. PB rules stay at MEMBER_VIA_TRIP (membership) because
+// phases have no `created_by` field and the acting caller's role can't be
+// correlated in a rule for update/delete (multi-relation `?=` aliasing) — so the
+// owner/co_owner gate is enforced here, resolving the caller's actual membership.
+//
+// These role hooks are registered BEFORE the day-rebucket hooks below, so they
+// run first in the request chain: a viewer/traveler write throws here (before
+// any e.next()), aborting the request, and the rebucket hooks never fire. An
+// owner/co_owner write calls e.next(), which cascades into the rebucket hook.
+//
+// PB 0.27 isolated-sandbox + handler-first signature: membership lookup inlined
+// per callback (cerebrum Do-Not-Repeat [2026-06-05]).
+onRecordCreateRequest((e) => {
+	const authId = e.requestInfo().auth?.id;
+	if (!authId) throw new UnauthorizedError('Authentication required');
+
+	const tripId = e.record.get('trip');
+	if (!tripId) throw new BadRequestError('trip is required');
+
+	let callerMember;
+	try {
+		callerMember = e.app.findFirstRecordByFilter(
+			'trip_members',
+			'trip = {:tripId} && user = {:uid}',
+			{ tripId: tripId, uid: authId }
+		);
+	} catch (_) {
+		throw new ForbiddenError('You are not a member of this trip');
+	}
+
+	const role = callerMember.get('role');
+	if (role !== 'owner' && role !== 'co_owner') {
+		throw new ForbiddenError('Only an owner or co-owner can create phases.');
+	}
+
+	e.next();
+}, 'phases');
+
+onRecordUpdateRequest((e) => {
+	const authId = e.requestInfo().auth?.id;
+	if (!authId) throw new UnauthorizedError('Authentication required');
+
+	const tripId = e.record.get('trip');
+
+	let callerMember;
+	try {
+		callerMember = e.app.findFirstRecordByFilter(
+			'trip_members',
+			'trip = {:tripId} && user = {:uid}',
+			{ tripId: tripId, uid: authId }
+		);
+	} catch (_) {
+		throw new ForbiddenError('You are not a member of this trip');
+	}
+
+	const role = callerMember.get('role');
+	if (role !== 'owner' && role !== 'co_owner') {
+		throw new ForbiddenError('Only an owner or co-owner can edit phases.');
+	}
+
+	e.next();
+}, 'phases');
+
+onRecordDeleteRequest((e) => {
+	const authId = e.requestInfo().auth?.id;
+	if (!authId) throw new UnauthorizedError('Authentication required');
+
+	const tripId = e.record.get('trip');
+
+	let callerMember;
+	try {
+		callerMember = e.app.findFirstRecordByFilter(
+			'trip_members',
+			'trip = {:tripId} && user = {:uid}',
+			{ tripId: tripId, uid: authId }
+		);
+	} catch (_) {
+		throw new ForbiddenError('You are not a member of this trip');
+	}
+
+	const role = callerMember.get('role');
+	if (role !== 'owner' && role !== 'co_owner') {
+		throw new ForbiddenError('Only an owner or co-owner can delete phases.');
+	}
+
+	e.next();
+}, 'phases');
+
 onRecordCreateRequest((e) => {
 	e.next();
 

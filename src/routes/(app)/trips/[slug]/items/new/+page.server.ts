@@ -269,9 +269,15 @@ export const actions: Actions = {
 			redirect(303, `/trips/${params.slug}/inbox`);
 		}
 
-		const submitAsSuggestion = membership.role === 'traveler' && !trip.auto_approve_suggestions;
+		// #175: travelers always route through the suggestions endpoint, never a
+		// direct items.create. The endpoint runs in admin context and auto-approves
+		// (creating the item immediately) when the trip has auto_approve_suggestions
+		// on, or queues it for review when off — matching SPEC §4 (traveler = suggest
+		// only*, with the asterisk = auto-approvable). A direct create is now blocked
+		// for travelers by the items.pb.js role hook, so this reroute is required to
+		// keep the traveler add-item flow working.
+		const submitAsSuggestion = membership.role === 'traveler';
 
-		// Suggestion path: traveler with auto-approve off.
 		if (submitAsSuggestion) {
 			try {
 				const suggestRes = await fetch(`${PB_BASE}/api/suggestions/create`, {
@@ -290,10 +296,16 @@ export const actions: Actions = {
 				const message = err instanceof Error ? err.message : 'Failed to submit suggestion.';
 				return fail(500, { error: message });
 			}
+			// Trip-Mode quick-add keeps the user in Trip Mode on save (#169); else
+			// the trip overview (an auto-approved item shows there; a queued one
+			// surfaces in the owner's inbox).
+			if (cameFromTrip) {
+				redirect(303, `/trips/${params.slug}/today`);
+			}
 			redirect(303, `/trips/${params.slug}`);
 		}
 
-		// Direct create path (owner/co_owner, or traveler with auto_approve on).
+		// Direct create path (owner/co_owner only — travelers are handled above).
 		try {
 			const existingItems = await locals.pb.collection('items').getFullList({
 				filter: `trip = "${trip.id}" && day = "${day}"`,

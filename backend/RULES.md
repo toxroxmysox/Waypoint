@@ -32,9 +32,9 @@ Role-agnostic. Any member of a trip can do anything to that trip's data; non-mem
 | `users` | self only | **co-traveler** (name+avatar) | null (OTP hook) | self only | null (no API) |
 | `trips` | member | member | authed | member | member |
 | `trip_members` | member of trip | member of trip | null (hooks/admin) | member of trip | member of trip |
-| `phases` | member of trip | member of trip | member of trip | member of trip | member of trip |
+| `phases` | member of trip | member of trip | member + hook (owner/co_owner, #175) | member + hook (owner/co_owner, #175) | member + hook (owner/co_owner, #175) |
 | `days` | member of trip | member of trip | null (hooks) | member of trip | null (hooks) |
-| `items` | member of trip | member of trip | member of trip | member of trip | member of trip |
+| `items` | member of trip | member of trip | member + hook (owner/co_owner, #175) | member + hook (owner/co_owner, #175) | member + hook (owner/co_owner, #175) |
 | `checklist_items` | member of item.trip | member of item.trip | member of item.trip | member of item.trip | member of item.trip |
 | `pending_invites` | member of trip | member of trip | null (endpoint) | null (immutable) | member of trip + hook (SPEC §3) |
 
@@ -124,6 +124,19 @@ The `trip_goals` collection (created 0040) is exercised by the harness as of #75
 - **create** — `MEMBER_VIA_TRIP && created_by.user = @request.auth.id && created_by.role != "viewer"`. Fully rule-expressible because `created_by` is a *single* relation: `created_by.role` correlates the author's role unambiguously (no multi-relation `?=` aliasing), and `created_by.user = auth` forces self-authorship. Viewers and non-members deny.
 - **update (edit)** — rule is `MEMBER_VIA_TRIP`; `trip_goals.pb.js` `onRecordUpdateRequest` rejects viewers (`403`). The acting editor isn't necessarily the author, so their own role can't be correlated in one rule expression — hence the hook (same reasoning as the invites delete-hook).
 - **delete** — rule is `MEMBER_VIA_TRIP`; `trip_goals.pb.js` `onRecordDeleteRequest` allows only the creator (`record.created_by === acting member id`) or an owner/co_owner. The fixture goal is authored by the **traveler**, so traveler passes as creator, owner/co_owner pass by role, and viewer/non-member deny. The **`AND zero goal_votes`** tightening on the creator branch lands in #77 with the `goal_votes` collection.
+
+## Items & Phases role gate (#175)
+
+Lands the long-documented "Target rules per SPEC §3" matrix for `items` and `phases` (migration 0047). Before this, both collections were plain `MEMBER_VIA_TRIP` for create/update/delete, so **viewers could write** and **travelers could edit/move/delete items + mutate phases** directly — the suggestion queue only ever gated item *creation* (findings WP-B-005, WP-B-006).
+
+| Collection | list | view | create | update | delete |
+|---|---|---|---|---|---|
+| `items` | member | member | owner/co_owner (hook) | owner/co_owner (hook) | owner/co_owner (hook) |
+| `phases` | member | member | owner/co_owner (hook) | owner/co_owner (hook) | owner/co_owner (hook) |
+
+- **rules stay `MEMBER_VIA_TRIP`** — the role gate is enforced in `items.pb.js` (create/update/delete) and the extended `phases.pb.js` (create/update/delete, registered *before* the existing day-rebucket hooks so a denied write throws before any `e.next()` and never rebuckets). The rule can't carry the role: for **update/delete** the acting caller isn't the author, and correlating the caller's role needs `trip.trip_members_via_trip.role ?= "owner"` alongside `...user ?= auth`, where the two `?=` can match *different* member rows (the multi-relation aliasing gotcha). For **items.create** `created_by` is single-relation, but the **import** and **closeout** flows create items without setting `created_by`, so a `created_by.role` create rule would 403 those owner-only flows — rejected. **phases** has no `created_by` field at all. Each hook resolves the caller's *actual* `trip_members` row and rejects any role but owner/co_owner.
+- **items.create — travelers suggest, they don't create.** The `items/new` action routes every traveler through `/api/suggestions/create` (admin context, bypasses the gate): auto-approved when `trip.auto_approve_suggestions` is on (item created immediately), queued otherwise. SPEC §4 "Add/edit/delete items: traveler suggest only*" — the asterisk = auto-approvable. Owner/co_owner keep the direct-create path.
+- **owner/co_owner flows unchanged** — all existing item/phase create/edit/reorder/delete/book paths pass the hook (caller is owner/co_owner). Harness: `items` + `phases` create/update/delete cells flip to `OWNER_COOWNER_ONLY` (traveler + viewer now deny; the fixture item/phase is owner-authored, so traveler/viewer mutating it deny on the caller's role). UI affordance-hiding for travelers/viewers on day-view/phase/item surfaces is a separate follow-up; this issue is the server-side enforcement.
 
 ## Documents (#70)
 
