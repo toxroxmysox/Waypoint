@@ -180,3 +180,53 @@ export function buildTripExport(
 		}))
 	};
 }
+
+/**
+ * PII-STRIPPED public export (#208) — the plan a stranger can reuse from a public
+ * archive link. The full archive is a read-only dead end for non-members; this
+ * lets a family "use the trip as a template" by downloading a skeleton JSON and
+ * importing it as their own new trip (rides #174's import + #173's clone fixes).
+ *
+ * PII scope (Scott's call, from the issue — "when in doubt, strip"):
+ *   STRIP — members, expenses, settlements, goals + votes (the whole money
+ *           ledger + group identities + group input), the budget envelope, AND
+ *           item-level private data: confirmation_codes, reservation_url,
+ *           booked / booked_by, assigned_to, real costs.
+ *   KEEP  — the reusable itinerary skeleton: trip meta (title/dates/tz/location),
+ *           phases, days, items (type/title/description/times/locations/end_date),
+ *           and trip/phase-scoped manual checklists (assignee already stripped on
+ *           export — they're reusable packing/prep templates).
+ *
+ * Implemented as a strip pass over buildTripExport so the date-format invariant
+ * (toDateOnly — the #174 round-trip bug) is shared, never re-derived. Snapshot
+ * sections come out empty because we pass no members/expenses/etc.
+ */
+export function buildPublicTripExport(
+	trip: Trip,
+	phases: Phase[],
+	days: Day[],
+	items: Item[],
+	checklists: Checklist[] = [],
+	checklistTasks: Task[] = []
+): TripExport {
+	// Pass NO members/expenses/settlements/goals → those snapshot sections are
+	// emitted empty. Pass null budget → no money envelope.
+	const base = buildTripExport(trip, phases, days, items, null, checklists, checklistTasks);
+
+	return {
+		...base,
+		items: base.items.map((item) => ({
+			...item,
+			// Item-level private data — a stranger reusing the plan gets none of it.
+			confirmation_codes: [],
+			reservation_url: '',
+			booked: false,
+			cost_estimate_usd: 0,
+			cost_actual_usd: 0
+		})),
+		members: [],
+		expenses: [],
+		settlements: [],
+		goals: []
+	};
+}

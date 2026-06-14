@@ -170,6 +170,44 @@
 		</div>
 	{/if}
 
+	<section class="border-line/60 mt-12 rounded-2xl border bg-surface/60 p-6 text-center">
+		<h2 class="font-display text-ink text-xl font-semibold tracking-tight">
+			Want to do this trip yourself?
+		</h2>
+		<p class="text-ink-soft mx-auto mt-2 max-w-md text-sm">
+			Download this plan as a template — the itinerary, phases, and days, with the
+			group's private details (who paid, bookings, costs) left out. Import it into
+			Waypoint to start your own trip from it.
+		</p>
+		<div class="mt-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
+			<a
+				href="{page.url.pathname}/export"
+				download
+				class="bg-ink text-on-ink inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium"
+			>
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+					<polyline points="7 10 12 15 17 10" />
+					<line x1="12" y1="15" x2="12" y2="3" />
+				</svg>
+				Use as template
+			</a>
+			<a
+				href="/trips/import"
+				class="text-ink-soft hover:text-ink inline-flex items-center justify-center gap-1.5 text-sm font-medium underline-offset-2 hover:underline"
+			>
+				Import into Waypoint
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<line x1="5" y1="12" x2="19" y2="12" />
+					<polyline points="12 5 19 12 12 19" />
+				</svg>
+			</a>
+		</div>
+		<p class="text-ink-muted mx-auto mt-3 max-w-md text-xs">
+			You'll sign in (or create a free account) to import — the new trip is yours.
+		</p>
+	</section>
+
 	<footer class="text-ink-muted mt-12 border-t border-border/30 pt-6 text-center text-xs">
 		Built with Waypoint
 	</footer>

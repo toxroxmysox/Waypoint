@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildTripExport } from './export';
+import { buildTripExport, buildPublicTripExport } from './export';
 import { validateTripImport } from './import';
 import type {
 	Trip,
@@ -346,5 +346,171 @@ describe('buildTripExport coverage extension (#174)', () => {
 		expect(result.expenses).toEqual([]);
 		expect(result.settlements).toEqual([]);
 		expect(result.goals).toEqual([]);
+	});
+});
+
+// #208 — the PII-stripped public archive export. A stranger with a public
+// archive link can download the PLAN (skeleton) and import it as their own new
+// trip. These assert the strip scope (no member identities, no money, no
+// item-level private data) AND that the skeleton still round-trips cleanly
+// through validateTripImport (rides #174's date-format fix).
+describe('buildPublicTripExport (#208 — PII-stripped archive export)', () => {
+	const pbTrip = makeTrip({
+		start_date: '2026-06-01 00:00:00.000Z',
+		end_date: '2026-06-07 00:00:00.000Z'
+	});
+	const pbPhases: Phase[] = [
+		{
+			id: 'p1',
+			trip: 'trip1',
+			name: 'Barcelona',
+			location: 'Barcelona',
+			country_code: 'ES',
+			start_date: '2026-06-01 00:00:00.000Z',
+			end_date: '2026-06-03 00:00:00.000Z',
+			order: 0,
+			collectionId: '',
+			collectionName: 'phases',
+			created: '',
+			updated: ''
+		}
+	];
+	const pbDays: Day[] = [
+		{
+			id: 'd1',
+			trip: 'trip1',
+			phases: ['p1'],
+			date: '2026-06-01 00:00:00.000Z',
+			notes: 'arrive late',
+			collectionId: '',
+			collectionName: 'days',
+			created: '',
+			updated: ''
+		}
+	];
+	// An item loaded with EVERY private field set — the export must scrub them.
+	const pbItems: Item[] = [
+		{
+			id: 'i1',
+			trip: 'trip1',
+			phase: 'p1',
+			day: 'd1',
+			type: 'lodging',
+			subtype: '',
+			title: 'Hotel Arts',
+			description: 'sea view',
+			location_name: 'Barcelona',
+			location_address: '123 Beach',
+			location_coords: { lat: 41.4, lng: 2.2 },
+			google_place_id: 'gp1',
+			start_time: '2026-06-01 15:00:00.000Z',
+			end_time: '',
+			start_tz: '',
+			end_tz: '',
+			end_date: '2026-06-03 00:00:00.000Z',
+			status: 'done',
+			booked: true,
+			booked_by: 'mem1',
+			paid_by: 'mem1',
+			confirmation_codes: [{ label: 'Booking', value: 'ABC123' }],
+			reservation_url: 'https://hotel.example/booking/ABC123',
+			free_cancellation: false,
+			cost_estimate_usd: 800,
+			cost_actual_usd: 950,
+			assigned_to: ['mem1', 'mem2'],
+			sort_order: 0,
+			parent_item: '',
+			requires_booking: true,
+			created_by: 'mem1',
+			collectionId: '',
+			collectionName: 'items',
+			created: '',
+			updated: ''
+		} as Item
+	];
+	const members: TripMember[] = [
+		{ id: 'm1', display_name: 'Ana', role: 'owner' } as unknown as TripMember
+	];
+	const expenses: Expense[] = [
+		{ id: 'e1', paid_by: 'm1', amount_usd: 120, description: 'Tapas', date: '2026-06-02', category: 'food', split_mode: 'equal' } as Expense
+	];
+
+	it('carries NO members, expenses, settlements, or goals (group identities + money stripped)', () => {
+		// Even if a caller mistakenly passed money/members, the public builder
+		// doesn't accept them — but assert the OUTPUT is empty regardless.
+		const pub = buildPublicTripExport(pbTrip, pbPhases, pbDays, pbItems);
+		expect(pub.members).toEqual([]);
+		expect(pub.expenses).toEqual([]);
+		expect(pub.settlements).toEqual([]);
+		expect(pub.goals).toEqual([]);
+		expect(pub.budget).toBeNull();
+	});
+
+	it('strips item-level private data (confirmation codes, reservation url, booked, costs)', () => {
+		const pub = buildPublicTripExport(pbTrip, pbPhases, pbDays, pbItems);
+		const item = pub.items[0];
+		expect(item.confirmation_codes).toEqual([]);
+		expect(item.reservation_url).toBe('');
+		expect(item.booked).toBe(false);
+		expect(item.cost_estimate_usd).toBe(0);
+		expect(item.cost_actual_usd).toBe(0);
+	});
+
+	it('no PII string leaks anywhere in the serialized public export', () => {
+		const pub = buildPublicTripExport(
+			pbTrip,
+			pbPhases,
+			pbDays,
+			pbItems,
+			// checklists/tasks happen to be empty here; the money/member args don't
+			// exist on this signature, so they can't leak by construction.
+			[],
+			[]
+		);
+		const json = JSON.stringify(pub);
+		expect(json).not.toContain('ABC123'); // confirmation code value
+		expect(json).not.toContain('hotel.example'); // reservation url
+		expect(json).not.toContain('mem1'); // booked_by / assigned_to / paid_by ids
+		expect(json).not.toContain('mem2');
+		expect(json).not.toContain('Tapas'); // expense description (not passed, must be absent)
+		expect(json).not.toContain('Ana'); // member display name
+		expect(json).not.toContain('950'); // actual cost
+	});
+
+	it('KEEPS the reusable skeleton (trip meta, phases, days, item display fields)', () => {
+		const pub = buildPublicTripExport(pbTrip, pbPhases, pbDays, pbItems);
+		expect(pub.trip.title).toBe('Test Trip');
+		expect(pub.trip.timezone).toBe('America/Detroit');
+		expect(pub.phases[0].name).toBe('Barcelona');
+		expect(pub.days[0].notes).toBe('arrive late');
+		const item = pub.items[0];
+		expect(item.title).toBe('Hotel Arts');
+		expect(item.type).toBe('lodging');
+		expect(item.description).toBe('sea view');
+		expect(item.location_name).toBe('Barcelona');
+		expect(item.location_coords).toEqual({ lat: 41.4, lng: 2.2 });
+		expect(item.start_time).toBe('2026-06-01 15:00:00.000Z'); // wall-clock kept verbatim
+		expect(item.end_date).toBe('2026-06-03 00:00:00.000Z'); // multi-day span kept
+		expect(item.status).toBe('done');
+	});
+
+	it('round-trips cleanly through validateTripImport (rides #174 date-format fix)', () => {
+		const pub = buildPublicTripExport(pbTrip, pbPhases, pbDays, pbItems);
+		const roundTripped = JSON.parse(JSON.stringify(pub));
+		const result = validateTripImport(roundTripped);
+		expect(result.errors).toEqual([]);
+		expect(result.valid).toBe(true);
+		// Calendar-date fields are bare YYYY-MM-DD so import's concatenation is safe.
+		expect(pub.trip.start_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+		expect(pub.days[0].date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+		expect(pub.items[0].day_date).toBe(pub.days[0].date);
+	});
+
+	it('shares the export builder, so the same import path accepts it', () => {
+		// Sanity: shape parity with the full export — same top-level keys, so the
+		// existing /trips/import validator + creator handle it unchanged.
+		const full = buildTripExport(pbTrip, pbPhases, pbDays, pbItems, null, [], [], members, expenses);
+		const pub = buildPublicTripExport(pbTrip, pbPhases, pbDays, pbItems);
+		expect(Object.keys(pub).sort()).toEqual(Object.keys(full).sort());
 	});
 });
