@@ -19,12 +19,17 @@ test.describe('Trip Mode checklist check-off (#52)', () => {
 		const tripSlug = `e2e-tripmode-${stamp}`;
 
 		// --- Create an active trip (today within range) ---
+		// Start 2 days back so the trip is unambiguously active in its OWN timezone.
+		// trips/new defaults timezone to the machine zone; a UTC `toISOString()`
+		// "today" can be tomorrow locally late-evening in a behind-UTC zone, which
+		// isTripActive (correctly, #167) reads as not-yet-started. A 2-day cushion
+		// absorbs any tz offset + the UTC day-rollover.
 		await page.getByRole('link', { name: 'New Trip' }).click();
 		await page.waitForURL(`${BASE}/trips/new`);
 		await page.fill('input[name="title"]', `E2E TripMode ${stamp}`);
-		const today = new Date().toISOString().split('T')[0];
+		const start = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 		const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-		await page.fill('input[name="start_date"]', today);
+		await page.fill('input[name="start_date"]', start);
 		await page.fill('input[name="end_date"]', nextWeek);
 		await page.fill('input[name="location_summary"]', 'Test Location');
 		await page.getByRole('button', { name: /create|save/i }).click();

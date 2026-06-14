@@ -32,7 +32,7 @@ cleanup() {
 trap cleanup EXIT
 
 # Wait for PB to answer (max ~15s).
-for _ in $(seq 1 30); do
+for _ in $(seq 1 60); do
 	if curl -sf "$PB_URL/api/health" >/dev/null 2>&1; then break; fi
 	sleep 0.5
 done
