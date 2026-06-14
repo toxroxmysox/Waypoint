@@ -15,29 +15,43 @@
 	import TaskRow from '$lib/itinerary/components/TaskRow.svelte';
 	import { getNowViewState } from '$lib/trip-mode/now-state';
 	import { formatCountdown, formatTime } from '$lib/shell/format';
+	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
 	import { untrack } from 'svelte';
 
 	let { data } = $props();
 
+	// #180 — the bell was absent from Now (Trip Mode's landing) though Today carries
+	// it. Documented placement rule: the NotificationBell lives on the mode-landing +
+	// hub pages — Overview, Now, Today, Money (expenses/budget), More — and is
+	// intentionally omitted on focused drill-downs (item detail, phases, lists,
+	// settings). Notifications ride the shared trip layout load.
+	let notifications = $state(untrack(() => data.notifications ?? []));
+	let unreadCount = $state(untrack(() => data.unreadCount ?? 0));
+
 	const nowIso = untrack(() => data.now);
 	const now = new Date(nowIso);
 	const todayStr = nowIso.split('T')[0];
-	const state = $derived(getNowViewState(data.todayItems, now, data.hasToday));
-	const focus = $derived(state.focus);
+	// Named nowState (not `state`) so it doesn't shadow the $state rune the bell uses.
+	const nowState = $derived(getNowViewState(data.todayItems, now, data.hasToday));
+	const focus = $derived(nowState.focus);
 
 	// In free-time the Focus already counts down to forwardItems[0]; it renders
 	// here ONCE, as the first normal-weight row — never enlarged twice. In
 	// mid-event the ongoing item is the Focus and forwardItems[0] is genuinely up
 	// next. forwardItems arrive ordered (timed, earliest first) from Slice A.
-	const nextItem = $derived(state.forwardItems[0] ?? null);
-	const laterItems = $derived(state.forwardItems.slice(1));
+	const nextItem = $derived(nowState.forwardItems[0] ?? null);
+	const laterItems = $derived(nowState.forwardItems.slice(1));
 
 	// Single end-of-day tail marker after the last upcoming item (#121 grill res.
 	// 4 — no per-gap rows). The empty-Focus states already say it themselves.
 	const showTail = $derived(focus.kind === 'mid-event' || focus.kind === 'free-time');
 </script>
 
-<NavBar title="Now" subtitle={data.trip.title} subtitleStyle="tagline" />
+<NavBar title="Now" subtitle={data.trip.title} subtitleStyle="tagline">
+	{#snippet right()}
+		<NotificationBell bind:notifications bind:unreadCount />
+	{/snippet}
+</NavBar>
 
 <!-- #84: reserve the home-indicator safe area so the fixed bottom nav doesn't clip the last items -->
 <main

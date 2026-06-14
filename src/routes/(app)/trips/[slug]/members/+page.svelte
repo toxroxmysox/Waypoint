@@ -155,6 +155,9 @@
 								</form>
 							{/if}
 							{#if isSelf}
+								<!-- #180: /account was unreachable from inside a trip — the
+								     self-row (you're looking at your own avatar) is the natural door. -->
+								<a href="/account" class="text-ink-soft hover:text-ink text-xs font-medium">Account</a>
 								<!-- #206: self-serve leave for ANY role. Reuses the remove
 								     tombstone path (?/leave → /api/members/remove, forced keep).
 								     Sole active owner is blocked here and re-blocked server-side. -->
