@@ -39,8 +39,8 @@ test.describe('M6 Polish', () => {
 	test('parking lot link is gone from More page (#86)', async ({ page }) => {
 		const slug = await openTripSlug(page);
 		await page.goto(`${BASE}/trips/${slug}/more`);
-		// Wait for the menu to render via a sibling card that stays.
-		await expect(page.getByText('Print itinerary').filter({ visible: true }).first()).toBeVisible();
+		// Wait for the menu to render via a sibling card that stays (Export is always present).
+		await expect(page.getByText('Export').filter({ visible: true }).first()).toBeVisible();
 		await expect(page.getByText('Parking lot')).toHaveCount(0);
 	});
 
@@ -52,11 +52,8 @@ test.describe('M6 Polish', () => {
 		expect(page.url()).toContain(`/trips/${slug}/phases`);
 	});
 
-	test('print itinerary button visible on More page', async ({ page }) => {
-		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/more`);
-		await expect(page.getByText('Print itinerary').filter({ visible: true }).first()).toBeVisible();
-	});
+	// NOTE: the Print itinerary feature was removed (#209) — its More-page button
+	// test was deleted with it.
 
 	// NOTE: the "checklist template picker" test was removed when the checklist
 	// item-type was retired (ADR-0003 / #48). Checklists are now a standalone
