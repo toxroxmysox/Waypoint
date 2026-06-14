@@ -73,10 +73,31 @@ routerAdd('POST', '/api/suggestions/create', (e) => {
 	// Inlined here because module-scope helpers are not visible in PB 0.27 sandbox.
 	let itemId = '';
 	if (autoApprove) {
+		// #196 — never let an approved item land phase-less. An unplanned item
+		// (no day) with phase='' renders on no surface (every parking view is
+		// phase-scoped). Fall back to the trip's first phase (by order) when the
+		// payload omits one. Inlined — module-scope helpers are invisible in the
+		// PB 0.27 sandbox.
+		let resolvedPhase = payload.phase || '';
+		if (!resolvedPhase && !payload.day) {
+			try {
+				const firstPhase = e.app.findRecordsByFilter(
+					'phases',
+					'trip = {:tripId}',
+					'+order',
+					1,
+					0,
+					{ tripId: tripId }
+				);
+				if (firstPhase && firstPhase.length > 0) resolvedPhase = firstPhase[0].id;
+			} catch (_) {
+				resolvedPhase = '';
+			}
+		}
 		const itemsCol = e.app.findCollectionByNameOrId('items');
 		const item = new Record(itemsCol);
 		item.set('trip', tripId);
-		item.set('phase', payload.phase || '');
+		item.set('phase', resolvedPhase);
 		item.set('day', payload.day || '');
 		item.set('type', payload.type || 'activity');
 		item.set('subtype', payload.subtype || '');
@@ -263,10 +284,31 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 		}
 		const payload = modifiedPayload || rawPayload;
 
+		// #196 — never approve an item into phase-less limbo. When the (possibly
+		// owner-edited) payload omits a phase and there's no day, fall back to the
+		// trip's first phase (by order) so the unplanned item is renderable in a
+		// parking lot. Inlined — sandbox can't see module-scope helpers.
+		let resolvedPhase = payload.phase || '';
+		if (!resolvedPhase && !payload.day) {
+			try {
+				const firstPhase = e.app.findRecordsByFilter(
+					'phases',
+					'trip = {:tripId}',
+					'+order',
+					1,
+					0,
+					{ tripId: tripId }
+				);
+				if (firstPhase && firstPhase.length > 0) resolvedPhase = firstPhase[0].id;
+			} catch (_) {
+				resolvedPhase = '';
+			}
+		}
+
 		const itemsCol = e.app.findCollectionByNameOrId('items');
 		const item = new Record(itemsCol);
 		item.set('trip', tripId);
-		item.set('phase', payload.phase || '');
+		item.set('phase', resolvedPhase);
 		item.set('day', payload.day || '');
 		item.set('type', payload.type || 'activity');
 		item.set('subtype', payload.subtype || '');

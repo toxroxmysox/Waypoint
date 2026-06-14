@@ -66,6 +66,37 @@
 		</a>
 	{/if}
 
+	{#if data.orphans.length > 0}
+		<section
+			aria-label="Unsorted ideas"
+			class="border-clay/30 bg-clay/10 rounded-lg border p-4 space-y-2"
+		>
+			<div class="flex items-center gap-2">
+				<span aria-hidden="true" class="text-clay text-lg">⚠</span>
+				<h2 class="text-ink text-sm font-semibold">
+					{data.orphans.length} Unsorted idea{data.orphans.length === 1 ? '' : 's'}
+				</h2>
+			</div>
+			<p class="text-ink-muted text-xs">
+				These ideas have no phase, so they don't appear in any parking lot. Open each one and
+				assign it a phase (or a day) to file it back.
+			</p>
+			<ul class="space-y-1">
+				{#each data.orphans as orphan}
+					<li>
+						<a
+							href="/trips/{data.trip.slug}/items/{orphan.id}/edit"
+							class="bg-surface hover:bg-surface-2 border-line text-ink flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm transition-colors"
+						>
+							<span class="min-w-0 truncate">{orphan.title || 'Untitled idea'}</span>
+							<span class="text-ink-muted shrink-0 text-xs capitalize">{orphan.type}</span>
+						</a>
+					</li>
+				{/each}
+			</ul>
+		</section>
+	{/if}
+
 	<div class="flex items-center justify-between">
 		<SectionH>
 			{data.phases.length} Phase{data.phases.length !== 1 ? 's' : ''}
@@ -227,6 +258,10 @@
 									return async ({ update, result }) => {
 										confirmDeleteId = null;
 										if (result.type === 'success') toast.show('Phase deleted');
+										// #196 — surface the block-until-moved message as a toast too
+										// (the form alert is above the fold; the action is below it).
+										else if (result.type === 'failure' && result.data?.error)
+											toast.show(String(result.data.error));
 										await update();
 									};
 								}}

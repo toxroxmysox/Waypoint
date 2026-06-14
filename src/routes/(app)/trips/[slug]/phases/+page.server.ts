@@ -26,7 +26,17 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 	}
 	const launchPhaseId = (phases as Phase[]).find((p) => (unratedByPhase[p.id] ?? 0) > 0)?.id ?? null;
 
-	return { trip, phases, unratedTotal, launchPhaseId };
+	// #196 — catch-all for pre-existing orphans: unplanned items with no phase
+	// render on no surface (every parking lot is phase-scoped). Surface them here
+	// so they can be re-homed. New code can't create these (block-at-delete +
+	// phase-required validation), but legacy data may already have them.
+	const orphans = await locals.pb.collection('items').getFullList<Item>({
+		filter: `trip = "${trip.id}" && status = "unplanned" && phase = ""`,
+		fields: 'id,title,type',
+		sort: 'title'
+	});
+
+	return { trip, phases, unratedTotal, launchPhaseId, orphans };
 };
 
 export const actions: Actions = {
@@ -126,8 +136,23 @@ export const actions: Actions = {
 			await locals.pb.collection('phases').delete(phaseId);
 			return { success: true };
 		} catch (err: unknown) {
-			const message = err instanceof Error ? err.message : 'Failed to delete phase.';
-			return fail(500, { error: message });
+			// #196 — the delete hook throws a BadRequestError ("Move N ideas first")
+			// when the phase still holds unplanned items. PB nests that message under
+			// .response.message; surface it (not the SDK's generic .message) so the
+			// user sees the actionable instruction, and return 400 for a validation
+			// failure rather than 500.
+			const e = err as {
+				status?: number;
+				message?: string;
+				response?: { message?: string };
+			};
+			const hookMessage = e.response?.message;
+			if (hookMessage) {
+				return fail(e.status && e.status >= 400 && e.status < 500 ? e.status : 400, {
+					error: hookMessage
+				});
+			}
+			return fail(500, { error: e.message || 'Failed to delete phase.' });
 		}
 	}
 };

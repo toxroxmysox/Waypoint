@@ -78,6 +78,38 @@ onRecordUpdateRequest((e) => {
 
 onRecordDeleteRequest((e) => {
 	const tripId = e.record.getString('trip');
+
+	// #196 — block-until-moved: a phase still holding unplanned ("idea") items
+	// cannot be deleted. items.phase has no cascadeDelete, so PB would clear
+	// item.phase and strand those ideas in phase-less limbo (renderable on no
+	// surface). Force the owner to re-home them first. Counted BEFORE e.next()
+	// so the throw aborts the delete (a throw after e.next() is too late —
+	// bug-114 / cerebrum). Planned items keep their day and survive a phase
+	// delete fine, so only status=unplanned blocks.
+	let orphanCount = 0;
+	try {
+		const stranded = e.app.findRecordsByFilter(
+			'items',
+			'phase = {:phaseId} && status = "unplanned"',
+			'',
+			0,
+			0,
+			{ phaseId: e.record.id }
+		);
+		orphanCount = stranded.length;
+	} catch (_) {
+		orphanCount = 0;
+	}
+	if (orphanCount > 0) {
+		throw new BadRequestError(
+			'Move ' +
+				orphanCount +
+				' idea' +
+				(orphanCount === 1 ? '' : 's') +
+				' out of this phase before deleting it.'
+		);
+	}
+
 	e.next();
 
 	let days;

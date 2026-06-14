@@ -57,6 +57,18 @@
 	let selectedDayDate = $derived(
 		context.days.find((d) => d.id === selectedDay)?.date.split(/[T ]/)[0] ?? ''
 	);
+	// #196 — phase-required invariant. An unscheduled (no-day) item becomes
+	// status=unplanned, and every parking surface is phase-scoped, so a
+	// phase-less unplanned item renders nowhere. When no day is picked, the
+	// phase select becomes required (mirrored by server validation).
+	let selectedPhase = $state(
+		untrack(() =>
+			mode === 'create' ? (context.preselectedPhase ?? '') : (initialData.phase ?? '')
+		)
+	);
+	// Require only when phases actually exist to assign to — a trip with zero
+	// phases can't trap an unscheduled item (and there's no parking lot yet).
+	let phaseRequired = $derived(selectedDay === '' && context.phases.length > 0);
 	let locationNameValue = $state(untrack(() => initialData.location_name));
 	let locationAddressValue = $state(untrack(() => initialData.location_address));
 	let locationCoords = $state(
@@ -424,22 +436,27 @@
 			</div>
 
 			<div>
-				<label for="phase" class="text-ink-soft block text-sm font-medium">Phase</label>
+				<label for="phase" class="text-ink-soft block text-sm font-medium">
+					Phase{#if phaseRequired}<span class="text-clay" aria-hidden="true"> *</span>{/if}
+				</label>
 				<select
 					id="phase"
 					name="phase"
+					bind:value={selectedPhase}
+					required={phaseRequired}
+					oninput={markDirty}
 					class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 				>
-					<option value="">None</option>
+					<option value="">{phaseRequired ? 'Select a phase…' : 'None'}</option>
 					{#each context.phases as p}
-						<option
-							value={p.id}
-							selected={p.id === (mode === 'create' ? (context.preselectedPhase ?? '') : initialData.phase)}
-						>
-							{p.name}
-						</option>
+						<option value={p.id}>{p.name}</option>
 					{/each}
 				</select>
+				{#if phaseRequired}
+					<p class="text-ink-muted mt-1 text-xs">
+						An unscheduled idea needs a phase so it shows up in that phase's parking lot.
+					</p>
+				{/if}
 			</div>
 
 			{#if fields.times}

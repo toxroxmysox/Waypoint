@@ -149,6 +149,22 @@ export const actions: Actions = {
 
 		if (!title) return fail(400, { error: 'Title is required.' });
 
+		// #196 — enforce the phase-required invariant at the source: an unscheduled
+		// (no-day) item becomes status=unplanned, and every parking surface is
+		// phase-scoped, so a phase-less unplanned item renders nowhere. Require a
+		// phase whenever no day is set — but only if the trip actually has phases
+		// to assign to (a zero-phase trip can't satisfy it and has no parking lot
+		// yet). Skipped when a day IS set (planned items are day-anchored).
+		if (!day && !phase) {
+			const phaseCount = await locals.pb.collection('phases').getList(1, 1, {
+				filter: `trip = "${trip.id}"`,
+				fields: 'id'
+			});
+			if (phaseCount.totalItems > 0) {
+				return fail(400, { error: 'Pick a phase for an unscheduled item, or assign it to a day.' });
+			}
+		}
+
 		// Validate: meals and notes can't be booked
 		if (booked && (type === 'meal' || type === 'note')) {
 			return fail(400, { error: `${type} items cannot be marked as booked.` });

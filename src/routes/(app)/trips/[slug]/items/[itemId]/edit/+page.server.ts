@@ -120,6 +120,20 @@ export const actions: Actions = {
 				resolvedStatus = 'planned';
 			}
 
+			// #196 — phase-required invariant: an unplanned item must keep a phase,
+			// or it falls into the phase-less limbo that renders on no surface.
+			// (done/considered items are day-anchored or archival and phase-optional.)
+			// Only enforce when the trip has phases to assign to.
+			if (resolvedStatus === 'unplanned' && !phase) {
+				const phaseCount = await locals.pb.collection('phases').getList(1, 1, {
+					filter: `trip = "${item['trip']}"`,
+					fields: 'id'
+				});
+				if (phaseCount.totalItems > 0) {
+					return fail(400, { error: 'Pick a phase for an unscheduled item, or assign it to a day.' });
+				}
+			}
+
 			// Resolve the owning day's date so item times carry the real calendar
 			// date (naive trip-local), not a 1970 placeholder. No day = no anchor.
 			let dayDate = '';
