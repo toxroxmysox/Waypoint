@@ -11,6 +11,7 @@
 	import MiniListCard from '$lib/itinerary/components/MiniListCard.svelte';
 	import DayCard from '$lib/itinerary/components/DayCard.svelte';
 	import DayMetricToggle from '$lib/itinerary/components/DayMetricToggle.svelte';
+	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import { titleCase } from '$lib/shell/format';
 	import { isTripActive } from '$lib/trip-mode/activation';
 	import { untrack } from 'svelte';
@@ -109,6 +110,27 @@
 			</div>
 		</div>
 	</Card>
+
+	{#if data.keyItems?.length}
+		<!-- #200 — findability lens: flights & stays, the two most-hunted item types,
+		     reachable from the trip home without opening each day. Not a full search. -->
+		<section class="space-y-1.5">
+			<div class="text-ink-muted flex items-center gap-1.5 px-0.5 text-[9.5px] font-bold tracking-[0.14em] uppercase">
+				Flights &amp; stays
+			</div>
+			<div class="grid gap-1.5">
+				{#each data.keyItems as it (it.id)}
+					<a
+						href="/trips/{data.trip.slug}/items/{it.id}"
+						class="border-line bg-surface hover:bg-surface-2 flex items-center gap-2.5 rounded-lg border px-3 py-2"
+					>
+						<TypeIcon type={it.type} size={20} />
+						<span class="text-ink truncate text-sm">{it.title}</span>
+					</a>
+				{/each}
+			</div>
+		</section>
+	{/if}
 
 	{#if tripLists.length > 0}
 		<!-- Whole-trip checklist previews (#51) -->

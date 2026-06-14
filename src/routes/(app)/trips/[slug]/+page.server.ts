@@ -23,6 +23,11 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 
 	return {
 		lists: rollupChecklists(checklists, tasks),
-		daySummaries: summarizeDays(items, days as Day[])
+		daySummaries: summarizeDays(items, days as Day[]),
+		// #200 — light findability lens: surface flights + lodging on the Overview so
+		// a member finds the flight/hotel without opening days one by one. Not search.
+		keyItems: items
+			.filter((i) => i.type === 'flight' || i.type === 'lodging')
+			.map((i) => ({ id: i.id, type: i.type, title: i.title }))
 	};
 };
