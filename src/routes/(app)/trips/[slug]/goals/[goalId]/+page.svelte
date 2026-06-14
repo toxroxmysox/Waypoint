@@ -88,10 +88,10 @@
 		</div>
 		<p class="text-ink-soft mt-2 text-[12.5px]">
 			{#if data.isDerived}
-				Set automatically from {linkedCount} linked plan{linkedCount === 1 ? '' : 's'}. Link more
-				plans and it keeps itself honest.
+				Set automatically from {linkedCount} linked item{linkedCount === 1 ? '' : 's'}. Link more
+				items and it keeps itself honest.
 			{:else}
-				Set manually — link a plan below and this goal will track its progress on its own.
+				Set manually — link an item below and this goal will track its progress on its own.
 			{/if}
 		</p>
 	</div>
@@ -99,10 +99,10 @@
 	<!-- #77 slot: "What the group thinks" goal-vote results panel mounts here,
 	     between the status block and the plans list (V4 PRD firm order). -->
 
-	<!-- Plans addressing it — the traceability list. -->
+	<!-- Items addressing it — the traceability list. -->
 	<section>
 		<h2 class="text-moss mb-2 px-0.5 text-[11px] font-bold tracking-[0.2em] uppercase">
-			Plans addressing it
+			Items addressing it
 		</h2>
 		{#if linkedCount > 0}
 			<Card>
@@ -144,7 +144,7 @@
 			<div
 				class="border-line text-ink-muted rounded-[14px] border-[1.5px] border-dashed px-4 py-6 text-center text-[13px]"
 			>
-				No plans linked yet. Link an item and this goal starts tracking it.
+				No items linked yet. Link an item and this goal starts tracking it.
 			</div>
 		{/if}
 	</section>
@@ -222,7 +222,7 @@
 <BottomSheet bind:open={linkOpen} title="Link an item">
 	{#if data.linkCandidates.length === 0}
 		<p class="text-ink-muted py-4 text-center text-sm">
-			No more items to link. Every plan on this trip is already attached.
+			No more items to link. Every item on this trip is already attached.
 		</p>
 	{:else}
 		<div class="space-y-1">

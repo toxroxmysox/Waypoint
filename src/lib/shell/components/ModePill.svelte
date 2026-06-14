@@ -18,6 +18,6 @@
 				? 'bg-moss-tint text-moss hover:bg-moss-tint/80'
 				: 'bg-clay-tint text-clay hover:bg-clay-tint/80'}"
 	>
-		{mode === 'trip' ? 'Edit plan' : 'Trip view'}
+		{mode === 'trip' ? 'Planning Mode' : 'Trip Mode'}
 	</button>
 </div>

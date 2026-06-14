@@ -244,6 +244,50 @@ Domains mirror the bounded contexts in `CONTEXT.md` §"Bounded Contexts", plus t
 
 ---
 
+## Exploration backlog (#116 app audit)
+
+Phase-3 explorations (`docs/app-audit/v2/explorations/`) surfaced these as future work — appetite-walked with Scott 2026-06-13 and all routed here (none built this pass). Feature-sized entries carry full detail; P3 polish batches point at their exploration file (the single source of truth). Domain tags let a per-domain reader still find them. Already-owned proposals were folded into existing issues (cited there): traveler-suggestion landing → #202, quick-add `from=trip` → #169, closeout→record → #195, parking doors → #166, booked-moment expense → #211, no-mode-toggle 900–1279px → #168, placeholder→join nudge → #210.
+
+### IA / navigation refactors — `layers.md`
+
+#### Merge the Phases index into Overview → one "Plan" surface *(refactor · Itinerary)*
+- **What:** Collapse `/trips/[slug]/phases` (the L2 index) into the trip Overview: phase cards with day chips + parking-count + inline quick-add + per-phase lists, management verbs behind an "Edit phases" toggle, swipe-launch card kept; `/phases` becomes a redirect (parking-lot→phases LEGACY-redirect precedent). Itinerary SubTabs 4→3 (Plan | Lists | Goals).
+- **Why:** Overview already renders the full skeleton; the index's only unique value is CRUD verbs + swipe launch — a duplicate L2 surface (designer P2), and the split is why parking-lot capture sits at 3 taps. Merge drops capture to 1–2 taps and kills the novice Overview-vs-Phases fork (S1/2/7/8).
+- **Target:** refactor — **needs its own plan when picked up**; entangles with #159/#160 (ContextRail parking drag) and #89 (phase-detail layout) — different surfaces, not discarded. The biggest IA bite of the audit.
+
+#### Money — one page with a budget header *(Money)*
+- **What:** Collapse Expenses|Budget sub-tabs into a single Money page: estimated-vs-spent header (math already in `budget/+page.svelte`), balances + Settle Up above the ledger, header-tap → budget editor (`/budget` survives as editor only).
+- **Why:** The sub-tabs split one dataset by record type, not by user question; "can we afford this" (S8) is 2 taps + a guess. Read → 0 taps.
+- **Target:** v4 — design alongside #198 (plan-vs-budget) + #211 (trip-mode Money summary).
+
+#### Today — inline "Next 3 days", drop the trip-mode sub-tab *(Trip Mode)*
+- **What:** Today as one scroll: timeline → inline checklists (#52) → collapsed "Next 3 days" (today/upcoming inlined, route redirects).
+- **Why:** `today/upcoming` is 68 lines of read-only lookahead behind a sub-tab — a nav event for "keep scrolling past tonight," burning the SubTabs row in the one-handed mode where vertical space is scarcest.
+- **Target:** v4 (afternoon-sized, independent of the Plan merge).
+
+### Connective-tissue pathways — `pathways.md`
+
+Each closes a lifecycle seam the audit found unowned; all pass a charter V-test; none duplicate a filed finding. Net-new.
+
+- **Goal → "Plan this" → item** *(P-1 · Itinerary — V2):* goal detail gains a "Plan this" → `items/new?goal={id}` with the goal pre-linked. The group-input cluster has capture + harvest but **no commit moment** — goals rot as wishes unless re-entered by hand. v4.
+- **Document upload → "Mark booked?" chip** *(P-2 · Itinerary/Documents — V3):* on `uploadDocument` success for `requires_booking && !booked`, a one-tap chip does the same `booked=true` write as the Smart List. The PDF is evidence of booking, yet `needsBooking()` stays wrong until someone visits the list — booking truth drops between Documents and Itinerary. v4.
+- **Pre-departure "unbooked sweep"** *(P-4 trimmed · Itinerary):* the one concrete sliver of the dropped next-step-strip engine — a T-minus-N "you leave Saturday and the riad isn't booked" surface. **Low conviction**; the full proactive engine was dropped (brushes D1 no-hub) and the booking Smart List (#198-adjacent) half-owns this. Fold into Smart List work. dogfood-driven.
+- **Swipe-deck completion → owner signal + ranked door** *(P-5 · Collaboration — V1/V2):* draining a phase's deck writes one in-app notification ("X finished voting on Paris" — 4th notif type) + a "k of n voted" phase-card line, both deep-linking to the vote-sorted parking lot. Harvest is write-only today, so "did everyone vote, what won?" happens in the group text. D1-safe (async, in-app). v4.
+- **Phase-exit sweep — "Leaving Paris tomorrow, N ideas still parked"** *(T-1 · Trip Mode — V3):* on a phase's last day (when a later phase exists), Today renders a keep/let-go card writing only the `phase` field (day-less items, stays in D3 bounds) + a "Review in planning" door. The unlisted **phase→phase** seam: parking ideas are phase-scoped, so leaving Paris strands its un-promoted ideas (replanning is same-phase; closeout is weeks too late). v4.
+- **Document chip on Trip-Mode item cards** *(T-2 · Trip Mode/Documents — V1):* cards for items with ≥1 Document get an artifact chip → one-tap open from the offline cache. Boarding-pass-at-the-gate is a 3-hop hunt today; its absence reopens the email folder. Rides #203 + CARD_CONTENT_SPEC. v4.
+- **Receipt on the expense — 3rd Document parent scope** *(T-3 · Money/Documents — V1):* optional attach/paste receipt on an expense, stored as a Document with **parent scope = Expense** (extends {Item|Trip} via the same entry-point principle); "Receipts" group in Trip Documents. Receipts are half of why groups keep Splitwise. Append-only enum-widen migration. v4.
+- **Clone with memory** *(PT-1 · Archive & Portability — V1):* clone gains opt-ins to **bring ideas we never did** (considered/unplanned → unplanned, day-less, phase-mapped) and **unmet goals** (non-done `trip_goals`). Clone hard-sets `status='planned'` and ignores goals today, so the Remember→Plan seam discards exactly the regret data closeout curated. Rides #173 (clone fix). v4.
+- **Money epilogue → fold into #195** *(PT-2 · Archive/Money — V1):* read-only estimate-vs-actual recap (Σ cost_estimate vs Σ expenses; per-member paid/owed) as the **settle-step landing in the wrap-up PRD #195**, not a standalone build — the trip→record seam drops the money story, so "what did it actually cost?" gets rebuilt in a spreadsheet.
+
+### P3 polish batches (detail lives in each exploration file)
+
+- **Landing & post-action** — `landing-map.md`: stay-on-phase-detail after `?/update`; Unscheduled-item lands in the parking lot, not Overview; archive share URL gets copy+toast (like join links). Plus a proposed 4-convention post-action contract for `design-system.md`. *(traveler-suggestion landing → #202; `from=trip` → #169; closeout→record → #195.)*
+- **Empty states** — `empty-states.md`: 11 P3 copy/CTA gaps to the app's own empty-state voice (booking never-filled-vs-drained, inbox suggestion-teach, pre-trip Trip-Mode countdown, free-day Today card, budget zero-state, Documents "Tap +", + the ES-8…12 batch). One polish pass. *(ES-1, the P2 unreachable trip-home teaching state → #111.)*
+- **Desktop shell / ContextRail** — `desktop.md`: Money/Inbox/goals/lists/item rail branches (data already loaded), FAB desktop anchoring, BottomSheet centered-modal variant (CLAUDE.md tablet+ rule), parking-treatment consistency. *(DESK-01, P1 no-mode-toggle 900–1279px → #168.)*
+- **Terminology** — `terminology.md`: glossary calls applied to CONTEXT.md this pass (List, offline member, mode-pill labels, D6 Closeout/Trip-Mode nav). Remaining copy: Documents "{n} file(s)"→"document(s)" (avoid-list) + minor nits (Upcoming/Next-3-Days, Transport/Transportation, Co-Owner casing, dead `typeLabel`). *(goal "plan"→"item" + mode-pill relabel fixed in code this pass.)*
+
+---
+
 ## Misc / Polish
 
 - **App Icon Artwork Refresh** — regenerate `icon-192.png` / `icon-512.png` + apple-touch-icon in the paper/ink/moss palette. Related: open bug [#38](https://github.com/toxroxmysox/Waypoint/issues/38) (iOS wrong icon). Maskable variant keeps safe area.
