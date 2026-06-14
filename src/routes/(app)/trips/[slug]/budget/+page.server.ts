@@ -1,6 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { TripBudget, Expense, BudgetCategory, ExpenseCategory } from '$lib/types';
+import type { TripBudget, Expense, BudgetCategory, ExpenseCategory, Item } from '$lib/types';
+import { plannedByCategory } from '$lib/money/planned-by-category';
 
 const DEFAULT_CATEGORIES: BudgetCategory[] = [
 	{ category: 'lodging', mode: 'total', daily_amount: null, total: 0 },
@@ -22,10 +23,20 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 		// No budget yet — use defaults
 	}
 
-	const expenses = await locals.pb.collection('expenses').getFullList<Expense>({
-		filter: `trip = "${trip.id}"`,
-		sort: '-date,-id'
-	});
+	// Expenses = money already spent; items carry the plan's forward-looking
+	// estimate (cost_estimate_usd). #198: the budget must compare planned vs budget
+	// vs spent, so we ride one field-limited items fetch (mirrors the Overview
+	// query) alongside the expenses fetch — no N+1, no extra round-trips.
+	const [expenses, items] = await Promise.all([
+		locals.pb.collection('expenses').getFullList<Expense>({
+			filter: `trip = "${trip.id}"`,
+			sort: '-date,-id'
+		}),
+		locals.pb.collection('items').getFullList<Item>({
+			filter: `trip = "${trip.id}"`,
+			fields: 'id,type,cost_estimate_usd'
+		})
+	]);
 
 	const isOwner = membership.role === 'owner' || membership.role === 'co_owner';
 
@@ -43,6 +54,9 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 		spentByCategory[cat] = (spentByCategory[cat] ?? 0) + exp.amount_usd;
 	}
 
+	// Sum the plan's estimate into the SAME budget categories (#198).
+	const plannedByCat = plannedByCategory(items);
+
 	return {
 		trip,
 		membership,
@@ -50,6 +64,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 		defaultCategories: DEFAULT_CATEGORIES,
 		tripDays,
 		spentByCategory,
+		plannedByCategory: plannedByCat,
 		isOwner,
 		memberCount: 0 // loaded client-side from parent if needed
 	};

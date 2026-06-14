@@ -43,6 +43,13 @@
 		Object.values(data.spentByCategory).reduce((s: number, v: number) => s + v, 0)
 	);
 
+	// #198 — the plan's forward-looking estimate (Σ cost_estimate_usd), bucketed
+	// into the same categories server-side, so Budget answers planned-vs-budget
+	// before any expense exists.
+	let totalPlanned = $derived(
+		Object.values(data.plannedByCategory).reduce((s: number, v: number) => s + v, 0)
+	);
+
 	function updateCategory(idx: number, field: 'mode' | 'daily_amount' | 'total', value: string) {
 		const cat = { ...cats[idx] };
 		if (field === 'mode') {
@@ -97,15 +104,27 @@
 ]} />
 
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8">
-	<!-- Grand total -->
+	<!-- Budget envelope total. Header names the BUDGET (the limit you set), not the
+	     plan estimate or what's spent — those are shown as their own lines (#198). -->
 	<div class="mb-6 text-center">
-		<p class="text-xs font-medium text-ink-muted uppercase tracking-wider">Estimated Total</p>
+		<p class="text-xs font-medium text-ink-muted uppercase tracking-wider">Budget Total</p>
 		<p class="font-mono text-3xl font-semibold text-ink">${formatAmount(grandTotal)}</p>
 		<div class="mt-1 flex items-center justify-center gap-3 text-xs text-ink-muted">
 			<span>${formatAmount(perDay)} / day</span>
 			<span class="text-line">|</span>
 			<span>{data.tripDays} days</span>
 		</div>
+		<!-- Planned vs budget — the "can we afford this?" answer, works before any
+		     expense exists. Clay = the plan already exceeds the envelope. -->
+		{#if totalPlanned > 0}
+			<p class="mt-2 text-xs text-ink-muted">
+				<span class="font-mono font-semibold {totalPlanned > grandTotal && grandTotal > 0 ? 'text-clay' : 'text-ink-soft'}">${formatAmount(totalPlanned)}</span>
+				planned
+				{#if totalPlanned > grandTotal && grandTotal > 0}
+					<span class="text-clay">(${formatAmount(totalPlanned - grandTotal)} over budget)</span>
+				{/if}
+			</p>
+		{/if}
 		{#if totalSpent > 0}
 			<div class="mt-2">
 				<div class="mx-auto max-w-[200px] h-1.5 rounded-full bg-surface-2 overflow-hidden">
@@ -139,6 +158,7 @@
 		<div class="space-y-3">
 			{#each cats as cat, idx}
 				{@const spent = data.spentByCategory[cat.category] ?? 0}
+				{@const planned = data.plannedByCategory[cat.category] ?? 0}
 				{@const meta = categoryMeta[cat.category]}
 				<Card>
 					<div class="p-3">
@@ -158,13 +178,28 @@
 									style="width: {Math.min(100, (spent / cat.total) * 100)}%"
 								></div>
 							</div>
-							<p class="text-[11px] text-ink-muted mb-2">
-								${formatAmount(spent)} spent
-								{#if spent > cat.total}
+						{/if}
+
+						<!-- planned / budget / spent — the per-category comparison (#198).
+						     Always shown so a member can read it before any expense exists
+						     (the bar above only appears once a budget is set). -->
+						<div class="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[11px] text-ink-muted">
+							<span>
+								<span class="font-mono {planned > cat.total && cat.total > 0 ? 'text-clay' : 'text-ink-soft'}">${formatAmount(planned)}</span>
+								planned
+							</span>
+							<span>
+								<span class="font-mono text-ink-soft">${formatAmount(cat.total)}</span>
+								budget
+							</span>
+							<span>
+								<span class="font-mono text-ink-soft">${formatAmount(spent)}</span>
+								spent
+								{#if spent > cat.total && cat.total > 0}
 									<span class="text-clay">(${formatAmount(spent - cat.total)} over)</span>
 								{/if}
-							</p>
-						{/if}
+							</span>
+						</div>
 
 						<!-- Editable fields (owner/co_owner only) -->
 						{#if data.isOwner}
