@@ -13,6 +13,9 @@ Rules of this file:
 |------|------|-----|-----------|-----------------|---------|-------------|
 | 2026-06-11 | skill-adoption | 1 | 0 | 0 | 0 | 0 |
 | 2026-06-12 | C: parking-scope | 2 | 0 | 0 | 0 | 1 |
+| 2026-06-13 | E: audit-fixes (#209/#171/#205/#206) | 4 (agent branches, no PR) | 1 | 1 (infra) | 0 | 2 |
+| 2026-06-13 | F: trip-mode coherence (#167/168/169/197/199/204) | 6 (1 sequential agent) | 0 | 1 | 0 | 0 |
+| 2026-06-14 | G: audit-fixes (13 issues) | 13 (5 agents; 3 stalled overnight, PM-recovered) | 0 | 1 | 0 | 1 |
 
 ## Debriefs
 
@@ -23,6 +26,28 @@ Rules of this file:
 - Ceremony: <step that cost time and caught nothing — or "all earned">
 - Root cause (only if escaped > 0): <which step failed>
 -->
+
+### 2026-06-14 wave G: audit-fixes — 5 file-disjoint agents, OVERNIGHT STALL + recovery
+- **Headline: the Mac slept when Scott went to bed and suspended 3 of 5 background agents mid-run** (~13h). Suspended agents never resume and never send a completion ping — but **per-issue commits survive in the worktree branch.** Recovery: `git log <base>..<branch>` on each stalled branch → cherry-pick the committed issues (10 of 13 here) → finish the uncommitted stragglers myself (#176/#200/#180). The agents committing per-issue (instructed) is the ONLY reason the work survived. **Promote candidate:** for long unsupervised AFK waves, recover from commits, not from completion pings; and consider warning that host-sleep kills background agents.
+- The 5-way file-disjoint split wasn't perfectly clean: #175 (roles) + #196 (itinerary) both edited `phases.pb.js` + `items/new` — git auto-merged correctly, and I verified the hook-chain order + the items/new guard stacking compose (role-gate reroutes travelers through suggestions; #196's phase-required + delete-block coexist). Lesson: role-enforcement hooks land in the same files as itinerary logic — route them to ONE agent or sequence, don't split roles vs itinerary.
+- Integration gate earned its keep AGAIN: e2e caught #198's "Estimated Total"→"Budget Total" rename breaking a stale assertion (fixed the test); a flaky settle-up failure was diagnosed (cross-test data dep under parallel workers, not a regression) and cleared on rerun — didn't chase it as real.
+- Held **#208** (archive export→import) — depends on #173 (not in wave) + a PII-scope decision; correctly not shipped blind.
+- Backstop held: check 0 · units 412 · e2e 52/1 · rules 406/406; #175's migration 0047 + items/phases role hooks verified on a fresh PB before ship.
+- **Review due (5 waves logged):** propose ≤3 skill edits next — candidates: the per-issue-commit recovery rule, the rename/removal → grep-tests rule (now appeared 2× → promote), and the :8097 startup-timeout fix (already applied).
+
+### 2026-06-13 wave F: trip-mode coherence — ONE sequential agent, 6 interlocked issues
+- Sequential single-agent (not parallel) for 6 issues converging on AppShell/Overview/items-new/loaders was right: zero cross-change seams (the agent saw all its own edits), check 0, units 373, e2e 47/1. ~194k agent tokens — coherent, worth it.
+- **The integration e2e earned its keep — the headline catch.** trip-mode-checklist failed: it creates its "active" trip with UTC `toISOString()` dates, but trips/new defaults tz to the machine zone (America/Detroit); an evening run set start_date to tomorrow-in-trip-tz → `isTripActive` (correctly, #167) read it not-yet-started → `/today` redirected to Overview → no "Check task". Diagnosed as a **tz-fragile TEST, not a code regression** (loader+chrome agreed; #167 is correct). The circuit-breaker (stop after 2 fails → diagnose, don't re-patch) prevented BOTH a false "it's just the flake, merge" AND a false "revert #167". Fix = tz-robust test dates.
+- Pre-dispatch recon paid off: caught + corrected #199's stale pointer (#154 had deleted `NowDayWrapped.svelte`) in the brief, so the agent didn't chase a ghost file.
+- **:8097 startup flake recurred (3× this wave; 2nd wave running).** 15s health-check too tight under the session's accumulated load. Fixed DURABLY (bumped e2e-isolated.sh to 30s, committed) instead of gambling on reruns — promote-watch tripped: this flake has now cost time across 2 waves, the structural fix is in.
+- Boundary: clean — the test + harness fixes were my-lane integration work; no product decision surfaced to Scott. Visual pass confirmed the #197 chrome (Overview=moss / now=clay) + #168 toggle live.
+
+### 2026-06-13 wave E: audit-fixes — FIRST hybrid wave (4 PM-spawned background agents)
+- Hybrid model works: 4 disjoint afk issues → parallel worktree agents → all returned clean → integrated in one reviewed pass + one deploy. Disjointness held (verified file-sets before firing); zero merge conflicts.
+- Caught-for-a-session: (1) `#209` removed Print but left the e2e `print itinerary button visible` assertion + a sibling test's render-sentinel both green-on-old, red-on-merge — the scoped agent can't see specs outside its files; the integration pass is exactly where this is caught. (2) `#205` first pass scoped codes to doc-bearing items only; Scott expanded to a dedicated all-items section — I rebuilt it (the agent's per-group plumbing was the wrong shape).
+- **Process finding (NEW, watch for recurrence → promote):** agent worktrees have NO `.wolf/` (gitignored) → agents can't read cerebrum scars OR update anatomy/memory/buglog. Bit nothing this wave (frontend; I pre-inlined #206's scars) but WILL bite backend-heavy Wave F/G. Fix applied going forward: bake `cp -r <main>/.wolf .wolf` into worktree-agent ENV, and PM owns the `.wolf` writes at integration.
+- Boundary: 2 genuine escalations, both right — surfaced the #205 scope gap (product) and the bundled-push of Scott's unpushed audit-docs commit (his publish intent). Neither was mine to decide.
+- Ceremony cut, on purpose: the starter template's "open a don't-merge PR" — skipped for in-session background agents (they return via result + local branch; I review the branch diff directly). No safety lost, one round-trip saved per agent. Watch whether skipping the PR ever costs a missed review surface; if not by wave G, propose dropping the PR requirement for the AFK-agent path in SKILL.md.
 
 ### 2026-06-12 wave C: parking-scope (#159 + #160)
 - Caught-for-a-session: none — both PRs matched AC exactly and self-verified green.
