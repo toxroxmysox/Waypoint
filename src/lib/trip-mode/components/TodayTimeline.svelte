@@ -17,7 +17,8 @@
 
 	const timeline = $derived(buildTimeline(items));
 
-	const completedCount = $derived(items.filter((i) => i.status === 'done').length);
+	// Plan-based count, never a done-count: done is Closeout's verdict and no
+	// Trip-Mode surface can set it, so "0 of N done" all day was a lie (#199).
 	const totalCount = $derived(items.length);
 
 	function getTemporalState(item: Item): 'past' | 'current' | 'future' {
@@ -55,7 +56,7 @@
 
 {#if totalCount > 0}
 	<div class="mb-3 flex items-center justify-between">
-		<Pill variant="default" size="sm">{completedCount} of {totalCount} done</Pill>
+		<Pill variant="default" size="sm">{totalCount} {totalCount === 1 ? 'thing' : 'things'} on today's plan</Pill>
 	</div>
 {/if}
 

@@ -79,10 +79,12 @@ export function getNowViewState(
 
 	// Nothing ahead. The cutoff only decides how this empty state reads.
 	if (now.getUTCHours() >= CUTOFF_HOUR) {
+		// Count what was PLANNED for today, not a done-count: done is assigned at
+		// Closeout and no Trip-Mode surface can move it, so "0 of N done" all day
+		// was a lie (#199). The summary reads "N things on today's plan".
 		const counted = todayItems.filter((i) => !isMultiDay(i));
-		const completedCount = counted.filter((i) => i.status === 'done').length;
 		return {
-			focus: { kind: 'wrapped-summary', completedCount, totalCount: counted.length },
+			focus: { kind: 'wrapped-summary', totalCount: counted.length },
 			forwardItems: []
 		};
 	}

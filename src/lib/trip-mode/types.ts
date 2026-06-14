@@ -37,7 +37,9 @@ export type NowFocus =
 	| { kind: 'mid-event'; currentItem: Item; minutesRemaining: number }
 	| { kind: 'free-time'; nextItem: Item; minutesUntilNext: number }
 	| { kind: 'nothing-else-planned' }
-	| { kind: 'wrapped-summary'; completedCount: number; totalCount: number };
+	// Day-wrapped summary counts what was PLANNED for today, not what's "done":
+	// done is Closeout's verdict and no Trip-Mode surface can move it (#199).
+	| { kind: 'wrapped-summary'; totalCount: number };
 
 /**
  * Full Now derivation: one Focus + a forward, today-only item list (items still

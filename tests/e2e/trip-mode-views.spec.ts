@@ -46,9 +46,9 @@ test.describe('Trip Mode Views', () => {
 			page.locator(':visible', { hasText: 'Next 3 Days' }).first()
 		).toBeVisible();
 
-		// Should show progress or empty state
+		// Should show the plan-count pill (#199 reworded "0 of N done") or an empty state
 		await expect(
-			page.locator(':visible', { hasText: /done|No itinerary|Nothing scheduled/ }).first()
+			page.locator(':visible', { hasText: /on today's plan|No itinerary|Nothing scheduled/ }).first()
 		).toBeVisible();
 	});
 

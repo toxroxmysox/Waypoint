@@ -83,8 +83,7 @@
 				<p class="text-ink font-display text-xl font-semibold">Day wrapped</p>
 				{#if focus.totalCount > 0}
 					<p class="text-ink-muted mt-2 text-sm">
-						{focus.completedCount} of {focus.totalCount}
-						{focus.totalCount === 1 ? 'item' : 'items'} completed
+						{focus.totalCount} {focus.totalCount === 1 ? 'thing' : 'things'} on today's plan
 					</p>
 				{:else}
 					<p class="text-ink-muted mt-2 text-sm">Nothing was scheduled for today.</p>

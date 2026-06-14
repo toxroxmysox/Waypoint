@@ -168,7 +168,7 @@ describe('getNowViewState — Focus + forward list (#153)', () => {
 	});
 
 	describe('nothing ahead — at/after 8pm cutoff', () => {
-		it('reads as a wrapped done-count summary once empty ahead and at/after 8pm', () => {
+		it('reads as a wrapped plan summary once empty ahead and at/after 8pm', () => {
 			const items = [
 				makeItem({ id: 'a', start_time: '2026-10-15 09:00:00.000Z', end_time: '2026-10-15 10:00:00.000Z', status: 'done' }),
 				makeItem({ id: 'b', start_time: '2026-10-15 12:00:00.000Z', end_time: '2026-10-15 13:00:00.000Z', status: 'done' })
@@ -176,25 +176,28 @@ describe('getNowViewState — Focus + forward list (#153)', () => {
 			const state = getNowViewState(items, new Date('2026-10-15T20:00:00Z'), true);
 			expect(state.focus.kind).toBe('wrapped-summary');
 			if (state.focus.kind === 'wrapped-summary') {
-				expect(state.focus.completedCount).toBe(2);
 				expect(state.focus.totalCount).toBe(2);
 			}
 		});
 
-		it('counts only done items as completedCount', () => {
+		// #199 — the summary counts what was PLANNED for today, never a done-count
+		// (done is Closeout's verdict, unreachable from Trip Mode). Status is ignored.
+		it('counts every planned item regardless of status — no done-count', () => {
 			const items = [
 				makeItem({ id: 'a', status: 'done' }),
 				makeItem({ id: 'b', status: 'planned' }),
 				makeItem({ id: 'c', status: 'done' })
 			];
 			const state = getNowViewState(items, new Date('2026-10-15T22:30:00Z'), true);
+			expect(state.focus.kind).toBe('wrapped-summary');
 			if (state.focus.kind === 'wrapped-summary') {
-				expect(state.focus.completedCount).toBe(2);
 				expect(state.focus.totalCount).toBe(3);
+				// completedCount no longer exists on the focus — done is not surfaced.
+				expect('completedCount' in state.focus).toBe(false);
 			}
 		});
 
-		it('an empty day at/after 8pm wraps with zero counts', () => {
+		it('an empty day at/after 8pm wraps with a zero plan count', () => {
 			const state = getNowViewState([], new Date('2026-10-15T20:30:00Z'), true);
 			expect(state.focus.kind).toBe('wrapped-summary');
 			if (state.focus.kind === 'wrapped-summary') {
@@ -302,7 +305,7 @@ describe('getNowViewState — Focus + forward list (#153)', () => {
 			expect(state.forwardItems.map((i) => i.id)).toEqual(['dinner']);
 		});
 
-		it('multi-day items are excluded from the wrapped done-count', () => {
+		it('multi-day items are excluded from the wrapped plan count', () => {
 			// After 8pm, nothing same-day ahead; the spanning rental should not pad counts.
 			const lateNow = new Date('2026-06-08T20:30:00.000Z');
 			const state = getNowViewState([avis(), workMeetings()], lateNow, true);
