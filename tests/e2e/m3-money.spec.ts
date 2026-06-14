@@ -116,8 +116,9 @@ test.describe('M3 Money', () => {
 			await expect(page.getByText('Food').filter({ visible: true }).first()).toBeVisible();
 			await expect(page.getByText('Transport').filter({ visible: true }).first()).toBeVisible();
 
-			// Grand total header visible
-			await expect(page.getByText(/estimated total/i).filter({ visible: true }).first()).toBeVisible();
+			// Grand total header visible (renamed "Estimated Total" → "Budget Total" in #198,
+			// which disambiguates the budget envelope from the plan's cost estimate).
+			await expect(page.getByText(/budget total/i).filter({ visible: true }).first()).toBeVisible();
 
 			// Save button visible for owner
 			await expect(page.getByRole('button', { name: /save budget/i }).filter({ visible: true }).first()).toBeVisible();
