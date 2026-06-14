@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { page } from '$app/state';
+	import { replaceState } from '$app/navigation';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import SubTabs from '$lib/ui/SubTabs.svelte';
 	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
@@ -75,6 +77,17 @@
 		selectedExpense = expense;
 		showExpenseDetail = true;
 	}
+
+	// The Trip Mode central Add navigates here with ?action=add — open the sheet
+	// and strip the param so a refresh doesn't reopen it.
+	$effect(() => {
+		if (page.url.searchParams.get('action') === 'add') {
+			showAddExpense = true;
+			const url = new URL(page.url);
+			url.searchParams.delete('action');
+			replaceState(url, page.state);
+		}
+	});
 </script>
 
 <NavBar
