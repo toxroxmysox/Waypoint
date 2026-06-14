@@ -110,7 +110,7 @@
 	<!-- Forward today-only list: next at normal weight, the rest muted -->
 	{#if nextItem}
 		<NowDivider label="Up next" />
-		<Card href="/trips/{data.trip.slug}/items/{nextItem.id}">
+		<Card href="/trips/{data.trip.slug}/items/{nextItem.id}?from=trip">
 			<div class="flex items-center gap-3 p-4">
 				<TypeIcon type={nextItem.type} sub={nextItem.subtype} size={36} />
 				<div class="min-w-0 flex-1">
@@ -131,7 +131,7 @@
 			<p class="text-ink-muted text-[11px] font-medium uppercase tracking-wide">Later today</p>
 			{#each laterItems as item (item.id)}
 				<a
-					href="/trips/{data.trip.slug}/items/{item.id}"
+					href="/trips/{data.trip.slug}/items/{item.id}?from=trip"
 					class="hover:bg-surface-2 flex items-center gap-2.5 rounded-lg px-2 py-2 opacity-75 transition-opacity hover:opacity-100"
 				>
 					<span class="font-mono text-ink-muted w-16 shrink-0 text-xs">

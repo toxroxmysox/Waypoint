@@ -56,7 +56,11 @@ test.describe('Trip Mode Views', () => {
 		// Use mobile viewport so only BottomNav renders
 		await page.setViewportSize({ width: 375, height: 812 });
 
-		await goToActiveTrip(page);
+		const slug = await goToActiveTrip(page);
+		// The Add affordance is Trip-Mode chrome; the Overview now renders planning
+		// chrome (#197), so be on a Trip-Mode surface before reaching for it.
+		await page.goto(`${BASE}/trips/${slug}/now`);
+		await page.waitForURL('**/now');
 
 		// The Add button in BottomNav (visible at mobile width)
 		await page.locator('.md-desktop\\:hidden button[aria-label="Add"]').click();

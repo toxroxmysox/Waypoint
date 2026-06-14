@@ -27,7 +27,7 @@
 		<div class="bg-clay absolute -left-2 top-0 bottom-0 w-1 rounded-full"></div>
 	{/if}
 
-	<Card href="/trips/{tripSlug}/items/{item.id}">
+	<Card href="/trips/{tripSlug}/items/{item.id}?from=trip">
 		<div class="flex items-start gap-3 p-3">
 			<TypeIcon type={item.type} sub={item.subtype} size={32} />
 			<div class="min-w-0 flex-1">

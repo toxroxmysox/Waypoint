@@ -36,12 +36,11 @@
 	}
 </script>
 
+<!-- Today is a root Trip-Mode tab, not a drill-down — no back chevron (#197 B-012). -->
 <NavBar
 	title="Today"
 	subtitle={data.trip.title}
 	subtitleStyle="tagline"
-	back
-	backHref="/trips/{data.trip.slug}"
 >
 	{#snippet right()}
 		<NotificationBell bind:notifications bind:unreadCount />
@@ -97,7 +96,7 @@
 				{#if tomorrowItems.length > 0}
 					<div class="mt-2 space-y-1">
 						{#each tomorrowItems.slice(0, 3) as item}
-							<a href="/trips/{data.trip.slug}/items/{item.id}" class="border-line hover:border-ink-muted flex items-center gap-2 rounded-lg border px-3 py-2">
+							<a href="/trips/{data.trip.slug}/items/{item.id}?from=trip" class="border-line hover:border-ink-muted flex items-center gap-2 rounded-lg border px-3 py-2">
 								<span class="font-mono text-ink-muted text-xs">
 									{item.start_time ? formatTime(item.start_time) : '—'}
 								</span>

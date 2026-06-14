@@ -8,6 +8,8 @@
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import { titleCase } from '$lib/shell/format';
+	import { fromTrip } from '$lib/shell/nav-tabs';
+	import { page } from '$app/state';
 	import ItemForm from '$lib/itinerary/components/ItemForm.svelte';
 
 	import VoteButtons from '$lib/collaboration/components/VoteButtons.svelte';
@@ -34,10 +36,17 @@
 	// Newest first: pending optimistic comments on top of the (-created) server list.
 	let allComments = $derived([...optimisticComments, ...data.comments]);
 
+	// Back is mode-aware (#197): a Trip-Mode drill-down (?from=trip) returns to
+	// Today; a planning visit returns to the item's day, else its phase (#197
+	// B-023 — parking ideas have no day), else the Overview.
 	let backHref = $derived(
-		data.itemDay
-			? `/trips/${data.trip.slug}/days/${data.itemDay.id}`
-			: `/trips/${data.trip.slug}`
+		fromTrip(page.url)
+			? `/trips/${data.trip.slug}/today`
+			: data.itemDay
+				? `/trips/${data.trip.slug}/days/${data.itemDay.id}`
+				: data.itemPhase
+					? `/trips/${data.trip.slug}/phases/${data.itemPhase.id}`
+					: `/trips/${data.trip.slug}`
 	);
 
 	// Inline checklist (ledger, issue #55)

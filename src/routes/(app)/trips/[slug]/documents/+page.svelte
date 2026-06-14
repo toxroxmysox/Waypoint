@@ -66,7 +66,8 @@
 	});
 </script>
 
-<NavBar title="Documents" subtitle="{total} {total === 1 ? 'file' : 'files'} · {data.trip.title}" back backHref="/trips">
+<!-- Back stays INSIDE the trip (#197 B-012) — never abandon to the all-trips list. -->
+<NavBar title="Documents" subtitle="{total} {total === 1 ? 'file' : 'files'} · {data.trip.title}" back backHref="/trips/{data.trip.slug}">
 	{#snippet right()}
 		{#if onTrip}
 			<span class="bg-clay-tint text-clay rounded-full px-2.5 py-1 text-[11px] font-semibold">On trip</span>

@@ -8,9 +8,10 @@
 	import type { MemberRole, Phase, Day, Trip } from '$lib/types';
 	import { isTripActive } from '$lib/trip-mode/activation';
 	import type { TripViewMode } from '$lib/trip-mode/activation';
-	import { getNavConfig } from '$lib/shell/nav-tabs';
+	import { getNavConfig, resolveChromeMode } from '$lib/shell/nav-tabs';
 	import { tripToday, tripTz } from '$lib/shell/trip-time';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 
 	let {
 		children,
@@ -33,11 +34,13 @@
 	} = $props();
 
 	const active = $derived(trip ? isTripActive(trip) : false);
-	const defaultMode: TripViewMode = $derived(active ? 'trip' : 'planning');
 
 	let userOverride = $state<TripViewMode | null>(null);
 
-	const mode: TripViewMode = $derived(active ? (userOverride ?? defaultMode) : 'planning');
+	// Chrome mode is derived from the URL (SSR-safe $derived, never $effect): a
+	// planning surface — including the bare Overview — always renders planning
+	// chrome even on an active trip, so the mode pill can't lie (#197 B-011).
+	const mode: TripViewMode = $derived(resolveChromeMode(page.url.pathname, active, userOverride));
 
 	$effect(() => {
 		if (!active) userOverride = null;

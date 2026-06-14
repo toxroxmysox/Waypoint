@@ -26,7 +26,7 @@
 </script>
 
 <a
-	href="/trips/{slug}/items/{item.id}"
+	href="/trips/{slug}/items/{item.id}?from=trip"
 	class="block rounded-xl border p-4 transition-colors
 		{isNext ? 'border-clay bg-clay/5 shadow-sm' : 'border-line bg-paper hover:border-ink-muted'}"
 >

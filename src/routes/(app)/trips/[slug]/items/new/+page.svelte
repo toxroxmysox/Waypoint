@@ -7,9 +7,17 @@
 	import ItemForm from '$lib/itinerary/components/ItemForm.svelte';
 	import type { ItemFormData } from '$lib/itinerary/components/ItemFormFields';
 	import { buildEmptyFormData } from '$lib/itinerary/item-fields';
+	import { fromTrip } from '$lib/shell/nav-tabs';
+	import { page } from '$app/state';
 	import type { ItemType } from '$lib/types';
 
 	let { data, form } = $props();
+
+	// Quick-add from Trip Mode (?from=trip) returns to Today; planning-entry keeps
+	// the Overview (#197 / #169).
+	let backHref = $derived(
+		fromTrip(page.url) ? `/trips/${data.trip.slug}/today` : `/trips/${data.trip.slug}`
+	);
 
 	let dirty = $state(false);
 	let submitting = $state(false);
@@ -54,7 +62,7 @@
 	});
 </script>
 
-<NavBar title="New item" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}" />
+<NavBar title="New item" subtitle={data.trip.title} back {backHref} />
 
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-4">
 	{#if error}

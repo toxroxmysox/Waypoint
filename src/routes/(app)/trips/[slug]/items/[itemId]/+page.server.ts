@@ -123,10 +123,16 @@ export const actions: Actions = {
 		try {
 			const item = await locals.pb.collection('items').getOne(params.itemId);
 			const dayId = item['day'] as string;
+			const phaseId = item['phase'] as string;
 			await locals.pb.collection('items').delete(params.itemId);
 
+			// Post-delete lands where the detail's back would (#197 B-023): the
+			// item's day, else its phase (parking ideas have no day), else Overview.
 			if (dayId) {
 				redirect(303, `/trips/${params.slug}/days/${dayId}`);
+			}
+			if (phaseId) {
+				redirect(303, `/trips/${params.slug}/phases/${phaseId}`);
 			}
 			redirect(303, `/trips/${params.slug}`);
 		} catch (err: unknown) {
