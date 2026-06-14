@@ -67,4 +67,38 @@ export interface TripExport {
 			total: number;
 		}>;
 	} | null;
+	// ── Snapshot-only sections (see EXPORT COVERAGE in export.ts) ─────────────
+	// Captured so a kept export is a true record (money ledger + group input),
+	// but NOT restored on import: every row below keys members by id, and a
+	// single-owner re-import can't reconstruct the roster to re-link them.
+	// `member_ref` values point at `members[].ref`; a human key, not PII.
+	members: Array<{
+		ref: string;
+		display_name: string;
+		role: string;
+	}>;
+	expenses: Array<{
+		paid_by_ref: string;
+		amount_usd: number;
+		description: string;
+		date: string;
+		category: string;
+		split_mode: string;
+		split_data: unknown;
+	}>;
+	settlements: Array<{
+		from_member_ref: string;
+		to_member_ref: string;
+		amount_usd: number;
+		date: string;
+		note: string;
+	}>;
+	goals: Array<{
+		title: string;
+		description: string;
+		status: string;
+		sort_order: number;
+		created_by_ref: string;
+		votes: Array<{ member_ref: string; value: string }>;
+	}>;
 }

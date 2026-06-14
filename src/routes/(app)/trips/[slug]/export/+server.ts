@@ -1,5 +1,16 @@
 import type { RequestHandler } from './$types';
-import type { Trip, Phase, Day, Item, TripBudget } from '$lib/types';
+import type {
+	Trip,
+	Phase,
+	Day,
+	Item,
+	TripBudget,
+	TripMember,
+	Expense,
+	Settlement,
+	TripGoal,
+	GoalVote
+} from '$lib/types';
 import { buildTripExport } from '$lib/portability/export';
 import { fetchManualChecklists } from '$lib/itinerary/checklist-loaders';
 
@@ -34,6 +45,31 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 	// Trip/phase-scoped manual checklists + their tasks (ADR-0003 §7).
 	const { checklists, tasks: checklistTasks } = await fetchManualChecklists(locals.pb, trip.id);
 
+	// Snapshot-only sections (money ledger + goals + member key). Exported for the
+	// record; import deliberately skips them — see EXPORT COVERAGE in export.ts.
+	const [members, expenses, settlements, goals] = await Promise.all([
+		locals.pb
+			.collection('trip_members')
+			.getFullList<TripMember>({ filter: `trip = "${trip.id}"`, sort: 'joined_at' }),
+		locals.pb
+			.collection('expenses')
+			.getFullList<Expense>({ filter: `trip = "${trip.id}"`, sort: 'date' }),
+		locals.pb
+			.collection('settlements')
+			.getFullList<Settlement>({ filter: `trip = "${trip.id}"`, sort: 'date' }),
+		locals.pb
+			.collection('trip_goals')
+			.getFullList<TripGoal>({ filter: `trip = "${trip.id}"`, sort: 'sort_order' })
+	]);
+
+	const goalIds = goals.map((g) => g.id);
+	const goalVotes =
+		goalIds.length > 0
+			? await locals.pb.collection('goal_votes').getFullList<GoalVote>({
+					filter: goalIds.map((id) => `goal = "${id}"`).join(' || ')
+				})
+			: [];
+
 	let budget = null;
 	try {
 		const tripBudget = await locals.pb
@@ -46,7 +82,20 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 		// No budget
 	}
 
-	const exportData = buildTripExport(trip, phases, days, items, budget, checklists, checklistTasks);
+	const exportData = buildTripExport(
+		trip,
+		phases,
+		days,
+		items,
+		budget,
+		checklists,
+		checklistTasks,
+		members,
+		expenses,
+		settlements,
+		goals,
+		goalVotes
+	);
 	const filename = `waypoint-${trip.slug}-${new Date().toISOString().split('T')[0]}.json`;
 
 	return new Response(JSON.stringify(exportData, null, 2), {
