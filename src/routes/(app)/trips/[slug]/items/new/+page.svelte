@@ -28,6 +28,7 @@
 	let prefill = $derived(data.prefill ?? null);
 	let suggestionId = $derived((prefill as Record<string, unknown> | null)?._suggestion_id as string ?? '');
 	let prefillAuthorName = $derived((prefill as Record<string, unknown> | null)?._author_name as string ?? '');
+	let prefillDayLabel = $derived((prefill as Record<string, unknown> | null)?._proposed_day_label as string ?? '');
 
 	let buttonLabel = $derived(
 		loading
@@ -46,19 +47,32 @@
 		return () => window.removeEventListener('beforeunload', handler);
 	});
 
+	// #177 — prefill ALL payload fields the traveler proposed, not just half.
+	// Previously day/phase/cost/subtype/end_date/assignee were dropped, so an
+	// Edit & Approve overwrote the original payload with empties (and a phase=''
+	// item fell into the no-surface limbo). day + phase flow through the
+	// create-mode context preselect (server seeds them from the payload), so
+	// they're not repeated here; everything else is set on initialData.
 	let initialData: ItemFormData = $derived({
 		...buildEmptyFormData((prefill?.type as ItemType) ?? 'activity'),
 		type: (prefill?.type as ItemType) ?? 'activity',
+		subtype: (prefill?.subtype as string) ?? '',
 		title: (prefill?.title as string) ?? '',
 		description: (prefill?.description as string) ?? '',
 		start_time: (prefill?.start_time as string) ?? '',
 		end_time: (prefill?.end_time as string) ?? '',
+		end_date: (prefill?.end_date as string) ?? '',
 		location_name: (prefill?.location_name as string) ?? '',
 		location_address: (prefill?.location_address as string) ?? '',
+		location_coords: prefill?.location_coords ?? null,
+		google_place_id: (prefill?.google_place_id as string) ?? '',
 		confirmation_codes: Array.isArray(prefill?.confirmation_codes) ? prefill.confirmation_codes : [],
 		booked: prefill?.booked === true,
+		requires_booking: prefill?.requires_booking === true,
 		reservation_url: (prefill?.reservation_url as string) ?? '',
 		free_cancellation: prefill?.free_cancellation === true,
+		cost_estimate_usd: Number(prefill?.cost_estimate_usd) || 0,
+		assigned_to: Array.isArray(prefill?.assigned_to) ? (prefill.assigned_to as string[]) : [],
 	});
 </script>
 
@@ -77,7 +91,8 @@
 
 	{#if suggestionId && prefillAuthorName}
 		<div class="border-moss/30 bg-moss-tint text-moss rounded-md border p-3 text-sm">
-			Reviewing suggestion from <strong>{prefillAuthorName}</strong>. Edit as needed, then approve.
+			Proposed by <strong>{prefillAuthorName}</strong>{#if prefillDayLabel}
+				for <strong>{prefillDayLabel}</strong>{/if}. Edit as needed, then approve.
 		</div>
 	{/if}
 

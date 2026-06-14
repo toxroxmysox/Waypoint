@@ -17,9 +17,11 @@ export const load: PageServerLoad = async ({ url, locals, parent }) => {
 
 	// If a day was preselected and no phase was explicitly passed, infer the
 	// phase from the day's first matched phase so the form arrives filled in.
+	// (#177 may later override both from a suggestion's proposed payload.)
+	let preselectedDay = dayId || '';
 	let preselectedPhase = phaseIdParam || '';
-	if (dayId && !preselectedPhase) {
-		const day = (days as Day[]).find((d) => d.id === dayId);
+	if (preselectedDay && !preselectedPhase) {
+		const day = (days as Day[]).find((d) => d.id === preselectedDay);
 		if (day?.phases?.length) {
 			preselectedPhase = day.phases[0];
 		}
@@ -52,12 +54,35 @@ export const load: PageServerLoad = async ({ url, locals, parent }) => {
 			const s = (resData.items ?? []).find((item: { id: string }) => item.id === suggestionId);
 			if (s) {
 				const raw = s.payload ?? {};
+				// #177 — the traveler's proposed day/phase live in the suggestion
+				// payload, not the URL. Seed the create-mode preselect from them so
+				// Edit & Approve keeps the scheduling intent (day flows through
+				// context.preselectedDay; phase through context.preselectedPhase).
+				if (raw.day) preselectedDay = String(raw.day);
+				if (raw.phase) preselectedPhase = String(raw.phase);
+				else if (preselectedDay && !preselectedPhase) {
+					const proposedDay = (days as Day[]).find((d) => d.id === preselectedDay);
+					if (proposedDay?.phases?.length) preselectedPhase = proposedDay.phases[0];
+				}
+				// Human-readable proposed-day label for the "Proposed by … for …" line.
+				let proposedDayLabel = 'Unscheduled';
+				const proposedDayRec = (days as Day[]).find((d) => d.id === String(raw.day ?? ''));
+				if (proposedDayRec?.date) {
+					proposedDayLabel = new Date(proposedDayRec.date.replace(' ', 'T')).toLocaleDateString(
+						'en-US',
+						{ weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }
+					);
+				}
 				prefill = {
 					...raw,
 					start_time: datetimeToTime(raw.start_time ?? ''),
 					end_time: datetimeToTime(raw.end_time ?? ''),
+					end_date: String(raw.end_date ?? '').split(/[T ]/)[0],
+					cost_estimate_usd: Number(raw.cost_estimate_usd) || 0,
+					assigned_to: Array.isArray(raw.assigned_to) ? raw.assigned_to : [],
 					_suggestion_id: s.id,
-					_author_name: s.author_name
+					_author_name: s.author_name,
+					_proposed_day_label: proposedDayLabel
 				};
 			}
 		} catch (_) {
@@ -76,7 +101,7 @@ export const load: PageServerLoad = async ({ url, locals, parent }) => {
 		days,
 		members,
 		goals,
-		preselectedDay: dayId || '',
+		preselectedDay,
 		preselectedPhase,
 		tripStartDate: String(trip.start_date || '').split(/[T ]/)[0],
 		tripEndDate: String(trip.end_date || '').split(/[T ]/)[0],
