@@ -63,17 +63,33 @@
 		</div>
 	{/if}
 
-	<!-- Mode pill button (lg-desktop only, when active) -->
+	<!-- Mode toggle (when active). Full pill at lg-desktop; an icon-sized variant
+	     fills the 72px md-desktop rail so 900–1279px isn't locked into Trip Mode
+	     with no "Edit plan" (#168). -->
 	{#if active && onToggleMode}
+		{@const toLabel = mode === 'trip' ? 'Edit plan' : 'Trip view'}
+		{@const toIcon = mode === 'trip' ? 'calendar' : 'clock'}
+		{@const tint = mode === 'trip'
+			? 'bg-moss-tint text-moss hover:bg-moss-tint/80'
+			: 'bg-clay-tint text-clay hover:bg-clay-tint/80'}
+		<!-- md-desktop: icon button -->
+		<div class="flex justify-center px-2 pt-3 lg-desktop:hidden">
+			<button
+				onclick={onToggleMode}
+				aria-label={toLabel}
+				title={toLabel}
+				class="flex h-12 w-12 items-center justify-center rounded-full transition-colors {tint}"
+			>
+				<StarIcons name={toIcon} size={20} />
+			</button>
+		</div>
+		<!-- lg-desktop: full pill -->
 		<div class="hidden lg-desktop:flex justify-center px-3 pt-3">
 			<button
 				onclick={onToggleMode}
-				class="w-full rounded-full px-3 py-1.5 text-xs font-medium transition-colors
-					{mode === 'trip'
-						? 'bg-moss-tint text-moss hover:bg-moss-tint/80'
-						: 'bg-clay-tint text-clay hover:bg-clay-tint/80'}"
+				class="w-full rounded-full px-3 py-1.5 text-xs font-medium transition-colors {tint}"
 			>
-				{mode === 'trip' ? 'Edit plan' : 'Trip view'}
+				{toLabel}
 			</button>
 		</div>
 	{/if}
