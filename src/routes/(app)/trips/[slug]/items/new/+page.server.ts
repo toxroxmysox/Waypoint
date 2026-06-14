@@ -86,7 +86,10 @@ export const load: PageServerLoad = async ({ url, locals, parent }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, locals, params }) => {
+	default: async ({ request, url, locals, params }) => {
+		// Trip-Mode quick-add (AddSheet sends ?from=trip): keep the user in Trip
+		// Mode on save instead of ejecting to the Planning day view (#169).
+		const cameFromTrip = url.searchParams.get('from') === 'trip';
 		const trip = await locals.pb
 			.collection('trips')
 			.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
@@ -269,7 +272,11 @@ export const actions: Actions = {
 				await syncGoalLinks(locals.pb, trip.id, created.id, goalIds);
 			}
 
-			// Redirect back to day view if came from a day, otherwise trip overview
+			// Trip-Mode quick-add lands back on Today (the new item shows there);
+			// planning-entry returns to the day view, else the trip overview (#169).
+			if (cameFromTrip) {
+				redirect(303, `/trips/${params.slug}/today`);
+			}
 			if (day) {
 				redirect(303, `/trips/${params.slug}/days/${day}`);
 			}
