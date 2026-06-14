@@ -4,6 +4,7 @@ import type { Item, Checklist, Task, TripMember, Vote, Comment, Document, Expens
 import { VOTE_OPTIONS, type VoteValue } from '$lib/collaboration/voting';
 import { toDocumentView } from '$lib/documents/view';
 import { memberAvatarUrl, withAvatarUrls } from '$lib/collaboration/member-avatar';
+import { computeMovePatch } from '$lib/itinerary/move-item';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, membership, phases, days } = await parent();
@@ -426,10 +427,31 @@ export const actions: Actions = {
 		const newPhase = data.get('phase')?.toString() || '';
 
 		try {
-			await locals.pb.collection('items').update(params.itemId, {
-				day: newDay,
-				phase: newPhase
+			// #172 — keep status in lockstep with day so the item can't land in a
+			// contradictory state (unplanned-with-day → invisible on the day;
+			// planned-without-day → renders nowhere or twice). The patch is computed
+			// by a pure, unit-tested function (move-item.ts) from the item's current
+			// status, mirroring the day view's pullToPlan/pushToParking invariant.
+			const item = await locals.pb.collection('items').getOne<Item>(params.itemId);
+			const patch = computeMovePatch({
+				currentStatus: item.status,
+				newDay,
+				newPhase
 			});
+
+			// #196 invariant carried into the move: an unplanned item must keep a
+			// phase or it falls into the no-surface limbo. If the move would leave
+			// it unplanned-and-phase-less, fall back to the trip's first phase (by
+			// order) so it stays renderable — same policy as the suggestion hook.
+			if (patch.status === 'unplanned' && !patch.phase) {
+				const firstPhase = await locals.pb
+					.collection('phases')
+					.getFirstListItem(`trip = "${item.trip}"`, { sort: 'order' })
+					.catch(() => null);
+				if (firstPhase) patch.phase = firstPhase.id;
+			}
+
+			await locals.pb.collection('items').update(params.itemId, patch);
 
 			return { success: true };
 		} catch (err: unknown) {

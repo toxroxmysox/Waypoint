@@ -25,6 +25,10 @@
 	let selectedPhase = $state(untrack(() => currentPhase));
 	let submitting = $state(false);
 
+	// #196/#172 — an unscheduled item must keep a phase (every parking surface is
+	// phase-scoped). Require a phase when no day is picked and phases exist.
+	let phaseRequired = $derived(selectedDay === '' && phases.length > 0);
+
 	function dayLabel(d: Day): string {
 		return new Date(d.date.replace(' ', 'T')).toLocaleDateString('en-US', {
 			weekday: 'short',
@@ -74,18 +78,26 @@
 
 {#if phases.length > 0}
 			<div>
-				<label for="move-phase" class="text-ink-soft block text-sm font-medium">Phase</label>
+				<label for="move-phase" class="text-ink-soft block text-sm font-medium">
+					Phase{#if phaseRequired}<span class="text-clay" aria-hidden="true"> *</span>{/if}
+				</label>
 				<select
 					id="move-phase"
 					name="phase"
 					bind:value={selectedPhase}
+					required={phaseRequired}
 					class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 				>
-					<option value="">No phase</option>
+					<option value="">{phaseRequired ? 'Select a phase…' : 'No phase'}</option>
 					{#each phases as p}
 						<option value={p.id}>{p.name}</option>
 					{/each}
 				</select>
+				{#if phaseRequired}
+					<p class="text-ink-muted mt-1 text-xs">
+						An unscheduled idea needs a phase to show up in its parking lot.
+					</p>
+				{/if}
 			</div>
 		{/if}
 
