@@ -12,6 +12,10 @@
 	let confirmDelete = $state(false);
 	let error = $derived(form?.error ?? '');
 	let success = $derived(form?.success ?? false);
+	// #176 — Settings is an owner console: non-owner/co-owner sees read-only trip
+	// details, no forms, no archive controls, no danger zone. (Actions still 403
+	// server-side — this hides affordances the user could never submit.)
+	const privileged = $derived(data.membership.role === 'owner' || data.membership.role === 'co_owner');
 </script>
 
 <NavBar title="Settings" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}" />
@@ -24,6 +28,7 @@
 		<div class="border-moss/30 bg-moss-tint text-moss rounded-md border p-3 text-sm">Trip updated.</div>
 	{/if}
 
+	{#if privileged}
 	<Card>
 		<form
 			method="POST"
@@ -221,4 +226,17 @@
 			</form>
 		{/if}
 	</div>
+	{:else}
+	<Card>
+		<div class="p-4 space-y-3">
+			<p class="text-ink-muted text-xs">Only an owner or co-owner can change trip settings.</p>
+			<dl class="space-y-2 text-sm">
+				<div><dt class="text-ink-muted text-xs">Trip name</dt><dd class="text-ink">{data.trip.title}</dd></div>
+				<div><dt class="text-ink-muted text-xs">Dates</dt><dd class="text-ink">{data.trip.start_date.split('T')[0].split(' ')[0]} – {data.trip.end_date.split('T')[0].split(' ')[0]}</dd></div>
+				<div><dt class="text-ink-muted text-xs">Timezone</dt><dd class="text-ink">{data.trip.timezone || 'UTC'}</dd></div>
+				<div><dt class="text-ink-muted text-xs">Location</dt><dd class="text-ink">{data.trip.location_summary || '—'}</dd></div>
+			</dl>
+		</div>
+	</Card>
+	{/if}
 </main>
