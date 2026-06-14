@@ -122,7 +122,7 @@
 							<div class="flex items-center gap-2">
 								<span class="text-ink truncate text-sm font-semibold">{m.displayLabel}</span>
 								{#if m.isPlaceholder}
-									<span class="text-ink-muted text-xs">(offline)</span>
+									<span class="text-ink-muted text-xs">(placeholder)</span>
 								{/if}
 							</div>
 							{#if m.emailLabel}
@@ -252,7 +252,7 @@
 		<section class="space-y-3">
 			<div class="flex items-center justify-between">
 				<h2 class="text-ink-soft text-xs font-semibold tracking-wider uppercase">
-					Add offline member
+					Add placeholder member
 				</h2>
 				<button
 					type="button"
