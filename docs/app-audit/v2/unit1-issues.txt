@@ -1,0 +1,18 @@
+# SUPERSEDED 2026-06-13: these #181-194 issues were DUPLICATES of the descriptive
+# batch #167-180 (the prior session filed the same 14 findings twice, 13 min apart).
+# ALL of #181-194 were CLOSED as dups; canonical batch = #167-180.
+# Disposition map (finding → kept #167-180 issue) is in docs/app-audit/progress.md.
+https://github.com/toxroxmysox/Waypoint/issues/181
+https://github.com/toxroxmysox/Waypoint/issues/182
+https://github.com/toxroxmysox/Waypoint/issues/183
+https://github.com/toxroxmysox/Waypoint/issues/184
+https://github.com/toxroxmysox/Waypoint/issues/185
+https://github.com/toxroxmysox/Waypoint/issues/186
+https://github.com/toxroxmysox/Waypoint/issues/187
+https://github.com/toxroxmysox/Waypoint/issues/188
+https://github.com/toxroxmysox/Waypoint/issues/189
+https://github.com/toxroxmysox/Waypoint/issues/190
+https://github.com/toxroxmysox/Waypoint/issues/191
+https://github.com/toxroxmysox/Waypoint/issues/192
+https://github.com/toxroxmysox/Waypoint/issues/193
+https://github.com/toxroxmysox/Waypoint/issues/194

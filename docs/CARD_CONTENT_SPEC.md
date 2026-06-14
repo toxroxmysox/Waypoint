@@ -3,6 +3,8 @@
 > Grilled: 2026-06-10. Source of truth: **the repo**. The `waypoint-card-design` handoff was validated against the code, not the other way around.
 > Companion to: `docs/PHASE_REDESIGN_PRD.md` (parking-lot/drag mechanics), `CONTEXT.md` (domain language).
 > Scope: a **content contract** — which real field feeds each slot on each surface, and its confirmed capture path. This is the binding field→slot reference the phase-redesign build wires against. Not a layout/visual spec (the handoff owns pixels).
+>
+> **⚠️ Partially superseded (2026-06-13, ADR-0011 / #210 Item Assignment):** the "card avatars = votes only, never assignees" rule is **reversed**. Item-card avatars now denote **assignees** (`assigned_to`, when trip >1 member); **votes move to an icon + count pill** on cards (the who-voted-what avatar stacks remain on item **detail**). Affected below: decision **#5**, the timeline card **Reactor avatars** row, and the **parking-lot card** line.
 
 ## Why this exists
 
@@ -35,7 +37,7 @@ Status reality: the edit dropdown offers **Planned / Done only**. `unplanned` is
 | 6 | `considered` status | a parking-lot state | closeout-only abandoned/swapped state | **✅ keep as enum value**, **❌ zero binding to the parking lot.** |
 | 3 | Day-card coverage (Morn/Aft/Eve) | counts timed items per daypart | dayparts derive only from `start_time`; untimed items (the common case) have none | **❌ cut the coverage pills.** Fullness = **one item count** = `dayItems` (timed + untimed; excludes multi-day banners). |
 | 4 | "Needs booking" pill | from `booked`/`requires_booking` | `requires_booking` real + set; pill not rendered today | **✅ add**, bound to `needsBooking()` = `planned && requires_booking && !booked`. Suppressed on parking-lot/unplanned. Mutually exclusive with `Booked`. |
-| 5 | `assigned_to` | "responsible members" (no actual slot) | captured (>1 member) + rendered in detail today | **✅ keep, detail-only.** Card avatars stay **votes-only** (one avatar meaning per card). |
+| 5 | `assigned_to` | "responsible members" (no actual slot) | captured (>1 member) + rendered in detail today | ~~**✅ keep, detail-only.** Card avatars stay votes-only.~~ → **SUPERSEDED by ADR-0011 (#210):** card avatars now denote **assignees** (>1 member) + double as the self-assign "+ Me" target; votes → icon+count pill on cards (faces stay on detail). One avatar meaning per card holds — inverted to assignment. |
 | 7 | `reservation_url` | Booking peek | captured + rendered | **✅ keep.** |
 | 7 | `free_cancellation` | Booking peek | captured + rendered | **✅ keep.** |
 | 7 | `booked_by` | Booking peek | pure ghost (no capture, no render) | **❌ cut.** Column retained, deprecated. |
@@ -72,10 +74,10 @@ Timeline membership = `dayItems` (`day = X && end_date = ""`), ordered by `build
 | Title | `title` | form | |
 | Time / location line | `start_time`–`end_time`, `location_name` | form | Anchored shows time; flowing shows "flex". |
 | Subtype | `subtype` | form | |
-| Reactor avatars | `votes` (item `votes` collection) | VoteButtons | **Votes only.** Never assignees. |
+| ~~Reactor avatars~~ → **Assignee avatars** | `assigned_to` (avatars via `member-avatar`); ~~`votes`~~ | self-assign "+ Me" / ItemForm | **ADR-0011 (#210):** card avatar slot = **assignees** (>1 member) + self-assign target. Votes now render as an **icon + count** pill (avatar stacks moved to detail). |
 | Cost | **`cost_estimate_usd`** (single "Cost") | form | Number only on the card — no expense link here (keep dense card clean). |
 
-**Parking-lot card** (phase-scoped `unplanned` pool, rendered under every day in the leg): drag handle, `TypeIcon`, `title`, `subtype`, reactor avatars, pull-up affordance. **No "Needs booking" pill** (uncommitted). Lifecycle per `PHASE_REDESIGN_PRD.md` (`pullToPlan` → planned+day; `pushToParking` → unplanned, day cleared, time stripped).
+**Parking-lot card** (phase-scoped `unplanned` pool, rendered under every day in the leg): drag handle, `TypeIcon`, `title`, `subtype`, **assignee avatars** (ADR-0011 #210 — was reactor avatars; votes → count pill), pull-up affordance. **No "Needs booking" pill** (uncommitted). Lifecycle per `PHASE_REDESIGN_PRD.md` (`pullToPlan` → planned+day; `pushToParking` → unplanned, day cleared, time stripped).
 
 ### 3. Item detail
 
@@ -88,7 +90,7 @@ Timeline membership = `dayItems` (`day = X && end_date = ""`), ordered by `build
 | Location | `location_name`, `location_address` | form (Places) | **⚠️ add** "Open in Maps" from `google_place_id` (deferred). |
 | Booking | `reservation_url`, `free_cancellation`, `confirmation_codes[]` | form | **No `booked_by`.** |
 | **Cost** | **`cost_estimate_usd`** (single "Cost") | form | **⚠️ add** conditional "View in expenses" → filtered expenses list, only when ≥1 `expenses.linked_item` points here (deferred). |
-| Assigned to | `assigned_to[]` | form (>1 member) | **Keep.** Detail-only. |
+| Assigned to | `assigned_to[]` | form (>1 member) + self-assign | **Keep.** Detail **and** card avatars now (ADR-0011 #210; no longer detail-only). |
 | Votes | item `votes` | VoteButtons | Header VoteButtons + stacks. |
 | Goals | linked `trip_goals.items` | form (goal-side) | **⚠️ add-render** (deferred); detail currently passes `linked_goal_ids: []`. |
 | Documents | `documents[]` | DocumentSection | Keep. |

@@ -635,10 +635,11 @@ Every "add item" form has an optional **lookup field** at the top.
 - Dismissable; remembered for 30 days
 
 ### Offline behavior
-- Service worker caches all trip data when online
-- Offline toggle in user menu: explicit "go offline" prevents network calls
-- Edits while offline = blocked with toast: "You're offline. Reconnect to save changes."
-- Cached views remain fully functional
+*(#116 audit corrected this — the claims here were aspirational and **never held** against the SSR architecture: server-side `locals.pb` loads bypass the service worker, so until #203 only document bytes cache (and only after a Documents-tab visit). The real contract is specced in **#203 / `docs/OFFLINE_PRD.md`**; target:)*
+- **Read-only offline for the one active trip.** After opening it online once during its active window, the service worker has prefetched the whole trip (all days, items, overview, Documents list + document bytes); navigations + their `__data.json` are cached network-first behind a precached app shell, so a cold launch or in-app navigation offline renders the cached trip — never a raw 503.
+- **Offline is automatic** — no manual toggle (the inert `SET_OFFLINE` toggle is removed). An app-wide banner shows "Offline — showing [Trip] as of [time]"; data revalidates on reconnect.
+- **Edits while offline = blocked with a toast** ("You're offline — reconnect to make changes"). Read-only; no offline edit queue.
+- Trips that aren't active aren't bulk-prefetched; they work offline only for pages visited online.
 
 ---
 

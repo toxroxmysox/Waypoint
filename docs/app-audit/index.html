@@ -1,0 +1,1920 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Waypoint — App Audit #116</title>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+mermaid.initialize({ startOnLoad: true, theme: 'neutral', flowchart: { curve: 'basis' } });
+window.addEventListener('load', () => setTimeout(panzoom, 1200));
+function panzoom() {
+  document.querySelectorAll('.diagram').forEach((box) => {
+    const svg = box.querySelector('svg'); if (!svg) return;
+    let scale = 1, tx = 0, ty = 0, dragging = false, sx = 0, sy = 0;
+    const apply = () => (svg.style.transform = `translate(${tx}px,${ty}px) scale(${scale})`);
+    svg.style.transformOrigin = '0 0'; svg.style.cursor = 'grab';
+    box.addEventListener('wheel', (e) => { e.preventDefault(); scale = Math.min(4, Math.max(0.4, scale * (e.deltaY < 0 ? 1.12 : 0.89))); apply(); }, { passive: false });
+    box.addEventListener('pointerdown', (e) => { dragging = true; sx = e.clientX - tx; sy = e.clientY - ty; svg.style.cursor = 'grabbing'; });
+    window.addEventListener('pointermove', (e) => { if (dragging) { tx = e.clientX - sx; ty = e.clientY - sy; apply(); } });
+    window.addEventListener('pointerup', () => { dragging = false; svg.style.cursor = 'grab'; });
+    box.querySelector('.reset')?.addEventListener('click', () => { scale = 1; tx = ty = 0; apply(); });
+  });
+}
+</script>
+<style>
+  :root { --paper:#f4efe7; --surface:#fbf8f2; --ink:#2b2926; --soft:#5a564f; --muted:#8a857c; --line:#e2dccf; --moss:#4a7c59; --clay:#b4552d; --gold:#b08d3e; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink); font:15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 20px 80px; }
+  h1 { font-size: 30px; margin: 8px 0 4px; } h2 { font-size: 21px; margin: 44px 0 10px; border-bottom: 2px solid var(--line); padding-bottom: 6px; }
+  h3 { font-size: 16px; margin: 6px 0; }
+  .sub { color: var(--muted); font-size: 13px; }
+  .scorebar { display:flex; gap:10px; flex-wrap:wrap; margin:18px 0; }
+  .score { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:10px 16px; text-align:center; min-width:86px; }
+  .score b { display:block; font-size:22px; } .score span { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; }
+  .charter { background:var(--surface); border:1px solid var(--line); border-left:4px solid var(--moss); border-radius:10px; padding:16px 20px; }
+  .charter h3 { margin-top:14px; color:var(--moss); font-size:13px; text-transform:uppercase; letter-spacing:.1em; }
+  .charter p, .charter li { font-size:14px; color:var(--soft); }
+  .twocol { columns: 2 340px; column-gap: 28px; }
+  .diagram-box { background:var(--surface); border:1px solid var(--line); border-radius:10px; margin:14px 0; overflow:hidden; }
+  .diagram-box header { display:flex; justify-content:space-between; align-items:center; padding:8px 14px; border-bottom:1px solid var(--line); font-weight:600; font-size:14px; }
+  .diagram { overflow:hidden; height: 430px; position:relative; touch-action:none; }
+  .diagram pre.mermaid { margin:0; display:flex; justify-content:center; }
+  .reset { font-size:12px; border:1px solid var(--line); background:var(--paper); border-radius:6px; padding:3px 10px; cursor:pointer; }
+  .hint { font-size:11px; color:var(--muted); font-weight:400; }
+  .filters { display:flex; gap:6px; flex-wrap:wrap; margin:12px 0; align-items:center; }
+  .filters button { border:1px solid var(--line); background:var(--surface); border-radius:999px; padding:4px 12px; font-size:12.5px; cursor:pointer; color:var(--soft); }
+  .filters button.on { background:var(--ink); color:var(--paper); border-color:var(--ink); }
+  .filters input { border:1px solid var(--line); border-radius:8px; padding:5px 10px; font-size:13px; background:var(--surface); min-width:180px; }
+  .filters .grp { font-size:11px; color:var(--muted); margin-left:8px; text-transform:uppercase; letter-spacing:.06em; }
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px 18px; margin:10px 0; }
+  .card header { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:4px; }
+  .sev { color:#fff; font-weight:700; font-size:12px; border-radius:6px; padding:2px 8px; }
+  .fid { font-family: ui-monospace, monospace; font-size:12px; color:var(--muted); }
+  .chip { font-size:11px; background:var(--paper); border:1px solid var(--line); border-radius:999px; padding:1px 9px; color:var(--soft); }
+  .chip.ctx { border-style:dashed; }
+  .card .what { font-size:14px; } .card .why, .card .fix { font-size:13.5px; color:var(--soft); }
+  .card .where code { font-size:11.5px; color:var(--muted); word-break:break-all; }
+  .card img.shot { max-width:230px; border:1px solid var(--line); border-radius:10px; margin-top:8px; display:block; }
+  table { border-collapse:collapse; width:100%; font-size:13px; background:var(--surface); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  th { text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); padding:8px 10px; border-bottom:2px solid var(--line); }
+  td { padding:7px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  td.num { color:var(--muted); font-family:ui-monospace,monospace; } td.taps { white-space:nowrap; font-family:ui-monospace,monospace; font-size:12px; }
+  td.notes { color:var(--soft); font-size:12.5px; } td.phasecell, td.persona { white-space:nowrap; }
+  .verdict { color:#fff; font-size:11px; font-weight:700; border-radius:6px; padding:2px 8px; white-space:nowrap; }
+  .doc-table td:first-child { font-weight:600; white-space:nowrap; }
+  .pill-live { color:var(--moss); font-weight:700; } .pill-rec { color:var(--muted); font-weight:700; }
+  footer { margin-top:60px; color:var(--muted); font-size:12px; border-top:1px solid var(--line); padding-top:14px; }
+  a { color: var(--moss); }
+</style></head><body><div class="wrap">
+
+<p class="sub">Waypoint · Issue #116 · research · generated 2026-06-14 from <code>docs/app-audit/*</code> (code-derived, branch claude/crazy-matsumoto-d2d390)</p>
+<h1>App-wide UX &amp; Navigation Audit</h1>
+<p class="sub">Dual lens: mechanical reachability (M1–M4) + vision fit (V1–V3) · panel: novice / power / code / designer · 44 task-path scenarios</p>
+
+<div class="scorebar">
+  <div class="score" style="border-color:#b4552d"><b>5</b><span>P1 findings</span></div>
+  <div class="score" style="border-color:#b08d3e"><b>10</b><span>P2 findings</span></div>
+  <div class="score"><b>10</b><span>P3 findings</span></div>
+  <div class="score" style="border-color:#4a7c59"><b>17</b><span>clean paths</span></div>
+  <div class="score" style="border-color:#b4552d"><b>9</b><span>lost / gap</span></div>
+  <div class="score"><b>37</b><span>pages mapped</span></div>
+</div>
+
+<h2>The Charter (what this audit judges against)</h2>
+<div class="charter">
+  <p><strong>Waypoint is the one home for a group trip.</strong> It replaces the Doc/Sheet/Splitwise/group-text stack with a single place where a small circle of friends and family <strong>plans</strong>, <strong>decides</strong>, <strong>executes</strong>, and <strong>keeps the record</strong>. The one job: <em>nothing about the trip should ever force anyone back to the old stack.</em> Quality bar: a non-technical friend contributes without being taught; nothing is lost at the seams (planning→trip day, trip day→record).</p>
+  <h3>A finding is real only if it fails a test</h3>
+  <ul>
+    <li><strong>Mechanical:</strong> M1 orphan route · M2 one-way street · M3 shipped-but-unreachable · M4 expected-but-missing link</li>
+    <li><strong>Vision:</strong> V1 forces the old stack · V2 silences a contributor · V3 drops something at a seam</li>
+    <li><strong>Not a finding:</strong> anything documented as deferred (SPEC_BACKLOG, PRD deferred lists, ADRs, off-the-table, NOT-list) — cited instead.</li>
+  </ul>
+  <h3>Grill decisions that bound the findings (D1–D6)</h3>
+  <ul>
+    <li><strong>D1</strong> No collaboration home — intentional (solo↔12+); scattering is design, discoverability ceiling is P2/P3.</li>
+    <li><strong>D2</strong> First five minutes is a real, known gap — first-class flow.</li>
+    <li><strong>D3</strong> Light Replanning boundary is temporal: <em>today</em> is Trip Mode's to edit; any other day is Planning's. Now a CONTEXT.md term.</li>
+    <li><strong>D4</strong> Replanning doors open proactively (free-time Focus, skipped item) — promoted from backlog-nicety to requirement.</li>
+    <li><strong>D5</strong> Wrap-up is a missing third derived state (auto-flip, quiet, group-facing) — pre-agreed P1, PRD-route.</li>
+    <li><strong>D6</strong> Docs are live (must track code) or records (point-in-time) — mismatches captured below.</li>
+  </ul>
+  <p class="sub">Full charter: <code>docs/app-audit/charter.md</code></p>
+</div>
+
+<h2>Navigation graph (code-derived)</h2>
+<p class="sub">Every edge from <code>href</code>/<code>goto()</code>/<code>redirect()</code>/form actions + nav chrome (<code>nav-tabs.ts</code>, BottomNav, SideRail, ContextRail, SubTabs). Drag to pan, scroll to zoom. ⚠ = finding. Raw data: <code>edges.json</code>.</p>
+
+<div class="diagram-box"><header>App shell — entry points & trip split<span><span class="hint">drag · scroll&nbsp;&nbsp;</span><button class="reset">reset</button></span></header>
+<div class="diagram"><pre class="mermaid">flowchart LR
+  classDef pub fill:#ddebdd,stroke:#4a7c59,color:#1f2d23
+  classDef warn fill:#f6d9cf,stroke:#b4552d,color:#5a2a14
+  classDef mode fill:#fdf6ec,stroke:#b08d3e,color:#4a3a14
+  login["/login (OTP)"]:::pub --> claim["/claim<br/>placeholder claim"] --> trips["/trips<br/>dashboard"]
+  invite["/invite/[code]<br/>email-bound"]:::pub --> tripHome
+  join["/join/[token]<br/>shared link"]:::pub --> tripHome
+  archive["/archive/[token]<br/>public, read-only"]:::pub
+  trips --> account["/account<br/>(only door: trips-list avatar) ⚠"]:::warn
+  trips --> new["/trips/new"] --> tripHome["trip home<br/>/trips/[slug]"]
+  trips --> import["/trips/import"] --> tripHome
+  tripHome <-->|"mode pill (active only)"| tripmode("TRIP MODE<br/>Now / Today / Add / Docs"):::mode
+  tripHome --- planning("PLANNING<br/>Itinerary / Money / Members / Docs / More"):::mode
+  err["404 / errors → unstyled dead end ⚠"]:::warn</pre></div></div>
+<div class="diagram-box"><header>Planning mode — 5-tab nav + sub-tabs<span><span class="hint">drag · scroll&nbsp;&nbsp;</span><button class="reset">reset</button></span></header>
+<div class="diagram"><pre class="mermaid">flowchart LR
+  classDef tab fill:#e7efe7,stroke:#4a7c59,color:#1f2d23
+  classDef warn fill:#f6d9cf,stroke:#b4552d,color:#5a2a14
+  subgraph bottomnav ["bottom nav (every planning page)"]
+    IT["Itinerary"]:::tab
+    MO["Money"]:::tab
+    ME["Members"]:::tab
+    DO["Docs"]:::tab
+    MR["More"]:::tab
+  end
+  IT --> ov["Overview /trips/[slug]"] & ph["/phases"] & li["/lists"] & go["/goals"]
+  ov --> day["/days/[dayId]<br/>timeline + parking divider"] --> itemNew["/items/new"] & item["/items/[id]"]
+  ph --> phd["/phases/[phaseId]<br/>parking reorder"] --> day
+  ph -->|"unrated card"| swipe["/swipe/[phaseId]<br/>IMMERSIVE deck"]
+  go --> cap["/goals/capture<br/>IMMERSIVE wizard"] & goal["/goals/[goalId]"]
+  li --> booking["/lists/booking<br/>smart list"] & list["/lists/[listId]"]
+  MO --> exp["/expenses"] & bud["/budget"]
+  ME --> members["/members<br/>invite + join links"]
+  DO --> docs["/documents<br/>back → /trips ⚠"]:::warn
+  MR --> more["/more"] --> inbox["/inbox (owner)<br/>traveler submit → 403 ⚠"]:::warn & close["/closeout"] & set["/settings"] & clone["/clone"] & exportE["GET /export"]
+  item --> edit["/items/[id]/edit"] & goal
+  itemNew -.->|"traveler, auto-approve off"| inbox</pre></div></div>
+<div class="diagram-box"><header>Trip mode — 4-tab nav (active trips)<span><span class="hint">drag · scroll&nbsp;&nbsp;</span><button class="reset">reset</button></span></header>
+<div class="diagram"><pre class="mermaid">flowchart LR
+  classDef tab fill:#f6e3d9,stroke:#b4552d,color:#5a2a14
+  classDef warn fill:#f6d9cf,stroke:#b4552d,color:#5a2a14
+  classDef miss fill:#fff,stroke:#b4552d,stroke-dasharray:5 4,color:#b4552d
+  subgraph nav ["clay bottom nav"]
+    NO["Now"]:::tab
+    TO["Today"]:::tab
+    AD["Add ⊕"]:::tab
+    DC["Docs"]:::tab
+  end
+  NO --> focus["Focus: ongoing / free time /<br/>wrapped / nothing planned"] --> item["/items/[id]"]
+  TO --> tl["today timeline + tomorrow preview<br/>+ checklists"] --> item
+  TO --> up["/today/upcoming<br/>Next 3 Days"]
+  AD --> as["AddSheet"] --> qa["items/new?day=today ✓"] & ae["expenses?action=add ✓"] & ad2["documents?action=add ✓"]
+  DC --> docs["/documents (precached ✓)<br/>back → /trips ⚠"]:::warn
+  focus -.->|"NO door ⚠"| park["parking lot ideas"]:::miss
+  tl -.->|"no skip→replace ⚠"| park
+  nav -.->|"no path ⚠"| money["budget / balances"]:::miss
+  nav -.->|"no path ⚠"| offline["offline toggle (in More) "]:::miss</pre></div></div>
+<div class="diagram-box"><header>Post-trip — the silent seam<span><span class="hint">drag · scroll&nbsp;&nbsp;</span><button class="reset">reset</button></span></header>
+<div class="diagram"><pre class="mermaid">flowchart LR
+  classDef warn fill:#f6d9cf,stroke:#b4552d,color:#5a2a14
+  classDef miss fill:#fff,stroke:#b4552d,stroke-dasharray:5 4,color:#b4552d
+  classDef ok fill:#e7efe7,stroke:#4a7c59,color:#1f2d23
+  endDate["end_date + 1"] -->|"silent revert ⚠"| planUI["planning UI<br/>(nothing to plan)"]:::warn
+  endDate -.->|"MISSING: wrap-up state (D5)"| wrap["settle → closeout → share"]:::miss
+  planUI --> more["/more (owner card)"] --> closeout["/closeout wizard ✓<br/>(no status gate ⚠, no goals step ⚠)"]:::warn
+  closeout -->|"finish → trip home<br/>(no share moment ⚠)"| planUI
+  more --> settings["/settings →<br/>archive link as raw code ⚠"]:::warn
+  settings -.-> pub["/archive/[token] ✓<br/>404 before publish ⚠"]:::warn
+  more --> clone["/clone ✓ (owner)"]:::ok & exp["GET /export ✓"]:::ok
+  money["/expenses settle-up ✓<br/>(uninvited)"]:::ok</pre></div></div>
+
+<h2>Task-path walkthroughs — 44 scenarios</h2>
+<p class="sub">"I want to…" intents walked through the real graph. Personas: N = novice (no hidden gestures, nothing learned-by-exploring), P = power.</p>
+<div class="filters" id="tpf">
+  <span class="grp">verdict</span>
+  <button data-v="all" class="on">all</button><button data-v="clean" class="">clean</button><button data-v="findable" class="">findable</button><button data-v="slow" class="">slow</button><button data-v="lost" class="">lost</button><button data-v="gap" class="">gap</button><button data-v="unbuilt" class="">unbuilt</button>
+</div>
+<table id="tptable"><thead><tr><th>#</th><th></th><th>Intent</th><th>Phase</th><th>Verdict</th><th>Taps</th><th>Path & notes</th></tr></thead>
+<tbody><tr data-verdict="findable" data-tphase="planning">
+  <td class="num">1</td><td class="persona">N</td>
+  <td>When is our flight?</td><td class="phasecell">planning</td>
+  <td><span class="verdict" style="background:#7a8a7a">findable</span></td>
+  <td class="taps">3</td>
+  <td class="notes">trips list → trip → (day card with flight) → day → item; or Overview day summaries — <em>No flights-level view; relies on knowing which day. DayCard summaries help. Related WP-A-017.</em></td></tr><tr data-verdict="findable" data-tphase="planning">
+  <td class="num">2</td><td class="persona">N</td>
+  <td>Add an idea I'm not sure about yet</td><td class="phasecell">planning</td>
+  <td><span class="verdict" style="background:#7a8a7a">findable</span></td>
+  <td class="taps">3</td>
+  <td class="notes">day → +Add / FAB → items/new (status defaults?) — or phase page ?/addIdea — <em>*Verify items/new exposes 'unplanned/idea' status plainly to a novice; phase page addIdea is the dedicated idea-capture but phase page is a power surface.</em></td></tr><tr data-verdict="clean" data-tphase="planning">
+  <td class="num">3</td><td class="persona">N</td>
+  <td>Invite Jake</td><td class="phasecell">planning</td>
+  <td><span class="verdict" style="background:#4a7c59">clean</span></td>
+  <td class="taps">2</td>
+  <td class="notes">bottom-nav Members → Invite by email (or join-link copy) — <em>Members is a top-level tab; travelers canInvite ✓; join links per-role with copy button ✓.</em></td></tr><tr data-verdict="slow" data-tphase="planning">
+  <td class="num">4</td><td class="persona">N</td>
+  <td>Say what I'm excited about (new member)</td><td class="phasecell">planning</td>
+  <td><span class="verdict" style="background:#b08d3e">slow</span></td>
+  <td class="taps">2-3</td>
+  <td class="notes">Overview → SubTab Goals → capture wizard; or Phases → swipe card; or vote on day cards — <em>All surfaces exist; none announce themselves to a fresh joiner. D1 intentional scattering; gap is the missing orientation moment (WP-A-014, WP-A-015).</em></td></tr><tr data-verdict="lost" data-tphase="cross">
+  <td class="num">5</td><td class="persona">N</td>
+  <td>FIRST FIVE MINUTES: invite link → oriented</td><td class="phasecell">cross</td>
+  <td><span class="verdict" style="background:#b4552d">lost</span></td>
+  <td class="taps">—</td>
+  <td class="notes">join/invite (good context card, OTP, claim) → accept → Overview, cold — <em>Front door excellent; landing is unoriented. Charter D2; WP-A-014. Known open issue — attach.</em></td></tr><tr data-verdict="clean" data-tphase="planning">
+  <td class="num">6</td><td class="persona">P</td>
+  <td>What still needs booking?</td><td class="phasecell">planning</td>
+  <td><span class="verdict" style="background:#4a7c59">clean</span></td>
+  <td class="taps">2</td>
+  <td class="notes">Overview → Lists sub-tab → Booking smart list — <em>Count badge on Lists index; read-and-check ✓.</em></td></tr><tr data-verdict="clean" data-tphase="planning">
+  <td class="num">7</td><td class="persona">N</td>
+  <td>Attach hotel confirmation PDF</td><td class="phasecell">planning</td>
+  <td><span class="verdict" style="background:#4a7c59">clean</span></td>
+  <td class="taps">2-3</td>
+  <td class="notes">item detail → Documents section → upload; or Docs tab FAB → sheet with item picker — <em>Both scopes per PRD; clipboard paste backlog S3 (#73).</em></td></tr><tr data-verdict="clean" data-tphase="planning">
+  <td class="num">8</td><td class="persona">P</td>
+  <td>Can we afford this?</td><td class="phasecell">planning</td>
+  <td><span class="verdict" style="background:#4a7c59">clean</span></td>
+  <td class="taps">2</td>
+  <td class="notes">Money tab → Budget sub-tab (estimated total vs budget)</td></tr><tr data-verdict="clean" data-tphase="planning">
+  <td class="num">9</td><td class="persona">P</td>
+  <td>Plan day 3 of Paris phase</td><td class="phasecell">planning</td>
+  <td><span class="verdict" style="background:#4a7c59">clean</span></td>
+  <td class="taps">2</td>
+  <td class="notes">Overview phase section → day card → day view (DnD timeline, parking divider, DayNav) — <em>Day view is the app's best surface.</em></td></tr><tr data-verdict="findable" data-tphase="planning">
+  <td class="num">10</td><td class="persona">N</td>
+  <td>What does everyone else want?</td><td class="phasecell">planning</td>
+  <td><span class="verdict" style="background:#7a8a7a">findable</span></td>
+  <td class="taps">2</td>
+  <td class="notes">Goals sub-tab (vote stacks) + day-view parking lot (vote stacks) — <em>Split across two surfaces by design (goal votes vs item votes, ADR-0004).</em></td></tr><tr data-verdict="slow" data-tphase="planning">
+  <td class="num">11</td><td class="persona">N</td>
+  <td>Add restaurant options for ONE city</td><td class="phasecell">planning</td>
+  <td><span class="verdict" style="background:#b08d3e">slow</span></td>
+  <td class="taps">3+2/idea</td>
+  <td class="notes">phase page → addIdea (phase-scoped, repeats) — or items/new per item — <em>addIdea on phase page is right surface but phase page reads as admin; items/new round-trips per idea. *No rapid multi-capture flow; goals/capture has one for goals — items don't.</em></td></tr><tr data-verdict="clean" data-tphase="planning">
+  <td class="num">12</td><td class="persona">N</td>
+  <td>How busy is that day? (outfits/walking)</td><td class="phasecell">planning</td>
+  <td><span class="verdict" style="background:#4a7c59">clean</span></td>
+  <td class="taps">1</td>
+  <td class="notes">Overview → DayCard summaries + DayMetricToggle; or day view timeline density — <em>Walking distance is out of scope (no maps); density/count is the available proxy.</em></td></tr><tr data-verdict="findable" data-tphase="planning">
+  <td class="num">13</td><td class="persona">N</td>
+  <td>Anything unbooked that should be booked before we go?</td><td class="phasecell">planning</td>
+  <td><span class="verdict" style="background:#7a8a7a">findable</span></td>
+  <td class="taps">2</td>
+  <td class="notes">Lists → Booking (auto list) — same as #6, novice entry — <em>Novice must guess 'Lists' holds it; 'Needs booking' pills on cards help en route.</em></td></tr><tr data-verdict="gap" data-tphase="planning">
+  <td class="num">14</td><td class="persona">P</td>
+  <td>Add MY flight, compare with others'</td><td class="phasecell">planning</td>
+  <td><span class="verdict" style="background:#8a3a5a">gap</span></td>
+  <td class="taps">—</td>
+  <td class="notes">add flight item ✓; comparison view — none — <em>WP-A-017. Not in backlog.</em></td></tr><tr data-verdict="findable" data-tphase="planning">
+  <td class="num">15</td><td class="persona">P</td>
+  <td>Rental car spanning phases</td><td class="phasecell">planning</td>
+  <td><span class="verdict" style="background:#7a8a7a">findable</span></td>
+  <td class="taps">3</td>
+  <td class="notes">items/new transportation + end_date spanning days across phases → MultiDayBanner on each spanned day — <em>Storage supports it (ADR-0002); item still belongs to ONE phase — surfaced under that phase's parking/structure only. *Verify banner renders across phase boundary.</em></td></tr><tr data-verdict="clean" data-tphase="planning">
+  <td class="num">16</td><td class="persona">N</td>
+  <td>Discuss an idea before committing</td><td class="phasecell">planning</td>
+  <td><span class="verdict" style="background:#4a7c59">clean</span></td>
+  <td class="taps">2</td>
+  <td class="notes">item detail → Comments (+ notification to others) — <em>Comment notification links back to item ✓. Messaging ceiling is intentional (SPEC_BACKLOG scope note).</em></td></tr><tr data-verdict="findable" data-tphase="planning">
+  <td class="num">17</td><td class="persona">P</td>
+  <td>Trip dates changed — extend/shift</td><td class="phasecell">planning</td>
+  <td><span class="verdict" style="background:#7a8a7a">findable</span></td>
+  <td class="taps">3</td>
+  <td class="notes">More → Settings → dates → save — <em>*Dogfood: confirm day regeneration + what happens to items on removed days (trips.pb.js hook). Phase dates edited separately per phase.</em></td></tr><tr data-verdict="clean" data-tphase="trip">
+  <td class="num">18</td><td class="persona">N</td>
+  <td>What's next right now?</td><td class="phasecell">trip</td>
+  <td><span class="verdict" style="background:#4a7c59">clean</span></td>
+  <td class="taps">0</td>
+  <td class="notes">open trip (active → Trip Mode default) → Now — <em>Interim layout (#153/#154) but states are correct.</em></td></tr><tr data-verdict="clean" data-tphase="trip">
+  <td class="num">19</td><td class="persona">N</td>
+  <td>Find the boarding pass</td><td class="phasecell">trip</td>
+  <td><span class="verdict" style="background:#4a7c59">clean</span></td>
+  <td class="taps">2</td>
+  <td class="notes">Docs tab → grouped by Flights → row → lightbox/file — <em>Precached on active trips ✓. Back-button bug WP-A-003 lurks on exit.</em></td></tr><tr data-verdict="clean" data-tphase="trip">
+  <td class="num">20</td><td class="persona">N</td>
+  <td>Add dinner expense + split</td><td class="phasecell">trip</td>
+  <td><span class="verdict" style="background:#4a7c59">clean</span></td>
+  <td class="taps">2</td>
+  <td class="notes">Add (center) → Add expense → expenses?action=add (form auto-opens) — <em>Deep-link param handled ✓. Mode flips to planning chrome on landing — mild context jolt.*</em></td></tr><tr data-verdict="lost" data-tphase="trip">
+  <td class="num">21</td><td class="persona">N</td>
+  <td>Tonight fell through — replan</td><td class="phasecell">trip</td>
+  <td><span class="verdict" style="background:#b4552d">lost</span></td>
+  <td class="taps">5+ w/ mode switch</td>
+  <td class="notes">NONE in Trip Mode: free-time Focus links next item only; parking lot unreachable; must mode-switch → day view → parking divider → pull — <em>WP-A-005, charter D3/D4 violation. THE seam scenario.</em></td></tr><tr data-verdict="clean" data-tphase="trip">
+  <td class="num">22</td><td class="persona">N</td>
+  <td>Quick-add coffee stop for today</td><td class="phasecell">trip</td>
+  <td><span class="verdict" style="background:#4a7c59">clean</span></td>
+  <td class="taps">2</td>
+  <td class="notes">Add → Add item to today (prefilled day+phase) — <em>D3 today-scope honored ✓ (AddSheet:19).</em></td></tr><tr data-verdict="clean" data-tphase="trip">
+  <td class="num">23</td><td class="persona">N</td>
+  <td>Where's the hotel address?</td><td class="phasecell">trip</td>
+  <td><span class="verdict" style="background:#4a7c59">clean</span></td>
+  <td class="taps">2</td>
+  <td class="notes">Today → multi-day banner (ongoing) → item detail → location — <em>MultiDayBanner on Today ✓; maps deep-link is backlog (Integrations).</em></td></tr><tr data-verdict="clean" data-tphase="trip">
+  <td class="num">24</td><td class="persona">P</td>
+  <td>Check tomorrow's plan from Trip Mode</td><td class="phasecell">trip</td>
+  <td><span class="verdict" style="background:#4a7c59">clean</span></td>
+  <td class="taps">1-2</td>
+  <td class="notes">Today → Tomorrow preview (3 items) → 'See all' → Next 3 Days sub-tab — <em>Read-only lookahead, correct per D3 boundary.</em></td></tr><tr data-verdict="findable" data-tphase="trip">
+  <td class="num">25</td><td class="persona">N</td>
+  <td>Check off packing-list task</td><td class="phasecell">trip</td>
+  <td><span class="verdict" style="background:#7a8a7a">findable</span></td>
+  <td class="taps">1+scroll</td>
+  <td class="notes">Today → checklists section at bottom → tap checkbox — <em>Below tomorrow preview — scroll to find.*</em></td></tr><tr data-verdict="unbuilt" data-tphase="trip">
+  <td class="num">26</td><td class="persona">N</td>
+  <td>Save today's favorite photo as a Memory</td><td class="phasecell">trip</td>
+  <td><span class="verdict" style="background:#888">unbuilt</span></td>
+  <td class="taps">—</td>
+  <td class="notes">— — <em>Trip Memory: PRD'd + glossaried, zero code (verified: no memory routes/components). SPEC_BACKLOG: shipped-nothing. Cite TRIP_MEMORY_PRD; not a nav finding.</em></td></tr><tr data-verdict="slow" data-tphase="trip">
+  <td class="num">27</td><td class="persona">N</td>
+  <td>Find hotel confirmation CODE</td><td class="phasecell">trip</td>
+  <td><span class="verdict" style="background:#b08d3e">slow</span></td>
+  <td class="taps">2 if you guess item; lost if you guess Docs</td>
+  <td class="notes">item detail → codes; Docs tab does NOT show codes — <em>WP-A-016.</em></td></tr><tr data-verdict="lost" data-tphase="trip">
+  <td class="num">28</td><td class="persona">N</td>
+  <td>Offline on the plane — what works?</td><td class="phasecell">trip</td>
+  <td><span class="verdict" style="background:#b4552d">lost</span></td>
+  <td class="taps">4 + mode switch + foreknowledge</td>
+  <td class="notes">documents precache automatic ✓; page/data offline = manual toggle in More (planning nav only) + reload — <em>WP-A-004.</em></td></tr><tr data-verdict="slow" data-tphase="trip">
+  <td class="num">29</td><td class="persona">P</td>
+  <td>Paper copy of today</td><td class="phasecell">trip</td>
+  <td><span class="verdict" style="background:#b08d3e">slow</span></td>
+  <td class="taps">3 + mode switch</td>
+  <td class="notes">mode-switch → More → Print itinerary (window.print) — <em>WP-A-024. *Dogfood what actually prints.</em></td></tr><tr data-verdict="slow" data-tphase="trip">
+  <td class="num">30</td><td class="persona">N</td>
+  <td>How are we doing on budget, mid-trip?</td><td class="phasecell">trip</td>
+  <td><span class="verdict" style="background:#b08d3e">slow</span></td>
+  <td class="taps">3 + mode switch</td>
+  <td class="notes">mode-switch → Money → Budget — <em>WP-A-018. Add-flow exists; glance doesn't.</em></td></tr><tr data-verdict="clean" data-tphase="post">
+  <td class="num">31</td><td class="persona">N</td>
+  <td>Who owes whom — settle up</td><td class="phasecell">post</td>
+  <td><span class="verdict" style="background:#4a7c59">clean</span></td>
+  <td class="taps">2</td>
+  <td class="notes">Money → balances + Settle up button → flow — <em>In-page excellent; the gap is nothing INVITES it post-trip (WP-A-001).</em></td></tr><tr data-verdict="findable" data-tphase="post">
+  <td class="num">32</td><td class="persona">P</td>
+  <td>Mark what we actually did</td><td class="phasecell">post</td>
+  <td><span class="verdict" style="background:#7a8a7a">findable</span></td>
+  <td class="taps">2</td>
+  <td class="notes">More → Closeout → wizard (day-by-day, bulk, replacements) — <em>Wizard good. Entry buried + no status gate (WP-A-007); owner-only card.</em></td></tr><tr data-verdict="gap" data-tphase="post">
+  <td class="num">33</td><td class="persona">P</td>
+  <td>Did we do what we set out to? (goals at closeout)</td><td class="phasecell">post</td>
+  <td><span class="verdict" style="background:#8a3a5a">gap</span></td>
+  <td class="taps">—</td>
+  <td class="notes">closeout wizard has NO goals step (grep: no goal refs); goals reviewable manually via Goals sub-tab (derived status) — <em>CONTEXT.md says Trip Goals 'reviewed in the closeout wizard' — code disagrees. Doc-vs-code mismatch + scenario gap; V4_GROUP_INPUT_PRD check in Phase 3.</em></td></tr><tr data-verdict="unbuilt" data-tphase="post">
+  <td class="num">34</td><td class="persona">N</td>
+  <td>Add memory of day 2 retroactively</td><td class="phasecell">post</td>
+  <td><span class="verdict" style="background:#888">unbuilt</span></td>
+  <td class="taps">—</td>
+  <td class="notes">— — <em>Same as #26 (TRIP_MEMORY_PRD, closeout-retro capture specced, unbuilt).</em></td></tr><tr data-verdict="lost" data-tphase="post">
+  <td class="num">35</td><td class="persona">N</td>
+  <td>Share trip with grandma</td><td class="phasecell">post</td>
+  <td><span class="verdict" style="background:#b4552d">lost</span></td>
+  <td class="taps">4 + hand-assembly</td>
+  <td class="notes">More → Settings → enable archive → wait for publish → hand-copy relative path from &lt;code&gt; — <em>WP-A-019 + WP-A-002 (pre-publish 404).</em></td></tr><tr data-verdict="clean" data-tphase="post">
+  <td class="num">36</td><td class="persona">P</td>
+  <td>Start next year's trip from this one</td><td class="phasecell">post</td>
+  <td><span class="verdict" style="background:#4a7c59">clean</span></td>
+  <td class="taps">2</td>
+  <td class="notes">More → Clone (phase mapping + date shift) — <em>Owner/co-owner only — travelers can't clone a trip they were on.*flag in walk</em></td></tr><tr data-verdict="clean" data-tphase="post">
+  <td class="num">37</td><td class="persona">P</td>
+  <td>Export my data</td><td class="phasecell">post</td>
+  <td><span class="verdict" style="background:#4a7c59">clean</span></td>
+  <td class="taps">2</td>
+  <td class="notes">More → Export (JSON download)</td></tr><tr data-verdict="lost" data-tphase="post">
+  <td class="num">38</td><td class="persona">N</td>
+  <td>MORNING AFTER end_date</td><td class="phasecell">post</td>
+  <td><span class="verdict" style="background:#b4552d">lost</span></td>
+  <td class="taps">—</td>
+  <td class="notes">open app → trip silently back in planning UI; eventually 'Past' section; no prompt to settle/closeout/share — <em>WP-A-001 (charter D5, pre-agreed P1).</em></td></tr><tr data-verdict="gap" data-tphase="post">
+  <td class="num">39</td><td class="persona">N</td>
+  <td>Family does the trip themselves from the recap</td><td class="phasecell">post</td>
+  <td><span class="verdict" style="background:#8a3a5a">gap</span></td>
+  <td class="taps">—</td>
+  <td class="notes">archive renders plan read-only; no template/export for non-members — <em>WP-A-020 — needs an intentional-vs-build call.</em></td></tr><tr data-verdict="findable" data-tphase="cross">
+  <td class="num">40</td><td class="persona">N</td>
+  <td>Switch modes and back</td><td class="phasecell">cross</td>
+  <td><span class="verdict" style="background:#7a8a7a">findable</span></td>
+  <td class="taps">1</td>
+  <td class="notes">mode pill (mobile top / siderail) ↔; toggle navigates to mode home — <em>Pill is small + label-only ('Edit plan'/'Trip view'); entry inconsistency WP-A-006. *Dogfood discoverability.</em></td></tr><tr data-verdict="slow" data-tphase="cross">
+  <td class="num">41</td><td class="persona">N</td>
+  <td>Change my name/avatar</td><td class="phasecell">cross</td>
+  <td><span class="verdict" style="background:#b08d3e">slow</span></td>
+  <td class="taps">2-3 (must LEAVE the trip)</td>
+  <td class="notes">back out to trips list → avatar chip → /account — <em>WP-A-011. Note: /account edits global avatar; per-trip display_name set at claim/join has no edit surface at all.*</em></td></tr><tr data-verdict="findable" data-tphase="cross">
+  <td class="num">42</td><td class="persona">N</td>
+  <td>What changed since I last looked?</td><td class="phasecell">cross</td>
+  <td><span class="verdict" style="background:#7a8a7a">findable</span></td>
+  <td class="taps">1</td>
+  <td class="notes">NotificationBell (6 surfaces) → links to inbox/item/members — <em>WP-A-012 placement inconsistency; badge not live (backlog).</em></td></tr><tr data-verdict="gap" data-tphase="cross">
+  <td class="num">43</td><td class="persona">P</td>
+  <td>Leave a trip / remove someone</td><td class="phasecell">cross</td>
+  <td><span class="verdict" style="background:#8a3a5a">gap</span></td>
+  <td class="taps">2 / —</td>
+  <td class="notes">remove (owner): Members ✓ w/ tombstones. Self-leave: none — <em>WP-A-013 (self-leave). Removal UX itself clean.</em></td></tr><tr data-verdict="clean" data-tphase="cross">
+  <td class="num">44</td><td class="persona">N</td>
+  <td>Several trips — find the right one</td><td class="phasecell">cross</td>
+  <td><span class="verdict" style="background:#4a7c59">clean</span></td>
+  <td class="taps">0</td>
+  <td class="notes">/trips: On trip / Upcoming / Past sections, accent on active — <em>Good orientation. Past section gives no closeout/archive status cue (minor, folds into WP-A-001).</em></td></tr></tbody></table>
+
+<h2>Findings — 25 total</h2>
+<div class="filters" id="ff">
+  <span class="grp">severity</span><button data-k="sev" data-val="P1">P1</button><button data-k="sev" data-val="P2">P2</button><button data-k="sev" data-val="P3">P3</button>
+  <span class="grp">phase</span><button data-k="phase" data-val="planning">planning</button><button data-k="phase" data-val="trip">trip</button><button data-k="phase" data-val="post-trip">post-trip</button><button data-k="phase" data-val="cross-phase">cross-phase</button>
+  <span class="grp">axis</span><button data-k="axis" data-val="mechanical">mechanical</button><button data-k="axis" data-val="vision">vision</button>
+  <span class="grp">lens</span><button data-k="lens" data-val="novice">novice</button><button data-k="lens" data-val="power">power</button><button data-k="lens" data-val="code">code</button><button data-k="lens" data-val="designer">designer</button>
+  <input id="fsearch" placeholder="search findings…">
+  <button id="fclear">clear</button>
+</div>
+<div id="cards">
+<article class="card" data-phase="post-trip" data-axis="vision" data-sev="P1" data-lens="designer" id="WP-A-001">
+  <header>
+    <span class="sev" style="background:#b4552d">P1</span>
+    <span class="fid">WP-A-001</span>
+    <span class="chip">post-trip</span><span class="chip">vision</span><span class="chip">designer lens</span><span class="chip ctx">Archive &amp; Portability</span>
+  </header>
+  <h3>The trip's end is a silent un-flip.</h3>
+  <p class="what">The trip's end is a silent un-flip. Day after end_date, isTripActive() goes false, the app reverts to the 5-tab planning UI, and the trip eventually slides to the 'Past' section of the trips list with zero call to action. No surface anywhere says 'your trip ended — settle up, close out, archive.' Settle-up waits inside Money, closeout hides behind More (owner-only card), archive link behind Settings.</p>
+  <p class="why"><strong>Why it's a gap:</strong> V3 seam drop — trip-day→record is the entire Remember pillar's front door and it doesn't exist. Charter D5 pre-agreed this as P1: end_date+1 should render a wrap-up-shaped state (auto-flipped, quiet, group-facing).</p>
+  <p class="fix"><strong>Proposed fix:</strong> Third derived state: end_date &lt; today &amp;&amp; status==active → trip home renders a closing sequence (outstanding debts → closeout w/ memory review → archive decision). Feature-sized: charter routes this to grill→PRD, not a quick issue.</p>
+  <p class="where"><code>src/lib/trip-mode/activation.ts (isTripActive) + src/lib/shell/components/AppShell.svelte:35-44 + src/routes/(app)/trips/+page.svelte:117-135</code></p>
+  
+</article>
+<article class="card" data-phase="cross-phase" data-axis="mechanical" data-sev="P1" data-lens="novice" id="WP-A-002">
+  <header>
+    <span class="sev" style="background:#b4552d">P1</span>
+    <span class="fid">WP-A-002</span>
+    <span class="chip">cross-phase</span><span class="chip">mechanical</span><span class="chip">novice lens</span><span class="chip ctx">Shell</span>
+  </header>
+  <h3>There is no +error.</h3>
+  <p class="what">There is no +error.svelte in the entire route tree. Every thrown error — mistyped trip slug, revoked archive token, archive visited before publish date ('Archive not yet published'), 403s — renders SvelteKit's unstyled default error page with no branding and no way back.</p>
+  <p class="why"><strong>Why it's a gap:</strong> M2 one-way street at the worst addresses: /archive/[token] is grandma's front door (she gets the link day one, taps it before publish-day → raw 404 page). Quality bar says 'contributes without being taught'; a dead-end error page teaches her the app is broken.</p>
+  <p class="fix"><strong>Proposed fix:</strong> Root +error.svelte (branded, 'back to your trips' / 'check the link' recovery actions) + a friendlier pre-publish archive state ('publishes on {date}') instead of a 404.</p>
+  <p class="where"><code>src/routes/ (no +error.svelte anywhere); thrown from e.g. src/routes/archive/[token]/+page.server.ts:21,25,34 and src/routes/(app)/trips/[slug]/inbox/+page.server.ts:11</code></p>
+  <img class="shot" src="screenshots/10-error-bad-slug.png" alt="WP-A-002 evidence">
+</article>
+<article class="card" data-phase="cross-phase" data-axis="mechanical" data-sev="P2" data-lens="novice" id="WP-A-003">
+  <header>
+    <span class="sev" style="background:#b08d3e">P2</span>
+    <span class="fid">WP-A-003</span>
+    <span class="chip">cross-phase</span><span class="chip">mechanical</span><span class="chip">novice lens</span><span class="chip ctx">Documents</span>
+  </header>
+  <h3>Documents page back button is backHref="/trips" — it exits to the trips LIST, not the current trip.</h3>
+  <p class="what">Documents page back button is backHref="/trips" — it exits to the trips LIST, not the current trip. Every sibling trip page backs to /trips/{slug}. Docs is a bottom-nav tab in BOTH modes, so this is one of the most-tapped backs in the app.</p>
+  <p class="why"><strong>Why it's a gap:</strong> M4 expected-but-missing link / wrong destination. Novice mid-trip: Docs tab → back → suddenly outside the trip, must re-find it. Disorienting exactly when one-handed.</p>
+  <p class="fix"><strong>Proposed fix:</strong> backHref="/trips/{data.trip.slug}" (or drop the back chevron entirely — it's a top-level tab, tabs don't 'back').</p>
+  <p class="where"><code>src/routes/(app)/trips/[slug]/documents/+page.svelte:65</code></p>
+  <img class="shot" src="screenshots/05-documents.png" alt="WP-A-003 evidence">
+</article>
+<article class="card" data-phase="trip" data-axis="vision" data-sev="P2" data-lens="novice" id="WP-A-004">
+  <header>
+    <span class="sev" style="background:#b08d3e">P2</span>
+    <span class="fid">WP-A-004</span>
+    <span class="chip">trip</span><span class="chip">vision</span><span class="chip">novice lens</span><span class="chip ctx">Shell</span>
+  </header>
+  <h3>Offline mode — a Trip-Mode-critical control ("I'm on the plane") — is a manual localStorage toggle buried in More, which is only reachable from the PLANNING nav.</h3>
+  <p class="what">Offline mode — a Trip-Mode-critical control ("I'm on the plane") — is a manual localStorage toggle buried in More, which is only reachable from the PLANNING nav. In Trip Mode there is no path to it. And as a concept, 'toggle offline then reload' is power-user plumbing a novice will never find or understand.</p>
+  <p class="why"><strong>Why it's a gap:</strong> V3 seam (planning→trip-day): the control you need mid-trip lives in the other mode. V1: the fallback is screenshots-in-camera-roll (the old stack). NB: Documents already auto-precache on active trips (documents/+page.svelte:45-51), so the artifact half is solved — the toggle governs page/data caching.</p>
+  <p class="fix"><strong>Proposed fix:</strong> Surface offline status/toggle in Trip Mode (e.g. on Docs tab next to the 'On trip' chip), or make page-data caching automatic on active trips like documents already are, demoting the manual toggle to a dev tool.</p>
+  <p class="where"><code>src/routes/(app)/trips/[slug]/more/+page.svelte:145-176 (offline toggle) + src/lib/shell/nav-tabs.ts:19-29 (trip nav has no More)</code></p>
+  <img class="shot" src="screenshots/06-more.png" alt="WP-A-004 evidence">
+</article>
+<article class="card" data-phase="trip" data-axis="vision" data-sev="P1" data-lens="novice" id="WP-A-005">
+  <header>
+    <span class="sev" style="background:#b4552d">P1</span>
+    <span class="fid">WP-A-005</span>
+    <span class="chip">trip</span><span class="chip">vision</span><span class="chip">novice lens</span><span class="chip ctx">Trip Mode</span>
+  </header>
+  <h3>Light Replanning (charter D3) has no doors in Trip Mode.</h3>
+  <p class="what">Light Replanning (charter D3) has no doors in Trip Mode. 'Tonight fell through' cannot be answered without a mode switch: the parking lot (the exact answer — phase-scoped ideas) is unreachable from Now/Today/Add; the free-time Focus links only the next planned item; there is no skip/cancel-with-replacement flow. Quick-add for today exists (AddSheet ✓) but choosing among already-captured ideas does not.</p>
+  <p class="why"><strong>Why it's a gap:</strong> V3 seam drop on the charter's own boundary: today-scoped replanning must live in Trip Mode (D3), and the two trigger states (free time, skipped item) should open doors proactively (D4). SPEC_BACKLOG lists 'Ideas from Free Time' + 'Inline contextual parking lot' as deferred — charter D4 explicitly promoted this from deferred-nicety to requirement. Now view is interim (#153/#154 Slice B pending) — fold into that work.</p>
+  <p class="fix"><strong>Proposed fix:</strong> Free-time Focus surfaces phase parking-lot ideas with promote-to-today; skip/cancel on a Today item offers a replacement from the same parking lot. Feature-shaped — Phase 3 decides PRD vs issues riding on #154.</p>
+  <p class="where"><code>src/routes/(app)/trips/[slug]/now/+page.svelte:32-37 (free-time → NowBetweenThings shows only next item) + src/lib/trip-mode/components/AddSheet.svelte:19-29 (no parking-lot option) + no skip/cancel affordance on Today</code></p>
+  <img class="shot" src="screenshots/03-now.png" alt="WP-A-005 evidence">
+</article>
+<article class="card" data-phase="cross-phase" data-axis="mechanical" data-sev="P2" data-lens="designer" id="WP-A-006">
+  <header>
+    <span class="sev" style="background:#b08d3e">P2</span>
+    <span class="fid">WP-A-006</span>
+    <span class="chip">cross-phase</span><span class="chip">mechanical</span><span class="chip">designer lens</span><span class="chip ctx">Trip Mode</span>
+  </header>
+  <h3>Two inconsistencies in Trip Mode entry: (1) the Overview 'Trip Mode' chip navigates to /today while the mode pill toggle lands on /now — two different 'homes' for the same mode; (2) the chip renders unconditionally — on planning-status and PAST trips it still shows, and tapping it lands on 'No itinerary for today / Today doesn't fall within this trip's dates', a dead-ish state that makes the app feel broken pre-trip and post-trip.</h3>
+  <p class="what">Two inconsistencies in Trip Mode entry: (1) the Overview 'Trip Mode' chip navigates to /today while the mode pill toggle lands on /now — two different 'homes' for the same mode; (2) the chip renders unconditionally — on planning-status and PAST trips it still shows, and tapping it lands on 'No itinerary for today / Today doesn't fall within this trip's dates', a dead-ish state that makes the app feel broken pre-trip and post-trip.</p>
+  <p class="why"><strong>Why it's a gap:</strong> M4 + designer coherence: one mode, one entry. The unguarded chip contradicts CONTEXT.md ('Trip Mode… available only when trip status is active').</p>
+  <p class="fix"><strong>Proposed fix:</strong> Gate the chip on isTripActive(trip); point it at /now to match the pill (or both at one agreed home).</p>
+  <p class="where"><code>src/routes/(app)/trips/[slug]/+page.svelte:92-101 (chip → /today, unguarded) vs src/lib/shell/components/AppShell.svelte:54 (toggle → /now)</code></p>
+  <img class="shot" src="screenshots/08-overview-upcoming-chip.png" alt="WP-A-006 evidence">
+</article>
+<article class="card" data-phase="post-trip" data-axis="mechanical" data-sev="P2" data-lens="code" id="WP-A-007">
+  <header>
+    <span class="sev" style="background:#b08d3e">P2</span>
+    <span class="fid">WP-A-007</span>
+    <span class="chip">post-trip</span><span class="chip">mechanical</span><span class="chip">code lens</span><span class="chip ctx">Archive &amp; Portability</span>
+  </header>
+  <h3>Closeout has no status awareness in either direction: the More card shows (and the wizard fully runs) on a trip that hasn't started — you can mark items 'done' during planning; and when the trip actually ends, nothing more than this same buried card invites you in.</h3>
+  <p class="what">Closeout has no status awareness in either direction: the More card shows (and the wizard fully runs) on a trip that hasn't started — you can mark items 'done' during planning; and when the trip actually ends, nothing more than this same buried card invites you in. Travelers/viewers get NO post-trip surface at all (card is owner/co-owner-only; their settle-up lives unprompted in Money).</p>
+  <p class="why"><strong>Why it's a gap:</strong> M4 + V3: the wizard exists but its entry ignores the trip lifecycle it serves. Subsumed by WP-A-001's wrap-up state for the invitation half; the premature-entry half is its own small guard fix.</p>
+  <p class="fix"><strong>Proposed fix:</strong> Status-gate the card/wizard (active+ended or closed-eligible), and let WP-A-001's wrap-up state be the real entry.</p>
+  <p class="where"><code>src/routes/(app)/trips/[slug]/more/+page.svelte:54-70 (card: role-gated only) + src/routes/(app)/trips/[slug]/closeout/+page.server.ts:5-18 (load: role guard only, no status guard)</code></p>
+  
+</article>
+<article class="card" data-phase="planning" data-axis="mechanical" data-sev="P1" data-lens="code" id="WP-A-008">
+  <header>
+    <span class="sev" style="background:#b4552d">P1</span>
+    <span class="fid">WP-A-008</span>
+    <span class="chip">planning</span><span class="chip">mechanical</span><span class="chip">code lens</span><span class="chip ctx">Collaboration</span>
+  </header>
+  <h3>On a trip with auto-approve OFF, a traveler submitting a new item is redirected to /trips/[slug]/inbox — which throws 403 'Only trip owners and co-owners can view the inbox' for travelers.</h3>
+  <p class="what">On a trip with auto-approve OFF, a traveler submitting a new item is redirected to /trips/[slug]/inbox — which throws 403 'Only trip owners and co-owners can view the inbox' for travelers. Combined with WP-A-002 (no error page), the contributor's reward for contributing is an unstyled error screen. Their suggestion DID save; they have no way to know.</p>
+  <p class="why"><strong>Why it's a gap:</strong> M2 one-way street + V2 silenced contributor, on the exact flow the review queue exists for. The quality-bar persona (non-technical friend, suggestion mode on) hits this 100% of the time.</p>
+  <p class="fix"><strong>Proposed fix:</strong> Redirect travelers to the trip home (or day) with a 'Suggestion sent — the organizer will review it' toast; reserve the /inbox redirect for owners approving via ?suggestion=.</p>
+  <p class="where"><code>src/routes/(app)/trips/[slug]/items/new/+page.server.ts:225 (redirect → /inbox) + src/routes/(app)/trips/[slug]/inbox/+page.server.ts:10-12 (403 for non-owners)</code></p>
+  
+</article>
+<article class="card" data-phase="planning" data-axis="vision" data-sev="P2" data-lens="novice" id="WP-A-009">
+  <header>
+    <span class="sev" style="background:#b08d3e">P2</span>
+    <span class="fid">WP-A-009</span>
+    <span class="chip">planning</span><span class="chip">vision</span><span class="chip">novice lens</span><span class="chip ctx">Collaboration</span>
+  </header>
+  <h3>A traveler who submits a suggestion has no surface — none — where they can see it exists, is pending, was approved, or was rejected.</h3>
+  <p class="what">A traveler who submits a suggestion has no surface — none — where they can see it exists, is pending, was approved, or was rejected. Rejection is completely silent. Approval is visible only indirectly (item appears).</p>
+  <p class="why"><strong>Why it's a gap:</strong> V2 silenced contributor: 'did my idea even go through?' is answered by asking in the group text (V1). D1 says contribution is contextual by design — but context for YOUR pending contribution is nowhere.</p>
+  <p class="fix"><strong>Proposed fix:</strong> Smallest: 'Your pending suggestions' strip on trip home for travelers (or a suggestion-status notification back to the submitter on approve/reject).</p>
+  <p class="where"><code>no route or component renders a traveler's own pending suggestions (inbox is owner-403; notifications go to owners on suggestion_added — backend/pb_hooks/notifications.pb.js:56)</code></p>
+  
+</article>
+<article class="card" data-phase="cross-phase" data-axis="mechanical" data-sev="P3" data-lens="code" id="WP-A-010">
+  <header>
+    <span class="sev" style="background:#7a8a7a">P3</span>
+    <span class="fid">WP-A-010</span>
+    <span class="chip">cross-phase</span><span class="chip">mechanical</span><span class="chip">code lens</span><span class="chip ctx">Shell</span>
+  </header>
+  <h3>TripTabs.</h3>
+  <p class="what">TripTabs.svelte is dead code — superseded by per-page SubTabs arrays. Its tab set (Overview/Phases/Members/Inbox/Settings) is also a fossil of an older IA, confusing for anyone reading the shell.</p>
+  <p class="why"><strong>Why it's a gap:</strong> M3 dead chrome. No user impact; maintenance trap (an agent 'fixing nav' could edit the dead file — this audit nearly did).</p>
+  <p class="fix"><strong>Proposed fix:</strong> Delete the file.</p>
+  <p class="where"><code>src/lib/shell/components/TripTabs.svelte (zero imports anywhere in src/)</code></p>
+  
+</article>
+<article class="card" data-phase="cross-phase" data-axis="mechanical" data-sev="P2" data-lens="novice" id="WP-A-011">
+  <header>
+    <span class="sev" style="background:#b08d3e">P2</span>
+    <span class="fid">WP-A-011</span>
+    <span class="chip">cross-phase</span><span class="chip">mechanical</span><span class="chip">novice lens</span><span class="chip ctx">Shell</span>
+  </header>
+  <h3>/account (name + avatar) is reachable ONLY from the trips-list avatar chip.</h3>
+  <p class="what">/account (name + avatar) is reachable ONLY from the trips-list avatar chip. From inside a trip — including the Members page, where you're looking at everyone's avatars and your own row — there is no path to your own profile. AVATARS_PRD made avatars app-wide identity; editing that identity has one door, on a page you skip past.</p>
+  <p class="why"><strong>Why it's a gap:</strong> M4 expected-but-missing link. Novice test 'change my avatar' from where avatars are seen → dead end → she asks in the group text (V1-lite).</p>
+  <p class="fix"><strong>Proposed fix:</strong> Link self-row on Members → /account; optionally an Account card under More.</p>
+  <p class="where"><code>src/routes/(app)/trips/+page.svelte:37 (only inbound link to /account in the app)</code></p>
+  
+</article>
+<article class="card" data-phase="cross-phase" data-axis="vision" data-sev="P3" data-lens="designer" id="WP-A-012">
+  <header>
+    <span class="sev" style="background:#7a8a7a">P3</span>
+    <span class="fid">WP-A-012</span>
+    <span class="chip">cross-phase</span><span class="chip">vision</span><span class="chip">designer lens</span><span class="chip ctx">Collaboration</span>
+  </header>
+  <h3>Notifications — the only 'what changed' surface — appear on a seemingly arbitrary subset of pages.</h3>
+  <p class="what">Notifications — the only 'what changed' surface — appear on a seemingly arbitrary subset of pages. Most notably absent from Now (the trip-mode default landing) and from the pages notifications link TO (items, members, inbox).</p>
+  <p class="why"><strong>Why it's a gap:</strong> Designer-consistency + V2-lite: 'catch up on what changed' (scenario 42) works only if you happen to be on one of the six pages. Backlog already notes the badge isn't live-updating; placement inconsistency compounds it.</p>
+  <p class="fix"><strong>Proposed fix:</strong> Render the bell in one consistent chrome slot (NavBar right) on all trip pages, or move it into BottomNav/More as a fixed location.</p>
+  <p class="where"><code>NotificationBell rendered on 6 surfaces only (trips/[slug], today, today/upcoming, expenses, budget, more) — absent from now (trip-mode home), members, documents, days, items, phases, goals, lists, inbox, settings</code></p>
+  
+</article>
+<article class="card" data-phase="cross-phase" data-axis="mechanical" data-sev="P2" data-lens="novice" id="WP-A-013">
+  <header>
+    <span class="sev" style="background:#b08d3e">P2</span>
+    <span class="fid">WP-A-013</span>
+    <span class="chip">cross-phase</span><span class="chip">mechanical</span><span class="chip">novice lens</span><span class="chip ctx">Collaboration</span>
+  </header>
+  <h3>A member cannot leave a trip.</h3>
+  <p class="what">A member cannot leave a trip. 'Remove' is owner-only; there is no 'Leave trip' affordance for travelers/viewers anywhere. MEMBERSHIP_LIFECYCLE_PRD specs self-leave semantics (tombstone, expenses forced to keep — PRD §13) and #133 shipped the removal machinery (formerMembers UI exists), but the self-serve door was never cut.</p>
+  <p class="why"><strong>Why it's a gap:</strong> M4: the data model and PRD support it; the UI doesn't. V2-adjacent: the only exit is asking the owner in the group text.</p>
+  <p class="fix"><strong>Proposed fix:</strong> 'Leave trip' on Members (self-row) reusing the remove/tombstone path with PRD §13 semantics. Backlog-aware: check #133's issue scope before filing as new.</p>
+  <p class="where"><code>src/routes/(app)/trips/[slug]/members/+page.svelte (Remove forms gated on data.isOwner; no self-leave control)</code></p>
+  
+</article>
+<article class="card" data-phase="cross-phase" data-axis="vision" data-sev="P1" data-lens="novice" id="WP-A-014">
+  <header>
+    <span class="sev" style="background:#b4552d">P1</span>
+    <span class="fid">WP-A-014</span>
+    <span class="chip">cross-phase</span><span class="chip">vision</span><span class="chip">novice lens</span><span class="chip ctx">Collaboration</span>
+  </header>
+  <h3>First five minutes: the join/invite front doors are genuinely good (pre-auth context card, inline OTP, placeholder claim), but accept dumps the new member onto the trip Overview with zero orientation — no welcome, no 'here's what this trip is', no 'here's where to say what you want' (goals/swipe/votes are 2-3 taps deep behind sub-tabs she's never seen).</h3>
+  <p class="what">First five minutes: the join/invite front doors are genuinely good (pre-auth context card, inline OTP, placeholder claim), but accept dumps the new member onto the trip Overview with zero orientation — no welcome, no 'here's what this trip is', no 'here's where to say what you want' (goals/swipe/votes are 2-3 taps deep behind sub-tabs she's never seen). D1 scattering is intentional, which makes the missing orientation moment THE onboarding surface.</p>
+  <p class="why"><strong>Why it's a gap:</strong> V2 silenced contributor at the moment of maximum intent (just joined, came to weigh in). Charter D2 pre-agreed this as a real gap; Scott notes an open issue exists for the intro experience — Phase 3 should attach to it rather than duplicate.</p>
+  <p class="fix"><strong>Proposed fix:</strong> Post-join landing state on the Overview (first-visit only): what/who/when + 'add what you're excited about' (goals capture) + 'rate the ideas' (swipe) entry points. Feature-shaped.</p>
+  <p class="where"><code>src/routes/join/[token]/+page.server.ts:98 + src/routes/invite/[code]/+page.server.ts:97 (accept → redirect /trips/[slug] = Overview, cold)</code></p>
+  
+</article>
+<article class="card" data-phase="planning" data-axis="vision" data-sev="P3" data-lens="designer" id="WP-A-015">
+  <header>
+    <span class="sev" style="background:#7a8a7a">P3</span>
+    <span class="fid">WP-A-015</span>
+    <span class="chip">planning</span><span class="chip">vision</span><span class="chip">designer lens</span><span class="chip ctx">Collaboration</span>
+  </header>
+  <h3>The swipe deck — a contribution minigame — launches from the Phases sub-tab, a structure-management surface (create/reorder/delete phases).</h3>
+  <p class="what">The swipe deck — a contribution minigame — launches from the Phases sub-tab, a structure-management surface (create/reorder/delete phases). A contributor 'looking for where to weigh in' has no reason to open Phases; an owner managing structure gets a game card. The card itself is good (count + label); its home is odd.</p>
+  <p class="why"><strong>Why it's a gap:</strong> Designer IA coherence within D1's contextual-scattering decision (per-surface discoverability is the agreed ceiling — P3). V4_GROUP_INPUT_PRD placed it here deliberately ('launches from a card on the Phases sub-tab') — so this challenges a documented choice; flag, don't presume.</p>
+  <p class="fix"><strong>Proposed fix:</strong> Candidate: mirror the launch card on Goals (the other contribution surface) or on the post-join landing (WP-A-014). Phase 3 call.</p>
+  <p class="where"><code>src/routes/(app)/trips/[slug]/phases/+page.svelte:55-67 (swipe launch card on the Phases sub-tab)</code></p>
+  
+</article>
+<article class="card" data-phase="trip" data-axis="vision" data-sev="P3" data-lens="novice" id="WP-A-016">
+  <header>
+    <span class="sev" style="background:#7a8a7a">P3</span>
+    <span class="fid">WP-A-016</span>
+    <span class="chip">trip</span><span class="chip">vision</span><span class="chip">novice lens</span><span class="chip ctx">Documents</span>
+  </header>
+  <h3>Text confirmation codes live solely on item detail; the Documents tab — literally named where a novice looks for 'my confirmation' — shows files only, with no hint that codes exist elsewhere.</h3>
+  <p class="what">Text confirmation codes live solely on item detail; the Documents tab — literally named where a novice looks for 'my confirmation' — shows files only, with no hint that codes exist elsewhere.</p>
+  <p class="why"><strong>Why it's a gap:</strong> V1-lite: mid-trip 'what's the hotel code' → Docs tab → not there → email (old stack). Domain model (Document=artifact, codes=item field) is sound per ADR/PRD; the NAV doesn't bridge the novice's mental model.</p>
+  <p class="fix"><strong>Proposed fix:</strong> Smallest: item rows in the Documents list also surface that item's codes (read-only chips), or an explainer line. Keep the model; bridge the lookup.</p>
+  <p class="where"><code>src/routes/(app)/trips/[slug]/items/[itemId]/+page.svelte:131 (confirmation_codes on item detail only); documents page shows artifacts only</code></p>
+  
+</article>
+<article class="card" data-phase="planning" data-axis="vision" data-sev="P2" data-lens="power" id="WP-A-017">
+  <header>
+    <span class="sev" style="background:#b08d3e">P2</span>
+    <span class="fid">WP-A-017</span>
+    <span class="chip">planning</span><span class="chip">vision</span><span class="chip">power lens</span><span class="chip ctx">Itinerary</span>
+  </header>
+  <h3>'Add MY flight and see how it lines up with everyone else's' has no answer.</h3>
+  <p class="what">'Add MY flight and see how it lines up with everyone else's' has no answer. Items carry no member association (paid_by/booked_by are unused ghosts per CARD_CONTENT_SPEC); a 'flights' view across members doesn't exist. Groups arriving separately — the normal case for friends-joining-trips — coordinate arrivals in the group text or a spreadsheet.</p>
+  <p class="why"><strong>Why it's a gap:</strong> V1 forces the old stack for a planning job squarely inside the vision ('plans the itinerary together'). Not in SPEC_BACKLOG — a genuine unsequenced gap.</p>
+  <p class="fix"><strong>Proposed fix:</strong> Feature-shaped: per-member flight items + an arrivals/departures lineup view (could be a Lists-style projection). Phase 3: PRD-or-defer decision.</p>
+  <p class="where"><code>no surface; flights are plain items (one per creator), no member association or comparison view</code></p>
+  
+</article>
+<article class="card" data-phase="trip" data-axis="vision" data-sev="P2" data-lens="novice" id="WP-A-018">
+  <header>
+    <span class="sev" style="background:#b08d3e">P2</span>
+    <span class="fid">WP-A-018</span>
+    <span class="chip">trip</span><span class="chip">vision</span><span class="chip">novice lens</span><span class="chip ctx">Money</span>
+  </header>
+  <h3>Mid-trip money has one-way flow: you can ADD an expense from Trip Mode (AddSheet → expenses?action=add ✓) but you cannot SEE anything — 'how are we doing on budget', 'what did today cost', 'who's owed what' all require switching to Planning Mode and tapping Money.</h3>
+  <p class="what">Mid-trip money has one-way flow: you can ADD an expense from Trip Mode (AddSheet → expenses?action=add ✓) but you cannot SEE anything — 'how are we doing on budget', 'what did today cost', 'who's owed what' all require switching to Planning Mode and tapping Money. During the trip is exactly when spending happens.</p>
+  <p class="why"><strong>Why it's a gap:</strong> V1: the glance you can't get is what Splitwise's widget gives — the old stack returns. Charter D3's boundary covers itinerary edits, not money visibility; this is an unowned seam.</p>
+  <p class="fix"><strong>Proposed fix:</strong> Candidates: budget/balance line on Today (after the timeline), or Day-Wrapped stats (already in backlog as 'Day Wrapped Stats — items/distance/spent'). Phase 3 picks the surface; cite backlog entry.</p>
+  <p class="where"><code>src/lib/shell/nav-tabs.ts:19-29 (trip nav: Now/Today/Add/Docs — no Money); AddSheet covers add-expense only</code></p>
+  
+</article>
+<article class="card" data-phase="post-trip" data-axis="vision" data-sev="P2" data-lens="novice" id="WP-A-019">
+  <header>
+    <span class="sev" style="background:#b08d3e">P2</span>
+    <span class="fid">WP-A-019</span>
+    <span class="chip">post-trip</span><span class="chip">vision</span><span class="chip">novice lens</span><span class="chip ctx">Archive &amp; Portability</span>
+  </header>
+  <h3>Sharing the archive is findable-but-hostile: the link exists only in Settings as a relative path in a code block — no absolute URL, no copy button, no share sheet; and finishing closeout (the natural 'now share it' moment) redirects silently to the trip home with no link handoff.</h3>
+  <p class="what">Sharing the archive is findable-but-hostile: the link exists only in Settings as a relative path in a code block — no absolute URL, no copy button, no share sheet; and finishing closeout (the natural 'now share it' moment) redirects silently to the trip home with no link handoff. Pre-publish, the link 404s (see WP-A-002) with no 'publishes on {date}' state.</p>
+  <p class="why"><strong>Why it's a gap:</strong> V3 record-seam: the Remember pillar's public output is minted but never handed to you. Novice 'share with grandma' = copy a &lt;code&gt; fragment and hand-assemble a URL.</p>
+  <p class="fix"><strong>Proposed fix:</strong> Copy-link button with absolute URL in Settings; archive-link card in the closeout summary / wrap-up state (WP-A-001); friendly pre-publish state.</p>
+  <p class="where"><code>src/routes/(app)/trips/[slug]/settings/+page.svelte:171 (share path as raw &lt;code&gt;, relative, no copy button) + closeout finish → redirect trip home (closeout/+page.server.ts:118, no link moment)</code></p>
+  <img class="shot" src="screenshots/07-settings-archive.png" alt="WP-A-019 evidence">
+</article>
+<article class="card" data-phase="post-trip" data-axis="vision" data-sev="P3" data-lens="power" id="WP-A-020">
+  <header>
+    <span class="sev" style="background:#7a8a7a">P3</span>
+    <span class="fid">WP-A-020</span>
+    <span class="chip">post-trip</span><span class="chip">vision</span><span class="chip">power lens</span><span class="chip ctx">Archive &amp; Portability</span>
+  </header>
+  <h3>Scenario 39 ('family does the trip themselves'): the archive is a beautiful dead end for non-members — no 'use as template', no export, and clone/import require membership.</h3>
+  <p class="what">Scenario 39 ('family does the trip themselves'): the archive is a beautiful dead end for non-members — no 'use as template', no export, and clone/import require membership. The trip's plan can be read but not reused by the people it's shared with.</p>
+  <p class="why"><strong>Why it's a gap:</strong> Vision-edge: 'shareable enough that the trip lives on' arguably stops at reading. Replication-for-strangers may be beyond the one job — flag for an explicit intentional/deferred call rather than assume.</p>
+  <p class="fix"><strong>Proposed fix:</strong> If wanted: 'Download plan (JSON)' on the archive page (PII-stripped, reuses export) + import-on-signup. Phase 3: intentional vs prd.</p>
+  <p class="where"><code>src/routes/archive/[token]/+page.svelte (read-only; no template/replicate path); clone+export are member-only</code></p>
+  
+</article>
+<article class="card" data-phase="planning" data-axis="mechanical" data-sev="P3" data-lens="novice" id="WP-A-021">
+  <header>
+    <span class="sev" style="background:#7a8a7a">P3</span>
+    <span class="fid">WP-A-021</span>
+    <span class="chip">planning</span><span class="chip">mechanical</span><span class="chip">novice lens</span><span class="chip ctx">Shell</span>
+  </header>
+  <h3>items/new back-chevron always points to the trip Overview, even when entered from a specific day (?day=) — back doesn't return where you came from.</h3>
+  <p class="what">items/new back-chevron always points to the trip Overview, even when entered from a specific day (?day=) — back doesn't return where you came from. (Successful submit DOES redirect to the day; it's the back/cancel path that teleports.)</p>
+  <p class="why"><strong>Why it's a gap:</strong> M4 wrong-back. Minor disorientation, frequent surface.</p>
+  <p class="fix"><strong>Proposed fix:</strong> Derive backHref from ?day= when present (mirror the submit redirect logic).</p>
+  <p class="where"><code>src/routes/(app)/trips/[slug]/items/new/+page.svelte:57 (backHref fixed to trip home, ignores ?day= context)</code></p>
+  
+</article>
+<article class="card" data-phase="cross-phase" data-axis="mechanical" data-sev="P3" data-lens="code" id="WP-A-022">
+  <header>
+    <span class="sev" style="background:#7a8a7a">P3</span>
+    <span class="fid">WP-A-022</span>
+    <span class="chip">cross-phase</span><span class="chip">mechanical</span><span class="chip">code lens</span><span class="chip ctx">Shell</span>
+  </header>
+  <h3>View-transition classifier's bottomNavRoutes omits trip-mode tabs (now/today/documents) — tab-to-tab hops in Trip Mode animate as drill-down/up instead of lateral tab transitions.</h3>
+  <p class="what">View-transition classifier's bottomNavRoutes omits trip-mode tabs (now/today/documents) — tab-to-tab hops in Trip Mode animate as drill-down/up instead of lateral tab transitions.</p>
+  <p class="why"><strong>Why it's a gap:</strong> M4-cosmetic: stale set from before Trip Mode nav landed.</p>
+  <p class="fix"><strong>Proposed fix:</strong> Add the trip-mode tab routes to the set.</p>
+  <p class="where"><code>src/routes/(app)/+layout.svelte:8-14 (bottomNavRoutes set: planning tabs only)</code></p>
+  
+</article>
+<article class="card" data-phase="cross-phase" data-axis="vision" data-sev="P3" data-lens="designer" id="WP-A-023">
+  <header>
+    <span class="sev" style="background:#7a8a7a">P3</span>
+    <span class="fid">WP-A-023</span>
+    <span class="chip">cross-phase</span><span class="chip">vision</span><span class="chip">designer lens</span><span class="chip ctx">Itinerary</span>
+  </header>
+  <h3>Settings renders the complete editable form — including the danger zone — for viewers and travelers; only on submit does the server 403.</h3>
+  <p class="what">Settings renders the complete editable form — including the danger zone — for viewers and travelers; only on submit does the server 403. A non-owner can fill out a whole form before learning they never could.</p>
+  <p class="why"><strong>Why it's a gap:</strong> Designer/novice: capability should be visible before effort. (Server enforcement itself is correct — UI-only gap.)</p>
+  <p class="fix"><strong>Proposed fix:</strong> Read-only render (or hide danger zone + disable inputs) for non-owner/co-owner.</p>
+  <p class="where"><code>src/routes/(app)/trips/[slug]/settings/+page.svelte (full form + danger zone render for all roles; actions 403 server-side only, settings/+page.server.ts:38-41)</code></p>
+  
+</article>
+<article class="card" data-phase="trip" data-axis="vision" data-sev="P3" data-lens="power" id="WP-A-024">
+  <header>
+    <span class="sev" style="background:#7a8a7a">P3</span>
+    <span class="fid">WP-A-024</span>
+    <span class="chip">trip</span><span class="chip">vision</span><span class="chip">power lens</span><span class="chip ctx">Shell</span>
+  </header>
+  <h3>Print path exists (More → Print itinerary) but is planning-nav-only — no path from Trip Mode, and it prints the page you're on (More), relying on print.</h3>
+  <p class="what">Print path exists (More → Print itinerary) but is planning-nav-only — no path from Trip Mode, and it prints the page you're on (More), relying on print.css to restyle; 'paper copy of today' on the road requires mode-switch + knowing the card exists.</p>
+  <p class="why"><strong>Why it's a gap:</strong> V1-lite, power persona. Low frequency; works when found.</p>
+  <p class="fix"><strong>Proposed fix:</strong> Verify what actually prints (dogfood); consider print from day view / Today.</p>
+  <p class="where"><code>src/routes/(app)/trips/[slug]/more/+page.svelte:127-143 (Print itinerary = window.print() in More; print.css exists in src/lib/shell)</code></p>
+  
+</article>
+<article class="card" data-phase="planning" data-axis="mechanical" data-sev="P3" data-lens="code" id="WP-A-025">
+  <header>
+    <span class="sev" style="background:#7a8a7a">P3</span>
+    <span class="fid">WP-A-025</span>
+    <span class="chip">planning</span><span class="chip">mechanical</span><span class="chip">code lens</span><span class="chip ctx">Itinerary</span>
+  </header>
+  <h3>Trip-mode routes (/now, /today, /today/upcoming) load for ANY trip status via deep link — planning or long-past trips render trip-mode views with the planning bottom-nav, a chimera state nav can't normally reach (but the unguarded Overview chip, WP-A-006, links straight into).</h3>
+  <p class="what">Trip-mode routes (/now, /today, /today/upcoming) load for ANY trip status via deep link — planning or long-past trips render trip-mode views with the planning bottom-nav, a chimera state nav can't normally reach (but the unguarded Overview chip, WP-A-006, links straight into).</p>
+  <p class="why"><strong>Why it's a gap:</strong> M4: nav and loaders disagree about when Trip Mode exists. Harmless today; trap as Trip Mode grows (e.g. wrap-up state will key off the same predicates).</p>
+  <p class="fix"><strong>Proposed fix:</strong> Cheap: fold into WP-A-006's chip gating. Stricter: loader redirect to trip home when !isTripActive (decide whether read-only future/past peeking is wanted — scenario 24 says yes for active trips).</p>
+  <p class="where"><code>src/routes/(app)/trips/[slug]/now/+page.server.ts, today/+page.server.ts (no isTripActive guard)</code></p>
+  
+</article></div>
+
+<h2>Doc hygiene — live docs vs code</h2>
+<p class="sub">Per D6: <span class="pill-live">LIVE</span> docs must track code and were fixed where verified; <span class="pill-rec">RECORD</span> docs are point-in-time history, left alone.</p>
+<table class="doc-table"><thead><tr><th>Doc</th><th>Class</th><th>State</th></tr></thead><tbody>
+<tr><td>CONTEXT.md</td><td class="pill-live">LIVE</td><td>FIXED in this audit: nav roster (Activity tab → Members/Docs per nav-tabs.ts); "not yet built" annotations for Trip Goal, Swipe-Quiz, Document, Join Link, Departed Member (all shipped); added [[Light Replanning]]. Remaining mismatch kept visible: "Trip Goals reviewed in closeout wizard" is design intent — wizard has no goals step (finding in walk, scenario 33).</td></tr>
+<tr><td>docs/SPEC.md</td><td class="pill-live">LIVE</td><td>STALE, not yet patched (needs its own pass): §1 nav says "Activity, Vault" tabs in both modes; §4 permission table still has Vault rows (Vault retired, ADR-0005). Trust CONTEXT.md + code instead.</td></tr>
+<tr><td>docs/SPEC_BACKLOG.md</td><td class="pill-live">LIVE</td><td>STALE on shipped-status: lists Trip Goal, Swipe-Quiz, Item Voting UI (#30), Documents S5 offline precache, and linked-goals-in-item-detail as backlog — all shipped in code. Needs a shipped-sweep.</td></tr>
+<tr><td>docs/design-system.md</td><td class="pill-live">LIVE</td><td>Not audited this pass (no nav claims).</td></tr>
+<tr><td>.wolf/anatomy.md</td><td class="pill-live">LIVE (auto)</td><td>Predates v4 routes (no goals/, documents/, lists/, swipe/, join/, account/; still lists vault/). OpenWolf will rescan; flagged so nobody trusts it for routes meanwhile.</td></tr>
+<tr><td>PRDs (V3, V4_*, AVATARS, MEMBERSHIP_LIFECYCLE, PHASE_REDESIGN, TASKS, TRIP_MEMORY)</td><td class="pill-rec">RECORD</td><td>Point-in-time intent; consulted for "why" + deferral citations. V3_PRD's Vault references are historical, fine.</td></tr>
+<tr><td>docs/adr/0001–0008</td><td class="pill-rec">RECORD</td><td>Locked decisions; no finding proposes reversing one.</td></tr>
+</tbody></table>
+
+<h2>What's genuinely good (so the gaps have contrast)</h2>
+<ul style="font-size:14px; color:var(--soft)">
+  <li><strong>The front doors are strong.</strong> /join and /invite: pre-auth context card, inline OTP, placeholder claim with role clamping, every error state has copy and an exit. The gap is only what happens <em>after</em> accept (WP-A-014).</li>
+  <li><strong>Day view is the app's best surface</strong> — timeline, parking dividers per phase, cross-phase pull rejection, FAB, DayNav swipe. Scenario 9 is the experience the vision describes.</li>
+  <li><strong>Documents shipped right:</strong> auto-precache on active trips, ?action=add deep link from the AddSheet, role-aware delete, lightbox. One wrong back-link (WP-A-003) mars it.</li>
+  <li><strong>Trips dashboard orients instantly</strong> (On trip / Upcoming / Past) — scenario 44 clean.</li>
+  <li><strong>Members page is a complete collaboration console</strong> — invite, join links (create/copy/rotate/revoke per role), placeholders, tombstones.</li>
+</ul>
+
+<h2>Machine-readable findings (Phase 3 files issues from this)</h2>
+<p class="sub">Same data as <code>findings.json</code> / <code>taskpaths.json</code> — embedded so the report is self-contained.</p>
+<script type="application/json" id="findings-data">{
+ "findings": [
+  {
+   "id": "WP-A-001",
+   "phase": "post-trip",
+   "context": "Archive & Portability",
+   "axis": "vision",
+   "severity": "P1",
+   "lens": "designer",
+   "where": "src/lib/trip-mode/activation.ts (isTripActive) + src/lib/shell/components/AppShell.svelte:35-44 + src/routes/(app)/trips/+page.svelte:117-135",
+   "what": "The trip's end is a silent un-flip. Day after end_date, isTripActive() goes false, the app reverts to the 5-tab planning UI, and the trip eventually slides to the 'Past' section of the trips list with zero call to action. No surface anywhere says 'your trip ended — settle up, close out, archive.' Settle-up waits inside Money, closeout hides behind More (owner-only card), archive link behind Settings.",
+   "why": "V3 seam drop — trip-day→record is the entire Remember pillar's front door and it doesn't exist. Charter D5 pre-agreed this as P1: end_date+1 should render a wrap-up-shaped state (auto-flipped, quiet, group-facing).",
+   "fix": "Third derived state: end_date < today && status==active → trip home renders a closing sequence (outstanding debts → closeout w/ memory review → archive decision). Feature-sized: charter routes this to grill→PRD, not a quick issue.",
+   "disposition": "prd — docs/TRIP_WRAPUP_PRD.md, issue #195"
+  },
+  {
+   "id": "WP-A-002",
+   "phase": "cross-phase",
+   "context": "Shell",
+   "axis": "mechanical",
+   "severity": "P1",
+   "lens": "novice",
+   "where": "src/routes/ (no +error.svelte anywhere); thrown from e.g. src/routes/archive/[token]/+page.server.ts:21,25,34 and src/routes/(app)/trips/[slug]/inbox/+page.server.ts:11",
+   "what": "There is no +error.svelte in the entire route tree. Every thrown error — mistyped trip slug, revoked archive token, archive visited before publish date ('Archive not yet published'), 403s — renders SvelteKit's unstyled default error page with no branding and no way back.",
+   "why": "M2 one-way street at the worst addresses: /archive/[token] is grandma's front door (she gets the link day one, taps it before publish-day → raw 404 page). Quality bar says 'contributes without being taught'; a dead-end error page teaches her the app is broken.",
+   "fix": "Root +error.svelte (branded, 'back to your trips' / 'check the link' recovery actions) + a friendlier pre-publish archive state ('publishes on {date}') instead of a 404.",
+   "disposition": "issue #171 (filed 2026-06-12; dup #185 closed 2026-06-12; archive-publish slice → #195)",
+   "screenshot": "10-error-bad-slug.png"
+  },
+  {
+   "id": "WP-A-003",
+   "phase": "cross-phase",
+   "context": "Documents",
+   "axis": "mechanical",
+   "severity": "P2",
+   "lens": "novice",
+   "where": "src/routes/(app)/trips/[slug]/documents/+page.svelte:65",
+   "what": "Documents page back button is backHref=\"/trips\" — it exits to the trips LIST, not the current trip. Every sibling trip page backs to /trips/{slug}. Docs is a bottom-nav tab in BOTH modes, so this is one of the most-tapped backs in the app.",
+   "why": "M4 expected-but-missing link / wrong destination. Novice mid-trip: Docs tab → back → suddenly outside the trip, must re-find it. Disorienting exactly when one-handed.",
+   "fix": "backHref=\"/trips/{data.trip.slug}\" (or drop the back chevron entirely — it's a top-level tab, tabs don't 'back').",
+   "disposition": "covered by #197 (WP-B-012 extends it — the Documents back-exit is in the nav-coherence bundle)",
+   "screenshot": "05-documents.png"
+  },
+  {
+   "id": "WP-A-004",
+   "phase": "trip",
+   "context": "Shell",
+   "axis": "vision",
+   "severity": "P2",
+   "lens": "novice",
+   "where": "src/routes/(app)/trips/[slug]/more/+page.svelte:145-176 (offline toggle) + src/lib/shell/nav-tabs.ts:19-29 (trip nav has no More)",
+   "what": "Offline mode — a Trip-Mode-critical control (\"I'm on the plane\") — is a manual localStorage toggle buried in More, which is only reachable from the PLANNING nav. In Trip Mode there is no path to it. And as a concept, 'toggle offline then reload' is power-user plumbing a novice will never find or understand.",
+   "why": "V3 seam (planning→trip-day): the control you need mid-trip lives in the other mode. V1: the fallback is screenshots-in-camera-roll (the old stack). NB: Documents already auto-precache on active trips (documents/+page.svelte:45-51), so the artifact half is solved — the toggle governs page/data caching.",
+   "fix": "Surface offline status/toggle in Trip Mode (e.g. on Docs tab next to the 'On trip' chip), or make page-data caching automatic on active trips like documents already are, demoting the manual toggle to a dev tool.",
+   "disposition": "prd — docs/OFFLINE_PRD.md, issue #203",
+   "screenshot": "06-more.png"
+  },
+  {
+   "id": "WP-A-005",
+   "phase": "trip",
+   "context": "Trip Mode",
+   "axis": "vision",
+   "severity": "P1",
+   "lens": "novice",
+   "where": "src/routes/(app)/trips/[slug]/now/+page.svelte:32-37 (free-time → NowBetweenThings shows only next item) + src/lib/trip-mode/components/AddSheet.svelte:19-29 (no parking-lot option) + no skip/cancel affordance on Today",
+   "what": "Light Replanning (charter D3) has no doors in Trip Mode. 'Tonight fell through' cannot be answered without a mode switch: the parking lot (the exact answer — phase-scoped ideas) is unreachable from Now/Today/Add; the free-time Focus links only the next planned item; there is no skip/cancel-with-replacement flow. Quick-add for today exists (AddSheet ✓) but choosing among already-captured ideas does not.",
+   "why": "V3 seam drop on the charter's own boundary: today-scoped replanning must live in Trip Mode (D3), and the two trigger states (free time, skipped item) should open doors proactively (D4). SPEC_BACKLOG lists 'Ideas from Free Time' + 'Inline contextual parking lot' as deferred — charter D4 explicitly promoted this from deferred-nicety to requirement. Now view is interim (#153/#154 Slice B pending) — fold into that work.",
+   "fix": "Free-time Focus surfaces phase parking-lot ideas with promote-to-today; skip/cancel on a Today item offers a replacement from the same parking lot. Feature-shaped — Phase 3 decides PRD vs issues riding on #154.",
+   "disposition": "prd — docs/TRIP_REPLANNING_PRD.md, issue #166 (absorbs #121 + #154, both closed 2026-06-12)",
+   "screenshot": "03-now.png"
+  },
+  {
+   "id": "WP-A-006",
+   "phase": "cross-phase",
+   "context": "Trip Mode",
+   "axis": "mechanical",
+   "severity": "P2",
+   "lens": "designer",
+   "where": "src/routes/(app)/trips/[slug]/+page.svelte:92-101 (chip → /today, unguarded) vs src/lib/shell/components/AppShell.svelte:54 (toggle → /now)",
+   "what": "Two inconsistencies in Trip Mode entry: (1) the Overview 'Trip Mode' chip navigates to /today while the mode pill toggle lands on /now — two different 'homes' for the same mode; (2) the chip renders unconditionally — on planning-status and PAST trips it still shows, and tapping it lands on 'No itinerary for today / Today doesn't fall within this trip's dates', a dead-ish state that makes the app feel broken pre-trip and post-trip.",
+   "why": "M4 + designer coherence: one mode, one entry. The unguarded chip contradicts CONTEXT.md ('Trip Mode… available only when trip status is active').",
+   "fix": "Gate the chip on isTripActive(trip); point it at /now to match the pill (or both at one agreed home).",
+   "disposition": "issue #204 (chip gate + /now target + loader guard; bundles A-025)",
+   "screenshot": "08-overview-upcoming-chip.png"
+  },
+  {
+   "id": "WP-A-007",
+   "phase": "post-trip",
+   "context": "Archive & Portability",
+   "axis": "mechanical",
+   "severity": "P2",
+   "lens": "code",
+   "where": "src/routes/(app)/trips/[slug]/more/+page.svelte:54-70 (card: role-gated only) + src/routes/(app)/trips/[slug]/closeout/+page.server.ts:5-18 (load: role guard only, no status guard)",
+   "what": "Closeout has no status awareness in either direction: the More card shows (and the wizard fully runs) on a trip that hasn't started — you can mark items 'done' during planning; and when the trip actually ends, nothing more than this same buried card invites you in. Travelers/viewers get NO post-trip surface at all (card is owner/co-owner-only; their settle-up lives unprompted in Money).",
+   "why": "M4 + V3: the wizard exists but its entry ignores the trip lifecycle it serves. Subsumed by WP-A-001's wrap-up state for the invitation half; the premature-entry half is its own small guard fix.",
+   "fix": "Status-gate the card/wizard (active+ended or closed-eligible), and let WP-A-001's wrap-up state be the real entry.",
+   "disposition": "prd — docs/TRIP_WRAPUP_PRD.md, issue #195"
+  },
+  {
+   "id": "WP-A-008",
+   "phase": "planning",
+   "context": "Collaboration",
+   "axis": "mechanical",
+   "severity": "P1",
+   "lens": "code",
+   "where": "src/routes/(app)/trips/[slug]/items/new/+page.server.ts:225 (redirect → /inbox) + src/routes/(app)/trips/[slug]/inbox/+page.server.ts:10-12 (403 for non-owners)",
+   "what": "On a trip with auto-approve OFF, a traveler submitting a new item is redirected to /trips/[slug]/inbox — which throws 403 'Only trip owners and co-owners can view the inbox' for travelers. Combined with WP-A-002 (no error page), the contributor's reward for contributing is an unstyled error screen. Their suggestion DID save; they have no way to know.",
+   "why": "M2 one-way street + V2 silenced contributor, on the exact flow the review queue exists for. The quality-bar persona (non-technical friend, suggestion mode on) hits this 100% of the time.",
+   "fix": "Redirect travelers to the trip home (or day) with a 'Suggestion sent — the organizer will review it' toast; reserve the /inbox redirect for owners approving via ?suggestion=.",
+   "disposition": "refuted (v2 verdict — 403-redirect misattributed; substance moved to WP-B-001 + the WP-A-009 amendment, PRD #202)"
+  },
+  {
+   "id": "WP-A-009",
+   "phase": "planning",
+   "context": "Collaboration",
+   "axis": "vision",
+   "severity": "P2",
+   "lens": "novice",
+   "where": "no route or component renders a traveler's own pending suggestions (inbox is owner-403; notifications go to owners on suggestion_added — backend/pb_hooks/notifications.pb.js:56)",
+   "what": "A traveler who submits a suggestion has no surface — none — where they can see it exists, is pending, was approved, or was rejected. Rejection is completely silent. Approval is visible only indirectly (item appears).",
+   "why": "V2 silenced contributor: 'did my idea even go through?' is answered by asking in the group text (V1). D1 says contribution is contextual by design — but context for YOUR pending contribution is nowhere.",
+   "fix": "Smallest: 'Your pending suggestions' strip on trip home for travelers (or a suggestion-status notification back to the submitter on approve/reject).",
+   "disposition": "prd — docs/TRIP_CONTRIBUTION_PRD.md, issue #202"
+  },
+  {
+   "id": "WP-A-010",
+   "phase": "cross-phase",
+   "context": "Shell",
+   "axis": "mechanical",
+   "severity": "P3",
+   "lens": "code",
+   "where": "src/lib/shell/components/TripTabs.svelte (zero imports anywhere in src/)",
+   "what": "TripTabs.svelte is dead code — superseded by per-page SubTabs arrays. Its tab set (Overview/Phases/Members/Inbox/Settings) is also a fossil of an older IA, confusing for anyone reading the shell.",
+   "why": "M3 dead chrome. No user impact; maintenance trap (an agent 'fixing nav' could edit the dead file — this audit nearly did).",
+   "fix": "Delete the file.",
+   "disposition": "issue #178 (filed 2026-06-12)"
+  },
+  {
+   "id": "WP-A-011",
+   "phase": "cross-phase",
+   "context": "Shell",
+   "axis": "mechanical",
+   "severity": "P2",
+   "lens": "novice",
+   "where": "src/routes/(app)/trips/+page.svelte:37 (only inbound link to /account in the app)",
+   "what": "/account (name + avatar) is reachable ONLY from the trips-list avatar chip. From inside a trip — including the Members page, where you're looking at everyone's avatars and your own row — there is no path to your own profile. AVATARS_PRD made avatars app-wide identity; editing that identity has one door, on a page you skip past.",
+   "why": "M4 expected-but-missing link. Novice test 'change my avatar' from where avatars are seen → dead end → she asks in the group text (V1-lite).",
+   "fix": "Link self-row on Members → /account; optionally an Account card under More.",
+   "disposition": "issue #180 (filed 2026-06-12)"
+  },
+  {
+   "id": "WP-A-012",
+   "phase": "cross-phase",
+   "context": "Collaboration",
+   "axis": "vision",
+   "severity": "P3",
+   "lens": "designer",
+   "where": "NotificationBell rendered on 6 surfaces only (trips/[slug], today, today/upcoming, expenses, budget, more) — absent from now (trip-mode home), members, documents, days, items, phases, goals, lists, inbox, settings",
+   "what": "Notifications — the only 'what changed' surface — appear on a seemingly arbitrary subset of pages. Most notably absent from Now (the trip-mode default landing) and from the pages notifications link TO (items, members, inbox).",
+   "why": "Designer-consistency + V2-lite: 'catch up on what changed' (scenario 42) works only if you happen to be on one of the six pages. Backlog already notes the badge isn't live-updating; placement inconsistency compounds it.",
+   "fix": "Render the bell in one consistent chrome slot (NavBar right) on all trip pages, or move it into BottomNav/More as a fixed location.",
+   "disposition": "issue #180 (filed 2026-06-12)"
+  },
+  {
+   "id": "WP-A-013",
+   "phase": "cross-phase",
+   "context": "Collaboration",
+   "axis": "mechanical",
+   "severity": "P2",
+   "lens": "novice",
+   "where": "src/routes/(app)/trips/[slug]/members/+page.svelte (Remove forms gated on data.isOwner; no self-leave control)",
+   "what": "A member cannot leave a trip. 'Remove' is owner-only; there is no 'Leave trip' affordance for travelers/viewers anywhere. MEMBERSHIP_LIFECYCLE_PRD specs self-leave semantics (tombstone, expenses forced to keep — PRD §13) and #133 shipped the removal machinery (formerMembers UI exists), but the self-serve door was never cut.",
+   "why": "M4: the data model and PRD support it; the UI doesn't. V2-adjacent: the only exit is asking the owner in the group text.",
+   "fix": "'Leave trip' on Members (self-row) reusing the remove/tombstone path with PRD §13 semantics. Backlog-aware: check #133's issue scope before filing as new.",
+   "disposition": "issue #206 (self-leave UI; reuses #133 tombstone machinery + lifecycle PRD self-leave semantics)"
+  },
+  {
+   "id": "WP-A-014",
+   "phase": "cross-phase",
+   "context": "Collaboration",
+   "axis": "vision",
+   "severity": "P1",
+   "lens": "novice",
+   "where": "src/routes/join/[token]/+page.server.ts:98 + src/routes/invite/[code]/+page.server.ts:97 (accept → redirect /trips/[slug] = Overview, cold)",
+   "what": "First five minutes: the join/invite front doors are genuinely good (pre-auth context card, inline OTP, placeholder claim), but accept dumps the new member onto the trip Overview with zero orientation — no welcome, no 'here's what this trip is', no 'here's where to say what you want' (goals/swipe/votes are 2-3 taps deep behind sub-tabs she's never seen). D1 scattering is intentional, which makes the missing orientation moment THE onboarding surface.",
+   "why": "V2 silenced contributor at the moment of maximum intent (just joined, came to weigh in). Charter D2 pre-agreed this as a real gap; Scott notes an open issue exists for the intro experience — Phase 3 should attach to it rather than duplicate.",
+   "fix": "Post-join landing state on the Overview (first-visit only): what/who/when + 'add what you're excited about' (goals capture) + 'rate the ideas' (swipe) entry points. Feature-shaped.",
+   "disposition": "attached to #111 (intro wizard) via comment, no dup (2026-06-12)"
+  },
+  {
+   "id": "WP-A-015",
+   "phase": "planning",
+   "context": "Collaboration",
+   "axis": "vision",
+   "severity": "P3",
+   "lens": "designer",
+   "where": "src/routes/(app)/trips/[slug]/phases/+page.svelte:55-67 (swipe launch card on the Phases sub-tab)",
+   "what": "The swipe deck — a contribution minigame — launches from the Phases sub-tab, a structure-management surface (create/reorder/delete phases). A contributor 'looking for where to weigh in' has no reason to open Phases; an owner managing structure gets a game card. The card itself is good (count + label); its home is odd.",
+   "why": "Designer IA coherence within D1's contextual-scattering decision (per-surface discoverability is the agreed ceiling — P3). V4_GROUP_INPUT_PRD placed it here deliberately ('launches from a card on the Phases sub-tab') — so this challenges a documented choice; flag, don't presume.",
+   "fix": "Candidate: mirror the launch card on Goals (the other contribution surface) or on the post-join landing (WP-A-014). Phase 3 call.",
+   "disposition": "issue #207 (mirror swipe launch on Goals / post-join)"
+  },
+  {
+   "id": "WP-A-016",
+   "phase": "trip",
+   "context": "Documents",
+   "axis": "vision",
+   "severity": "P3",
+   "lens": "novice",
+   "where": "src/routes/(app)/trips/[slug]/items/[itemId]/+page.svelte:131 (confirmation_codes on item detail only); documents page shows artifacts only",
+   "what": "Text confirmation codes live solely on item detail; the Documents tab — literally named where a novice looks for 'my confirmation' — shows files only, with no hint that codes exist elsewhere.",
+   "why": "V1-lite: mid-trip 'what's the hotel code' → Docs tab → not there → email (old stack). Domain model (Document=artifact, codes=item field) is sound per ADR/PRD; the NAV doesn't bridge the novice's mental model.",
+   "fix": "Smallest: item rows in the Documents list also surface that item's codes (read-only chips), or an explainer line. Keep the model; bridge the lookup.",
+   "disposition": "issue #205 (codes as read-only chips in Documents)"
+  },
+  {
+   "id": "WP-A-017",
+   "phase": "planning",
+   "context": "Itinerary",
+   "axis": "vision",
+   "severity": "P2",
+   "lens": "power",
+   "where": "no surface; flights are plain items (one per creator), no member association or comparison view",
+   "what": "'Add MY flight and see how it lines up with everyone else's' has no answer. Items carry no member association (paid_by/booked_by are unused ghosts per CARD_CONTENT_SPEC); a 'flights' view across members doesn't exist. Groups arriving separately — the normal case for friends-joining-trips — coordinate arrivals in the group text or a spreadsheet.",
+   "why": "V1 forces the old stack for a planning job squarely inside the vision ('plans the itinerary together'). Not in SPEC_BACKLOG — a genuine unsequenced gap.",
+   "fix": "Feature-shaped: per-member flight items + an arrivals/departures lineup view (could be a Lists-style projection). Phase 3: PRD-or-defer decision.",
+   "disposition": "prd — docs/ITEM_ASSIGNMENT_PRD.md, issue #210 (reframed: Item Assignment primitive + Flights Smart List; assigned_to was already live; ADR-0011 card-avatar reversal)"
+  },
+  {
+   "id": "WP-A-018",
+   "phase": "trip",
+   "context": "Money",
+   "axis": "vision",
+   "severity": "P2",
+   "lens": "novice",
+   "where": "src/lib/shell/nav-tabs.ts:19-29 (trip nav: Now/Today/Add/Docs — no Money); AddSheet covers add-expense only",
+   "what": "Mid-trip money has one-way flow: you can ADD an expense from Trip Mode (AddSheet → expenses?action=add ✓) but you cannot SEE anything — 'how are we doing on budget', 'what did today cost', 'who's owed what' all require switching to Planning Mode and tapping Money. During the trip is exactly when spending happens.",
+   "why": "V1: the glance you can't get is what Splitwise's widget gives — the old stack returns. Charter D3's boundary covers itinerary edits, not money visibility; this is an unowned seam.",
+   "fix": "Candidates: budget/balance line on Today (after the timeline), or Day-Wrapped stats (already in backlog as 'Day Wrapped Stats — items/distance/spent'). Phase 3 picks the surface; cite backlog entry.",
+   "disposition": "prd — docs/TRIP_MONEY_PRD.md, issue #211 (Trip-Mode Money tab/summary: spent (pre/on-trip split) vs budget + balance + today, read-only deep-links; folds in P-3 booked-moment expense capture; deps #170/#197)"
+  },
+  {
+   "id": "WP-A-019",
+   "phase": "post-trip",
+   "context": "Archive & Portability",
+   "axis": "vision",
+   "severity": "P2",
+   "lens": "novice",
+   "where": "src/routes/(app)/trips/[slug]/settings/+page.svelte:171 (share path as raw <code>, relative, no copy button) + closeout finish → redirect trip home (closeout/+page.server.ts:118, no link moment)",
+   "what": "Sharing the archive is findable-but-hostile: the link exists only in Settings as a relative path in a code block — no absolute URL, no copy button, no share sheet; and finishing closeout (the natural 'now share it' moment) redirects silently to the trip home with no link handoff. Pre-publish, the link 404s (see WP-A-002) with no 'publishes on {date}' state.",
+   "why": "V3 record-seam: the Remember pillar's public output is minted but never handed to you. Novice 'share with grandma' = copy a <code> fragment and hand-assemble a URL.",
+   "fix": "Copy-link button with absolute URL in Settings; archive-link card in the closeout summary / wrap-up state (WP-A-001); friendly pre-publish state.",
+   "disposition": "prd — docs/TRIP_WRAPUP_PRD.md, issue #195",
+   "screenshot": "07-settings-archive.png"
+  },
+  {
+   "id": "WP-A-020",
+   "phase": "post-trip",
+   "context": "Archive & Portability",
+   "axis": "vision",
+   "severity": "P3",
+   "lens": "power",
+   "where": "src/routes/archive/[token]/+page.svelte (read-only; no template/replicate path); clone+export are member-only",
+   "what": "Scenario 39 ('family does the trip themselves'): the archive is a beautiful dead end for non-members — no 'use as template', no export, and clone/import require membership. The trip's plan can be read but not reused by the people it's shared with.",
+   "why": "Vision-edge: 'shareable enough that the trip lives on' arguably stops at reading. Replication-for-strangers may be beyond the one job — flag for an explicit intentional/deferred call rather than assume.",
+   "fix": "If wanted: 'Download plan (JSON)' on the archive page (PII-stripped, reuses export) + import-on-signup. Phase 3: intentional vs prd.",
+   "disposition": "issue #208 (export from archive + import as new trip; blocked on #174/#173)"
+  },
+  {
+   "id": "WP-A-021",
+   "phase": "planning",
+   "context": "Shell",
+   "axis": "mechanical",
+   "severity": "P3",
+   "lens": "novice",
+   "where": "src/routes/(app)/trips/[slug]/items/new/+page.svelte:57 (backHref fixed to trip home, ignores ?day= context)",
+   "what": "items/new back-chevron always points to the trip Overview, even when entered from a specific day (?day=) — back doesn't return where you came from. (Successful submit DOES redirect to the day; it's the back/cancel path that teleports.)",
+   "why": "M4 wrong-back. Minor disorientation, frequent surface.",
+   "fix": "Derive backHref from ?day= when present (mirror the submit redirect logic).",
+   "disposition": "issue #178 (filed 2026-06-12)"
+  },
+  {
+   "id": "WP-A-022",
+   "phase": "cross-phase",
+   "context": "Shell",
+   "axis": "mechanical",
+   "severity": "P3",
+   "lens": "code",
+   "where": "src/routes/(app)/+layout.svelte:8-14 (bottomNavRoutes set: planning tabs only)",
+   "what": "View-transition classifier's bottomNavRoutes omits trip-mode tabs (now/today/documents) — tab-to-tab hops in Trip Mode animate as drill-down/up instead of lateral tab transitions.",
+   "why": "M4-cosmetic: stale set from before Trip Mode nav landed.",
+   "fix": "Add the trip-mode tab routes to the set.",
+   "disposition": "issue #178 (filed 2026-06-12)"
+  },
+  {
+   "id": "WP-A-023",
+   "phase": "cross-phase",
+   "context": "Itinerary",
+   "axis": "vision",
+   "severity": "P3",
+   "lens": "designer",
+   "where": "src/routes/(app)/trips/[slug]/settings/+page.svelte (full form + danger zone render for all roles; actions 403 server-side only, settings/+page.server.ts:38-41)",
+   "what": "Settings renders the complete editable form — including the danger zone — for viewers and travelers; only on submit does the server 403. A non-owner can fill out a whole form before learning they never could.",
+   "why": "Designer/novice: capability should be visible before effort. (Server enforcement itself is correct — UI-only gap.)",
+   "fix": "Read-only render (or hide danger zone + disable inputs) for non-owner/co-owner.",
+   "disposition": "issue #176 (filed 2026-06-12)"
+  },
+  {
+   "id": "WP-A-024",
+   "phase": "trip",
+   "context": "Shell",
+   "axis": "vision",
+   "severity": "P3",
+   "lens": "power",
+   "where": "src/routes/(app)/trips/[slug]/more/+page.svelte:127-143 (Print itinerary = window.print() in More; print.css exists in src/lib/shell)",
+   "what": "Print path exists (More → Print itinerary) but is planning-nav-only — no path from Trip Mode, and it prints the page you're on (More), relying on print.css to restyle; 'paper copy of today' on the road requires mode-switch + knowing the card exists.",
+   "why": "V1-lite, power persona. Low frequency; works when found.",
+   "fix": "Verify what actually prints (dogfood); consider print from day view / Today.",
+   "disposition": "issue #209 (remove Print itinerary; never needed, per Scott)"
+  },
+  {
+   "id": "WP-A-025",
+   "phase": "planning",
+   "context": "Itinerary",
+   "axis": "mechanical",
+   "severity": "P3",
+   "lens": "code",
+   "where": "src/routes/(app)/trips/[slug]/now/+page.server.ts, today/+page.server.ts (no isTripActive guard)",
+   "what": "Trip-mode routes (/now, /today, /today/upcoming) load for ANY trip status via deep link — planning or long-past trips render trip-mode views with the planning bottom-nav, a chimera state nav can't normally reach (but the unguarded Overview chip, WP-A-006, links straight into).",
+   "why": "M4: nav and loaders disagree about when Trip Mode exists. Harmless today; trap as Trip Mode grows (e.g. wrap-up state will key off the same predicates).",
+   "fix": "Cheap: fold into WP-A-006's chip gating. Stricter: loader redirect to trip home when !isTripActive (decide whether read-only future/past peeking is wanted — scenario 24 says yes for active trips).",
+   "disposition": "issue #204 (folded into A-006 loader guard)"
+  }
+ ],
+ "taskpaths": [
+  {
+   "n": 1,
+   "persona": "N",
+   "intent": "When is our flight?",
+   "phase": "planning",
+   "path": "trips list → trip → (day card with flight) → day → item; or Overview day summaries",
+   "taps": 3,
+   "verdict": "findable",
+   "notes": "No flights-level view; relies on knowing which day. DayCard summaries help. Related WP-A-017."
+  },
+  {
+   "n": 2,
+   "persona": "N",
+   "intent": "Add an idea I'm not sure about yet",
+   "phase": "planning",
+   "path": "day → +Add / FAB → items/new (status defaults?) — or phase page ?/addIdea",
+   "taps": 3,
+   "verdict": "findable",
+   "notes": "*Verify items/new exposes 'unplanned/idea' status plainly to a novice; phase page addIdea is the dedicated idea-capture but phase page is a power surface."
+  },
+  {
+   "n": 3,
+   "persona": "N",
+   "intent": "Invite Jake",
+   "phase": "planning",
+   "path": "bottom-nav Members → Invite by email (or join-link copy)",
+   "taps": 2,
+   "verdict": "clean",
+   "notes": "Members is a top-level tab; travelers canInvite ✓; join links per-role with copy button ✓."
+  },
+  {
+   "n": 4,
+   "persona": "N",
+   "intent": "Say what I'm excited about (new member)",
+   "phase": "planning",
+   "path": "Overview → SubTab Goals → capture wizard; or Phases → swipe card; or vote on day cards",
+   "taps": "2-3",
+   "verdict": "slow",
+   "notes": "All surfaces exist; none announce themselves to a fresh joiner. D1 intentional scattering; gap is the missing orientation moment (WP-A-014, WP-A-015)."
+  },
+  {
+   "n": 5,
+   "persona": "N",
+   "intent": "FIRST FIVE MINUTES: invite link → oriented",
+   "phase": "cross",
+   "path": "join/invite (good context card, OTP, claim) → accept → Overview, cold",
+   "taps": "—",
+   "verdict": "lost",
+   "notes": "Front door excellent; landing is unoriented. Charter D2; WP-A-014. Known open issue — attach."
+  },
+  {
+   "n": 6,
+   "persona": "P",
+   "intent": "What still needs booking?",
+   "phase": "planning",
+   "path": "Overview → Lists sub-tab → Booking smart list",
+   "taps": 2,
+   "verdict": "clean",
+   "notes": "Count badge on Lists index; read-and-check ✓."
+  },
+  {
+   "n": 7,
+   "persona": "N",
+   "intent": "Attach hotel confirmation PDF",
+   "phase": "planning",
+   "path": "item detail → Documents section → upload; or Docs tab FAB → sheet with item picker",
+   "taps": "2-3",
+   "verdict": "clean",
+   "notes": "Both scopes per PRD; clipboard paste backlog S3 (#73)."
+  },
+  {
+   "n": 8,
+   "persona": "P",
+   "intent": "Can we afford this?",
+   "phase": "planning",
+   "path": "Money tab → Budget sub-tab (estimated total vs budget)",
+   "taps": 2,
+   "verdict": "clean",
+   "notes": ""
+  },
+  {
+   "n": 9,
+   "persona": "P",
+   "intent": "Plan day 3 of Paris phase",
+   "phase": "planning",
+   "path": "Overview phase section → day card → day view (DnD timeline, parking divider, DayNav)",
+   "taps": 2,
+   "verdict": "clean",
+   "notes": "Day view is the app's best surface."
+  },
+  {
+   "n": 10,
+   "persona": "N",
+   "intent": "What does everyone else want?",
+   "phase": "planning",
+   "path": "Goals sub-tab (vote stacks) + day-view parking lot (vote stacks)",
+   "taps": 2,
+   "verdict": "findable",
+   "notes": "Split across two surfaces by design (goal votes vs item votes, ADR-0004)."
+  },
+  {
+   "n": 11,
+   "persona": "N",
+   "intent": "Add restaurant options for ONE city",
+   "phase": "planning",
+   "path": "phase page → addIdea (phase-scoped, repeats) — or items/new per item",
+   "taps": "3+2/idea",
+   "verdict": "slow",
+   "notes": "addIdea on phase page is right surface but phase page reads as admin; items/new round-trips per idea. *No rapid multi-capture flow; goals/capture has one for goals — items don't."
+  },
+  {
+   "n": 12,
+   "persona": "N",
+   "intent": "How busy is that day? (outfits/walking)",
+   "phase": "planning",
+   "path": "Overview → DayCard summaries + DayMetricToggle; or day view timeline density",
+   "taps": 1,
+   "verdict": "clean",
+   "notes": "Walking distance is out of scope (no maps); density/count is the available proxy."
+  },
+  {
+   "n": 13,
+   "persona": "N",
+   "intent": "Anything unbooked that should be booked before we go?",
+   "phase": "planning",
+   "path": "Lists → Booking (auto list) — same as #6, novice entry",
+   "taps": 2,
+   "verdict": "findable",
+   "notes": "Novice must guess 'Lists' holds it; 'Needs booking' pills on cards help en route."
+  },
+  {
+   "n": 14,
+   "persona": "P",
+   "intent": "Add MY flight, compare with others'",
+   "phase": "planning",
+   "path": "add flight item ✓; comparison view — none",
+   "taps": "—",
+   "verdict": "gap",
+   "notes": "WP-A-017. Not in backlog."
+  },
+  {
+   "n": 15,
+   "persona": "P",
+   "intent": "Rental car spanning phases",
+   "phase": "planning",
+   "path": "items/new transportation + end_date spanning days across phases → MultiDayBanner on each spanned day",
+   "taps": 3,
+   "verdict": "findable",
+   "notes": "Storage supports it (ADR-0002); item still belongs to ONE phase — surfaced under that phase's parking/structure only. *Verify banner renders across phase boundary."
+  },
+  {
+   "n": 16,
+   "persona": "N",
+   "intent": "Discuss an idea before committing",
+   "phase": "planning",
+   "path": "item detail → Comments (+ notification to others)",
+   "taps": 2,
+   "verdict": "clean",
+   "notes": "Comment notification links back to item ✓. Messaging ceiling is intentional (SPEC_BACKLOG scope note)."
+  },
+  {
+   "n": 17,
+   "persona": "P",
+   "intent": "Trip dates changed — extend/shift",
+   "phase": "planning",
+   "path": "More → Settings → dates → save",
+   "taps": 3,
+   "verdict": "findable",
+   "notes": "*Dogfood: confirm day regeneration + what happens to items on removed days (trips.pb.js hook). Phase dates edited separately per phase."
+  },
+  {
+   "n": 18,
+   "persona": "N",
+   "intent": "What's next right now?",
+   "phase": "trip",
+   "path": "open trip (active → Trip Mode default) → Now",
+   "taps": 0,
+   "verdict": "clean",
+   "notes": "Interim layout (#153/#154) but states are correct."
+  },
+  {
+   "n": 19,
+   "persona": "N",
+   "intent": "Find the boarding pass",
+   "phase": "trip",
+   "path": "Docs tab → grouped by Flights → row → lightbox/file",
+   "taps": 2,
+   "verdict": "clean",
+   "notes": "Precached on active trips ✓. Back-button bug WP-A-003 lurks on exit."
+  },
+  {
+   "n": 20,
+   "persona": "N",
+   "intent": "Add dinner expense + split",
+   "phase": "trip",
+   "path": "Add (center) → Add expense → expenses?action=add (form auto-opens)",
+   "taps": 2,
+   "verdict": "clean",
+   "notes": "Deep-link param handled ✓. Mode flips to planning chrome on landing — mild context jolt.*"
+  },
+  {
+   "n": 21,
+   "persona": "N",
+   "intent": "Tonight fell through — replan",
+   "phase": "trip",
+   "path": "NONE in Trip Mode: free-time Focus links next item only; parking lot unreachable; must mode-switch → day view → parking divider → pull",
+   "taps": "5+ w/ mode switch",
+   "verdict": "lost",
+   "notes": "WP-A-005, charter D3/D4 violation. THE seam scenario."
+  },
+  {
+   "n": 22,
+   "persona": "N",
+   "intent": "Quick-add coffee stop for today",
+   "phase": "trip",
+   "path": "Add → Add item to today (prefilled day+phase)",
+   "taps": 2,
+   "verdict": "clean",
+   "notes": "D3 today-scope honored ✓ (AddSheet:19)."
+  },
+  {
+   "n": 23,
+   "persona": "N",
+   "intent": "Where's the hotel address?",
+   "phase": "trip",
+   "path": "Today → multi-day banner (ongoing) → item detail → location",
+   "taps": 2,
+   "verdict": "clean",
+   "notes": "MultiDayBanner on Today ✓; maps deep-link is backlog (Integrations)."
+  },
+  {
+   "n": 24,
+   "persona": "P",
+   "intent": "Check tomorrow's plan from Trip Mode",
+   "phase": "trip",
+   "path": "Today → Tomorrow preview (3 items) → 'See all' → Next 3 Days sub-tab",
+   "taps": "1-2",
+   "verdict": "clean",
+   "notes": "Read-only lookahead, correct per D3 boundary."
+  },
+  {
+   "n": 25,
+   "persona": "N",
+   "intent": "Check off packing-list task",
+   "phase": "trip",
+   "path": "Today → checklists section at bottom → tap checkbox",
+   "taps": "1+scroll",
+   "verdict": "findable",
+   "notes": "Below tomorrow preview — scroll to find.*"
+  },
+  {
+   "n": 26,
+   "persona": "N",
+   "intent": "Save today's favorite photo as a Memory",
+   "phase": "trip",
+   "path": "—",
+   "taps": "—",
+   "verdict": "unbuilt",
+   "notes": "Trip Memory: PRD'd + glossaried, zero code (verified: no memory routes/components). SPEC_BACKLOG: shipped-nothing. Cite TRIP_MEMORY_PRD; not a nav finding."
+  },
+  {
+   "n": 27,
+   "persona": "N",
+   "intent": "Find hotel confirmation CODE",
+   "phase": "trip",
+   "path": "item detail → codes; Docs tab does NOT show codes",
+   "taps": "2 if you guess item; lost if you guess Docs",
+   "verdict": "slow",
+   "notes": "WP-A-016."
+  },
+  {
+   "n": 28,
+   "persona": "N",
+   "intent": "Offline on the plane — what works?",
+   "phase": "trip",
+   "path": "documents precache automatic ✓; page/data offline = manual toggle in More (planning nav only) + reload",
+   "taps": "4 + mode switch + foreknowledge",
+   "verdict": "lost",
+   "notes": "WP-A-004."
+  },
+  {
+   "n": 29,
+   "persona": "P",
+   "intent": "Paper copy of today",
+   "phase": "trip",
+   "path": "mode-switch → More → Print itinerary (window.print)",
+   "taps": "3 + mode switch",
+   "verdict": "slow",
+   "notes": "WP-A-024. *Dogfood what actually prints."
+  },
+  {
+   "n": 30,
+   "persona": "N",
+   "intent": "How are we doing on budget, mid-trip?",
+   "phase": "trip",
+   "path": "mode-switch → Money → Budget",
+   "taps": "3 + mode switch",
+   "verdict": "slow",
+   "notes": "WP-A-018. Add-flow exists; glance doesn't."
+  },
+  {
+   "n": 31,
+   "persona": "N",
+   "intent": "Who owes whom — settle up",
+   "phase": "post",
+   "path": "Money → balances + Settle up button → flow",
+   "taps": 2,
+   "verdict": "clean",
+   "notes": "In-page excellent; the gap is nothing INVITES it post-trip (WP-A-001)."
+  },
+  {
+   "n": 32,
+   "persona": "P",
+   "intent": "Mark what we actually did",
+   "phase": "post",
+   "path": "More → Closeout → wizard (day-by-day, bulk, replacements)",
+   "taps": 2,
+   "verdict": "findable",
+   "notes": "Wizard good. Entry buried + no status gate (WP-A-007); owner-only card."
+  },
+  {
+   "n": 33,
+   "persona": "P",
+   "intent": "Did we do what we set out to? (goals at closeout)",
+   "phase": "post",
+   "path": "closeout wizard has NO goals step (grep: no goal refs); goals reviewable manually via Goals sub-tab (derived status)",
+   "taps": "—",
+   "verdict": "gap",
+   "notes": "CONTEXT.md says Trip Goals 'reviewed in the closeout wizard' — code disagrees. Doc-vs-code mismatch + scenario gap; V4_GROUP_INPUT_PRD check in Phase 3."
+  },
+  {
+   "n": 34,
+   "persona": "N",
+   "intent": "Add memory of day 2 retroactively",
+   "phase": "post",
+   "path": "—",
+   "taps": "—",
+   "verdict": "unbuilt",
+   "notes": "Same as #26 (TRIP_MEMORY_PRD, closeout-retro capture specced, unbuilt)."
+  },
+  {
+   "n": 35,
+   "persona": "N",
+   "intent": "Share trip with grandma",
+   "phase": "post",
+   "path": "More → Settings → enable archive → wait for publish → hand-copy relative path from <code>",
+   "taps": "4 + hand-assembly",
+   "verdict": "lost",
+   "notes": "WP-A-019 + WP-A-002 (pre-publish 404)."
+  },
+  {
+   "n": 36,
+   "persona": "P",
+   "intent": "Start next year's trip from this one",
+   "phase": "post",
+   "path": "More → Clone (phase mapping + date shift)",
+   "taps": 2,
+   "verdict": "clean",
+   "notes": "Owner/co-owner only — travelers can't clone a trip they were on.*flag in walk"
+  },
+  {
+   "n": 37,
+   "persona": "P",
+   "intent": "Export my data",
+   "phase": "post",
+   "path": "More → Export (JSON download)",
+   "taps": 2,
+   "verdict": "clean",
+   "notes": ""
+  },
+  {
+   "n": 38,
+   "persona": "N",
+   "intent": "MORNING AFTER end_date",
+   "phase": "post",
+   "path": "open app → trip silently back in planning UI; eventually 'Past' section; no prompt to settle/closeout/share",
+   "taps": "—",
+   "verdict": "lost",
+   "notes": "WP-A-001 (charter D5, pre-agreed P1)."
+  },
+  {
+   "n": 39,
+   "persona": "N",
+   "intent": "Family does the trip themselves from the recap",
+   "phase": "post",
+   "path": "archive renders plan read-only; no template/export for non-members",
+   "taps": "—",
+   "verdict": "gap",
+   "notes": "WP-A-020 — needs an intentional-vs-build call."
+  },
+  {
+   "n": 40,
+   "persona": "N",
+   "intent": "Switch modes and back",
+   "phase": "cross",
+   "path": "mode pill (mobile top / siderail) ↔; toggle navigates to mode home",
+   "taps": 1,
+   "verdict": "findable",
+   "notes": "Pill is small + label-only ('Edit plan'/'Trip view'); entry inconsistency WP-A-006. *Dogfood discoverability."
+  },
+  {
+   "n": 41,
+   "persona": "N",
+   "intent": "Change my name/avatar",
+   "phase": "cross",
+   "path": "back out to trips list → avatar chip → /account",
+   "taps": "2-3 (must LEAVE the trip)",
+   "verdict": "slow",
+   "notes": "WP-A-011. Note: /account edits global avatar; per-trip display_name set at claim/join has no edit surface at all.*"
+  },
+  {
+   "n": 42,
+   "persona": "N",
+   "intent": "What changed since I last looked?",
+   "phase": "cross",
+   "path": "NotificationBell (6 surfaces) → links to inbox/item/members",
+   "taps": 1,
+   "verdict": "findable",
+   "notes": "WP-A-012 placement inconsistency; badge not live (backlog)."
+  },
+  {
+   "n": 43,
+   "persona": "P",
+   "intent": "Leave a trip / remove someone",
+   "phase": "cross",
+   "path": "remove (owner): Members ✓ w/ tombstones. Self-leave: none",
+   "taps": "2 / —",
+   "verdict": "gap",
+   "notes": "WP-A-013 (self-leave). Removal UX itself clean."
+  },
+  {
+   "n": 44,
+   "persona": "N",
+   "intent": "Several trips — find the right one",
+   "phase": "cross",
+   "path": "/trips: On trip / Upcoming / Past sections, accent on active",
+   "taps": 0,
+   "verdict": "clean",
+   "notes": "Good orientation. Past section gives no closeout/archive status cue (minor, folds into WP-A-001)."
+  }
+ ]
+}</script>
+<details><summary style="cursor:pointer">view raw JSON</summary><pre style="font-size:11px; overflow:auto; max-height:300px; background:var(--surface); padding:10px; border:1px solid var(--line); border-radius:8px;">{
+  "findings": [
+    {
+      "id": "WP-A-001",
+      "phase": "post-trip",
+      "context": "Archive &amp; Portability",
+      "axis": "vision",
+      "severity": "P1",
+      "lens": "designer",
+      "where": "src/lib/trip-mode/activation.ts (isTripActive) + src/lib/shell/components/AppShell.svelte:35-44 + src/routes/(app)/trips/+page.svelte:117-135",
+      "what": "The trip's end is a silent un-flip. Day after end_date, isTripActive() goes false, the app reverts to the 5-tab planning UI, and the trip eventually slides to the 'Past' section of the trips list with zero call to action. No surface anywhere says 'your trip ended — settle up, close out, archive.' Settle-up waits inside Money, closeout hides behind More (owner-only card), archive link behind Settings.",
+      "why": "V3 seam drop — trip-day→record is the entire Remember pillar's front door and it doesn't exist. Charter D5 pre-agreed this as P1: end_date+1 should render a wrap-up-shaped state (auto-flipped, quiet, group-facing).",
+      "fix": "Third derived state: end_date &lt; today &amp;&amp; status==active → trip home renders a closing sequence (outstanding debts → closeout w/ memory review → archive decision). Feature-sized: charter routes this to grill→PRD, not a quick issue.",
+      "disposition": "prd — docs/TRIP_WRAPUP_PRD.md, issue #195"
+    },
+    {
+      "id": "WP-A-002",
+      "phase": "cross-phase",
+      "context": "Shell",
+      "axis": "mechanical",
+      "severity": "P1",
+      "lens": "novice",
+      "where": "src/routes/ (no +error.svelte anywhere); thrown from e.g. src/routes/archive/[token]/+page.server.ts:21,25,34 and src/routes/(app)/trips/[slug]/inbox/+page.server.ts:11",
+      "what": "There is no +error.svelte in the entire route tree. Every thrown error — mistyped trip slug, revoked archive token, archive visited before publish date ('Archive not yet published'), 403s — renders SvelteKit's unstyled default error page with no branding and no way back.",
+      "why": "M2 one-way street at the worst addresses: /archive/[token] is grandma's front door (she gets the link day one, taps it before publish-day → raw 404 page). Quality bar says 'contributes without being taught'; a dead-end error page teaches her the app is broken.",
+      "fix": "Root +error.svelte (branded, 'back to your trips' / 'check the link' recovery actions) + a friendlier pre-publish archive state ('publishes on {date}') instead of a 404.",
+      "disposition": "issue #171 (filed 2026-06-12; dup #185 closed 2026-06-12; archive-publish slice → #195)",
+      "screenshot": "10-error-bad-slug.png"
+    },
+    {
+      "id": "WP-A-003",
+      "phase": "cross-phase",
+      "context": "Documents",
+      "axis": "mechanical",
+      "severity": "P2",
+      "lens": "novice",
+      "where": "src/routes/(app)/trips/[slug]/documents/+page.svelte:65",
+      "what": "Documents page back button is backHref=\"/trips\" — it exits to the trips LIST, not the current trip. Every sibling trip page backs to /trips/{slug}. Docs is a bottom-nav tab in BOTH modes, so this is one of the most-tapped backs in the app.",
+      "why": "M4 expected-but-missing link / wrong destination. Novice mid-trip: Docs tab → back → suddenly outside the trip, must re-find it. Disorienting exactly when one-handed.",
+      "fix": "backHref=\"/trips/{data.trip.slug}\" (or drop the back chevron entirely — it's a top-level tab, tabs don't 'back').",
+      "disposition": "covered by #197 (WP-B-012 extends it — the Documents back-exit is in the nav-coherence bundle)",
+      "screenshot": "05-documents.png"
+    },
+    {
+      "id": "WP-A-004",
+      "phase": "trip",
+      "context": "Shell",
+      "axis": "vision",
+      "severity": "P2",
+      "lens": "novice",
+      "where": "src/routes/(app)/trips/[slug]/more/+page.svelte:145-176 (offline toggle) + src/lib/shell/nav-tabs.ts:19-29 (trip nav has no More)",
+      "what": "Offline mode — a Trip-Mode-critical control (\"I'm on the plane\") — is a manual localStorage toggle buried in More, which is only reachable from the PLANNING nav. In Trip Mode there is no path to it. And as a concept, 'toggle offline then reload' is power-user plumbing a novice will never find or understand.",
+      "why": "V3 seam (planning→trip-day): the control you need mid-trip lives in the other mode. V1: the fallback is screenshots-in-camera-roll (the old stack). NB: Documents already auto-precache on active trips (documents/+page.svelte:45-51), so the artifact half is solved — the toggle governs page/data caching.",
+      "fix": "Surface offline status/toggle in Trip Mode (e.g. on Docs tab next to the 'On trip' chip), or make page-data caching automatic on active trips like documents already are, demoting the manual toggle to a dev tool.",
+      "disposition": "prd — docs/OFFLINE_PRD.md, issue #203",
+      "screenshot": "06-more.png"
+    },
+    {
+      "id": "WP-A-005",
+      "phase": "trip",
+      "context": "Trip Mode",
+      "axis": "vision",
+      "severity": "P1",
+      "lens": "novice",
+      "where": "src/routes/(app)/trips/[slug]/now/+page.svelte:32-37 (free-time → NowBetweenThings shows only next item) + src/lib/trip-mode/components/AddSheet.svelte:19-29 (no parking-lot option) + no skip/cancel affordance on Today",
+      "what": "Light Replanning (charter D3) has no doors in Trip Mode. 'Tonight fell through' cannot be answered without a mode switch: the parking lot (the exact answer — phase-scoped ideas) is unreachable from Now/Today/Add; the free-time Focus links only the next planned item; there is no skip/cancel-with-replacement flow. Quick-add for today exists (AddSheet ✓) but choosing among already-captured ideas does not.",
+      "why": "V3 seam drop on the charter's own boundary: today-scoped replanning must live in Trip Mode (D3), and the two trigger states (free time, skipped item) should open doors proactively (D4). SPEC_BACKLOG lists 'Ideas from Free Time' + 'Inline contextual parking lot' as deferred — charter D4 explicitly promoted this from deferred-nicety to requirement. Now view is interim (#153/#154 Slice B pending) — fold into that work.",
+      "fix": "Free-time Focus surfaces phase parking-lot ideas with promote-to-today; skip/cancel on a Today item offers a replacement from the same parking lot. Feature-shaped — Phase 3 decides PRD vs issues riding on #154.",
+      "disposition": "prd — docs/TRIP_REPLANNING_PRD.md, issue #166 (absorbs #121 + #154, both closed 2026-06-12)",
+      "screenshot": "03-now.png"
+    },
+    {
+      "id": "WP-A-006",
+      "phase": "cross-phase",
+      "context": "Trip Mode",
+      "axis": "mechanical",
+      "severity": "P2",
+      "lens": "designer",
+      "where": "src/routes/(app)/trips/[slug]/+page.svelte:92-101 (chip → /today, unguarded) vs src/lib/shell/components/AppShell.svelte:54 (toggle → /now)",
+      "what": "Two inconsistencies in Trip Mode entry: (1) the Overview 'Trip Mode' chip navigates to /today while the mode pill toggle lands on /now — two different 'homes' for the same mode; (2) the chip renders unconditionally — on planning-status and PAST trips it still shows, and tapping it lands on 'No itinerary for today / Today doesn't fall within this trip's dates', a dead-ish state that makes the app feel broken pre-trip and post-trip.",
+      "why": "M4 + designer coherence: one mode, one entry. The unguarded chip contradicts CONTEXT.md ('Trip Mode… available only when trip status is active').",
+      "fix": "Gate the chip on isTripActive(trip); point it at /now to match the pill (or both at one agreed home).",
+      "disposition": "issue #204 (chip gate + /now target + loader guard; bundles A-025)",
+      "screenshot": "08-overview-upcoming-chip.png"
+    },
+    {
+      "id": "WP-A-007",
+      "phase": "post-trip",
+      "context": "Archive &amp; Portability",
+      "axis": "mechanical",
+      "severity": "P2",
+      "lens": "code",
+      "where": "src/routes/(app)/trips/[slug]/more/+page.svelte:54-70 (card: role-gated only) + src/routes/(app)/trips/[slug]/closeout/+page.server.ts:5-18 (load: role guard only, no status guard)",
+      "what": "Closeout has no status awareness in either direction: the More card shows (and the wizard fully runs) on a trip that hasn't started — you can mark items 'done' during planning; and when the trip actually ends, nothing more than this same buried card invites you in. Travelers/viewers get NO post-trip surface at all (card is owner/co-owner-only; their settle-up lives unprompted in Money).",
+      "why": "M4 + V3: the wizard exists but its entry ignores the trip lifecycle it serves. Subsumed by WP-A-001's wrap-up state for the invitation half; the premature-entry half is its own small guard fix.",
+      "fix": "Status-gate the card/wizard (active+ended or closed-eligible), and let WP-A-001's wrap-up state be the real entry.",
+      "disposition": "prd — docs/TRIP_WRAPUP_PRD.md, issue #195"
+    },
+    {
+      "id": "WP-A-008",
+      "phase": "planning",
+      "context": "Collaboration",
+      "axis": "mechanical",
+      "severity": "P1",
+      "lens": "code",
+      "where": "src/routes/(app)/trips/[slug]/items/new/+page.server.ts:225 (redirect → /inbox) + src/routes/(app)/trips/[slug]/inbox/+page.server.ts:10-12 (403 for non-owners)",
+      "what": "On a trip with auto-approve OFF, a traveler submitting a new item is redirected to /trips/[slug]/inbox — which throws 403 'Only trip owners and co-owners can view the inbox' for travelers. Combined with WP-A-002 (no error page), the contributor's reward for contributing is an unstyled error screen. Their suggestion DID save; they have no way to know.",
+      "why": "M2 one-way street + V2 silenced contributor, on the exact flow the review queue exists for. The quality-bar persona (non-technical friend, suggestion mode on) hits this 100% of the time.",
+      "fix": "Redirect travelers to the trip home (or day) with a 'Suggestion sent — the organizer will review it' toast; reserve the /inbox redirect for owners approving via ?suggestion=.",
+      "disposition": "refuted (v2 verdict — 403-redirect misattributed; substance moved to WP-B-001 + the WP-A-009 amendment, PRD #202)"
+    },
+    {
+      "id": "WP-A-009",
+      "phase": "planning",
+      "context": "Collaboration",
+      "axis": "vision",
+      "severity": "P2",
+      "lens": "novice",
+      "where": "no route or component renders a traveler's own pending suggestions (inbox is owner-403; notifications go to owners on suggestion_added — backend/pb_hooks/notifications.pb.js:56)",
+      "what": "A traveler who submits a suggestion has no surface — none — where they can see it exists, is pending, was approved, or was rejected. Rejection is completely silent. Approval is visible only indirectly (item appears).",
+      "why": "V2 silenced contributor: 'did my idea even go through?' is answered by asking in the group text (V1). D1 says contribution is contextual by design — but context for YOUR pending contribution is nowhere.",
+      "fix": "Smallest: 'Your pending suggestions' strip on trip home for travelers (or a suggestion-status notification back to the submitter on approve/reject).",
+      "disposition": "prd — docs/TRIP_CONTRIBUTION_PRD.md, issue #202"
+    },
+    {
+      "id": "WP-A-010",
+      "phase": "cross-phase",
+      "context": "Shell",
+      "axis": "mechanical",
+      "severity": "P3",
+      "lens": "code",
+      "where": "src/lib/shell/components/TripTabs.svelte (zero imports anywhere in src/)",
+      "what": "TripTabs.svelte is dead code — superseded by per-page SubTabs arrays. Its tab set (Overview/Phases/Members/Inbox/Settings) is also a fossil of an older IA, confusing for anyone reading the shell.",
+      "why": "M3 dead chrome. No user impact; maintenance trap (an agent 'fixing nav' could edit the dead file — this audit nearly did).",
+      "fix": "Delete the file.",
+      "disposition": "issue #178 (filed 2026-06-12)"
+    },
+    {
+      "id": "WP-A-011",
+      "phase": "cross-phase",
+      "context": "Shell",
+      "axis": "mechanical",
+      "severity": "P2",
+      "lens": "novice",
+      "where": "src/routes/(app)/trips/+page.svelte:37 (only inbound link to /account in the app)",
+      "what": "/account (name + avatar) is reachable ONLY from the trips-list avatar chip. From inside a trip — including the Members page, where you're looking at everyone's avatars and your own row — there is no path to your own profile. AVATARS_PRD made avatars app-wide identity; editing that identity has one door, on a page you skip past.",
+      "why": "M4 expected-but-missing link. Novice test 'change my avatar' from where avatars are seen → dead end → she asks in the group text (V1-lite).",
+      "fix": "Link self-row on Members → /account; optionally an Account card under More.",
+      "disposition": "issue #180 (filed 2026-06-12)"
+    },
+    {
+      "id": "WP-A-012",
+      "phase": "cross-phase",
+      "context": "Collaboration",
+      "axis": "vision",
+      "severity": "P3",
+      "lens": "designer",
+      "where": "NotificationBell rendered on 6 surfaces only (trips/[slug], today, today/upcoming, expenses, budget, more) — absent from now (trip-mode home), members, documents, days, items, phases, goals, lists, inbox, settings",
+      "what": "Notifications — the only 'what changed' surface — appear on a seemingly arbitrary subset of pages. Most notably absent from Now (the trip-mode default landing) and from the pages notifications link TO (items, members, inbox).",
+      "why": "Designer-consistency + V2-lite: 'catch up on what changed' (scenario 42) works only if you happen to be on one of the six pages. Backlog already notes the badge isn't live-updating; placement inconsistency compounds it.",
+      "fix": "Render the bell in one consistent chrome slot (NavBar right) on all trip pages, or move it into BottomNav/More as a fixed location.",
+      "disposition": "issue #180 (filed 2026-06-12)"
+    },
+    {
+      "id": "WP-A-013",
+      "phase": "cross-phase",
+      "context": "Collaboration",
+      "axis": "mechanical",
+      "severity": "P2",
+      "lens": "novice",
+      "where": "src/routes/(app)/trips/[slug]/members/+page.svelte (Remove forms gated on data.isOwner; no self-leave control)",
+      "what": "A member cannot leave a trip. 'Remove' is owner-only; there is no 'Leave trip' affordance for travelers/viewers anywhere. MEMBERSHIP_LIFECYCLE_PRD specs self-leave semantics (tombstone, expenses forced to keep — PRD §13) and #133 shipped the removal machinery (formerMembers UI exists), but the self-serve door was never cut.",
+      "why": "M4: the data model and PRD support it; the UI doesn't. V2-adjacent: the only exit is asking the owner in the group text.",
+      "fix": "'Leave trip' on Members (self-row) reusing the remove/tombstone path with PRD §13 semantics. Backlog-aware: check #133's issue scope before filing as new.",
+      "disposition": "issue #206 (self-leave UI; reuses #133 tombstone machinery + lifecycle PRD self-leave semantics)"
+    },
+    {
+      "id": "WP-A-014",
+      "phase": "cross-phase",
+      "context": "Collaboration",
+      "axis": "vision",
+      "severity": "P1",
+      "lens": "novice",
+      "where": "src/routes/join/[token]/+page.server.ts:98 + src/routes/invite/[code]/+page.server.ts:97 (accept → redirect /trips/[slug] = Overview, cold)",
+      "what": "First five minutes: the join/invite front doors are genuinely good (pre-auth context card, inline OTP, placeholder claim), but accept dumps the new member onto the trip Overview with zero orientation — no welcome, no 'here's what this trip is', no 'here's where to say what you want' (goals/swipe/votes are 2-3 taps deep behind sub-tabs she's never seen). D1 scattering is intentional, which makes the missing orientation moment THE onboarding surface.",
+      "why": "V2 silenced contributor at the moment of maximum intent (just joined, came to weigh in). Charter D2 pre-agreed this as a real gap; Scott notes an open issue exists for the intro experience — Phase 3 should attach to it rather than duplicate.",
+      "fix": "Post-join landing state on the Overview (first-visit only): what/who/when + 'add what you're excited about' (goals capture) + 'rate the ideas' (swipe) entry points. Feature-shaped.",
+      "disposition": "attached to #111 (intro wizard) via comment, no dup (2026-06-12)"
+    },
+    {
+      "id": "WP-A-015",
+      "phase": "planning",
+      "context": "Collaboration",
+      "axis": "vision",
+      "severity": "P3",
+      "lens": "designer",
+      "where": "src/routes/(app)/trips/[slug]/phases/+page.svelte:55-67 (swipe launch card on the Phases sub-tab)",
+      "what": "The swipe deck — a contribution minigame — launches from the Phases sub-tab, a structure-management surface (create/reorder/delete phases). A contributor 'looking for where to weigh in' has no reason to open Phases; an owner managing structure gets a game card. The card itself is good (count + label); its home is odd.",
+      "why": "Designer IA coherence within D1's contextual-scattering decision (per-surface discoverability is the agreed ceiling — P3). V4_GROUP_INPUT_PRD placed it here deliberately ('launches from a card on the Phases sub-tab') — so this challenges a documented choice; flag, don't presume.",
+      "fix": "Candidate: mirror the launch card on Goals (the other contribution surface) or on the post-join landing (WP-A-014). Phase 3 call.",
+      "disposition": "issue #207 (mirror swipe launch on Goals / post-join)"
+    },
+    {
+      "id": "WP-A-016",
+      "phase": "trip",
+      "context": "Documents",
+      "axis": "vision",
+      "severity": "P3",
+      "lens": "novice",
+      "where": "src/routes/(app)/trips/[slug]/items/[itemId]/+page.svelte:131 (confirmation_codes on item detail only); documents page shows artifacts only",
+      "what": "Text confirmation codes live solely on item detail; the Documents tab — literally named where a novice looks for 'my confirmation' — shows files only, with no hint that codes exist elsewhere.",
+      "why": "V1-lite: mid-trip 'what's the hotel code' → Docs tab → not there → email (old stack). Domain model (Document=artifact, codes=item field) is sound per ADR/PRD; the NAV doesn't bridge the novice's mental model.",
+      "fix": "Smallest: item rows in the Documents list also surface that item's codes (read-only chips), or an explainer line. Keep the model; bridge the lookup.",
+      "disposition": "issue #205 (codes as read-only chips in Documents)"
+    },
+    {
+      "id": "WP-A-017",
+      "phase": "planning",
+      "context": "Itinerary",
+      "axis": "vision",
+      "severity": "P2",
+      "lens": "power",
+      "where": "no surface; flights are plain items (one per creator), no member association or comparison view",
+      "what": "'Add MY flight and see how it lines up with everyone else's' has no answer. Items carry no member association (paid_by/booked_by are unused ghosts per CARD_CONTENT_SPEC); a 'flights' view across members doesn't exist. Groups arriving separately — the normal case for friends-joining-trips — coordinate arrivals in the group text or a spreadsheet.",
+      "why": "V1 forces the old stack for a planning job squarely inside the vision ('plans the itinerary together'). Not in SPEC_BACKLOG — a genuine unsequenced gap.",
+      "fix": "Feature-shaped: per-member flight items + an arrivals/departures lineup view (could be a Lists-style projection). Phase 3: PRD-or-defer decision.",
+      "disposition": "prd — docs/ITEM_ASSIGNMENT_PRD.md, issue #210 (reframed: Item Assignment primitive + Flights Smart List; assigned_to was already live; ADR-0011 card-avatar reversal)"
+    },
+    {
+      "id": "WP-A-018",
+      "phase": "trip",
+      "context": "Money",
+      "axis": "vision",
+      "severity": "P2",
+      "lens": "novice",
+      "where": "src/lib/shell/nav-tabs.ts:19-29 (trip nav: Now/Today/Add/Docs — no Money); AddSheet covers add-expense only",
+      "what": "Mid-trip money has one-way flow: you can ADD an expense from Trip Mode (AddSheet → expenses?action=add ✓) but you cannot SEE anything — 'how are we doing on budget', 'what did today cost', 'who's owed what' all require switching to Planning Mode and tapping Money. During the trip is exactly when spending happens.",
+      "why": "V1: the glance you can't get is what Splitwise's widget gives — the old stack returns. Charter D3's boundary covers itinerary edits, not money visibility; this is an unowned seam.",
+      "fix": "Candidates: budget/balance line on Today (after the timeline), or Day-Wrapped stats (already in backlog as 'Day Wrapped Stats — items/distance/spent'). Phase 3 picks the surface; cite backlog entry.",
+      "disposition": "prd — docs/TRIP_MONEY_PRD.md, issue #211 (Trip-Mode Money tab/summary: spent (pre/on-trip split) vs budget + balance + today, read-only deep-links; folds in P-3 booked-moment expense capture; deps #170/#197)"
+    },
+    {
+      "id": "WP-A-019",
+      "phase": "post-trip",
+      "context": "Archive &amp; Portability",
+      "axis": "vision",
+      "severity": "P2",
+      "lens": "novice",
+      "where": "src/routes/(app)/trips/[slug]/settings/+page.svelte:171 (share path as raw &lt;code&gt;, relative, no copy button) + closeout finish → redirect trip home (closeout/+page.server.ts:118, no link moment)",
+      "what": "Sharing the archive is findable-but-hostile: the link exists only in Settings as a relative path in a code block — no absolute URL, no copy button, no share sheet; and finishing closeout (the natural 'now share it' moment) redirects silently to the trip home with no link handoff. Pre-publish, the link 404s (see WP-A-002) with no 'publishes on {date}' state.",
+      "why": "V3 record-seam: the Remember pillar's public output is minted but never handed to you. Novice 'share with grandma' = copy a &lt;code&gt; fragment and hand-assemble a URL.",
+      "fix": "Copy-link button with absolute URL in Settings; archive-link card in the closeout summary / wrap-up state (WP-A-001); friendly pre-publish state.",
+      "disposition": "prd — docs/TRIP_WRAPUP_PRD.md, issue #195",
+      "screenshot": "07-settings-archive.png"
+    },
+    {
+      "id": "WP-A-020",
+      "phase": "post-trip",
+      "context": "Archive &amp; Portability",
+      "axis": "vision",
+      "severity": "P3",
+      "lens": "power",
+      "where": "src/routes/archive/[token]/+page.svelte (read-only; no template/replicate path); clone+export are member-only",
+      "what": "Scenario 39 ('family does the trip themselves'): the archive is a beautiful dead end for non-members — no 'use as template', no export, and clone/import require membership. The trip's plan can be read but not reused by the people it's shared with.",
+      "why": "Vision-edge: 'shareable enough that the trip lives on' arguably stops at reading. Replication-for-strangers may be beyond the one job — flag for an explicit intentional/deferred call rather than assume.",
+      "fix": "If wanted: 'Download plan (JSON)' on the archive page (PII-stripped, reuses export) + import-on-signup. Phase 3: intentional vs prd.",
+      "disposition": "issue #208 (export from archive + import as new trip; blocked on #174/#173)"
+    },
+    {
+      "id": "WP-A-021",
+      "phase": "planning",
+      "context": "Shell",
+      "axis": "mechanical",
+      "severity": "P3",
+      "lens": "novice",
+      "where": "src/routes/(app)/trips/[slug]/items/new/+page.svelte:57 (backHref fixed to trip home, ignores ?day= context)",
+      "what": "items/new back-chevron always points to the trip Overview, even when entered from a specific day (?day=) — back doesn't return where you came from. (Successful submit DOES redirect to the day; it's the back/cancel path that teleports.)",
+      "why": "M4 wrong-back. Minor disorientation, frequent surface.",
+      "fix": "Derive backHref from ?day= when present (mirror the submit redirect logic).",
+      "disposition": "issue #178 (filed 2026-06-12)"
+    },
+    {
+      "id": "WP-A-022",
+      "phase": "cross-phase",
+      "context": "Shell",
+      "axis": "mechanical",
+      "severity": "P3",
+      "lens": "code",
+      "where": "src/routes/(app)/+layout.svelte:8-14 (bottomNavRoutes set: planning tabs only)",
+      "what": "View-transition classifier's bottomNavRoutes omits trip-mode tabs (now/today/documents) — tab-to-tab hops in Trip Mode animate as drill-down/up instead of lateral tab transitions.",
+      "why": "M4-cosmetic: stale set from before Trip Mode nav landed.",
+      "fix": "Add the trip-mode tab routes to the set.",
+      "disposition": "issue #178 (filed 2026-06-12)"
+    },
+    {
+      "id": "WP-A-023",
+      "phase": "cross-phase",
+      "context": "Itinerary",
+      "axis": "vision",
+      "severity": "P3",
+      "lens": "designer",
+      "where": "src/routes/(app)/trips/[slug]/settings/+page.svelte (full form + danger zone render for all roles; actions 403 server-side only, settings/+page.server.ts:38-41)",
+      "what": "Settings renders the complete editable form — including the danger zone — for viewers and travelers; only on submit does the server 403. A non-owner can fill out a whole form before learning they never could.",
+      "why": "Designer/novice: capability should be visible before effort. (Server enforcement itself is correct — UI-only gap.)",
+      "fix": "Read-only render (or hide danger zone + disable inputs) for non-owner/co-owner.",
+      "disposition": "issue #176 (filed 2026-06-12)"
+    },
+    {
+      "id": "WP-A-024",
+      "phase": "trip",
+      "context": "Shell",
+      "axis": "vision",
+      "severity": "P3",
+      "lens": "power",
+      "where": "src/routes/(app)/trips/[slug]/more/+page.svelte:127-143 (Print itinerary = window.print() in More; print.css exists in src/lib/shell)",
+      "what": "Print path exists (More → Print itinerary) but is planning-nav-only — no path from Trip Mode, and it prints the page you're on (More), relying on print.css to restyle; 'paper copy of today' on the road requires mode-switch + knowing the card exists.",
+      "why": "V1-lite, power persona. Low frequency; works when found.",
+      "fix": "Verify what actually prints (dogfood); consider print from day view / Today.",
+      "disposition": "issue #209 (remove Print itinerary; never needed, per Scott)"
+    },
+    {
+      "id": "WP-A-025",
+      "phase": "planning",
+      "context": "Itinerary",
+      "axis": "mechanical",
+      "severity": "P3",
+      "lens": "code",
+      "where": "src/routes/(app)/trips/[slug]/now/+page.server.ts, today/+page.server.ts (no isTripActive guard)",
+      "what": "Trip-mode routes (/now, /today, /today/upcoming) load for ANY trip status via deep link — planning or long-past trips render trip-mode views with the planning bottom-nav, a chimera state nav can't normally reach (but the unguarded Overview chip, WP-A-006, links straight into).",
+      "why": "M4: nav and loaders disagree about when Trip Mode exists. Harmless today; trap as Trip Mode grows (e.g. wrap-up state will key off the same predicates).",
+      "fix": "Cheap: fold into WP-A-006's chip gating. Stricter: loader redirect to trip home when !isTripActive (decide whether read-only future/past peeking is wanted — scenario 24 says yes for active trips).",
+      "disposition": "issue #204 (folded into A-006 loader guard)"
+    }
+  ]
+}</pre></details>
+
+<footer>Charter: docs/app-audit/charter.md · State: routes.json, edges.json, taskpaths.json, findings.json · Screenshots: docs/app-audit/screenshots/ (375px, dev data) · No PR — research issue #116.</footer>
+</div>
+
+<script>
+// taskpath verdict filter
+document.querySelectorAll('#tpf button').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('#tpf button').forEach((x) => x.classList.remove('on'));
+  b.classList.add('on');
+  const v = b.dataset.v;
+  document.querySelectorAll('#tptable tbody tr').forEach((tr) => {
+    tr.style.display = v === 'all' || tr.dataset.verdict === v ? '' : 'none';
+  });
+}));
+// findings multi-facet filter
+const active = { sev: new Set(), phase: new Set(), axis: new Set(), lens: new Set() };
+const applyF = () => {
+  const q = document.getElementById('fsearch').value.toLowerCase();
+  document.querySelectorAll('#cards .card').forEach((c) => {
+    const ok = (!active.sev.size || active.sev.has(c.dataset.sev)) &&
+      (!active.phase.size || active.phase.has(c.dataset.phase)) &&
+      (!active.axis.size || active.axis.has(c.dataset.axis)) &&
+      (!active.lens.size || active.lens.has(c.dataset.lens)) &&
+      (!q || c.textContent.toLowerCase().includes(q));
+    c.style.display = ok ? '' : 'none';
+  });
+};
+document.querySelectorAll('#ff button[data-k]').forEach((b) => b.addEventListener('click', () => {
+  const s = active[b.dataset.k];
+  s.has(b.dataset.val) ? s.delete(b.dataset.val) : s.add(b.dataset.val);
+  b.classList.toggle('on');
+  applyF();
+}));
+document.getElementById('fsearch').addEventListener('input', applyF);
+document.getElementById('fclear').addEventListener('click', () => {
+  Object.values(active).forEach((s) => s.clear());
+  document.querySelectorAll('#ff .on').forEach((b) => b.classList.remove('on'));
+  document.getElementById('fsearch').value = '';
+  applyF();
+});
+</script>
+</body></html>

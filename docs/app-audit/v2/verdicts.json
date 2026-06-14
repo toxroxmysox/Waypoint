@@ -1,0 +1,299 @@
+[
+ {
+  "id": "WP-A-001",
+  "verdict": "confirmed",
+  "severity": "P1",
+  "summary": "All claims verified in code. isTripActive() (activation.ts) returns false the day after end_date; AppShell.svelte:35-44 derives mode=planning and hides the ModePill when !active (the $effect even clears any trip-mode override). The trips-list Past section renders bare title+dates cards with zero CTA. A repo-wide grep for any trip-ended/wrap-up/settle surface finds 'Settle Up' only inside the expenses page sheet \u2014 nothing lifecycle-triggered. Charter D5 explicitly pre-agrees this as a P1 vision gap routed to grill\u2192PRD; V3 seam-drop test fails as cited. Not deferred anywhere: SPEC_BACKLOG has no wrap-up/closing-sequence entry (closeout wizard is listed shipped, which is the buried-entry half, WP-A-007's territory).",
+  "evidence": "src/lib/trip-mode/activation.ts (date-range check, archived guard); src/lib/shell/components/AppShell.svelte:35-44 (mode derivation + override reset); src/routes/(app)/trips/+page.svelte:117-135 (Past cards, no CTA); grep src/ for ended/settle/wrap-up \u2192 only expenses/+page.svelte:164,223; docs/SPEC_BACKLOG.md (no wrap-up entry); charter D5."
+ },
+ {
+  "id": "WP-A-002",
+  "verdict": "confirmed",
+  "severity": "P1",
+  "summary": "Mechanically airtight: find returns zero +error.svelte files under src/routes and no src/error.html; no handleError in src/hooks.server.ts or hooks.client.ts. So every thrown error renders SvelteKit's unbranded default with no recovery affordance. The archive pre-publish 404 is real: archive/[token]/+page.server.ts throws 404 'Archive not found' (bad token, line 21; archive_enabled false, line 25) and 404 'Archive not yet published' when now < end_date + archive_publish_after_days (lines 33-35) \u2014 so a link shared at trip end 404s for the whole publish-delay window (default 7 days). Inbox 403 for non-owners verified at inbox/+page.server.ts:10-12. P1 stands per charter \u00a75's explicit 'front-door (invite/join/archive) failure'; M2 one-way street is the right test.",
+  "evidence": "find src/routes -name '+error.svelte' \u2192 none; no src/error.html; no handleError hooks; src/routes/archive/[token]/+page.server.ts:14-35 (three 404 throws incl. pre-publish window math); src/routes/(app)/trips/[slug]/inbox/+page.server.ts:10-12 (403)."
+ },
+ {
+  "id": "WP-A-003",
+  "verdict": "amended",
+  "severity": "P3",
+  "amendment": "Core fact true, key evidence claim false, severity down to P3. Documents backHref='/trips' is verified (documents/+page.svelte:65). But 'every sibling trip page backs to /trips/{slug}' is refuted: expenses/+page.svelte:85, budget/+page.svelte:88, and more/+page.svelte:28 ALL use backHref='/trips' too \u2014 members/+page.svelte:96 is the lone tab backing to the trip. So Docs follows the majority top-level-tab convention; the actual inconsistency is members vs the rest, inverted from the claim. The real residual problem is Trip-Mode-specific: Docs is one of the 4 trip tabs and its back chevron exits the trip entirely. Severity: recovery is in-app and two taps (trips list \u2192 trip card), no old-stack workaround \u2014 charter P2 requires buried-feature/old-stack; this is navigation friction/inconsistency = P3. Fix direction (back to trip home, or no chevron on a root tab) still right, and should sweep expenses/budget/more for one convention.",
+  "summary": "Verified backHref values across all five planning tabs; the claimed outlier is actually the majority pattern. Finding survives only as the trip-mode wrong-exit + tab back-convention inconsistency, which is polish-grade per the charter bar.",
+  "evidence": "grep backHref: documents:65='/trips', expenses:85='/trips', budget:88='/trips', more:28='/trips', members:96='/trips/{slug}'; nav-tabs.ts:19-29 confirms Docs in trip nav."
+ },
+ {
+  "id": "WP-A-004",
+  "verdict": "amended",
+  "severity": "P2",
+  "amendment": "All cited facts verified; one mechanism claim corrected \u2014 the finding UNDERSTATES the problem. Its NB says 'the toggle governs page/data caching'. Code: SET_OFFLINE flips a flag the service worker consults only in the PocketBase-API branch (service-worker.ts:89-103, port 8090 or /api/ paths). SvelteKit navigations are network-first with a fallback to a cache nothing ever populates (no cache.put for navigations, lines 128-139), and __data.json requests hit the final cache-first branch which also never puts (142-146). SSR pages load data server-side, so the toggle effectively gates almost nothing a member's browser does. The control is therefore both unreachable in Trip Mode AND nearly inert \u2014 strengthens the finding's own fix (make caching automatic, demote the toggle).",
+  "summary": "Toggle location (more/+page.svelte:145-176, localStorage + SET_OFFLINE + reload), trip nav without More (nav-tabs.ts:19-29: Now/Today/Add/Docs), and Documents auto-precache on active trips (documents/+page.svelte:44-51, onTrip-gated) all verified by content. Not documented-deferred: SPEC_BACKLOG's S5 offline precache (#74) shipped for Documents; no entry defers an in-trip offline control or page caching. P2 correct per charter: shipped-but-buried with the old stack (camera-roll screenshots) as the workaround; V3 seam cite valid since the mode pill is the only path and offline-on-the-plane is today-scoped (D3's consequence classifies mode-switch answers to today-scoped needs as dead ends).",
+  "evidence": "src/routes/(app)/trips/[slug]/more/+page.svelte:145-176; src/lib/shell/nav-tabs.ts:19-29; src/routes/(app)/trips/[slug]/documents/+page.svelte:44-51; src/service-worker.ts:19-39 (SET_OFFLINE), 89-146 (per-branch behavior, no nav/__data puts); docs/SPEC_BACKLOG.md:157,164."
+ },
+ {
+  "id": "WP-A-005",
+  "verdict": "confirmed",
+  "severity": "P1",
+  "summary": "Disposition already set (PRD #166); judged claims only \u2014 all true. now/+page.svelte:32-37: free-time Focus renders NowBetweenThings with only nextItem + minutesUntilNext, no parking-lot data. AddSheet.svelte:15-30: exactly three actions (add item via full items/new form, add expense, add document) \u2014 no parking-lot browse/promote. Case-insensitive grep for 'skip' across src/lib/trip-mode/, today/, now/ routes returns nothing \u2014 no skip/cancel affordance exists. docs/TRIP_REPLANNING_PRD.md's problem statement independently asserts the same code reality ('Parking Lot unreachable from Now, Today, and the Add sheet'). P1 fits the charter exactly: D3 makes today-scoped replanning a Trip-Mode requirement, D4 promotes the proactive doors from SPEC_BACKLOG-deferred to charter requirement, and the charter names mid-trip dead ends P1.",
+  "evidence": "src/routes/(app)/trips/[slug]/now/+page.svelte:24-54 (Focus branches); src/lib/trip-mode/components/AddSheet.svelte:15-30; grep -i skip in trip-mode/today/now \u2192 empty; docs/TRIP_REPLANNING_PRD.md (Approved, supersedes #121/#154)."
+ },
+ {
+  "id": "Viewer role gets full write UI",
+  "verdict": "confirmed",
+  "severity": "P2",
+  "summary": "Could not refute any layer. UI: day-view '+ Add' link and FAB render unconditionally (days/[dayId]/+page.svelte ~151-159, 203); phases page 'Add phase' button and create/reorder/delete actions have zero role/membership-role references (grep of phases/+page.server.ts: membership used only for swipe-progress filter); item detail shows Move/Edit/Delete to all roles. Server: items/new action's only branch is submitAsSuggestion = role==='traveler' && !auto_approve \u2014 a viewer falls through to the direct-create path. Backend: migrations 0008 + 0014 set items and phases full CRUD to MEMBER_VIA_TRIP ('@request.auth.id != \"\" && trip.trip_members_via_trip.user ?= @request.auth.id') \u2014 no role term; no onRecord hooks exist for items, and phases.pb.js hooks contain no role checks. So viewer writes succeed end-to-end. The contrast pattern is real: tasks gate via an app-layer isViewer helper (items/[itemId]/+page.server.ts ~103-106 with a comment saying exactly why), documents.pb.js:36 and expenses.pb.js:30 deny viewers. RULES.md's intended matrix (items.update/delete: viewer '\u2014', traveler '\u2014') and the M2d 'tighten items.create' plan confirm intent-never-landed (progress marker still at M2b). Not documented-deferred per the charter's closed list (SPEC_BACKLOG has only role-downgrade + documents permissions; RULES.md is not a charter-recognized deferral doc and is itself stale). P2 right: M4 expected-but-missing gate / shipped role model contradicted \u2014 not on the charter's P1 critical-path list.",
+  "evidence": "items/new/+page.server.ts (~228 traveler-only suggestion branch, direct-create comment omits viewer); backend/pb_migrations/0008_tighten_rules.js:30-47 + 0014_explicit_rules_audit.js:54-83 (MEMBER_VIA_TRIP, 'full CRUD by trip members'); no item hooks, phases.pb.js role-free; isViewer gate in items/[itemId]/+page.server.ts; backend/RULES.md matrix + M2d; docs/SPEC.md:83-87; SPEC_BACKLOG.md:82,165."
+ },
+ {
+  "id": "Suggestion review gate covers only item creation",
+  "verdict": "confirmed",
+  "severity": "P2",
+  "summary": "Verified every cited action: items/[itemId]/edit update action (read in full around lines 53-184) fetches the item and writes with no membership/role lookup; items/[itemId]/+page.server.ts delete (~121-137) and moveItem (~417-433) likewise; phases/+page.server.ts create/reorder/delete have no role checks; days/[dayId]/+page.server.ts updateNotes (~66-78) writes day notes unguarded. PB rules are role-blind for all of these (0014: items/phases full CRUD = member-via-trip, days.update = member-via-trip). Meanwhile the SAME item-detail server file gates every checklist/task action through isViewer with an explicit comment that PB rules are membership-scoped so the viewer gate lives at the app layer \u2014 proving the intended pattern exists and these doors were skipped, not designed open. The traveler asymmetry is real: items/new routes traveler\u2192suggestion when auto-approve is off, but a traveler can edit/move/delete any existing item directly, hollowing the review funnel. SPEC.md:83-87 verified (traveler 'suggest only*', viewer '\u2014'), and the charter's known-stale list covers nav + Vault rows, not these. P2 confirmed. Note for Phase 3: this and the viewer-write finding are two facets of one root cause (role-blind items/phases/days writes) \u2014 file as one fix with two symptom statements, not two issues.",
+  "evidence": "items/[itemId]/edit/+page.server.ts update action (no role check); items/[itemId]/+page.server.ts delete + moveItem (none) vs isViewer-gated task actions in same file; phases/+page.server.ts (grep role/isOwner/viewer \u2192 only swipe-progress membership use); days/[dayId]/+page.server.ts:66-78; 0014_explicit_rules_audit.js:54-83; docs/SPEC.md:83-87; item detail + phases page chrome ungated."
+ },
+ {
+  "id": "moveItem action desyncs status from day",
+  "verdict": "confirmed",
+  "severity": "P2",
+  "summary": "Reproduced fully in code. moveItem (items/[itemId]/+page.server.ts, last action) updates exactly {day, phase} \u2014 no status touch, no time-stripping. The sibling edit action contains the precise invariant ('Status logic' comment: !day && status not done/considered \u2192 unplanned; day && unplanned \u2192 planned), so drift-not-design is accurate. MoveItemSheet offers 'No day (unscheduled)' and 'No phase' options to any item. State (a): planned item moved to no-day matches neither the day timeline query (filter day=\"id\" && end_date=\"\") nor any parking surface (all filter status='unplanned') \u2192 invisible on day/phase surfaces, consistent with the claimed URL/goal-link/booking-list-only findability. State (b): unplanned item moved onto a day matches the timeline (day match, no status filter) AND the day-page parking query (status='unplanned' + phase match, no day exclusion) and phase-detail parking (phaseItems.filter(status==='unplanned')) \u2192 double-rendered. The reorder guard exists verbatim: phases/[phaseId]/+page.server.ts rejects moved.day !== '' with 'Only this phase's ideas can be reordered.' \u2014 the code half-knows the state is illegal, as claimed. Not in SPEC_BACKLOG or any PRD deferred list. P2 fits: shipped Move feature manufactures states that read as data loss (M3), but not on a charter P1 critical path.",
+  "evidence": "items/[itemId]/+page.server.ts moveItem (day+phase only) vs edit/+page.server.ts status-reconciliation block; src/lib/itinerary/components/MoveItemSheet.svelte:~68 ('No day (unscheduled)') + ~85 ('No phase'); days/[dayId]/+page.server.ts:23-26 (timeline filter) + ~55-61 (parking filter, no day exclusion); phases/[phaseId]/+page.svelte:20 (status-only parking filter); phases/[phaseId]/+page.server.ts:~157-159 (reorder guard, exact error string)."
+ },
+ {
+  "id": "WP-A-005",
+  "verdict": "confirmed",
+  "severity": "P1",
+  "summary": "Judged claims-truth only (disposition already PRD #166). All three code claims hold: the free-time state renders exactly one 'Up next' planned-item card, the Trip Mode Add sheet offers only item/expense/document (no parking-lot promote), and no skip/cancel affordance exists in Today or any trip-mode component. P1 stands per pre-agreed D3/D4.",
+  "evidence": "src/lib/trip-mode/components/NowBetweenThings.svelte (single nextItem card, lines 9-35); src/lib/trip-mode/components/AddSheet.svelte:15-30 (three goto targets only); grep skip|cancel across today/+page.svelte and src/lib/trip-mode/components/* = zero hits. docs/TRIP_REPLANNING_PRD.md exists and specs exactly these doors."
+ },
+ {
+  "id": "WP-A-006",
+  "verdict": "amended",
+  "severity": "P3",
+  "amendment": "Severity P2 \u2192 P3. Claims fully true, but per charter \u00a75 this is inconsistency/friction, not a buried feature: nothing forces the old stack, the dead-ish /today landing is one tap from recovery inside normal chrome (AppShell renders planning nav on non-active trips, so no M2 trap), and no feature is undiscoverable.",
+  "summary": "Both claims verified: the Overview 'Trip Mode' chip is unconditional and targets /today while the pill toggle targets /now \u2014 the AppShell #80 comment even declares Now the mode's home, so the chip contradicts a recorded decision. On planning/past trips the chip lands on the 'Today doesn't fall within this trip's dates' empty state, contradicting CONTEXT.md:54. Real, but P3-grade polish under the charter bar.",
+  "evidence": "src/routes/(app)/trips/[slug]/+page.svelte:92-101 (chip, no guard in enclosing block); src/lib/shell/components/AppShell.svelte:48-54 (toggle \u2192 /now, #80 comment); today/+page.svelte:61-62 (empty-state copy); today/+page.server.ts has no status guard; CONTEXT.md:54 ('Available only when trip status is active')."
+ },
+ {
+  "id": "WP-A-007",
+  "verdict": "confirmed",
+  "severity": "P2",
+  "summary": "All claims true: closeout load guards role only (redirect non-owners), zero status checks in load or any of the five actions, so markDone/finishCloseout run fully on a planning-status trip. The More card is gated solely by isOwnerOrCoOwner, and repo-wide grep shows more/+page.svelte is the ONLY surface linking /closeout \u2014 no lifecycle invitation exists, and travelers/viewers get no post-trip surface (their settle-up sits unprompted in Money). P2 fits: wizard shipped but buried behind an owner-only card that ignores the lifecycle it serves; the invitation half is correctly noted as subsumed by WP-A-001/D5.",
+  "evidence": "src/routes/(app)/trips/[slug]/closeout/+page.server.ts:5-18 (role-only load) + actions lines 20-124 (markDone/markDoneAll/trimEnd/addReplacement/finishCloseout \u2014 no status anywhere); more/+page.svelte:54-70 ({#if isOwnerOrCoOwner} card); closeout/+page.svelte has no client status gate; grep 'closeout' across src \u2192 only more/+page.svelte links it. Not in SPEC_BACKLOG as deferred."
+ },
+ {
+  "id": "WP-A-008",
+  "verdict": "refuted",
+  "severity": "P1",
+  "summary": "Core claim is false and was never true: the traveler suggestion-submit path redirects 303 to the trip HOME (/trips/[slug]), not /inbox. The /inbox redirect at line 225 sits inside the `if (suggestionId)` branch \u2014 the owner-only edit-and-approve path \u2014 which the finder misattributed to the traveler flow. Verified in the original inbox commit (fbbe379) too: traveler path \u2192 trip home from day one, so the 'traveler rewarded with a 403' scenario and its 100%-hit-rate P1 do not exist. The inbox 403 for non-owners is real but only reachable by manual navigation; the genuine residue (traveler gets no post-submit feedback) belongs to WP-A-009.",
+  "evidence": "src/routes/(app)/trips/[slug]/items/new/+page.server.ts:207-226 (suggestionId branch \u2192 /inbox), :229-250 (submitAsSuggestion branch \u2192 redirect(303, `/trips/${params.slug}`)); git show fbbe379 same structure (inbox redirect :160 in suggestionId branch, traveler redirect :184 \u2192 trip home); inbox/+page.server.ts:10-12 (403 confirmed but unreached by submit flow)."
+ },
+ {
+  "id": "WP-A-009",
+  "verdict": "amended",
+  "severity": "P1",
+  "amendment": "Severity P2 \u2192 P1. With WP-A-008 refuted, this is the actual contributor-silencing gap on the collaboration path, and charter \u00a75 names 'contributor-silencing gap' explicitly under P1. The void is total: no post-submit confirmation (items/new enhance callback has no success branch; redirect lands on trip home which renders nothing about pending suggestions), no status surface ever, no approve/reject notification, silent rejection indistinguishable from data loss. On any auto-approve-off trip the quality-bar persona's only recourse is the group text (V1) \u2014 and the blind v2 finder independently rated this same gap P1.",
+  "summary": "Claims fully confirmed: no route or component renders a traveler's own pending suggestions \u2014 the only suggestion UIs are the owner-403 inbox and the items/new submit banner; trip home contains zero suggestion references. notifications.pb.js defines exactly three types, and suggestion_added goes to owners/co-owners excluding the author; nothing notifies the submitter on approve/reject. D1 (contextual-by-design) cannot excuse it since no context anywhere shows your own pending contribution.",
+  "evidence": "grep 'suggestion' across src/routes+src/lib: UI surfaces = inbox (403 non-owners at inbox/+page.server.ts:10-12), items/new banner, settings toggle, more card \u2014 no traveler status surface; trips/[slug]/+page.svelte has none. backend/pb_hooks/notifications.pb.js:4-7 (3 types), :58-77 (recipients = owner/co_owner, id != author). items/new/+page.svelte:79-89 (no success feedback) + server redirect \u2192 trip home."
+ },
+ {
+  "id": "WP-A-010",
+  "verdict": "confirmed",
+  "severity": "P3",
+  "summary": "Exactly as claimed: TripTabs.svelte exists in src/lib/shell/components/ with zero imports anywhere in src/ (repo grep excluding the file itself returns nothing), and its hardcoded tab set Overview/Phases/Members/Inbox/Settings is a fossil of the pre-SubTabs IA. M3 dead chrome, no user impact, delete-the-file fix. P3 is right per the charter bar.",
+  "evidence": "src/lib/shell/components/TripTabs.svelte:10-14 (fossil tab set incl. role-gated Inbox); grep -rn 'TripTabs' src/ excluding self-references = 0 matches."
+ },
+ {
+  "id": "Edit & Approve silently discards",
+  "verdict": "confirmed",
+  "severity": "P2",
+  "summary": "Every link in the claimed chain verified in code: the inbox Edit & Approve link carries no day/phase params, the server prefill passes the raw payload (incl. day/phase) but the client initialData maps only type/title/description/times/location/codes/booked/url/cancellation on top of buildEmptyFormData's day:''/phase:'' \u2014 so day, phase, subtype, end_date, cost_estimate_usd, assigned_to silently reset. On submit the review hook does `payload = modifiedPayload || rawPayload` (wholesale replacement), so 'Approve with edits' writes phase:''/day:''/status:'unplanned', discarding the traveler's scheduling intent and landing the item in the phase-less black hole; plain Approve (no payload) preserves the original. Not deferred: SPEC_BACKLOG:85 still says 'UI exposes no edit form' \u2014 stale, the UI shipped \u2014 and a backlog entry deferring the UI cannot shield a live data-dropping defect. P2 right (V2 drop at the review seam; flow completes, so not P1).",
+  "evidence": "inbox/+page.svelte:114-119 (?suggestion= only); items/new/+page.server.ts:42-66 (prefill = raw payload), :79-80 (preselectedDay/Phase from URL only); items/new/+page.svelte:41-54 (initialData omits day/phase/subtype/end_date/cost/assigned_to); src/lib/itinerary/item-fields.ts:180-181 (day:'', phase:''); backend/pb_hooks/suggestions.pb.js:264 (modifiedPayload || rawPayload), :269-270 + status from payload.day; docs/SPEC_BACKLOG.md:85."
+ },
+ {
+  "id": "Phase-less unplanned items land in an invisible black hole",
+  "verdict": "confirmed",
+  "severity": "P2",
+  "summary": "All three creation paths and the invisibility both verified. Creation: (a) ItemForm offers Day '' (Unscheduled, :410) and Phase '' (None, :433) with no server-side phase requirement and status = day?'planned':'unplanned'; (b) the suggestions hook's auto-approve and review-approve paths both write phase:''/day:''/status:'unplanned' when the payload lacks them; (c) phases.pb.js onRecordDeleteRequest re-buckets only days' phases multi-relation and never touches items, while 0006_items.js declares items.phase without cascadeDelete, so PB clears item.phase on phase delete \u2014 orphaning that phase's entire parking lot. Invisibility: every parking surface is phase-scoped (day view filters i.phase === p.id; phase detail queries phase = id; trip-wide /parking-lot is a 303 to /phases, retired #86; swipe is per-phase), violating CONTEXT.md's 'unplanned\u2026 phase required' invariant. Not deferred \u2014 SPEC_BACKLOG:29 reasserts 'Every item requires a phase' and TRIP_REPLANNING_PRD's skip door preserves phase. P2 right (M3 unreachable state reading as data loss; not a critical-path break).",
+  "evidence": "src/lib/itinerary/components/ItemForm.svelte:410/:433 (claim said :428 \u2014 minor drift, content true); items/new/+page.server.ts:~264 (status ternary, no phase validation); backend/pb_hooks/suggestions.pb.js:79-98, :264-298; backend/pb_hooks/phases.pb.js:79-110 (days only); backend/pb_migrations/0006_items.js:14 (no cascadeDelete); days/[dayId]/+page.svelte:142 (i.phase === p.id); phases/[phaseId]/+page.server.ts:32; parking-lot/+page.server.ts (303 redirect); CONTEXT.md:14,:46; docs/SPEC_BACKLOG.md:29."
+ },
+ {
+  "id": "Budget page never compares",
+  "verdict": "confirmed",
+  "severity": "P2",
+  "summary": "Code-true: the budget loader fetches trip_budgets and expenses only \u2014 never items \u2014 and grandTotal is the sum of budget category envelopes yet is labeled 'Estimated Total'. The plan's cost_estimate_usd aggregates nowhere above a single day: the only \u03a3 in the repo is day-card.ts's per-day budgetTotal (shown via DayMetricToggle chips), confirmed by repo-wide grep of cost_estimate_usd usage. Not deferred: SPEC_BACKLOG Money backlog lists only multi-currency (off-table) and item\u2194expense nav; no PRD defers a plan-vs-budget rollup. This is charter scenario 8 verbatim ('Can we afford this? \u2014 budget status vs plan') failing V1 \u2014 the spreadsheet survives \u2014 so P2 fits exactly. One citation nuance: CARD_CONTENT_SPEC's 'never aggregated anywhere' row refers to cost_actual_usd (the estimate 'circulates' in day chips), but the substantive claim stands on code alone.",
+  "evidence": "budget/+page.server.ts:19 (trip_budgets), :25 (expenses), no items query; budget/+page.svelte:39 (grandTotal = \u03a3 cats), :102-103 ('Estimated Total' label); src/lib/itinerary/day-card.ts:40 (per-day \u03a3 cost_estimate_usd); src/lib/itinerary/components/DayMetricToggle.svelte exists; repo grep cost_estimate_usd \u2192 no other aggregation; docs/SPEC_BACKLOG.md:99-107 (Money backlog); docs/CARD_CONTENT_SPEC.md:32 (row is about cost_actual_usd)."
+ },
+ {
+  "id": "WP-A-011",
+  "verdict": "confirmed",
+  "severity": "P2",
+  "summary": "Refutation failed: a repo-wide grep for '/account' finds exactly one inbound href in the entire app, on the trips-list header avatar chip. The Members page renders every avatar (including self) with no link to /account; More page has none; AppShell/NavBar have none. M4 holds, and P2 fits the charter bar (feature shipped but reachable through one buried door you pass once). Not documented-deferred anywhere.",
+  "evidence": "grep '/account' across src \u2192 only src/routes/(app)/trips/+page.svelte:37 (plus a comment in trips/+page.server.ts:49). members/+page.svelte:111-180 self-row = Avatar + Pill, no profile link. SPEC_BACKLOG.md: no account-entry-point item."
+ },
+ {
+  "id": "WP-A-012",
+  "verdict": "confirmed",
+  "severity": "P3",
+  "summary": "Exact claim verified: NotificationBell is rendered in precisely the six cited files and nowhere else \u2014 absent from /now (trip-mode landing), members, documents, days, items, phases, goals, lists, inbox, settings. Notification links target /inbox, /items/[id], /members \u2014 all bell-less, confirming the 'absent from pages notifications link TO' clause. P3 right: in trip mode the Today tab (one tap from Now) still carries the bell, so this is inconsistency, not a silencing gap.",
+  "evidence": "grep '<NotificationBell' \u2192 trips/[slug]/+page.svelte:62, today:47, today/upcoming:37, expenses:88, budget:91, more:31 only. backend/pb_hooks/notifications.pb.js:56,116,169 links \u2192 inbox/items/members. SPEC_BACKLOG.md:84 documents only the non-live badge, not placement."
+ },
+ {
+  "id": "WP-A-013",
+  "verdict": "confirmed",
+  "severity": "P2",
+  "summary": "Confirmed and actually stronger than written: the live API hook explicitly supports self-leave ('any member may self-leave', forced keep per PRD Resolution 13), but the UI's only remove control is gated on data.isOwner and no 'Leave trip' affordance exists anywhere in src/routes. So this is shipped server machinery with no door \u2014 M4/M3. Not documented-deferred: MEMBERSHIP_LIFECYCLE_PRD has no deferred list covering the self-leave UI and SPEC_BACKLOG has zero 'leave' entries. P2 per bar (shipped but unreachable; real-world workaround is asking the owner in the group text).",
+  "evidence": "members/+page.svelte:150 '{#if data.isOwner}' gates Remove; the only !isOwner branch (:368) is invite-role help text. backend/pb_hooks/members.pb.js:356,393-397,435-439 self-leave path exists and forces disposition 'keep'. grep -i leave over src/routes \u2192 only unsaved-changes confirms. docs/MEMBERSHIP_LIFECYCLE_PRD.md \u00a713 + #133 slicing list self-leave in /api/members/remove scope."
+ },
+ {
+  "id": "WP-A-014",
+  "verdict": "confirmed",
+  "severity": "P1",
+  "summary": "Mechanics verified: both accept flows redirect 303 to /trips/[slug] (Overview) and the Overview has no first-visit/welcome state (no welcome/onboard/first-visit code anywhere in the trip routes). Contribution surfaces are genuinely buried for a newcomer: planning BottomNav is Itinerary/Money/Members/Docs/More \u2014 goals lives behind the Phases|Lists|Goals SubTabs and swipe behind a conditional card on Phases, so 2-3 unguided taps. Charter D2 pre-agrees this gap is real and first-class (an open issue existing does NOT make it intentional under \u00a73); P1 matches the bar's 'front-door failure / contributor-silencing gap'. Minor overstatement only: the Overview does show title/dates/day cards, so 'zero orientation' is really 'zero contribution-directed orientation' \u2014 not verdict-changing.",
+  "evidence": "src/routes/join/[token]/+page.server.ts:98 and src/routes/invite/[code]/+page.server.ts:97 both redirect(303, `/trips/${trip.slug}`). grep welcome/first-visit/onboard in trips/[slug]/+page.* \u2192 none. src/lib/shell/nav-tabs.ts:34-38 planning tabs; phases/+page.svelte SubTabs + swipe card :55-67. charter.md D2; SPEC_BACKLOG: no onboarding entry."
+ },
+ {
+  "id": "WP-A-015",
+  "verdict": "confirmed",
+  "severity": "P3",
+  "summary": "All claims true: the item-rating swipe deck's only inbound edge is the conditional launch card on the Phases sub-tab (renders only when unratedTotal > 0), and Phases is a structure-management surface. Considered refuting as intentional \u2014 V4_GROUP_INPUT_PRD Resolution 5 deliberately set 'Entry = a launch card on the Phases sub-tab' \u2014 but the charter's intentional carve-out names PRD deferred-lists, not PRD design resolutions, PRDs are point-in-time records (precedence #5), and the finding already cites the PRD and says 'flag, don't presume'. P3 is the D1 ceiling correctly applied; Phase 3 may still disposition it 'intentional'.",
+  "evidence": "phases/+page.svelte:55-67 swipe card gated on data.unratedTotal > 0 && data.launchPhaseId; grep shows no other href to /swipe/ (goals/capture reuses the SwipeDeck component for goal capture, not an entry to item rating). docs/V4_GROUP_INPUT_PRD.md:31-32 Resolution 5 documents the placement. charter.md D1 + \u00a73 intentional list."
+ },
+ {
+  "id": "Clone is unusable",
+  "verdict": "confirmed",
+  "severity": "P2",
+  "summary": "Every mechanism reproduced in code. The trips after-create hook generates a day record for EVERY date in range unconditionally (day generation is not gated on created_by), so the clone action's manual day creates \u2014 whose first shifted date is exactly targetStart by construction (offset = targetStart \u2212 sourceStart) \u2014 always violate the unique (trip,date) index; the catch has no cleanup, leaving trip + owner membership + phases as retry-accumulating debris (unique slug suffix means no collision blocking retries). include_phases is checked by default, so the default submit always fails for any real trip (the hook guarantees every trip has day rows). Phases-off path verified too: items forced status:'planned' with day:''/phase:'' are invisible on every surface (day-filtered views, phase-filtered parking lot \u2014 the trip-wide parking lot is a 303 redirect to /phases \u2014 booking projection needs requires_booking which isn't copied, and items/ has no index +page). 'flight' is a real ItemType missing from the clone checklist. P2 right per bar: scenario 36 shipped-but-unusable, workaround is rebuilding by hand. Nit: it's a fail(500) form error surfacing the PB message, not a literal 500 page.",
+  "evidence": "clone/+page.server.ts:69-81 (create without created_by), :83-88 (manual membership \u2014 no membership collision), :110-125 (manual day creates via shiftDate \u2192 'YYYY-MM-DD 00:00:00.000Z'), :136-165 (status:'planned', day/phase fallback '', no requires_booking), :191-195 (catch \u2192 fail, no cleanup). backend/pb_hooks/trips.pb.js:22-72 (day generation ungated). backend/pb_migrations/0005_days.js:17 unique (trip,date). clone/+page.svelte:14 (itemTypes omits 'flight'; src/lib/itinerary/types.ts:38 includes it), :99 (checked). parking-lot/+page.server.ts \u2192 redirect 303 /phases; phases/[phaseId]/+page.server.ts:32 phase-filtered; ls items/ \u2192 only [itemId], new. tests/e2e/m6-polish.spec.ts:20-31 render-only."
+ },
+ {
+  "id": "Export\u2192Import round-trip is broken",
+  "verdict": "confirmed",
+  "severity": "P2",
+  "summary": "Both breaks verified independently. (1) buildTripExport copies trip.start_date/end_date and d.date raw \u2014 PB returns 'YYYY-MM-DD 00:00:00.000Z' (the codebase's own split(/[T ]/) calls evidence the stored format) \u2014 and validateTripImport checks only typeof string with no normalization, so import appends another ' 00:00:00.000Z' producing an unparseable date and the trip create throws: a genuine Waypoint export can never import. (2) With hand-normalized dates, import passes created_by so the trips hook creates the owner membership and all day rows; import's explicit trip_members create then violates unique (trip,user) (and its day creates would violate unique (trip,date)); the catch does no cleanup, so trip + hook membership + hook days persist as an owned phantom trip, repeated per retry. The path is advertised on the trips list in both empty and non-empty states, and E2E only asserts the file input renders. P2 fits: the 'JSON backup' cannot be restored, scenario 37's value void, workaround is the old stack.",
+  "evidence": "src/lib/portability/export.ts:21-22,43 raw dates; src/lib/portability/import.ts:27-42 (validateTripImport, no date handling); trips/import/+page.server.ts:42-43,85 (' 00:00:00.000Z' appended), :51 (created_by), :55-61 (explicit membership), :146-150 (catch, no cleanup). backend/pb_hooks/trips.pb.js:7-72; backend/pb_migrations/0003_trip_members.js:21 unique (trip,user) WHERE user != ''; 0005_days.js:17. trips/+page.svelte:56-58,141-145 'import from JSON'. tests/e2e/m5-closure.spec.ts:52-57 render-only; no submitting import/clone E2E exists."
+ },
+ {
+  "id": "isTripActive uses UTC",
+  "verdict": "confirmed",
+  "severity": "P1",
+  "summary": "Contradiction is real and exactly as described: activation.ts derives 'today' from now.toISOString() (UTC) and TripDateInfo carries no timezone, while trips/+page.server.ts groups On-trip/Past using the tz-aware tripToday(tripTz(trip)). For a negative-UTC-offset trip the final local evening flips isTripActive false (~6-8pm), AppShell hard-forces mode to 'planning' (mode = active ? \u2026 : 'planning'), wipes userOverride, and unmounts the ModePill ({#if active}), so trip chrome (Now/Today/Add) is gone while /trips simultaneously says 'On trip'; documents' on-trip gating uses the same broken predicate. Mirror early-activation the evening before day one also follows. One precision fix: now/ DOES have a +page.server.ts \u2014 it merely contains no active-gate, so the substance (/now stays URL-only-reachable, no chrome edge) is correct. P1 per charter: a mid-trip (final-evening) dead end where D3's today-scoped tasks lose their Trip-Mode home; activation.test.ts has no timezone case.",
+  "evidence": "src/lib/trip-mode/activation.ts:3-15 (UTC date, no tz field); src/lib/shell/trip-time.ts:44-47 tripToday(tz); src/routes/(app)/trips/+page.server.ts:30-48 tz-aware grouping; src/lib/shell/components/AppShell.svelte:35-43 (mode forced, override wiped), :76-78 ({#if active} ModePill); documents/+page.svelte:20 onTrip = isTripActive(data.trip); grep isTripActive|redirect|active in now/+page.server.ts \u2192 no guard; grep tz in activation.test.ts \u2192 none.",
+  "amendment": "Minor wording only: 'now has no +page.server.ts guard' should read 'now/+page.server.ts exists but contains no active-check' \u2014 the file exists, the guard doesn't. Claim substance and severity unchanged."
+ },
+ {
+  "id": "WP-A-016",
+  "verdict": "amended",
+  "severity": "P3",
+  "amendment": "\"Text confirmation codes live solely on item detail\" is false: TripModeCard.svelte:59-67 renders confirmation_codes as label/value rows, and it is used by NowMidEvent (Now view mid-event state) and today/upcoming \u2014 so mid-trip the code often IS visible without item detail. The real, narrower gap stands: the Documents tab renders zero codes and its empty-state copy (documents/+page.svelte:83 'Boarding passes, tickets, and confirmations land here.') actively reinforces the wrong mental model, strengthening the Docs-tab-bridge half of the finding.",
+  "summary": "Core V1-lite gap (Docs tab is where the novice looks for 'my confirmation', codes aren't there, no hint) is real and even reinforced by the Docs empty-state copy. But the premise that codes exist only on item detail is refuted by TripModeCard \u2014 codes surface on Now mid-event and Today\u2192Upcoming cards. P3 unchanged; the fix (bridge the lookup in Documents) still stands.",
+  "evidence": "items/[itemId]/+page.svelte:131 passes confirmation_codes to detail renderer; TripModeCard.svelte:59-67 renders codes; used in NowMidEvent.svelte + today/upcoming/+page.svelte; documents/+page.svelte has no confirmation_codes usage, only line 83 empty-state copy; today/+page.svelte main timeline shows no codes."
+ },
+ {
+  "id": "WP-A-017",
+  "verdict": "amended",
+  "severity": "P2",
+  "amendment": "Two supporting facts are overstated. (1) 'Items carry no member association' \u2014 items.assigned_to is a real multi-member field captured in ItemForm.svelte:632-634 (checkbox per member), so a member CAN be associated with their flight item. (2) booked_by is no longer a pure ghost: lists/booking/+page.server.ts:83 writes booked_by on the mark-booked action (CARD_CONTENT_SPEC.md:21/41 'no capture path anywhere' is stale on this point). The headline gap is intact: no flights comparison/lineup view exists anywhere, and no card/surface renders member\u2194flight association.",
+  "summary": "Scenario 14's expected comparison view genuinely does not exist \u2014 every 'flight' hit in src/ is form/lookup/type/icon plumbing, no cross-member lineup surface. SPEC_BACKLOG's only flight entries (lines 42-48: tz capture, type-ambiguity) do not cover this, so it is unsequenced, not deferred \u2014 the finding's backlog claim holds. But the mechanism claims need amending: assigned_to exists and is capturable, so the gap is 'association never surfaced + no comparison view', not 'no association possible'. P2 stands (V1: arrival coordination falls back to group text/spreadsheet; the in-app approximation is title-convention items on the arrival-day timeline with no member identity).",
+  "evidence": "grep flight in src/ \u2192 ItemForm/FlightLookup/types/TypeIcon/grouping only, no view; itinerary/types.ts:65-66 booked_by/paid_by; lists/booking/+page.server.ts:83 writes booked_by; ItemForm.svelte:265,632-634 assigned_to capture; CARD_CONTENT_SPEC.md:21,31,41 ghost/cut decisions; SPEC_BACKLOG.md:42-48 flight entries are tz+ambiguity only."
+ },
+ {
+  "id": "WP-A-018",
+  "verdict": "confirmed",
+  "severity": "P2",
+  "summary": "Verified one-way money flow in Trip Mode: trip nav is Now/Today/Add/Docs with no Money tab; AddSheet's only money affordance is addExpense \u2192 goto expenses?action=add (which itself lands on a Planning surface); zero budget/spent/balance/expense rendering exists in now/, today/, or any trip-mode component. The cited backlog entry (Day Wrapped Stats, SPEC_BACKLOG.md:124) covers only an end-of-day 'spent' summary, not mid-day budget status or balances, and the finding already cites it \u2014 so this is not documented-deferred. One honesty note: the workaround is the in-app mode pill \u2192 Money, not literally the old stack, so the V1 citation is V1-lite as the finding's own 'unowned seam' framing admits; but charter scenario 30 explicitly demands the glance 'without leaving Trip Mode', so P2 holds.",
+  "evidence": "nav-tabs.ts:18-30 trip branch (no Money); AddSheet.svelte:22-25 addExpense goto; grep budget|expense|spent|balance over now/, today/, src/lib/trip-mode/ \u2192 only AddSheet matches; SPEC_BACKLOG.md:114,124 (Day Wrapped Stats)."
+ },
+ {
+  "id": "WP-A-019",
+  "verdict": "confirmed",
+  "severity": "P2",
+  "summary": "All four sub-claims verified by content. Settings renders the share link as a relative path inside a <code> block (settings/+page.svelte:167-174: `/archive/{token}`) \u2014 no absolute URL, and grep finds no copy/clipboard/share affordance anywhere in the file. finishCloseout redirects 303 to /trips/[slug] (closeout/+page.server.ts:118) with no link handoff, despite being the moment the token may have just been minted (lines 112-115). Pre-publish state is a bare 404 'Archive not yet published' (archive/[token]/+page.server.ts:33-35), no 'publishes on {date}'. V3 record-seam at P2 (shipped but hostile/buried) is exactly the charter bar.",
+  "evidence": "settings/+page.svelte:167-174 (code block, relative path), no clipboard/copy matches in file; closeout/+page.server.ts:111-118 (archived:true, token mint, redirect to trip home); archive/[token]/+page.server.ts:33-35 (404 pre-publish)."
+ },
+ {
+  "id": "WP-A-020",
+  "verdict": "confirmed",
+  "severity": "P3",
+  "summary": "The public archive page is read-only for non-members: its only outbound affordances are the photo_album_url link and collapse/expand buttons \u2014 no template, no download, no export, no signup CTA. Clone is owner/co_owner-gated (clone/+page.server.ts:10), export lives under the authed (app) group; both require membership as claimed. Not documented-deferred: SPEC_BACKLOG.md:128-137 resolves 'archive stays plan-only' (vs memory exposure) but says nothing about replication-for-non-members, and no PRD covers it. The finding correctly self-flags this as needing an explicit intentional-vs-prd call rather than asserting a failure; P3 vision-edge is the right severity.",
+  "evidence": "archive/[token]/+page.svelte \u2192 only hrefs are photo_album_url (line 49) + collapse button (73); clone/+page.server.ts:10 role gate; export/+server.ts under (app); SPEC_BACKLOG.md:128-137,209 archive plan-only resolution, no template/replication entry."
+ },
+ {
+  "id": "Archiving is an unguarded one-way door",
+  "verdict": "confirmed",
+  "severity": "P2",
+  "summary": "Every cited mechanism verified by content. Closeout card on More is gated only by isOwnerOrCoOwner (more/+page.svelte ~54-70) \u2014 no date/status condition; finishCloseout (closeout/+page.server.ts:98-123) sets archived:true with no end-date/status guard and the 'Finish & Archive Trip' button (closeout/+page.svelte ~146-153) has no confirm dialog and no consequence copy; archived hard-disables Trip Mode (activation.ts:10); once archived the public gate is bypassed (archive/[token]/+page.server.ts:33), so archiving can instantly publish; the trips-list active bucket filters purely by dates, never consulting archived (trips/+page.server.ts:30-44). Repo-wide, archived:false appears only at new:62/import:52/clone:80, no unarchive action or route exists, and no Svelte UI renders an archived indicator (only settings prose at :126). Bonus evidence the verifier found: settings/+page.server.ts:124-150 contains a dead archiveTrip action no form invokes \u2014 a third unguarded archive write with zero UI. Not deferred: D5 documents the missing wrap-up state, not the absence of guard/unarchive/badge. P2 (M2 one-way street) is right \u2014 P1's 'archive front-door failure' refers to the public surface, and the action requires deliberate owner taps.",
+  "evidence": "more/+page.svelte:54-70 (isOwnerOrCoOwner-only Card); closeout/+page.server.ts:98-123; closeout/+page.svelte:146-153; activation.ts:10; archive/[token]/+page.server.ts:33; trips/+page.server.ts:30-44 (date-only buckets); grep archived: \u2192 false only new:62/import:52/clone:80, true in closeout:111 + settings:137 (dead action, no form at settings page actions ?/update ?/toggleArchive ?/delete); grep -i unarchive \u2192 zero hits; grep archived in *.svelte \u2192 only settings copy line 126."
+ },
+ {
+  "id": "Archive publish gate contradicts settings copy",
+  "verdict": "confirmed",
+  "severity": "P2",
+  "summary": "Gate logic matches the claim exactly: archive/[token]/+page.server.ts:28-34 computes publishDate = end_date + (archive_publish_after_days || 7) and gates with `if (!trip.archived && now < publishDate)` \u2014 so (a) the delay is measured from end_date, not archiving (no archived_at exists anywhere), (b) once archived the delay is skipped entirely, making the 'Publish delay (days after archiving)' knob (settings/+page.svelte:153-155) a no-op on the normal closeout flow, and (c) an enabled-but-never-archived trip auto-publishes at end_date+delay, contradicting the copy 'link is generated after the trip is archived' (settings/+page.svelte:126). Token is minted at enable-time in toggleArchive (settings/+page.server.ts:106-109), and buildArchiveView maps status='planned' into consideredItems (archive-view.ts:36-38) while sanitization retains title/location_name/location_address \u2014 so the un-closed-out planned itinerary does render publicly under 'What we considered'. P2 right: code-verified guard-vs-copy breach, not a critical-path dead end.",
+  "evidence": "archive/[token]/+page.server.ts:24-35 (enable check + gate); settings/+page.svelte:126,153-155 (copy); settings/+page.server.ts:106-109 (mint at enable); closeout/+page.server.ts:111-115 (mint at archive); archive-view.ts:8-21 (sanitizer keeps title/locations) + 36-38 (consideredItems includes 'planned'); no archived_at field anywhere."
+ },
+ {
+  "id": "Trip-Mode quick-add ejects to Planning on save",
+  "verdict": "confirmed",
+  "severity": "P1",
+  "summary": "Fully reproduced in code. AddSheet.svelte:15-20 constructs ?from=trip&day=<todayId>; items/new/+page.server.ts reads only day/phase/suggestion (lines 14-16) \u2014 `from` is read nowhere in the repo, a ghost param proving the intended return path (M4). Success with a day redirects to /trips/[slug]/days/[day] (line 273-274) \u2014 verified a Planning surface (days/[dayId] contains DayNav/parking/drag); cancel/back is NavBar backHref=/trips/[slug] (items/new/+page.svelte:57); the traveler-with-auto-approve-off path redirects bare to /trips/[slug] (line 249) with no toast/param/confirmation anywhere. Because AppShell (mounted at trips/[slug]/+layout.svelte) keeps mode='trip' during an active trip, the Planning day editor renders under stale trip chrome with 'Now' highlighted (getActiveTab fallback) \u2014 the desync claim holds. Not deferred: TRIP_REPLANNING_PRD.md Out of Scope excludes quick-add precisely because 'the Add sheet already covers quick-add-for-today' \u2014 an assumption this redirect falsifies, so no other workstream owns the fix. P1 stands per binding D3: scenario 22 is today-scoped, 'must not leave Trip Mode', and D3 pre-classifies a today-scoped task answered by a Planning surface as a dead end on the mid-trip critical path; the central oversized Add button is Trip Mode's primary action.",
+  "evidence": "AddSheet.svelte:15-20; items/new/+page.server.ts:14-16 (params read), 249, 273-276 (redirects); items/new/+page.svelte:57 (backHref); grep 'from' param reads \u2192 zero; days/[dayId]/* match DayNav/parking/drag; AppShell.svelte:35-44 (mode derivation, in-memory override) + nav-tabs.ts getActiveTab trip-branch fallback 'now'; docs/TRIP_REPLANNING_PRD.md Out of Scope bullet + Further Notes (WP-A-005 origin)."
+ },
+ {
+  "id": "WP-A-021",
+  "verdict": "confirmed",
+  "severity": "P3",
+  "summary": "Back chevron on items/new is hardcoded to the trip Overview while the route demonstrably knows its day context: the load reads ?day= into preselectedDay and the create action redirects to /days/{day} on success. So submit returns you to the day but back/cancel teleports to Overview \u2014 exactly as claimed. M4 wrong-back, frequent surface, fully recoverable: P3 per charter bar (friction/polish).",
+  "evidence": "src/routes/(app)/trips/[slug]/items/new/+page.svelte:57 (backHref=\"/trips/{data.trip.slug}\", verbatim); +page.server.ts:14 (url.searchParams.get('day')), :79 (preselectedDay), :272-276 (if (day) redirect 303 \u2192 /days/{day} else Overview). No other back affordance found."
+ },
+ {
+  "id": "WP-A-022",
+  "verdict": "amended",
+  "severity": "P3",
+  "amendment": "Root cause confirmed (stale bottomNavRoutes set), but the symptom is misdescribed: trip-mode tab hops (now/today/documents, all depth 3 after group-stripping) classify as 'peer' \u2014 a 240ms horizontal slide \u2014 not drill-down/up. The drill mis-animation actually occurs on the PLANNING Itinerary\u2194Docs hop (depth 2\u21943), because the set also omits documents, which is a bottom tab in BOTH modes. Scope is wider (planning Docs tab too), symptom is slide-instead-of-crossfade in trip mode.",
+  "summary": "The set at +layout.svelte:8-14 contains only {trip home, expenses, budget, members, more} \u2014 pre-dating both the trip-mode nav and the Docs planning tab (#71). Omitted routes fall through to the depth comparison: equal-depth trip-tab hops get 'peer' (slide), and the Itinerary\u2194Docs planning hop gets drill-down/up. Either way tab taps don't get the 180ms 'tab' crossfade. Cosmetic, P3 stands.",
+  "evidence": "src/routes/(app)/+layout.svelte:8-14 (set verbatim), :16-30 (classify: set-hit \u2192 'tab', else depth compare \u2192 drill/peer); src/lib/shell/nav-tabs.ts:23-27 (trip tabs = now/today/documents) and :34-38 (planning tabs include documents); src/routes/layout.css:198-227 (tab=crossfade 180ms, peer=horizontal slide 240ms, drill=vertical slides \u2014 visually distinct, so the misclassification is user-visible)."
+ },
+ {
+  "id": "WP-A-023",
+  "verdict": "confirmed",
+  "severity": "P3",
+  "summary": "Settings page renders the entire editable form including the danger zone for every role; the only 'role' strings in the .svelte file are ARIA attributes \u2014 no isOwner/canEdit gating exists. All four server actions (update, delete, archive-settings, archiveTrip) 403 non-owners, so enforcement is correct and the gap is purely presentational. The inbound Settings card in More is unconditional, so travelers/viewers genuinely reach this form. Capability-invisible-until-submit is designer/novice polish: P3 right.",
+  "evidence": "src/routes/(app)/trips/[slug]/settings/+page.server.ts:7-8 (load returns membership, unused for gating), :38-39/:67-68/:97-98/:133-134 (role !== owner/co_owner \u2192 fail(403)); settings/+page.svelte grep: zero role conditionals, delete button at :209; more/+page.svelte:72 (Settings Card unconditional, outside the role-gated closeout block ending :70)."
+ },
+ {
+  "id": "WP-A-024",
+  "verdict": "amended",
+  "severity": "P3",
+  "amendment": "The finding's hedge 'works when found' is false and its fix's open question ('verify what actually prints') is now answered: it prints the More menu. print.css is generic restyling only \u2014 its printable hooks .print-header and .day-section match ZERO components anywhere in src/, and window.print() exists only on More. 'Print itinerary' therefore emits the More card list with all buttons display:none'd \u2014 the labeled artifact (an itinerary) is never produced by the only print affordance in the app. Half-built scaffolding, not a working-but-buried feature.",
+  "summary": "Mechanics confirmed: Print card at more/+page.svelte:127-143 calls window.print(); print.css exists and is globally imported. Amended per above \u2014 the affordance is non-functional for its label, not merely mode-locked. Severity stays P3 per the charter bar: power persona, low frequency, and the in-app workaround (browser/share-sheet print on the day view, which print.css does clean up) is not the old stack \u2014 so it doesn't meet P2's shipped-but-buried/old-stack-workaround test.",
+  "evidence": "src/routes/(app)/trips/[slug]/more/+page.svelte:128-142 (button onclick window.print, 'Print itinerary' label); src/lib/shell/print.css (full read: hides nav/buttons, restyles cards; no itinerary injection); src/routes/layout.css:2 (@import print.css); grep: .print-header/.day-section used nowhere outside print.css; window.print call sites = more/+page.svelte only."
+ },
+ {
+  "id": "WP-A-025",
+  "verdict": "confirmed",
+  "severity": "P3",
+  "summary": "now/+page.server.ts (read in full) contains no status, isTripActive, or redirect logic of any kind \u2014 it computes today from trip tz and loads items for any trip status; today and today/upcoming loaders grep clean for the same patterns, and no trip-layout guard exists. Deep links (and WP-A-006's unguarded chip) render trip-mode views under planning chrome since AppShell derives mode from isTripActive. Not documented-deferred anywhere; D5's wrap-up state will key off these predicates, so the trap claim is fair. P3 right \u2014 no normal nav path reaches it except via WP-A-006, which carries the user-facing severity.",
+  "evidence": "src/routes/(app)/trips/[slug]/now/+page.server.ts:6-53 (full file: parent() \u2192 tripNow \u2192 items; zero guards); grep isTripActive|status|redirect across now/, today/, today/upcoming/ +page.server.ts and trips/[slug]/+layout.server.ts: no hits."
+ },
+ {
+  "id": "Offline surface is document-bytes-only",
+  "verdict": "confirmed",
+  "severity": "P1",
+  "summary": "Every mechanical sub-claim holds: the service worker never caches navigation HTML or __data.json (the only cache.put calls are docs precache :33, docs cache-on-view :78, and PB-API responses :111), 'prerendered' is not imported and no route sets prerender, so the navigate fallback (:128-139) always misses \u2192 literal 'Offline' 503 text; the generic branch (:141-147) is cache-first with no put, so in-app nav offline dies too (fetch rejection \u2192 SvelteKit hard-nav \u2192 same 503). precacheDocuments has exactly one call site, gated on onTrip on the Documents page, so the cached boarding-pass bytes are unreachable in the state they exist for (M3). The More offline toggle only gates PB-API requests SSR pages never make, and its own reload() 503s offline. Not documented-deferred: SPEC_BACKLOG's only offline entries are notification-realtime and S5 docs-precache (itself shipped in code while still listed as backlog \u2014 extra doc-hygiene wrinkle); SPEC.md:498/511/687 affirmatively claim full offline read as shipped. P1 fits the charter bar exactly: mid-trip dead end on the critical path (scenarios 19/28), V1 back-to-email for the boarding pass.",
+  "evidence": "src/service-worker.ts full read (:17 ASSETS=build+files; :61-86 docs branch; :88-124 isPBApi=port 8090||/api/; :128-139 navigate, no put; :141-147 generic, no put); grep cache.put \u2192 lines 33/78/111 only; grep prerender in src/routes \u2192 none; precacheDocuments call sites \u2192 offline-cache.ts def + documents/+page.svelte:50 (inside $effect gated if(!onTrip) return); more/+page.svelte:148-156 (toggle \u2192 SET_OFFLINE + location.reload); docs/SPEC.md:498-499,511,687; docs/SPEC_BACKLOG.md:84,157,164."
+ },
+ {
+  "id": "AddSheet 'Add expense' hands off to a param the Expenses page never reads",
+  "verdict": "amended",
+  "severity": "P3",
+  "amendment": "Severity down from the claimed P2 to P3. Charter P2 requires the workaround to be the old stack; here the recovery is the labeled 'Add expense' FAB on the very page the user lands on \u2014 one extra in-app tap. The two sibling finders who hit the same defect both rated it P3 with this exact reasoning. Mechanics fully confirmed otherwise.",
+  "summary": "AddSheet.addExpense() navigates to /trips/[slug]/expenses?action=add (AddSheet.svelte:22-25), and expenses/+page.svelte contains zero reads of page.url or searchParams \u2014 showAddExpense is set only by the FAB onclick. The contract IS implemented by the sibling target: documents/+page.svelte has an $effect that opens its sheet on action=add and strips the param, proving the handoff was a real convention dropped on one of its two consumers. M4 confirmed; one-tap in-app recovery caps it at P3.",
+  "evidence": "src/lib/trip-mode/components/AddSheet.svelte:22-30 (addExpense \u2192 ?action=add; addDocument \u2192 ?action=add); src/routes/(app)/trips/[slug]/expenses/+page.svelte:31 (showAddExpense $state), :198 (FAB onclick only setter), grep searchParams|page.url \u2192 no hits; documents/+page.svelte:53-56 (working $effect handler for the same param)."
+ },
+ {
+  "id": "Closeout never reviews parking-lot ideas",
+  "verdict": "confirmed",
+  "severity": "P2",
+  "summary": "Both variants of the claim verify. The wizard is day-cards-then-summary only: itemsForDay filters i.day === day.id, so unplanned items (day='') never enter any step, and no phase-end review exists anywhere in the component. The loader fetches ALL trip items, so unplanned rows silently inflate the summary's else-bucket labeled 'Skipped (stayed planned)'. Downstream, buildArchiveView puts status planned|considered into consideredItems and excludes unplanned entirely \u2014 so the public 'what we considered' both drops every parking-lot idea and relabels owner-skipped planned items as considered. The documented contract says otherwise in two live docs (SPEC.md:523 + :585, CONTEXT.md:47 verbatim 'At the end of each phase, reviews unplanned items\u2026bulk auto-consider'), and V4_GROUP_INPUT_PRD:129/:246 sequence the deferred goals step 'after the per-phase unplanned review' \u2014 assuming it exists. SPEC_BACKLOG's Archive & Portability backlog contains only the memories-stay-private resolution; nothing defers this step. The claim's own deferral hygiene is correct (goals review and memory review properly cited as deferred, not flagged). V3 seam-drop + live-doc lie; P2 is right \u2014 the wizard runs and the archive publishes, data stays in the DB, so it under-reports the record rather than breaking a critical path (P1's bar).",
+  "evidence": "src/routes/(app)/trips/[slug]/closeout/+page.svelte:17-28 (sortedDays + itemsForDay day-filter), :30-40 (summary: else planned++ catches unplanned), :74-111 (day cards \u2192 summary, no phase step), :123 ('Skipped (stayed planned)' label); closeout/+page.server.ts:12-15 (items filter trip-wide, includes unplanned); src/lib/portability/archive-view.ts:35-38 (doneItems=done; consideredItems=planned||considered; unplanned excluded); docs/SPEC.md:523,585; CONTEXT.md:47; docs/V4_GROUP_INPUT_PRD.md:129,246; docs/SPEC_BACKLOG.md:133-137 (no deferral)."
+ }
+]

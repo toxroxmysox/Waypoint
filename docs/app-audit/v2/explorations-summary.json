@@ -1,0 +1,317 @@
+[
+ {
+  "key": "landing-map",
+  "headline": "Landing map complete: 74 actions across 30 server files audited \u2014 the app has 4 sound post-action conventions, and every real mismatch is an action that picked the wrong one (or none); worst is the traveler-suggestion black hole.",
+  "key_points": [
+   "~85% of actions land correctly via four house conventions already in code: stay+see-it (expenses, checklists, votes), land-in-the-thing-you-made (list create, item edit, clone), return-to-queue (inbox, booking smart list, closeout rows), capture-loop (goals/capture, phase addIdea).",
+   "P1 (V2): traveler suggestion submit (items/new/+page.server.ts:249) redirects to trip overview with no toast, no trace, no reachable pending view (inbox 403s travelers), and no approve/reject notification back to the suggester (notifications.pb.js emits suggestion_added to owners only). The contribution appears to vanish \u2014 confirm-via-group-text is the predictable fallback. Not documented-deferred anywhere.",
+   "P2 (D3 seam): Trip-Mode AddSheet passes from=trip to items/new (AddSheet.svelte:17-19) but the param is DEAD \u2014 never read; quick-add-for-today lands on the planning day editor (/days/[dayId]) instead of back on Today. TRIP_REPLANNING_PRD #166 explicitly leans on this flow ('the Add sheet already covers quick-add-for-today') without fixing its landing. Expense/document legs of the same sheet land fine (their tabs exist in both modes).",
+   "D5-fold: finishCloseout (closeout/+page.server.ts:118) lands on the planning overview of the now-archived trip \u2014 zero archived state, no recap/share/memory pointer (verified absent in [slug] page+load). Contribution to the D5 wrap-up PRD: the final landing must be the record surface.",
+   "Cited, not flagged: invite/join accept \u2192 /trips/[slug] is the documented landing (MEMBERSHIP_LIFECYCLE_PRD L55); arrival-content gap is D2 / open issue #111.",
+   "Three P3s: phase ?/update ejects detail\u2192list while sibling addIdea stays (phases/[phaseId]/+page.server.ts:84); Unscheduled item creation lands on overview where unplanned items are invisible (items/new:276); archive share URL renders as inert <code> with no copy/open (settings/+page.svelte:167-174) vs join links' copy+toast pattern.",
+   "Full analysis with complete per-action table written to docs/app-audit/v2/explorations/landing-map.md, including a proposed 4-convention post-action contract for design-system.md plus a D3 rider: today-scoped actions initiated from Trip Mode must land back on a Trip-Mode surface with the result visible."
+  ],
+  "proposals": [
+   {
+    "title": "Give traveler suggestions a confirmed landing (P1, V2)",
+    "what": "Keep the traveler on /items/new with an explicit success state \u2014 the goals/capture pattern: 'Sent to [owner] for review' + Suggest another + Back to trip. Pair with a 'waiting for review' chip where the item would appear, and (separate small slice) a notification to the suggester on approve/reject.",
+    "why": "items/new/+page.server.ts:249 redirects to the overview with no toast and no trace; inbox is owner-only (403), so the contributor cannot verify their contribution exists \u2014 V2 contributor-silencing on the exact non-technical persona the quality bar names; fallback is the group text (V1)."
+   },
+   {
+    "title": "Honor from=trip: quick-add lands back on Today (P2, D3)",
+    "what": "Thread the already-passed from=trip param through the items/new form as a hidden input; on success redirect to /trips/[slug]/today instead of /days/[dayId].",
+    "why": "AddSheet.svelte:17-19 passes from=trip but nothing reads it; 'add a coffee stop to today' from Trip Mode lands on the planning day editor, leaking the planning stack into the one-handed mid-trip flow. Momentum and D3 both say land where the result is visible in trip terms: the Today timeline."
+   },
+   {
+    "title": "Wrap-up PRD: finishCloseout must land on the record (fold into D5)",
+    "what": "Spec, inside the D5 grill\u2192PRD, that the closeout's final redirect targets a recap/share surface and that an archived trip's home leads with the record \u2014 not the planning overview.",
+    "why": "closeout/+page.server.ts:118 lands on a planning view with zero archived state \u2014 V3 seam drop at the most ceremonial moment in the lifecycle. D5 already owns the feature; this is its most important screen."
+   },
+   {
+    "title": "Stay on phase detail after ?/update (P3)",
+    "what": "Replace the redirect at phases/[phaseId]/+page.server.ts:84 with return { success: true }; keep the 'Phase updated' toast; enhance invalidates in place.",
+    "why": "The edit form lives on the detail page; saving ejects to the list while sibling addIdea stays put \u2014 context loss with no momentum gain, inconsistent with the page's own other action."
+   },
+   {
+    "title": "Land Unscheduled item creation where parking lots live (P3)",
+    "what": "items/new with day=Unscheduled redirects to /trips/[slug]/phases (or the selected phase's detail) instead of the trip overview.",
+    "why": "items/new:276 lands on the overview, which renders days/lists only \u2014 the just-created unplanned idea is invisible there; result-visibility failure on the creation convention."
+   },
+   {
+    "title": "Make the archive share URL actionable (P3)",
+    "what": "On settings after toggleArchive: absolute URL, copy button with 'Link copied' toast, and an 'open archive' link \u2014 the exact pattern already shipped for join links (members/+page.svelte:45).",
+    "why": "settings/+page.svelte:167-174 renders the scenario-35 artifact ('share with grandma') as an inert relative <code> string requiring manual text selection on a phone."
+   }
+  ],
+  "file_written": "/Users/Scott/Waypoint/.claude/worktrees/crazy-matsumoto-d2d390/docs/app-audit/v2/explorations/landing-map.md"
+ },
+ {
+  "key": "layers",
+  "headline": "Yes \u2014 but only the middle layer. Both navs and item detail are right-sized; the excess is a duplicate L2 index (Overview vs Phases), two thin 2-item sub-tab pairs (Money, Today), a junk-drawer More tab hiding Inbox, and zero mobile doors into the parking lot from Trip Mode.",
+  "key_points": [
+   "Mobile stack verified in code: bottom-nav tab -> SubTabs -> page -> detail (+ sheets). SideRail/ContextRail are desktop-only (md/lg-desktop gates), so the phone has exactly 4 chrome layers; ContextRail's phase-scoped parking ideas simply do not exist at 375px.",
+   "Tap audit of the 20 most common charter-S9 intents: 13/20 already hit content in <=2 taps, so tab count is not the problem. Misses cluster in 4 spots: capture depth (parking idea = 3 taps via Phases->phase->quick-add), glance depth (budget behind Money's 2nd sub-tab despite already computing spent-vs-plan), mode-boundary breaks (scenarios 21/30 force the mode pill: replan-from-parking = 4 taps + mode exit, a D3-violation shape), and the Overview-vs-Phases fork.",
+   "Overview (+page.svelte) already renders the full trip skeleton -- phase links, direct day chips, per-phase lists -- making the Phases index a second L2 surface for the same collection whose only unique value is CRUD verbs + swipe launch. It exists for structure, not information (designer lens, P2).",
+   "Thin destinations: today/upcoming is 68 lines of read-only lookahead behind a sub-tab; lists/booking is 69 lines behind Lists; Inbox's only inbound UI link is one owner-gated row inside More (V2 risk: member suggestions rot unseen).",
+   "No shipped sheet should be a page; the gap is the reverse -- Trip Mode's AddSheet has 3 create-new actions and no promote-existing. SPEC_BACKLOG defers 'Inline contextual parking lot' (cited, not flagged) but D4 promotes the free-time door to a charter requirement.",
+   "Landing wrinkle: tapping an active trip on /trips lands planning Overview content inside trip-mode chrome (no server redirect to /now; getActiveTab falls through to 'now'), costing +1 tap and a disorientation beat on every mid-trip cold open.",
+   "Proposal keeps both navs at 5/4 tabs, deletes no routes, respects D1/D3/D4/D5; sub-tabs survive only in Itinerary (Plan|Lists|Goals -- genuinely parallel collections). Net effect: 9 of 20 intents lose a layer or a fork; worst-case depth (item edit) intentionally unchanged because item detail staying heavy is what lets the layers above flatten.",
+   "Sequencing: Money merge, Today merge, and the /now landing redirect are each afternoon-sized and independent; the Plan merge (Overview+Phases with #159/#160 drag interactions) is the real project; the Trip-Mode parking door should ride the existing D3/D4 audit disposition, not fork a new plan."
+  ],
+  "proposals": [
+   {
+    "title": "Merge Phases index into Overview -> single 'Plan' surface",
+    "what": "One itinerary surface: stats card, suggestions ribbon (relocated Inbox entry, owner-gated), phase cards each with day chips + parking-count chip + InlineQuickAdd + per-phase lists, management verbs behind an 'Edit phases' toggle, swipe-launch card retained. /trips/[slug]/phases becomes a redirect (precedent: parking-lot->phases LEGACY redirect). Itinerary SubTabs go 4 -> 3 (Plan | Lists | Goals).",
+    "why": "Overview and Phases both claim to be 'the itinerary' -- the novice fork behind scenarios 1/2/7/8 -- and the split is why parking capture sits at L3 (3 taps). Merging drops idea-capture to 1-2 taps and deletes the fork; the index's only unique content was CRUD verbs."
+   },
+   {
+    "title": "Collapse Money sub-tabs into one page with budget header",
+    "what": "Single Money page: estimated-total-vs-spent header (the math budget/+page.svelte:118 already does), balances + Settle Up above the ledger, expense list, header tap pushes the budget editor (/budget route survives as editor only).",
+    "why": "Expenses|Budget splits one dataset by record type, not by user question; 'can we afford this' (S8) costs 2 taps + a guess, and mid-trip 'how are we doing' (S30) costs 3 taps + a mode exit. Read becomes 0 taps, edit 1."
+   },
+   {
+    "title": "Inline 'Next 3 Days' into Today; delete trip-mode sub-tabs",
+    "what": "Today becomes one scroll: timeline -> inline checklists (already shipped #52) -> collapsed 'Next 3 days' section (today/upcoming content inlined, route redirects). Optional 'spent so far' header line answers S30 in-mode.",
+    "why": "upcoming is a 68-line read-only glance, not a workspace -- a sub-tab navigation event for content that is naturally 'keep scrolling past tonight', burning the SubTabs row in the one-handed mode where vertical space matters most."
+   },
+   {
+    "title": "Give Trip Mode parking-lot doors (D3/D4 compliant)",
+    "what": "AddSheet gains a 4th action 'Promote an idea' (phase-scoped parking picker -> pullToPlan onto today); Now's free-time state gets the 'Ideas nearby' door. Implements D4's charter-promoted free-time door; the heavier inline-timeline parking stays backlog-deferred (cited).",
+    "why": "Scenario 21 (tonight fell through) currently costs 4 taps + leaving Trip Mode because ContextRail's parking ideas are desktop-only -- the exact D3-violation shape the charter pre-flags. Drops to 2 taps, never exits the mode."
+   },
+   {
+    "title": "More -> Settings; relocate Inbox entry; fix active-trip landing",
+    "what": "More becomes a real Settings page (settings form inline + Clone/Export/Account/Closeout rows; Account row closes S41). Inbox entry moves to the Plan suggestions ribbon (route unchanged, D1-safe contextual placement). /trips/[slug] while isTripActive && no pill override server-redirects to /now. Bell renders on Members/Docs too.",
+    "why": "A collaboration inbox hidden behind an owner-gated row in a drawer named 'More' is a V2 contributor-silencing risk; the landing mismatch (planning Overview inside trip chrome) taxes every mid-trip cold open +1 tap; D5's wrap-up banner slot stays reserved, not solved here."
+   }
+  ],
+  "file_written": "/Users/Scott/Waypoint/.claude/worktrees/crazy-matsumoto-d2d390/docs/app-audit/v2/explorations/layers.md"
+ },
+ {
+  "key": "pathways",
+  "headline": "10 net-new pathway proposals across the lifecycle \u2014 connective tissue (goal\u2192item, document\u2192booked, booked\u2192expense, expense\u2192receipt, document\u2192timeline), proactive momentum doors (overview next-step strip, swipe-completion decide signal, placeholder-assignment invite nudge), and two unowned lifecycle seams (mid-trip phase\u2192phase idea carry; post-trip Remember\u2192Plan clone seeding) \u2014 all verified absent in code, none duplicating findings.json/fresh-findings.json or documented-deferred backlog.",
+  "key_points": [
+   "Coverage map built first: replanning doors (TRIP_REPLANNING_PRD), D5 wrap-up, Memory (TRIP_MEMORY_PRD), goals-in-closeout (GROUP_INPUT deferred), item-expense nav (backlog + #128), integrations, and all 75 findings are cited as owned territory and skipped.",
+   "Code verification grounded every proposal: goal detail links existing items only (goals/[goalId]/+page.svelte:155); uploadDocument returns bare success (items/[itemId]/+page.server.ts:142-159); booking check-off writes booked+booked_by with no follow-on (lists/booking/+page.server.ts:82); clone hard-sets status='planned' and ignores goals (clone/+page.server.ts:153); swipe drain offers only next-phase (swipe/[phaseId]/+page.svelte:83-90); expenses page has zero document refs; only 3 notification types exist.",
+   "Two genuinely unowned seams found: phase->phase mid-trip (parking-lot ideas silently exit relevance when the group leaves a phase; TRIP_REPLANNING is today/same-phase only) and Remember->Plan (clone discards 'considered' regret data and unmet goals, leaving the four-pillar loop open at the back).",
+   "All proposals pass guardrails: no hub (D1), D3 temporal boundary honored (phase-carry mutates only the phase field on day-less items), scale-invariant solo degradation, NOT-list clean (in-app notifications only, receipts are Documents-domain artifacts not photo album).",
+   "Dependencies flagged for Phase 3: P-3/T-3 need the broken ?action=add handler fixed first; PT-2 (money epilogue) must route into the D5 grill, not a standalone issue; taskpath verdicts killed three candidate ideas (day density, traveler invite, goals browse \u2014 all judged clean/intentional)."
+  ],
+  "proposals": [
+   {
+    "title": "P-1 Planning: 'Plan this' door on Trip Goal detail",
+    "what": "Goal detail gains a primary action beside the existing link-existing-items sheet: Plan this -> items/new?goal={id} with the goal pre-selected in the form's 'Addresses goal(s)' control; returns to goal detail with derived status bumped.",
+    "why": "Group-input cluster has capture (/goals/capture) and harvest (goal votes) but no commit moment \u2014 goals rot as wishes unless re-entered by hand from the item form. V2-adjacent: the contributor's aspiration is heard but never carried into the plan."
+   },
+   {
+    "title": "P-2 Planning: document upload -> 'Mark booked?' confirm chip",
+    "what": "When uploadDocument succeeds on an item with requires_booking && !booked, the success state renders a one-tap dismissable chip performing the same booked=true write as the booking Smart List. State-based nudge only \u2014 no content inspection (distinct from the PRD's cut OCR scope-suggestion).",
+    "why": "Uploading the confirmation PDF is evidence of booking; the app watches the proof arrive yet keeps needsBooking() wrong until someone separately visits the list. V3 seam: booking truth drops between Documents and Itinerary contexts \u2014 zero edges exist between them today."
+   },
+   {
+    "title": "P-3 Planning: booked moment -> 'Log what you paid' expense prefill",
+    "what": "Smart-list check-off and item booked toggle answer with a skippable toast-action opening expenses?action=add prefilled (linked_item, amount=cost_estimate, payer=current member). Depends on the fresh finding's broken ?action=add handler being fixed.",
+    "why": "Booking is when money actually leaves an account and exactly when the Splitwise habit fires (charter V1). Captures the expense at the moment it becomes real, keeping Money authoritative from planning onward; backlog's item-expense entry covers navigation over existing links, not creation."
+   },
+   {
+    "title": "P-4 Planning: lifecycle-aware next-step strip on trip Overview",
+    "what": "One dismissible slot under the Overview header computing the trip's next collective step: shape phases -> get the group in -> hear from everyone (swipe) -> T-minus-7 pre-departure sweep (N to book, flights/lodging missing documents, unassigned tasks), one action at a time, suppressed appropriately for solo trips.",
+    "why": "D2 names the joiner's first five minutes; the owner's first session and the group's last week before departure have the same unowned-momentum problem. The planning->trip seam has zero proactive surface \u2014 nothing says 'you leave Saturday and the riad isn't booked' (D4 doors-open-proactively applied to the departure side)."
+   },
+   {
+    "title": "P-5 Planning: swipe-deck completion -> owner signal + ranked-results door",
+    "what": "Draining a phase's deck writes one in-app notification to owner/co-owners ('X finished voting on Paris' \u2014 a fourth notification type) and a 'k of n have voted' line on the phase card; both deep-link to that phase's already-vote-sorted parking lot.",
+    "why": "Harvest is write-only today: a traveler swipes 30 cards and nobody is told, so 'did everyone vote? what won?' happens in the group text (V1/V2). Completes capture->harvest->decide with the decide door; async in-app only, D1-safe."
+   },
+   {
+    "title": "P-6 Planning: assigning a task to a placeholder -> join-link nudge",
+    "what": "Task assignee picker choosing a placeholder member renders an inline 'X isn't here yet \u2014 share the join link' copy action reusing the Members page's existing per-role link.",
+    "why": "Tasks accept placeholders as assignees \u2014 people who cannot see the assignment, so 'Jake's on grocery duty' silently becomes nobody is (V2). Assignment time is the highest-conversion instant to pull a non-technical friend in; TASKS_PRD's deferred task_assigned notification covers real members, not the member who can't be notified."
+   },
+   {
+    "title": "T-1 Trip: phase-exit sweep \u2014 'Leaving Paris tomorrow, N ideas still parked'",
+    "what": "On a phase's last day (when a later phase exists), Today renders one card: per-item keep/let-go bottom sheet writing only the phase field (unplanned items are day-less, so re-homing stays inside the D3 boundary), plus a working-door 'Review in planning' for anything heavier.",
+    "why": "Multi-phase trips have a third seam nobody listed \u2014 phase->phase inside the trip. Parking-lot ideas are phase-scoped, so leaving Paris silently strands Paris's un-promoted ideas; TRIP_REPLANNING's doors only surface the current phase and closeout review arrives weeks too late to rescue an idea into the same trip. D4 applied to the phase boundary."
+   },
+   {
+    "title": "T-2 Trip: papers on the timeline \u2014 document chip on Trip-Mode item cards",
+    "what": "Now/Today cards for items with >=1 Document get an artifact chip; tap opens the document directly (single doc straight to lightbox/native-PDF, multiple to the detail Documents section), served from the S5 offline cache.",
+    "why": "Boarding-pass-at-the-gate is a three-hop hunt today (card -> detail -> Documents section -> open) or a Documents-tab scan; the card spec places documents on detail only. One-tap artifact access from the glance is the one job's most critical path \u2014 its absence reopens the email folder (V1). Distinct from S4 preview rendering and the offline-route P1 plumbing findings."
+   },
+   {
+    "title": "T-3 Trip: receipt on the expense \u2014 third Document parent scope",
+    "what": "Expense form/row gains an optional attach-or-paste receipt slot stored as a Document with parent scope Expense (consciously extending the shipped {Item|Trip} decision via the PRD's own entry-point-scoping principle); thumbnail chip on the row, 'Receipts' group in Trip Documents.",
+    "why": "Receipts are half of why groups keep Splitwise (V1) and they are execution artifacts \u2014 squarely Documents-domain, nowhere near the Memory photo-album NOT-line. Settles disputes at settle-up with the artifact on the money record instead of twelve photos up the group chat. Verified absent: expenses page has zero file references."
+   },
+   {
+    "title": "PT-1 Post-trip: clone with memory \u2014 carry 'unfinished business' into next year's trip",
+    "what": "Clone form gains two opt-ins: bring ideas we never did (considered + unplanned source items land as unplanned, day-less, phase-mapped in the new parking lot) and bring unmet goals (non-done trip_goals, creator preserved where the member exists). Today clone hard-sets every item to status='planned' and never queries goals.",
+    "why": "The Remember->Plan hand-off is the only lifecycle seam with literally no pathway \u2014 closeout deliberately curates regret ('considered' = wanted it, didn't do it), then clone discards exactly that data. Without it, next year's planning session starts by scrolling the old Doc (V1). Rides on, but is distinct from, the fresh clone-bug findings."
+   },
+   {
+    "title": "PT-2 Post-trip: money epilogue \u2014 estimate-vs-actual recap as D5 grill input",
+    "what": "Read-only recap from existing data (per category/item: sum of cost_estimate vs sum of expenses; per-member paid/owed) rendered as the landing context of the settle step in the D5 wrap-up sequence. Explicitly routed as input to the charter-D5 grill->PRD, not a standalone issue.",
+    "why": "The trip->record seam drops the money story: Item Cost is defined as the forward-looking estimate and nothing ever closes the loop against the authoritative Expense record, so 'what did it actually cost?' gets rebuilt in a spreadsheet (V1 \u2014 the literal Sheet in the old stack). Distinct from the planning budget finding, mid-trip glance WP-A-018, and export gaps."
+   }
+  ],
+  "file_written": "/Users/Scott/Waypoint/.claude/worktrees/crazy-matsumoto-d2d390/docs/app-audit/v2/explorations/pathways.md"
+ },
+ {
+  "key": "empty-states",
+  "headline": "38 zero-data branches audited: 1 P2 (trip home's teaching empty state is unreachable dead code; real first-run teaches nothing), 11 P3 copy/CTA gaps, 8 surfaces cited as covered (PRD #166, D1/D3/D5, #50/#52, #111)",
+  "key_points": [
+   "Full inventory of every empty branch in src/routes/**/+page.svelte plus delegated components (DayTimeline, TodayTimeline, DocumentSection, ChecklistBody, Now sub-components) written to docs/app-audit/v2/explorations/empty-states.md with file:line, copy, CTA, verdict for each.",
+   "Headline mechanical find (ES-1, P2/M3): trips.pb.js:30 auto-creates day rows and trips/new requires dates, so data.days.length>0 always \u2014 the crafted 'A blank itinerary' empty state at (app)/trips/[slug]/+page.svelte:208-228 can never render; every fresh trip shows an uninstructed flat list of 'Nothing planned yet' DayCards instead. Its nested 'Add a day item' CTA is doubly dead (gated on firstDayId inside a days.length===0 branch).",
+   "The app has a strong existing empty-state voice \u2014 gold standards: trips list, DayTimeline's 'Empty. Tap to add one \u2014 or drag an idea here.', swipe drain (3 onward doors), parking-lot teach-the-term, ChecklistBody's never-filled vs drained distinction. Findings are mostly stragglers not matching the app's own bar.",
+   "Backlog-aware: Now's free-time/nothing-else-planned idea doors are NOT flagged (PRD docs/TRIP_REPLANNING_PRD.md / #166 Door 1 covers exactly those states); post-trip morning-after cited to D5; trip-home orientation wizard cited to open issue #111; Today's empty timeline IS flagged (ES-5) because #166 explicitly scopes Today layout changes out.",
+   "First-five-minutes synthesis: join/claim/goals/day-view/documents empties are all healthy \u2014 the only D2-relevant empty-state weakness is trip home (ES-1); proposed role-aware hero reuses the existing goals capture wizard for the traveler variant.",
+   "Dual-state bug pattern: lists/booking/+page.svelte:57-61 says 'All booked. Nothing left to reserve.' on a fresh trip with zero bookable items (false reassurance on the pre-departure-sweep surface, scenarios 6/13).",
+   "Four true dead-end empties found (no CTA, no teaching): inbox 'No pending suggestions.' (assumes domain knowledge of suggestions/auto-approve), Trip Mode outside trip dates (today:58-64 + now:47-53, reachable pre-trip via the always-rendered Trip Mode button), TodayTimeline free-day card, budget page's mute $0.00 for non-owners."
+  ],
+  "proposals": [
+   {
+    "title": "ES-1 (P2): Replace unreachable trip-home empty state with reachable role-aware first-run hero",
+    "what": "Key the first-run state on content (totalItems===0 && phases.length===0), render a hero card above the day list. Owner: 'A blank itinerary. Your days are ready. Group them into phases \u2014 city, leg, whatever fits \u2014 or drop the first plan straight onto a day.' + [Add a phase] [Open day one] [Invite the group]. Traveler: 'Nothing planned yet. Start with what you want out of this trip.' + [Add & review goals] \u2192 goals/capture. Delete the dead branch at [slug]/+page.svelte:208-228.",
+    "why": "M3 shipped-but-unreachable + D2 first-five-minutes: this is the owner's first screen and the early-joiner's landing; current state is rows of 'Nothing planned yet' with zero guidance. Empty-state-sized slice of #111, shippable independently."
+   },
+   {
+    "title": "ES-2 (P3): Split booking smart list never-filled vs drained",
+    "what": "Pass totalBookable from server; zero bookable items \u2192 'Nothing here needs booking yet. Flights, stays, rentals, and tickets you plan will line up here until they're booked.'; keep 'All booked. Nothing left to reserve.' only when drained. lists/booking/+page.svelte:57-61.",
+    "why": "Fresh trip currently gets false 'All booked' reassurance on the pre-departure-sweep surface; ChecklistBody:80-82 already models the correct dual-state pattern."
+   },
+   {
+    "title": "ES-3 (P3): Teach the suggestion concept in inbox empty",
+    "what": "'No suggestions waiting. When auto-approve is off, travelers' ideas land here for your sign-off before they join the plan.' + quiet link [Review approval setting] \u2192 settings. inbox/+page.svelte:52-55.",
+    "why": "'No pending suggestions.' assumes the owner knows the Suggestion/Auto-approve mechanics (CONTEXT.md glossary); page currently reads as purposeless."
+   },
+   {
+    "title": "ES-4 (P3): Pre-trip Trip Mode dead end gets countdown + door",
+    "what": "'Trip starts in {n} days. Nothing to show until day one \u2014 the plan lives in Planning Mode.' + [Browse the plan] \u2192 trip home. Shared card for today/+page.svelte:58-64 and now/+page.svelte:47-53. Pre-trip only \u2014 post-trip occurrence is D5's (cited, not re-flagged).",
+    "why": "Trip home renders the Trip Mode button at all times; novices tapping it pre-trip hit an actionless card on both tabs."
+   },
+   {
+    "title": "ES-5 (P3, coordinate #166): Free-day Today card points at + and parking lot",
+    "what": "'Nothing scheduled for today. A free day \u2014 tap + to add something, or check the parking lot for ideas.' TodayTimeline.svelte:62-65; link parking lot to phase detail or #166's ideas surface once shipped.",
+    "why": "D4 makes free time THE replanning entry state; #166 Door 1 covers Now but explicitly scopes Today's layout out, leaving this card dead. Add-sheet already exists in bottom nav (AppShell:106)."
+   },
+   {
+    "title": "ES-6 (P3): Budget zero-state copy, role-aware",
+    "what": "grandTotal===0 non-owner: 'No budget set yet. The trip owner can set one here. Spending still adds up on the Expenses tab.' Owner: one-liner 'Set a per-day or total amount for each category \u2014 the estimate updates as you type.' budget/+page.svelte:99-122.",
+    "why": "Members checking affordability (scenario 8) see a mute wall of $0.00 indistinguishable from broken."
+   },
+   {
+    "title": "ES-7 (P3): Documents empty gains the how-sentence",
+    "what": "Append 'Tap + to add the first one.' to documents/+page.svelte:74-84.",
+    "why": "Expenses points at its FAB; Documents has the same FAB (line 128) but never mentions it \u2014 pattern inconsistency on a scenario-7 surface."
+   },
+   {
+    "title": "ES-8..ES-12 (P3 batch): voice-consistency micro-fixes",
+    "what": "Goals viewer variant 'Goals the group adds will show up here.' (goals:143-147); comments 'No comments yet \u2014 say what you're thinking.' (items/[itemId]:249); phase-days 'Adjust the phase dates above to pull days in.' (phases/[phaseId]:239); closeout no-days back-link (closeout:72); item-filtered expenses [Log one] button opening the existing AddExpense sheet pre-linked (expenses:115-118).",
+    "why": "Each is a one-line copy or single-CTA change bringing stragglers up to the app's established empty-state grammar; batchable into one polish issue."
+   }
+  ],
+  "file_written": "/Users/Scott/Waypoint/.claude/worktrees/crazy-matsumoto-d2d390/docs/app-audit/v2/explorations/empty-states.md"
+ },
+ {
+  "key": "terminology",
+  "headline": "Terminology sweep: 2 avoid-list violations, 4 decision-worthy divergences where the UI word may beat the glossary, 3 glossary-stale-vs-code items (D6), 7 minor consistency nits, 25+ surfaces verified clean \u2014 all P3, no vision-test failures.",
+  "key_points": [
+   "AVOID-VIOLATION: goal detail calls linked Items 'plans' (Item avoid list bans 'plan') \u2014 goals/[goalId]/+page.svelte:91-95 ('linked plan(s)', 'Link more plans'), :105 ('Plans addressing it'), :145 mixes both nouns in one sentence ('No plans linked yet. Link an item\u2026'). Origin V4_GROUP_INPUT_PRD.md:460 (same sentence that used deprecated 'wish').",
+   "AVOID-VIOLATION: Documents NavBar subtitle counts '{n} file(s)' (Document avoid list bans 'file') \u2014 documents/+page.svelte:65. 'Choose file' in DocumentAddSheet is acceptable (OS picker object, pre-Document).",
+   "Sanctioned patterns confirmed clean: Pass-for-dislike vote labels (VoteButtons.svelte:20, vote-meta.ts), 'Inbox' (Planning Mode glossary entry names it), 'ideas' colloquialism, 'Needs booking'/'Booked' pills, 'Cost', 'Former members', 'Auto-approve traveler suggestions', zero 'wish' strings in src/ (#92 holds).",
+   "Systemic divergence: Checklist primitive surfaces as 'Lists' everywhere (sub-tab, h1, 'New list', 'Create list') \u2014 not avoid-listed; the glossary noun never appears in product. Recommend glossary update (sanction 'List' as surfaced label), not UI rename.",
+   "Placeholder Member surfaces as 'Add offline member' / '(offline)' badge (members/+page.svelte:216,118) \u2014 not avoid-listed; arguably better novice UX than 'placeholder'. Recommend glossary records the surfaced label.",
+   "Mode-switch door has two names: ModePill says 'Trip view'/'Edit plan' (brushing Trip Mode's avoided 'live view' and Planning Mode's avoided 'edit mode') while the overview button says 'Trip Mode' (ModePill.svelte:21 vs trips/[slug]/+page.svelte:100).",
+   "Closeout glossary\u2194code drift (D6): UI verbs Done/Swap/Skip (CloseoutItemRow.svelte:102-122) vs glossary 'done or considered'; 'considered' surfaces only as a parenthetical ('Swapped (considered)'); 'Skip' leaves items planned; glossary's keep/remove unplanned review doesn't match shipped UI.",
+   "Glossary stale vs code: Trip Mode entry says 4-tab nav ends in 'Documents' but nav-tabs.ts:27 labels it 'Docs' (consistent with Planning's sanctioned 'Docs') \u2014 fix the glossary line.",
+   "Minor consistency: 'Upcoming' NavBar vs 'Next 3 Days' sub-tab on the same page; budget 'Transport' vs item-type 'Transportation'; titleCase('co_owner')\u2192'Co Owner' vs hand-mapped 'Co-Owner'; ItemForm day option 'Unscheduled' has no glossary word; dead checklist typeLabel at item-fields.ts:112; 'Parking lot' vs 'Ideas' split across adjacent surfaces (both sanctioned)."
+  ],
+  "proposals": [
+   {
+    "title": "Fix goal-detail 'plan(s)' wording or sanction it",
+    "what": "Either s/plan(s)/item(s)/ in goals/[goalId]/+page.svelte (lines 91-95, 105, 145 \u2014 five strings, one file), or amend Item's Avoid note to permit 'plan' in goal-traceability copy. The line-145 sentence mixing 'plans' and 'item' changes regardless.",
+    "why": "Only hard avoid-list violation in flowing copy; 'plan' is explicitly banned for Item, and the page contradicts itself ('Link an item' sheet vs 'Plans addressing it' heading). Scott's call on direction \u2014 'plans addressing it' is genuinely warmer English."
+   },
+   {
+    "title": "Change Documents subtitle 'file(s)' to 'document(s)'",
+    "what": "documents/+page.svelte:65 \u2014 subtitle '{n} file(s) \u00b7 {trip}' becomes '{n} document(s) \u00b7 {trip}'.",
+    "why": "'file' is on the Document avoid list; one-line fix; the page's own empty state already says 'No documents yet.'"
+   },
+   {
+    "title": "Glossary update: sanction 'List' as the surfaced label of Checklist",
+    "what": "Add to CONTEXT.md Checklist entry: \"surfaced as 'List' in nav and UI copy\" \u2014 mirroring the Pass/dislike pattern. No UI change.",
+    "why": "Divergence is systemic and deliberate-looking (tab, h1, all buttons/empty states); 'Lists' is the better surface word since the view unions Checklists with the booking Smart List. Scott's call."
+   },
+   {
+    "title": "Glossary update: record 'offline member' as Placeholder Member's surfaced label",
+    "what": "Add to CONTEXT.md Placeholder Member entry: \"surfaced as 'offline member' / '(offline)' badge\". Note Departed Members never read as 'offline' (they render under 'Former members').",
+    "why": "'Placeholder' is dev jargon; 'offline' explains the concept to a novice. Not avoid-listed, so the cheap fix is documenting reality. Scott's call."
+   },
+   {
+    "title": "Unify the mode-switch door label",
+    "why": "Same door is 'Trip view' (ModePill) and 'Trip Mode' (overview button); reverse direction 'Edit plan' never names Planning Mode and brushes its avoided 'edit mode'.",
+    "what": "Either relabel ModePill.svelte:21 to 'Trip Mode'/'Planning' (glossary nouns), or record the pill verbs in the Planning Mode / Trip Mode glossary entries. Scott's call."
+   },
+   {
+    "title": "D6 fix: align CONTEXT.md Closeout + Trip Mode entries with shipped code",
+    "what": "Closeout entry: document surfaced verbs Done/Swap/Skip, that Skip leaves items planned, and that the keep/remove unplanned review isn't shipped. Trip Mode entry: '(Now, Today, Add, Documents)' \u2192 'Docs'.",
+    "why": "CONTEXT.md is a live doc (charter D6); both entries currently describe UI that doesn't exist as written. Lean: keep the friendlier UI verbs, fix the doc."
+   }
+  ],
+  "file_written": "/Users/Scott/Waypoint/.claude/worktrees/crazy-matsumoto-d2d390/docs/app-audit/v2/explorations/terminology.md"
+ },
+ {
+  "key": "desktop",
+  "headline": "Desktop shell audit: 2 of ~24 rail-visible routes have purpose-built ContextRail content, and md-desktop (900-1279px) has no mode toggle at all \u2014 a P1 Trip-Mode dead end; everything else is P3 pane-filler and convention drift.",
+  "key_points": [
+   "DESK-01 (P1, M4+D3): no mode toggle at 900-1279px on active trips. Mobile ModePill is md-desktop:hidden (AppShell.svelte:75), SideRail pill is lg-desktop only (SideRail.svelte:68), desktop branch renders no ModePill. Trip-mode rail = Now/Today/Add/Docs with no planning link, so iPad-landscape users cannot reach the D3 'working door' for future-scoped tasks.",
+   "ContextRail (ContextRail.svelte) has 4 branches for 5 sections: documents = real summary (per V4_DOCUMENTS_PRD, summary-only is intentional); money = static filler despite budget/spentByCategory/settlements already in page loads; members = phase-list filler; 'more' section (/more, /inbox, /settings) has NO branch \u2014 320px pane renders ~empty. ~19 other routes (goals, lists, items, now, today, closeout, clone) fall through to the generic itinerary branch.",
+   "Per-route rail content is cheap: the page.data plumb is established (documentSummary, parkingLotItems #159) and every proposed branch's data is already returned by existing loads (expenses:50-61, goals:40, lists:28, items/[itemId]:91, inbox:35).",
+   "SideRail phase quick-links are lg-desktop + planning-mode only (SideRail.svelte:144-161) \u2014 consistent with D3; trip name lg-only; oversized Add action works at both desktop widths. Tab parity with BottomNav is exact.",
+   "Desktop affordances mostly pass: zero hover-only-revealed controls found app-wide; SwipeDeck has full keyboard (arrows/rewind/Escape), showKeys hints, modal detail at width, real vote buttons per V4_GROUP_INPUT_PRD. Gaps: FAB is fixed to viewport right-5 and paints on top of the ContextRail at lg with a 5rem offset for a nonexistent BottomNav (days, expenses, documents pages); BottomSheet (11 consumers incl. the SideRail Add sheet) stays bottom-anchored at desktop, violating CLAUDE.md 'centered modals on tablet+'.",
+   "Immersive surfaces (swipe, goals/capture) suppress ALL chrome at every width but are deliberately styled as centered max-w-md lightbox cards with verified exits \u2014 intentional, no finding. Capture deck omits showKeys hints only (P3).",
+   "Wasted-pane pages: /more, /inbox, /settings (empty rail); /now is max-w-lg with no desktop widening but explicitly interim per #153/#154 file comment (cite, fold into #154); non-trip routes (/trips landing, /account, new/import/claim) have no desktop shell at all \u2014 phone columns at 1440px.",
+   "Mode-state incoherence (P3): rail Up Next links and /trips re-entry land on planning pages while userOverride keeps trip chrome \u2014 mode never flips on navigation (AppShell.svelte:38-44).",
+   "Mode pill placement per breakpoint: <900 in-flow pill that scrolls away; 900-1279 absent; >=1280 persistent rail button. Same target-mode label semantics, two separate implementations.",
+   "Hygiene: TripTabs.svelte has zero imports (dead component). Width math is sound everywhere \u2014 content pane fits max-w-2xl at both breakpoint floors; no overflow. SPEC_BACKLOG contains zero desktop/rail deferrals, so none of the above is documented-deferred."
+  ],
+  "proposals": [
+   {
+    "title": "md-desktop mode toggle (DESK-01 fix)",
+    "what": "Add the mode control to the 72px rail at md-desktop (icon-sized toggle in the same slot as the lg pill) or render ModePill in the content header for 900-1279px.",
+    "why": "P1 candidate: mid-trip dead end for future-scoped tasks at iPad-landscape widths; D3 names the pill as THE working door to Planning Mode and it does not exist at this breakpoint."
+   },
+   {
+    "title": "Money rail: live budget glance",
+    "what": "Replace the static money branch with budget-vs-spent bar, top 3 categories, and a you-owe/you're-owed line + settle link on /expenses; per-day burn on /budget. Data already in both loads.",
+    "why": "Scenarios 8 and 30-31 (can we afford this / who owes whom) want an at-a-glance pane; the rail currently shows phase dates instead of any money data."
+   },
+   {
+    "title": "Inbox + more/settings rail branch",
+    "what": "New 'more' branch: pending-suggestion count and oldest-pending age on /inbox (load returns pending/approved); lifecycle quick links (closeout/clone/export) on /more and /settings.",
+    "why": "These three routes render a near-empty 320px pane today; inbox is the scenario-42 catch-up surface with its data already loaded."
+   },
+   {
+    "title": "Split goals/lists/item out of the itinerary fallthrough",
+    "what": "Extend TripSection (or branch on page.data key presence): goal pulse (top-voted, N members not yet voted, capture link) on /goals; per-list progress bars + 'N need booking' on /lists; vote tally / comment count / attached docs / linked expenses-goals on /items/[itemId].",
+    "why": "getActiveSection is too coarse \u2014 these routes show Up Next day links irrelevant to their job while each load already returns the exact context data the rail should surface (booking readiness = scenarios 6/13; goals review = 10/33)."
+   },
+   {
+    "title": "FAB desktop anchoring (DESK-06)",
+    "what": "At lg-desktop anchor the FAB to the content pane (right: calc(320px + 1.25rem)) and drop the 5rem bottom offset at md+; or swap to an in-column header action at desktop.",
+    "why": "FAB currently floats on top of the fixed ContextRail with an offset sized for a BottomNav that is not rendered at desktop (days, expenses, documents pages)."
+   },
+   {
+    "title": "BottomSheet centered-modal variant (DESK-07)",
+    "what": "Teach BottomSheet one breakpoint (md-desktop:items-center + rounded-xl + fade) so all 11 consumers \u2014 including the SideRail Add sheet \u2014 become centered modals at desktop.",
+    "why": "CLAUDE.md mandates bottom sheets on mobile, centered modals on tablet+; SwipeDeck already implements the dual pattern, so this is the one component out of convention."
+   },
+   {
+    "title": "Parking treatment consistency decision (DESK-12)",
+    "what": "Decide one lg-desktop treatment for parking: day pages move it to the rail (#159) while phase detail keeps it in-column; either give the phase page a rail handoff or document why reorder/quick-add keeps it in-column.",
+    "why": "Two parking surfaces with opposite desktop behavior is a consistency call to make in Phase 3, not a defect \u2014 the phase column carries affordances the rail ParkingLotSection lacks."
+   }
+  ],
+  "file_written": "/Users/Scott/Waypoint/.claude/worktrees/crazy-matsumoto-d2d390/docs/app-audit/v2/explorations/desktop.md"
+ }
+]
