@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { goto } from '$app/navigation';
 	import { validateForm } from '$lib/shell/actions/validate-form';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Avatar from '$lib/ui/Avatar.svelte';
@@ -16,6 +17,7 @@
 	let revoking = $state<string | null>(null);
 	let promoting = $state<string | null>(null);
 	let removing = $state<string | null>(null);
+	let leaving = $state(false);
 	let showPlaceholderForm = $state(false);
 	// #118 join links
 	let joinLinkBusy = $state<string | null>(null);
@@ -69,6 +71,10 @@
 	const actionForm = $derived(
 		(form?.action ?? null) as { success?: boolean; error?: string } | null
 	);
+	const leaveForm = $derived(
+		(form?.leave ?? null) as { success?: boolean; error?: string } | null
+	);
+	const leaveError = $derived(leaveForm?.error ?? '');
 
 	const inviteSuccess = $derived(inviteForm?.success ?? false);
 	const inviteError = $derived(inviteForm?.error ?? '');
@@ -95,9 +101,9 @@
 
 <NavBar title="Members" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}" />
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 space-y-6 px-4 pt-4 pb-8">
-	{#if actionError}
+	{#if actionError || leaveError}
 		<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">
-			{actionError}
+			{actionError || leaveError}
 		</div>
 	{/if}
 
@@ -109,6 +115,7 @@
 		<Card>
 			<ul class="divide-line divide-y">
 				{#each data.members as m (m.id)}
+					{@const isSelf = m.user === data.membership.user}
 					<li class="flex items-center justify-between gap-3 px-4 py-3">
 						<Avatar img={m.avatarUrl} initial={m.displayLabel} alt={m.displayLabel} size={36} />
 						<div class="min-w-0 flex-1">
@@ -147,9 +154,39 @@
 									</button>
 								</form>
 							{/if}
-							{#if data.isOwner}
-								{@const isSelf = m.user === data.membership.user}
-								{@const blocked = isSelf && isSoleOwner}
+							{#if isSelf}
+								<!-- #206: self-serve leave for ANY role. Reuses the remove
+								     tombstone path (?/leave → /api/members/remove, forced keep).
+								     Sole active owner is blocked here and re-blocked server-side. -->
+								<form
+									method="POST"
+									action="?/leave"
+									use:enhance={() => {
+										leaving = true;
+										return async ({ update, result }) => {
+											leaving = false;
+											if (result.type === 'success') {
+												toast.show('You left the trip');
+												await goto('/trips');
+												return;
+											}
+											await update();
+										};
+									}}
+								>
+									<input type="hidden" name="member_id" value={data.membership.id} />
+									<button
+										type="submit"
+										disabled={leaving || isSoleOwner}
+										title={isSoleOwner
+											? 'Transfer ownership or remove others before leaving'
+											: undefined}
+										class="text-clay hover:text-clay/80 disabled:text-ink-muted text-xs font-semibold"
+									>
+										{leaving ? '…' : 'Leave trip'}
+									</button>
+								</form>
+							{:else if data.isOwner}
 								<form
 									method="POST"
 									action="?/remove"
@@ -165,8 +202,7 @@
 									<input type="hidden" name="member_id" value={m.id} />
 									<button
 										type="submit"
-										disabled={removing === m.id || blocked}
-										title={blocked ? 'Cannot remove the sole owner' : undefined}
+										disabled={removing === m.id}
 										class="text-clay hover:text-clay/80 disabled:text-ink-muted text-xs font-semibold"
 									>
 										{removing === m.id ? '…' : 'Remove'}

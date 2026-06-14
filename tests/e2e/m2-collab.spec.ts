@@ -152,6 +152,40 @@ test.describe('M2 Collaboration', () => {
 		}
 	});
 
+	test('member can self-leave: traveler sees enabled "Leave trip" on own row (#206)', async ({
+		browser
+	}) => {
+		const { page, ctx } = await devLogin(browser, EMAILS.traveler);
+
+		try {
+			await page.goto(`${BASE}/trips/${tripSlug}/members`);
+			// The traveler's own row exposes a self-serve leave control, enabled
+			// (a non-owner is never the sole owner).
+			const leaveBtn = page.getByRole('button', { name: /leave trip/i });
+			await expect(leaveBtn).toBeVisible({ timeout: 10000 });
+			await expect(leaveBtn).toBeEnabled();
+		} finally {
+			await ctx.close();
+		}
+	});
+
+	test('sole owner cannot self-leave: "Leave trip" present but disabled (#206)', async ({
+		browser
+	}) => {
+		const { page, ctx } = await devLogin(browser, EMAILS.owner);
+
+		try {
+			await page.goto(`${BASE}/trips/${tripSlug}/members`);
+			// The fixture's owner is the only owner — their leave control renders
+			// but is blocked (transfer ownership / remove others first).
+			const leaveBtn = page.getByRole('button', { name: /leave trip/i });
+			await expect(leaveBtn).toBeVisible({ timeout: 10000 });
+			await expect(leaveBtn).toBeDisabled();
+		} finally {
+			await ctx.close();
+		}
+	});
+
 	test('mobile responsive: members at 375px', async ({ browser }) => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 

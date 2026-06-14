@@ -308,6 +308,43 @@ export const actions: Actions = {
 		return { action: { success: true } };
 	},
 
+	// Self-serve leave (#206). Reuses the SAME tombstone path as `remove` —
+	// POSTs the caller's own member row to /api/members/remove with NO
+	// disposition. The hook detects self-leave (target.user === authRecord.id),
+	// forces disposition='keep' (PRD §13: a leaver can't reassign or cascade,
+	// so expenses stay pointed at the tombstone), always drops their votes
+	// (§12), and blocks the sole active owner. No new hard-delete path.
+	leave: async ({ request, locals }) => {
+		const data = await request.formData();
+		const memberId = data.get('member_id')?.toString();
+		if (!memberId) return fail(400, { leave: { error: 'Missing member id.' } });
+
+		const token = locals.pb.authStore.token;
+		const res = await fetch(`${PUBLIC_PB_URL}/api/members/remove`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${token}`
+			},
+			body: JSON.stringify({ member_id: memberId })
+		});
+
+		if (!res.ok) {
+			let msg = 'Could not leave this trip.';
+			try {
+				const body = await res.json();
+				// Reframe the hook's sole-owner block from the leaver's POV.
+				const hookMsg = (body?.message || '').toString();
+				msg = /sole owner/i.test(hookMsg)
+					? "You're the only owner — transfer ownership or remove the other members before you can leave."
+					: hookMsg || msg;
+			} catch (_) {}
+			return fail(res.status, { leave: { error: msg } });
+		}
+
+		return { leave: { success: true } };
+	},
+
 	// --- #118 join-link management. All three go through the join hook (role cap
 	// + owner gating + token generation live server-side). ---
 	createJoinLink: async ({ request, locals, params }) => {
