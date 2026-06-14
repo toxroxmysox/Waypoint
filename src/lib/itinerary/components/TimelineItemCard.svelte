@@ -57,7 +57,7 @@
 		<!-- Slot: drag handle — sibling of the link so taps/keys don't navigate. -->
 		<button
 			type="button"
-			class="text-line flex shrink-0 touch-none cursor-grab items-center px-1"
+			class="text-ink-muted flex shrink-0 touch-none cursor-grab items-center px-1"
 			aria-label="Drag to reorder"
 			onpointerdown={onHandlePointer}
 			onmousedown={onHandlePointer}

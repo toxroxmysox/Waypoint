@@ -120,7 +120,7 @@
 			<!-- Drag handle (sibling of the link → starts a drag, never navigates). -->
 			<button
 				type="button"
-				class="text-line flex shrink-0 touch-none cursor-grab items-center px-1"
+				class="text-ink-muted flex shrink-0 touch-none cursor-grab items-center px-1"
 				aria-label="Drag to reorder idea"
 				onpointerdown={onHandlePointer}
 				onmousedown={onHandlePointer}
