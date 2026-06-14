@@ -39,7 +39,7 @@ Ceremony per issue type: `docs/agents/triage-labels.md`. Grill-vs-slice, HITL-vs
 
 ## Dispatch (hybrid)
 
-- **AFK, small/medium slice** → spawn a background agent in an isolated worktree yourself. No ferrying, no handoff file — results return in-session; still require the don't-merge PR.
+- **AFK, small/medium slice** → spawn a background agent in an isolated worktree yourself. No ferrying, no handoff file, **no PR** — the agent **commits each issue separately** to its worktree branch and you integrate from those commits (`git log <base>..<branch>` → cherry-pick). Per-issue commits are the recovery unit: host-sleep or agent-death mid-run loses only *uncommitted* stragglers (2026-06-14 overnight stall ate 3 agents; all committed issues survived). Copy `.wolf/` into each worktree (`cp -r <main>/.wolf .wolf`) — agents are otherwise blind to the Do-Not-Repeat scars (gitignored, absent from worktrees); the PM does the canonical `.wolf` writes at integration.
 - **HITL, feature-sized, or migration-heavy** → write a starter prompt for a Desktop session Scott fires.
 
 Both briefs come from one template: [references/starter-prompt.md](references/starter-prompt.md). Pre-split migration-number ranges across concurrent backend work.
@@ -50,6 +50,7 @@ Full ritual: [references/integration-wave.md](references/integration-wave.md). T
 
 - **Intent check before merge.** Diff vs acceptance criteria + binding contract. Don't merge wrong-but-green work.
 - **0 conflicts ≠ correct.** Read the seams of auto-merged hot spots.
+- **Removed or renamed a user-facing label/affordance? `grep -rn '<old text>' tests/`** and fix the assertions — renames/removals pass on the branch but go RED at merge (bit #209 Print button, #198 "Estimated Total"→"Budget Total").
 - **Fresh PB (:8097) for anything migration-dependent. Never trust :8090.**
 - `pnpm install` before judging check failures when a PR adds a dependency.
 - Wave report = what landed + **visual proof** (screenshots of changed UI) + decisions needed. Scott checks intent in 30 seconds, never by reading code.

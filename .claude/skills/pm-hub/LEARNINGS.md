@@ -65,4 +65,9 @@ Rules of this file:
 
 Every 5 waves (or 10 learnings, whichever first): read this whole file, propose ≤3 skill edits to Scott, each citing rows/entries above. Two consecutive empty reviews → double the interval and note it here.
 
-- Next review due: after wave 5.
+### Review 1 — 2026-06-14 (after 5 waves: skill-adoption · C · E · F · G)
+Two learnings each appeared **twice** → promoted into SKILL.md + starter-prompt.md:
+1. **Agent resilience.** (a) per-issue commits are the recovery unit — the 2026-06-14 overnight host-sleep suspended 3 of 5 agents, every committed issue survived; (b) copy `.wolf/` into each worktree — agents are blind to Do-Not-Repeat otherwise (wave E); (c) drop the don't-merge PR for PM-spawned in-session agents — integrate from branch commits (proved costless E→G). → SKILL.md Dispatch + starter-prompt ENV/REPORT.
+2. **Rename/removal → `grep tests/`.** Green-on-branch, red-on-merge. Evidence: #209 Print button (E), #198 "Estimated Total"→"Budget Total" (G). → SKILL.md integration-wave + starter-prompt GUARDRAILS.
+Not promoted: :8097 startup flake (already structurally fixed — e2e-isolated.sh 15s→30s, wave F). No ritual step has caught nothing for 5 waves, so none cut.
+- Next review due: after wave 10.
