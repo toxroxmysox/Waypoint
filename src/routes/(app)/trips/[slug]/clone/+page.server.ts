@@ -3,6 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 import type { Phase, Day, Item } from '$lib/types';
 import { cloneChecklistPayloads } from '$lib/itinerary/clone-checklists';
 import { fetchManualChecklists } from '$lib/itinerary/checklist-loaders';
+import { cloneItemPlacement } from '$lib/itinerary/clone-items';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
 	const { trip, membership, phases } = await parent();
@@ -109,18 +110,54 @@ export const actions: Actions = {
 
 			const dayIdMap = new Map<string, string>();
 			if (includePhases) {
+				// The trips.pb.js create hook already seeded a day record for every
+				// date in newTrip's range (and bucketed phases by date overlap). The
+				// unique index idx_days_trip_date(trip,date) means a blind create()
+				// for those same dates 500s — the original bug. So FIND-OR-REUSE the
+				// seeded day for each source date (idempotent), only creating one if
+				// a date is somehow missing. Source `notes` are carried onto it.
 				const sourceDays = await locals.pb.collection('days').getFullList<Day>({
 					filter: `trip = "${sourceTripRecord.id}"`,
 					sort: 'date'
 				});
+				const targetDays = await locals.pb.collection('days').getFullList<Day>({
+					filter: `trip = "${newTrip.id}"`,
+					sort: 'date'
+				});
+				const targetByDate = new Map<string, Day>();
+				for (const d of targetDays) {
+					targetByDate.set(d.date.split(/[T ]/)[0], d);
+				}
+
 				for (const day of sourceDays) {
-					const newDay = await locals.pb.collection('days').create({
-						trip: newTrip.id,
-						date: shiftDate(day.date),
-						phases: (day.phases ?? []).map((pid) => phaseIdMap.get(pid) || '').filter(Boolean),
-						notes: ''
-					});
-					dayIdMap.set(day.id, newDay.id);
+					const shiftedDate = shiftDate(day.date); // 'YYYY-MM-DD 00:00:00.000Z'
+					const dateKey = shiftedDate.split(/[T ]/)[0];
+					const phaseIds = (day.phases ?? [])
+						.map((pid) => phaseIdMap.get(pid) || '')
+						.filter(Boolean);
+
+					const existing = targetByDate.get(dateKey);
+					if (existing) {
+						// Reuse the hook-seeded day; carry source notes (the hook seeds
+						// notes empty). Phases are already bucketed by the hook, but set
+						// them explicitly from the mapped source phases for fidelity.
+						if (day.notes || phaseIds.length > 0) {
+							await locals.pb.collection('days').update(existing.id, {
+								notes: day.notes || '',
+								phases: phaseIds.length > 0 ? phaseIds : existing.phases
+							});
+						}
+						dayIdMap.set(day.id, existing.id);
+					} else {
+						const newDay = await locals.pb.collection('days').create<Day>({
+							trip: newTrip.id,
+							date: shiftedDate,
+							phases: phaseIds,
+							notes: day.notes || ''
+						});
+						targetByDate.set(dateKey, newDay);
+						dayIdMap.set(day.id, newDay.id);
+					}
 				}
 			}
 
@@ -135,10 +172,23 @@ export const actions: Actions = {
 
 				for (const item of sourceItems) {
 					if (!includeItemTypes.includes(item.type)) continue;
+					// Status/day/phase mapping (#173 + #196 invariant): unplanned ideas
+					// stay unplanned (day-less parking); planned/done/considered reset
+					// to planned on the future-dated clone — but a planned item whose
+					// day didn't resolve falls back to parking, never day-less-but-planned.
+					const placement = cloneItemPlacement({
+						sourceStatus: item.status,
+						mappedDay: dayIdMap.get(item.day) || '',
+						mappedPhase: phaseIdMap.get(item.phase) || ''
+					});
+					// Parking-lot items carry no clock anchor (mirrors pushToParking /
+					// move-item): an unscheduled clone is a clean idea, not a timed item
+					// stuck in the parking lot.
+					const isParked = placement.status === 'unplanned';
 					await locals.pb.collection('items').create({
 						trip: newTrip.id,
-						phase: phaseIdMap.get(item.phase) || '',
-						day: dayIdMap.get(item.day) || '',
+						phase: placement.phase,
+						day: placement.day,
 						type: item.type,
 						subtype: item.subtype,
 						title: item.title,
@@ -147,10 +197,10 @@ export const actions: Actions = {
 						location_address: item.location_address,
 						location_coords: item.location_coords,
 						google_place_id: item.google_place_id,
-						start_time: item.start_time,
-						end_time: item.end_time,
-						end_date: item.end_date ? shiftDate(item.end_date) : '',
-						status: 'planned',
+						start_time: isParked ? '' : item.start_time,
+						end_time: isParked ? '' : item.end_time,
+						end_date: !isParked && item.end_date ? shiftDate(item.end_date) : '',
+						status: placement.status,
 						booked: false,
 						confirmation_codes: [],
 						reservation_url: '',

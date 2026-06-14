@@ -5,13 +5,16 @@
 	import Card from '$lib/ui/Card.svelte';
 	import Button from '$lib/ui/Button.svelte';
 	import { titleCase } from '$lib/shell/format';
+	import { CLONEABLE_ITEM_TYPES } from '$lib/itinerary/clone-items';
 
 	let { data, form } = $props();
 
 	let loading = $state(false);
 	let error = $derived(form?.error ?? '');
 
-	const itemTypes = ['lodging', 'transportation', 'activity', 'meal', 'note'] as const;
+	// Single source of truth for cloneable types — includes `flight` (#173;
+	// flights were silently dropped because this list omitted the type).
+	const itemTypes = CLONEABLE_ITEM_TYPES;
 
 	const sourceStartStr = $derived(data.sourceTrip.start_date.split(/[T ]/)[0]);
 	const sourceEndStr = $derived(data.sourceTrip.end_date.split(/[T ]/)[0]);
