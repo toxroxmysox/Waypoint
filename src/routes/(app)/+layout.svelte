@@ -5,12 +5,19 @@
 
 	type TransitionType = 'tab' | 'peer' | 'drill-down' | 'drill-up' | 'fade';
 
+	// Every route reachable from a bottom-nav tab, in BOTH modes — so tab-to-tab
+	// hops animate laterally (peer) instead of as a drill-down/up. Planning tabs:
+	// Itinerary / Money / Members / Docs / More. Trip-mode tabs (#178): Now /
+	// Today / Docs (Add opens a sheet, no route). Docs is shared by both.
 	const bottomNavRoutes = new Set([
 		'/(app)/trips/[slug]',
 		'/(app)/trips/[slug]/expenses',
 		'/(app)/trips/[slug]/budget',
 		'/(app)/trips/[slug]/members',
-		'/(app)/trips/[slug]/more'
+		'/(app)/trips/[slug]/documents',
+		'/(app)/trips/[slug]/more',
+		'/(app)/trips/[slug]/now',
+		'/(app)/trips/[slug]/today'
 	]);
 
 	function classifyNavigation(from: string | null | undefined, to: string | null | undefined): TransitionType {

@@ -13,10 +13,19 @@
 
 	let { data, form } = $props();
 
-	// Quick-add from Trip Mode (?from=trip) returns to Today; planning-entry keeps
-	// the Overview (#197 / #169).
+	// Back/cancel target mirrors where a successful submit returns (#178):
+	//   - Edit & Approve (?suggestion=) → Inbox (where approve also lands)
+	//   - Trip-Mode quick-add (?from=trip) → Today (#197 / #169)
+	//   - entered from a day (?day=) → that day view (was teleporting to Overview)
+	//   - otherwise → the trip Overview
 	let backHref = $derived(
-		fromTrip(page.url) ? `/trips/${data.trip.slug}/today` : `/trips/${data.trip.slug}`
+		page.url.searchParams.get('suggestion')
+			? `/trips/${data.trip.slug}/inbox`
+			: fromTrip(page.url)
+				? `/trips/${data.trip.slug}/today`
+				: data.preselectedDay
+					? `/trips/${data.trip.slug}/days/${data.preselectedDay}`
+					: `/trips/${data.trip.slug}`
 	);
 
 	let dirty = $state(false);
