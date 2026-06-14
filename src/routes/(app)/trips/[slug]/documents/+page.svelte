@@ -17,6 +17,10 @@
 
 	const groups = $derived(groupDocuments(data.documents));
 	const total = $derived(data.documents.length);
+	// Confirmation codes surface even for items with no uploaded file (#205), so the
+	// page is "empty" only when there are neither documents nor codes.
+	const itemCodes = $derived(data.itemCodes ?? []);
+	const isEmpty = $derived(total === 0 && itemCodes.length === 0);
 	const onTrip = $derived(isTripActive(data.trip));
 	const privileged = $derived(data.membership.role === 'owner' || data.membership.role === 'co_owner');
 
@@ -71,7 +75,7 @@
 </NavBar>
 
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-24">
-	{#if total === 0}
+	{#if isEmpty}
 		<div class="flex flex-col items-center justify-center py-20 text-center">
 			<div class="text-ink-muted mb-3">
 				<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
@@ -84,6 +88,47 @@
 		</div>
 	{:else}
 		<div class="space-y-7">
+			<!-- #205 — Confirmation codes live on the item, not the file. Surface every
+			     code-bearing item here (even ones with no uploaded document) so a member
+			     finds "the hotel code" in Docs without hunting through item detail. Read-only;
+			     tap the item to edit. -->
+			{#if itemCodes.length > 0}
+				<section>
+					<div class="mb-3 flex items-center gap-2.5">
+						<span class="bg-gold-tint text-gold flex h-7 w-7 items-center justify-center rounded-full">
+							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<circle cx="7.5" cy="15.5" r="5.5" />
+								<path d="m21 2-9.6 9.6" />
+								<path d="m15.5 7.5 3 3L22 7l-3-3" />
+							</svg>
+						</span>
+						<h2 class="text-ink text-sm font-semibold">Confirmation codes</h2>
+						<span class="text-ink-muted font-mono text-xs tabular-nums">{itemCodes.length}</span>
+						<span class="bg-line h-px flex-1"></span>
+					</div>
+					<div class="space-y-2">
+						{#each itemCodes as entry (entry.item_id)}
+							<div class="border-line bg-surface rounded-lg border p-3">
+								<a
+									href="/trips/{data.trip.slug}/items/{entry.item_id}"
+									class="text-ink hover:text-moss mb-2 flex items-center gap-2 text-sm font-medium"
+								>
+									<TypeIcon type={entry.item_type} size={22} />
+									<span class="truncate">{entry.item_title}</span>
+								</a>
+								<div class="space-y-1">
+									{#each entry.codes as code}
+										<div class="bg-surface-2 flex items-center justify-between gap-3 rounded px-3 py-1.5">
+											<span class="text-ink-muted text-xs tracking-wide uppercase">{code.label}</span>
+											<span class="text-ink font-mono text-sm font-semibold select-all">{code.value}</span>
+										</div>
+									{/each}
+								</div>
+							</div>
+						{/each}
+					</div>
+				</section>
+			{/if}
 			{#each groups as group (group.key)}
 				<section>
 					<!-- Group header: round badge + label + mono count + hairline rule. -->

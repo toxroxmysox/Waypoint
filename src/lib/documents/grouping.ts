@@ -1,4 +1,5 @@
 import type { ItemType } from '$lib/types';
+import type { ConfirmationCode } from '$lib/itinerary/types';
 import type { DocumentView } from './types';
 
 // Aggregate grouping for the Trip Documents view (#71): the Trip-level group
@@ -64,4 +65,29 @@ export function groupDocuments(docs: DocumentView[]): DocumentGroup[] {
 /** Per-type counts for the ContextRail summary, in the same order as the groups. */
 export function documentTypeBreakdown(docs: DocumentView[]): { label: string; count: number }[] {
 	return groupDocuments(docs).map((g) => ({ label: g.label, count: g.docs.length }));
+}
+
+// Confirmation codes live on the item, not the file (#205). A member hunting for
+// "the hotel code" looks in Documents — so the aggregate surfaces every
+// code-bearing item in one dedicated section, INDEPENDENT of whether that item
+// has an uploaded document (a booking often has a code and no PDF). Read-only;
+// edits stay on item detail. Items arrive in itinerary (sort_order) order; blank
+// values are dropped, and an item with no non-blank codes is omitted entirely.
+export interface ItemCodes {
+	item_id: string;
+	item_title: string;
+	item_type: ItemType;
+	codes: ConfirmationCode[];
+}
+
+export function itemsWithCodes(
+	items: { id: string; title: string; type: ItemType; confirmation_codes?: ConfirmationCode[] }[]
+): ItemCodes[] {
+	const out: ItemCodes[] = [];
+	for (const it of items) {
+		const codes = (it.confirmation_codes ?? []).filter((c) => c.value?.trim());
+		if (codes.length === 0) continue;
+		out.push({ item_id: it.id, item_title: it.title || 'Item', item_type: it.type, codes });
+	}
+	return out;
 }

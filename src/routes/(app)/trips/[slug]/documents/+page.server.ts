@@ -2,7 +2,7 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Document, Item } from '$lib/types';
 import { toDocumentView } from '$lib/documents/view';
-import { documentTypeBreakdown } from '$lib/documents/grouping';
+import { documentTypeBreakdown, itemsWithCodes } from '$lib/documents/grouping';
 
 export const load: PageServerLoad = async ({ parent, locals }) => {
 	const { trip, membership } = await parent();
@@ -16,7 +16,9 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 		locals.pb.collection('items').getFullList<Item>({
 			filter: `trip = "${trip.id}"`,
 			sort: 'sort_order',
-			fields: 'id,type,title'
+			// confirmation_codes rides along so the Documents tab can surface every
+			// code-bearing item (#205), even ones with no uploaded file. No schema change.
+			fields: 'id,type,title,confirmation_codes'
 		})
 	]);
 
@@ -31,6 +33,8 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 		membership,
 		documents,
 		itemOptions,
+		// Every item carrying a confirmation code, for the dedicated Documents section.
+		itemCodes: itemsWithCodes(items),
 		documentSummary: {
 			total: documents.length,
 			breakdown: documentTypeBreakdown(documents)
