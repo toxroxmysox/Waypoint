@@ -3,10 +3,28 @@
 	import ArchiveDaySection from '$lib/portability/components/ArchiveDaySection.svelte';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import { titleCase } from '$lib/shell/format';
+	import type { PageData } from './$types';
 
 	let { data } = $props();
 
+	// Element type of the published archive's considered-items list (the loader
+	// returns a union: the published view vs. the pre-publish pending object).
+	type ArchiveItem = Extract<PageData, { consideredItems: unknown[] }>['consideredItems'][number];
+
+	// Pre-publish window: token is valid but the story isn't live yet (#171).
+	const pending = $derived('pending' in data ? data : null);
+	const publishDateLabel = $derived(
+		pending?.publishDate
+			? new Date(pending.publishDate).toLocaleDateString('en-US', {
+					month: 'long',
+					day: 'numeric',
+					year: 'numeric'
+				})
+			: ''
+	);
+
 	const dateRange = $derived.by(() => {
+		if ('pending' in data) return '';
 		const fmt = (d: string) =>
 			new Date(d.replace(' ', 'T')).toLocaleDateString('en-US', {
 				month: 'long',
@@ -17,7 +35,8 @@
 	});
 
 	const consideredByType = $derived.by(() => {
-		const grouped = new Map<string, typeof data.consideredItems>();
+		const grouped = new Map<string, ArchiveItem[]>();
+		if ('pending' in data) return grouped;
 		for (const item of data.consideredItems) {
 			const type = item.type || 'activity';
 			if (!grouped.has(type)) grouped.set(type, []);
@@ -30,15 +49,49 @@
 </script>
 
 <svelte:head>
-	<title>{data.trip.title} — Trip Archive</title>
-	<meta property="og:title" content={data.trip.title} />
-	<meta property="og:description" content="{data.trip.location_summary ? data.trip.location_summary + ' · ' : ''}{dateRange}" />
-	<meta property="og:type" content="article" />
-	<meta property="og:url" content={page.url.href} />
+	{#if 'pending' in data}
+		<title>{data.tripTitle} — Coming soon</title>
+		<meta name="robots" content="noindex" />
+	{:else}
+		<title>{data.trip.title} — Trip Archive</title>
+		<meta property="og:title" content={data.trip.title} />
+		<meta property="og:description" content="{data.trip.location_summary ? data.trip.location_summary + ' · ' : ''}{dateRange}" />
+		<meta property="og:type" content="article" />
+		<meta property="og:url" content={page.url.href} />
+	{/if}
 </svelte:head>
 
-<main class="mx-auto w-full max-w-2xl px-4 pb-16">
-	<header class="py-10 text-center">
+{#if 'pending' in data}
+	<main class="mx-auto flex min-h-dvh w-full max-w-md flex-col items-center justify-center px-6 text-center">
+		<p class="font-display text-ink text-2xl font-semibold italic">Waypoint</p>
+		<svg
+			class="text-moss-soft mt-8"
+			width="44"
+			height="44"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="1.75"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+			aria-hidden="true"
+		>
+			<circle cx="12" cy="12" r="9" />
+			<polyline points="12 7 12 12 15 14" />
+		</svg>
+		<h1 class="font-display text-ink mt-6 text-3xl font-semibold tracking-tight">
+			This trip's story is still being written
+		</h1>
+		<p class="text-ink-soft mt-3 text-base">
+			<strong class="text-ink">{data.tripTitle}</strong> publishes on
+			<span class="whitespace-nowrap">{publishDateLabel}</span>. Check back then — the full
+			itinerary and highlights will be waiting for you here.
+		</p>
+		<p class="text-ink-muted mt-6 text-sm">Bookmark this page so it's easy to find.</p>
+	</main>
+{:else}
+	<main class="mx-auto w-full max-w-2xl px-4 pb-16">
+		<header class="py-10 text-center">
 		<h1 class="text-ink text-3xl font-bold tracking-tight">{data.trip.title}</h1>
 		{#if data.trip.location_summary}
 			<p class="text-ink-muted mt-2 font-serif text-lg italic">{data.trip.location_summary}</p>
@@ -120,4 +173,5 @@
 	<footer class="text-ink-muted mt-12 border-t border-border/30 pt-6 text-center text-xs">
 		Built with Waypoint
 	</footer>
-</main>
+	</main>
+{/if}

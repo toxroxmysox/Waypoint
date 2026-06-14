@@ -31,7 +31,14 @@ export const load: PageServerLoad = async ({ params }) => {
 	publishDate.setDate(publishDate.getDate() + (trip.archive_publish_after_days || 7));
 
 	if (!trip.archived && now < publishDate) {
-		error(404, 'Archive not yet published');
+		// Pre-publish window: the token is valid but the story isn't live yet.
+		// Render a friendly "publishes on {date}" page instead of a dead-end 404
+		// (grandma may open this link the moment the trip ends — see WP-A-002).
+		return {
+			pending: true as const,
+			tripTitle: trip.title,
+			publishDate: publishDate.toISOString()
+		};
 	}
 
 	const [phases, days, items] = await Promise.all([
