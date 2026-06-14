@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { PUBLIC_PB_URL } from '$env/static/public';
+import { safeRedirect } from '$lib/shell/safe-redirect';
 
 export interface Claim {
 	member_id: string;
@@ -11,15 +12,17 @@ export interface Claim {
 	role: string;
 }
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
 	const token = locals.pb.authStore.token;
+	// Deep-link destination threaded from login through the claim gate (#179).
+	const dest = safeRedirect(url.searchParams.get('redirect'));
 
 	const res = await fetch(`${PUBLIC_PB_URL}/api/members/my-claims`, {
 		headers: { Authorization: `Bearer ${token}` }
 	});
 
 	if (!res.ok) {
-		redirect(303, '/trips');
+		redirect(303, dest);
 	}
 
 	const { claims } = (await res.json()) as { claims: Claim[] };
@@ -35,10 +38,11 @@ export const load: PageServerLoad = async ({ locals }) => {
 				redirect(303, `/invite/${invites[0].code}`);
 			}
 		}
-		redirect(303, '/trips');
+		// Nothing pending — land on the preserved deep-link target (or /trips).
+		redirect(303, dest);
 	}
 
-	return { claims };
+	return { claims, redirectTo: safeRedirect(url.searchParams.get('redirect'), '') };
 };
 
 export const actions: Actions = {
@@ -47,6 +51,7 @@ export const actions: Actions = {
 		const memberId = data.get('member_id')?.toString();
 		const tripSlug = data.get('trip_slug')?.toString();
 		const displayName = data.get('display_name')?.toString().trim() || '';
+		const dest = safeRedirect(data.get('redirect')?.toString(), '');
 
 		if (!memberId) return fail(400, { error: 'Missing member_id.' });
 
@@ -71,11 +76,15 @@ export const actions: Actions = {
 		}
 
 		// On success: go to the trip if slug is known, otherwise reload /claim
-		// which will show the next pending claim or redirect to /trips.
-		redirect(303, tripSlug ? `/trips/${tripSlug}` : '/claim');
+		// (preserving any deep-link target) to show the next pending claim or
+		// fall through to the preserved destination / trips.
+		if (tripSlug) redirect(303, `/trips/${tripSlug}`);
+		redirect(303, dest ? `/claim?redirect=${encodeURIComponent(dest)}` : '/claim');
 	},
 
-	skip: async () => {
-		redirect(303, '/trips');
+	skip: async ({ request }) => {
+		const data = await request.formData();
+		// Skipping the claim still honors the original deep-link destination.
+		redirect(303, safeRedirect(data.get('redirect')?.toString()));
 	}
 };

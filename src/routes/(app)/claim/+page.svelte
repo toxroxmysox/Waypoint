@@ -69,6 +69,7 @@
 				>
 					<input type="hidden" name="member_id" value={claim.member_id} />
 					<input type="hidden" name="trip_slug" value={claim.trip_slug} />
+					<input type="hidden" name="redirect" value={data.redirectTo ?? ''} />
 
 					<div>
 						<label for="display-name" class="text-ink-soft block text-sm font-medium">
@@ -91,6 +92,7 @@
 				</form>
 
 				<form method="POST" action="?/skip">
+					<input type="hidden" name="redirect" value={data.redirectTo ?? ''} />
 					<button
 						type="submit"
 						class="text-ink-muted hover:text-ink w-full py-1 text-center text-sm"

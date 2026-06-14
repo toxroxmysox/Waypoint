@@ -46,6 +46,38 @@
 </NavBar>
 
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-24">
+	{#if data.pendingClaims > 0}
+		<!-- #179c: pending placeholder claims skipped at login are otherwise
+		     stranded until the next fresh login. This card re-enters the flow. -->
+		<a href="/claim" class="mb-4 block" data-sveltekit-preload-data="hover">
+			<Card strong accent="var(--color-moss)">
+				<div class="flex items-center gap-3 p-4">
+					<span
+						class="bg-moss-tint text-moss flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+						aria-hidden="true"
+					>
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M20 6 9 17l-5-5" />
+						</svg>
+					</span>
+					<div class="min-w-0 flex-1">
+						<p class="text-ink text-sm font-semibold">
+							{#if data.pendingClaims === 1}
+								You've been added to {data.firstClaimTitle || 'a trip'}
+							{:else}
+								{data.pendingClaims} trips are waiting for you
+							{/if}
+						</p>
+						<p class="text-ink-muted text-xs">Tap to review and join.</p>
+					</div>
+					<svg class="text-ink-muted shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="m9 18 6-6-6-6" />
+					</svg>
+				</div>
+			</Card>
+		</a>
+	{/if}
+
 	{#if isEmpty}
 		<div class="py-16 text-center">
 			<p class="font-display text-ink text-lg italic">No trips yet.</p>

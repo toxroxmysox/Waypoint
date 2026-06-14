@@ -1,8 +1,9 @@
 import type { PageServerLoad } from './$types';
 import type { Trip, TripMember } from '$lib/types';
 import { tripToday, tripTz } from '$lib/shell/trip-time';
+import { PUBLIC_PB_URL } from '$env/static/public';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, fetch }) => {
 	// Get all trip memberships for the current user
 	const memberships = await locals.pb.collection('trip_members').getFullList<TripMember>({
 		// #133: a Departed Member's `user` is cleared, so a removed trip already
@@ -50,5 +51,35 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const u = locals.user!;
 	const avatarUrl = u.avatar ? locals.pb.files.getURL(u, u.avatar) : '';
 
-	return { active, upcoming, past, profileName: u.name, avatarUrl };
+	// #179c: pending placeholder claims the user skipped at login are otherwise
+	// unreachable until the next fresh login. Surface a count here so the user
+	// can re-enter the claim flow. Best-effort — a failure must never break the
+	// trips list (one throwing query 500s the whole page; see cerebrum).
+	let pendingClaims = 0;
+	let firstClaimTitle = '';
+	try {
+		const token = locals.pb.authStore.token;
+		const res = await fetch(`${PUBLIC_PB_URL}/api/members/my-claims`, {
+			headers: { Authorization: `Bearer ${token}` }
+		});
+		if (res.ok) {
+			const { claims } = (await res.json()) as {
+				claims: { trip_title?: string }[];
+			};
+			pendingClaims = claims?.length ?? 0;
+			firstClaimTitle = claims?.[0]?.trip_title ?? '';
+		}
+	} catch {
+		// Swallow — the claims card just won't render.
+	}
+
+	return {
+		active,
+		upcoming,
+		past,
+		profileName: u.name,
+		avatarUrl,
+		pendingClaims,
+		firstClaimTitle
+	};
 };

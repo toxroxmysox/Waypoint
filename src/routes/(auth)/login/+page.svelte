@@ -2,12 +2,18 @@
 	import { enhance } from '$app/forms';
 	import Button from '$lib/ui/Button.svelte';
 
-	let { form } = $props();
+	let { data, form } = $props();
 
 	let otpId = $state('');
 	let email = $state('');
 	let loading = $state(false);
+	let resending = $state(false);
+	let resent = $state(false);
 	let error = $state('');
+	// Deep-link destination preserved by the (app) guard — threaded through the
+	// OTP round-trip so verify lands the user back where they were headed. The
+	// server re-validates it (safeRedirect) on every action; this is just carry.
+	const redirectTo = $derived((form?.redirectTo as string) ?? data?.redirectTo ?? '');
 	$effect(() => {
 		if (form?.error) error = form.error;
 	});
@@ -60,6 +66,7 @@
 						};
 					}}
 				>
+					<input type="hidden" name="redirect" value={redirectTo} />
 					<label for="email" class="text-ink-soft block text-sm font-medium">Email</label>
 					<input
 						type="email"
@@ -89,6 +96,7 @@
 					}}
 				>
 					<input type="hidden" name="otpId" value={otpId} />
+					<input type="hidden" name="redirect" value={redirectTo} />
 					<label for="code" class="text-ink-soft block text-sm font-medium">Code</label>
 					<input
 						type="text"
@@ -107,16 +115,55 @@
 					<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="mt-4 w-full">
 						{loading ? 'Verifying…' : 'Verify'}
 					</Button>
+				</form>
+
+				<!-- Resend: re-requests a fresh code for the same email without
+				     leaving the code screen. Matches the invite/join OTP affordance
+				     (#179 WP-B-031). Open-redirect-safe: server re-validates. -->
+				<form
+					method="POST"
+					action="?/requestOTP"
+					use:enhance={() => {
+						resending = true;
+						resent = false;
+						error = '';
+						return async ({ result, update }) => {
+							resending = false;
+							if (result.type === 'success' && result.data?.otpId) {
+								otpId = result.data.otpId as string;
+								resent = true;
+							} else {
+								await update();
+							}
+						};
+					}}
+				>
+					<input type="hidden" name="email" value={email} />
+					<input type="hidden" name="redirect" value={redirectTo} />
 					<button
-						type="button"
-						class="text-ink-muted hover:text-ink-soft mt-2 w-full text-sm"
-						onclick={() => {
-							otpId = '';
-						}}
+						type="submit"
+						disabled={resending}
+						class="text-ink-muted hover:text-ink-soft disabled:text-ink-muted/60 mt-3 w-full text-sm"
 					>
-						Use a different email
+						{#if resending}
+							Resending…
+						{:else if resent}
+							Code resent ✓ — resend again
+						{:else}
+							Resend code
+						{/if}
 					</button>
 				</form>
+				<button
+					type="button"
+					class="text-ink-muted hover:text-ink-soft mt-1 w-full text-sm"
+					onclick={() => {
+						otpId = '';
+						resent = false;
+					}}
+				>
+					Use a different email
+				</button>
 			{/if}
 		</div>
 	</div>
