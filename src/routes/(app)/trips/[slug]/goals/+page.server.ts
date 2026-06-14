@@ -1,10 +1,34 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { TripGoal, TripMember, GoalVote } from '$lib/types';
+import type { TripGoal, TripMember, GoalVote, Item, Phase, Vote } from '$lib/types';
 import { withAvatarUrls } from '$lib/collaboration/member-avatar';
 
 export const load: PageServerLoad = async ({ parent, locals }) => {
-	const { trip } = await parent();
+	const { trip, membership, phases } = await parent();
+
+	// Swipe-deck launch-card data (#207). Mirrors the Phases-tab card: how many
+	// items the member hasn't rated, and the first phase (in order) with unrated
+	// cards to kick the deck off from. Goals is a contribution surface a
+	// contributor actually visits, so the deck gets an additional door here.
+	const deckItems = await locals.pb.collection('items').getFullList<Item>({
+		filter: `trip = "${trip.id}" && (status = "planned" || status = "unplanned")`,
+		fields: 'id,phase'
+	});
+	const myVotes = await locals.pb.collection('votes').getFullList<Vote>({
+		filter: `trip = "${trip.id}" && member = "${membership.id}"`,
+		fields: 'item'
+	});
+	const votedItemIds = new Set(myVotes.map((v) => v.item));
+
+	const unratedByPhase: Record<string, number> = {};
+	let unratedTotal = 0;
+	for (const it of deckItems) {
+		if (votedItemIds.has(it.id)) continue;
+		unratedByPhase[it.phase] = (unratedByPhase[it.phase] ?? 0) + 1;
+		unratedTotal++;
+	}
+	const launchPhaseId =
+		(phases as Phase[]).find((p) => (unratedByPhase[p.id] ?? 0) > 0)?.id ?? null;
 
 	// Phase-less, trip-scoped. created_by is expanded for author avatar/name.
 	const goals = await locals.pb.collection('trip_goals').getFullList<TripGoal>({
@@ -37,7 +61,13 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 		return (a.created ?? '').localeCompare(b.created ?? '');
 	});
 
-	return { goals: sortedGoals, votesByGoal, members: withAvatarUrls(locals.pb, members) };
+	return {
+		goals: sortedGoals,
+		votesByGoal,
+		members: withAvatarUrls(locals.pb, members),
+		unratedTotal,
+		launchPhaseId
+	};
 };
 
 export const actions: Actions = {
