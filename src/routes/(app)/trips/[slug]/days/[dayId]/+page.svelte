@@ -20,6 +20,14 @@
 	let notesLoading = $state(false);
 	let error = $derived(form?.error ?? '');
 
+	// Reset editing state when navigating between days (client-side reuse of component instance).
+	// $effect is safe here: editingNotes starts false (correct SSR value); this only resets a UI flag.
+	$effect(() => {
+		const _ = data.day.id;
+		editingNotes = false;
+		notesLoading = false;
+	});
+
 	function dayLabel(): string {
 		return new Date(data.day.date.replace(' ', 'T')).toLocaleDateString('en-US', {
 			weekday: 'long',
@@ -75,7 +83,8 @@
 		<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{error}</div>
 	{/if}
 
-	<!-- Day notes -->
+	<!-- Day notes — keyed by day id so unsaved draft is discarded on day navigation -->
+	{#key data.day.id}
 	<Card>
 		<div class="p-3">
 			<div class="flex items-center justify-between">
@@ -121,6 +130,7 @@
 			{/if}
 		</div>
 	</Card>
+	{/key}
 
 	{#if data.spanningItems.length > 0}
 		<div class="space-y-2">
