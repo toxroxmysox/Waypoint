@@ -77,7 +77,7 @@
 	<!-- Mobile: content + bottom nav -->
 	<div
 		class="md-desktop:hidden"
-		style="--accent-current: {mode === 'trip' ? 'var(--color-clay)' : 'var(--color-moss)'}; --accent-tint-current: {mode === 'trip' ? 'var(--color-clay-tint)' : 'var(--color-moss-tint)'}"
+		style="--color-accent: {mode === 'trip' ? 'var(--color-clay)' : 'var(--color-moss)'}; --color-accent-tint: {mode === 'trip' ? 'var(--color-clay-tint)' : 'var(--color-moss-tint)'}"
 	>
 		{#if active}
 			<div class="px-4 pt-3 pb-1">
@@ -92,7 +92,7 @@
 	<!-- Desktop: side rail + content + context rail -->
 	<div
 		class="hidden md-desktop:block"
-		style="--accent-current: {mode === 'trip' ? 'var(--color-clay)' : 'var(--color-moss)'}; --accent-tint-current: {mode === 'trip' ? 'var(--color-clay-tint)' : 'var(--color-moss-tint)'}"
+		style="--color-accent: {mode === 'trip' ? 'var(--color-clay)' : 'var(--color-moss)'}; --color-accent-tint: {mode === 'trip' ? 'var(--color-clay-tint)' : 'var(--color-moss-tint)'}"
 	>
 		<SideRail
 			{slug}

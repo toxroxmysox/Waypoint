@@ -55,14 +55,17 @@
 	--color-error-deep: #8e2a2a;
 
 	/*
-	 * Mode-driven accent: falls back to moss (planning) when --accent-current is
-	 * not set. AppShell overrides --accent-current to clay in trip mode so that
-	 * every descendant picks up the correct accent without per-component branching.
+	 * Mode-driven accent. Default = moss (planning). AppShell overrides
+	 * --color-accent DIRECTLY on the mode wrapper (clay in trip mode) so every
+	 * descendant inherits the right accent. The override MUST be on --color-accent
+	 * itself, not an indirection like --accent-current: a custom property declared
+	 * at :root resolves its var() AT :root, so children inherit the resolved value,
+	 * not the formula — a deeper --accent-current would never re-resolve (#222).
 	 * MUST be --color-* namespace: Tailwind v4 only generates bg-/text-/border-
-	 * utilities from --color-* (same class of bug as the --z-* tokens — bug-168).
+	 * utilities from --color-* (same class as the --z-* tokens — bug-168).
 	 */
-	--color-accent: var(--accent-current, var(--color-moss));
-	--color-accent-tint: var(--accent-tint-current, var(--color-moss-tint));
+	--color-accent: var(--color-moss);
+	--color-accent-tint: var(--color-moss-tint);
 
 	--breakpoint-md-desktop: 900px;
 	--breakpoint-lg-desktop: 1280px;
