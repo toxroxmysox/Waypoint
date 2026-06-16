@@ -33,8 +33,19 @@
 		<div class="bg-clay absolute -left-2 top-0 bottom-0 w-1 rounded-full"></div>
 	{/if}
 
-	<Card href="/trips/{tripSlug}/items/{item.id}?from=trip">
-		<div class="flex items-start gap-3 p-3">
+	<!-- #231: assignee footer must sit INSIDE the card border. A button can't nest
+	     in an anchor, so the card is a bordered <div> and the card-body tap is a
+	     stretched <a> (after:absolute after:inset-0). The edit link + assignee
+	     footer ride above it (relative z-10) and stay tappable. -->
+	<Card class="group-hover:shadow-card-strong group-active:bg-surface-2">
+		<div class="relative flex items-start gap-3 p-3">
+			<!-- Stretched link: card body navigates to the item detail. -->
+			<a
+				href="/trips/{tripSlug}/items/{item.id}?from=trip"
+				class="absolute inset-0 rounded-lg after:absolute after:inset-0"
+				aria-label={item.title}
+			></a>
+
 			<TypeIcon type={item.type} sub={item.subtype} size={32} />
 			<div class="min-w-0 flex-1">
 				<div class="flex items-center gap-2">
@@ -61,32 +72,32 @@
 					<p class="text-ink-muted mt-1 text-[11px] uppercase tracking-wide">{titleCase(item.subtype)}</p>
 				{/if}
 				{#if votes.length}
-					<div class="mt-1.5">
+					<div class="relative z-10 mt-1.5 w-fit">
 						<VoteCountPill {votes} />
 					</div>
 				{/if}
 			</div>
 			<a
 				href="/trips/{tripSlug}/items/{item.id}/edit"
-				class="text-ink-muted hover:text-ink shrink-0 p-1"
+				class="text-ink-muted hover:text-ink relative z-10 shrink-0 p-1"
 				aria-label="Edit {item.title}"
-				onclick={(e) => e.stopPropagation()}
 			>
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
 				</svg>
 			</a>
 		</div>
-	</Card>
 
-	<!-- Assignee avatars + self-assign (ADR-0011 / #226) — sibling of the card link
-	     (button never nests in an anchor). Tap opens the view-names sheet with a
-	     "+ Me" toggle. Self-gates on >1 member. -->
-	<AssigneeStacks
-		itemId={item.id}
-		itemTitle={item.title}
-		assignedTo={item.assigned_to}
-		{members}
-		size={18}
-	/>
+		<!-- Assignee avatars + self-assign (ADR-0011 / #226) — now a child of the
+		     bordered card (#231). relative z-10 lifts the buttons above the stretched
+		     link; padding/indent on the row collapses the footer on solo trips. -->
+		<AssigneeStacks
+			itemId={item.id}
+			itemTitle={item.title}
+			assignedTo={item.assigned_to}
+			{members}
+			size={18}
+			class="relative z-10 mb-3 pr-3 pl-[2.75rem]"
+		/>
+	</Card>
 </div>

@@ -21,7 +21,8 @@
 		itemTitle,
 		assignedTo = [],
 		members = [],
-		size = 20
+		size = 20,
+		class: klass = ''
 	}: {
 		itemId: string;
 		itemTitle: string;
@@ -29,6 +30,10 @@
 		assignedTo?: string[];
 		members?: Array<TripMember & { avatarUrl?: string }>;
 		size?: number;
+		/** Extra classes on the root row. The host card passes the in-border
+		 *  padding/indent here so an empty footer collapses (the row renders only
+		 *  when there's something to show — #231). */
+		class?: string;
 	} = $props();
 
 	// Optimistic local copy of assigned_to. Seeded from the prop; the avatar pops
@@ -91,7 +96,7 @@
 </script>
 
 {#if multiMember && (assignees.length > 0 || mayToggle)}
-	<div class="mt-1.5 flex items-center gap-2 pl-1">
+	<div class="mt-1.5 flex items-center gap-2 pl-1 {klass}">
 	{#if assignees.length > 0}
 		<button
 			type="button"

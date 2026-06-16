@@ -74,8 +74,20 @@
 	{/if}
 
 	<div class="min-w-0 flex-1">
-		<Card href="/trips/{tripSlug}/items/{item.id}">
-			<div class="flex items-start gap-3 p-3" class:border-l-2={overlapping} class:border-gold={overlapping}>
+		<!-- #231: the assignee footer must sit INSIDE the card border. A button
+		     can't nest in an anchor, so the card is a bordered <div> (not <Card href>)
+		     and navigation is a stretched <a> (after:absolute after:inset-0) covering
+		     the content row only — the assignee footer sits above it (relative z-10)
+		     and stays tappable. Stretched-link pattern, per the #77/#78 cerebrum scar. -->
+		<Card class="group-hover:shadow-card-strong group-active:bg-surface-2 {overlapping ? 'border-l-2 border-gold' : ''}">
+			<div class="relative flex items-start gap-3 p-3">
+				<!-- Stretched link: whole content row navigates to the item. -->
+				<a
+					href="/trips/{tripSlug}/items/{item.id}"
+					class="absolute inset-0 rounded-lg after:absolute after:inset-0"
+					aria-label={item.title}
+				></a>
+
 				<!-- Slot: type glyph (+ subtype) -->
 				<TypeIcon type={item.type} sub={item.subtype} size={32} />
 
@@ -107,7 +119,7 @@
 
 					<!-- Slot: vote count pill (ADR-0011 — avatars now mean assignees, votes are a count) -->
 					{#if votes.length}
-						<div class="mt-1.5">
+						<div class="relative z-10 mt-1.5 w-fit">
 							<VoteCountPill {votes} />
 						</div>
 					{/if}
@@ -120,18 +132,21 @@
 					</div>
 				{/if}
 			</div>
-		</Card>
 
-		<!-- Slot: assignee avatars + self-assign (ADR-0011 / #226). Sibling of the
-		     card link — a button must never nest inside the card's <a>. Tap opens
-		     the view-names sheet (with a "+ Me" toggle for members). Self-gates on
-		     >1 member, so it renders nothing on solo trips. -->
-		<AssigneeStacks
-			itemId={item.id}
-			itemTitle={item.title}
-			assignedTo={item.assigned_to}
-			{members}
-			size={18}
-		/>
+			<!-- Slot: assignee avatars + self-assign (ADR-0011 / #226). Now a child of
+			     the bordered card (#231) so the bubbles sit inside the border; relative
+			     z-10 lifts the buttons above the stretched link. The padding/indent is
+			     on the row itself (via `class`) so the footer collapses to nothing on
+			     solo trips. Indent aligns past the 32px glyph + gap to the title; the
+			     row's own pl-1 + mt-1.5 are kept, so this only adds the rest. -->
+			<AssigneeStacks
+				itemId={item.id}
+				itemTitle={item.title}
+				assignedTo={item.assigned_to}
+				{members}
+				size={18}
+				class="relative z-10 mb-3 pr-3 pl-[2.75rem]"
+			/>
+		</Card>
 	</div>
 </div>

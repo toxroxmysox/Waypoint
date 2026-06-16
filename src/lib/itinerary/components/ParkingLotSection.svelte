@@ -97,8 +97,16 @@
 				</button>
 
 				<div class="min-w-0 flex-1">
-					<Card href="/trips/{tripSlug}/items/{item.id}" class="no-callout">
-						<div class="flex items-center gap-3 px-3 py-2">
+					<!-- #231: assignee footer inside the card border. Bordered <div> card
+					     + stretched <a> for navigation (button can't nest in an anchor);
+					     the footer rides above it (relative z-10). -->
+					<Card class="no-callout group-hover:shadow-card-strong group-active:bg-surface-2">
+						<div class="relative flex items-center gap-3 px-3 py-2">
+							<a
+								href="/trips/{tripSlug}/items/{item.id}"
+								class="absolute inset-0 rounded-lg after:absolute after:inset-0"
+								aria-label={item.title}
+							></a>
 							<TypeIcon type={item.type} sub={item.subtype} size={18} />
 							<div class="min-w-0 flex-1">
 								<p class="text-ink truncate text-sm" title={item.title}>{item.title}</p>
@@ -106,15 +114,16 @@
 									<p class="text-ink-muted mt-0.5 text-[11px] tracking-wide uppercase">{titleCase(item.subtype)}</p>
 								{/if}
 								{#if votesByItem[item.id]?.length}
-									<div class="mt-1.5">
+									<div class="relative z-10 mt-1.5 w-fit">
 										<VoteCountPill votes={votesByItem[item.id]} />
 									</div>
 								{/if}
 							</div>
 						</div>
+						<!-- Assignee avatars + self-assign (ADR-0011 / #226) — child of the
+						     bordered card (#231); padding on the row collapses it when empty. -->
+						<AssigneeStacks itemId={item.id} itemTitle={item.title} assignedTo={item.assigned_to} {members} size={18} class="relative z-10 mb-2 pr-3 pl-[2.25rem]" />
 					</Card>
-					<!-- Assignee avatars + self-assign (ADR-0011 / #226) — sibling of the card link. -->
-					<AssigneeStacks itemId={item.id} itemTitle={item.title} assignedTo={item.assigned_to} {members} size={18} />
 				</div>
 
 				<!-- Slot: pull-up affordance (tap to plan — sibling of the link) -->
@@ -148,8 +157,15 @@
 				CARD_CONTENT_SPEC §2 parking-lot card (inert mode — desktop rail).
 				Drag/pull wiring lives in the dndEnabled branch above (#60).
 			-->
-			<Card href="/trips/{tripSlug}/items/{item.id}">
-				<div class="flex items-center gap-3 px-3 py-2">
+			<!-- #231: assignee footer inside the card border. Bordered <div> card +
+			     stretched <a> for navigation; footer rides above it (relative z-10). -->
+			<Card class="group-hover:shadow-card-strong group-active:bg-surface-2">
+				<div class="relative flex items-center gap-3 px-3 py-2">
+					<a
+						href="/trips/{tripSlug}/items/{item.id}"
+						class="absolute inset-0 rounded-lg after:absolute after:inset-0"
+						aria-label={item.title}
+					></a>
 					<div class="text-line flex shrink-0 cursor-grab items-center" aria-label="Drag to reorder">
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
 							<circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" />
@@ -166,7 +182,7 @@
 							<p class="text-ink-muted mt-0.5 text-[11px] tracking-wide uppercase">{titleCase(item.subtype)}</p>
 						{/if}
 						{#if votesByItem[item.id]?.length}
-							<div class="mt-1.5">
+							<div class="relative z-10 mt-1.5 w-fit">
 								<VoteCountPill votes={votesByItem[item.id]} />
 							</div>
 						{/if}
@@ -178,11 +194,11 @@
 						</svg>
 					</div>
 				</div>
+				<!-- Assignee avatars + self-assign (ADR-0011 / #226) — child of the
+				     bordered card (#231); padding on the row collapses it when empty.
+				     Indent aligns past the 14px grip + 18px glyph. -->
+				<AssigneeStacks itemId={item.id} itemTitle={item.title} assignedTo={item.assigned_to} {members} size={18} class="relative z-10 mb-2 pr-3 pl-[3.5rem]" />
 			</Card>
-			<!-- Assignee avatars + self-assign (ADR-0011 / #226) — sibling of the card link. -->
-			<div class="pl-8">
-				<AssigneeStacks itemId={item.id} itemTitle={item.title} assignedTo={item.assigned_to} {members} size={18} />
-			</div>
 		{/each}
 	</section>
 {/if}
