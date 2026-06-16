@@ -7,6 +7,28 @@
 > Records: **ADR-0011** (item-card avatars denote assignees, not voters — reverses CARD_CONTENT_SPEC) + the **CARD_CONTENT_SPEC** reversal (decision #5, the timeline reactor-avatars row, the parking-lot card line) + CONTEXT.md (**Assignment** term, broadened **Smart List**, annotated **Vote**).
 > Relationship: rides the **#175** role-matrix tightening (viewer = read-only); sibling to **#200** (the novice "when is our flight" light-lens — separate). No dependency blockers.
 
+## Grill Resolutions (2026-06-15 — grilled with Scott + 3-panel review; Slices 1 & 2 ship tonight)
+
+> **Supersede the body where they differ.** Source of truth for current intent.
+
+**Interaction (per Scott + the issue-#210 comment):**
+1. **Card = stacked assignee avatar bubbles** (ADR-0011), shown only when the trip has >1 member.
+2. **Tap = "show who's on this"** — tapping the bubbles opens a **view-names bottom sheet** (the `AssignMemberSheet` pattern) listing everyone assigned. One unambiguous tap meaning.
+3. **Self-assign lives INSIDE the sheet** — a **"+ Me" / remove-me** control in the sheet, not on the card. **Two taps** (open sheet → "+ Me"), not one. **Story #2 reframed to two-tap; drop the "single gesture" framing.**
+4. **No double-tap.** US #17 (double-tap accelerator) is **removed**, not deferred. Drop the "double-tapping the card is an optional accelerator" clause in the ADR-0011 impl decision.
+5. **Optimistic UI + graceful rollback** (Dogfood): the avatar pops on immediately on "+ Me"; on a failed write it **snaps back with a "couldn't add you — tap to retry"** cue (never a silent flicker → users re-tap and toggle themselves off).
+6. **Votes → `icon + count` pill** on cards (never a bare integer — keep the vote icon); the who-voted-what faces stay on item **detail** (ADR-0004 untouched).
+
+**Self-assign write path — HOOK EXCEPTION (Scott's call; overrides the body's "thin `items.update` action" and the privileged-action lean):**
+7. Self-assign is an **item edit** re-permitted by a **narrow exception in `items.pb.js`'s owner/co-owner update gate** (the #175 gate): a **member** may update an item **iff the only delta is adding/removing their OWN `trip_members.id` in `assigned_to`** — viewers excluded (`canSelfAssign`). The hook compares old vs new `assigned_to` (server-side) and rejects any other field delta or any change to another member's id. The body's "rides #175" is **backwards** — #175 *blocks* the write; this adds the exception that re-permits the self-only case.
+8. **Implementation care (Architect's flag):** goja diff-work on the security hot-path — inline all logic in the hook body, explicit string comparisons (cerebrum scars: goja date-truthiness, file-scope helpers); the action sends **only** `assigned_to` with the caller toggled, **never trust a client array**; `assigned_to` holds `trip_members.id` (not `users.id`). **Fallback:** if the in-hook diff proves fragile, switch to a privileged `e.app.save()` action (the `/api/suggestions/create` Dao-level pattern — bypasses hooks **and** rules, no rule change). `test:rules`: traveler self-add/remove yes; touch another id or another field no; viewer no; non-member no.
+
+**Slicing (`to-issues`) — Slices 1 & 2 BOTH tonight:**
+9. **Slice 1 — assignee avatars + view (read; no write path, no #175 collision):** flip the card avatar slot from `VoteStacks` → stacked **assignee** bubbles across **every** card surface (timeline, trip-mode Today, parking-lot — **and audit closeout/archive rows** so "one avatar meaning per card" holds everywhere); tap → the read-only **view-names sheet**; votes → the `icon + count` pill. Self-contained (assigning still via the item form). Tracer bullet: a card visibly shows an assignee avatar.
+10. **Slice 2 — self-assign:** add the **"+ Me" / remove-me** toggle inside the sheet + the **`items.pb.js` self-only exception** + **optimistic UI/rollback** + `test:rules`. The `assignment` pure module (`canSelfAssign`, `toggleAssignee`) is its test core.
+11. **Slice 3 — Flights Smart List** (`flights-lineup` module + `lists/flights` read-only route): separate/independent; fast-follow (tonight if time, else next).
+12. **SPEC §4 delta (bake into Slice 2's issue):** a member self-toggling their own `assigned_to` is an explicit **exception** to the traveler suggest-only gate.
+
 ## Problem Statement
 
 A flight is already a first-class [[Item]] — it carries its own departure/arrival times, airports, and timezones (AeroDataBox, via the flight lookup). And every Item already has an `assigned_to` field. But none of that reaches the surfaces where it would matter.

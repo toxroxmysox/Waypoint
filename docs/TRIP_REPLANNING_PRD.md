@@ -6,6 +6,34 @@
 > Supersedes: #121 (Now shows the whole day) and #154 (Now Slice B — weighted Focus view) — both closed into this PRD. Slice A (#153, state machine + loader) shipped and is the foundation.
 > Glossary: [[Now]], [[Today]], [[Focus]], [[Parking Lot]], [[Light Replanning]], [[Item Status]] in CONTEXT.md.
 
+## Grill Resolutions (2026-06-15 — grilled with Scott + 3-panel review)
+
+> **These supersede the body below wherever they differ.** Source of truth for current intent = this block.
+
+**1. Not a rebuild — a delta on shipped #154.** The weighted Now view already shipped (`now/+page.svelte`). #166 = the Now+Today merge + the two doors + a skip affordance, layered on the shipped Now. Strike the body's "rebuild Now" framing.
+
+**2. Merge Now + Today into ONE "Now" tab.** Nav tab label = **Now**; sub-tabs **`Today` (default)** and **`Next 3 days`** (the existing upcoming view, `today/upcoming`).
+- `Today` layout, top → bottom: **faded past items** (peek at top, reveal by scroll-up) → **active item = Focus, front-and-centre, full detail** (auto-scrolled here on open) → **later-today items as NORMAL cards** (this *overrides* #154's muted "later today" tier — only three weights now: faded past / Focus active / normal rest) → **divider** → **next-day preview** (same as today's) + **link to `Next 3 days`**.
+- The merged surface shows **all** of today's items (timed + untimed) — which is *why* a promoted (untimed) idea now renders on Now (the old Now filtered to timed-only; the merge fixes the door's biggest blocker for free).
+
+**3. Nav + the cross-cut.** Trip nav becomes **`Now · Money · ⊕Add · Docs`** — merging Now+Today frees the slot #211's Money tab needs (375px can't hold a 5th tab + the centre FAB). Two modes only (Planning/Trip) — reaffirmed; the "one nav, kill Trip mode's nav" option was rejected (reverses shipped, deliberate v3 design).
+- **SPEC §2 delta (ship with #166's issues):** rewrite the stale Trip nav `Now, Today, Add, Vault` → `Now, Money, Add, Docs`.
+- **Sequencing:** #166 lands FIRST (owns the merge + tab count in `nav-tabs.ts`); #211 rebases to drop Money into the freed slot — never concurrent (same file clobbers).
+- **Don't orphan member-contact:** with Members gone from Trip nav, surface tap-to-call/text a member on the Now surface or the Add sheet (Dogfood's catch).
+
+**4. Door 1 — ideas for now.** When the Focus is *free time* or *nothing else planned*, surface the **current phase's** parked ideas (the existing per-phase parking zone, #87), one-tap promote. Scoped to the current phase (NOT pooled across the day's phases). **Empty current phase → no door** (no widening — every idea already has a phase; there are no phase-less items). Ordered by vote score.
+
+**5. Door 2 — collapsed (no replacement-picker).** Skip a planned item → it returns to the parking lot (unplanned, day cleared, reversible — the "never did it" verdict stays Closeout's). The replacement is **Door 1's ideas strip rendered inline at the freed slot** — *same component*, now triggered by free-time **or** a just-skipped gap. The dedicated bottom-sheet picker in the body is cut.
+
+**6. Current-phase derivation (the boundary-day logic).** A calendar day can belong to ≥2 phases.
+- current phase = the phase of the **active item**, else the most-recent item today **ordered by time** (`start_time`, never list/`sort_order` position).
+- **Transition rule:** if that item is **transportation or flight**, current phase = the phase of the **NEXT item** you're travelling toward (the arriving phase) — **even if that next item is on a later day** (late-night arrival, nothing else today = still arrived).
+- **No items at all:** use the day's own phase (`primaryPhaseForDay`). Items always carry a phase, so this is the only "can't tell" case. Generalises to >2 phases.
+
+**7. Architecture.** Promote/skip **reuse `computeMovePatch` + `sort-order.ts`** — **kill the proposed parallel `replan` module** (one source of truth so Planning-drag and Trip-doors can never diverge; both doors are literally moves). Promote = assign `day` + slot into `sort_order`, **no phase reassignment** (the idea keeps its own phase, which already contains today). Verify the merged Now derives its untimed flow from the same `sort_order` key so promoted ideas render.
+
+**8. Roles unchanged (SPEC §4):** promote/skip = item edits = owner/co-owner; travelers see the strip read-only + vote stacks; viewers see, mutate nothing.
+
 ## Problem Statement
 
 Mid-trip plans break — a restaurant is closed, weather kills the hike, the group is tired. Today the app cannot answer "tonight fell through, what else could we do?" without leaving Trip Mode: the [[Parking Lot]] (the exact answer — the group's captured ideas, phase-scoped) is unreachable from Now, Today, and the Add sheet. The free-time Focus shows only a countdown to the next planned item. The result is a six-step mode-switching detour on a phone, mid-trip — or the group falls back to the group text, which is the failure mode Waypoint exists to eliminate.

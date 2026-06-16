@@ -7,6 +7,32 @@
 > Depends on: **#170** (the `?action=add` expense prefill is broken — the booked-moment toast *and* the existing Trip-Mode add both need it). Rides **#197** (URL-derived chrome — the Money tab is a trip-mode summary surface, not the planning `/expenses`).
 > Records: SPEC §Money / Trip-Mode nav change (Money tab in Trip Mode); CONTEXT.md annotations (**Budget** mid-trip glance, **Expense** booked-moment capture). **No ADR** (additive, reuses the pure money modules, reverses no documented decision).
 
+## Grill Resolutions (2026-06-15 — grilled with Scott + 3-panel review)
+
+> **Supersede the body where they differ.** Source of truth for current intent.
+
+**SPLIT INTO THREE (Scott's call):** the PRD's two halves divide into a ship-ready **Summary**, a reusable **Prefill mechanism** (new issue, re-grill), and a re-grill of the **Capture trigger**.
+
+**A — Trip-Mode Money Summary (READY — afk):**
+1. `money-glance` pure module + a read-only Trip-Mode (clay) money route. **KEEP the prepaid/on-trip split** (`expense.date < tripStart` vs `>=`) — it's the PRD's actual insight and nearly free. "Spent" = actual `expenses` only (never estimates). `myBalance` reuses `computeBalances`.
+2. **Budget total is NET-NEW** — there is NO reusable total helper (the summation is inline in `budget/+page.server.ts`); build it once in `money-glance` as the single source.
+3. `todaySpend` in **trip-local tz**; **over-budget renders "-$X over"** (not a vanished/negative "left"); **no budget set → show spent, omit "left."**
+4. Read-only; each figure deep-links to the planning Money pages (#197 keeps the route in Trip-Mode chrome).
+5. **NAV — settled by #166, BLOCKED-BY it:** the Money tab lands in the slot freed by #166's Now+Today merge → **`Now · Money · ⊕Add · Docs`**. The body's `Today/Money/Add/Docs/Now` (5-tab) is superseded. The module/route can be built in parallel; the *tab* waits for #166's nav merge.
+6. **SPEC delta:** §Money / Trip-Mode nav (Money tab) — bake into this slice.
+
+**B — Reusable prefilled add-expense (NEW ISSUE — re-grill later; Scott: "this won't be the only place we use it"):**
+7. `ExpenseForm` **cannot prefill an add today** — passing `expense` flips it to *edit* mode (`?/updateExpense`, hides Paid-by/Split, needs `expense.id`). Add **discrete optional `initial*` props** (amount/description/paidBy/date/linkedItem) that seed the `$state` initializers WITHOUT touching `isEdit`; add the `linked_item` hidden input the form doesn't emit today; the `?action=add` effect must read value params (reads none now). **#170 only opens a BLANK form — this prefill is net-new, not "riding #170."**
+8. **Payer prefilled = current member, EDITABLE** (when someone else paid / you booked for the group, fix it inline).
+9. General-purpose infrastructure (the booked-moment capture is just one caller). Re-grill the mechanism before slicing.
+
+**C — Paid-moment capture trigger (RE-GRILL — Scott: "booking isn't always the right signal, only sometimes"):**
+10. **"Booked" is the wrong trigger by default** — for big line items (group Airbnb, hotels, car) booked ≠ money-left-account (hold now / charged later / deposit-then-balance), so a booked-fired toast mostly mis-captures and trains dismissal. Re-grill toward a **money-event signal** ("I paid / mark prepaid"), booked as only *one* such case.
+11. **The prefill must carry the SPLIT, not just the payer** (Dogfood: book the group's $2,400 house → a *personal* expense doesn't close the loop; shared items should default to a group split).
+12. The two booking paths are **unequal** — the booking-list "book" server action discards its `result` and returns no item payload; a toast there needs the action to return the item + the page to consume `result`. Dedupe (prompt only if no linked expense — `linked-expenses.ts` exists) decided at re-grill. Depends on **B**.
+
+**Stale refs:** #170/#197/#198 are **CLOSED** — the body's "depends on #170 (broken)" is stale; #170 shipped (blank-form only).
+
 ## Problem Statement
 
 Mid-trip money is one-way. From Trip Mode you can ADD an expense (the Add sheet → expenses), but you can SEE nothing — "how are we doing on budget," "what did today cost," "who's owed what" all force a switch to Planning → Money. During the trip is exactly when spending happens and the questions are most urgent, yet Trip Mode (the on-the-road UI) has no Money at all — the tab simply vanishes when the trip goes active. The fallback is Splitwise or the group text (the V1 old stack), on the money job Waypoint means to own.

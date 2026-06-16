@@ -6,6 +6,45 @@
 > Glossary: [[Closeout]], [[Public Archive]], [[Trip Member]], [[Trip Goal]], [[Parking Lot]], [[Expense]], [[Settlement]], [[Trip Mode]] in CONTEXT.md.
 > Schema reality (verified in migrations 2026-06-12): `trips` has **no `status` field** — lifecycle is derived. The only persisted lifecycle flag is `archived` (bool, `0002_trips.js:25`). `finishCloseout` already sets `archived: true` (`closeout/+page.server.ts:111`) — the terminal transition exists. This PRD records the D6 fix to CONTEXT.md (status is derived, not a field) and a SPEC §4 role change.
 
+## Grill Resolutions (2026-06-15 — grilled with Scott + 3-panel review)
+
+> **These supersede the body below wherever they differ.** The original body is preserved for provenance (audit findings, reasoning). Source of truth for current intent = this block.
+
+**Lifecycle (the spine — also gates #166/#211/#203):**
+1. Keep the 4-state derived lifecycle — `getTripLifecycle(trip, now)` → `planning | active | wrap-up | closed`, computed in **server load** (not in `AppShell`). `isTripActive` collapses to an alias (`=== 'active'`); **audit its ~4 callers** (`today/`, `today/upcoming/`, `now/`) — they mean *active-only* ("the live trip"), never active-or-wrap-up. A **date-less trip → `planning`** (explicit guard; never `wrap-up` via an empty `end_date`). **#167 already landed** — `isTripActive` already compares trip-local dates, so the body's "it uses UTC `new Date()`" line is **stale**.
+2. **wrap-up persists indefinitely and dormant** — no auto-close, no countdown, no cron, no push/badge. "Never formally closed out" is the normal ending. The only re-engagement is **unsettled money**.
+
+**Presentation — two modes only; wrap-up is a banner, not a home:**
+3. **No third mode.** Two modes stay (Planning 5-tab, Trip 4-tab). wrap-up/closed re-skin the **Overview home within the planning shell** (Now/Today are meaningless for an ended trip).
+4. **wrap-up = ONE bordered banner** (NOT the 3-card dedicated home in the body) that **replaces the top of the Overview** (the trip-details card + Flights & Stays); Itinerary/Days stay below. **Equal-weight action rows** in one border. Actions appear **only when outstanding** and fall away as completed (never 3 at once).
+5. **Cut the readiness check-in entirely** — drop User Stories 6/7, the `expense-readiness` module, and the `expenses_ready_at` field. (A soft "3 of 5 ready" that never gates anything is a status nobody acts on.)
+6. **Settle-up is gated on balance, not lifecycle** — shows wherever a balance is owed, including the closed/record view, so closing out never strands a debt. Empty trip → no settle action (free).
+
+**Publish / consent:**
+7. **Two independent flags:** `archived` (closeout done) + `archive_publish_at` (public gate). `finishCloseout` sets `archived: true` regardless of the publish choice → **closed-and-private is a normal state.**
+8. **Publish = owner/co-owner ONLY**, gated on **role alone** (not "currently closing"), **enforced server-side**. An owner can publish an **already-closed** trip later.
+9. **Publish is a standalone "Publish record" control on the closed trip** (the closed-state banner row: "Publish record" for an owner → "Share link" for everyone once published), **also** offered as the owner's final closeout step. **Travelers' wizard ends at "submit review → closed"** — no publish step (no un-pressable step to walk to).
+10. **Publish control = binary** — Keep private (**default**) / Publish — with an inline **date defaulting to today** (leave = publish now, change = schedule). **Kill the legacy "wait N days" / `archive_publish_after_days`** as the gate.
+
+**The record:**
+11. **Goals review: KILLED** — removed from #195 entirely (the derived goal-status model makes a manual `met` flag a second source of truth that lies about the linked items; "nobody cares" — Scott). Goals do not appear in the record for v1.
+12. **"What we considered" is reframed: a recommendations list FOR THE PUBLIC** (outsiders asking "we're going there — what'd you do?"), NOT group nostalgia. The travelers don't care about it; the public who asks does.
+13. **Travelers' closeout = the done/considered walk of planned items only.** They never review — or see — the unplanned parking-lot ideas.
+14. **Owners/co-owners get an OPTIONAL "Review the parking-lot items" step, skipped by default** — curation/cleanup of the public recommendations, not a required task. Skip → ideas publish as-is; review → tidy first. **This consciously reverses audit WP-B-020**, whose premise (that ideas belong in the *group's* record) was wrong.
+15. **Public record = what we did + budget (opt-in) + "what we considered"** (curated parking-lot ideas as public recommendations).
+16. **Fix the planned-leak:** the record's "considered" section = explicitly-`considered` items + kept parking-lot ideas, **never stray `planned`** items. Guard the inverse **done-leak**: the closeout walk must ensure planned items get marked so the done-set is real.
+
+**Budget in the public record:**
+17. **Budget = a summary only** (trip total / rough per-person) — **never** itemized expenses or who-owes-whom (those stay in-group, members-only). **Opt-in:** an owner/co-owner toggle at publish ("include budget in the public record"); **default off**, consistent with private-by-default. (New small flag, e.g. `trips.archive_show_budget`.)
+
+**Schema delta vs the body:** keep `archive_publish_at` (date, nullable — the publish gate); **drop `expenses_ready_at`** (readiness cut); **add** a public-budget-include bool (e.g. `archive_show_budget`). The body's migration number (`0047`) is taken — use the next free number at slice (0048+).
+
+**SPEC.md updates (ship WITH the #195 issues, not as a separate pass):**
+- **§4 permission table** — closeout opens to **travelers** for the item walk; the **publish** decision is **owner/co-owner only**.
+- **§§5/8** — the archive publish mechanism changes from `archive_publish_after_days` (delay measured from `end_date`) to an explicit **`archive_publish_at`** set at closeout; **binary** (private = default / publish + optional date defaulting to today); legacy field becomes import/export/clone-compat only.
+- **Lifecycle/status language** — any SPEC text implying a stored trip `status` field, or naming the retired **Vault/Activity** surfaces, is corrected to the derived 4-state lifecycle (`planning/active/wrap-up/closed`). The public record gains the **"what we considered"** recommendations section + the opt-in budget summary.
+- Each sliced issue that touches one of these §§ carries its SPEC edit as an acceptance criterion (per the standing convention — SPEC self-heals as work ships).
+
 ## Problem Statement
 
 A trip ends and the app goes quiet at the exact moment it should be loudest. The day after `end_date`, `isTripActive()` flips to false, the UI silently reverts from Trip Mode's 4 tabs to the 5-tab planning view, and the trip slowly slides into the "Past" section of the trips list with **zero call to action**. Nothing anywhere says "your trip ended — settle up, close it out, share the record." The three things a group wants to do after a trip are each buried: settle-up waits unprompted inside Money, the closeout wizard hides behind a More-tab card (owner/co-owner only — travelers and viewers get no post-trip surface at all), and the public archive link lives in Settings as a bare relative path in a code block. This is the entire "Remember" pillar's front door, and it doesn't exist (charter D5 pre-agreed this as a P1).
