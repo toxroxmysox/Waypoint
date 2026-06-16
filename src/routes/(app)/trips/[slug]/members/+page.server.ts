@@ -83,8 +83,8 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 		}
 		return {
 			...m,
-			displayLabel: m.display_name || '(member)',
-			emailLabel: '',
+			displayLabel: m.display_name || m.expand?.user?.name || m.expand?.user?.email || '(member)',
+			emailLabel: m.expand?.user?.email || '',
 			isPlaceholder: false,
 			isDeparted: false,
 			removedAtLabel: '',
@@ -112,10 +112,13 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 		if (inviter) {
 			if (authUser && inviter.user === authUser.id) {
 				inviterLabel = inviter.display_name || authUser.name || authUser.email || 'you';
-			} else if (inviter.display_name) {
-				inviterLabel = inviter.display_name;
-			} else if (inviter.placeholder_name) {
-				inviterLabel = inviter.placeholder_name;
+			} else {
+				inviterLabel =
+					inviter.display_name ||
+					inviter.expand?.user?.name ||
+					inviter.expand?.user?.email ||
+					inviter.placeholder_name ||
+					'someone';
 			}
 		}
 		return {
