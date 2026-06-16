@@ -22,7 +22,8 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		}),
 		locals.pb.collection('trip_members').getFullList<TripMember>({
 			filter: `trip = "${trip.id}" && removed_at = ""`,
-			sort: 'id'
+			sort: 'id',
+			expand: 'user'
 		}),
 		locals.pb.collection('items').getFullList<Item>({
 			filter: `trip = "${trip.id}"`,

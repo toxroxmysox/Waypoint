@@ -84,7 +84,8 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 		return {
 			...m,
 			displayLabel: m.display_name || m.expand?.user?.name || m.expand?.user?.email || '(member)',
-			emailLabel: m.expand?.user?.email || '',
+			// Other members' email stays hidden on the roster (emailVisibility is off; #223 fixes names, not email exposure).
+			emailLabel: '',
 			isPlaceholder: false,
 			isDeparted: false,
 			removedAtLabel: '',
