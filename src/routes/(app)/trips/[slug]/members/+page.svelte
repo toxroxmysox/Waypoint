@@ -119,10 +119,14 @@
 					<li class="flex items-center justify-between gap-3 px-4 py-3">
 						<Avatar img={m.avatarUrl} initial={m.displayLabel} alt={m.displayLabel} size={36} />
 						<div class="min-w-0 flex-1">
-							<div class="flex items-center gap-2">
-								<span class="text-ink truncate text-sm font-semibold">{m.displayLabel}</span>
+							<!-- #234: flex-wrap so the "(placeholder)" tag drops to a second line on a
+							     narrow viewport instead of stealing the name's width — the truncate
+							     name was clipping to nothing on mobile portrait (the placeholder rows
+							     also carry the extra Promote action, crowding the row). -->
+							<div class="flex flex-wrap items-center gap-x-2">
+								<span class="text-ink max-w-full truncate text-sm font-semibold">{m.displayLabel}</span>
 								{#if m.isPlaceholder}
-									<span class="text-ink-muted text-xs">(placeholder)</span>
+									<span class="text-ink-muted shrink-0 text-xs">(placeholder)</span>
 								{/if}
 							</div>
 							{#if m.emailLabel}
