@@ -82,6 +82,8 @@
 			items={tripMode.now.todayItems}
 			tripSlug={data.trip.slug}
 			{now}
+			votesByItem={data.votesByItem}
+			members={data.members}
 		/>
 
 		{#if tripMode.upNext.tomorrowDay}

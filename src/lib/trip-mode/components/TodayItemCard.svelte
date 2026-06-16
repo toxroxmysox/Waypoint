@@ -1,18 +1,24 @@
 <script lang="ts">
-	import type { Item } from '$lib/types';
+	import type { Item, Vote, TripMember } from '$lib/types';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
 	import Card from '$lib/ui/Card.svelte';
+	import VoteCountPill from '$lib/collaboration/components/VoteCountPill.svelte';
+	import AssigneeStacks from '$lib/itinerary/components/AssigneeStacks.svelte';
 	import { formatTime, titleCase } from '$lib/shell/format';
 
 	let {
 		item,
 		tripSlug,
-		temporal
+		temporal,
+		votes = [],
+		members = []
 	}: {
 		item: Item;
 		tripSlug: string;
 		temporal: 'past' | 'current' | 'future';
+		votes?: Vote[];
+		members?: TripMember[];
 	} = $props();
 
 	const dimmed = $derived(temporal === 'past');
@@ -54,6 +60,11 @@
 				{#if item.subtype}
 					<p class="text-ink-muted mt-1 text-[11px] uppercase tracking-wide">{titleCase(item.subtype)}</p>
 				{/if}
+				{#if votes.length}
+					<div class="mt-1.5">
+						<VoteCountPill {votes} />
+					</div>
+				{/if}
 			</div>
 			<a
 				href="/trips/{tripSlug}/items/{item.id}/edit"
@@ -67,4 +78,17 @@
 			</a>
 		</div>
 	</Card>
+
+	<!-- Assignee avatars (ADR-0011) — sibling of the card link (button never nests
+	     in an anchor). Tap opens the read-only view-names sheet. -->
+	{#if members.length > 1 && item.assigned_to.length}
+		<div class="mt-1.5 pl-1">
+			<AssigneeStacks
+				itemTitle={item.title}
+				assignedTo={item.assigned_to}
+				{members}
+				size={18}
+			/>
+		</div>
+	{/if}
 </div>

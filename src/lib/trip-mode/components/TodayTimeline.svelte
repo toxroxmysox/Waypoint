@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Item } from '$lib/types';
+	import type { Item, Vote, TripMember } from '$lib/types';
 	import { buildTimeline } from '$lib/itinerary/timeline';
 	import TodayItemCard from './TodayItemCard.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
@@ -8,11 +8,15 @@
 	let {
 		items,
 		tripSlug,
-		now
+		now,
+		votesByItem = {},
+		members = []
 	}: {
 		items: Item[];
 		tripSlug: string;
 		now: Date;
+		votesByItem?: Record<string, Vote[]>;
+		members?: TripMember[];
 	} = $props();
 
 	const timeline = $derived(buildTimeline(items));
@@ -78,6 +82,8 @@
 					item={entry.item}
 					{tripSlug}
 					temporal={getTemporalState(entry.item)}
+					votes={votesByItem[entry.item.id] ?? []}
+					{members}
 				/>
 			{/if}
 		{/each}

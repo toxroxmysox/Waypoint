@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import type { Trip, Phase, Day, Item } from '$lib/types';
+	import type { Trip, Phase, Day, Item, Vote, TripMember } from '$lib/types';
 	import { getActiveSection, formatTripDate } from '$lib/shell/trip-nav';
 	import { tripToday, tripTz } from '$lib/shell/trip-time';
 	import ParkingLotSection from '$lib/itinerary/components/ParkingLotSection.svelte';
@@ -26,6 +26,14 @@
 	// (same plumb as documentSummary below) because the trip layout loader can't
 	// see dayId. No other route returns this key, so it's empty off day pages.
 	const parkingLotItems = $derived((page.data.parkingLotItems as Item[] | undefined) ?? []);
+
+	// Same merged-page-data plumb: the day load carries the roster (with avatars)
+	// and votes so the rail's parking cards render assignee bubbles + a vote count
+	// pill (ADR-0011), consistent with the mobile parking lot.
+	const railMembers = $derived((page.data.members as TripMember[] | undefined) ?? []);
+	const railVotesByItem = $derived(
+		(page.data.votesByItem as Record<string, Vote[]> | undefined) ?? {}
+	);
 
 	const today = $derived(tripToday(tripTz(trip ?? {})));
 
@@ -166,7 +174,13 @@
 		{#if isDayPage && parkingLotItems.length > 0}
 			<div class="border-line space-y-2 border-t px-5 py-4">
 				<h3 class="text-ink-soft text-xs font-semibold uppercase tracking-wider">Ideas</h3>
-				<ParkingLotSection items={parkingLotItems} {phases} tripSlug={slug} />
+				<ParkingLotSection
+					items={parkingLotItems}
+					{phases}
+					tripSlug={slug}
+					members={railMembers}
+					votesByItem={railVotesByItem}
+				/>
 			</div>
 		{/if}
 

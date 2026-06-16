@@ -4,7 +4,8 @@
 	import type { Item, Phase, Vote, TripMember } from '$lib/types';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import Card from '$lib/ui/Card.svelte';
-	import VoteStacks from '$lib/collaboration/components/VoteStacks.svelte';
+	import VoteCountPill from '$lib/collaboration/components/VoteCountPill.svelte';
+	import AssigneeStacks from '$lib/itinerary/components/AssigneeStacks.svelte';
 	import { titleCase } from '$lib/shell/format';
 
 	let {
@@ -106,12 +107,18 @@
 								{/if}
 								{#if votesByItem[item.id]?.length}
 									<div class="mt-1.5">
-										<VoteStacks votes={votesByItem[item.id]} {members} size={18} />
+										<VoteCountPill votes={votesByItem[item.id]} />
 									</div>
 								{/if}
 							</div>
 						</div>
 					</Card>
+					<!-- Assignee avatars (ADR-0011) — sibling of the card link. -->
+					{#if members.length > 1 && item.assigned_to.length}
+						<div class="mt-1.5 pl-1">
+							<AssigneeStacks itemTitle={item.title} assignedTo={item.assigned_to} {members} size={18} />
+						</div>
+					{/if}
 				</div>
 
 				<!-- Slot: pull-up affordance (tap to plan — sibling of the link) -->
@@ -164,7 +171,7 @@
 						{/if}
 						{#if votesByItem[item.id]?.length}
 							<div class="mt-1.5">
-								<VoteStacks votes={votesByItem[item.id]} {members} size={18} />
+								<VoteCountPill votes={votesByItem[item.id]} />
 							</div>
 						{/if}
 					</div>
@@ -176,6 +183,12 @@
 					</div>
 				</div>
 			</Card>
+			<!-- Assignee avatars (ADR-0011) — sibling of the card link. -->
+			{#if members.length > 1 && item.assigned_to.length}
+				<div class="mt-1.5 pl-9">
+					<AssigneeStacks itemTitle={item.title} assignedTo={item.assigned_to} {members} size={18} />
+				</div>
+			{/if}
 		{/each}
 	</section>
 {/if}

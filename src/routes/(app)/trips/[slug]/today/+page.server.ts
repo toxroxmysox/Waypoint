@@ -1,9 +1,10 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Day, Item, Checklist, Task, TripMember } from '$lib/types';
+import type { Day, Item, Checklist, Task, TripMember, Vote } from '$lib/types';
 import { tripNow, tripTz } from '$lib/shell/trip-time';
 import { isTripActive } from '$lib/trip-mode/activation';
 import { fetchManualChecklists } from '$lib/itinerary/checklist-loaders';
+import { withAvatarUrls } from '$lib/collaboration/member-avatar';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, days } = await parent();
@@ -41,6 +42,23 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		sort: 'day'
 	});
 
+	// Roster + votes for the Today cards (#224, ADR-0011): card avatars denote
+	// assignees, votes show as a count pill. Roster carries avatars for the faces.
+	const itemIds = [...items, ...multiDayItems].map((i) => i.id);
+	const [votes, members] = await Promise.all([
+		itemIds.length > 0
+			? locals.pb.collection('votes').getFullList<Vote>({
+					filter: itemIds.map((id) => `item = "${id}"`).join(' || ')
+				})
+			: Promise.resolve([] as Vote[]),
+		locals.pb.collection('trip_members').getFullList<TripMember>({
+			filter: `trip = "${trip.id}" && removed_at = ""`,
+			expand: 'user'
+		})
+	]);
+	const votesByItem: Record<string, Vote[]> = {};
+	for (const v of votes) (votesByItem[v.item] ??= []).push(v);
+
 	// Trip Mode checklists (#52): read + check only. Trip/phase-scoped manual
 	// lists (e.g. packing); item-scoped grocery lists stay on their Item.
 	const { checklists: lists, tasks: listTasks } = await fetchManualChecklists(locals.pb, trip.id);
@@ -54,6 +72,8 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		items,
 		multiDayItems,
 		checklists,
+		votesByItem,
+		members: withAvatarUrls(locals.pb, members),
 		now: now.toISOString()
 	};
 };

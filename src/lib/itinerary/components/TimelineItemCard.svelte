@@ -3,7 +3,8 @@
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
 	import Card from '$lib/ui/Card.svelte';
-	import VoteStacks from '$lib/collaboration/components/VoteStacks.svelte';
+	import VoteCountPill from '$lib/collaboration/components/VoteCountPill.svelte';
+	import AssigneeStacks from '$lib/itinerary/components/AssigneeStacks.svelte';
 	import { needsBooking } from '$lib/itinerary/booking-projection';
 	import { titleCase, formatTime } from '$lib/shell/format';
 
@@ -104,10 +105,10 @@
 						<p class="text-ink-muted mt-1 text-[11px] uppercase tracking-wide">{titleCase(item.subtype)}</p>
 					{/if}
 
-					<!-- Slot: reactor avatars (votes only — never assignees) -->
+					<!-- Slot: vote count pill (ADR-0011 — avatars now mean assignees, votes are a count) -->
 					{#if votes.length}
 						<div class="mt-1.5">
-							<VoteStacks {votes} {members} size={18} />
+							<VoteCountPill {votes} />
 						</div>
 					{/if}
 				</div>
@@ -120,5 +121,20 @@
 				{/if}
 			</div>
 		</Card>
+
+		<!-- Slot: assignee avatars (ADR-0011). Sibling of the card link — a button
+		     must never nest inside the card's <a>. Tap opens the view-names sheet.
+		     Self-gates on >1 member + non-empty, so renders nothing (no stray gap)
+		     on solo trips or unassigned items. -->
+		{#if members.length > 1 && item.assigned_to.length}
+			<div class="mt-1.5 pl-1">
+				<AssigneeStacks
+					itemTitle={item.title}
+					assignedTo={item.assigned_to}
+					{members}
+					size={18}
+				/>
+			</div>
+		{/if}
 	</div>
 </div>
