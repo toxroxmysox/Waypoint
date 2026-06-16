@@ -1,5 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { canGoBack } from '$lib/shell/stores/nav-depth';
 
 	let {
 		title,
@@ -20,7 +22,15 @@
 	} = $props();
 
 	function handleBack() {
-		if (onBack) onBack();
+		if (onBack) {
+			onBack();
+			return;
+		}
+		if ($canGoBack) {
+			history.back();
+		} else if (backHref) {
+			goto(backHref);
+		}
 	}
 </script>
 
@@ -29,28 +39,16 @@
 >
 	<div class="flex w-10 shrink-0 items-center">
 		{#if back}
-			{#if backHref}
-				<a
-					href={backHref}
-					class="text-ink-soft hover:text-ink -ml-2 flex h-11 w-11 items-center justify-center rounded-full"
-					aria-label="Back"
-				>
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
-						<path d="m15 18-6-6 6-6" />
-					</svg>
-				</a>
-			{:else}
-				<button
-					type="button"
-					onclick={handleBack}
-					class="text-ink-soft hover:text-ink -ml-2 flex h-11 w-11 items-center justify-center rounded-full"
-					aria-label="Back"
-				>
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
-						<path d="m15 18-6-6 6-6" />
-					</svg>
-				</button>
-			{/if}
+			<button
+				type="button"
+				onclick={handleBack}
+				class="text-ink-soft hover:text-ink -ml-2 flex h-11 w-11 items-center justify-center rounded-full"
+				aria-label="Back"
+			>
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+					<path d="m15 18-6-6 6-6" />
+				</svg>
+			</button>
 		{/if}
 	</div>
 

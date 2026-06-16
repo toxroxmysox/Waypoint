@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { onNavigate } from '$app/navigation';
+	import { onNavigate, afterNavigate } from '$app/navigation';
+	import { updateNavDepth } from '$lib/shell/stores/nav-depth';
 
 	let { children } = $props();
 
@@ -35,6 +36,10 @@
 
 		return 'peer';
 	}
+
+	afterNavigate((nav) => {
+		updateNavDepth(nav.type, nav.delta);
+	});
 
 	onNavigate((navigation) => {
 		if (!document.startViewTransition) return;

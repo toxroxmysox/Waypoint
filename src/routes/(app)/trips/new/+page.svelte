@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { validateForm } from '$lib/shell/actions/validate-form';
+	import { goto } from '$app/navigation';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
 	import Button from '$lib/ui/Button.svelte';
@@ -42,9 +43,15 @@
 			use:validateForm
 			use:enhance={() => {
 				loading = true;
-				return async ({ update }) => {
+				return async ({ update, result }) => {
 					loading = false;
-					await update();
+					if (result.type === 'redirect') {
+						// replaceState so back from the new trip skips the creation
+						// form and returns to the trips list (#214 / ADR-0012).
+						await goto(result.location, { replaceState: true });
+					} else {
+						await update();
+					}
 				};
 			}}
 			class="p-4 space-y-4"

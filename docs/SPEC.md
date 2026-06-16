@@ -411,7 +411,7 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 - Design tokens in Tailwind v4 `@theme`: paper, surface, surface-2, ink, ink-soft, ink-muted, line, moss, moss-soft, moss-tint, clay, gold, sky; radii sm/md/lg/xl; card shadow; 8pt spacing scale
 - Google Fonts: Fraunces (display), Inter (UI), JetBrains Mono (codes / times / money)
 - Primitive components in `src/lib/components/ui/`: `Pill`, `Card`, `Button`, `SectionH`, `TypeIcon`, `Avatar`, `NavBar`, `FAB`
-- `<NavBar>` context-aware per route (title, subtitle, back, right) — replaces current top `Header.svelte`
+- `<NavBar>` context-aware per route (title, subtitle, back, right) — back is historical (`history.back`) with a logical, mode-aware fallback on cold-load — see ADR-0012
 - Trip subtitle renders `location_summary` in Fraunces italic (handoff-style tagline; carries through to the archive view in M5)
 - Phase color picker locked to the accent palette (moss, clay, gold, sky); storage stays hex text
 - Empty trip starter actions: only what M1 supports (Add a phase, Add a day item)

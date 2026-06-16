@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { goto } from '$app/navigation';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Button from '$lib/ui/Button.svelte';
 
@@ -59,9 +60,15 @@
 		enctype="multipart/form-data"
 		use:enhance={() => {
 			submitting = true;
-			return async ({ update }) => {
+			return async ({ result, update }) => {
 				submitting = false;
-				await update();
+				if (result.type === 'redirect') {
+					// replaceState so back from the imported trip skips the import
+					// form and returns to the trips list (#214 / ADR-0012).
+					await goto(result.location, { replaceState: true });
+				} else {
+					await update();
+				}
 			};
 		}}
 		class="space-y-4"

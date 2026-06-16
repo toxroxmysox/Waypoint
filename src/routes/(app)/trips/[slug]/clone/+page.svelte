@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { validateForm } from '$lib/shell/actions/validate-form';
+	import { goto } from '$app/navigation';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
 	import Button from '$lib/ui/Button.svelte';
@@ -46,7 +47,13 @@
 			loading = true;
 			return async ({ result, update }) => {
 				loading = false;
-				await update();
+				if (result.type === 'redirect') {
+					// replaceState so back from the cloned trip skips the clone
+					// form and returns to the source trip (#214 / ADR-0012).
+					await goto(result.location, { replaceState: true });
+				} else {
+					await update();
+				}
 			};
 		}}
 		class="space-y-4"

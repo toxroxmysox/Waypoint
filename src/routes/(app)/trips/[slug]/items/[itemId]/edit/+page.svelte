@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { validateForm } from '$lib/shell/actions/validate-form';
-	import { beforeNavigate } from '$app/navigation';
+	import { beforeNavigate, goto } from '$app/navigation';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Button from '$lib/ui/Button.svelte';
 	import ItemForm from '$lib/itinerary/components/ItemForm.svelte';
@@ -80,8 +80,14 @@
 				if (result.type === 'failure') {
 					loading = false;
 					submitting = false;
+					await update();
+				} else if (result.type === 'redirect') {
+					// replaceState so back skips the edit form and returns to the
+					// screen the user came from, not the edit page (#214 / ADR-0012).
+					await goto(result.location, { replaceState: true });
+				} else {
+					await update();
 				}
-				await update();
 			};
 		}}
 		class="space-y-4"
