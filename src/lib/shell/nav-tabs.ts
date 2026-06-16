@@ -45,6 +45,10 @@ export function getActiveTab(pathname: string, mode: TripViewMode): string {
 		if (pathname.includes('/documents')) return 'documents';
 		if (pathname.includes('/now')) return 'now';
 		if (pathname.includes('/today')) return 'today';
+		// Trip-Mode Money summary (#227). The nav *tab* lands once #166 frees the slot
+		// (Now · Money · Add · Docs); mapping the active tab here is ready for it and is
+		// harmless until then (no tab to highlight yet).
+		if (pathname.includes('/money')) return 'money';
 		// Non-tab trip surfaces (item detail reached from Trip Mode, etc.) get NO
 		// active tab — don't false-highlight "Now" on a page that isn't Now (#197).
 		return '';
@@ -70,8 +74,11 @@ export function resolveChromeMode(
 	override: TripViewMode | null
 ): TripViewMode {
 	if (!dateActive) return 'planning';
-	// Exclusive Trip-Mode surfaces.
-	if (/\/(now|today)(\/|$)/.test(pathname)) return 'trip';
+	// Exclusive Trip-Mode surfaces. `/money` is the Trip-Mode Money summary (#227) — a
+	// trip-mode glance distinct from the planning `/expenses` + `/budget` pages it deep-
+	// links to (those deliberately stay planning chrome, #197 B-011). Tapping a deep-link
+	// crosses to planning Money by design.
+	if (/\/(now|today|money)(\/|$)/.test(pathname)) return 'trip';
 	// Shared surfaces (item detail / new item, Documents — both navs carry a Docs
 	// tab) follow the in-memory mode so a Trip-Mode drill-down keeps Trip chrome;
 	// default to Trip on an active trip.

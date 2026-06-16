@@ -8,6 +8,8 @@ describe('getActiveTab', () => {
 		expect(getActiveTab(`${P}/now`, 'trip')).toBe('now');
 		expect(getActiveTab(`${P}/today`, 'trip')).toBe('today');
 		expect(getActiveTab(`${P}/documents`, 'trip')).toBe('documents');
+		// #227 — Trip-Mode Money summary maps to 'money' (ready for the #166 nav slot).
+		expect(getActiveTab(`${P}/money`, 'trip')).toBe('money');
 	});
 
 	it('returns no active tab for non-tab trip surfaces (#197)', () => {
@@ -34,6 +36,14 @@ describe('resolveChromeMode (#197 B-011)', () => {
 		expect(resolveChromeMode(`${P}/now`, true, null)).toBe('trip');
 		expect(resolveChromeMode(`${P}/today`, true, null)).toBe('trip');
 		expect(resolveChromeMode(`${P}/today/upcoming`, true, null)).toBe('trip');
+		// #227 — the Trip-Mode Money summary is its own trip surface (clay), distinct
+		// from the planning /expenses + /budget pages it deep-links to.
+		expect(resolveChromeMode(`${P}/money`, true, null)).toBe('trip');
+	});
+
+	it('keeps the Money summary planning chrome before the trip is active', () => {
+		// Like /now, /money is planning chrome until the trip's dates make it active.
+		expect(resolveChromeMode(`${P}/money`, false, null)).toBe('planning');
 	});
 
 	it('renders PLANNING chrome on the active-trip Overview — no chimera', () => {
