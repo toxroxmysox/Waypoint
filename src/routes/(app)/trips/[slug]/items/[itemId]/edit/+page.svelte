@@ -17,6 +17,21 @@
 	let confirmDelete = $state(false);
 	let error = $derived(form?.error ?? '');
 
+	// #236: the sticky Save bar must collapse its BottomNav-clearance when the soft
+	// keyboard is open. BottomNav unmounts on input focus (to clear the keyboard),
+	// so a fixed `bottom: 5rem` clearance becomes dead space — the bar then floats
+	// mid-viewport and jitters as iOS resizes the visual viewport during scroll.
+	// Mirror BottomNav's own focus detection: keyboard open → pin to the true
+	// bottom (safe-area only); keyboard closed → sit above BottomNav (matches FAB).
+	let inputFocused = $state(false);
+	function handleFocusIn(e: FocusEvent) {
+		const tag = (e.target as HTMLElement)?.tagName;
+		if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') inputFocused = true;
+	}
+	function handleFocusOut() {
+		inputFocused = false;
+	}
+
 	beforeNavigate(({ cancel }) => {
 		if (dirty && !submitting && !confirm('You have unsaved changes. Leave anyway?')) cancel();
 	});
@@ -56,6 +71,8 @@
 		linked_goal_ids: data.item.linked_goal_ids ?? []
 	}));
 </script>
+
+<svelte:window onfocusin={handleFocusIn} onfocusout={handleFocusOut} />
 
 <NavBar
 	title="Edit"
@@ -107,7 +124,10 @@
 			typeEditable={true}
 		/>
 
-		<div class="sticky bottom-20 md-desktop:bottom-4 z-sticky bg-paper -mx-4 px-4 pt-2 pb-2">
+		<div
+			class="save-bar sticky z-sticky bg-paper -mx-4 px-4 pt-2"
+			class:save-bar--keyboard={inputFocused}
+		>
 			<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="w-full">
 				{loading ? 'Saving…' : 'Save changes'}
 			</Button>
@@ -155,3 +175,28 @@
 		{/if}
 	</div>
 </main>
+
+<style>
+	/* #236: anchored Save bar.
+	   - Keyboard CLOSED (mobile): sit just above the fixed BottomNav, matching the
+	     FAB's offset (safe-area + 5rem). The internal bottom padding carries the
+	     home-indicator safe area so the button is never under it.
+	   - Keyboard OPEN (mobile): BottomNav unmounts on input focus, so drop the
+	     clearance and pin to the true bottom (safe-area only). The bar then rides
+	     directly above the keyboard with no mid-viewport float/jitter on scroll.
+	   - Desktop (>=900px): no soft keyboard — a small static 1rem offset. */
+	.save-bar {
+		bottom: calc(env(safe-area-inset-bottom, 0px) + 5rem);
+		padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+	}
+	.save-bar.save-bar--keyboard {
+		bottom: env(safe-area-inset-bottom, 0px);
+	}
+	@media (min-width: 900px) {
+		.save-bar,
+		.save-bar.save-bar--keyboard {
+			bottom: 1rem;
+			padding-bottom: 0.5rem;
+		}
+	}
+</style>

@@ -33,6 +33,18 @@
 	let loading = $state(false);
 	let error = $derived(form?.error ?? '');
 
+	// #236: same anchored Save bar as edit — collapse the BottomNav-clearance when
+	// the soft keyboard is open (BottomNav unmounts on input focus), so the sticky
+	// bar pins to the true bottom and stops floating/jittering on scroll.
+	let inputFocused = $state(false);
+	function handleFocusIn(e: FocusEvent) {
+		const tag = (e.target as HTMLElement)?.tagName;
+		if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') inputFocused = true;
+	}
+	function handleFocusOut() {
+		inputFocused = false;
+	}
+
 	let submitAsSuggestion = $derived(data.submitAsSuggestion ?? false);
 	let prefill = $derived(data.prefill ?? null);
 	let suggestionId = $derived((prefill as Record<string, unknown> | null)?._suggestion_id as string ?? '');
@@ -84,6 +96,8 @@
 		assigned_to: Array.isArray(prefill?.assigned_to) ? (prefill.assigned_to as string[]) : [],
 	});
 </script>
+
+<svelte:window onfocusin={handleFocusIn} onfocusout={handleFocusOut} />
 
 <NavBar title="New item" subtitle={data.trip.title} back {backHref} />
 
@@ -142,10 +156,35 @@
 			typeEditable={true}
 		/>
 
-		<div class="sticky bottom-20 md-desktop:bottom-4 z-sticky bg-paper -mx-4 px-4 pt-2 pb-2">
+		<div
+			class="save-bar sticky z-sticky bg-paper -mx-4 px-4 pt-2"
+			class:save-bar--keyboard={inputFocused}
+		>
 			<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="w-full">
 				{buttonLabel}
 			</Button>
 		</div>
 	</form>
 </main>
+
+<style>
+	/* #236: anchored Save bar — see edit/+page.svelte for the full rationale.
+	   Keyboard closed: above BottomNav (safe-area + 5rem, matches FAB), with the
+	   home-indicator safe area in the bottom padding. Keyboard open: BottomNav is
+	   gone, so pin to the true bottom (safe-area only) — no float/jitter. Desktop:
+	   a static 1rem offset (no soft keyboard). */
+	.save-bar {
+		bottom: calc(env(safe-area-inset-bottom, 0px) + 5rem);
+		padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+	}
+	.save-bar.save-bar--keyboard {
+		bottom: env(safe-area-inset-bottom, 0px);
+	}
+	@media (min-width: 900px) {
+		.save-bar,
+		.save-bar.save-bar--keyboard {
+			bottom: 1rem;
+			padding-bottom: 0.5rem;
+		}
+	}
+</style>
