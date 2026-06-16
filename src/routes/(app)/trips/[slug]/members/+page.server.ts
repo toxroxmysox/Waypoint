@@ -83,7 +83,18 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 		}
 		return {
 			...m,
-			displayLabel: m.display_name || m.expand?.user?.name || m.expand?.user?.email || '(member)',
+			// #234: keep placeholder_name as the final name fallback even on the
+			// real-user branch. #223 resolved names via expand.user.name, but a
+			// name-only placeholder has no user to expand — if such a row ever lands
+			// here (e.g. a stale/orphaned `user` ref that doesn't expand), it must
+			// still show its entered name, not the generic "(member)". Mirrors the
+			// canonical display chain (VoteStacks / member-name.ts).
+			displayLabel:
+				m.display_name ||
+				m.expand?.user?.name ||
+				m.expand?.user?.email ||
+				m.placeholder_name ||
+				'(member)',
 			// Other members' email stays hidden on the roster (emailVisibility is off; #223 fixes names, not email exposure).
 			emailLabel: '',
 			isPlaceholder: false,
