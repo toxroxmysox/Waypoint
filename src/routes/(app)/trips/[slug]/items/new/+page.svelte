@@ -169,22 +169,21 @@
 
 <style>
 	/* #236: anchored Save bar — see edit/+page.svelte for the full rationale.
-	   Keyboard closed: above BottomNav (safe-area + 5rem, matches FAB), with the
-	   home-indicator safe area in the bottom padding. Keyboard open: BottomNav is
-	   gone, so pin to the true bottom (safe-area only) — no float/jitter. Desktop:
-	   a static 1rem offset (no soft keyboard). */
+	   Pinned to bottom:0 with the BottomNav clearance as INTERNAL padding-bottom, so
+	   the opaque bg-paper fills the strip to the viewport bottom (content behind it
+	   never peeks through a gap) while the button clears the nav. Keyboard closed:
+	   safe-area + 5rem. Keyboard open: BottomNav gone → safe-area only. Desktop: 1rem. */
 	.save-bar {
-		bottom: calc(env(safe-area-inset-bottom, 0px) + 5rem);
-		padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+		bottom: 0;
+		padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5.5rem);
 	}
 	.save-bar.save-bar--keyboard {
-		bottom: env(safe-area-inset-bottom, 0px);
+		padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
 	}
 	@media (min-width: 900px) {
 		.save-bar,
 		.save-bar.save-bar--keyboard {
-			bottom: 1rem;
-			padding-bottom: 0.5rem;
+			padding-bottom: 1rem;
 		}
 	}
 </style>

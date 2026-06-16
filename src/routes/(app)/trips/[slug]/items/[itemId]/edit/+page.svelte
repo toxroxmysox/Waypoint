@@ -183,26 +183,27 @@
 </main>
 
 <style>
-	/* #236: anchored Save bar.
-	   - Keyboard CLOSED (mobile): sit just above the fixed BottomNav, matching the
-	     FAB's offset (safe-area + 5rem). The internal bottom padding carries the
-	     home-indicator safe area so the button is never under it.
-	   - Keyboard OPEN (mobile): BottomNav unmounts on input focus, so drop the
-	     clearance and pin to the true bottom (safe-area only). The bar then rides
-	     directly above the keyboard with no mid-viewport float/jitter on scroll.
-	   - Desktop (>=900px): no soft keyboard — a small static 1rem offset. */
+	/* #236: anchored Save bar. The bar is pinned to bottom:0 and carries the
+	   BottomNav clearance as INTERNAL padding-bottom, so its opaque bg-paper fills
+	   the strip down to the viewport bottom — form content scrolling behind it is
+	   covered (never peeks through a gap), the button sits above the BottomNav, and
+	   the nav (higher z-index) overlays the bar's bottom padding.
+	   - Keyboard CLOSED (mobile): padding clears the BottomNav (safe-area + 5rem)
+	     + the home-indicator safe area, so the button is never under either.
+	   - Keyboard OPEN (mobile): BottomNav unmounts on input focus → drop the 5rem
+	     clearance so the button rides just above the keyboard (safe-area only).
+	   - Desktop (>=900px): no BottomNav — a small 1rem internal pad. */
 	.save-bar {
-		bottom: calc(env(safe-area-inset-bottom, 0px) + 5rem);
-		padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+		bottom: 0;
+		padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5.5rem);
 	}
 	.save-bar.save-bar--keyboard {
-		bottom: env(safe-area-inset-bottom, 0px);
+		padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
 	}
 	@media (min-width: 900px) {
 		.save-bar,
 		.save-bar.save-bar--keyboard {
-			bottom: 1rem;
-			padding-bottom: 0.5rem;
+			padding-bottom: 1rem;
 		}
 	}
 </style>
