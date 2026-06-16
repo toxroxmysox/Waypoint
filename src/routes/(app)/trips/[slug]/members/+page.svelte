@@ -284,11 +284,6 @@
 								{placeholderForm.error}
 							</div>
 						{/if}
-						{#if placeholderForm?.success}
-							<div class="border-moss/30 bg-moss-tint text-moss rounded-md border p-3 text-sm">
-								{placeholderForm.displayName} added.
-							</div>
-						{/if}
 
 						<div>
 							<label for="ph-name" class="text-ink-soft block text-sm font-medium">
