@@ -3,6 +3,7 @@
 	import { enhance } from '$app/forms';
 	import { validateForm } from '$lib/shell/actions/validate-form';
 	import { goto } from '$app/navigation';
+	import { markReplaceNavigation } from '$lib/shell/stores/nav-depth';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
 	import Button from '$lib/ui/Button.svelte';
@@ -48,6 +49,8 @@
 					if (result.type === 'redirect') {
 						// replaceState so back from the new trip skips the creation
 						// form and returns to the trips list (#214 / ADR-0012).
+						// #235: don't let the depth counter count this replace.
+						markReplaceNavigation();
 						await goto(result.location, { replaceState: true });
 					} else {
 						await update();

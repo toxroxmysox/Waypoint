@@ -6,6 +6,7 @@
 	import Button from '$lib/ui/Button.svelte';
 	import ItemForm from '$lib/itinerary/components/ItemForm.svelte';
 	import type { ItemFormData } from '$lib/itinerary/components/ItemFormFields';
+	import { markReplaceNavigation } from '$lib/shell/stores/nav-depth';
 	import { untrack } from 'svelte';
 
 	let { data, form } = $props();
@@ -101,6 +102,11 @@
 				} else if (result.type === 'redirect') {
 					// replaceState so back skips the edit form and returns to the
 					// screen the user came from, not the edit page (#214 / ADR-0012).
+					// #235: a replaceState goto adds NO history entry, but afterNavigate
+					// can't detect that — announce it so the depth counter doesn't
+					// overcount (which made back land on the replaced entry: flash, no
+					// move). Must precede the goto so the next afterNavigate consumes it.
+					markReplaceNavigation();
 					await goto(result.location, { replaceState: true });
 				} else {
 					await update();
