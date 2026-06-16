@@ -272,7 +272,7 @@
 						{@const allocated = Object.values(splitAmounts).reduce((s, v) => s + (parseFloat(v) || 0), 0)}
 						{@const remaining = (parseFloat(amount) || 0) - allocated}
 						<p class="text-xs text-ink-muted">
-							Remaining: <span class="font-mono {remaining < -0.01 ? 'text-clay' : remaining > 0.01 ? 'text-gold' : 'text-moss'}">${remaining.toFixed(2)}</span>
+							Remaining: <span class="font-mono {remaining < -0.01 ? 'text-error' : remaining > 0.01 ? 'text-gold' : 'text-moss'}">${remaining.toFixed(2)}</span>
 						</p>
 					{/if}
 				</div>
@@ -367,7 +367,7 @@
 			<p role="alert" class="mb-2 text-sm text-error">{(formProp.deleteExpense as Record<string, string>).error}</p>
 		{/if}
 
-		<Button type="submit" variant="ghost" size="md" class="w-full text-clay" disabled={deleting} loading={deleting}>
+		<Button type="submit" variant="ghost" size="md" class="w-full text-error" disabled={deleting} loading={deleting}>
 			{deleting ? 'Deleting...' : 'Delete Expense'}
 		</Button>
 	</form>

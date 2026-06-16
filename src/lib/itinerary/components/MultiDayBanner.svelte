@@ -46,7 +46,7 @@
 {#if range}
 	<a
 		href="/trips/{tripSlug}/items/{item.id}"
-		class="bg-clay text-paper flex items-center gap-3 rounded-xl px-4 py-3 shadow-sm transition-opacity hover:opacity-95"
+		class="bg-accent text-paper flex items-center gap-3 rounded-xl px-4 py-3 shadow-sm transition-opacity hover:opacity-95"
 	>
 		<span class="bg-paper/20 flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
 			<TypeIcon type={item.type} size={18} />

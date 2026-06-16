@@ -159,11 +159,11 @@
 			<div class="mb-4 flex gap-3 overflow-x-auto pb-1 -mx-4 px-4">
 				{#each myDebts as debt}
 					{@const iOwe = debt.from === data.membership.id}
-					<div class="flex-shrink-0 rounded-lg border px-4 py-3 min-w-[200px] {iOwe ? 'border-clay/30 bg-clay/5' : 'border-moss/30 bg-moss-tint'}">
-						<p class="text-xs font-medium {iOwe ? 'text-clay' : 'text-moss'}">
+					<div class="flex-shrink-0 rounded-lg border px-4 py-3 min-w-[200px] {iOwe ? 'border-accent/30 bg-accent/5' : 'border-moss/30 bg-moss-tint'}">
+						<p class="text-xs font-medium {iOwe ? 'text-accent' : 'text-moss'}">
 							{iOwe ? `You owe ${memberName(debt.to)}` : `${memberName(debt.from)} owes you`}
 						</p>
-						<p class="font-mono text-lg font-semibold {iOwe ? 'text-clay' : 'text-moss'}">
+						<p class="font-mono text-lg font-semibold {iOwe ? 'text-accent' : 'text-moss'}">
 							${formatAmount(debt.amount)}
 						</p>
 					</div>

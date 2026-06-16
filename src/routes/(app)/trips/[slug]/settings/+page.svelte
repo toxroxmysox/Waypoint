@@ -183,16 +183,16 @@
 		</div>
 	</Card>
 
-	<div class="border-clay/30 rounded-lg border p-4">
-		<h2 class="text-clay text-sm font-semibold">Danger zone</h2>
-		<p class="text-clay/80 mt-1 text-xs">
+	<div class="border-error/30 rounded-lg border p-4">
+		<h2 class="text-error text-sm font-semibold">Danger zone</h2>
+		<p class="text-error/80 mt-1 text-xs">
 			Deleting a trip removes all phases, days, and items permanently.
 		</p>
 		{#if !confirmDelete}
 			<button
 				type="button"
 				onclick={() => (confirmDelete = true)}
-				class="border-clay/40 text-clay hover:bg-clay/10 mt-3 rounded-md border px-3 py-1.5 text-sm font-semibold"
+				class="border-error/40 text-error hover:bg-error/10 mt-3 rounded-md border px-3 py-1.5 text-sm font-semibold"
 			>
 				Delete trip
 			</button>
@@ -212,7 +212,7 @@
 				<button
 					type="submit"
 					disabled={deleting}
-					class="bg-clay text-paper hover:bg-clay/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-40"
+					class="bg-error text-paper hover:bg-error/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-40"
 				>
 					{deleting ? 'Deleting…' : 'Confirm delete'}
 				</button>

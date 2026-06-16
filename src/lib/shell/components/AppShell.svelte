@@ -75,7 +75,10 @@
 	{@render children()}
 {:else}
 	<!-- Mobile: content + bottom nav -->
-	<div class="md-desktop:hidden">
+	<div
+		class="md-desktop:hidden"
+		style="--accent-current: {mode === 'trip' ? 'var(--color-clay)' : 'var(--color-moss)'}; --accent-tint-current: {mode === 'trip' ? 'var(--color-clay-tint)' : 'var(--color-moss-tint)'}"
+	>
 		{#if active}
 			<div class="px-4 pt-3 pb-1">
 				<ModePill {mode} onToggle={toggleMode} />
@@ -87,7 +90,10 @@
 	</div>
 
 	<!-- Desktop: side rail + content + context rail -->
-	<div class="hidden md-desktop:block">
+	<div
+		class="hidden md-desktop:block"
+		style="--accent-current: {mode === 'trip' ? 'var(--color-clay)' : 'var(--color-moss)'}; --accent-tint-current: {mode === 'trip' ? 'var(--color-clay-tint)' : 'var(--color-moss-tint)'}"
+	>
 		<SideRail
 			{slug}
 			{role}

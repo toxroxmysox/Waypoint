@@ -62,12 +62,12 @@
 	</div>
 	<div class="mt-2 h-1.5 rounded-full bg-surface-2 overflow-hidden">
 		<div
-			class="h-full rounded-full transition-all {totalSpent > budgetTotal ? 'bg-clay' : 'bg-moss'}"
+			class="h-full rounded-full transition-all {totalSpent > budgetTotal ? 'bg-error' : 'bg-moss'}"
 			style="width: {budgetTotal > 0 ? Math.min(100, (totalSpent / budgetTotal) * 100) : 0}%"
 		></div>
 	</div>
 	{#if totalSpent > budgetTotal}
-		<p class="mt-1 text-xs text-clay">${fmt(totalSpent - budgetTotal)} over budget</p>
+		<p class="mt-1 text-xs text-error">${fmt(totalSpent - budgetTotal)} over budget</p>
 	{/if}
 </button>
 
@@ -85,7 +85,7 @@
 						</div>
 						<div class="h-1 rounded-full bg-surface-2 overflow-hidden">
 							<div
-								class="h-full rounded-full {spent > cat.total ? 'bg-clay' : 'bg-moss'}"
+								class="h-full rounded-full {spent > cat.total ? 'bg-error' : 'bg-moss'}"
 								style="width: {Math.min(100, (spent / cat.total) * 100)}%"
 							></div>
 						</div>

@@ -96,13 +96,13 @@
 				Rename list
 			</button>
 			{#if !confirmDeleteList}
-				<button type="button" onclick={() => (confirmDeleteList = true)} class="text-ink-muted hover:text-clay text-xs font-medium">
+				<button type="button" onclick={() => (confirmDeleteList = true)} class="text-ink-muted hover:text-error text-xs font-medium">
 					Delete list
 				</button>
 			{:else}
 				<form method="POST" action="?/deleteList" use:enhance class="flex items-center gap-2">
 					<span class="text-ink-muted text-xs">Delete this list?</span>
-					<button type="submit" class="text-clay text-xs font-semibold">Confirm</button>
+					<button type="submit" class="text-error text-xs font-semibold">Confirm</button>
 					<button type="button" onclick={() => (confirmDeleteList = false)} class="text-ink-muted text-xs">Cancel</button>
 				</form>
 			{/if}

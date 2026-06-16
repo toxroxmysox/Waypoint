@@ -88,7 +88,7 @@
 
 	<form method="POST" action={deleteAction} use:enhance={closeOnDone} class="mt-3 text-center">
 		<input type="hidden" name="task_id" value={taskId} />
-		<button type="submit" class="text-ink-muted hover:text-clay text-xs font-medium">
+		<button type="submit" class="text-ink-muted hover:text-error text-xs font-medium">
 			Delete task
 		</button>
 	</form>

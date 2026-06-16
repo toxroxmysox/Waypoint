@@ -66,7 +66,7 @@
 								{memberName(debt.from)} owes {memberName(debt.to)}
 							{/if}
 						</p>
-						<p class="font-mono text-lg font-semibold {iOwe ? 'text-clay' : owedToMe ? 'text-moss' : 'text-ink'}">
+						<p class="font-mono text-lg font-semibold {iOwe ? 'text-accent' : owedToMe ? 'text-moss' : 'text-ink'}">
 							${fmt(debt.amount)}
 						</p>
 					</div>

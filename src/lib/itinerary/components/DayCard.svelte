@@ -66,7 +66,7 @@
 					{headline}
 				</p>
 				{#if isToday}
-					<span class="bg-clay text-paper shrink-0 rounded-full px-1.5 py-[1px] text-[9.5px] font-bold tracking-wide uppercase">
+					<span class="bg-accent text-paper shrink-0 rounded-full px-1.5 py-[1px] text-[9.5px] font-bold tracking-wide uppercase">
 						Today
 					</span>
 				{/if}

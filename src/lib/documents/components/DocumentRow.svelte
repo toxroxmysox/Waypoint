@@ -145,7 +145,7 @@
 						<button
 							type="button"
 							role="menuitem"
-							class="text-clay hover:bg-clay/5 flex w-full items-center gap-2 px-3 py-2 text-left"
+							class="text-error hover:bg-error/5 flex w-full items-center gap-2 px-3 py-2 text-left"
 							onclick={() => (confirming = true)}
 						>
 							Delete
@@ -169,7 +169,7 @@
 							<input type="hidden" name="document_id" value={doc.id} />
 							<p class="text-ink-muted mb-1.5 text-[12px]">Delete this document?</p>
 							<div class="flex items-center gap-2">
-								<button type="submit" disabled={deleting} class="bg-clay text-paper rounded-md px-2.5 py-1 text-xs font-semibold disabled:opacity-40">
+								<button type="submit" disabled={deleting} class="bg-error text-paper rounded-md px-2.5 py-1 text-xs font-semibold disabled:opacity-40">
 									{deleting ? 'Deleting…' : 'Delete'}
 								</button>
 								<button type="button" onclick={() => (confirming = false)} class="text-ink-muted text-xs">Cancel</button>

@@ -155,7 +155,7 @@
 							class="flex items-center gap-1.5"
 						>
 							<input type="hidden" name="document_id" value={doc.id} />
-							<button type="submit" disabled={deleting} class="bg-clay text-paper rounded-md px-2.5 py-1.5 text-xs font-semibold disabled:opacity-40">
+							<button type="submit" disabled={deleting} class="bg-error text-paper rounded-md px-2.5 py-1.5 text-xs font-semibold disabled:opacity-40">
 								{deleting ? 'Deleting…' : 'Confirm'}
 							</button>
 							<button type="button" onclick={() => (confirming = false)} class="text-paper/70 px-1.5 text-xs">Cancel</button>

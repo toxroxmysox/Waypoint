@@ -129,7 +129,7 @@
 								<button
 									type="submit"
 									aria-label="Unlink {item.title}"
-									class="text-ink-muted hover:text-clay p-1"
+									class="text-ink-muted hover:text-error p-1"
 								>
 									<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 										<path d="M6 18L18 6M6 6l12 12" />
@@ -188,13 +188,13 @@
 	{/if}
 
 	{#if data.canDelete}
-		<div class="border-clay/30 rounded-lg border p-4">
-			<h3 class="text-clay text-sm font-semibold">Delete goal</h3>
+		<div class="border-error/30 rounded-lg border p-4">
+			<h3 class="text-error text-sm font-semibold">Delete goal</h3>
 			{#if !confirmDelete}
 				<button
 					type="button"
 					onclick={() => (confirmDelete = true)}
-					class="border-clay/40 text-clay hover:bg-clay/10 mt-2 rounded-md border px-3 py-1.5 text-sm font-semibold"
+					class="border-error/40 text-error hover:bg-error/10 mt-2 rounded-md border px-3 py-1.5 text-sm font-semibold"
 				>
 					Delete
 				</button>
@@ -202,7 +202,7 @@
 				<form method="POST" action="?/delete" use:enhance class="mt-2 flex items-center gap-2">
 					<button
 						type="submit"
-						class="bg-clay text-paper hover:bg-clay/90 rounded-md px-3 py-1.5 text-sm font-semibold"
+						class="bg-error text-paper hover:bg-error/90 rounded-md px-3 py-1.5 text-sm font-semibold"
 					>
 						Confirm delete
 					</button>
