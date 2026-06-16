@@ -672,6 +672,85 @@ function printNovelReport() {
 	}
 }
 
+// #226 — self-assign exception in items.pb.js. The fixed matrix keeps items
+// update at OWNER_COOWNER_ONLY (a generic traveler edit must still 403); these
+// cases drive the NARROW carve-out: a member may PATCH `assigned_to` IFF the only
+// delta is toggling their OWN trip_members.id. Each sub-case uses a fresh fixture
+// (the fixture item starts with empty assigned_to). assigned_to holds
+// trip_members.id, NOT users.id.
+const SELF_ASSIGN_OPS = [
+	'self_add_traveler',
+	'self_remove_traveler',
+	'self_add_viewer',
+	'self_add_nonmember',
+	'add_other_member',
+	'self_add_with_other_field'
+];
+
+async function runSelfAssignNovelCases(tokens) {
+	// 1. Traveler self-ADD — toggles their own id onto an empty assigned_to → allow.
+	let fixture = await setupFixture();
+	const add = await pbRequest('PATCH', `/api/collections/items/records/${fixture.itemId}`, {
+		token: tokens.traveler,
+		body: { assigned_to: [fixture.memberIds.traveler] }
+	});
+	recordResult('items', 'self_add_traveler', 'traveler', 'allow', classifyWrite(add.status), add.status);
+
+	// 2. Traveler self-REMOVE — from a state where they're already assigned → allow.
+	//    Seed via the owner (a privileged edit) so the remove is the only delta.
+	fixture = await setupFixture();
+	await pbRequest('PATCH', `/api/collections/items/records/${fixture.itemId}`, {
+		token: tokens.owner,
+		body: { assigned_to: [fixture.memberIds.traveler] }
+	});
+	const remove = await pbRequest('PATCH', `/api/collections/items/records/${fixture.itemId}`, {
+		token: tokens.traveler,
+		body: { assigned_to: [] }
+	});
+	recordResult('items', 'self_remove_traveler', 'traveler', 'allow', classifyWrite(remove.status), remove.status);
+
+	// 3. Viewer self-ADD — viewers are read-only, never self-assign → deny.
+	fixture = await setupFixture();
+	const viewerAdd = await pbRequest('PATCH', `/api/collections/items/records/${fixture.itemId}`, {
+		token: tokens.viewer,
+		body: { assigned_to: [fixture.memberIds.viewer] }
+	});
+	recordResult('items', 'self_add_viewer', 'viewer', 'deny', classifyWrite(viewerAdd.status), viewerAdd.status);
+
+	// 4. Non-member self-ADD — not a member of the trip → deny.
+	fixture = await setupFixture();
+	const nmAdd = await pbRequest('PATCH', `/api/collections/items/records/${fixture.itemId}`, {
+		token: tokens.non_member,
+		body: { assigned_to: [fixture.memberIds.traveler] }
+	});
+	recordResult('items', 'self_add_nonmember', 'non_member', 'deny', classifyWrite(nmAdd.status), nmAdd.status);
+
+	// 5. Traveler adds ANOTHER member's id (the co_owner's) — not self → deny.
+	fixture = await setupFixture();
+	const other = await pbRequest('PATCH', `/api/collections/items/records/${fixture.itemId}`, {
+		token: tokens.traveler,
+		body: { assigned_to: [fixture.memberIds.co_owner] }
+	});
+	recordResult('items', 'add_other_member', 'traveler', 'deny', classifyWrite(other.status), other.status);
+
+	// 6. Traveler self-adds AND edits another field (title) in one PATCH → deny
+	//    (the exception forbids any other field delta).
+	fixture = await setupFixture();
+	const piggyback = await pbRequest('PATCH', `/api/collections/items/records/${fixture.itemId}`, {
+		token: tokens.traveler,
+		body: { assigned_to: [fixture.memberIds.traveler], title: 'Sneaky edit' }
+	});
+	recordResult('items', 'self_add_with_other_field', 'traveler', 'deny', classifyWrite(piggyback.status), piggyback.status);
+}
+
+function printSelfAssignReport() {
+	console.log('\n[#226 self-assign — member toggles only their OWN assigned_to]');
+	for (const r of results.filter((x) => SELF_ASSIGN_OPS.includes(x.op))) {
+		const mark = r.passed ? 'PASS' : 'FAIL';
+		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+	}
+}
+
 // #103 / ADR-0006 — co-traveler cross-read of the `users` row. The fixed
 // (collection, op, role) matrix proves co_owner/traveler/viewer can *view* the
 // owner's row and non_member can't, but it only inspects HTTP status. These
@@ -1211,12 +1290,16 @@ async function main() {
 	console.log('#118 cases: shared join link (role cap, join-at-role, revoke/expiry, clamp, tombstone)');
 	await runJoinLinkNovelCases(tokens);
 
+	console.log('#226 cases: self-assign exception (member toggles only their own assigned_to)');
+	await runSelfAssignNovelCases(tokens);
+
 	printReport();
 	printNovelReport();
 	printUsersCrossReadReport();
 	printSuggestionsReport();
 	printMemberRemovalReport();
 	printJoinLinkReport();
+	printSelfAssignReport();
 
 	const failed = results.some((r) => !r.passed);
 	exit(failed ? 1 : 0);

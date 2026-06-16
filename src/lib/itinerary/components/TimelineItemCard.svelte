@@ -122,19 +122,16 @@
 			</div>
 		</Card>
 
-		<!-- Slot: assignee avatars (ADR-0011). Sibling of the card link — a button
-		     must never nest inside the card's <a>. Tap opens the view-names sheet.
-		     Self-gates on >1 member + non-empty, so renders nothing (no stray gap)
-		     on solo trips or unassigned items. -->
-		{#if members.length > 1 && item.assigned_to.length}
-			<div class="mt-1.5 pl-1">
-				<AssigneeStacks
-					itemTitle={item.title}
-					assignedTo={item.assigned_to}
-					{members}
-					size={18}
-				/>
-			</div>
-		{/if}
+		<!-- Slot: assignee avatars + self-assign (ADR-0011 / #226). Sibling of the
+		     card link — a button must never nest inside the card's <a>. Tap opens
+		     the view-names sheet (with a "+ Me" toggle for members). Self-gates on
+		     >1 member, so it renders nothing on solo trips. -->
+		<AssigneeStacks
+			itemId={item.id}
+			itemTitle={item.title}
+			assignedTo={item.assigned_to}
+			{members}
+			size={18}
+		/>
 	</div>
 </div>

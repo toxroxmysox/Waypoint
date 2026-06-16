@@ -43,9 +43,20 @@ onRecordCreateRequest((e) => {
 }, 'items');
 
 // ---------------------------------------------------------------------------
-// Before update: only owner/co_owner may edit/move/book items. (Travelers edit
-// = suggest-only per SPEC §4; viewers read-only.)
-// ---------------------------------------------------------------------------
+// Before update: only owner/co_owner may edit/move/book items (SPEC §4 —
+// travelers edit = suggest-only; viewers read-only).
+//
+// NARROW EXCEPTION (#226, ADR-0011): a non-owner MEMBER (traveler/co_owner —
+// never a viewer) may update an item IFF the ONLY delta is adding or removing
+// their OWN trip_members.id in `assigned_to`. This is "I'm doing this" — a note
+// about the caller's own participation, never something an owner approves — so
+// it takes effect immediately and bypasses the suggest-only gate. Self-assign
+// only ever toggles the CALLER's id; any change to another member's id or to any
+// other field is rejected. The diff is computed SERVER-SIDE from the original
+// record, so the client can't sneak in extra changes.
+//
+// goja scars (cerebrum): all logic inlined in the body (no file-scope helpers);
+// explicit string comparisons (empty fields read back as truthy objects).
 onRecordUpdateRequest((e) => {
 	const authId = e.requestInfo().auth?.id;
 	if (!authId) throw new UnauthorizedError('Authentication required');
@@ -64,8 +75,64 @@ onRecordUpdateRequest((e) => {
 	}
 
 	const role = callerMember.get('role');
-	if (role !== 'owner' && role !== 'co_owner') {
+	if (role === 'owner' || role === 'co_owner') {
+		e.next();
+		return;
+	}
+
+	// Viewers are read-only — never a self-assign.
+	if (role === 'viewer') {
 		throw new ForbiddenError('Only an owner or co-owner can edit items.');
+	}
+
+	// --- Self-assign exception (traveler) --------------------------------------
+	const original = e.record.original();
+
+	// (1) Reject any OTHER field delta. Every item field except assigned_to must
+	// be byte-for-byte unchanged. Explicit, stable field list (no goja schema
+	// introspection) + string-coercion compares (empty/JSON fields read back as
+	// objects; '' + x normalizes them — cerebrum goja scar).
+	const lockedFields = [
+		'trip', 'phase', 'day', 'type', 'subtype', 'title', 'description',
+		'location_name', 'location_address', 'location_coords', 'google_place_id',
+		'start_time', 'end_time', 'start_tz', 'end_tz', 'end_date', 'status',
+		'booked', 'booked_by', 'paid_by', 'confirmation_codes', 'reservation_url',
+		'free_cancellation', 'cost_estimate_usd', 'cost_actual_usd', 'sort_order',
+		'parent_item', 'requires_booking', 'created_by'
+	];
+	for (let i = 0; i < lockedFields.length; i++) {
+		const f = lockedFields[i];
+		if ('' + e.record.get(f) !== '' + original.get(f)) {
+			throw new ForbiddenError(
+				'Only an owner or co-owner can edit items; a member may only add or remove themselves.'
+			);
+		}
+	}
+
+	// (2) The assigned_to delta must be EXACTLY the caller's own id (added XOR
+	// removed). Normalize both sides to plain string-id arrays first.
+	const rawOld = original.get('assigned_to');
+	const rawNew = e.record.get('assigned_to');
+	const oldIds = [];
+	if (rawOld) for (let i = 0; i < rawOld.length; i++) oldIds.push('' + rawOld[i]);
+	const newIds = [];
+	if (rawNew) for (let i = 0; i < rawNew.length; i++) newIds.push('' + rawNew[i]);
+
+	const me = '' + callerMember.id;
+
+	// Symmetric difference of old vs new ids — the ids that were added or removed.
+	const changed = [];
+	for (let i = 0; i < oldIds.length; i++) {
+		if (newIds.indexOf(oldIds[i]) === -1 && changed.indexOf(oldIds[i]) === -1) changed.push(oldIds[i]);
+	}
+	for (let i = 0; i < newIds.length; i++) {
+		if (oldIds.indexOf(newIds[i]) === -1 && changed.indexOf(newIds[i]) === -1) changed.push(newIds[i]);
+	}
+
+	if (changed.length !== 1 || changed[0] !== me) {
+		throw new ForbiddenError(
+			'Only an owner or co-owner can edit items; a member may only add or remove themselves.'
+		);
 	}
 
 	e.next();

@@ -79,16 +79,14 @@
 		</div>
 	</Card>
 
-	<!-- Assignee avatars (ADR-0011) — sibling of the card link (button never nests
-	     in an anchor). Tap opens the read-only view-names sheet. -->
-	{#if members.length > 1 && item.assigned_to.length}
-		<div class="mt-1.5 pl-1">
-			<AssigneeStacks
-				itemTitle={item.title}
-				assignedTo={item.assigned_to}
-				{members}
-				size={18}
-			/>
-		</div>
-	{/if}
+	<!-- Assignee avatars + self-assign (ADR-0011 / #226) — sibling of the card link
+	     (button never nests in an anchor). Tap opens the view-names sheet with a
+	     "+ Me" toggle. Self-gates on >1 member. -->
+	<AssigneeStacks
+		itemId={item.id}
+		itemTitle={item.title}
+		assignedTo={item.assigned_to}
+		{members}
+		size={18}
+	/>
 </div>

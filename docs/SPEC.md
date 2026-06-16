@@ -84,6 +84,7 @@ All test harnesses require PocketBase running via `./backend/start.sh` with `WAY
 |---|:---:|:---:|:---:|:---:|:---:|
 | Create/edit trip metadata | ✓ | ✓ | — | — | — |
 | Add/edit/delete items | ✓ | ✓ | suggest only* | — | — |
+| Self-assign (toggle own `assigned_to`) | ✓ | ✓ | ✓ (immediate)† | — | — |
 | Book / unbook items | ✓ | ✓ | suggest only | — | — |
 | Mark done / use closeout wizard | ✓ | ✓ | — | — | — |
 | View Trip Vault | ✓ | ✓ | ✓ (with trip password) | — | — |
@@ -102,6 +103,8 @@ All test harnesses require PocketBase running via `./backend/start.sh` with `WAY
 | View archive (post-trip) | ✓ | ✓ | ✓ | ✓ | ✓ (after end_date + N days) |
 
 *Traveler-suggested items can be auto-approved via per-trip setting (default: yes).
+
+†**Self-assign exception (#226, ADR-0011):** the suggest-only gate on item edits has one narrow carve-out — a Traveler (and Co-Owner/Owner) may add or remove **their own** `trip_members.id` in an item's `assigned_to`, even on an item they didn't create, and it takes effect **immediately** (no review queue). Declaring "I'm doing this" is a note about one's own participation, not a plan change an owner must approve. The exception is self-only: it is enforced in `items.pb.js` (the update hook compares old-vs-new `assigned_to` server-side and rejects any change to another member's id or to any other field), and Viewers are excluded. Assigning *other* members stays the deliberate owner/co-owner edit-form path.
 
 **Notes:**
 - Owner and Co-Owner are functionally identical. Distinction exists only for "who can promote others."

@@ -113,12 +113,8 @@
 							</div>
 						</div>
 					</Card>
-					<!-- Assignee avatars (ADR-0011) — sibling of the card link. -->
-					{#if members.length > 1 && item.assigned_to.length}
-						<div class="mt-1.5 pl-1">
-							<AssigneeStacks itemTitle={item.title} assignedTo={item.assigned_to} {members} size={18} />
-						</div>
-					{/if}
+					<!-- Assignee avatars + self-assign (ADR-0011 / #226) — sibling of the card link. -->
+					<AssigneeStacks itemId={item.id} itemTitle={item.title} assignedTo={item.assigned_to} {members} size={18} />
 				</div>
 
 				<!-- Slot: pull-up affordance (tap to plan — sibling of the link) -->
@@ -183,12 +179,10 @@
 					</div>
 				</div>
 			</Card>
-			<!-- Assignee avatars (ADR-0011) — sibling of the card link. -->
-			{#if members.length > 1 && item.assigned_to.length}
-				<div class="mt-1.5 pl-9">
-					<AssigneeStacks itemTitle={item.title} assignedTo={item.assigned_to} {members} size={18} />
-				</div>
-			{/if}
+			<!-- Assignee avatars + self-assign (ADR-0011 / #226) — sibling of the card link. -->
+			<div class="pl-8">
+				<AssigneeStacks itemId={item.id} itemTitle={item.title} assignedTo={item.assigned_to} {members} size={18} />
+			</div>
 		{/each}
 	</section>
 {/if}
