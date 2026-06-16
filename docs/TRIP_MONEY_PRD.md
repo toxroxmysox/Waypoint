@@ -13,7 +13,10 @@
 
 **SPLIT INTO THREE (Scott's call):** the PRD's two halves divide into a ship-ready **Summary**, a reusable **Prefill mechanism** (new issue, re-grill), and a re-grill of the **Capture trigger**.
 
-**A — Trip-Mode Money Summary (READY — afk):**
+**A — Trip-Mode Money Summary (RE-GRILLED 2026-06-15 → PER-PERSON model; supersedes the group framing in A1–A6 below; see #227):**
+> The glance is **per-person** ("how much do *I* have left?"), not group. **my-budget** = group total ÷ members; **my-spent** = my SHARE of expenses (the `computeBalances` split attribution — reconciliation-aware, includes what I owe, NOT out-of-pocket). Two labeled numbers, each as a **total + per-remaining-day rate** (per-day is the hero): **N1** (left = budget − share) and **N2** (left for unplanned = N1 − my share of remaining planned estimates). Solo v1; couple/"money circle" units + custom budgets deferred (**#230**). "Spent" stays actual logged expenses; estimates appear only inside N2's forecast.
+
+
 1. `money-glance` pure module + a read-only Trip-Mode (clay) money route. **KEEP the prepaid/on-trip split** (`expense.date < tripStart` vs `>=`) — it's the PRD's actual insight and nearly free. "Spent" = actual `expenses` only (never estimates). `myBalance` reuses `computeBalances`.
 2. **Budget total is NET-NEW** — there is NO reusable total helper (the summation is inline in `budget/+page.server.ts`); build it once in `money-glance` as the single source.
 3. `todaySpend` in **trip-local tz**; **over-budget renders "-$X over"** (not a vanished/negative "left"); **no budget set → show spent, omit "left."**
