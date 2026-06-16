@@ -23,8 +23,8 @@ export interface DayCardSummary {
 	bookableCount: number;
 	/** Σ cost_estimate_usd over the day's items. */
 	budgetTotal: number;
-	/** Lodging spanning this date, or null. */
-	stay: StayChip | null;
+	/** State-change chips for this date: check-in and check-out only (never 'staying'). Empty when no state changes. */
+	stays: StayChip[];
 }
 
 /** Day-scoped, non-banner items for a day: `day === id && end_date === ''`. */
@@ -45,16 +45,17 @@ export function summarizeDay(items: Item[], days: Day[], day: Day): DayCardSumma
 		days,
 		date
 	);
-	let stay: StayChip | null = null;
-	if (lodging.length > 0) {
-		const it = lodging[0];
+	const stays: StayChip[] = [];
+	for (const it of lodging) {
 		const start = it.day ? toDateOnly(days.find((d) => d.id === it.day)?.date ?? '') : '';
 		const end = toDateOnly(it.end_date ?? '');
 		const kind: StayKind = date === start ? 'check-in' : date === end ? 'check-out' : 'staying';
-		stay = { kind, name: it.title };
+		if (kind !== 'staying') {
+			stays.push({ kind, name: it.title });
+		}
 	}
 
-	return { itemCount: own.length, bookedCount, bookableCount, budgetTotal, stay };
+	return { itemCount: own.length, bookedCount, bookableCount, budgetTotal, stays };
 }
 
 /** Per-day summaries keyed by day id, for a whole trip's (or phase's) items. */

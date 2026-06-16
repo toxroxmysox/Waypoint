@@ -45,6 +45,10 @@
 		staying: 'Staying',
 		'check-out': 'Check-out'
 	};
+
+	// Only check-in and check-out chips are ever emitted; 'staying' is kept in the
+	// map for type completeness but is never rendered (#221).
+
 </script>
 
 <Card {href}>
@@ -83,15 +87,15 @@
 					<span>{summary.bookedCount}/{summary.bookableCount} booked</span>
 				{/if}
 
-				{#if summary.stay}
+				{#each summary.stays as chip (chip.kind + chip.name)}
 					<span class="text-line">·</span>
 					<span class="text-moss inline-flex min-w-0 items-center gap-1">
 						<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 							<path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4" />
 						</svg>
-						<span class="truncate">{stayLabel[summary.stay.kind]}{summary.stay.name ? ` · ${summary.stay.name}` : ''}</span>
+						<span class="truncate">{stayLabel[chip.kind]}{chip.name ? ` · ${chip.name}` : ''}</span>
 					</span>
-				{/if}
+				{/each}
 			</div>
 		</div>
 	</div>
