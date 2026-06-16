@@ -16,6 +16,7 @@ Rules of this file:
 | 2026-06-13 | E: audit-fixes (#209/#171/#205/#206) | 4 (agent branches, no PR) | 1 | 1 (infra) | 0 | 2 |
 | 2026-06-13 | F: trip-mode coherence (#167/168/169/197/199/204) | 6 (1 sequential agent) | 0 | 1 | 0 | 0 |
 | 2026-06-14 | G: audit-fixes (13 issues) | 13 (5 agents; 3 stalled overnight, PM-recovered) | 0 | 1 | 0 | 1 |
+| 2026-06-15 | dogfood (#213–223 + #214 + #222) | 9 (4 agents, 1 died→PM-recovered; refspec, no PRs) | 0 | 1 | 0 | 1 |
 
 ## Debriefs
 
@@ -26,6 +27,11 @@ Rules of this file:
 - Ceremony: <step that cost time and caught nothing — or "all earned">
 - Root cause (only if escaped > 0): <which step failed>
 -->
+
+### 2026-06-15 dogfood waves (#213–223) + #214 back + #222 accent
+- Caught-for-a-session: **#222 accent token PASSED `pnpm check` but was visually DEAD** — `--color-accent: var(--accent-current, moss)` declared in `@theme` (`:root`) resolves its var AT :root, so children inherit the resolved moss and a deeper `--accent-current` never re-resolves → accent stayed moss in trip mode. Caught ONLY by reading computed `background-color` in-browser (moss 62,90,58 vs clay 165,89,58). **pnpm-check ≠ visual-verified for theme/token CSS — measure computed styles.** Also: #223 agent leaked other-members' email on the roster (trimmed); stale-:8090 flagged a `users` non_member viewRule fail → fresh-PB re-run = green (the #105 scar held — almost filed a non-bug).
+- Boundary: one slip — I CLOSED #222 *before* the deploy push, which then rejected (origin/main advanced **4× under me** via the concurrent grill-PM session). **Close only AFTER the push confirms; fetch+rebase before every push.** Recovered #222 from a background agent that died mid-run (edits intact + uncommitted; verified + committed myself) — the "recover from the worktree, not a completion ping" lesson now appears 2× (wave-G overnight-stall + this death); already promoted to SKILL.md Dispatch, holding.
+- Ceremony: ~25 tool-calls black-box-testing #214 history semantics via synthetic preview clicks — unreliable for SvelteKit history, caught nothing; the code-read (BottomNav uses plain `<a>` → pushes) was decisive. Recognize sooner when a tool can't cleanly test a thing and fall back to code + on-device.
 
 ### 2026-06-14 wave G: audit-fixes — 5 file-disjoint agents, OVERNIGHT STALL + recovery
 - **Headline: the Mac slept when Scott went to bed and suspended 3 of 5 background agents mid-run** (~13h). Suspended agents never resume and never send a completion ping — but **per-issue commits survive in the worktree branch.** Recovery: `git log <base>..<branch>` on each stalled branch → cherry-pick the committed issues (10 of 13 here) → finish the uncommitted stragglers myself (#176/#200/#180). The agents committing per-issue (instructed) is the ONLY reason the work survived. **Promote candidate:** for long unsupervised AFK waves, recover from commits, not from completion pings; and consider warning that host-sleep kills background agents.
@@ -71,3 +77,9 @@ Two learnings each appeared **twice** → promoted into SKILL.md + starter-promp
 2. **Rename/removal → `grep tests/`.** Green-on-branch, red-on-merge. Evidence: #209 Print button (E), #198 "Estimated Total"→"Budget Total" (G). → SKILL.md integration-wave + starter-prompt GUARDRAILS.
 Not promoted: :8097 startup flake (already structurally fixed — e2e-isolated.sh 15s→30s, wave F). No ritual step has caught nothing for 5 waves, so none cut.
 - Next review due: after wave 10.
+
+## 2026-06-15 — Grill+ship session (wave I: #210 Item Assignment)
+**Debrief:** (a) Caught at integration: the agent left #225 UNCOMMITTED (recovered via patch); the stale-local-main 5-commit divergence (rebased clean); the SPEC.md auto-merge seam (verified sane, not trusted). Inspecting the agent's worktree git state *before* trusting its "completed" notification is what caught the uncommitted straggler. (b) Boundary: owned the messy multi-session integration end-to-end; surfaced the confusing git-state to Scott exactly once (he cleared it as expected concurrent work); never handed him a dev task. (c) Ceremony: re-running test:rules on a byte-identical hook was near-redundant but cheap and the rule mandates fresh-PB for hook/migration work — keep it.
+**Process fix promoted to the starter template:** "commit each slice the instant its checks pass, before any e2e/PB wait; the report-back must carry a commit SHA per slice." (Root cause of the #225 near-miss.)
+**Metrics:** 2026-06-15 | wave I | 3 PRs (#224/#225/#226) | 0 seam-bugs | 0 verify-failures | 0 escaped | 1 escalation (git-state, resolved)
+**Escaped defect:** none.
