@@ -1,13 +1,14 @@
 <script lang="ts">
 	import { getFieldConfig } from '$lib/itinerary/item-fields';
 	import { defaultRequiresBooking } from '$lib/itinerary/booking-projection';
-	import type { ItemType, ConfirmationCode } from '$lib/types';
+	import type { ItemType, ConfirmationCode, Item } from '$lib/types';
 	import Card from '$lib/ui/Card.svelte';
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
 	import PlacesAutocomplete from '$lib/itinerary/components/PlacesAutocomplete.svelte';
 	import FlightLookup from '$lib/itinerary/components/FlightLookup.svelte';
-	import { titleCase, formatTime } from '$lib/shell/format';
+	import { titleCase, formatTime, formatDateRange } from '$lib/shell/format';
+	import { itemDateRange } from '$lib/itinerary/multi-day';
 	import PhaseChip from '$lib/ui/PhaseChip.svelte';
 	import { untrack } from 'svelte';
 	import type { ItemFormMode, ItemFormData, ItemFormContext } from './ItemFormFields';
@@ -148,15 +149,21 @@
 	);
 
 	// Detail "When" row = date · start–end (no tz). §3 of CARD_CONTENT_SPEC.
+	// For multi-day items, show the full date span instead of just the start date.
+	let multiDayRange = $derived(
+		itemDateRange(initialData as unknown as Item, context.days)
+	);
 	let scheduleDate = $derived(
-		itemDay
-			? new Date(itemDay.date.replace(' ', 'T')).toLocaleDateString('en-US', {
-					weekday: 'long',
-					month: 'long',
-					day: 'numeric',
-					timeZone: 'UTC'
-				})
-			: ''
+		multiDayRange
+			? formatDateRange(multiDayRange.start, multiDayRange.end)
+			: itemDay
+				? new Date(itemDay.date.replace(' ', 'T')).toLocaleDateString('en-US', {
+						weekday: 'long',
+						month: 'long',
+						day: 'numeric',
+						timeZone: 'UTC'
+					})
+				: ''
 	);
 	let scheduleTimes = $derived(
 		fields.times && initialData.start_time
