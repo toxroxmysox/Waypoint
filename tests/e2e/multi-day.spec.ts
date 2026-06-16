@@ -56,9 +56,10 @@ test.describe('Multi-day items', () => {
 		await page.locator('input[name="end_date"]:visible').first().fill(plus3);
 		await page.locator('button[type="submit"]:visible').first().click();
 
-		// Back on the start day view: banner (a.bg-clay) shows the hotel + check-in label.
+		// Back on the start day view: banner shows the hotel + check-in label.
+		// (#222 renamed the banner class bg-clay → bg-accent, mode-driven accent.)
 		await page.waitForURL(new RegExp(startDayHref!.replace(/\//g, '\\/')), { timeout: 10000 });
-		const startBanner = page.locator('a.bg-clay:visible').first();
+		const startBanner = page.locator('a.bg-accent:visible').first();
 		await expect(startBanner).toContainText('Test Hotel');
 		await expect(startBanner).toContainText(/Check in/i);
 
@@ -66,7 +67,7 @@ test.describe('Multi-day items', () => {
 		await page.locator('a[aria-label^="Next day:"]:visible').first().click();
 		await page.waitForURL(new RegExp(`/trips/${tripSlug}/days/`));
 		// Banner re-renders here with "night X of N" — proof it spans, not a timeline card.
-		const midBanner = page.locator('a.bg-clay:visible').first();
+		const midBanner = page.locator('a.bg-accent:visible').first();
 		await expect(midBanner).toContainText('Test Hotel', { timeout: 5000 });
 		await expect(midBanner).toContainText(/night \d+ of \d+/i);
 	});

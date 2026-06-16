@@ -39,7 +39,9 @@ test.describe('Closeout leaves checklists untouched (#53)', () => {
 		await page.getByRole('button', { name: /create|save/i }).filter({ visible: true }).first().click();
 		await page.waitForURL(/\/days\//, { timeout: 10000 });
 
-		await page.getByText('Campsite').filter({ visible: true }).first().click();
+		// #231: the card is a stretched-link <a aria-label="<title>"> overlaying the
+		// content, so getByText(...).click() is intercepted by the anchor. Target the link.
+		await page.getByRole('link', { name: 'Campsite' }).filter({ visible: true }).first().click();
 		await page.waitForURL(/\/items\/[a-z0-9]+$/);
 		const itemUrl = page.url();
 		await page.getByRole('button', { name: 'Add checklist' }).filter({ visible: true }).first().click();

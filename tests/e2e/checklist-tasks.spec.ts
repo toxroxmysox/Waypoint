@@ -46,7 +46,9 @@ test.describe('Inline item checklist (#48 primitive · #55 ledger)', () => {
 		await page.waitForURL(new RegExp(dayHref!.replace(/\//g, '\\/')), { timeout: 10000 });
 
 		// --- Open the item detail ---
-		await page.getByText('Grocery run').filter({ visible: true }).first().click();
+		// #231: card is a stretched-link <a aria-label="<title>">; click the link, not the
+		// obscured text (getByText click is intercepted by the absolute-inset anchor).
+		await page.getByRole('link', { name: 'Grocery run' }).filter({ visible: true }).first().click();
 		await page.waitForURL(/\/items\/[a-z0-9]+$/);
 
 		// The trip layout is a dual tree (mobile + desktop, one CSS-hidden), so scope
