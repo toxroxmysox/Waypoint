@@ -9,7 +9,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 
 	// Trip- and phase-scoped manual checklists (item-scoped ones live on their
 	// Item, not the Lists surface).
-	const [{ checklists, tasks }, members, bookingCount] = await Promise.all([
+	const [{ checklists, tasks }, members, bookingCount, flightsCount] = await Promise.all([
 		fetchManualChecklists(locals.pb, trip.id),
 		locals.pb.collection('trip_members').getFullList<TripMember>({
 			filter: `trip = "${trip.id}" && removed_at = ""`,
@@ -21,11 +21,17 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 				filter: `trip = "${trip.id}" && requires_booking = true && booked = false && status = "planned"`
 			})
 			.then((r) => r.totalItems)
+			.catch(() => 0),
+		// Flights Smart List (#225): a read-only lens — the index shows the flight count.
+		locals.pb
+			.collection('items')
+			.getList(1, 1, { filter: `trip = "${trip.id}" && type = "flight"` })
+			.then((r) => r.totalItems)
 			.catch(() => 0)
 	]);
 
 	const lists = rollupChecklists(checklists, tasks);
-	return { lists, members: withAvatarUrls(locals.pb, members), bookingCount };
+	return { lists, members: withAvatarUrls(locals.pb, members), bookingCount, flightsCount };
 };
 
 export const actions: Actions = {

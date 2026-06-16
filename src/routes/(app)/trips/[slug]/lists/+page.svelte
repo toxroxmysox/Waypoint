@@ -58,7 +58,7 @@
 		<!-- Booking smart list — pinned first, system-maintained (content lands in #50) -->
 		<a
 			href="{listsBase}/booking"
-			class="border-gold bg-gold-tint border-l-[3px] {data.lists.length > 0 ? 'border-line border-b' : ''} flex items-center gap-3 px-[15px] py-[13px]"
+			class="border-gold bg-gold-tint border-l-[3px] border-line border-b flex items-center gap-3 px-[15px] py-[13px]"
 		>
 			<span class="border-gold bg-gold-tint flex h-7 w-7 shrink-0 items-center justify-center rounded-full border">
 				<svg width="13" height="13" viewBox="0 0 20 20" fill="none">
@@ -74,6 +74,28 @@
 			</div>
 			<span class="text-gold-deep shrink-0 font-mono text-xs font-semibold tabular-nums">
 				{data.bookingCount} left
+			</span>
+		</a>
+
+		<!-- Flights smart list (#225) — read-only chronological lens, sibling to Booking -->
+		<a
+			href="{listsBase}/flights"
+			class="border-sky bg-sky-tint border-l-[3px] {data.lists.length > 0 ? 'border-line border-b' : ''} flex items-center gap-3 px-[15px] py-[13px]"
+		>
+			<span class="border-sky bg-sky-tint flex h-7 w-7 shrink-0 items-center justify-center rounded-full border">
+				<svg width="13" height="13" viewBox="0 0 20 20" fill="none">
+					<path d="M2 11l16-6-5 13-2.5-5L2 11z" stroke="var(--color-sky)" stroke-width="1.6" stroke-linejoin="round" />
+				</svg>
+			</span>
+			<div class="min-w-0 flex-1">
+				<div class="flex items-center gap-2">
+					<span class="text-ink text-[14.5px] font-semibold">Flights</span>
+					<AutoChip />
+				</div>
+				<div class="text-sky mt-0.5 text-[11px]">Auto · read-only · in departure order</div>
+			</div>
+			<span class="text-sky shrink-0 font-mono text-xs font-semibold tabular-nums">
+				{data.flightsCount} flight{data.flightsCount === 1 ? '' : 's'}
 			</span>
 		</a>
 
