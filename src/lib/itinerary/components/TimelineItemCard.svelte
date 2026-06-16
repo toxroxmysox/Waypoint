@@ -94,7 +94,7 @@
 						{#if anchored && item.start_time}
 							<span class="font-mono">{formatTime(item.start_time)}{item.end_time ? ` – ${formatTime(item.end_time)}` : ''}</span>
 						{:else}
-							<span class="font-mono">flex</span>
+							<span>No Time Set</span>
 						{/if}
 						{#if item.location_name}<span class="text-line">·</span> {item.location_name}{/if}
 					</p>
