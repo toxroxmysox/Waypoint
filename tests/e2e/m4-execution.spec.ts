@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
 const BASE = 'http://localhost:4173';
 
 // The first trip belonging to E2E_TEST_EMAIL is active (today ∈ trip dates), so it
-// loads in *trip mode* — the nav surfaces Now/Today/Add/Documents, NOT a "More" tab.
+// loads in *trip mode* — the nav surfaces Now/Money/Add/Docs, NOT a "More" tab.
 // Secondary pages live at known routes, so navigate by URL (mode- and viewport-
 // independent) rather than clicking nav chrome that only exists in one mode.
 async function openTripSlug(page: import('@playwright/test').Page): Promise<string> {
@@ -48,13 +48,11 @@ test.describe('M4 Execution', () => {
 
 	test('trip mode today view renders', async ({ page }) => {
 		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/today`);
-		await page.waitForURL('**/today');
+		await page.goto(`${BASE}/trips/${slug}/now`);
+		await page.waitForURL('**/now');
 
-		// Should see Today content or a no-itinerary message.
-		const todayHeader = page.getByRole('heading', { level: 2 }).filter({ visible: true });
-		const noItinerary = page.getByText('No itinerary for today').filter({ visible: true });
-		await expect(todayHeader.first().or(noItinerary).first()).toBeVisible();
+		// #244 merged Today into the weighted Now view (/today 308-redirects to /now).
+		await expect(page.locator('main:visible').first()).toBeVisible();
 	});
 
 	test('A2HS banner shows and dismisses', async ({ page }) => {
@@ -71,8 +69,8 @@ test.describe('M4 Execution', () => {
 	test('mobile responsive — trip mode at 375px', async ({ page }) => {
 		await page.setViewportSize({ width: 375, height: 812 });
 		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/today`);
-		await page.waitForURL('**/today');
+		await page.goto(`${BASE}/trips/${slug}/now`);
+		await page.waitForURL('**/now');
 
 		const main = page.locator('main:visible').first();
 		const box = await main.boundingBox();
