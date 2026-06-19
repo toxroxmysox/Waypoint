@@ -46,6 +46,15 @@ onRecordCreateRequest((e) => {
 // Before update: only owner/co_owner may edit/move/book items (SPEC §4 —
 // travelers edit = suggest-only; viewers read-only).
 //
+// CREATOR EXCEPTION (#219): a member may edit ALL fields of an item THEY created
+// (created_by == the caller's own trip_members.id) DIRECTLY — no suggestion
+// queue, including booking/money fields. "Suggest-only" is about contributing to
+// OTHERS' plans; your own item is yours to edit. Delete stays owner/co_owner only
+// (enforced in the delete hook below). created_by is a relation to trip_members
+// (migration 0006), so it holds the AUTHOR'S MEMBER id — compare it to
+// callerMember.id, NOT authId (a user id). Import/closeout items have no
+// created_by, so this only ever matches items a member actually authored.
+//
 // NARROW EXCEPTION (#226, ADR-0011): a non-owner MEMBER (traveler/co_owner —
 // never a viewer) may update an item IFF the ONLY delta is adding or removing
 // their OWN trip_members.id in `assigned_to`. This is "I'm doing this" — a note
@@ -76,6 +85,17 @@ onRecordUpdateRequest((e) => {
 
 	const role = callerMember.get('role');
 	if (role === 'owner' || role === 'co_owner') {
+		e.next();
+		return;
+	}
+
+	// Creator exception (#219): the caller created this item → full direct edit.
+	// created_by holds a trip_members.id; compare to the caller's member id.
+	// String-coerce both sides (empty/relation fields read back as objects in
+	// goja — cerebrum scar); the createdBy guard skips items with no author
+	// (import/closeout), where '' === callerMember.id must never pass.
+	const createdBy = '' + e.record.get('created_by');
+	if (createdBy && createdBy === '' + callerMember.id) {
 		e.next();
 		return;
 	}

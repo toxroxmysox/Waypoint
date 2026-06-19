@@ -83,7 +83,7 @@ All test harnesses require PocketBase running via `./backend/start.sh` with `WAY
 | Action | Owner | Co-Owner | Traveler | Viewer | Public (archive link) |
 |---|:---:|:---:|:---:|:---:|:---:|
 | Create/edit trip metadata | ✓ | ✓ | — | — | — |
-| Add/edit/delete items | ✓ | ✓ | suggest only* | — | — |
+| Add/edit/delete items | ✓ | ✓ | suggest only*; edit OWN immediate‡ | — | — |
 | Self-assign (toggle own `assigned_to`) | ✓ | ✓ | ✓ (immediate)† | — | — |
 | Book / unbook items | ✓ | ✓ | suggest only | — | — |
 | Mark done / use closeout wizard | ✓ | ✓ | — | — | — |
@@ -105,6 +105,8 @@ All test harnesses require PocketBase running via `./backend/start.sh` with `WAY
 *Traveler-suggested items can be auto-approved via per-trip setting (default: yes).
 
 †**Self-assign exception (#226, ADR-0011):** the suggest-only gate on item edits has one narrow carve-out — a Traveler (and Co-Owner/Owner) may add or remove **their own** `trip_members.id` in an item's `assigned_to`, even on an item they didn't create, and it takes effect **immediately** (no review queue). Declaring "I'm doing this" is a note about one's own participation, not a plan change an owner must approve. The exception is self-only: it is enforced in `items.pb.js` (the update hook compares old-vs-new `assigned_to` server-side and rejects any change to another member's id or to any other field), and Viewers are excluded. Assigning *other* members stays the deliberate owner/co-owner edit-form path.
+
+‡**Creator-edit exception (#219):** "suggest only" governs contributing to *others'* plans. A Traveler may **edit ALL fields of an item they created** (`created_by` == the caller's own `trip_members.id`) **directly and immediately** — including booking/money fields — with no suggestion queue. Enforced in `items.pb.js` (the update hook allows the write when `created_by` matches the caller's member id) and mirrored in the edit-form UI gate (the Edit affordance and the `…/edit` route both check the same condition, so a Traveler reaches and submits the form for their own item, while another member's item still 403s). **Delete remains owner/co-owner only** — a creator can edit but not delete. Editing items created by *others* stays suggest-only.
 
 **Notes:**
 - Owner and Co-Owner are functionally identical. Distinction exists only for "who can promote others."

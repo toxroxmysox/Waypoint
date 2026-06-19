@@ -751,6 +751,88 @@ function printSelfAssignReport() {
 	}
 }
 
+// #219 — creator-edit exception in items.pb.js. The fixed matrix keeps items
+// update at OWNER_COOWNER_ONLY (a traveler editing SOMEONE ELSE's item must still
+// 403), and items delete at OWNER_COOWNER_ONLY (no creator carve-out). These
+// cases drive the new carve-out: a member may edit ALL fields of an item THEY
+// created (created_by == the caller's own trip_members.id) directly — including
+// booking/money fields — but may NOT delete it. The fixture item is
+// owner-authored; for the "own item" cases we mint a TRAVELER-authored item via
+// the owner's token (the create hook only checks the CALLER's role and does not
+// validate created_by), then act as the traveler. created_by holds a
+// trip_members.id, NOT a users.id.
+const CREATOR_EDIT_OPS = [
+	'edit_own_item_traveler',
+	'edit_own_item_booking_traveler',
+	'edit_other_item_traveler',
+	'delete_own_item_traveler'
+];
+
+async function runCreatorEditNovelCases(tokens) {
+	// 1. Traveler edits their OWN item (a plain field) → allow. Owner mints the
+	//    item with created_by = the traveler's member id; the traveler then PATCHes
+	//    a normal field.
+	let fixture = await setupFixture();
+	let made = await pbRequest('POST', '/api/collections/items/records', {
+		token: tokens.owner,
+		body: {
+			trip: fixture.tripId,
+			type: 'activity',
+			title: 'Traveler-authored item (#219)',
+			created_by: fixture.memberIds.traveler
+		}
+	});
+	const ownItemId = made.data?.id;
+	const editOwn = await pbRequest('PATCH', `/api/collections/items/records/${ownItemId}`, {
+		token: tokens.traveler,
+		body: { description: 'Creator edits their own item' }
+	});
+	recordResult('items', 'edit_own_item_traveler', 'traveler', 'allow', classifyWrite(editOwn.status), editOwn.status);
+
+	// 2. Traveler edits a BOOKING/MONEY field on their OWN item → allow (the
+	//    carve-out covers all fields, unlike the narrow #226 self-assign one).
+	const editBooking = await pbRequest('PATCH', `/api/collections/items/records/${ownItemId}`, {
+		token: tokens.traveler,
+		body: { booked: true, cost_estimate_usd: 42 }
+	});
+	recordResult('items', 'edit_own_item_booking_traveler', 'traveler', 'allow', classifyWrite(editBooking.status), editBooking.status);
+
+	// 3. Traveler edits ANOTHER member's item (the owner-authored fixture item) →
+	//    deny. The creator exception must not leak to non-creators.
+	fixture = await setupFixture();
+	const editOther = await pbRequest('PATCH', `/api/collections/items/records/${fixture.itemId}`, {
+		token: tokens.traveler,
+		body: { description: 'Editing someone else’s item' }
+	});
+	recordResult('items', 'edit_other_item_traveler', 'traveler', 'deny', classifyWrite(editOther.status), editOther.status);
+
+	// 4. Traveler DELETEs their OWN item → deny. The creator may edit but never
+	//    delete (delete stays owner/co_owner only).
+	fixture = await setupFixture();
+	made = await pbRequest('POST', '/api/collections/items/records', {
+		token: tokens.owner,
+		body: {
+			trip: fixture.tripId,
+			type: 'activity',
+			title: 'Traveler-authored item to delete (#219)',
+			created_by: fixture.memberIds.traveler
+		}
+	});
+	const delOwnId = made.data?.id;
+	const delOwn = await pbRequest('DELETE', `/api/collections/items/records/${delOwnId}`, {
+		token: tokens.traveler
+	});
+	recordResult('items', 'delete_own_item_traveler', 'traveler', 'deny', classifyWrite(delOwn.status), delOwn.status);
+}
+
+function printCreatorEditReport() {
+	console.log('\n[#219 creator-edit — member edits their OWN item directly, but cannot delete it]');
+	for (const r of results.filter((x) => CREATOR_EDIT_OPS.includes(x.op))) {
+		const mark = r.passed ? 'PASS' : 'FAIL';
+		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+	}
+}
+
 // #103 / ADR-0006 — co-traveler cross-read of the `users` row. The fixed
 // (collection, op, role) matrix proves co_owner/traveler/viewer can *view* the
 // owner's row and non_member can't, but it only inspects HTTP status. These
@@ -1293,6 +1375,9 @@ async function main() {
 	console.log('#226 cases: self-assign exception (member toggles only their own assigned_to)');
 	await runSelfAssignNovelCases(tokens);
 
+	console.log('#219 cases: creator-edit exception (member edits their own item; cannot delete it)');
+	await runCreatorEditNovelCases(tokens);
+
 	printReport();
 	printNovelReport();
 	printUsersCrossReadReport();
@@ -1300,6 +1385,7 @@ async function main() {
 	printMemberRemovalReport();
 	printJoinLinkReport();
 	printSelfAssignReport();
+	printCreatorEditReport();
 
 	const failed = results.some((r) => !r.passed);
 	exit(failed ? 1 : 0);

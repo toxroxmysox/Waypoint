@@ -70,12 +70,14 @@
 			>
 				Move
 			</button>
-			<a
-				href="/trips/{data.trip.slug}/items/{data.item.id}/edit"
-				class="text-ink-soft hover:text-ink text-[12px] font-semibold"
-			>
-				Edit
-			</a>
+			{#if data.canEdit}
+				<a
+					href="/trips/{data.trip.slug}/items/{data.item.id}/edit"
+					class="text-ink-soft hover:text-ink text-[12px] font-semibold"
+				>
+					Edit
+				</a>
+			{/if}
 		</div>
 	{/snippet}
 </NavBar>

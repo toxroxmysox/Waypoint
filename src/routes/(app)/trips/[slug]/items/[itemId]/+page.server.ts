@@ -89,7 +89,15 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 
 	const myVote = votes.find((v) => v.member === membership.id) ?? null;
 
-	return { item, checklist, tasks, members: withAvatarUrls(locals.pb, members), comments, votes, myVote, documents, itemDay: day, itemPhase: phase, linkedExpenseCount: linkedExpenses.length, linkedGoals };
+	// #219 — who may edit this item directly: owner/co_owner, OR the member who
+	// created it (created_by holds a trip_members.id). Mirrors the items.pb.js
+	// update gate so the Edit affordance never shows when the submit would 403.
+	const canEdit =
+		membership.role === 'owner' ||
+		membership.role === 'co_owner' ||
+		(!!item.created_by && item.created_by === membership.id);
+
+	return { item, checklist, tasks, members: withAvatarUrls(locals.pb, members), comments, votes, myVote, documents, itemDay: day, itemPhase: phase, linkedExpenseCount: linkedExpenses.length, linkedGoals, canEdit };
 };
 
 async function getMembership(locals: App.Locals, tripId: string): Promise<TripMember> {

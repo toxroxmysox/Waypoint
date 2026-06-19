@@ -6,7 +6,7 @@ import { combineDateTime } from '$lib/shell/trip-time';
 import { syncGoalLinks } from '$lib/itinerary/goal-links';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
-	const { trip, phases, days } = await parent();
+	const { trip, membership, phases, days } = await parent();
 
 	let item: Item;
 	try {
@@ -17,6 +17,19 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 
 	if (item.trip !== trip.id) {
 		error(404, 'Item not found');
+	}
+
+	// #219 — gate the edit form to who can actually save: owner/co_owner, OR the
+	// member who created this item (created_by holds a trip_members.id). Matches
+	// the items.pb.js update hook so a traveler can reach + submit edits to their
+	// OWN item, but a direct nav to another member's item returns 403 here rather
+	// than rendering a form whose submit would 403.
+	const canEdit =
+		membership.role === 'owner' ||
+		membership.role === 'co_owner' ||
+		(!!item.created_by && item.created_by === membership.id);
+	if (!canEdit) {
+		error(403, 'Only an owner, co-owner, or the item’s creator can edit this item.');
 	}
 
 	const members = await locals.pb.collection('trip_members').getFullList<TripMember>({
