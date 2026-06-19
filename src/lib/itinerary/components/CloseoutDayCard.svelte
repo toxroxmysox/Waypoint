@@ -54,11 +54,15 @@
 				action="?/markDoneAll"
 				use:enhance={() => {
 					bulkSubmitting = true;
-					return async ({ result }) => {
+					return async ({ result, update }) => {
 						bulkSubmitting = false;
 						if (result.type === 'success') {
 							bulkDone = true;
-							window.location.reload();
+							// Re-run load() so items come back status:done (rows re-derive isDone).
+							// update() re-renders WITHOUT remounting the page — so the closeout
+							// wizard's currentDayIndex survives. A full window.location.reload()
+							// reset it to 0, snapping the user back to the first day (#257).
+							await update({ reset: false });
 						}
 					};
 				}}
