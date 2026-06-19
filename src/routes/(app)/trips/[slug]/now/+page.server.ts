@@ -1,9 +1,10 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Day, Item, Checklist, Task, TripMember } from '$lib/types';
+import type { Day, Item, Checklist, Task, TripMember, Vote } from '$lib/types';
 import { tripNow, tripTz } from '$lib/shell/trip-time';
 import { isTripActive } from '$lib/trip-mode/activation';
 import { fetchManualChecklists } from '$lib/itinerary/checklist-loaders';
+import { withAvatarUrls } from '$lib/collaboration/member-avatar';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, days } = await parent();
@@ -17,11 +18,26 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const todayStr = now.toISOString().split('T')[0];
 	const today = days.find((d: Day) => d.date.split(/[T ]/)[0] === todayStr) ?? null;
 
-	// Now is today-only and forward-looking: the full set of today's discrete
-	// (non-spanning) items. No tomorrow / next-3-days — that's Today's job.
+	// #244: Now absorbed Today — it is the whole day, not just the forward slice.
+	// All of today's discrete (non-spanning) items, TIMED AND UNTIMED, so a promoted
+	// (untimed) idea renders. Weights (faded past / Focus / normal rest) derive client-
+	// side via `getNowFeed`; the loader just supplies the full set.
 	const todayItems = today
 		? await locals.pb.collection('items').getFullList<Item>({
 				filter: `day = "${today.id}" && end_date = ""`,
+				sort: 'start_time,sort_order'
+			})
+		: [];
+
+	// Next-day preview (the divider tail → "Next 3 days"). Just tomorrow's items;
+	// the full 3-day list lives on /today/upcoming (the "Next 3 days" sub-tab).
+	const tomorrow = new Date(now);
+	tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+	const tomorrowStr = tomorrow.toISOString().split('T')[0];
+	const tomorrowDay = days.find((d: Day) => d.date.split(/[T ]/)[0] === tomorrowStr) ?? null;
+	const tomorrowItems = tomorrowDay
+		? await locals.pb.collection('items').getFullList<Item>({
+				filter: `day = "${tomorrowDay.id}" && end_date = ""`,
 				sort: 'start_time,sort_order'
 			})
 		: [];
@@ -41,6 +57,24 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 				})
 			: [];
 
+	// Roster + votes for the merged Now cards (#244, mirroring Today): card avatars
+	// denote assignees, votes show as a count pill. Roster also carries email for the
+	// member-contact strip (#244: members left the nav — surface tap-to-contact here).
+	const itemIds = [...todayItems, ...multiDayItems].map((i) => i.id);
+	const [votes, members] = await Promise.all([
+		itemIds.length > 0
+			? locals.pb.collection('votes').getFullList<Vote>({
+					filter: itemIds.map((id) => `item = "${id}"`).join(' || ')
+				})
+			: Promise.resolve([] as Vote[]),
+		locals.pb.collection('trip_members').getFullList<TripMember>({
+			filter: `trip = "${trip.id}" && removed_at = ""`,
+			expand: 'user'
+		})
+	]);
+	const votesByItem: Record<string, Vote[]> = {};
+	for (const v of votes) (votesByItem[v.item] ??= []).push(v);
+
 	// Trip Mode checklists (#52): read + check-off in place (Slice B). Trip/phase-
 	// scoped manual lists only; item-scoped lists stay on their Item.
 	const { checklists: lists, tasks: listTasks } = await fetchManualChecklists(locals.pb, trip.id);
@@ -52,8 +86,12 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 
 	return {
 		todayItems,
+		tomorrowItems,
+		tomorrowDate: tomorrowDay?.date ?? null,
 		multiDayItems,
 		checklists,
+		votesByItem,
+		members: withAvatarUrls(locals.pb, members),
 		hasToday: today !== null,
 		now: now.toISOString()
 	};

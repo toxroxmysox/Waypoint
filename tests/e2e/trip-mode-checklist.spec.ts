@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 // Issue #52 — Trip Mode checklist check-off. A checklist created in Planning is
-// checkable from Trip Mode's Today surface (read + check only); the check
-// persists back to Planning. No create/rename/assign/delete in Trip Mode.
+// checkable from Trip Mode's merged Now surface (#244; read + check only); the
+// check persists back to Planning. No create/rename/assign/delete in Trip Mode.
 const BASE = 'http://localhost:4173';
 
 test.describe('Trip Mode checklist check-off (#52)', () => {
@@ -47,8 +47,8 @@ test.describe('Trip Mode checklist check-off (#52)', () => {
 		await addRow.press('Enter');
 		await expect(page.getByText('Tent').filter({ visible: true }).first()).toBeVisible();
 
-		// --- Trip Mode (Today): the list shows, check the task ---
-		await page.goto(`${BASE}/trips/${tripSlug}/today`);
+		// --- Trip Mode (merged Now, #244): the list shows, check the task ---
+		await page.goto(`${BASE}/trips/${tripSlug}/now`);
 		await expect(page.getByText('Packing').filter({ visible: true }).first()).toBeVisible();
 		await expect(page.getByText('Tent').filter({ visible: true }).first()).toBeVisible();
 

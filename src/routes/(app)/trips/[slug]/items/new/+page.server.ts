@@ -298,9 +298,9 @@ export const actions: Actions = {
 			}
 			// Trip-Mode quick-add keeps the user in Trip Mode on save (#169); else
 			// the trip overview (an auto-approved item shows there; a queued one
-			// surfaces in the owner's inbox).
+			// surfaces in the owner's inbox). #244: Now absorbed Today.
 			if (cameFromTrip) {
-				redirect(303, `/trips/${params.slug}/today`);
+				redirect(303, `/trips/${params.slug}/now`);
 			}
 			redirect(303, `/trips/${params.slug}`);
 		}
@@ -325,10 +325,11 @@ export const actions: Actions = {
 				await syncGoalLinks(locals.pb, trip.id, created.id, goalIds);
 			}
 
-			// Trip-Mode quick-add lands back on Today (the new item shows there);
-			// planning-entry returns to the day view, else the trip overview (#169).
+			// Trip-Mode quick-add lands back on the merged Now view (the new item shows
+			// there — #244); planning-entry returns to the day view, else the trip
+			// overview (#169).
 			if (cameFromTrip) {
-				redirect(303, `/trips/${params.slug}/today`);
+				redirect(303, `/trips/${params.slug}/now`);
 			}
 			if (day) {
 				redirect(303, `/trips/${params.slug}/days/${day}`);

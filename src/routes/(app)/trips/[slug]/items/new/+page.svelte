@@ -15,14 +15,14 @@
 
 	// Back/cancel target mirrors where a successful submit returns (#178):
 	//   - Edit & Approve (?suggestion=) → Inbox (where approve also lands)
-	//   - Trip-Mode quick-add (?from=trip) → Today (#197 / #169)
+	//   - Trip-Mode quick-add (?from=trip) → the merged Now view (#244 / #197 / #169)
 	//   - entered from a day (?day=) → that day view (was teleporting to Overview)
 	//   - otherwise → the trip Overview
 	let backHref = $derived(
 		page.url.searchParams.get('suggestion')
 			? `/trips/${data.trip.slug}/inbox`
 			: fromTrip(page.url)
-				? `/trips/${data.trip.slug}/today`
+				? `/trips/${data.trip.slug}/now`
 				: data.preselectedDay
 					? `/trips/${data.trip.slug}/days/${data.preselectedDay}`
 					: `/trips/${data.trip.slug}`

@@ -52,3 +52,14 @@ export interface NowViewState {
 	focus: NowFocus;
 	forwardItems: Item[];
 }
+
+/**
+ * The merged Now feed (#244): today split into exactly three visual weights.
+ * `pastItems` (faded peek) above the Focus; `restItems` (forward timed woven with
+ * all untimed, normal weight) below it. Derived by `getNowFeed`.
+ */
+export interface NowFeed {
+	focus: NowFocus;
+	pastItems: Item[];
+	restItems: Item[];
+}

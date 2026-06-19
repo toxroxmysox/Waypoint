@@ -37,11 +37,12 @@
 	let allComments = $derived([...optimisticComments, ...data.comments]);
 
 	// Back is mode-aware (#197): a Trip-Mode drill-down (?from=trip) returns to
-	// Today; a planning visit returns to the item's day, else its phase (#197
-	// B-023 — parking ideas have no day), else the Overview.
+	// the merged Now view (#244 — Now absorbed Today); a planning visit returns to
+	// the item's day, else its phase (#197 B-023 — parking ideas have no day), else
+	// the Overview.
 	let backHref = $derived(
 		fromTrip(page.url)
-			? `/trips/${data.trip.slug}/today`
+			? `/trips/${data.trip.slug}/now`
 			: data.itemDay
 				? `/trips/${data.trip.slug}/days/${data.itemDay.id}`
 				: data.itemPhase

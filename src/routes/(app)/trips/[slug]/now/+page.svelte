@@ -1,57 +1,82 @@
 <script lang="ts">
-	// Weighted Now view (#121 Slice B / #154). One always-on Focus block, then a
-	// forward today-only list in diminishing visual weight: next item normal, the
-	// rest in the muted "later today" tier. Past items hidden (Today dims them).
-	// Items are read-only here — tap a card to open detail; only checklist tasks
-	// toggle in place. Tier styling is first-pass (#121 soft area).
+	// Merged Now view (#244). Now absorbed Today: one weighted whole-day glance with
+	// exactly THREE visual weights, top → bottom — faded past (peek, revealed by
+	// scrolling up; the page auto-scrolls to the Focus on open so the past sits
+	// above the fold) → Focus active item full detail → normal-weight rest cards
+	// (this OVERRIDES #154's muted "later today" tier) → divider → next-day preview
+	// + link to the "Next 3 days" sub-tab. Shows ALL of today incl. UNTIMED items.
 	import NavBar from '$lib/ui/NavBar.svelte';
+	import SubTabs from '$lib/ui/SubTabs.svelte';
 	import Card from '$lib/ui/Card.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
-	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import NowDivider from '$lib/trip-mode/components/NowDivider.svelte';
 	import TripModeCard from '$lib/trip-mode/components/TripModeCard.svelte';
+	import MemberContactStrip from '$lib/trip-mode/components/MemberContactStrip.svelte';
 	import MultiDayBanner from '$lib/itinerary/components/MultiDayBanner.svelte';
 	import TaskRow from '$lib/itinerary/components/TaskRow.svelte';
-	import { getNowViewState } from '$lib/trip-mode/now-state';
+	import { getNowFeed } from '$lib/trip-mode/now-state';
 	import { formatCountdown, formatTime } from '$lib/shell/format';
 	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
-	import { untrack } from 'svelte';
+	import { untrack, tick, onMount } from 'svelte';
 
 	let { data } = $props();
 
-	// #180 — the bell was absent from Now (Trip Mode's landing) though Today carries
-	// it. Documented placement rule: the NotificationBell lives on the mode-landing +
-	// hub pages — Overview, Now, Today, Money (expenses/budget), More — and is
-	// intentionally omitted on focused drill-downs (item detail, phases, lists,
-	// settings). Notifications ride the shared trip layout load.
+	// #180 — the bell lives on the mode-landing + hub pages (Overview, Now, Money,
+	// Docs, More). Notifications ride the shared trip layout load.
 	let notifications = $state(untrack(() => data.notifications ?? []));
 	let unreadCount = $state(untrack(() => data.unreadCount ?? 0));
 
 	const nowIso = untrack(() => data.now);
 	const now = new Date(nowIso);
 	const todayStr = nowIso.split('T')[0];
-	// Named nowState (not `state`) so it doesn't shadow the $state rune the bell uses.
-	const nowState = $derived(getNowViewState(data.todayItems, now, data.hasToday));
-	const focus = $derived(nowState.focus);
 
-	// In free-time the Focus already counts down to forwardItems[0]; it renders
-	// here ONCE, as the first normal-weight row — never enlarged twice. In
-	// mid-event the ongoing item is the Focus and forwardItems[0] is genuinely up
-	// next. forwardItems arrive ordered (timed, earliest first) from Slice A.
-	const nextItem = $derived(nowState.forwardItems[0] ?? null);
-	const laterItems = $derived(nowState.forwardItems.slice(1));
+	// The merged feed: faded past / Focus / normal rest (timed + untimed woven).
+	// Named nowFeed (not `feed`/`state`) to avoid shadowing the $state rune.
+	const nowFeed = $derived(getNowFeed(data.todayItems, now, data.hasToday));
+	const focus = $derived(nowFeed.focus);
+	const pastItems = $derived(nowFeed.pastItems);
+	const restItems = $derived(nowFeed.restItems);
 
-	// Single end-of-day tail marker after the last upcoming item (#121 grill res.
-	// 4 — no per-gap rows). The empty-Focus states already say it themselves.
-	const showTail = $derived(focus.kind === 'mid-event' || focus.kind === 'free-time');
+	// "Up next" highlight keys off the Focus's actual next TIMED item, not a
+	// positional index — an untimed idea can sort ahead of the next timed thing in
+	// the woven rest, and it isn't the "next" anything. In mid-event the ongoing
+	// item is the Focus, so nothing in the rest is "up next".
+	const nextItemId = $derived(focus.kind === 'free-time' ? focus.nextItem.id : null);
+
+	function dayLabel(dateStr: string): string {
+		return new Date(dateStr.replace(' ', 'T')).toLocaleDateString('en-US', {
+			weekday: 'long',
+			month: 'short',
+			day: 'numeric',
+			timeZone: 'UTC'
+		});
+	}
+
+	// Auto-scroll to the Focus on open (the contract's anchor). This naturally
+	// pushes the faded past above the fold → "reveal on scroll-up". Mirrors
+	// TodayTimeline's onMount scroll. No-op on SSR / when there's no past to hide.
+	onMount(() => {
+		if (pastItems.length === 0) return;
+		tick().then(() => {
+			document.getElementById('now-focus')?.scrollIntoView({ behavior: 'auto', block: 'start' });
+		});
+	});
 </script>
 
+<!-- Now is a root Trip-Mode tab, not a drill-down — no back chevron (#197 B-012). -->
 <NavBar title="Now" subtitle={data.trip.title} subtitleStyle="tagline">
 	{#snippet right()}
 		<NotificationBell bind:notifications bind:unreadCount />
 	{/snippet}
 </NavBar>
+
+<!-- #244: Now owns the sub-tabs. Today (default, this view) + Next 3 days
+     (the existing /today/upcoming view). -->
+<SubTabs tabs={[
+	{ id: 'today', label: 'Today', href: `/trips/${data.trip.slug}/now` },
+	{ id: 'upcoming', label: 'Next 3 Days', href: `/trips/${data.trip.slug}/today/upcoming` }
+]} />
 
 <!-- #84: reserve the home-indicator safe area so the fixed bottom nav doesn't clip the last items -->
 <main
@@ -72,92 +97,109 @@
 		</div>
 	{/if}
 
-	<!-- Focus -->
-	{#if focus.kind === 'mid-event'}
-		<section class="space-y-2">
-			<div class="flex items-center justify-between">
-				<Pill variant="trip" size="sm">Right now</Pill>
-				<p class="text-ink-muted text-xs">{formatCountdown(focus.minutesRemaining)} remaining</p>
-			</div>
-			<TripModeCard item={focus.currentItem} slug={data.trip.slug} />
-		</section>
-	{:else if focus.kind === 'free-time'}
-		<Card>
-			<div class="p-6 text-center">
-				<p class="text-ink-muted text-xs font-medium uppercase tracking-wide">Free time</p>
-				<p class="text-ink font-display mt-2 text-3xl font-semibold">
-					{formatCountdown(focus.minutesUntilNext)}
-				</p>
-				<p class="text-ink-muted mt-1 text-sm">until next activity</p>
-			</div>
-		</Card>
-	{:else if focus.kind === 'wrapped-summary'}
-		<Card>
-			<div class="p-6 text-center">
-				<p class="text-ink font-display text-xl font-semibold">Day wrapped</p>
-				{#if focus.totalCount > 0}
-					<p class="text-ink-muted mt-2 text-sm">
-						{focus.totalCount} {focus.totalCount === 1 ? 'thing' : 'things'} on today's plan
-					</p>
-				{:else}
-					<p class="text-ink-muted mt-2 text-sm">Nothing was scheduled for today.</p>
-				{/if}
-			</div>
-		</Card>
-	{:else if focus.kind === 'nothing-else-planned'}
-		<Card>
-			<div class="p-6 text-center">
-				<p class="text-ink-soft font-semibold">Nothing else planned</p>
-				<p class="text-ink-muted mt-1 text-sm">The rest of today is open.</p>
-			</div>
-		</Card>
-	{:else}
-		<Card>
-			<div class="p-6 text-center">
-				<p class="text-ink-soft font-semibold">No itinerary for today</p>
-				<p class="text-ink-muted mt-1 text-sm">Today doesn't fall within this trip's dates.</p>
-			</div>
-		</Card>
-	{/if}
-
-	<!-- Forward today-only list: next at normal weight, the rest muted -->
-	{#if nextItem}
-		<NowDivider label="Up next" />
-		<Card href="/trips/{data.trip.slug}/items/{nextItem.id}?from=trip">
-			<div class="flex items-center gap-3 p-4">
-				<TypeIcon type={nextItem.type} sub={nextItem.subtype} size={36} />
-				<div class="min-w-0 flex-1">
-					<h4 class="text-ink text-base font-semibold">{nextItem.title}</h4>
-					{#if nextItem.start_time}
-						<p class="text-ink-muted font-mono mt-0.5 text-sm">{formatTime(nextItem.start_time)}</p>
-					{/if}
-					{#if nextItem.location_name}
-						<p class="text-ink-muted mt-0.5 text-sm">{nextItem.location_name}</p>
-					{/if}
-				</div>
-			</div>
-		</Card>
-	{/if}
-
-	{#if laterItems.length > 0}
-		<section class="space-y-1">
-			<p class="text-ink-muted text-[11px] font-medium uppercase tracking-wide">Later today</p>
-			{#each laterItems as item (item.id)}
+	<!-- Weight 1: faded past (peek above the Focus; auto-scroll lands on the Focus
+	     so these need a scroll-up to reach). Hidden entirely when nothing's behind. -->
+	{#if pastItems.length > 0}
+		<section class="space-y-1 opacity-55">
+			<p class="text-ink-muted text-[11px] font-medium uppercase tracking-wide">Earlier today</p>
+			{#each pastItems as item (item.id)}
 				<a
 					href="/trips/{data.trip.slug}/items/{item.id}?from=trip"
-					class="hover:bg-surface-2 flex items-center gap-2.5 rounded-lg px-2 py-2 opacity-75 transition-opacity hover:opacity-100"
+					class="hover:bg-surface-2 flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors"
 				>
-					<span class="font-mono text-ink-muted w-16 shrink-0 text-xs">
-						{formatTime(item.start_time)}
-					</span>
+					<span class="font-mono text-ink-muted w-16 shrink-0 text-xs">{formatTime(item.start_time)}</span>
 					<span class="text-ink-soft truncate text-sm">{item.title}</span>
 				</a>
 			{/each}
 		</section>
 	{/if}
 
-	{#if showTail}
-		<p class="text-ink-muted py-1 text-center text-xs">Nothing else planned</p>
+	<!-- Weight 2: Focus — the live state, front-and-centre, full detail. Auto-scroll target. -->
+	<div id="now-focus" class="scroll-mt-[110px]">
+		{#if focus.kind === 'mid-event'}
+			<section class="space-y-2">
+				<div class="flex items-center justify-between">
+					<Pill variant="trip" size="sm">Right now</Pill>
+					<p class="text-ink-muted text-xs">{formatCountdown(focus.minutesRemaining)} remaining</p>
+				</div>
+				<TripModeCard item={focus.currentItem} slug={data.trip.slug} />
+			</section>
+		{:else if focus.kind === 'free-time'}
+			<Card>
+				<div class="p-6 text-center">
+					<p class="text-ink-muted text-xs font-medium uppercase tracking-wide">Free time</p>
+					<p class="text-ink font-display mt-2 text-3xl font-semibold">
+						{formatCountdown(focus.minutesUntilNext)}
+					</p>
+					<p class="text-ink-muted mt-1 text-sm">until next activity</p>
+				</div>
+			</Card>
+		{:else if focus.kind === 'wrapped-summary'}
+			<Card>
+				<div class="p-6 text-center">
+					<p class="text-ink font-display text-xl font-semibold">Day wrapped</p>
+					{#if focus.totalCount > 0}
+						<p class="text-ink-muted mt-2 text-sm">
+							{focus.totalCount} {focus.totalCount === 1 ? 'thing' : 'things'} on today's plan
+						</p>
+					{:else}
+						<p class="text-ink-muted mt-2 text-sm">Nothing was scheduled for today.</p>
+					{/if}
+				</div>
+			</Card>
+		{:else if focus.kind === 'nothing-else-planned'}
+			<Card>
+				<div class="p-6 text-center">
+					<p class="text-ink-soft font-semibold">Nothing else planned</p>
+					<p class="text-ink-muted mt-1 text-sm">The rest of today is open.</p>
+				</div>
+			</Card>
+		{:else}
+			<Card>
+				<div class="p-6 text-center">
+					<p class="text-ink-soft font-semibold">No itinerary for today</p>
+					<p class="text-ink-muted mt-1 text-sm">Today doesn't fall within this trip's dates.</p>
+				</div>
+			</Card>
+		{/if}
+	</div>
+
+	<!-- Weight 3: the rest at NORMAL weight (overrides #154's muted later-today
+	     tier). Forward timed items woven with all untimed items. Full cards. -->
+	{#if restItems.length > 0}
+		<section class="space-y-2">
+			<NowDivider label="Coming up" />
+			{#each restItems as item (item.id)}
+				<TripModeCard {item} slug={data.trip.slug} isNext={item.id === nextItemId} />
+			{/each}
+		</section>
+	{/if}
+
+	<!-- Divider → next-day preview + link to the "Next 3 days" sub-tab. -->
+	{#if data.tomorrowDate}
+		<div class="border-line border-t pt-4">
+			<SectionH>
+				{#snippet right()}
+					<a href="/trips/{data.trip.slug}/today/upcoming" class="text-ink-muted hover:text-ink-soft text-xs">Next 3 days</a>
+				{/snippet}
+				{dayLabel(data.tomorrowDate)}
+			</SectionH>
+			{#if data.tomorrowItems.length > 0}
+				<div class="mt-2 space-y-1">
+					{#each data.tomorrowItems.slice(0, 3) as item (item.id)}
+						<a href="/trips/{data.trip.slug}/items/{item.id}?from=trip" class="border-line hover:border-ink-muted flex items-center gap-2 rounded-lg border px-3 py-2">
+							<span class="font-mono text-ink-muted text-xs">{item.start_time ? formatTime(item.start_time) : '—'}</span>
+							<span class="text-ink text-sm truncate">{item.title}</span>
+						</a>
+					{/each}
+					{#if data.tomorrowItems.length > 3}
+						<p class="text-ink-muted text-center text-xs">+{data.tomorrowItems.length - 3} more</p>
+					{/if}
+				</div>
+			{:else}
+				<p class="text-ink-muted mt-2 text-xs">Nothing scheduled.</p>
+			{/if}
+		</div>
 	{/if}
 
 	<!-- Trip Mode checklists (#52): read + check only, no create/rename/assign -->
@@ -194,4 +236,7 @@
 			{/each}
 		</div>
 	{/if}
+
+	<!-- #244: Members left the Trip nav — surface tap-to-contact a fellow traveller here. -->
+	<MemberContactStrip members={data.members} selfUserId={data.membership.user} />
 </main>

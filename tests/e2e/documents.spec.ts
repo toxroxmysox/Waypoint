@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
 const BASE = 'http://localhost:4173';
 
 // Documents (#70/#71). The first E2E trip is active → it loads in trip mode, so
-// the bottom nav surfaces Now/Today/Add/Docs. Secondary pages live at known
+// the bottom nav surfaces Now/Money/Add/Docs (#244). Secondary pages live at known
 // routes, so navigate by URL (mode- and viewport-independent).
 async function openTripSlug(page: import('@playwright/test').Page): Promise<string> {
 	await page.goto(`${BASE}/trips`);

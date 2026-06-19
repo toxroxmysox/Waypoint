@@ -1,14 +1,38 @@
 import { describe, it, expect } from 'vitest';
-import { getActiveTab, resolveChromeMode, fromTrip } from './nav-tabs';
+import { getNavConfig, getActiveTab, resolveChromeMode, fromTrip } from './nav-tabs';
 
 const P = '/trips/spain-2025';
+
+describe('getNavConfig — trip nav (#244)', () => {
+	it('Trip nav is Now · Money · Add · Docs (Today merged into Now, Money slot freed)', () => {
+		const cfg = getNavConfig('spain-2025', 'trip');
+		expect(cfg.accent).toBe('clay');
+		expect(cfg.tabs.map((t) => t.id)).toEqual(['now', 'money', 'add', 'documents']);
+		// No standalone Today tab anymore — it's a sub-tab under Now.
+		expect(cfg.tabs.some((t) => t.id === 'today')).toBe(false);
+		// Money tab points at the existing /money route (#227).
+		expect(cfg.tabs.find((t) => t.id === 'money')?.href).toBe('/trips/spain-2025/money');
+	});
+
+	it('exactly 4 trip tabs — no 5th-tab overflow at 375px (the merge is why)', () => {
+		expect(getNavConfig('spain-2025', 'trip').tabs).toHaveLength(4);
+	});
+
+	it('planning nav is unchanged (5 tabs)', () => {
+		const cfg = getNavConfig('spain-2025', 'planning');
+		expect(cfg.accent).toBe('moss');
+		expect(cfg.tabs.map((t) => t.id)).toEqual(['itinerary', 'money', 'members', 'documents', 'more']);
+	});
+});
 
 describe('getActiveTab', () => {
 	it('maps trip-mode tab routes', () => {
 		expect(getActiveTab(`${P}/now`, 'trip')).toBe('now');
-		expect(getActiveTab(`${P}/today`, 'trip')).toBe('today');
+		// #244: Today is a sub-tab of Now — /today (+ /today/upcoming) highlight Now.
+		expect(getActiveTab(`${P}/today`, 'trip')).toBe('now');
+		expect(getActiveTab(`${P}/today/upcoming`, 'trip')).toBe('now');
 		expect(getActiveTab(`${P}/documents`, 'trip')).toBe('documents');
-		// #227 — Trip-Mode Money summary maps to 'money' (ready for the #166 nav slot).
+		// #227 — Trip-Mode Money summary maps to 'money' (now a real nav tab, #244).
 		expect(getActiveTab(`${P}/money`, 'trip')).toBe('money');
 	});
 

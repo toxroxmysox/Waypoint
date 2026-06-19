@@ -31,15 +31,17 @@
 	subtitle={data.trip.title}
 	subtitleStyle="tagline"
 	back
-	backHref="/trips/{data.trip.slug}/today"
+	backHref="/trips/{data.trip.slug}/now"
 >
 	{#snippet right()}
 		<NotificationBell bind:notifications bind:unreadCount />
 	{/snippet}
 </NavBar>
 
+<!-- #244: the "Today" sub-tab is the merged Now view at /now (not the old /today,
+     which now redirects there). "Next 3 days" stays on this /today/upcoming route. -->
 <SubTabs tabs={[
-	{ id: 'today', label: 'Today', href: `/trips/${data.trip.slug}/today` },
+	{ id: 'today', label: 'Today', href: `/trips/${data.trip.slug}/now` },
 	{ id: 'upcoming', label: 'Next 3 Days', href: `/trips/${data.trip.slug}/today/upcoming` }
 ]} />
 

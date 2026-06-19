@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getNowViewState } from './now-state';
+import { getNowViewState, getNowFeed } from './now-state';
 import { tripNow } from '$lib/shell/trip-time';
 import type { Item } from '$lib/types';
 
@@ -332,5 +332,89 @@ describe('getNowViewState — Focus + forward list (#153)', () => {
 			];
 			expect(getNowViewState(items, now, true).focus.kind).toBe('free-time');
 		});
+	});
+});
+
+describe('getNowFeed — merged Now: faded past / Focus / normal rest (#244)', () => {
+	const NOW = new Date('2026-10-15T13:00:00Z');
+
+	it('no-day yields the no-day focus and empty past + rest', () => {
+		const feed = getNowFeed([], NOW, false);
+		expect(feed.focus.kind).toBe('no-day');
+		expect(feed.pastItems).toEqual([]);
+		expect(feed.restItems).toEqual([]);
+	});
+
+	it('splits a day into past (ended) / Focus (ongoing) / rest (forward), earliest-first', () => {
+		const items = [
+			makeItem({ id: 'breakfast', start_time: '2026-10-15 08:00:00.000Z', end_time: '2026-10-15 09:00:00.000Z' }),
+			makeItem({ id: 'museum', start_time: '2026-10-15 12:00:00.000Z', end_time: '2026-10-15 14:00:00.000Z' }),
+			makeItem({ id: 'dinner', start_time: '2026-10-15 19:00:00.000Z', end_time: '2026-10-15 21:00:00.000Z' })
+		];
+		const feed = getNowFeed(items, NOW, true);
+		// 13:00: breakfast ended (past), museum ongoing (Focus), dinner ahead (rest).
+		expect(feed.pastItems.map((i) => i.id)).toEqual(['breakfast']);
+		expect(feed.focus.kind).toBe('mid-event');
+		if (feed.focus.kind === 'mid-event') expect(feed.focus.currentItem.id).toBe('museum');
+		expect(feed.restItems.map((i) => i.id)).toEqual(['dinner']);
+	});
+
+	it('the ongoing Focus item never double-renders in the rest (mid-event)', () => {
+		const items = [
+			makeItem({ id: 'museum', start_time: '2026-10-15 12:00:00.000Z', end_time: '2026-10-15 14:00:00.000Z' }),
+			makeItem({ id: 'dinner', start_time: '2026-10-15 19:00:00.000Z', end_time: '2026-10-15 21:00:00.000Z' })
+		];
+		const feed = getNowFeed(items, NOW, true);
+		expect(feed.restItems.map((i) => i.id)).toEqual(['dinner']);
+		expect(feed.restItems.some((i) => i.id === 'museum')).toBe(false);
+	});
+
+	it('UNTIMED items render in the rest — the whole point of the merge (old Now dropped them)', () => {
+		const items = [
+			makeItem({ id: 'idea', start_time: '', sort_order: 100, title: 'Promoted idea' }),
+			makeItem({ id: 'dinner', start_time: '2026-10-15 19:00:00.000Z', end_time: '2026-10-15 21:00:00.000Z' })
+		];
+		const feed = getNowFeed(items, NOW, true);
+		expect(feed.restItems.map((i) => i.id).sort()).toEqual(['dinner', 'idea']);
+	});
+
+	it('weaves untimed among forward timed by sort_order (an untimed before an anchor leads it)', () => {
+		// dinner anchored sort_order 300; idea untimed sort_order 100 → idea precedes it.
+		const items = [
+			makeItem({ id: 'dinner', start_time: '2026-10-15 19:00:00.000Z', end_time: '2026-10-15 21:00:00.000Z', sort_order: 300 }),
+			makeItem({ id: 'idea', start_time: '', sort_order: 100 })
+		];
+		const feed = getNowFeed(items, NOW, true);
+		expect(feed.restItems.map((i) => i.id)).toEqual(['idea', 'dinner']);
+	});
+
+	it('an untimed-only day before the cutoff: nothing-else Focus, untimed in the rest, no past', () => {
+		const items = [makeItem({ id: 'a', start_time: '', sort_order: 100 }), makeItem({ id: 'b', start_time: '', sort_order: 200 })];
+		const feed = getNowFeed(items, NOW, true);
+		expect(feed.focus.kind).toBe('nothing-else-planned');
+		expect(feed.pastItems).toEqual([]);
+		expect(feed.restItems.map((i) => i.id)).toEqual(['a', 'b']);
+	});
+
+	it('in free-time the next item stays as a rest row (Focus is a countdown card, not an item)', () => {
+		const items = [
+			makeItem({ id: 'past', start_time: '2026-10-15 09:00:00.000Z', end_time: '2026-10-15 10:00:00.000Z' }),
+			makeItem({ id: 'dinner', start_time: '2026-10-15 19:00:00.000Z', end_time: '2026-10-15 21:00:00.000Z' })
+		];
+		const feed = getNowFeed(items, NOW, true);
+		expect(feed.focus.kind).toBe('free-time');
+		expect(feed.pastItems.map((i) => i.id)).toEqual(['past']);
+		expect(feed.restItems.map((i) => i.id)).toEqual(['dinner']);
+	});
+
+	it('multi-day spanning items never appear in past or rest (they are banners)', () => {
+		const items = [
+			makeItem({ id: 'hotel', start_time: '2026-10-15 06:00:00.000Z', end_time: '2026-10-18 11:00:00.000Z', end_date: '2026-10-18' }),
+			makeItem({ id: 'dinner', start_time: '2026-10-15 19:00:00.000Z', end_time: '2026-10-15 21:00:00.000Z' })
+		];
+		const feed = getNowFeed(items, NOW, true);
+		expect(feed.pastItems.some((i) => i.id === 'hotel')).toBe(false);
+		expect(feed.restItems.some((i) => i.id === 'hotel')).toBe(false);
+		expect(feed.restItems.map((i) => i.id)).toEqual(['dinner']);
 	});
 });

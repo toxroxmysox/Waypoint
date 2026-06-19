@@ -12,7 +12,7 @@ A self-hosted, mobile-first PWA that replaces the Google Doc / Google Sheet / Sp
 
 **Two modes, one view:**
 1. **Planning Mode** — collaborative itinerary building. Default mode. 5-tab moss nav (Itinerary, Money, Activity, Vault, More). Available in all trip statuses.
-2. **Trip Mode** — live-trip execution. Phone-first, one-handed, large cards, offline-capable read. 4-tab clay nav (Now, Today, Add, Docs). Available only when trip status = active. Default mode for active trips; user can switch to Planning Mode and back. A read-only Trip-Mode **Money** summary lives at `/trips/[slug]/money` (clay chrome via `resolveChromeMode`) — see §Money. Its bottom-nav *tab* is pending #166 (the Now+Today merge frees the slot → `Now · Money · Add · Docs`); until then the route is reachable directly and deep-links cross to the planning Money pages.
+2. **Trip Mode** — live-trip execution. Phone-first, one-handed, large cards, offline-capable read. 4-tab clay nav (Now, Money, Add, Docs). Available only when trip status = active. Default mode for active trips; user can switch to Planning Mode and back. **Now** absorbed Today (#244): it is one weighted whole-day tab with sub-tabs **Today** (default — the weighted view at `/now`) and **Next 3 days** (`/today/upcoming`); `/today` redirects to `/now`. The **Money** tab is the read-only Trip-Mode per-person money glance at `/trips/[slug]/money` (clay chrome via `resolveChromeMode`) — see §Money; merging Now+Today freed its slot (375px can't hold a 5th tab + the centre Add FAB).
 3. **Public Archive** — read-only post-trip view of what actually happened. Not a mode — rendered automatically for closed trips and via public share link. Linkable from Scott's website.
 
 ---
@@ -483,7 +483,7 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 - "Settle up" action creates settlement record
 - Expense list view with filter by member, category, date range
 - Budget vs actual comparison view
-- **Trip-Mode Money summary** (`/money`, #227) — a read-only per-person glance for the road, in Trip-Mode (clay) chrome, answering "how much do *I* have left to spend?". My budget = group budget total (NET-NEW `groupBudgetTotal` helper: per_day × tripDays + total) ÷ member count; my spent = my **reconciliation-aware** share of logged expenses (the `computeBalances` split attribution — what I consumed/owe, not out-of-pocket). Shows **N1** (left to spend = my budget − my share) and **N2** (left for unplanned = N1 − my share of remaining unbooked/unlinked estimates), each as a per-day rate over the trip-local remaining days (the hero) plus a total. Pure core in `money-glance.ts`; every figure deep-links to /budget and /expenses (no editing on the glance). Bottom-nav tab pending #166.
+- **Trip-Mode Money summary** (`/money`, #227) — a read-only per-person glance for the road, in Trip-Mode (clay) chrome, answering "how much do *I* have left to spend?". My budget = group budget total (NET-NEW `groupBudgetTotal` helper: per_day × tripDays + total) ÷ member count; my spent = my **reconciliation-aware** share of logged expenses (the `computeBalances` split attribution — what I consumed/owe, not out-of-pocket). Shows **N1** (left to spend = my budget − my share) and **N2** (left for unplanned = N1 − my share of remaining unbooked/unlinked estimates), each as a per-day rate over the trip-local remaining days (the hero) plus a total. Pure core in `money-glance.ts`; every figure deep-links to /budget and /expenses (no editing on the glance). Its bottom-nav tab landed with #244 (the Now+Today merge freed the slot): Trip nav = `Now · Money · Add · Docs`.
 
 **Acceptance:**
 - 3-person uneven dinner split (Scott $40, Abby $30, Jake $0 — Scott paid €120 = $130) settles correctly
@@ -592,7 +592,7 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 17. **Trip Mode — Now** — what's happening now, next up, ongoing items
 18. **Trip Mode — Today** — today timeline, planned items + parking lot
 19. **Trip Mode — Add** — quick-add item during trip
-20. **Trip Mode — Money** (`/money`) — read-only per-person glance: "how much do *I* have left to spend?" Two labeled figures — **N1** left-to-spend (my budget − my reconciliation-aware share) and **N2** left-for-unplanned (N1 − my share of remaining planned estimates) — each as a per-day rate (the hero) + a total. Deep-links to /budget and /expenses to settle/edit. Tab pending #166 (#227).
+20. **Trip Mode — Money** (`/money`) — read-only per-person glance: "how much do *I* have left to spend?" Two labeled figures — **N1** left-to-spend (my budget − my reconciliation-aware share) and **N2** left-for-unplanned (N1 − my share of remaining planned estimates) — each as a per-day rate (the hero) + a total. Deep-links to /budget and /expenses to settle/edit. Bottom-nav tab landed with #244 (#227).
 21. **Trip Mode — Vault** — password-gated encrypted entries
 
 ### Public
@@ -627,7 +627,7 @@ Every "add item" form has an optional **lookup field** at the top.
 - Planning Mode ↔ Trip Mode toggle in trip header. Mode is UI state, not data.
 - Trip Mode available only when trip status = active. Default mode for active trips.
 - Planning Mode: 5-tab moss nav (Itinerary, Money, Activity, Vault, More).
-- Trip Mode: 4-tab clay nav (Now, Today, Add, Vault).
+- Trip Mode: 4-tab clay nav (Now, Money, Add, Docs). Now is one weighted whole-day tab with Today / Next 3 days sub-tabs (#244); Money = the Trip-Mode money glance at `/money`.
 - Archive view auto-rendered for closed trips (also accessible via public share link). Not a mode.
 
 ### Mobile-first interaction patterns

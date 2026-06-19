@@ -1,5 +1,6 @@
 import type { Item } from '$lib/types';
-import type { NowViewState } from './types';
+import type { NowViewState, NowFeed } from './types';
+import { orderDayItems } from '$lib/itinerary/timeline';
 
 /**
  * Evening cutoff (trip-local hour). It does NOT hide upcoming items — it ONLY
@@ -90,4 +91,53 @@ export function getNowViewState(
 	}
 
 	return { focus: { kind: 'nothing-else-planned' }, forwardItems: [] };
+}
+
+/** Timed same-day items that have already ended, earliest first. */
+function pastItems(items: Item[], now: Date): Item[] {
+	const t = now.getTime();
+	return items
+		.filter((i) => !isMultiDay(i) && !!i.end_time && parseDateTime(i.end_time).getTime() <= t)
+		.sort((a, b) => parseDateTime(a.start_time).getTime() - parseDateTime(b.start_time).getTime());
+}
+
+/**
+ * The merged Now feed (#244): the whole of today split into exactly THREE visual
+ * weights, top → bottom.
+ *   - `pastItems`   — timed items already ended (faded peek, revealed on scroll-up)
+ *   - `focus`       — the live state (mid-event / free-time / nothing / wrapped)
+ *   - `restItems`   — everything else still relevant: forward TIMED items woven
+ *                     with ALL UNTIMED items by sort_order (normal-weight cards).
+ *
+ * Untimed items are the reason this exists: the old Now filtered to timed-only,
+ * so a promoted (untimed) idea never rendered. The merge surfaces them here.
+ *
+ * In mid-event the ongoing item is the Focus and is excluded from `restItems`.
+ * In free-time / nothing-else / wrapped the Focus is a countdown/summary CARD
+ * (not an item), so the next item stays as the first `restItems` row. Pure (no IO).
+ */
+export function getNowFeed(todayItems: Item[], now: Date, hasToday: boolean): NowFeed {
+	const view = getNowViewState(todayItems, now, hasToday);
+
+	if (!hasToday) {
+		return { focus: view.focus, pastItems: [], restItems: [] };
+	}
+
+	const past = pastItems(todayItems, now);
+
+	// The ongoing item (mid-event Focus) must not double-render in the rest.
+	const focusItemId = view.focus.kind === 'mid-event' ? view.focus.currentItem.id : null;
+
+	// Untimed, non-spanning items always belong to the rest (they're never past:
+	// no time pins them, and Trip Mode can't set 'done' — that's Closeout's).
+	const untimed = todayItems.filter((i) => !isMultiDay(i) && !i.start_time);
+
+	// Forward timed items minus the Focus's ongoing item. `view.forwardItems` is
+	// already the timed, not-yet-started, multi-day-excluded set, earliest first.
+	const forwardTimed = view.forwardItems.filter((i) => i.id !== focusItemId);
+
+	// Weave forward-timed + untimed into one display order (the #120 shared core).
+	const restItems = orderDayItems([...forwardTimed, ...untimed]);
+
+	return { focus: view.focus, pastItems: past, restItems };
 }

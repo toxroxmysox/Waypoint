@@ -10,23 +10,21 @@ async function goToActiveTrip(page: import('@playwright/test').Page) {
 	return page.url().split('/trips/')[1].split('/')[0];
 }
 
-test.describe('Trip Mode Views', () => {
+test.describe('Trip Mode Views (#244 merged Now)', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto(`${BASE}/api/dev/login`);
 		await page.waitForURL('**/trips');
 	});
 
-	test('Now tab renders a valid state (not the old stub)', async ({ page }) => {
+	test('Now tab renders a valid weighted state (not the old stub)', async ({ page }) => {
 		const slug = await goToActiveTrip(page);
 		await page.goto(`${BASE}/trips/${slug}/now`);
 		await page.waitForURL('**/now');
 
-		// Should NOT show the old stub text
-		await expect(page.getByText('Coming soon')).not.toBeVisible();
+		// Should NOT show the old stub text (visible-scoped — dual AppShell trees).
+		await expect(page.getByText('Coming soon').filter({ visible: true })).toHaveCount(0);
 
-		// Should show one of the valid Focus states (find any visible match).
-		// "Nothing else planned" joined the matrix with #121's always-on Focus
-		// (empty forward list before the 8pm trip-local cutoff).
+		// One of the valid Focus states is visible.
 		await expect(
 			page
 				.locator(':visible', {
@@ -36,40 +34,69 @@ test.describe('Trip Mode Views', () => {
 		).toBeVisible();
 	});
 
-	test('Today tab renders with SubTabs', async ({ page }) => {
+	test('Now owns the Today / Next 3 Days sub-tabs', async ({ page }) => {
 		const slug = await goToActiveTrip(page);
-		await page.goto(`${BASE}/trips/${slug}/today`);
-		await page.waitForURL('**/today');
-
-		// SubTabs should be visible
-		await expect(
-			page.locator(':visible', { hasText: 'Next 3 Days' }).first()
-		).toBeVisible();
-
-		// Should show the plan-count pill (#199 reworded "0 of N done") or an empty state
-		await expect(
-			page.locator(':visible', { hasText: /on today's plan|No itinerary|Nothing scheduled/ }).first()
-		).toBeVisible();
-	});
-
-	test('Add button opens choice sheet with two options', async ({ page }) => {
-		// Use mobile viewport so only BottomNav renders
-		await page.setViewportSize({ width: 375, height: 812 });
-
-		const slug = await goToActiveTrip(page);
-		// The Add affordance is Trip-Mode chrome; the Overview now renders planning
-		// chrome (#197), so be on a Trip-Mode surface before reaching for it.
 		await page.goto(`${BASE}/trips/${slug}/now`);
 		await page.waitForURL('**/now');
 
-		// The Add button in BottomNav (visible at mobile width)
-		await page.locator('.md-desktop\\:hidden button[aria-label="Add"]').click();
+		// The merged Now carries the sub-tabs (Today is the default view here).
+		await expect(page.locator(':visible', { hasText: 'Next 3 Days' }).first()).toBeVisible();
+		await expect(page.getByRole('link', { name: 'Today' }).filter({ visible: true }).first()).toBeVisible();
+	});
 
-		// Bottom sheet should appear with two options
+	test('/today redirects to the merged /now', async ({ page }) => {
+		const slug = await goToActiveTrip(page);
+		await page.goto(`${BASE}/trips/${slug}/today`);
+		await page.waitForURL(`**/trips/${slug}/now`);
+		expect(page.url()).toContain(`/trips/${slug}/now`);
+	});
+
+	test('Next 3 Days sub-tab still lives at /today/upcoming', async ({ page }) => {
+		const slug = await goToActiveTrip(page);
+		await page.goto(`${BASE}/trips/${slug}/today/upcoming`);
+		await page.waitForURL('**/today/upcoming');
+		await expect(page.locator(':visible', { hasText: 'Next 3 Days' }).first()).toBeVisible();
+	});
+
+	test('Trip nav = Now · Money · Add · Docs; no 5th-tab overflow at 375px', async ({ page }) => {
+		await page.setViewportSize({ width: 375, height: 812 });
+		const slug = await goToActiveTrip(page);
+		await page.goto(`${BASE}/trips/${slug}/now`);
+		await page.waitForURL('**/now');
+
+		// The mobile BottomNav is the visible nav at 375px (last :visible <nav>).
+		const bottomNav = page.locator('nav:visible').last();
+		await expect(bottomNav.getByText('Now')).toBeVisible();
+		await expect(bottomNav.getByText('Money')).toBeVisible();
+		await expect(bottomNav.getByText('Docs')).toBeVisible();
+		await expect(bottomNav.getByRole('button', { name: 'Add' })).toBeVisible();
+		// Today is no longer a top-level trip tab (it merged into Now).
+		await expect(bottomNav.getByText('Today', { exact: true })).toHaveCount(0);
+		// Exactly four tab slots (3 links + the Add button) — no overflow.
+		await expect(bottomNav.locator(':scope > a, :scope > button')).toHaveCount(4);
+	});
+
+	test('Money tab navigates to the /money glance', async ({ page }) => {
+		await page.setViewportSize({ width: 375, height: 812 });
+		const slug = await goToActiveTrip(page);
+		await page.goto(`${BASE}/trips/${slug}/now`);
+		await page.waitForURL('**/now');
+
+		await page.locator('nav:visible').last().getByText('Money').click();
+		await page.waitForURL(`**/trips/${slug}/money`);
+		expect(page.url()).toContain(`/trips/${slug}/money`);
+	});
+
+	test('Add button opens the choice sheet', async ({ page }) => {
+		await page.setViewportSize({ width: 375, height: 812 });
+		const slug = await goToActiveTrip(page);
+		await page.goto(`${BASE}/trips/${slug}/now`);
+		await page.waitForURL('**/now');
+
+		await page.locator('.md-desktop\\:hidden button[aria-label="Add"]').click();
 		await expect(page.getByText('Add item to today')).toBeVisible();
 		await expect(page.getByText('Add expense')).toBeVisible();
 
-		// Dismiss via close button
 		await page.locator('button[aria-label="Close"]').click();
 		await expect(page.getByText('Add item to today')).not.toBeVisible();
 	});
