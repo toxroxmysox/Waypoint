@@ -3,13 +3,14 @@
 	// assignees, so votes retreat from avatar stacks to this icon + count pill. The
 	// who-voted-what avatar stacks (VoteStacks) stay on item detail + the swipe deck.
 	// Shows a COUNT, never the (still never-numeric) weighted score. Display-only.
-	import type { Vote } from '$lib/types';
+	// Target-agnostic (ADR-0004/0009): renders item/goal/suggestion vote arrays.
+	import type { DisplayVote } from '$lib/collaboration/voting';
 
 	let {
 		votes = [],
 		size = 14
 	}: {
-		votes?: Vote[];
+		votes?: DisplayVote[];
 		size?: number;
 	} = $props();
 

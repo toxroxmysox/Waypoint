@@ -6,6 +6,7 @@
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import DayCard from '$lib/itinerary/components/DayCard.svelte';
 	import PhaseParkingReorder from '$lib/itinerary/components/PhaseParkingReorder.svelte';
+	import GhostCard from '$lib/itinerary/components/GhostCard.svelte';
 	import DayMetricToggle from '$lib/itinerary/components/DayMetricToggle.svelte';
 	import { toast } from '$lib/shell/stores/toast';
 	import { titleCase } from '$lib/shell/format';
@@ -18,6 +19,12 @@
 	let loading = $state(false);
 	let error = $derived(form?.error ?? '');
 	const parkingLotItems = $derived(data.phaseItems.filter((it) => it.status === 'unplanned'));
+	// #248 — pending suggestions for this phase, as Ghost Cards (dotted "pending"),
+	// sourced from the pure parking-lot-cards merge so they tag + sort consistently.
+	const ghostCards = $derived(data.parkingCards.filter((c) => c.kind === 'ghost'));
+	// Viewers see ghosts read-only-but-can-see (no cast buttons).
+	const canVoteGhosts = $derived(data.viewerRole !== 'viewer');
+	const parkingLotCount = $derived(parkingLotItems.length + ghostCards.length);
 
 	// #57 — quick-add an idea into this phase's parking lot.
 	let addingIdea = $state(false);
@@ -200,7 +207,7 @@
 			<div class="mb-2 flex items-center justify-between gap-2">
 				<div class="flex items-baseline gap-2">
 					<SectionH>Parking lot</SectionH>
-					<span class="text-ink-muted font-mono text-[11px]">{parkingLotItems.length}</span>
+					<span class="text-ink-muted font-mono text-[11px]">{parkingLotCount}</span>
 				</div>
 				<Button onclick={() => (addingIdea = !addingIdea)} variant="ghost" size="sm">
 					{addingIdea ? 'Cancel' : '+ Add idea'}
@@ -266,7 +273,25 @@
 				{#if parkingLotItems.length > 0}
 					<!-- #88 — drag-reorder ideas; persists sort_order among this phase's unplanned items. -->
 					<PhaseParkingReorder items={parkingLotItems} tripSlug={data.trip.slug} />
-				{:else if !addingIdea}
+				{/if}
+
+				{#if ghostCards.length > 0}
+					<!-- #248 — pending suggestions as dotted Ghost Cards, visible to all
+					     members and votable (viewers read-only). Below the real ideas;
+					     they're proposals awaiting review, not settled parking-lot items. -->
+					<div class="space-y-1.5">
+						{#each ghostCards as card (card.id)}
+							<GhostCard
+								{card}
+								members={data.members}
+								myMemberId={data.myMemberId}
+								canVote={canVoteGhosts}
+							/>
+						{/each}
+					</div>
+				{/if}
+
+				{#if parkingLotItems.length === 0 && ghostCards.length === 0 && !addingIdea}
 					<div class="px-4 py-7 text-center">
 						<p class="font-display text-ink-soft text-base italic">No ideas yet.</p>
 						<p class="text-ink-muted mt-1 text-[13px]">Add one to start a parking lot for this phase.</p>

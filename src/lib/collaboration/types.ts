@@ -104,3 +104,17 @@ export interface GoalVote {
 	value: VoteValue;
 	created: string;
 }
+
+// #248 / ADR-0009 — a vote on a pending Suggestion (a Ghost Card). Parallels
+// `Vote`/`GoalVote` (separate collection, not polymorphic). No `trip` field —
+// trip is reachable via `suggestion`. Shares `VoteValue` + voting.ts
+// grouping/scoring with item/goal votes. On approval each row is copied onto the
+// new item's `votes` (one-time transfer, ADR-0009); a member cannot vote on a
+// suggestion they authored.
+export interface SuggestionVote {
+	id: string;
+	suggestion: string;
+	member: string;
+	value: VoteValue;
+	created: string;
+}

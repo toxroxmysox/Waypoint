@@ -1,14 +1,16 @@
 <script lang="ts">
-	import type { Vote, TripMember } from '$lib/types';
-	import { VOTE_OPTIONS, groupVotesByOption, type VoteValue } from '$lib/collaboration/voting';
+	import type { TripMember } from '$lib/types';
+	import { VOTE_OPTIONS, groupVotesByOption, type DisplayVote, type VoteValue } from '$lib/collaboration/voting';
 	import Avatar from '$lib/ui/Avatar.svelte';
 
+	// Target-agnostic (ADR-0004/0009): item `Vote`, `GoalVote`, and
+	// `SuggestionVote` all satisfy `DisplayVote`, so this stack renders any of them.
 	let {
 		votes = [],
 		members = [],
 		size = 20
 	}: {
-		votes?: Vote[];
+		votes?: DisplayVote[];
 		members?: Array<TripMember & { avatarUrl?: string }>;
 		size?: number;
 	} = $props();

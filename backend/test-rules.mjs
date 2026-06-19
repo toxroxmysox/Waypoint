@@ -28,7 +28,7 @@ const EMAILS = {
 };
 
 const ROLES = ['owner', 'co_owner', 'traveler', 'viewer', 'non_member'];
-const COLLECTIONS = ['users', 'trips', 'trip_members', 'phases', 'days', 'items', 'checklist_items', 'pending_invites', 'votes', 'trip_goals', 'goal_votes', 'documents'];
+const COLLECTIONS = ['users', 'trips', 'trip_members', 'phases', 'days', 'items', 'checklist_items', 'pending_invites', 'votes', 'trip_goals', 'goal_votes', 'suggestion_votes', 'documents'];
 
 // Collections whose create requires a multipart body (a file field). `documents`
 // (#70) takes a single file; the harness uploads a valid 1x1 PNG so PB's
@@ -115,6 +115,8 @@ function fixtureRecordId(fixture, collection) {
 			return fixture.goalId;
 		case 'goal_votes':
 			return fixture.goalVoteId;
+		case 'suggestion_votes':
+			return fixture.suggestionVoteId;
 		case 'documents':
 			return fixture.documentId;
 		default:
@@ -363,6 +365,26 @@ const EXPECT = {
 		update: SELF_ONLY,
 		delete: SELF_ONLY
 	},
+	// suggestion_votes (#248 — PRD #202 / ADR-0009 votable Ghost Cards; parallels
+	// goal_votes, single-parent ownership `suggestion → trip`):
+	//   list/view: any member can see the trip's suggestion votes.
+	//   create: owner·co_owner·traveler may vote on a suggestion they did NOT
+	//           author; viewers cannot (role) and non_member/anon are not members.
+	//           The createBody targets the viewer-authored `suggestionNeutral`, so
+	//           none of owner/co_owner/traveler is its author — all three pass;
+	//           viewer denies on both role and the can't-vote-own rule. (The
+	//           can't-vote-your-own-suggestion negative case is asserted separately
+	//           — see runSuggestionVotesNovelCases.)
+	//   update/delete: own vote only. The fixture suggestion_vote belongs to the
+	//           owner (on the co_owner's suggestion), so only owner passes —
+	//           SELF_ONLY.
+	suggestion_votes: {
+		list: ALLOW_MEMBERS_DENY_NONMEMBER,
+		view: ALLOW_MEMBERS_DENY_NONMEMBER,
+		create: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' },
+		update: SELF_ONLY,
+		delete: SELF_ONLY
+	},
 	// documents (#70):
 	//   list/view: any member sees the trip's documents.
 	//   create: any member EXCEPT viewers (documents.pb.js blocks viewers;
@@ -457,6 +479,18 @@ function createBody(collection, role, fixture) {
 				member: fixture.memberIds[role] || fixture.memberIds.owner,
 				value: 'like'
 			};
+		case 'suggestion_votes':
+			// Vote as the acting member on the viewer-authored `suggestionNeutral`,
+			// which none of owner/co_owner/traveler authored — so the
+			// can't-vote-own-suggestion rule passes for them and they vote
+			// successfully; viewer denies on role + own-suggestion. non_member has no
+			// membership → falls back to owner, whose user != the non_member auth, so
+			// member.user = auth fails → deny.
+			return {
+				suggestion: fixture.suggestionNeutralId,
+				member: fixture.memberIds[role] || fixture.memberIds.owner,
+				value: 'like'
+			};
 		case 'trip_goals':
 			// Author as the acting member's own membership. The createRule gates on
 			// created_by.role (single relation), so viewer denies and owner/
@@ -497,6 +531,8 @@ function updateBody(collection) {
 		case 'votes':
 			return { value: 'love' };
 		case 'goal_votes':
+			return { value: 'love' };
+		case 'suggestion_votes':
 			return { value: 'love' };
 		case 'trip_goals':
 			return { title: 'Harness goal updated' };
@@ -667,6 +703,72 @@ async function runGoalVotesNovelCases(tokens) {
 function printNovelReport() {
 	console.log('\n[novel #77 rules]');
 	for (const r of results.filter((x) => NOVEL_OPS.includes(x.op))) {
+		const mark = r.passed ? 'PASS' : 'FAIL';
+		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+	}
+}
+
+// #248 (PRD #202 / ADR-0009) — votable Ghost Cards. The fixed (collection, op,
+// role) matrix proves the membership + viewer gates, but four rule behaviors need
+// dedicated assertions: a member CAN cast a vote, a member CANNOT vote a
+// suggestion they authored, ownership resolves single-parent via `suggestion →
+// trip`, and a non-member is denied. Each sub-case uses a fresh fixture (the
+// unique (suggestion, member) index forbids re-voting). Authored = owner;
+// neutral = viewer-authored (so owner/traveler are non-authors of it).
+const SUGGESTION_VOTE_OPS = [
+	'cast_vote',
+	'cannot_vote_own',
+	'ownership_via_parent',
+	'nonmember_denied'
+];
+
+async function runSuggestionVotesNovelCases(tokens) {
+	// 1. CAST — owner votes a suggestion they did NOT author (the viewer-authored
+	//    `suggestionNeutral`) → allow. The headline "pending suggestions are
+	//    votable" behavior.
+	let fixture = await setupFixture();
+	const cast = await pbRequest('POST', '/api/collections/suggestion_votes/records', {
+		token: tokens.owner,
+		body: { suggestion: fixture.suggestionNeutralId, member: fixture.memberIds.owner, value: 'love' }
+	});
+	recordResult('suggestion_votes', 'cast_vote', 'owner', 'allow', classifyWrite(cast.status), cast.status);
+
+	// 2. CANNOT-VOTE-OWN — owner votes the owner-authored `suggestionAuthored` →
+	//    deny (authorship is the implicit endorsement; rule: suggestion.author !=
+	//    member).
+	fixture = await setupFixture();
+	const own = await pbRequest('POST', '/api/collections/suggestion_votes/records', {
+		token: tokens.owner,
+		body: { suggestion: fixture.suggestionAuthoredId, member: fixture.memberIds.owner, value: 'like' }
+	});
+	recordResult('suggestion_votes', 'cannot_vote_own', 'owner', 'deny', classifyWrite(own.status), own.status);
+
+	// 3. OWNERSHIP VIA PARENT — a traveler who is a member of the suggestion's trip
+	//    (resolved single-parent via `suggestion → trip`, no `trip` FK on the vote)
+	//    votes a suggestion they did NOT author → allow. Proves the branch-free
+	//    ownership path holds for a non-owner member.
+	fixture = await setupFixture();
+	const viaParent = await pbRequest('POST', '/api/collections/suggestion_votes/records', {
+		token: tokens.traveler,
+		body: { suggestion: fixture.suggestionNeutralId, member: fixture.memberIds.traveler, value: 'like' }
+	});
+	recordResult('suggestion_votes', 'ownership_via_parent', 'traveler', 'allow', classifyWrite(viaParent.status), viaParent.status);
+
+	// 4. NON-MEMBER DENIED — a non-member of the trip cannot vote any of its
+	//    suggestions; the `suggestion.trip.trip_members_via_trip` path excludes
+	//    them → deny. (Votes as the owner's member id; they still fail member.user =
+	//    auth, and aren't a member regardless.)
+	fixture = await setupFixture();
+	const nm = await pbRequest('POST', '/api/collections/suggestion_votes/records', {
+		token: tokens.non_member,
+		body: { suggestion: fixture.suggestionNeutralId, member: fixture.memberIds.owner, value: 'like' }
+	});
+	recordResult('suggestion_votes', 'nonmember_denied', 'non_member', 'deny', classifyWrite(nm.status), nm.status);
+}
+
+function printSuggestionVotesReport() {
+	console.log('\n[#248 suggestion_votes — cast, cannot-vote-own, ownership-via-parent, non-member denied]');
+	for (const r of results.filter((x) => SUGGESTION_VOTE_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
 		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
 	}
@@ -1392,6 +1494,9 @@ async function main() {
 	console.log('Novel #77 cases: vote-own-goal + tightened delete');
 	await runGoalVotesNovelCases(tokens);
 
+	console.log('#248 cases: suggestion_votes (cast, cannot-vote-own, ownership-via-parent, non-member denied)');
+	await runSuggestionVotesNovelCases(tokens);
+
 	console.log('#103 cases: co-traveler users cross-read (name+avatar, no email/secrets)');
 	fixture = await setupFixture();
 	await runUsersCrossReadCases(tokens, fixture);
@@ -1417,6 +1522,7 @@ async function main() {
 
 	printReport();
 	printNovelReport();
+	printSuggestionVotesReport();
 	printUsersCrossReadReport();
 	printSuggestionsReport();
 	printMemberRemovalReport();

@@ -394,6 +394,67 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 	goalVoteOwner.set('value', 'love');
 	e.app.save(goalVoteOwner);
 
+	// #248 suggestion_votes fixtures (PRD #202 / ADR-0009) — pending suggestions
+	// are votable Ghost Cards. Mirrors the #77 goal_votes fixtures exactly; the
+	// vote's trip-ownership path is single-parent `suggestion → trip`. Three pending
+	// suggestions cover the voting rules:
+	//   - suggestionAuthored : authored by owner, carries one existing vote. Used to
+	//                          assert the can't-vote-your-own-suggestion rule (owner
+	//                          voting it → deny).
+	//   - suggestionCoOwner  : authored by co_owner; hosts the OWNER-owned
+	//                          suggestion_vote that serves as the fixture record
+	//                          (list/view/update/delete are SELF_ONLY → only owner
+	//                          passes). Owner voting a co_owner suggestion is legal.
+	//   - suggestionNeutral  : authored by the viewer, zero seeded votes — the
+	//                          create-matrix target. owner/co_owner/traveler can all
+	//                          vote it (none authored it, none is a viewer); viewer
+	//                          denies on role + the own-suggestion rule.
+	// All three are `pending` `new_item` suggestions whose payload.phase = the
+	// fixture phase, so they'd render as ghosts in that phase's parking lot.
+	const suggestionsCol = e.app.findCollectionByNameOrId('suggestions');
+
+	const suggestionAuthored = new Record(suggestionsCol);
+	suggestionAuthored.set('trip', trip.id);
+	suggestionAuthored.set('author', memberIds.owner);
+	suggestionAuthored.set('target_type', 'new_item');
+	suggestionAuthored.set('payload', { title: 'Owner ghost (voted)', phase: phase.id, type: 'activity' });
+	suggestionAuthored.set('status', 'pending');
+	e.app.save(suggestionAuthored);
+
+	const suggestionCoOwner = new Record(suggestionsCol);
+	suggestionCoOwner.set('trip', trip.id);
+	suggestionCoOwner.set('author', memberIds.co_owner);
+	suggestionCoOwner.set('target_type', 'new_item');
+	suggestionCoOwner.set('payload', { title: 'Co-owner ghost', phase: phase.id, type: 'activity' });
+	suggestionCoOwner.set('status', 'pending');
+	e.app.save(suggestionCoOwner);
+
+	const suggestionNeutral = new Record(suggestionsCol);
+	suggestionNeutral.set('trip', trip.id);
+	suggestionNeutral.set('author', memberIds.viewer);
+	suggestionNeutral.set('target_type', 'new_item');
+	suggestionNeutral.set('payload', { title: 'Neutral ghost', phase: phase.id, type: 'activity' });
+	suggestionNeutral.set('status', 'pending');
+	e.app.save(suggestionNeutral);
+
+	// Existing vote on the owner's suggestion (cast by the traveler) — the "voted
+	// pending suggestion" fixture. Direct save bypasses the create rule.
+	const suggestionVotesCol = e.app.findCollectionByNameOrId('suggestion_votes');
+	const suggestionVoteSeed = new Record(suggestionVotesCol);
+	suggestionVoteSeed.set('suggestion', suggestionAuthored.id);
+	suggestionVoteSeed.set('member', memberIds.traveler);
+	suggestionVoteSeed.set('value', 'like');
+	e.app.save(suggestionVoteSeed);
+
+	// The OWNER-owned suggestion_vote on the co_owner's suggestion — the
+	// suggestion_votes fixture record for list/view/update/delete (SELF_ONLY → only
+	// owner passes).
+	const suggestionVoteOwner = new Record(suggestionVotesCol);
+	suggestionVoteOwner.set('suggestion', suggestionCoOwner.id);
+	suggestionVoteOwner.set('member', memberIds.owner);
+	suggestionVoteOwner.set('value', 'love');
+	e.app.save(suggestionVoteOwner);
+
 	// Create a checklist item under it.
 	const checklistCol = e.app.findCollectionByNameOrId('checklist_items');
 	const checklistItem = new Record(checklistCol);
@@ -454,6 +515,10 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 		goalCoOwnerId: goalCoOwner.id,
 		goalNeutralId: goalNeutral.id,
 		goalVoteId: goalVoteOwner.id,
+		suggestionAuthoredId: suggestionAuthored.id,
+		suggestionCoOwnerId: suggestionCoOwner.id,
+		suggestionNeutralId: suggestionNeutral.id,
+		suggestionVoteId: suggestionVoteOwner.id,
 		checklistItemId: checklistItem.id,
 		pendingInviteId: invite.id,
 		pendingInviteCode: inviteCode,

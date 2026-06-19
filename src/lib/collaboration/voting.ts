@@ -2,6 +2,15 @@ import type { Vote, VoteValue } from './types';
 
 export type { VoteValue };
 
+// Target-agnostic vote shape (ADR-0004/0009): item `Vote`, `GoalVote`, and
+// `SuggestionVote` all satisfy it. Scoring + avatar-stack display operate on this
+// alone, so the same logic serves every votable target without branching.
+export interface DisplayVote {
+	id: string;
+	member: string;
+	value: VoteValue;
+}
+
 /** Display order — strongest preference first. */
 export const VOTE_OPTIONS: VoteValue[] = ['love', 'like', 'flexible', 'dislike'];
 
@@ -12,14 +21,18 @@ export const VOTE_WEIGHTS: Record<VoteValue, number> = {
 	dislike: -2
 };
 
-/** Aggregate weighted score for an item's votes. Never shown numerically — drives sort only. */
+/** Aggregate weighted score for a target's votes. Never shown numerically — drives sort only. */
 export function scoreVotes(votes: Pick<Vote, 'value'>[]): number {
 	return votes.reduce((sum, v) => sum + (VOTE_WEIGHTS[v.value] ?? 0), 0);
 }
 
-/** Bucket votes by option for avatar-stack display. Every option key is always present. */
-export function groupVotesByOption(votes: Vote[]): Record<VoteValue, Vote[]> {
-	const grouped: Record<VoteValue, Vote[]> = { love: [], like: [], flexible: [], dislike: [] };
+/** Bucket votes by option for avatar-stack display. Every option key is always
+ *  present. Generic over the concrete vote type so item/goal/suggestion votes all
+ *  flow through unchanged (preserves the input element type). */
+export function groupVotesByOption<T extends Pick<DisplayVote, 'value'>>(
+	votes: T[]
+): Record<VoteValue, T[]> {
+	const grouped: Record<VoteValue, T[]> = { love: [], like: [], flexible: [], dislike: [] };
 	for (const v of votes) {
 		if (grouped[v.value]) grouped[v.value].push(v);
 	}
