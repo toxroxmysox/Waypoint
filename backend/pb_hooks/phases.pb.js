@@ -170,6 +170,30 @@ onRecordUpdateRequest((e) => {
 onRecordDeleteRequest((e) => {
 	const tripId = e.record.getString('trip');
 
+	// #217 — a trip must always have at least one phase. Block deleting the
+	// LAST remaining phase of its trip. Counted BEFORE e.next() so the throw
+	// aborts the delete (a throw after e.next() is too late — bug-114). Inlined
+	// per the goja isolated-sandbox constraint documented above.
+	let phaseCount = 0;
+	try {
+		const tripPhases = e.app.findRecordsByFilter(
+			'phases',
+			'trip = {:tripId}',
+			'',
+			0,
+			0,
+			{ tripId: tripId }
+		);
+		phaseCount = tripPhases.length;
+	} catch (_) {
+		phaseCount = 0;
+	}
+	if (phaseCount <= 1) {
+		throw new BadRequestError(
+			'A trip must have at least one phase. Add another phase before deleting this one.'
+		);
+	}
+
 	// #196 — block-until-moved: a phase still holding unplanned ("idea") items
 	// cannot be deleted. items.phase has no cascadeDelete, so PB would clear
 	// item.phase and strand those ideas in phase-less limbo (renderable on no

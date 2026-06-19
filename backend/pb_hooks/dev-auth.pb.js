@@ -207,8 +207,11 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 		// No existing fixture trip; nothing to clean up.
 	}
 
-	// Create the trip. The trips after-create hook adds the owner as a member
-	// and auto-generates day records for the date range.
+	// Create the trip. The trips after-create hook adds the owner as a member,
+	// auto-generates day records for the date range, AND auto-seeds a default
+	// "Trip" phase spanning the trip (#217). The explicit "Test Phase" below is
+	// therefore the SECOND phase — so deleting it is not a last-phase delete
+	// (which phases.pb.js now blocks), keeping the phases.delete=allow cells green.
 	const tripsCol = e.app.findCollectionByNameOrId('trips');
 	const trip = new Record(tripsCol);
 	trip.set('slug', slug);
@@ -256,15 +259,31 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 	e.app.save(spare);
 	memberIds.spare = spare.id;
 
-	// Create a phase covering the whole trip.
+	// Create a SECOND phase covering the whole trip (the auto-seeded "Trip"
+	// phase from the after-create hook is the first). Used as the fixture's
+	// primary phase reference; having two phases keeps phases.delete=allow valid.
 	const phasesCol = e.app.findCollectionByNameOrId('phases');
 	const phase = new Record(phasesCol);
 	phase.set('trip', trip.id);
 	phase.set('name', 'Test Phase');
 	phase.set('start_date', '2026-06-01 00:00:00.000Z');
 	phase.set('end_date', '2026-06-03 00:00:00.000Z');
-	phase.set('order', 0);
+	phase.set('order', 1);
 	e.app.save(phase);
+
+	// Capture the hook-seeded default "Trip" phase id (#217) so the rules
+	// harness can drive the last-phase-delete block.
+	let seededPhaseId = '';
+	try {
+		const seeded = e.app.findFirstRecordByFilter(
+			'phases',
+			'trip = {:tripId} && name = "Trip"',
+			{ tripId: trip.id }
+		);
+		if (seeded) seededPhaseId = seeded.id;
+	} catch (_) {
+		seededPhaseId = '';
+	}
 
 	// Pick the first auto-generated day for fixture references.
 	const days = e.app.findRecordsByFilter('days', 'trip = {:tripId}', '+date', 1, 0, {
@@ -425,6 +444,7 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 	return e.json(200, {
 		tripId: trip.id,
 		phaseId: phase.id,
+		phaseId2: seededPhaseId,
 		dayId: day.id,
 		itemId: item.id,
 		itemId2: item2.id,

@@ -27,6 +27,26 @@ onRecordAfterCreateSuccess((e) => {
 		return;
 	}
 
+	// --- Auto-seed a default "Trip" phase spanning the whole trip (#217) ---
+	// A trip must always have at least one phase (the delete hook in
+	// phases.pb.js blocks removing the last one). Seeded BEFORE the day-seed
+	// loop below so the phases query that loop runs (next block) picks it up
+	// and buckets every generated day into it — no separate rebucket needed.
+	// phases has NO `created_by` field (schema 0004): set trip + name +
+	// start/end (the required/used fields) + order, mirroring trips/new.
+	try {
+		const phasesCollection = e.app.findCollectionByNameOrId('phases');
+		const seedPhase = new Record(phasesCollection);
+		seedPhase.set('trip', e.record.id);
+		seedPhase.set('name', 'Trip');
+		seedPhase.set('start_date', rawStart.substring(0, 10) + ' 00:00:00.000Z');
+		seedPhase.set('end_date', rawEnd.substring(0, 10) + ' 00:00:00.000Z');
+		seedPhase.set('order', 0);
+		e.app.save(seedPhase);
+	} catch (_) {
+		// If phase seeding fails, still generate days (best-effort).
+	}
+
 	const daysCollection = e.app.findCollectionByNameOrId('days');
 
 	let phases = [];

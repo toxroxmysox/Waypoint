@@ -672,6 +672,40 @@ function printNovelReport() {
 	}
 }
 
+// #217 — a trip must always have at least one phase. phases.pb.js blocks
+// deleting the LAST phase of a trip (BadRequestError before e.next()). The fixed
+// matrix can't express "delete allowed when >1 phase, denied when it's the last":
+// the fixture now has TWO phases (the hook-seeded "Trip" = phaseId2, plus the
+// explicit "Test Phase" = phaseId), so these cases drive both halves on one
+// fixture in sequence. Owner is used (it already passes the owner/co_owner role
+// gate, isolating the last-phase rule).
+const LAST_PHASE_OPS = ['delete_not_last', 'delete_last'];
+
+async function runLastPhaseDeleteCases(tokens) {
+	const fixture = await setupFixture();
+
+	// Control: two phases exist → owner deletes one ("Test Phase") → allow.
+	const delNotLast = await pbRequest('DELETE', `/api/collections/phases/records/${fixture.phaseId}`, {
+		token: tokens.owner
+	});
+	recordResult('phases', 'delete_not_last', 'owner', 'allow', classifyWrite(delNotLast.status), delNotLast.status);
+
+	// Block: only the hook-seeded "Trip" phase remains → deleting it is the
+	// last-phase delete → deny (BadRequestError, classified deny).
+	const delLast = await pbRequest('DELETE', `/api/collections/phases/records/${fixture.phaseId2}`, {
+		token: tokens.owner
+	});
+	recordResult('phases', 'delete_last', 'owner', 'deny', classifyWrite(delLast.status), delLast.status);
+}
+
+function printLastPhaseDeleteReport() {
+	console.log('\n[novel #217 last-phase delete block]');
+	for (const r of results.filter((x) => LAST_PHASE_OPS.includes(x.op))) {
+		const mark = r.passed ? 'PASS' : 'FAIL';
+		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+	}
+}
+
 // #226 — self-assign exception in items.pb.js. The fixed matrix keeps items
 // update at OWNER_COOWNER_ONLY (a generic traveler edit must still 403); these
 // cases drive the NARROW carve-out: a member may PATCH `assigned_to` IFF the only
@@ -1378,6 +1412,9 @@ async function main() {
 	console.log('#219 cases: creator-edit exception (member edits their own item; cannot delete it)');
 	await runCreatorEditNovelCases(tokens);
 
+	console.log('#217 cases: last-phase delete block (deny removing the only phase)');
+	await runLastPhaseDeleteCases(tokens);
+
 	printReport();
 	printNovelReport();
 	printUsersCrossReadReport();
@@ -1386,6 +1423,7 @@ async function main() {
 	printJoinLinkReport();
 	printSelfAssignReport();
 	printCreatorEditReport();
+	printLastPhaseDeleteReport();
 
 	const failed = results.some((r) => !r.passed);
 	exit(failed ? 1 : 0);
