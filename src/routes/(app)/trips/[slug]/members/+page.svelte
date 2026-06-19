@@ -223,31 +223,55 @@
 		</Card>
 	</section>
 
-	<!-- Former members (#133 tombstones) -->
+	<!-- Former members (#133 tombstones) — collapsed by default behind a
+	     disclosure (#232) so departed/removed people don't clutter the roster.
+	     <details> is uncontrolled (no `open` attr) → starts closed; native
+	     toggle, no JS state needed. -->
 	{#if data.formerMembers.length > 0}
-		<section class="space-y-3">
-			<h2 class="text-ink-soft text-xs font-semibold tracking-wider uppercase">
-				Former members ({data.formerMembers.length})
-			</h2>
-			<Card>
-				<ul class="divide-line divide-y">
-					{#each data.formerMembers as m (m.id)}
-						<li class="flex items-center justify-between gap-3 px-4 py-3 opacity-75">
-							<Avatar departed alt={m.displayLabel} size={36} />
-							<div class="min-w-0 flex-1">
-								<div class="text-ink-soft truncate text-sm font-medium">{m.displayLabel}</div>
-								<div class="text-ink-muted truncate text-xs">
-									Removed{m.removedAtLabel ? ` · ${m.removedAtLabel}` : ''}
+		<section>
+			<details class="group space-y-3">
+				<summary
+					class="text-ink-soft hover:text-ink flex cursor-pointer list-none items-center gap-1.5 text-xs font-semibold tracking-wider uppercase select-none [&::-webkit-details-marker]:hidden"
+				>
+					<!-- Chevron: ink-muted (NOT text-line — it's ~1.2:1, invisible). Rotates open. -->
+					<svg
+						class="text-ink-muted transition-transform duration-150 group-open:rotate-90"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						width="14"
+						height="14"
+						aria-hidden="true"
+					>
+						<path d="m9 18 6-6-6-6" />
+					</svg>
+					Former members ({data.formerMembers.length})
+				</summary>
+				<Card>
+					<ul class="divide-line divide-y">
+						{#each data.formerMembers as m (m.id)}
+							<li class="flex items-center justify-between gap-3 px-4 py-3 opacity-75">
+								<Avatar departed alt={m.displayLabel} size={36} />
+								<div class="min-w-0 flex-1">
+									<div class="text-ink-soft truncate text-sm font-medium">{m.displayLabel}</div>
+									<div class="text-ink-muted truncate text-xs">
+										Removed{m.removedAtLabel ? ` · ${m.removedAtLabel}` : ''}
+									</div>
 								</div>
-							</div>
-							<Pill variant="default" size="sm">Departed</Pill>
-						</li>
-					{/each}
-				</ul>
-			</Card>
-			<p class="text-ink-muted text-xs">
-				Removed members keep their name on past expenses and records. Their money history is never deleted.
-			</p>
+								<span class="shrink-0">
+									<Pill variant="default" size="sm">Departed</Pill>
+								</span>
+							</li>
+						{/each}
+					</ul>
+				</Card>
+				<p class="text-ink-muted text-xs">
+					Removed members keep their name on past expenses and records. Their money history is never deleted.
+				</p>
+			</details>
 		</section>
 	{/if}
 
