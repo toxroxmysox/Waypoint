@@ -26,7 +26,7 @@ GUARDRAILS
 - Migration numbers: use <assigned range, e.g. 0047–0049>. Explicit-field collections need created/updated autodate fields.
 - Migration-dependent behavior: verify on a FRESH PB — scripts/e2e-clean-pb.sh (:8097), NEVER :8090 (stale schema). :8097 is shared and stompable — make sure no other session is mid-E2E.
 - After Svelte changes: pnpm check. New links/buttons: pnpm test:e2e:clean.
-- Removing or RENAMING a user-facing label/affordance? `grep -rn '<old text>' tests/` and fix any assertion — renames/removals pass on your branch but go RED at merge (bit #209, #198).
+- Removing/RENAMING a user-facing label/affordance OR changing/redirecting a ROUTE? `grep -rn '<old text or route>' tests/` across **ALL** specs (not just the one you wrote) and fix every assertion — renames/removals/route-changes pass on your branch but go RED at merge (bit #209, #198, #244 `/today`→`/now` broke a sibling spec the agent didn't author).
 - UI changes: verify mobile-first at 375px.
 
 VERIFY (all green before reporting done)
