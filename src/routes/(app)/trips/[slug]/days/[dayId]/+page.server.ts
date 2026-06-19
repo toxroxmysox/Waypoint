@@ -2,7 +2,7 @@ import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Day, Item, Vote, TripMember } from '$lib/types';
 import { phasesForDay } from '$lib/itinerary/phases';
-import { rebalance, insertBetween, GAP } from '$lib/itinerary/sort-order';
+import { rebalanceDayOrder, GAP } from '$lib/itinerary/sort-order';
 import { spanningItemsForDate } from '$lib/itinerary/multi-day';
 import { withAvatarUrls } from '$lib/collaboration/member-avatar';
 
@@ -80,53 +80,41 @@ export const actions: Actions = {
 	reorder: async ({ request, params, locals }) => {
 		const data = await request.formData();
 		const itemId = data.get('item_id')?.toString();
-		const beforeOrder = data.get('before_order')?.toString();
-		const afterOrder = data.get('after_order')?.toString();
+		const orderRaw = data.get('order')?.toString();
 
 		if (!itemId) return fail(400, { error: 'Missing item ID.' });
 
-		const before = beforeOrder && !isNaN(Number(beforeOrder)) ? Number(beforeOrder) : null;
-		const after = afterOrder && !isNaN(Number(afterOrder)) ? Number(afterOrder) : null;
+		// #237: an untimed item must be able to land anywhere — between or below
+		// timed items — and stick. A single midpoint sort_order can't encode that
+		// (orderDayItems re-weaves untimed items against timed anchors whose
+		// sort_order is unrelated to the clock). The client sends the full resulting
+		// display order; rebalance the WHOLE day to match it so the drop round-trips.
+		// Scope matches the timeline the user sees (load uses `end_date = ""`) so
+		// multi-day banner items aren't renumbered — they never appear in `order`.
+		const day = await locals.pb.collection('items').getFullList<Item>({
+			filter: `day = "${params.dayId}" && end_date = ""`,
+			fields: 'id'
+		});
+		const dayIds = new Set(day.map((i) => i.id));
 
-		let newOrder = insertBetween(before, after);
-
-		if (newOrder === null) {
-			// Gap too small — rebalance all items on this day
-			const dayItems = await locals.pb.collection('items').getFullList<Item>({
-				filter: `day = "${params.dayId}"`,
-				sort: 'sort_order',
-				fields: 'id,sort_order'
-			});
-
-			const orderedIds = dayItems.filter((i) => i.id !== itemId).map((i) => i.id);
-			let insertIdx = orderedIds.length;
-			if (after !== null) {
-				const afterIdx = orderedIds.findIndex(
-					(id) => dayItems.find((i) => i.id === id)?.sort_order === after
-				);
-				if (afterIdx >= 0) insertIdx = afterIdx;
-			} else if (before !== null) {
-				const beforeIdx = orderedIds.findIndex(
-					(id) => dayItems.find((i) => i.id === id)?.sort_order === before
-				);
-				if (beforeIdx >= 0) insertIdx = beforeIdx + 1;
-			}
-			orderedIds.splice(insertIdx, 0, itemId);
-
-			const updates = rebalance(orderedIds);
-			try {
-				await Promise.all(
-					updates.map((u) => locals.pb.collection('items').update(u.id, { sort_order: u.sort_order }))
-				);
-				return { success: true };
-			} catch (err: unknown) {
-				const message = err instanceof Error ? err.message : 'Failed to reorder.';
-				return fail(500, { error: message });
+		const requested = (orderRaw ?? '').split(',').filter(Boolean);
+		// Only trust ids that actually live on this day (drop stray/foreign ids), and
+		// append any day items the client omitted so none lose their sort_order.
+		const seen = new Set<string>();
+		const orderedIds: string[] = [];
+		for (const id of requested) {
+			if (dayIds.has(id) && !seen.has(id)) {
+				orderedIds.push(id);
+				seen.add(id);
 			}
 		}
+		for (const i of day) if (!seen.has(i.id)) orderedIds.push(i.id);
 
+		const updates = rebalanceDayOrder(orderedIds.map((id) => ({ id })));
 		try {
-			await locals.pb.collection('items').update(itemId, { sort_order: newOrder });
+			await Promise.all(
+				updates.map((u) => locals.pb.collection('items').update(u.id, { sort_order: u.sort_order }))
+			);
 			return { success: true };
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : 'Failed to reorder.';
@@ -139,18 +127,15 @@ export const actions: Actions = {
 		const itemId = data.get('item_id')?.toString();
 		if (!itemId) return fail(400, { error: 'Missing item ID.' });
 
-		// Position-aware pull (#60): drop neighbors come from the dnd flat list.
-		// No neighbors → append to the day's tail (legacy behavior).
-		const beforeRaw = data.get('before_order')?.toString();
-		const afterRaw = data.get('after_order')?.toString();
-		const before = beforeRaw && !isNaN(Number(beforeRaw)) ? Number(beforeRaw) : null;
-		const after = afterRaw && !isNaN(Number(afterRaw)) ? Number(afterRaw) : null;
-
-		const newOrder = before === null && after === null ? null : insertBetween(before, after);
+		// An idea pulled in via tap-to-plan has no drop position → append to the tail.
+		// A drag carries the full resulting display order; rebalance the whole day so
+		// the pulled item sticks where it landed — including between/below timed items
+		// (#237), the same whole-day rebalance the timeline reorder uses.
+		const orderRaw = data.get('order')?.toString();
 
 		try {
-			if (before === null && after === null) {
-				// Append to the end of the day.
+			if (!orderRaw) {
+				// Append to the end of the day (tap-to-plan, no drop position).
 				const tail = await locals.pb.collection('items').getFullList({
 					filter: `day = "${params.dayId}"`,
 					sort: '-sort_order',
@@ -161,37 +146,35 @@ export const actions: Actions = {
 					status: 'planned',
 					sort_order: tail.length > 0 ? Number(tail[0].sort_order) + GAP : GAP
 				});
-			} else if (newOrder === null) {
-				// Gap collapsed — rebalance the day with the pulled item spliced in.
-				const dayItems = await locals.pb.collection('items').getFullList<Item>({
-					filter: `day = "${params.dayId}"`,
-					sort: 'sort_order',
-					fields: 'id,sort_order'
-				});
-				const orderedIds = dayItems.map((i) => i.id);
-				let insertIdx = orderedIds.length;
-				if (after !== null) {
-					const afterIdx = dayItems.findIndex((i) => i.sort_order === after);
-					if (afterIdx >= 0) insertIdx = afterIdx;
-				} else if (before !== null) {
-					const beforeIdx = dayItems.findIndex((i) => i.sort_order === before);
-					if (beforeIdx >= 0) insertIdx = beforeIdx + 1;
-				}
-				orderedIds.splice(insertIdx, 0, itemId);
-				const updates = rebalance(orderedIds);
-				await Promise.all(
-					updates.map((u) =>
-						locals.pb.collection('items').update(u.id, { sort_order: u.sort_order })
-					)
-				);
-				await locals.pb.collection('items').update(itemId, { day: params.dayId, status: 'planned' });
-			} else {
-				await locals.pb.collection('items').update(itemId, {
-					day: params.dayId,
-					status: 'planned',
-					sort_order: newOrder
-				});
+				return { success: true };
 			}
+
+			// Attach the pulled item to the day FIRST so it's part of the day set the
+			// whole-day rebalance renumbers.
+			await locals.pb.collection('items').update(itemId, { day: params.dayId, status: 'planned' });
+
+			// Scope matches the visible timeline (load uses `end_date = ""`).
+			const day = await locals.pb.collection('items').getFullList<Item>({
+				filter: `day = "${params.dayId}" && end_date = ""`,
+				fields: 'id'
+			});
+			const dayIds = new Set(day.map((i) => i.id));
+
+			const requested = orderRaw.split(',').filter(Boolean);
+			const seen = new Set<string>();
+			const orderedIds: string[] = [];
+			for (const id of requested) {
+				if (dayIds.has(id) && !seen.has(id)) {
+					orderedIds.push(id);
+					seen.add(id);
+				}
+			}
+			for (const i of day) if (!seen.has(i.id)) orderedIds.push(i.id);
+
+			const updates = rebalanceDayOrder(orderedIds.map((id) => ({ id })));
+			await Promise.all(
+				updates.map((u) => locals.pb.collection('items').update(u.id, { sort_order: u.sort_order }))
+			);
 			return { success: true };
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : 'Failed to add item to day.';

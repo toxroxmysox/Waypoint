@@ -89,6 +89,9 @@
 	let formItemId = $state('');
 	let formBefore = $state('');
 	let formAfter = $state('');
+	// Full resulting timeline display order (comma-joined ids) for the whole-day
+	// rebalance on the `reorder`/`pullToPlan` actions (#237).
+	let formOrder = $state('');
 	let formParkingPhaseId = $state('');
 
 	// A handle press enables every zone — svelte-dnd-action grabs whatever item is
@@ -113,10 +116,17 @@
 		}
 	}
 
-	function submit(form: HTMLFormElement | undefined, itemId: string, before: number | null, after: number | null) {
+	function submit(
+		form: HTMLFormElement | undefined,
+		itemId: string,
+		before: number | null,
+		after: number | null,
+		order: string[] | null = null
+	) {
 		formItemId = itemId;
 		formBefore = before?.toString() ?? '';
 		formAfter = after?.toString() ?? '';
+		formOrder = order?.join(',') ?? '';
 		queueMicrotask(() => form?.requestSubmit());
 	}
 
@@ -149,12 +159,16 @@
 				after,
 				dayPhases: dayPhaseIds
 			});
+			// The full resulting display order drives the whole-day sort_order
+			// rebalance (#237) so an untimed item sticks anywhere — between/below
+			// timed items — instead of re-weaving back to the top.
+			const order = next.map((i) => i.id);
 			switch (action.kind) {
 				case 'reorder':
-					submit(reorderForm, movedId, action.before, action.after);
+					submit(reorderForm, movedId, action.before, action.after, order);
 					break;
 				case 'pull':
-					submit(pullForm, movedId, action.before, action.after);
+					submit(pullForm, movedId, action.before, action.after, order);
 					break;
 				case 'snapback':
 				case 'reject':
@@ -240,15 +254,16 @@
 
 <!-- Hidden forms for the existing server actions. enhance() invalidates the load
      on success, which re-seeds the working copies from server truth. -->
+<!-- reorder/pullToPlan rebalance the WHOLE day to the resulting display order
+     (#237) — `order` is the comma-joined item ids; an empty `order` on pull means
+     tap-to-plan (append to the tail). -->
 <form bind:this={reorderForm} method="POST" action="?/reorder" use:enhance class="hidden">
 	<input type="hidden" name="item_id" value={formItemId} />
-	<input type="hidden" name="before_order" value={formBefore} />
-	<input type="hidden" name="after_order" value={formAfter} />
+	<input type="hidden" name="order" value={formOrder} />
 </form>
 <form bind:this={pullForm} method="POST" action="?/pullToPlan" use:enhance class="hidden">
 	<input type="hidden" name="item_id" value={formItemId} />
-	<input type="hidden" name="before_order" value={formBefore} />
-	<input type="hidden" name="after_order" value={formAfter} />
+	<input type="hidden" name="order" value={formOrder} />
 </form>
 <form bind:this={pushForm} method="POST" action="?/pushToParking" use:enhance class="hidden">
 	<input type="hidden" name="item_id" value={formItemId} />

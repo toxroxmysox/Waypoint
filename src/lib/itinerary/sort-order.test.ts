@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { nextSortOrder, insertBetween, rebalance, reorderUpdates, GAP } from './sort-order';
+import {
+	nextSortOrder,
+	insertBetween,
+	rebalance,
+	reorderUpdates,
+	rebalanceDayOrder,
+	GAP
+} from './sort-order';
+import { orderDayItems, type DayOrderable } from './timeline';
 
 describe('nextSortOrder', () => {
 	it('returns GAP for empty list', () => {
@@ -115,5 +123,91 @@ describe('reorderUpdates', () => {
 		expect(reorderUpdates(ideas(['a', 100]), 'a', null, null)).toEqual([
 			{ id: 'a', sort_order: GAP }
 		]);
+	});
+});
+
+describe('rebalanceDayOrder (#237 — untimed items interleave freely)', () => {
+	// A minimal DayOrderable for round-trip checks through orderDayItems.
+	type TestItem = DayOrderable & { id: string };
+	const timed = (id: string, start_time: string): TestItem => ({ id, start_time, sort_order: 0 });
+	const untimed = (id: string): TestItem => ({ id, start_time: '', sort_order: 0 });
+
+	// Apply the rebalance updates back onto the items, then re-derive the day's
+	// display order — this is exactly what the server + a fresh page load do.
+	const applyAndReorder = (items: TestItem[], displayOrder: TestItem[]): string[] => {
+		const updates = rebalanceDayOrder(displayOrder);
+		const byId = new Map(updates.map((u) => [u.id, u.sort_order]));
+		const persisted = items.map((i) => ({ ...i, sort_order: byId.get(i.id) ?? i.sort_order }));
+		return orderDayItems(persisted).map((i) => i.id);
+	};
+
+	it('(a) keeps an untimed item dropped BETWEEN two timed items in that position after rebalance', () => {
+		const t1 = timed('t1', '2026-06-15 09:00:00.000Z');
+		const t2 = timed('t2', '2026-06-15 14:00:00.000Z');
+		const dinner = untimed('dinner'); // the "no time set dinner" from the issue
+		// Dropped order: dinner sits between the two timed items.
+		const dropped = [t1, dinner, t2];
+		expect(applyAndReorder([t1, t2, dinner], dropped)).toEqual(['t1', 'dinner', 't2']);
+	});
+
+	it('(a) keeps an untimed item dropped BELOW all timed items at the tail after rebalance', () => {
+		const t1 = timed('t1', '2026-06-15 09:00:00.000Z');
+		const t2 = timed('t2', '2026-06-15 14:00:00.000Z');
+		const dinner = untimed('dinner');
+		const dropped = [t1, t2, dinner]; // dinner below both timed items
+		expect(applyAndReorder([t1, t2, dinner], dropped)).toEqual(['t1', 't2', 'dinner']);
+	});
+
+	it('(b) timed items keep their start_time order regardless of the dropped order', () => {
+		const t1 = timed('t1', '2026-06-15 09:00:00.000Z');
+		const t2 = timed('t2', '2026-06-15 14:00:00.000Z');
+		const u = untimed('u');
+		// Even if a caller hands timed items out of clock order, orderDayItems pins
+		// them by start_time — t1 (9am) always precedes t2 (2pm).
+		const droppedWrongClockOrder = [t2, u, t1];
+		const result = applyAndReorder([t1, t2, u], droppedWrongClockOrder);
+		const tIdx = (id: string) => result.indexOf(id);
+		expect(tIdx('t1')).toBeLessThan(tIdx('t2'));
+	});
+
+	it('(c) emits monotonic, collision-free sort_order values across the whole day', () => {
+		const dropped = [
+			timed('t1', '2026-06-15 09:00:00.000Z'),
+			untimed('u1'),
+			timed('t2', '2026-06-15 14:00:00.000Z'),
+			untimed('u2'),
+			untimed('u3')
+		];
+		const updates = rebalanceDayOrder(dropped);
+		const orders = updates.map((u) => u.sort_order);
+		// Strictly increasing (monotonic) → also guarantees no collisions.
+		for (let i = 1; i < orders.length; i++) {
+			expect(orders[i]).toBeGreaterThan(orders[i - 1]);
+		}
+		expect(new Set(orders).size).toBe(orders.length);
+		// Preserves the dropped order 1:1.
+		expect(updates.map((u) => u.id)).toEqual(['t1', 'u1', 't2', 'u2', 'u3']);
+	});
+
+	it('round-trips a mixed day with multiple untimed items woven between anchors', () => {
+		const t1 = timed('t1', '2026-06-15 08:00:00.000Z');
+		const t2 = timed('t2', '2026-06-15 12:00:00.000Z');
+		const t3 = timed('t3', '2026-06-15 18:00:00.000Z');
+		const a = untimed('a');
+		const b = untimed('b');
+		const c = untimed('c');
+		const dropped = [t1, a, t2, b, c, t3]; // a after t1; b,c between t2 and t3
+		expect(applyAndReorder([t1, t2, t3, a, b, c], dropped)).toEqual([
+			't1',
+			'a',
+			't2',
+			'b',
+			'c',
+			't3'
+		]);
+	});
+
+	it('handles an empty day', () => {
+		expect(rebalanceDayOrder([])).toEqual([]);
 	});
 });
