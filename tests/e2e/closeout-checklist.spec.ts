@@ -67,7 +67,7 @@ test.describe('Closeout leaves checklists untouched (#53)', () => {
 	// re-running load() via the enhance update() helper (no full reload).
 	test('"All done" keeps you on the same day (#257)', async ({ page }) => {
 		const stamp = Date.now().toString(36);
-		const tripSlug = `e2e-closeout-allday-${stamp}`;
+		const tripSlug = `e2e-closeout-alldone-${stamp}`;
 
 		// Multi-day trip so we can navigate to Day 2 and prove we stay there.
 		await page.getByRole('link', { name: 'New Trip' }).click();
@@ -93,16 +93,19 @@ test.describe('Closeout leaves checklists untouched (#53)', () => {
 
 		// Closeout: advance to Day 2, then click "All done".
 		await page.goto(`${BASE}/trips/${tripSlug}/closeout`);
-		await expect(page.getByText('Day 1 of', { exact: false })).toBeVisible();
-		await page.getByRole('button', { name: 'Next Day' }).click();
-		await expect(page.getByText('Day 2 of', { exact: false })).toBeVisible();
+		await expect(page.getByText('Day 1 of', { exact: false }).filter({ visible: true }).first()).toBeVisible();
+		await page.getByRole('button', { name: 'Next Day' }).filter({ visible: true }).first().click();
+		await expect(page.getByText('Day 2 of', { exact: false }).filter({ visible: true }).first()).toBeVisible();
 
-		await page.getByRole('button', { name: 'All done', exact: true }).click();
+		await page.getByRole('button', { name: 'All done', exact: true }).filter({ visible: true }).first().click();
 
 		// The bug: this would snap back to "Day 1 of N". The fix keeps us on Day 2,
 		// and the day's items now read Done.
-		await expect(page.getByText('Day 2 of', { exact: false })).toBeVisible({ timeout: 5000 });
-		await expect(page.getByText('Day 1 of', { exact: false })).toHaveCount(0);
+		await expect(page.getByText('Day 2 of', { exact: false }).filter({ visible: true }).first()).toBeVisible({ timeout: 5000 });
+		// Dual AppShell trees instantiate +page.svelte twice with independent
+		// currentDayIndex $state — the hidden tree still shows "Day 1 of", so scope
+		// the negative assertion to the visible tree (#257).
+		await expect(page.getByText('Day 1 of', { exact: false }).filter({ visible: true })).toHaveCount(0);
 		await expect(page.getByText('Done').filter({ visible: true }).first()).toBeVisible();
 	});
 });
