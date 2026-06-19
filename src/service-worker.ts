@@ -3,28 +3,59 @@
 /// <reference lib="esnext" />
 /// <reference lib="webworker" />
 
+// Thin service-worker shell over the pure `cache-policy` module (#253, ADR-0010).
+// All routing decisions live in `cache-policy`; this file only executes them:
+// precache the app shell + build assets at install, then apply the chosen
+// strategy (cache-first / network-first / passthrough) to each GET. Caches are
+// device-scoped and version-namespaced — old versions are evicted on activate
+// and the whole set is cleared on logout (CLEAR_CACHES message).
+
 import { build, files, version } from '$service-worker';
-import { isDocumentFilePath } from '$lib/documents/offline-cache';
+import { decideStrategy } from '$lib/offline/cache-policy';
+import { SHELL_URL, cacheFirst, networkFirst, shellResponse } from '$lib/offline/sw-runtime';
 
 declare const self: ServiceWorkerGlobalScope;
 
+// One namespace per build version. Bumping `version` (SvelteKit does this per
+// build) orphans the previous set, which `activate` then evicts.
 const STATIC_CACHE = `waypoint-static-${version}`;
 const DATA_CACHE = `waypoint-data-${version}`;
 // Document artifact bytes (S5, #74). Populated by precache (active trip) and by
-// cache-on-view runtime caching (planning mode). Bytes are immutable per record.
+// cache-first runtime caching (planning mode). Bytes are immutable per record.
 const DOCS_CACHE = `waypoint-docs-${version}`;
+
+const CURRENT_CACHES = [STATIC_CACHE, DATA_CACHE, DOCS_CACHE];
 
 const ASSETS = [...build, ...files];
 
-let offlineMode = false;
+self.addEventListener('install', (event) => {
+	event.waitUntil(
+		caches.open(STATIC_CACHE).then(async (cache) => {
+			await cache.addAll(ASSETS);
+			// Precache the app shell so a cold-launch offline always renders.
+			await cache.put(SHELL_URL, shellResponse());
+		})
+	);
+	self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+	event.waitUntil(
+		caches.keys().then(async (keys) => {
+			for (const key of keys) {
+				if (!CURRENT_CACHES.includes(key)) await caches.delete(key);
+			}
+			await self.clients.claim();
+		})
+	);
+});
 
 self.addEventListener('message', (event) => {
-	if (event.data?.type === 'SET_OFFLINE') {
-		offlineMode = event.data.offline;
-	} else if (event.data?.type === 'PRECACHE_DOCS') {
+	const data = event.data;
+	if (data?.type === 'PRECACHE_DOCS') {
 		// Precache the active trip's documents while online. Per-URL fetch+put so
 		// one failure doesn't abort the batch (unlike cache.addAll).
-		const urls: string[] = event.data.urls ?? [];
+		const urls: string[] = data.urls ?? [];
 		event.waitUntil(
 			caches.open(DOCS_CACHE).then((cache) =>
 				Promise.allSettled(
@@ -35,113 +66,33 @@ self.addEventListener('message', (event) => {
 				)
 			)
 		);
+	} else if (data?.type === 'CLEAR_CACHES') {
+		// Logout: caches hold authenticated SSR HTML + data, so they're device-scoped
+		// and wiped on sign-out (ADR-0010). Drop every waypoint-* cache.
+		event.waitUntil(
+			caches.keys().then((keys) =>
+				Promise.all(keys.filter((k) => k.startsWith('waypoint-')).map((k) => caches.delete(k)))
+			)
+		);
 	}
-});
-
-self.addEventListener('install', (event) => {
-	event.waitUntil(
-		caches.open(STATIC_CACHE).then((cache) => cache.addAll(ASSETS))
-	);
-	self.skipWaiting();
-});
-
-self.addEventListener('activate', (event) => {
-	event.waitUntil(
-		caches.keys().then(async (keys) => {
-			for (const key of keys) {
-				if (key !== STATIC_CACHE && key !== DATA_CACHE && key !== DOCS_CACHE) {
-					await caches.delete(key);
-				}
-			}
-		})
-	);
-	self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
-	if (event.request.method !== 'GET') return;
+	const strategy = decideStrategy(event.request, self.location.origin);
 
-	const url = new URL(event.request.url);
-
-	// Document artifact bytes — cache-first (immutable per record). A miss falls
-	// through to the network and populates DOCS_CACHE (cache-on-view for planning
-	// mode); precache puts the active trip's files here ahead of time. Serves
-	// offline once cached regardless of token expiry — we cache the bytes.
-	if (isDocumentFilePath(url.pathname)) {
-		event.respondWith(
-			caches.match(event.request).then((cached) => {
-				if (cached) return cached;
-				return fetch(event.request)
-					.then(async (response) => {
-						if (response.ok) {
-							const cache = await caches.open(DOCS_CACHE);
-							cache.put(event.request, response.clone());
-						}
-						return response;
-					})
-					.catch(() => new Response('Offline', { status: 503 }));
-			})
-		);
-		return;
-	}
-
-	// PocketBase API requests — network-first with data cache fallback
-	const isPBApi = url.port === '8090' || url.pathname.startsWith('/api/');
-
-	if (isPBApi) {
-		if (offlineMode) {
-			// In explicit offline mode, serve from cache only
-			event.respondWith(
-				caches.match(event.request).then((cached) => {
-					return cached ?? new Response(
-						JSON.stringify({ error: 'Offline' }),
-						{ status: 503, headers: { 'Content-Type': 'application/json' } }
-					);
-				})
-			);
+	switch (strategy.kind) {
+		case 'cache-first': {
+			// Build assets land in STATIC_CACHE; document bytes in DOCS_CACHE.
+			const url = new URL(event.request.url);
+			const cacheName = url.pathname.includes('/_app/') ? STATIC_CACHE : DOCS_CACHE;
+			event.respondWith(cacheFirst(event.request, cacheName));
 			return;
 		}
-
-		// Network-first: try network, cache the response, fallback to cache
-		event.respondWith(
-			fetch(event.request)
-				.then(async (response) => {
-					if (response.ok) {
-						const cache = await caches.open(DATA_CACHE);
-						cache.put(event.request, response.clone());
-					}
-					return response;
-				})
-				.catch(() =>
-					caches.match(event.request).then((cached) => {
-						return cached ?? new Response(
-							JSON.stringify({ error: 'Offline' }),
-							{ status: 503, headers: { 'Content-Type': 'application/json' } }
-						);
-					})
-				)
-		);
-		return;
+		case 'network-first':
+			event.respondWith(networkFirst(event.request, DATA_CACHE, strategy.fallbackToShell));
+			return;
+		default:
+			// passthrough: let the browser handle it (default fetch). Not respondWith'd.
+			return;
 	}
-
-	// Navigation requests — network-first with cache fallback
-	if (event.request.mode === 'navigate') {
-		event.respondWith(
-			fetch(event.request).catch(async () => {
-				const cached = await caches.match(event.request);
-				return cached ?? new Response('Offline', {
-					status: 503,
-					headers: { 'Content-Type': 'text/html' }
-				});
-			})
-		);
-		return;
-	}
-
-	// Static assets — cache-first
-	event.respondWith(
-		caches.match(event.request).then((cached) => {
-			return cached ?? fetch(event.request);
-		})
-	);
 });

@@ -9,8 +9,6 @@
 	let { children } = $props();
 	let routeAnnouncement = $state('');
 
-	let offline = $state(false);
-
 	onMount(() => {
 		// Number input scroll prevention
 		const handler = (e: WheelEvent) => {
@@ -19,21 +17,6 @@
 			}
 		};
 		document.addEventListener('wheel', handler, { passive: true });
-
-		// Restore offline state from localStorage
-		const storedOffline = localStorage.getItem('waypoint-offline');
-		if (storedOffline === 'true') {
-			offline = true;
-			sendOfflineToSW(true);
-		}
-
-		// Listen for online/offline events
-		window.addEventListener('online', () => {
-			if (!offline) sendOfflineToSW(false);
-		});
-		window.addEventListener('offline', () => {
-			sendOfflineToSW(true);
-		});
 
 		return () => document.removeEventListener('wheel', handler);
 	});
@@ -49,21 +32,6 @@
 		const h1 = document.querySelector('h1');
 		routeAnnouncement = h1?.textContent?.trim() || document.title;
 	});
-
-	function sendOfflineToSW(value: boolean) {
-		if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-			navigator.serviceWorker.controller.postMessage({
-				type: 'SET_OFFLINE',
-				offline: value
-			});
-		}
-	}
-
-	function toggleOffline() {
-		offline = !offline;
-		localStorage.setItem('waypoint-offline', String(offline));
-		sendOfflineToSW(offline);
-	}
 </script>
 
 <svelte:head>
@@ -72,13 +40,6 @@
 
 <a href="#main-content" class="skip-link">Skip to content</a>
 <div class="sr-only" aria-live="polite" aria-atomic="true">{routeAnnouncement}</div>
-
-{#if offline}
-	<div class="bg-clay/90 text-paper px-4 py-1.5 text-center text-xs font-semibold">
-		Offline mode
-		<button onclick={toggleOffline} class="text-paper/80 hover:text-paper ml-2 underline">Go online</button>
-	</div>
-{/if}
 
 <A2HSBanner />
 

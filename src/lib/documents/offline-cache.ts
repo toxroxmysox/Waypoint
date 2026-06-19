@@ -33,3 +33,14 @@ export function precacheDocuments(urls: string[]): void {
 	if (typeof navigator === 'undefined' || !urls.length) return;
 	navigator.serviceWorker?.controller?.postMessage({ type: 'PRECACHE_DOCS', urls });
 }
+
+/**
+ * Ask the active service worker to drop every offline cache (authenticated SSR
+ * HTML + data + document bytes). Fire on logout — caches are device-scoped, so a
+ * sign-out must not leave the prior account's trip readable (ADR-0010). No-op
+ * without a controlling SW.
+ */
+export function clearOfflineCaches(): void {
+	if (typeof navigator === 'undefined') return;
+	navigator.serviceWorker?.controller?.postMessage({ type: 'CLEAR_CACHES' });
+}

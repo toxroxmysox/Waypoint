@@ -13,11 +13,6 @@
 
 	let notifications = $state<Notification[]>(untrack(() => data.notifications ?? []));
 	let unreadCount = $state(untrack(() => data.unreadCount ?? 0));
-	let offlineEnabled = $state(false);
-
-	$effect(() => {
-		offlineEnabled = typeof localStorage !== 'undefined' && localStorage.getItem('waypoint-offline') === 'true';
-	});
 </script>
 
 <NavBar
@@ -122,38 +117,5 @@
 				<path d="m9 18 6-6-6-6" />
 			</svg>
 		</a>
-	</Card>
-
-	<Card>
-		<button
-			type="button"
-			onclick={() => {
-				const current = localStorage.getItem('waypoint-offline') === 'true';
-				const next = !current;
-				localStorage.setItem('waypoint-offline', String(next));
-				if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-					navigator.serviceWorker.controller.postMessage({ type: 'SET_OFFLINE', offline: next });
-				}
-				window.location.reload();
-			}}
-			class="flex w-full items-center gap-3 p-4"
-		>
-			<svg class="text-ink-soft shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-				<line x1="1" y1="1" x2="23" y2="23" />
-				<path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55" />
-				<path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39" />
-				<path d="M10.71 5.05A16 16 0 0 1 22.56 9" />
-				<path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88" />
-				<path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
-				<line x1="12" y1="20" x2="12.01" y2="20" />
-			</svg>
-			<div class="min-w-0 flex-1 text-left">
-				<p class="text-ink text-sm font-semibold">Offline mode</p>
-				<p class="text-ink-muted text-[12px]">{offlineEnabled ? 'Currently on — using cached data' : 'Toggle offline to use cached trip data'}</p>
-			</div>
-			{#if offlineEnabled}
-				<span class="bg-gold-tint text-gold shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium">On</span>
-			{/if}
-		</button>
 	</Card>
 </main>

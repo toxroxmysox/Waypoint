@@ -5,6 +5,7 @@
 	import Button from '$lib/ui/Button.svelte';
 	import Avatar from '$lib/ui/Avatar.svelte';
 	import FAB from '$lib/shell/components/FAB.svelte';
+	import { clearOfflineCaches } from '$lib/documents/offline-cache';
 
 	let { data } = $props();
 
@@ -25,7 +26,7 @@
 <NavBar title="Waypoint">
 	{#snippet right()}
 		<div class="flex items-center gap-3">
-			<form method="POST" action="/logout">
+			<form method="POST" action="/logout" onsubmit={() => clearOfflineCaches()}>
 				<button
 					type="submit"
 					class="text-ink-muted hover:text-ink-soft text-[12px] font-medium"
