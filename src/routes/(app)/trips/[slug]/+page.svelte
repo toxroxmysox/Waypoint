@@ -12,6 +12,7 @@
 	import DayCard from '$lib/itinerary/components/DayCard.svelte';
 	import DayMetricToggle from '$lib/itinerary/components/DayMetricToggle.svelte';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
+	import WrapUpBanner from '$lib/trip-mode/components/WrapUpBanner.svelte';
 	import { titleCase } from '$lib/shell/format';
 	import { isTripActive } from '$lib/trip-mode/activation';
 	import { untrack } from 'svelte';
@@ -22,6 +23,12 @@
 	// Trip Mode chip only shows on an active trip, and lands on /now to match the
 	// mode pill — one mode, one home (#204).
 	const tripActive = $derived(isTripActive(data.trip));
+
+	// Lifecycle router (#239/#195): `wrap-up` swaps the top of the Overview (the
+	// trip-details card + Flights & Stays) for the wrap-up banner; Itinerary/Days stay
+	// below. Computed in server load and read here — $derived (never $effect, which
+	// doesn't run in SSR and would render the wrong top on first paint).
+	const isWrapUp = $derived(data.lifecycle === 'wrap-up');
 
 	let notifications = $state<Notification[]>(untrack(() => data.notifications ?? []));
 	let unreadCount = $state(untrack(() => data.unreadCount ?? 0));
@@ -76,6 +83,15 @@
 ]} />
 
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-6">
+	{#if isWrapUp}
+		<!-- Wrap-up (#239/#195): ONE bordered banner replaces the trip-details card +
+		     Flights & Stays. Itinerary/Days still render below, unchanged. -->
+		<WrapUpBanner
+			slug={data.trip.slug}
+			dateRange={formatDateRange(data.trip.start_date, data.trip.end_date)}
+			balanceOwed={data.wrapUp?.balanceOwed ?? false}
+		/>
+	{:else}
 	<!-- Trip stats card -->
 	<Card>
 		<div class="flex items-start justify-between p-4">
@@ -130,6 +146,7 @@
 				{/each}
 			</div>
 		</section>
+	{/if}
 	{/if}
 
 	{#if tripLists.length > 0}

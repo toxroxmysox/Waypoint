@@ -11,8 +11,8 @@
 A self-hosted, mobile-first PWA that replaces the Google Doc / Google Sheet / Splitwise / pinned-message stack Scott and Abby use for trip planning, execution, and post-trip sharing. Must be polished enough that non-technical friends will actually contribute, structured enough that nothing gets lost between planning and trip day, and shareable enough that the trip lives on as a public archive afterward.
 
 **Two modes, one view:**
-1. **Planning Mode** — collaborative itinerary building. Default mode. 5-tab moss nav (Itinerary, Money, Activity, Vault, More). Available in all trip statuses.
-2. **Trip Mode** — live-trip execution. Phone-first, one-handed, large cards, offline-capable read. 4-tab clay nav (Now, Money, Add, Docs). Available only when trip status = active. Default mode for active trips; user can switch to Planning Mode and back. **Now** absorbed Today (#244): it is one weighted whole-day tab with sub-tabs **Today** (default — the weighted view at `/now`) and **Next 3 days** (`/today/upcoming`); `/today` redirects to `/now`. The **Money** tab is the read-only Trip-Mode per-person money glance at `/trips/[slug]/money` (clay chrome via `resolveChromeMode`) — see §Money; merging Now+Today freed its slot (375px can't hold a 5th tab + the centre Add FAB).
+1. **Planning Mode** — collaborative itinerary building. Default mode. 5-tab moss nav (Itinerary, Money, Activity, Vault, More). Available in every lifecycle state.
+2. **Trip Mode** — live-trip execution. Phone-first, one-handed, large cards, offline-capable read. 4-tab clay nav (Now, Money, Add, Docs). Available only when the trip's **derived lifecycle** is `active` (there is no stored `status` field — the lifecycle is computed from dates + `archived`; see §Data Model / CONTEXT.md Trip). Default mode for active trips; user can switch to Planning Mode and back. **Now** absorbed Today (#244): it is one weighted whole-day tab with sub-tabs **Today** (default — the weighted view at `/now`) and **Next 3 days** (`/today/upcoming`); `/today` redirects to `/now`. The **Money** tab is the read-only Trip-Mode per-person money glance at `/trips/[slug]/money` (clay chrome via `resolveChromeMode`) — see §Money; merging Now+Today freed its slot (375px can't hold a 5th tab + the centre Add FAB).
 3. **Public Archive** — read-only post-trip view of what actually happened. Not a mode — rendered automatically for closed trips and via public share link. Linkable from Scott's website.
 
 ---
@@ -625,7 +625,7 @@ Every "add item" form has an optional **lookup field** at the top.
 
 ### Mode switching
 - Planning Mode ↔ Trip Mode toggle in trip header. Mode is UI state, not data.
-- Trip Mode available only when trip status = active. Default mode for active trips.
+- Trip Mode available only when the trip's **derived lifecycle** (`getTripLifecycle` → planning/active/wrap-up/closed; only `archived` persists) is `active`. Default mode for active trips.
 - Planning Mode: 5-tab moss nav (Itinerary, Money, Activity, Vault, More).
 - Trip Mode: 4-tab clay nav (Now, Money, Add, Docs). Now is one weighted whole-day tab with Today / Next 3 days sub-tabs (#244); Money = the Trip-Mode money glance at `/money`.
 - Archive view auto-rendered for closed trips (also accessible via public share link). Not a mode.

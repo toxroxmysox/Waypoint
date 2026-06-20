@@ -1,5 +1,3 @@
-import { tripToday, tripTz } from '$lib/shell/trip-time';
-
 export type TripViewMode = 'planning' | 'trip';
 
 export interface TripDateInfo {
@@ -10,12 +8,9 @@ export interface TripDateInfo {
 	timezone?: string;
 }
 
-export function isTripActive(trip: TripDateInfo, now: Date = new Date()): boolean {
-	if (trip.archived || !trip.start_date || !trip.end_date) return false;
-	// Compare against the trip-local calendar date, not UTC — otherwise an
-	// ahead-of-UTC trip flips to Planning mid-evening on its last day (#167).
-	const today = tripToday(tripTz(trip), now);
-	const start = trip.start_date.split(/[T ]/)[0];
-	const end = trip.end_date.split(/[T ]/)[0];
-	return today >= start && today <= end;
-}
+// `isTripActive` now collapses to `getTripLifecycle(...) === 'active'` — the live-trip
+// branch of the 4-state lifecycle (#195). Re-exported here so its existing callers
+// (`today/upcoming/`, `now/`, AppShell, the Overview, documents) keep their import path
+// and keep meaning active-ONLY, never active-or-wrap-up. The trip-local date comparison
+// (the #167 fix) lives in `getTripLifecycle`.
+export { isTripActive } from './trip-lifecycle';
