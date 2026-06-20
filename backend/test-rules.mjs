@@ -80,6 +80,25 @@ async function authBypass(email) {
 	return data.token;
 }
 
+// #238 — superuser token for schema introspection (GET /api/collections is
+// superuser-only). Defaults to the isolated-PB superuser that scripts/
+// e2e-clean-pb.sh upserts (admin@e2e.test / e2eAdminPass123); override via
+// PB_SUPERUSER_EMAIL / PB_SUPERUSER_PASSWORD when running against another PB.
+// Returns null (rather than exiting) if auth fails, so the drift test can degrade
+// to a recorded FAIL instead of taking down the whole harness.
+async function superuserToken() {
+	const identity = process.env.PB_SUPERUSER_EMAIL || 'admin@e2e.test';
+	const password = process.env.PB_SUPERUSER_PASSWORD || 'e2eAdminPass123';
+	const { status, data } = await pbRequest('POST', '/api/collections/_superusers/auth-with-password', {
+		body: { identity, password }
+	});
+	if (status !== 200 || !data?.token) {
+		console.error(`superuser auth failed (HTTP ${status}) — set PB_SUPERUSER_EMAIL/PASSWORD`, data);
+		return null;
+	}
+	return data.token;
+}
+
 async function setupFixture() {
 	const { status, data } = await pbRequest('POST', '/api/dev/rules-fixture', {
 		body: { emails: EMAILS }
@@ -1100,19 +1119,26 @@ function printUsersCrossReadReport() {
 	}
 }
 
-// #133 — soft-remove tombstone. The fixed matrix can't express endpoint-driven
-// removal, so these cases drive /api/members/remove and assert the load-bearing
-// invariants: money survives, the row is retained as a tombstone, and a tombstone
-// is invisible to the active-roster and name-only claim-picker queries (the
-// highest-risk #118 cross-issue guard).
+// #133 + #238 — removal disposition. The fixed matrix can't express endpoint-
+// driven removal, so these cases drive /api/members/remove and assert the load-
+// bearing invariants:
+//   - A member WITH data (authored an expense + is in its split) tombstones:
+//     money survives, the row is retained, and the tombstone is invisible to the
+//     active-roster query (#133).
+//   - A ZERO-REFERENCE member (the name-only spare authors nothing, and votes are
+//     always dropped) is HARD-DELETED (purged) — the row is gone from even the
+//     unguarded all-rows query, and the response reports deleted:true (#238 /
+//     ADR-0013). This replaces the old name-only-tombstone assertion: the spare is
+//     exactly the zero-ref case the purge targets.
 const MEMBER_REMOVAL_OPS = [
 	'remove_with_expense_ok',
 	'member_tombstoned',
+	'tombstone_not_deleted',
 	'money_survived',
 	'roster_excludes_tombstone',
 	'tombstone_retained',
-	'nameonly_picker_excludes',
-	'nameonly_present_unguarded'
+	'zeroref_purged_deleted',
+	'zeroref_row_gone'
 ];
 
 function filterQuery(tripId, extra) {
@@ -1142,6 +1168,11 @@ async function runMemberRemovalNovelCases(tokens) {
 		body: { member_id: fixture.memberIds.traveler }
 	});
 	recordResult('trip_members', 'remove_with_expense_ok', 'owner', 'allow', classifyWrite(rm.status), rm.status);
+
+	// #238: the traveler authored an expense AND is in its split → tombstone, NOT
+	// purge. The hook must report deleted:false.
+	const tombNotDeleted = rm.status === 200 && rm.data?.deleted === false;
+	recordResult('trip_members', 'tombstone_not_deleted', 'owner', 'yes', tombNotDeleted ? 'yes' : 'no', rm.status);
 
 	// Row RETAINED as a tombstone: removed_at set, user cleared.
 	const mem = await pbRequest('GET', `/api/collections/trip_members/records/${fixture.memberIds.traveler}`, {
@@ -1174,34 +1205,147 @@ async function runMemberRemovalNovelCases(tokens) {
 	const inAll = (all.data?.items || []).some((r) => r.id === fixture.memberIds.traveler);
 	recordResult('trip_members', 'tombstone_retained', 'owner', 'yes', inAll ? 'yes' : 'no', all.status);
 
-	// --- Name-only claim picker (highest-risk #118 guard). Remove the name-only
-	// spare (user="" && placeholder_email=""), then prove the guarded picker omits
-	// it while the pre-#133 unguarded query still matches it.
+	// --- #238 zero-ref purge. The name-only spare authors nothing and holds no
+	// votes, so it is the canonical zero-reference member: removing it HARD-DELETES
+	// the row (not a tombstone). Assert the hook reports deleted:true AND the row is
+	// gone from even the unguarded all-rows query (a tombstone would still be there).
 	fixture = await setupFixture();
-	await pbRequest('POST', '/api/members/remove', {
+	const purge = await pbRequest('POST', '/api/members/remove', {
 		token: tokens.owner,
 		body: { member_id: fixture.memberIds.spare }
 	});
-	const pickerGuarded = await pbRequest(
-		'GET',
-		`/api/collections/trip_members/records?perPage=200&filter=${filterQuery(fixture.tripId, ' && user="" && placeholder_email="" && removed_at=""')}`,
-		{ token: tokens.owner }
-	);
-	const inPickerGuarded = (pickerGuarded.data?.items || []).some((r) => r.id === fixture.memberIds.spare);
-	recordResult('trip_members', 'nameonly_picker_excludes', 'owner', 'yes', !inPickerGuarded ? 'yes' : 'no', pickerGuarded.status);
+	const purgedDeleted = purge.status === 200 && purge.data?.deleted === true;
+	recordResult('trip_members', 'zeroref_purged_deleted', 'owner', 'yes', purgedDeleted ? 'yes' : 'no', purge.status);
 
-	const pickerRaw = await pbRequest(
+	// The row is hard-deleted: absent from the unguarded query (no removed_at filter),
+	// and a direct GET 404s.
+	const allRows = await pbRequest(
 		'GET',
-		`/api/collections/trip_members/records?perPage=200&filter=${filterQuery(fixture.tripId, ' && user="" && placeholder_email=""')}`,
+		`/api/collections/trip_members/records?perPage=200&filter=${filterQuery(fixture.tripId, '')}`,
 		{ token: tokens.owner }
 	);
-	const inPickerRaw = (pickerRaw.data?.items || []).some((r) => r.id === fixture.memberIds.spare);
-	recordResult('trip_members', 'nameonly_present_unguarded', 'owner', 'yes', inPickerRaw ? 'yes' : 'no', pickerRaw.status);
+	const spareStillPresent = (allRows.data?.items || []).some((r) => r.id === fixture.memberIds.spare);
+	const directGet = await pbRequest('GET', `/api/collections/trip_members/records/${fixture.memberIds.spare}`, {
+		token: tokens.owner
+	});
+	const rowGone = !spareStillPresent && directGet.status === 404;
+	recordResult('trip_members', 'zeroref_row_gone', 'owner', 'yes', rowGone ? 'yes' : 'no', directGet.status);
 }
 
 function printMemberRemovalReport() {
-	console.log('\n[#133 soft-remove tombstone — money survives, tombstone invisible to roster/claim]');
+	console.log('\n[#133/#238 removal — member-with-data tombstones (money survives); zero-ref member purges]');
 	for (const r of results.filter((x) => MEMBER_REMOVAL_OPS.includes(x.op))) {
+		const mark = r.passed ? 'PASS' : 'FAIL';
+		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+	}
+}
+
+// --- #238 schema-introspection DRIFT test ----------------------------------
+// This is what makes the zero-ref purge afk-safe. The remove hook's reference
+// scan (members.pb.js → MEMBER_RELATION_FIELDS) must enumerate EVERY relation
+// field that targets trip_members — a miss means a member could be hard-deleted
+// while still referenced, orphaning the id or throwing the prod-400 the tombstone
+// model exists to prevent. The hand-maintained list already drifted once (the old
+// #238 body missed 6 surfaces).
+//
+// So: introspect the LIVE schema (superuser GET /api/collections), enumerate every
+// relation field whose target is trip_members, and FAIL if one isn't in the
+// CANONICAL_MEMBER_RELATIONS set below (which mirrors the hook's constant). A
+// future migration that adds a member-relation field then goes RED here until the
+// purge check is taught about it.
+const DRIFT_OPS = ['schema_covered', 'introspection_ok'];
+
+// Mirror of members.pb.js MEMBER_RELATION_FIELDS (every category — drop / cascade
+// / block / split). Keyed "collection.field". Keep in lock-step with the hook.
+const CANONICAL_MEMBER_RELATIONS = new Set([
+	// block (money + authored + the two the old body missed)
+	'expenses.paid_by',
+	'expenses.created_by',
+	'settlements.from_member',
+	'settlements.to_member',
+	'settlements.created_by',
+	'suggestions.author',
+	'suggestions.reviewed_by',
+	'trip_goals.created_by',
+	'documents.uploaded_by',
+	'items.created_by',
+	'items.paid_by',
+	'items.booked_by',
+	'items.assigned_to',
+	'tasks.assignee',
+	'checklist_items.checked_by',
+	'notifications.recipient',
+	// drop (votes — always dropped before the reference scan)
+	'votes.member',
+	'goal_votes.member',
+	'suggestion_votes.member',
+	// cascade (PB cascadeDelete + no identity to preserve)
+	'pending_invites.invited_by',
+	'join_tokens.created_by'
+]);
+
+async function runMemberRelationDriftCase() {
+	const token = await superuserToken();
+	if (!token) {
+		// Auth unavailable — record an explicit FAIL so the harness goes red rather
+		// than silently skipping the drift guard.
+		recordResult('trip_members', 'introspection_ok', 'superuser', 'yes', 'no', 0);
+		recordResult('trip_members', 'schema_covered', 'superuser', 'yes', 'unknown', 0);
+		return;
+	}
+
+	const res = await pbRequest('GET', '/api/collections?perPage=500', { token: 'Bearer ' + token });
+	const cols = res.data?.items;
+	const introspected = res.status === 200 && Array.isArray(cols);
+	recordResult('trip_members', 'introspection_ok', 'superuser', 'yes', introspected ? 'yes' : 'no', res.status);
+	if (!introspected) return;
+
+	// Resolve the trip_members collection id (relation fields reference by id).
+	const tripMembers = cols.find((c) => c.name === 'trip_members');
+	if (!tripMembers) {
+		recordResult('trip_members', 'schema_covered', 'superuser', 'yes', 'no_trip_members', res.status);
+		return;
+	}
+	const tripMembersId = tripMembers.id;
+
+	// Enumerate every relation field across all collections targeting trip_members.
+	// PB 0.27 exposes fields at collection.fields[]; the relation target is
+	// field.collectionId (older shapes nest it under field.options.collectionId).
+	const found = []; // "collection.field" strings
+	for (const col of cols) {
+		const fields = col.fields || col.schema || [];
+		for (const f of fields) {
+			if (f.type !== 'relation') continue;
+			const targetId = f.collectionId || (f.options && f.options.collectionId);
+			if (targetId === tripMembersId) {
+				found.push(`${col.name}.${f.name}`);
+			}
+		}
+	}
+
+	// DRIFT: any live member-relation field not in the canonical (hook) set.
+	const uncovered = found.filter((key) => !CANONICAL_MEMBER_RELATIONS.has(key));
+	const covered = uncovered.length === 0;
+	recordResult(
+		'trip_members',
+		'schema_covered',
+		'superuser',
+		'yes',
+		covered ? 'yes' : `MISSING:${uncovered.join(',')}`,
+		res.status
+	);
+	if (!covered) {
+		console.log(
+			`  ⚠️  DRIFT — these trip_members relation fields are NOT in members.pb.js ` +
+				`MEMBER_RELATION_FIELDS / the harness CANONICAL_MEMBER_RELATIONS:\n     ${uncovered.join('\n     ')}\n` +
+				`     Add them to the purge reference check (block unless cascadeDelete) before this can ship.`
+		);
+	}
+}
+
+function printMemberRelationDriftReport() {
+	console.log('\n[#238 schema drift — every trip_members relation field is covered by the purge check]');
+	for (const r of results.filter((x) => DRIFT_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
 		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
 	}
@@ -1505,8 +1649,11 @@ async function main() {
 	fixture = await setupFixture();
 	await runSuggestionsMemberReadCases(tokens, fixture);
 
-	console.log('#133 cases: soft-remove tombstone (money survives, tombstone invisible)');
+	console.log('#133/#238 cases: removal disposition (member-with-data tombstones; zero-ref purges)');
 	await runMemberRemovalNovelCases(tokens);
+
+	console.log('#238 case: member-relation schema drift (purge reference set is complete)');
+	await runMemberRelationDriftCase();
 
 	console.log('#118 cases: shared join link (role cap, join-at-role, revoke/expiry, clamp, tombstone)');
 	await runJoinLinkNovelCases(tokens);
@@ -1526,6 +1673,7 @@ async function main() {
 	printUsersCrossReadReport();
 	printSuggestionsReport();
 	printMemberRemovalReport();
+	printMemberRelationDriftReport();
 	printJoinLinkReport();
 	printSelfAssignReport();
 	printCreatorEditReport();

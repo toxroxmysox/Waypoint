@@ -14,6 +14,10 @@ type MemberRow = TripMember & {
 	isDeparted: boolean;
 	removedAtLabel: string;
 	avatarUrl: string;
+	// #238 (ADR-0013): true when no record references this member, so removing them
+	// hard-deletes (purge) rather than tombstones. Computed only for active members
+	// an owner could remove; UX hint only — the remove hook re-checks server-side.
+	zeroRef: boolean;
 };
 
 type PendingRow = PendingInvite & {
@@ -55,7 +59,8 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 				isPlaceholder: false,
 				isDeparted: true,
 				removedAtLabel: m.removed_at.split(' ')[0],
-				avatarUrl
+				avatarUrl,
+				zeroRef: false
 			};
 		}
 		const isPlaceholder = !m.user;
@@ -67,7 +72,8 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 				isPlaceholder: true,
 				isDeparted: false,
 				removedAtLabel: '',
-				avatarUrl
+				avatarUrl,
+				zeroRef: false
 			};
 		}
 		if (authUser && m.user === authUser.id) {
@@ -78,7 +84,8 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 				isPlaceholder: false,
 				isDeparted: false,
 				removedAtLabel: '',
-				avatarUrl
+				avatarUrl,
+				zeroRef: false
 			};
 		}
 		return {
@@ -100,7 +107,8 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 			isPlaceholder: false,
 			isDeparted: false,
 			removedAtLabel: '',
-			avatarUrl
+			avatarUrl,
+			zeroRef: false
 		};
 	});
 
@@ -169,6 +177,30 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 	const canManageJoinLinks = canInvite && !trip.archived;
 	// Active owners only — a tombstoned owner must not prop up the sole-owner count.
 	const ownerCount = members.filter((m) => m.role === 'owner' && !m.removed_at).length;
+
+	// #238 (ADR-0013): for each member an owner could remove, probe whether they're
+	// zero-ref (removal will hard-delete) vs referenced (will tombstone) so the
+	// Remove dialog shows the right copy. Owner-only (others don't see Remove),
+	// non-self (self-leave never purges), open trips only (closed = frozen). Runs
+	// the SAME /api/members/can-purge server check the hook re-validates against, in
+	// parallel to avoid a waterfall. A probe failure leaves the cautious default
+	// (zeroRef:false) — the hook still purges if truly zero-ref.
+	if (isOwner && !trip.archived) {
+		const probeTargets = activeMembers.filter((m) => m.user !== membership.user);
+		await Promise.all(
+			probeTargets.map(async (m) => {
+				try {
+					const r = (await locals.pb.send(
+						`/api/members/can-purge?member_id=${encodeURIComponent(m.id)}`,
+						{ method: 'GET' }
+					)) as { zero_ref?: boolean };
+					m.zeroRef = r?.zero_ref === true;
+				} catch {
+					m.zeroRef = false;
+				}
+			})
+		);
+	}
 
 	return {
 		trip,
@@ -320,7 +352,15 @@ export const actions: Actions = {
 			return fail(res.status, { action: { error: msg } });
 		}
 
-		return { action: { success: true } };
+		// #238: surface whether the hook hard-deleted (zero-ref purge) or tombstoned,
+		// so the client toast reads "deleted" vs "removed" to match what happened.
+		let deleted = false;
+		try {
+			const body = await res.json();
+			deleted = body?.deleted === true;
+		} catch (_) {}
+
+		return { action: { success: true, deleted } };
 	},
 
 	// Self-serve leave (#206). Reuses the SAME tombstone path as `remove` —

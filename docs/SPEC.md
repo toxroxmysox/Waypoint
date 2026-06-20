@@ -161,6 +161,8 @@ PocketBase collections. Field types use PocketBase notation. All collections inc
 
 **Merge logic:** when a user signs up with email matching a `placeholder_email`, prompt: "Join trip [X] as [placeholder_name]? You can change your display name." On confirm, link `user`, clear placeholder fields.
 
+**Removal (ADR-0008 + ADR-0013):** a `removed_at` timestamp tombstones a removed member so authored records keep their identity ("Bob paid $40"). But a member that **nothing references** — a typo'd placeholder, a vote-only member (votes always drop on removal) — is **hard-deleted** instead of tombstoned: with no record to preserve, the tombstone is pure clutter. So the **Former-members** roster disclosure only ever holds members who left data behind. Any reference (incl. a share in an `expenses.split_data`) → tombstone; reassign is the only escape for money. Forward behavior only — existing tombstones are not retroactively purged.
+
 ### `phases`
 | Field | Type | Notes |
 |---|---|---|

@@ -331,13 +331,145 @@ routerAdd('POST', '/api/members/promote', (e) => {
 });
 
 // ---------------------------------------------------------------------------
-// POST /api/members/remove — soft-remove tombstone (#133, ADR-0008).
+// GET /api/members/can-purge?member_id=ID — UX-only zero-ref probe (ADR-0013).
 //
-// Removal does NOT delete the trip_members row. It snapshots the resolved
-// display name into display_name (so "Bob paid $40" still renders), clears
-// `user` (severing access — no membership rule matches a cleared user id, so
-// zero collection rules change), clears the claim hooks, and stamps removed_at.
-// The row is RETAINED as a Departed Member tombstone.
+// The Remove dialog calls this lazily on open to decide which confirm to show:
+//   zero_ref true  → "Delete permanently" confirm (the removal will hard-delete).
+//   zero_ref false → keep the disposition picker (the removal will tombstone).
+// The /api/members/remove hook RE-CHECKS server-side as the source of truth — this
+// is purely to pick the dialog copy, so a benign race (a ref appears between the
+// probe and the POST) just means the hook tombstones and reports deleted:false.
+//
+// Runs the SAME block-reference scan as the remove hook (votes excluded — they're
+// always dropped, so a vote-only member probes zero_ref:true). Self-leave is never
+// purgeable, so this returns zero_ref:false for the caller's own row regardless.
+// The reference-field list is inlined (goja can't see file-scope consts) and is
+// kept in lock-step with the remove hook's MEMBER_RELATION_FIELDS; the test:rules
+// drift test introspects the live schema and fails if either copy is incomplete.
+// ---------------------------------------------------------------------------
+routerAdd('GET', '/api/members/can-purge', (e) => {
+	const authRecord = e.auth;
+	if (!authRecord) {
+		throw new UnauthorizedError('Authentication required');
+	}
+
+	// requestInfo().query — e.request.url is not valid in the PB 0.27 sandbox
+	// (see suggestions.pb.js). Values may be a string or string array; normalize.
+	const query = e.requestInfo().query || {};
+	const memberId = Array.isArray(query['member_id']) ? query['member_id'][0] : (query['member_id'] || '');
+	if (!memberId) throw new BadRequestError('member_id is required');
+
+	let target;
+	try {
+		target = e.app.findRecordById('trip_members', memberId);
+	} catch (_) {
+		throw new NotFoundError('Member not found');
+	}
+	const tripId = target.get('trip');
+
+	// Authority: only a member of the trip may probe (owner/co_owner do the actual
+	// removing, but any member reading the roster can see the affordance). A
+	// tombstoned caller has user="" so never matches.
+	try {
+		e.app.findFirstRecordByFilter(
+			'trip_members',
+			'trip = {:tripId} && user = {:uid} && removed_at = ""',
+			{ tripId: tripId, uid: authRecord.id }
+		);
+	} catch (_) {
+		throw new ForbiddenError('You are not a member of this trip');
+	}
+
+	// Self-leave can never purge — short-circuit.
+	const isSelfLeave = !!target.get('user') && target.get('user') === authRecord.id;
+	// An existing tombstone is never re-purged here (backfill is out of scope, #238).
+	const alreadyRemoved = target.getString('removed_at') !== '';
+	if (isSelfLeave || alreadyRemoved) {
+		return e.json(200, { ok: true, member_id: memberId, zero_ref: false });
+	}
+
+	// Same 'block' set as MEMBER_RELATION_FIELDS in the remove hook (votes excluded —
+	// they always drop; cascade relations excluded — PB cleans them + no identity).
+	const BLOCK_FIELDS = [
+		['expenses', 'paid_by'],
+		['expenses', 'created_by'],
+		['settlements', 'from_member'],
+		['settlements', 'to_member'],
+		['settlements', 'created_by'],
+		['suggestions', 'author'],
+		['suggestions', 'reviewed_by'],
+		['trip_goals', 'created_by'],
+		['documents', 'uploaded_by'],
+		['items', 'created_by'],
+		['items', 'paid_by'],
+		['items', 'booked_by'],
+		['tasks', 'assignee'],
+		['checklist_items', 'checked_by'],
+		['notifications', 'recipient']
+	];
+	for (const rel of BLOCK_FIELDS) {
+		try {
+			e.app.findFirstRecordByFilter(rel[0], rel[1] + ' = {:mid}', { mid: memberId });
+			return e.json(200, { ok: true, member_id: memberId, zero_ref: false });
+		} catch (_) {}
+	}
+	// items.assigned_to is multi (~).
+	try {
+		e.app.findFirstRecordByFilter('items', 'assigned_to ~ {:mid}', { mid: memberId });
+		return e.json(200, { ok: true, member_id: memberId, zero_ref: false });
+	} catch (_) {}
+
+	// expenses.split_data (JSON, no FK) — a member present only in a split is
+	// referenced. Decode the byte-array JSON exactly as the remove hook does.
+	let expenses = [];
+	try {
+		expenses = e.app.findRecordsByFilter('expenses', 'trip = {:tripId}', '', 0, 0, { tripId: tripId });
+	} catch (_) {
+		expenses = [];
+	}
+	for (const exp of expenses) {
+		let split = exp.get('split_data');
+		if (Array.isArray(split) && split.length > 0 && typeof split[0] === 'number') {
+			try { split = JSON.parse(String.fromCharCode.apply(null, split)); } catch (_) { split = null; }
+		} else if (typeof split === 'string') {
+			try { split = JSON.parse(split); } catch (_) { split = null; }
+		}
+		if (!split || typeof split !== 'object') continue;
+		const mem = split.members;
+		if (mem && mem.length) {
+			for (let i = 0; i < mem.length; i++) {
+				if (mem[i] === memberId) return e.json(200, { ok: true, member_id: memberId, zero_ref: false });
+			}
+		}
+		const amounts = split.amounts;
+		if (amounts && typeof amounts === 'object') {
+			for (const k in amounts) {
+				if (k === memberId) return e.json(200, { ok: true, member_id: memberId, zero_ref: false });
+			}
+		}
+	}
+
+	return e.json(200, { ok: true, member_id: memberId, zero_ref: true });
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/members/remove — remove a member (#133, ADR-0008 + ADR-0013).
+//
+// After the chosen disposition runs and votes are dropped, the hook checks the
+// full reference set. ADR-0013 (auto-purge a zero-reference member):
+//   - If NOTHING references the member, the row is HARD-DELETED (purged) and the
+//     response is { deleted: true }. A typo'd placeholder / vote-only member that
+//     authored no records has no identity to preserve, so the tombstone is pure
+//     clutter — ADR-0008 always intended "hard-delete only if nothing references
+//     it", this makes that true in code.
+//   - If ANY record references the member, the row is RETAINED as a Departed
+//     Member tombstone exactly as before: the resolved display name is snapshotted
+//     into display_name (so "Bob paid $40" still renders), `user` is cleared
+//     (severing access — no membership rule matches a cleared user id, so zero
+//     collection rules change), the claim hooks are cleared, and removed_at is
+//     stamped. The response is { deleted: false }.
+// There is NO force-delete: any reference → tombstone. Reassign stays the only
+// escape hatch. Money integrity is absolute.
 //
 // Body: { member_id, disposition?, reassign_to? }
 //   disposition: 'keep' (default) | 'reassign' | 'cascade'
@@ -346,12 +478,37 @@ routerAdd('POST', '/api/members/promote', (e) => {
 //     cascade  — delete the departed member's NON-MONEY authored content.
 //   reassign_to: target member id (required when disposition = 'reassign').
 //
-// Invariants (PRD Resolutions 10/12/13/14):
+// Response: { ok, member_id, deleted, removed_at, disposition }
+//   deleted: true  → row hard-deleted (zero-ref purge); removed_at = "".
+//   deleted: false → row tombstoned (had references); removed_at stamped.
+//
+// Invariants (PRD Resolutions 10/12/13/14 + ADR-0013):
 //   - Money (expenses, settlements) is NEVER cascade-deleted — keep or reassign.
-//   - Votes (votes, goal_votes) ALWAYS drop. The retained row means their
-//     member-relation cascadeDelete won't fire on its own, so we drop explicitly.
-//   - Self-leave is tombstone-only (forced keep).
+//   - Votes (votes, goal_votes, suggestion_votes) ALWAYS drop. The retained row
+//     means their member-relation cascadeDelete won't fire on its own, so we drop
+//     them explicitly — which also makes a vote-only member zero-ref (→ purged).
+//   - Self-leave is tombstone-only (forced keep) AND never purges: a leaver can't
+//     delete themselves out of the trip, only tombstone.
 //   - Frozen on a closed (archived) trip.
+//
+// REFERENCE SET — single source of truth: MEMBER_RELATION_FIELDS (declared at the
+// top of the remove callback, goja-safe). Every relation field that targets
+// trip_members is enumerated there, each tagged with how removal handles it:
+//   'drop'    — deleted before the reference check (votes / goal_votes /
+//               suggestion_votes); never blocks purge.
+//   'cascade' — PB cascadeDelete cleans it up automatically on member delete AND
+//               it carries no display identity (pending_invites.invited_by,
+//               join_tokens.created_by); does not block purge.
+//   'block'   — its presence means the member is referenced → tombstone, never
+//               purge. The 14 money/authored FKs PLUS the two the old #238 body
+//               missed: checklist_items.checked_by (orphans the id; no cascade)
+//               and notifications.recipient (required + no cascade → a hard-delete
+//               would throw the very prod-400 the tombstone model prevents).
+//   PLUS expenses.split_data (JSON, no FK): a member present only in an expense
+//   split (someone else paid; they owe a share) IS referenced → 'block'.
+// The test:rules drift test introspects the live schema and FAILS if a relation
+// field targeting trip_members isn't categorised here — so a future member-
+// relation migration goes RED until this list is updated.
 //
 // Caller must be owner/co_owner to remove someone else; any member may self-leave
 // (except the sole owner). All helpers are inlined inside the callback — PB's
@@ -378,6 +535,48 @@ routerAdd('POST', '/api/members/remove', (e) => {
 	// date field, so !!get('removed_at') would always be true and skip the stamp.
 	const alreadyRemoved = target.getString('removed_at') !== '';
 	const tripId = target.get('trip');
+
+	// SINGLE SOURCE OF TRUTH for every relation field targeting trip_members
+	// (ADR-0013). Inlined here because goja can't see file-scope constants. Each
+	// entry: [collection, field, category]. Categories:
+	//   'drop'    — deleted before the reference scan (votes); never blocks purge.
+	//   'cascade' — PB cascadeDelete handles it on member delete + no identity to
+	//               preserve; does not block purge.
+	//   'block'   — presence → tombstone (referenced). 'multi' = multi-relation
+	//               (filter with ~). 'split' = expenses.split_data JSON (no FK).
+	// The test:rules drift test introspects the live schema and fails if a
+	// trip_members relation field is missing here, so a future member-relation
+	// migration goes RED until this list is updated.
+	const MEMBER_RELATION_FIELDS = [
+		// Money — never purged-around; identity must survive (block).
+		['expenses', 'paid_by', 'block'],
+		['expenses', 'created_by', 'block'],
+		['expenses', 'split_data', 'split'],
+		['settlements', 'from_member', 'block'],
+		['settlements', 'to_member', 'block'],
+		['settlements', 'created_by', 'block'],
+		// Non-money authored / referencing records (block).
+		['suggestions', 'author', 'block'],
+		['suggestions', 'reviewed_by', 'block'],
+		['trip_goals', 'created_by', 'block'],
+		['documents', 'uploaded_by', 'block'],
+		['items', 'created_by', 'block'],
+		['items', 'paid_by', 'block'],
+		['items', 'booked_by', 'block'],
+		['items', 'assigned_to', 'block_multi'],
+		['tasks', 'assignee', 'block'],
+		// The two the old #238 body MISSED — no cascade, so a hard-delete would
+		// orphan the id / throw a required-FK 400 (block).
+		['checklist_items', 'checked_by', 'block'],
+		['notifications', 'recipient', 'block'],
+		// Votes — dropped above the disposition switch (drop).
+		['votes', 'member', 'drop'],
+		['goal_votes', 'member', 'drop'],
+		['suggestion_votes', 'member', 'drop'],
+		// cascadeDelete + no identity — PB cleans these on delete (cascade).
+		['pending_invites', 'invited_by', 'cascade'],
+		['join_tokens', 'created_by', 'cascade']
+	];
 
 	// Frozen on a closed trip (Resolution 14) — symmetric with the join window.
 	let trip;
@@ -461,9 +660,12 @@ routerAdd('POST', '/api/members/remove', (e) => {
 	}
 
 	// --- Always drop the departed member's votes (Resolution 12). The row is
-	// retained, so votes.member / goal_votes.member cascadeDelete won't fire —
-	// drop them explicitly.
-	for (const col of ['votes', 'goal_votes']) {
+	// retained (or about to be purged), so votes.member / goal_votes.member /
+	// suggestion_votes.member cascadeDelete won't fire on its own — drop them
+	// explicitly. This also makes a vote-only member zero-ref (→ purged, ADR-0013):
+	// suggestion_votes was missing from this loop pre-#238, so a member whose only
+	// reference was a suggestion vote would have wrongly blocked the purge.
+	for (const col of ['votes', 'goal_votes', 'suggestion_votes']) {
 		let rows = [];
 		try {
 			rows = e.app.findRecordsByFilter(col, 'member = {:mid}', '', 0, 0, { mid: target.id });
@@ -568,6 +770,105 @@ routerAdd('POST', '/api/members/remove', (e) => {
 	}
 	// disposition === 'keep': children keep pointing at the tombstone — nothing to do.
 
+	// --- ADR-0013: zero-reference auto-purge. Votes are already dropped and the
+	// disposition has run, so the live reference set is whatever 'block' fields
+	// still point at this member. `existsRef` is a cheap existence probe (perPage=1
+	// equivalent — findFirstRecordByFilter throws when none match). split_data has
+	// no FK, so scan every trip expense's JSON for the id in members[] (equal split)
+	// or the keys of amounts{} (by_amount).
+	const targetId = target.id;
+	const existsBlockRef = () => {
+		for (const rel of MEMBER_RELATION_FIELDS) {
+			const col = rel[0];
+			const field = rel[1];
+			const kind = rel[2];
+			if (kind === 'block') {
+				try {
+					e.app.findFirstRecordByFilter(col, field + ' = {:mid}', { mid: targetId });
+					return true; // a match exists
+				} catch (_) {
+					// none — keep scanning
+				}
+			} else if (kind === 'block_multi') {
+				try {
+					e.app.findFirstRecordByFilter(col, field + ' ~ {:mid}', { mid: targetId });
+					return true;
+				} catch (_) {}
+			} else if (kind === 'split') {
+				// expenses.split_data — JSON, no FK. Pull this trip's expenses and
+				// inspect the parsed split. Scoped to the trip (split ids are members
+				// of the same trip), so the scan stays small.
+				let expenses = [];
+				try {
+					expenses = e.app.findRecordsByFilter('expenses', 'trip = {:tripId}', '', 0, 0, { tripId: tripId });
+				} catch (_) {
+					expenses = [];
+				}
+				for (const exp of expenses) {
+					// PB JSON fields surface as a BYTE ARRAY in goja hooks (not a parsed
+					// object) — decode via String.fromCharCode then JSON.parse, exactly as
+					// expenses.pb.js does. Missing this would silently skip every split, so
+					// a member who only owes a share would wrongly purge (money-integrity bug).
+					let split = exp.get('split_data');
+					if (Array.isArray(split) && split.length > 0 && typeof split[0] === 'number') {
+						try { split = JSON.parse(String.fromCharCode.apply(null, split)); } catch (_) { split = null; }
+					} else if (typeof split === 'string') {
+						try { split = JSON.parse(split); } catch (_) { split = null; }
+					}
+					if (!split || typeof split !== 'object') continue;
+					// equal split: members: [ids]
+					const mem = split.members;
+					if (mem && mem.length) {
+						for (let i = 0; i < mem.length; i++) {
+							if (mem[i] === targetId) return true;
+						}
+					}
+					// by_amount: amounts: { memberId: n } — check the KEYS
+					const amounts = split.amounts;
+					if (amounts && typeof amounts === 'object') {
+						for (const k in amounts) {
+							if (k === targetId) return true;
+						}
+					}
+				}
+			}
+			// 'drop' / 'cascade' never block a purge.
+		}
+		return false;
+	};
+
+	// Self-leave NEVER purges (a leaver can't delete themselves out — ADR-0013) and
+	// a re-removal of an existing tombstone stays a tombstone (forward-only; backfill
+	// of existing tombstones is out of scope, #238). Otherwise: zero refs → purge.
+	if (!isSelfLeave && !alreadyRemoved && !existsBlockRef()) {
+		try {
+			e.app.delete(target);
+		} catch (err) {
+			// A reference appeared between the scan and the delete (concurrency), or
+			// PB's required-FK constraint backstopped us. Fall through to tombstone
+			// and report the real outcome rather than 500ing.
+			console.log('members.remove: purge of ' + targetId + ' failed, tombstoning instead: ' + err);
+			// fall through to the tombstone block below
+		}
+		// Re-fetch to confirm the row is actually gone (delete may have thrown).
+		let stillExists = true;
+		try {
+			e.app.findRecordById('trip_members', targetId);
+		} catch (_) {
+			stillExists = false;
+		}
+		if (!stillExists) {
+			return e.json(200, {
+				ok: true,
+				member_id: targetId,
+				deleted: true,
+				removed_at: '',
+				disposition: disposition
+			});
+		}
+		// else: delete failed → continue to tombstone.
+	}
+
 	// --- Tombstone the membership row. Snapshot the resolved display name into
 	// display_name (ADR-0008 snapshot target), then sever access + clear claim
 	// hooks and stamp removed_at. The row is RETAINED.
@@ -601,6 +902,7 @@ routerAdd('POST', '/api/members/remove', (e) => {
 	return e.json(200, {
 		ok: true,
 		member_id: target.id,
+		deleted: false,
 		removed_at: target.get('removed_at'),
 		disposition: disposition
 	});

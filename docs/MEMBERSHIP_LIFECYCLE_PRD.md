@@ -68,9 +68,17 @@
 
 ## Resolutions — #133 exit grill (2026-06-10)
 
-9. **Removal is a soft-remove tombstone** ([[Departed Member]]). The `trip_members` row
-   is retained; the remove hook snapshots `users.name` → `display_name`, clears `user`
-   (severs access, zero rule changes), sets `removed_at`. See ADR-0008.
+9. **Removal is a soft-remove tombstone** ([[Departed Member]]) **— unless nothing
+   references the member, in which case the row is hard-deleted (ADR-0013, #238).** The
+   remove hook snapshots `users.name` → `display_name`, clears `user` (severs access, zero
+   rule changes), sets `removed_at`, and retains the row. But after the disposition runs
+   and votes drop, the hook checks the full reference set (every relation FK targeting
+   `trip_members` **plus** `expenses.split_data`); if nothing references the member it
+   `e.app.delete`s the row instead and returns `deleted: true`. A vote-only / typo'd
+   placeholder has no authored-record identity to preserve, so the tombstone is pure
+   clutter — and [[Departed Member]] (the Former-members disclosure) only ever holds
+   members who left data. No force-delete (any reference → tombstone); self-leave never
+   purges; forward-only (existing tombstones are not backfilled). See ADR-0008 + ADR-0013.
 10. **Money is never deleted.** Expenses & settlements keep-with-tombstone (default) or
     reassign to another member — never cascade. This is the load-bearing invariant.
 11. **Non-money records: remover's three-way choice** — keep-with-tombstone / reassign /
