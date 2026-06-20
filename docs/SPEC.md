@@ -501,9 +501,9 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 - Trip Mode: today-focused view, large cards, optimized for one-handed phone use
 - Tomorrow / next-3-days quick views
 - "Now" indicator showing next time-anchored item
-- Service worker: full offline read mode (all trip data cached)
-- Offline toggle: explicit user-controlled "go offline" mode that prevents network requests
-- Background refresh when online
+- Service worker: read-only offline for the one active trip — the SW caches what it serves (navigations + their `__data.json`, network-first behind a precached app shell) and prefetches the whole active trip on app-open during its active window. *(Shipped via #203; the M4-era "full offline read mode, all trip data cached" claim never held against SSR — see §Offline for the real contract.)*
+- ~~Offline toggle: explicit user-controlled "go offline" mode~~ — **dropped (WP-A-004).** It was inert against the SSR architecture and buried in planning-only nav. Offline is automatic now (an app-wide banner keyed off `navigator.onLine`); there is no toggle.
+- Background revalidation: navigations are network-first, so the moment signal returns they refetch fresh and the whole-trip prefetch re-runs on the next online app-open. (No background job while the app is closed.)
 - "Add to Home Screen" first-visit banner (iOS + Android variants)
 - Trip Vault: encrypted entries, password-gated access
 - Vault password setup and forgot-password warning
@@ -514,9 +514,9 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 
 **Acceptance:**
 - Trip Mode loads in <1s on a 4-year-old phone
-- Full trip works offline after one online load
-- Vault entries encrypted at rest; password required per session
-- Cannot accidentally lose vault data without explicit clear
+- The **one active trip** works read-only offline after one online open during its active window (cold launch + in-app navigation render the cached trip, never a raw 503); editing offline is blocked with a toast. Inactive/future trips are not bulk-prefetched. *(See §Offline.)*
+- Vault entries encrypted at rest; password required per session *(superseded — Vault retired in M7, ADR-0005)*
+- Cannot accidentally lose vault data without explicit clear *(superseded — Vault retired in M7)*
 
 **Dogfood:** Traverse City wine trip, October — first real group trip.
 
@@ -565,7 +565,7 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
   Sections 4, 5, 8, 9 below.
 - **New `documents` domain** — plain (unencrypted) PDF/image artifacts, membership-gated, one file per
   record, attached to an Item or the Trip. Takes the retired Vault nav slot (Planning + Trip Mode).
-- **Offline:** active-trip Document files auto-precached by the service worker; planning = cache-on-view.
+- **Offline:** active-trip Document files auto-precached by the service worker; planning = cache-on-view. *(Now folded into the whole-trip prefetch — see §Offline / PRD #203.)*
 - See the PRD for data model, permissions, views, offline, and the design grill decisions.
 
 ---
@@ -642,11 +642,16 @@ Every "add item" form has an optional **lookup field** at the top.
 - Dismissable; remembered for 30 days
 
 ### Offline behavior
-*(#116 audit corrected this — the claims here were aspirational and **never held** against the SSR architecture: server-side `locals.pb` loads bypass the service worker, so until #203 only document bytes cache (and only after a Documents-tab visit). The real contract is specced in **#203 / `docs/OFFLINE_PRD.md`**; target:)*
-- **Read-only offline for the one active trip.** After opening it online once during its active window, the service worker has prefetched the whole trip (all days, items, overview, Documents list + document bytes); navigations + their `__data.json` are cached network-first behind a precached app shell, so a cold launch or in-app navigation offline renders the cached trip — never a raw 503.
-- **Offline is automatic** — no manual toggle (the inert `SET_OFFLINE` toggle is removed). An app-wide banner shows "Offline — showing [Trip] as of [time]"; data revalidates on reconnect.
-- **Edits while offline = blocked with a toast** ("You're offline — reconnect to make changes"). Read-only; no offline edit queue.
-- Trips that aren't active aren't bulk-prefetched; they work offline only for pages visited online.
+
+**Shipped** via PRD **#203** (slices #253/#254/#255), decision **ADR-0010**. This section is the real contract — earlier SPEC claims ("full offline read mode, all trip data cached", "Full trip works offline after one online load") were aspirational and **never held** against the SSR architecture (server-side `locals.pb` loads bypass the service worker; pre-#203, only document bytes cached, and only after a Documents-tab visit — the #116-audit live-doc lie, findings WP-B-010 + WP-A-004). The strategy meets SSR where it is — cache the rendered output + data payloads + proactively prefetch — rather than rearchitecting to a client-fetch / IndexedDB model (rejected in the ADR).
+
+- **Read-only offline for the one active trip.** After the traveler opens it online once during its active window, the **whole active trip is available read-only offline** — the itinerary (Now, every day, every item, the overview) and every [[Document]] (boarding pass, hotel vouchers). On the plane they open Waypoint and see their day and their boarding pass, not a 503.
+- **The service worker caches what it serves.** Navigations and their SvelteKit `__data.json` payloads are cached **network-first** (fresh online, last-seen offline). A minimal **app shell is precached** at install, so a cold launch offline always renders the app. Document bytes are **cache-first** (immutable per record). Routing is a pure `cache-policy` module; the SW is a thin executor (slice #253).
+- **The whole active trip is prefetched on app-open.** A pure `offline-manifest` module turns the active trip's loaded data into the exact URL set — every day route, item-detail data payload, the overview, the Documents list, and every document-byte URL. On app-open during the active window (from **any** Trip-Mode surface, gated by the tz-correct `isTripActive`, #167), the SW best-effort (`allSettled`) pulls that whole list into cache, **scoped to the one active trip** (slice #254). The day-1 flight is covered without the traveler having hunted through tabs.
+- **Offline is automatic and honest.** There is **no toggle** (the inert manual toggle + its `SET_OFFLINE` plumbing and localStorage flag were removed — closes WP-A-004). An app-wide banner keyed off `navigator.onLine` + the online/offline events shows "Offline — showing [Trip] as of [snapshot time]," prominent in Trip Mode; the snapshot revalidates the moment signal returns (slice #255).
+- **Read-only, gracefully.** Any attempt to mutate offline is short-circuited with a toast ("You're offline — reconnect to make changes"); read navigation is unaffected. No offline edit queue or sync. A page that genuinely wasn't cached shows a friendly "not available offline" state, never a raw 503 (slice #255).
+- **Device-scoped; cleared on logout.** The cached HTML is authenticated SSR output, so caches are device-scoped and wiped on sign-out (mitigates a shared-device leak); old cache versions are evicted by the per-build version scheme (slice #253).
+- **Inactive/future trips are not bulk-prefetched.** They work offline only for the specific pages visited online (cache-on-visit), which is acceptable — the promise is the one active trip on a plane.
 
 ---
 
@@ -692,7 +697,7 @@ API keys live in Pocketbase env vars or `.env` file, never in client code. Front
 
 - **Accessibility:** WCAG 2.1 AA. Semantic HTML, keyboard nav, focus visible, ARIA where needed, color contrast ≥4.5:1, alt text on images, form labels, screen-reader-friendly errors.
 - **Performance:** First contentful paint <1.5s on 4G mobile. Trip Mode interactive in <1s after cache. Lighthouse score ≥90 across the board.
-- **Offline:** Read-only offline works for any trip viewed at least once online.
+- **Offline:** The **one active trip** is fully read-only offline after one online open during its active window (whole-trip prefetch: every day, item, the overview, the Documents list + all bytes). Other (inactive/future) trips are read offline only for the specific pages visited online (cache-on-visit). Editing offline is blocked. See §Offline for the full contract.
 - **Browser support:** Last 2 versions of Chrome, Safari (iOS + macOS), Firefox, Edge.
 - **Mobile:** iPhone (iOS 16+), Android (Chrome 110+). Tablet and desktop fully supported.
 - **Privacy:** No third-party trackers. Self-hosted analytics only. No data sold or shared.
@@ -759,6 +764,7 @@ v1 = M1 through M5. Considered done when:
 
 | Date | Summary | Reference |
 |---|---|---|
+| 2026-06-19 | **§Offline truthed up to shipped behavior (live-doc lie closed).** Offline shipped (PRD #203 / ADR-0010): read-only active trip after one online open, whole-trip prefetch on app-open (`offline-manifest`), SW caches what it serves behind a precached shell (`cache-policy`), automatic offline banner (no toggle — WP-A-004 closed), editing blocked offline, friendly "not available offline" state, device-scoped caches cleared on logout. Rewrote §Offline + the stale M4/M5 "full offline read mode / all trip data cached / full trip works offline" claims that never held against SSR. CONTEXT.md [[Document]] offline note verified accurate (unchanged). | docs/SPEC.md §Offline, PRD #203, ADR-0010, slices #253/#254/#255 |
 | 2026-06-07 | **M7 — Documents & Vault retirement registered.** Vault (`vault_entries`, `vault_password_hash`, client-side crypto, vault route) retired entirely; new `documents` domain (plain PDF/image artifacts, membership-gated, Item/Trip-scoped, offline-precached for active trip) takes its nav slot. Design handoff (*The Ledger*) grilled into the PRD. Supersedes Vault refs in §§4, 5, 8, 9. | docs/V4_DOCUMENTS_PRD.md, ADR-0005 |
 | 2026-05-29 | **v3 design alignment.** Slot → anchor time + time slot (derived). Status lifecycle expanded: unplanned → planned → done/considered. Flight promoted to first-class item type with AeroDataBox integration. Votes redesigned: Love/Like/Flexible/Dislike with avatar stacks, no visible score. Rank and parking_lot_scope removed — parking lot is now a filtered view (status = unplanned). Multi-day items via end_date. Phase colors removed (mode accent instead). Three modes → two modes + archive view. Closeout rewritten for new status lifecycle. Suggestion two-gate model (approved → unplanned, not planned). Ferry removed from transportation subtypes. | CONTEXT.md, GitHub #11 |
 | 2026-04-25 | Design system adopted. Paper/ink/moss/clay/gold/sky palette, Fraunces/Inter/JetBrains Mono fonts. | M1.5 milestone |
