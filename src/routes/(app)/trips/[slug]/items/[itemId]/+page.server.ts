@@ -474,5 +474,46 @@ export const actions: Actions = {
 			const message = err instanceof Error ? err.message : 'Failed to move item.';
 			return fail(500, { error: message });
 		}
+	},
+
+	// #246 Door 2 — skip from item detail (the second entry point; the Today card's
+	// overflow is the first). Same semantics as the Now route's skipItem: clear day
+	// → unplanned, strip time, keep phase → returns to the parking lot, reversible,
+	// never `considered`. Owner/co_owner only (SPEC §4). Reuses computeMovePatch.
+	skipItem: async ({ params, locals }) => {
+		const item = await locals.pb.collection('items').getOne<Item>(params.itemId);
+		const membership = await locals.pb
+			.collection('trip_members')
+			.getFirstListItem<TripMember>(
+				`trip = "${item.trip}" && user = "${locals.user!.id}" && removed_at = ""`
+			)
+			.catch(() => null);
+		if (!membership || (membership.role !== 'owner' && membership.role !== 'co_owner')) {
+			return fail(403, { error: 'Only the trip owner or a co-owner can skip an item.' });
+		}
+
+		try {
+			const patch = computeMovePatch({
+				currentStatus: item.status,
+				newDay: '',
+				newPhase: item.phase
+			});
+			if (patch.status === 'unplanned' && !patch.phase) {
+				const firstPhase = await locals.pb
+					.collection('phases')
+					.getFirstListItem(`trip = "${item.trip}"`, { sort: 'order' })
+					.catch(() => null);
+				if (firstPhase) patch.phase = firstPhase.id;
+			}
+			await locals.pb.collection('items').update(params.itemId, patch);
+			return { success: true };
+		} catch (err: unknown) {
+			const e = err as { status?: number };
+			if (e?.status === 403) {
+				return fail(403, { error: 'Only the trip owner or a co-owner can skip an item.' });
+			}
+			const message = err instanceof Error ? err.message : 'Failed to skip item.';
+			return fail(500, { error: message });
+		}
 	}
 };

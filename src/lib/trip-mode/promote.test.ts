@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { promotedDisplayOrder, promotePlacement } from './promote';
 import { orderDayItems } from '$lib/itinerary/timeline';
+import { computeMovePatch } from '$lib/itinerary/move-item';
 import type { Item } from '$lib/types';
 
 function makeItem(overrides: Partial<Item> = {}): Item {
@@ -195,5 +196,31 @@ describe('promotePlacement — sort_order round-trips the placement', () => {
 		const updates = promotePlacement(dayItems, idea, NOON);
 		const byId = Object.fromEntries(updates.map((u) => [u.id, u.sort_order]));
 		expect(byId['idea']).toBeGreaterThan(byId['done']);
+	});
+});
+
+// #246 Door 2 — skip semantics. Skip has NO dedicated pure module (PRD §7: reuse,
+// don't fork): the server action is `computeMovePatch({ newDay: '' })`. These pin
+// the contract the Door 2 actions depend on so a change to computeMovePatch that
+// would break skip is caught here, next to Door 1's pure tests.
+describe('skip semantics — computeMovePatch({ newDay: \'\' }) (Door 2)', () => {
+	it('a planned today item → unplanned, day cleared, time stripped, sort reset', () => {
+		const patch = computeMovePatch({ currentStatus: 'planned', newDay: '', newPhase: 'phaseA' });
+		expect(patch.status).toBe('unplanned');
+		expect(patch.day).toBe('');
+		expect(patch.start_time).toBe('');
+		expect(patch.end_time).toBe('');
+		expect(patch.sort_order).toBe(0);
+	});
+
+	it('KEEPS the phase so the item returns to its phase parking lot (#196 invariant)', () => {
+		const patch = computeMovePatch({ currentStatus: 'planned', newDay: '', newPhase: 'phaseA' });
+		expect(patch.phase).toBe('phaseA');
+	});
+
+	it('a skipped item NEVER becomes considered — that verdict is Closeout\'s, not skip\'s', () => {
+		const patch = computeMovePatch({ currentStatus: 'planned', newDay: '', newPhase: 'phaseA' });
+		expect(patch.status).not.toBe('considered');
+		expect(patch.status).toBe('unplanned');
 	});
 });

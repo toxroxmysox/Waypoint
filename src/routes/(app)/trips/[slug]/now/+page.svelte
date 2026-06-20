@@ -51,6 +51,12 @@
 	// An empty current phase yields no ideas, so the strip self-hides regardless.
 	const doorOpen = $derived(focus.kind === 'free-time' || focus.kind === 'nothing-else-planned');
 
+	// #246 Door 2 — a just-skipped item frees a slot; open the SAME ideas strip
+	// inline so the gap can be re-filled (accepting an idea promotes it in). Sticky
+	// for the session after a skip even if a later item keeps the Focus engaged —
+	// the strip renders below the rest list as the "replace what you skipped" rail.
+	let justSkipped = $state(false);
+
 	function dayLabel(dateStr: string): string {
 		return new Date(dateStr.replace(' ', 'T')).toLocaleDateString('en-US', {
 			weekday: 'long',
@@ -129,7 +135,12 @@
 					<Pill variant="trip" size="sm">Right now</Pill>
 					<p class="text-ink-muted text-xs">{formatCountdown(focus.minutesRemaining)} remaining</p>
 				</div>
-				<TripModeCard item={focus.currentItem} slug={data.trip.slug} />
+				<TripModeCard
+					item={focus.currentItem}
+					slug={data.trip.slug}
+					canSkip={data.canPromote}
+					onSkipped={() => (justSkipped = true)}
+				/>
 			</section>
 		{:else if focus.kind === 'free-time'}
 			<Card>
@@ -171,10 +182,21 @@
 		{/if}
 	</div>
 
-	<!-- #245 Door 1 — "ideas for now": the current phase's parked ideas at a
-	     free-time / nothing-else Focus. Self-hides when the phase has no ideas. -->
-	{#if doorOpen}
-		<IdeasStrip ideas={data.ideas} members={data.members} slug={data.trip.slug} canPromote={data.canPromote} />
+	<!-- #245 Door 1 / #246 Door 2 — "ideas for now": the current phase's parked
+	     ideas, shown at a free-time / nothing-else Focus (Door 1) OR after a
+	     just-skipped slot (Door 2 — accepting one promotes it into the gap). Same
+	     component, two triggers. Self-hides when the phase has no ideas. -->
+	{#if doorOpen || justSkipped}
+		<IdeasStrip
+			ideas={data.ideas}
+			members={data.members}
+			slug={data.trip.slug}
+			canPromote={data.canPromote}
+			heading={justSkipped && !doorOpen ? 'Replace it' : 'Ideas for now'}
+			subheading={justSkipped && !doorOpen
+				? 'Pick a backup from this part of the trip'
+				: 'Backup plans from this part of the trip'}
+		/>
 	{/if}
 
 	<!-- Weight 3: the rest at NORMAL weight (overrides #154's muted later-today
@@ -183,7 +205,13 @@
 		<section class="space-y-2">
 			<NowDivider label="Coming up" />
 			{#each restItems as item (item.id)}
-				<TripModeCard {item} slug={data.trip.slug} isNext={item.id === nextItemId} />
+				<TripModeCard
+					{item}
+					slug={data.trip.slug}
+					isNext={item.id === nextItemId}
+					canSkip={data.canPromote}
+					onSkipped={() => (justSkipped = true)}
+				/>
 			{/each}
 		</section>
 	{/if}

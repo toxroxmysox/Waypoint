@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { goto } from '$app/navigation';
 	import { getFieldConfig } from '$lib/itinerary/item-fields';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
@@ -40,6 +41,16 @@
 	function formatAmount(n: number): string {
 		return n.toFixed(2);
 	}
+	// #246 Door 2 — skip from item detail (second entry point). Only meaningful for
+	// a planned, scheduled item, and only owner/co_owner may skip (SPEC §4). Skipping
+	// returns it to the parking lot (reversible) and pulls it off the day → bounce
+	// back to Now where the ideas strip offers a replacement.
+	let skipping = $state(false);
+	const canSkip = $derived(
+		(data.membership?.role === 'owner' || data.membership?.role === 'co_owner') &&
+			data.item.status === 'planned' &&
+			!!data.item.day
+	);
 
 	// Comments
 	let commentText = $state('');
@@ -372,6 +383,42 @@
 			</form>
 		</div>
 	</Card>
+
+	<!-- #246 Door 2 — Skip (reversible; distinct from Delete). Pulls the item off
+	     today back into its phase's parking lot, then returns to Now where the
+	     ideas strip offers a replacement. Owner/co_owner only, planned items only. -->
+	{#if canSkip}
+		<div class="border-line rounded-lg border p-4">
+			<h3 class="text-ink-soft text-sm font-semibold">Not happening?</h3>
+			<p class="text-ink-muted mt-1 text-sm">
+				Skip this {typeLabel} — it returns to your ideas so you can do it later or pick a
+				replacement. Nothing is deleted.
+			</p>
+			<form
+				method="POST"
+				action="?/skipItem"
+				use:enhance={() => {
+					skipping = true;
+					return async ({ result }) => {
+						skipping = false;
+						// Skipped → off today → bounce to Now (the ideas strip opens there).
+						if (result.type === 'success') {
+							await goto(`/trips/${data.trip.slug}/now`);
+						}
+					};
+				}}
+				class="mt-2"
+			>
+				<button
+					type="submit"
+					disabled={skipping}
+					class="border-ink-muted/40 text-ink-soft hover:bg-surface-2 rounded-md border px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
+				>
+					{skipping ? 'Skipping…' : 'Skip — not happening'}
+				</button>
+			</form>
+		</div>
+	{/if}
 
 	<!-- Delete -->
 	<div class="border-clay/30 rounded-lg border p-4">

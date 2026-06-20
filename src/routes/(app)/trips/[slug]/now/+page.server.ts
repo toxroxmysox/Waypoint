@@ -259,5 +259,60 @@ export const actions: Actions = {
 			}
 			return fail(500, { error: err instanceof Error ? err.message : 'Failed to promote idea.' });
 		}
+	},
+
+	// #246 Door 2 — skip a planned TODAY item. REUSES computeMovePatch (clear day →
+	// unplanned, strip time, reset sort_order; PRD §7) so the item returns to its
+	// phase's PARKING LOT — reversible ("maybe later in the trip"), re-promotable
+	// from the strip. NEVER `considered` (that verdict is Closeout's, not here):
+	// computeMovePatch only sets `unplanned` on a non-terminal item, exactly the
+	// contract. Owner/co_owner only (SPEC §4); travelers/viewers 403.
+	skipItem: async ({ request, params, locals }) => {
+		const trip = await locals.pb
+			.collection('trips')
+			.getFirstListItem<Trip>(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+
+		const membership = await locals.pb
+			.collection('trip_members')
+			.getFirstListItem<TripMember>(
+				`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`
+			);
+		if (membership.role !== 'owner' && membership.role !== 'co_owner') {
+			return fail(403, { error: 'Only the trip owner or a co-owner can skip an item.' });
+		}
+
+		const data = await request.formData();
+		const itemId = data.get('item_id')?.toString();
+		if (!itemId) return fail(400, { error: 'Missing item ID.' });
+
+		try {
+			const item = await locals.pb.collection('items').getOne<Item>(itemId);
+			if (item.trip !== trip.id) return fail(403, { error: 'Not authorized.' });
+
+			// Clear the day → unplanned + stripped time anchors. Keep the item's own
+			// phase so it lands back in that phase's parking lot (the #196 invariant:
+			// an unplanned item must keep a phase or it falls into no-surface limbo).
+			const patch = computeMovePatch({
+				currentStatus: item.status,
+				newDay: '',
+				newPhase: item.phase
+			});
+			if (patch.status === 'unplanned' && !patch.phase) {
+				const firstPhase = await locals.pb
+					.collection('phases')
+					.getFirstListItem(`trip = "${trip.id}"`, { sort: 'order' })
+					.catch(() => null);
+				if (firstPhase) patch.phase = firstPhase.id;
+			}
+
+			await locals.pb.collection('items').update(itemId, patch);
+			return { success: true };
+		} catch (err: unknown) {
+			const e = err as { status?: number };
+			if (e?.status === 403) {
+				return fail(403, { error: 'Only the trip owner or a co-owner can skip an item.' });
+			}
+			return fail(500, { error: err instanceof Error ? err.message : 'Failed to skip item.' });
+		}
 	}
 };
