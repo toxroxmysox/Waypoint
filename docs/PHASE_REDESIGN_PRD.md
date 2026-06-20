@@ -1,7 +1,7 @@
 # Phase Sub-tab Redesign — PRD
 
 > Milestone: [#2 Phase sub-tab redesign](https://github.com/toxroxmysox/Waypoint/milestone/2)
-> Grilled: 2026-06-07. Status: ready-for-agent.
+> Grilled: 2026-06-07. Status: **Shipped** (milestone #2 complete — 10 issues closed). *Was "ready-for-agent"; trued up 2026-06-19.*
 > Domain language: see `CONTEXT.md` (Phase, Day, Item, Parking Lot, Item Status, Sort Order, Multi-day Item).
 > Field→slot content contract for the item/day cards: see `docs/CARD_CONTENT_SPEC.md` (grilled 2026-06-10) — binding reference the card build wires against.
 

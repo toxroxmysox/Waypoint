@@ -2,7 +2,7 @@
 
 > Owner: Scott Vanden Warsen
 > Created: 2026-06-07
-> Status: Draft
+> Status: **Shipped** (milestone [#1](https://github.com/toxroxmysox/Waypoint/milestone/1) complete — issues #48–#53 closed). *Was "Draft"; trued up 2026-06-19.*
 > Context: Issues #45 (closes), #41 · ADR-0003 · CONTEXT.md (Checklist, Task, Smart List, Booking Readiness)
 > Design: `design/lists-checklists/` — `Waypoint Lists - Final Pass.html` is the visual spec (art direction **B "Ledger"**); `README.md` is the dev handoff; `source-jsx/` is the reference source. Implementation issues #48–#53.
 
