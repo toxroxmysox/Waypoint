@@ -34,6 +34,16 @@
 	let showExpenseDetail = $state(false);
 	let selectedExpense = $state<Expense | null>(null);
 
+	// #228 — prefill values captured from the ?action=add value params (amount /
+	// description / date / linked_item). Read once in the effect below and fed to the ADD
+	// ExpenseForm so a caller (e.g. #229's paid-moment capture) can open it pre-filled.
+	let prefill = $state<{
+		amount: string;
+		description: string;
+		date: string;
+		linkedItem: string;
+	}>({ amount: '', description: '', date: '', linkedItem: '' });
+
 	// #128 — when deep-linked from an item (?item=<id>), show only that item's
 	// expenses. Multiplicity-safe: a filtered list, never an assumed single record.
 	let filterItemId = $derived(data.filterItemId ?? '');
@@ -79,12 +89,23 @@
 	}
 
 	// The Trip Mode central Add navigates here with ?action=add — open the sheet
-	// and strip the param so a refresh doesn't reopen it.
+	// and strip the params so a refresh doesn't reopen it. #228 — also read the optional
+	// value params (amount/description/date/linked_item) into `prefill` so the ADD form
+	// can open pre-filled (the booked/paid-moment capture passes them, ADR-0014).
 	$effect(() => {
 		if (page.url.searchParams.get('action') === 'add') {
+			const sp = page.url.searchParams;
+			prefill = {
+				amount: sp.get('amount') ?? '',
+				description: sp.get('description') ?? '',
+				date: sp.get('date') ?? '',
+				linkedItem: sp.get('linked_item') ?? ''
+			};
 			showAddExpense = true;
 			const url = new URL(page.url);
-			url.searchParams.delete('action');
+			for (const key of ['action', 'amount', 'description', 'date', 'linked_item']) {
+				url.searchParams.delete(key);
+			}
 			replaceState(url, page.state);
 		}
 	});
@@ -215,6 +236,10 @@
 		members={data.members}
 		membershipId={data.membership.id}
 		{form}
+		initialAmount={prefill.amount}
+		initialDescription={prefill.description}
+		initialDate={prefill.date}
+		initialLinkedItem={prefill.linkedItem}
 		onclose={() => (showAddExpense = false)}
 	/>
 </BottomSheet>

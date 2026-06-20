@@ -17,6 +17,20 @@
 		// and passes its detail href + title so we can render a "View item" link.
 		linkedItemHref?: string;
 		linkedItemTitle?: string;
+		// #228 — discrete prefill values for an ADD (NOT edit). These seed the $state
+		// initializers below WITHOUT touching `isEdit` (passing `expense` still = edit
+		// mode), so the booked/paid-moment capture (#229) and any future caller can open
+		// the add form pre-filled. Ignored when `expense` is set (edit wins). Payer
+		// (`initialPaidBy`) defaults to the current member but stays editable (ADR-0014).
+		initialAmount?: string;
+		initialDescription?: string;
+		initialDate?: string;
+		initialPaidBy?: string;
+		initialLinkedItem?: string;
+		// #229 — the prefilled split (carries the SPLIT, not just the payer, per ADR-0014).
+		// Shared big-ticket items default to a whole-group even split; both stay editable.
+		initialSplitMode?: 'equal' | 'by_amount';
+		initialSplitMembers?: string[];
 	}
 
 	let {
@@ -26,7 +40,14 @@
 		form: formProp,
 		onclose,
 		linkedItemHref = '',
-		linkedItemTitle = ''
+		linkedItemTitle = '',
+		initialAmount = '',
+		initialDescription = '',
+		initialDate = '',
+		initialPaidBy = '',
+		initialLinkedItem = '',
+		initialSplitMode,
+		initialSplitMembers
 	}: Props = $props();
 
 	let isEdit = $derived(expense !== null);
@@ -48,23 +69,30 @@
 		return m.display_name || m.expand?.user?.name || m.expand?.user?.email || m.placeholder_name || '(member)';
 	}
 
-	let amount = $state(untrack(() => expense?.amount_usd.toString() ?? ''));
-	let description = $state(untrack(() => expense?.description ?? ''));
+	// ADD-mode initializers fall back to the #228 prefill props (edit wins — when
+	// `expense` is set the record's own values seed the fields; the prefill is ignored).
+	let amount = $state(untrack(() => expense?.amount_usd.toString() ?? initialAmount));
+	let description = $state(untrack(() => expense?.description ?? initialDescription));
 	let expenseDate = $state(untrack(() =>
-		expense?.date?.split(/[T ]/)[0] ?? new Date().toISOString().split('T')[0]
+		expense?.date?.split(/[T ]/)[0] ?? (initialDate || new Date().toISOString().split('T')[0])
 	));
 	let category = $state<ExpenseCategory>(untrack(() =>
 		(expense?.category as ExpenseCategory) ?? 'other'
 	));
-	let paidBy = $state(untrack(() => expense?.paid_by ?? membershipId));
+	let paidBy = $state(untrack(() => expense?.paid_by ?? (initialPaidBy || membershipId)));
 	let splitMode = $state<'equal' | 'by_amount'>(untrack(() =>
-		(expense?.split_mode as 'equal' | 'by_amount') ?? 'equal'
+		(expense?.split_mode as 'equal' | 'by_amount') ?? initialSplitMode ?? 'equal'
 	));
 
 	let splitMembers = $state<Set<string>>(untrack(() => {
 		if (expense) {
 			const sd = expense.split_data as { members?: string[] } | null;
 			return new Set(sd?.members ?? members.map((m) => m.id));
+		}
+		// #229 prefill: an explicit initialSplitMembers (e.g. whole-group even split) seeds
+		// the checklist; otherwise default to everyone (the form's existing ADD default).
+		if (initialSplitMembers && initialSplitMembers.length > 0) {
+			return new Set(initialSplitMembers);
 		}
 		return new Set(members.map((m) => m.id));
 	}));
@@ -331,6 +359,12 @@
 	<input type="hidden" name="paid_by" value={paidBy} />
 	<input type="hidden" name="split_mode" value={splitMode} />
 	<input type="hidden" name="split_data" value={computeSplitData()} />
+	<!-- #228 — round-trip the linked item on ADD so the captured expense links back to it
+	     (?/addExpense reads `linked_item`). Empty on a normal blank add; edits keep their
+	     existing linkage via the record, so we only emit it for an unlinked ADD. -->
+	{#if !isEdit && initialLinkedItem}
+		<input type="hidden" name="linked_item" value={initialLinkedItem} />
+	{/if}
 
 	{#if !isEdit && formProp?.addExpense && 'error' in (formProp.addExpense as Record<string, unknown>)}
 		<p role="alert" class="mb-3 text-sm text-error">{(formProp.addExpense as Record<string, string>).error}</p>
