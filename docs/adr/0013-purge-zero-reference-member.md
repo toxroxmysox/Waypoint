@@ -58,3 +58,27 @@ tombstoned. This makes ADR-0008's stated intent true in code.
 - Concurrency: if a reference appears between the dialog check and the delete, the hook
   tombstones instead and reports the real outcome; PB's required-FK 400 is the backstop.
 - SPEC reconciliation (member/roster section) lands with #238's build slice, not here.
+
+## Amendment — grill 2026-06-19 (#238 build readiness)
+
+Re-grilled before dispatching the build slice. Auto-purge-at-removal and "no separate button"
+re-confirmed (as decided above). Three refinements:
+
+1. **The reference set MUST also cover `expenses.split_data` (JSON) — no FK protects it.** The set
+   above is FK-only and is therefore incomplete. `split_data` embeds member ids — `{members:[ids]}`
+   for an equal split and `{amounts:{memberId:n}}` (keyed by member id) for by_amount. A member who is
+   *only* a split participant (someone else paid; they owe a share) is genuinely referenced yet
+   invisible to every FK check. The purge check scans each trip expense's `split_data` for the member
+   id; a hit → tombstone. Without this, a member owed money inside a split could be hard-deleted →
+   orphaned id → broken `debt-simplify` balances. *(The inverse gap exists in ADR-0008's reassign
+   disposition, which rewrites `paid_by`/`created_by` but not `split_data` — tracked as #259.)*
+2. **Drift-proofing replaces trusting the hand-list.** The FK list is a single source-of-truth
+   constant; a schema-introspection test enumerates every collection whose relation field targets
+   `trip_members` and fails if one isn't in the constant — so a future member-relation migration goes
+   RED in CI until the purge check is updated. (The hand-list already drifted: #238's original body
+   omitted `expenses.created_by`, `settlements.created_by`, `items.paid_by`, `items.booked_by`,
+   `tasks.assignee`, and all of `split_data`.)
+3. **One-time backfill deferred OUT of the AFK build.** Purging *existing* zero-ref tombstones
+   hard-deletes real production rows — a real-data mutation that cannot run unattended (PM hard-stop:
+   dry-run + eyeball + sign-off). #238 ships forward behavior only (new removals auto-purge). The
+   backfill is a separate HITL dry-run, deprioritised (one dogfood trip's tombstones; harmless).
