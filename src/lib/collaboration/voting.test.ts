@@ -4,7 +4,8 @@ import {
 	VOTE_OPTIONS,
 	scoreVotes,
 	groupVotesByOption,
-	sortByVoteScore
+	sortByVoteScore,
+	tallyVotes
 } from './voting';
 import type { Vote } from './types';
 
@@ -74,5 +75,20 @@ describe('sortByVoteScore', () => {
 		const copy = [...items];
 		sortByVoteScore(items, scores);
 		expect(items).toEqual(copy);
+	});
+});
+
+describe('tallyVotes (#251 Inbox tally)', () => {
+	it('counts each option and the total', () => {
+		const votes = [vote('love'), vote('love', 'm2'), vote('like', 'm3'), vote('dislike', 'm4')];
+		const { counts, total } = tallyVotes(votes);
+		expect(counts).toEqual({ love: 2, like: 1, flexible: 0, dislike: 1 });
+		expect(total).toBe(4);
+	});
+
+	it('returns all-zero counts and total 0 for no votes', () => {
+		const { counts, total } = tallyVotes([]);
+		expect(counts).toEqual({ love: 0, like: 0, flexible: 0, dislike: 0 });
+		expect(total).toBe(0);
 	});
 });

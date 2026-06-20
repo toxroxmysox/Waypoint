@@ -39,6 +39,19 @@ export function groupVotesByOption<T extends Pick<DisplayVote, 'value'>>(
 	return grouped;
 }
 
+/** Per-option vote COUNTS (every option key present, 0 when none) plus the total.
+ *  For the Inbox tally (#251): an owner reviewing a queue wants the breakdown of
+ *  who-felt-what, not the (still-never-numeric) weighted score. Display-only. */
+export function tallyVotes<T extends Pick<DisplayVote, 'value'>>(
+	votes: T[]
+): { counts: Record<VoteValue, number>; total: number } {
+	const counts: Record<VoteValue, number> = { love: 0, like: 0, flexible: 0, dislike: 0 };
+	for (const v of votes) {
+		if (counts[v.value] !== undefined) counts[v.value] += 1;
+	}
+	return { counts, total: votes.length };
+}
+
 /**
  * Sort items by aggregate weighted score (desc), breaking ties by `sort_order` (asc).
  * A missing score is treated as 0. Returns a new array; the input is not mutated.

@@ -200,6 +200,8 @@ routerAdd('GET', '/api/suggestions/list', (e) => {
 			target_type: r.get('target_type'),
 			payload: r.get('payload'),
 			status: r.get('status'),
+			// #250 — the rejection note, surfaced on the Inbox Rejected tab (#251).
+			review_note: r.get('review_note') || '',
 			reviewed_at: r.get('reviewed_at') || '',
 			created: r.get('created')
 		};

@@ -52,6 +52,8 @@ export interface Suggestion {
 	target_type: SuggestionTargetType;
 	payload: Partial<Item> | null;
 	status: SuggestionStatus;
+	// #250 — the required note an owner gave when rejecting (empty otherwise).
+	review_note?: string;
 	reviewed_at: string;
 	created: string;
 }

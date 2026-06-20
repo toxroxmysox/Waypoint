@@ -1,8 +1,15 @@
 import { fail, error } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Suggestion } from '$lib/types';
+import type { Suggestion, SuggestionVote } from '$lib/types';
+import type { DisplayVote } from '$lib/collaboration/voting';
 
 const PB_BASE = process.env.PUBLIC_PB_URL || 'http://127.0.0.1:8090';
+
+// #251 — a Suggestion plus the votes cast on its ghost (suggestion_votes), so each
+// Inbox tab can show a vote tally. Approved suggestions keep their suggestion_votes
+// as frozen history (the migrated item votes are separate), so the tally is
+// consistent across all three tabs.
+export type InboxSuggestion = Suggestion & { votes: DisplayVote[] };
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
 	const { trip, membership } = await parent();
@@ -15,24 +22,55 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 
 	let pending: Suggestion[] = [];
 	let approved: Suggestion[] = [];
+	let rejected: Suggestion[] = [];
 	try {
-		const [pendingRes, approvedRes] = await Promise.all([
+		// #251 — three tabs: Pending / Approved / Rejected.
+		const [pendingRes, approvedRes, rejectedRes] = await Promise.all([
 			fetch(`${PB_BASE}/api/suggestions/list?trip_id=${trip.id}&status=pending`, {
 				headers: { Authorization: `Bearer ${token}` }
 			}),
 			fetch(`${PB_BASE}/api/suggestions/list?trip_id=${trip.id}&status=approved`, {
 				headers: { Authorization: `Bearer ${token}` }
+			}),
+			fetch(`${PB_BASE}/api/suggestions/list?trip_id=${trip.id}&status=rejected`, {
+				headers: { Authorization: `Bearer ${token}` }
 			})
 		]);
 		const pendingData = await pendingRes.json();
 		const approvedData = await approvedRes.json();
+		const rejectedData = await rejectedRes.json();
 		pending = pendingData.items ?? [];
 		approved = approvedData.items ?? [];
+		rejected = rejectedData.items ?? [];
 	} catch (_) {
 		// Non-fatal — render empty state.
 	}
 
-	return { trip, membership, pending, approved };
+	// #251 — load suggestion_votes for every listed suggestion and attach a tally.
+	// One query (OR-chained ids), bucketed by suggestion. SuggestionVote satisfies
+	// DisplayVote (id + member + value), which is all the tally needs.
+	const allIds = [...pending, ...approved, ...rejected].map((s) => s.id);
+	const votesBySuggestion: Record<string, DisplayVote[]> = {};
+	if (allIds.length > 0) {
+		try {
+			const votes = await locals.pb.collection('suggestion_votes').getFullList<SuggestionVote>({
+				filter: allIds.map((id) => `suggestion = "${id}"`).join(' || ')
+			});
+			for (const v of votes) (votesBySuggestion[v.suggestion] ??= []).push(v);
+		} catch (_) {
+			// Non-fatal — tallies just render empty.
+		}
+	}
+	const attach = (list: Suggestion[]): InboxSuggestion[] =>
+		list.map((s) => ({ ...s, votes: votesBySuggestion[s.id] ?? [] }));
+
+	return {
+		trip,
+		membership,
+		pending: attach(pending),
+		approved: attach(approved),
+		rejected: attach(rejected)
+	};
 };
 
 export const actions: Actions = {
