@@ -1,8 +1,9 @@
 import type { PageServerLoad } from './$types';
-import type { Expense, Settlement, TripMember, Item, TripBudget } from '$lib/types';
+import type { Expense, Settlement, TripMember, Item, TripBudget, MoneyUnitRecord } from '$lib/types';
 import { tripToday, tripTz } from '$lib/shell/trip-time';
 import { computeBalances } from '$lib/money/debt-simplify';
-import { moneyGlance } from '$lib/money/money-glance';
+import { moneyGlance, groupBudgetTotal, myShareOfExpenses } from '$lib/money/money-glance';
+import { unitForMember, effectiveUnitBudget, unitSpent } from '$lib/money/money-units';
 
 // Trip-Mode Money summary (#227) — a read-only, per-person glance answering "how much
 // do I have left to spend?". Reuses the pure `money-glance` module; this loader is just
@@ -13,7 +14,7 @@ import { moneyGlance } from '$lib/money/money-glance';
 export const load: PageServerLoad = async ({ parent, locals }) => {
 	const { trip, membership } = await parent();
 
-	const [expenses, settlements, members, items] = await Promise.all([
+	const [expenses, settlements, members, items, moneyUnits] = await Promise.all([
 		locals.pb.collection('expenses').getFullList<Expense>({
 			filter: `trip = "${trip.id}"`,
 			sort: '-date,-id'
@@ -22,9 +23,10 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 			filter: `trip = "${trip.id}"`,
 			sort: '-date,-id'
 		}),
+		// #230 — names too, so the glance can label the viewer's unit ("You & Abby").
 		locals.pb.collection('trip_members').getFullList<TripMember>({
 			filter: `trip = "${trip.id}" && removed_at = ""`,
-			fields: 'id'
+			fields: 'id,display_name,placeholder_name'
 		}),
 		// Remaining-planned items (N2) need only booked + estimate + a few display fields
 		// for the drill-down list; linkage to an expense is read from expenses.linked_item.
@@ -32,7 +34,13 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 			filter: `trip = "${trip.id}"`,
 			fields: 'id,title,type,subtype,booked,cost_estimate_usd',
 			sort: '-cost_estimate_usd'
-		})
+		}),
+		// #230 / ADR-0015 — Money Units, for auto-scoping the glance to the viewer's own
+		// unit. Tolerate the collection being absent (pre-0050 PB) so the page never 500s.
+		locals.pb
+			.collection('money_units')
+			.getFullList<MoneyUnitRecord>({ filter: `trip = "${trip.id}"`, sort: 'created' })
+			.catch(() => [] as MoneyUnitRecord[])
 	]);
 
 	let budget: TripBudget | null = null;
@@ -79,12 +87,47 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 			cost_estimate_usd: i.cost_estimate_usd
 		}));
 
+	// #230 / ADR-0015 — auto-scope a UNIT view of the glance to the viewer's own unit
+	// (persistent + declared → no per-view picking; solo member = unit of one, unchanged).
+	// Unit budget = the absolute override OR the even share (group ÷ heads × unit size);
+	// unit spent = Σ the unit members' reconciliation-aware shares (attribution is free
+	// once the unit is defined). Budgets are decoupled — Σ unit budgets need NOT equal the
+	// group total. null budget figures when no group budget AND no override.
+	const myUnit = unitForMember(
+		moneyUnits.map((u) => ({ id: u.id, members: u.members, budget_usd: u.budget_usd })),
+		membership.id
+	);
+	const groupTotal = groupBudgetTotal(budget, tripDays);
+	const memberShares = new Map<string, number>();
+	for (const memberId of myUnit.members) {
+		memberShares.set(memberId, myShareOfExpenses(expenses, memberId));
+	}
+	const unitBudget = effectiveUnitBudget(myUnit, groupTotal, members.length);
+	const unitSpentTotal = unitSpent(memberShares, myUnit.members);
+	const memberName = (id: string): string => {
+		const m = members.find((mem) => mem.id === id);
+		if (!m) return 'Member';
+		if (m.id === membership.id) return 'You';
+		return m.display_name || m.placeholder_name || '(member)';
+	};
+	const unitScope = {
+		// Is this a real multi-member pool, or just the solo unit-of-one (the per-person view)?
+		isUnit: myUnit.members.length > 1,
+		label: myUnit.members.map(memberName).join(' & '),
+		memberCount: myUnit.members.length,
+		budget: unitBudget,
+		spent: unitSpentTotal,
+		left: unitBudget == null ? null : unitBudget - unitSpentTotal,
+		customBudget: myUnit.budget_usd != null
+	};
+
 	return {
 		trip,
 		glance,
 		myBalance,
 		memberCount: members.length,
 		remainingPlannedItems,
-		hasExpenses: expenses.length > 0
+		hasExpenses: expenses.length > 0,
+		unitScope
 	};
 };

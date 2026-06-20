@@ -48,8 +48,17 @@ export function simplifyDebts(
 	expenses: Expense[],
 	settlements: Settlement[]
 ): DebtEdge[] {
-	const balances = computeBalances(expenses, settlements);
+	return simplifyFromBalances(computeBalances(expenses, settlements));
+}
 
+/**
+ * The greedy debt-simplification over a balances map (positive = owed, negative = owes).
+ * Extracted from `simplifyDebts` so the #230 Money-Unit settle-up can run the SAME greedy
+ * on aggregated unit-node balances (ADR-0015 — a member→unit pre-aggregation in FRONT of
+ * this; nothing rewritten). Keys are opaque (member ids for the per-person case, unit keys
+ * for the per-unit case). Behaviour for member-keyed input is identical to before.
+ */
+export function simplifyFromBalances(balances: Map<string, number>): DebtEdge[] {
 	const creditors: { id: string; amount: number }[] = [];
 	const debtors: { id: string; amount: number }[] = [];
 

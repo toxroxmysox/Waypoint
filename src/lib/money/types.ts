@@ -69,3 +69,21 @@ export interface TripBudget {
 	created: string;
 	updated: string;
 }
+
+// #230 / ADR-0015 — a Money Unit: a self-declared, shared, trip-scoped grouping of members
+// who pool money. `members` holds trip_members.id[]. `budget_usd` is the OPTIONAL absolute
+// custom override (empty/0-unset → the even-share default; a stored 0 is a real target).
+// The pure `money-units.ts` MoneyUnit interface is the structural subset this satisfies.
+export interface MoneyUnitRecord {
+	id: string;
+	trip: string;
+	members: string[];
+	budget_usd: number | null;
+	created_by: string;
+	created: string;
+	updated: string;
+	expand?: {
+		members?: TripMember[];
+		created_by?: TripMember;
+	};
+}

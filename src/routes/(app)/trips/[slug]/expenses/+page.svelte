@@ -10,23 +10,64 @@
 	import FAB from '$lib/shell/components/FAB.svelte';
 	import BottomSheet from '$lib/ui/BottomSheet.svelte';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
-	import { simplifyDebts } from '$lib/money/debt-simplify';
+	import type { DebtEdge } from '$lib/money/debt-simplify';
 	import { expensesForItem } from '$lib/money/linked-expenses';
+	import { unitDebts, type UnitDebtEdge } from '$lib/money/money-units';
 	import type { Notification, Expense, ExpenseCategory, ItemType } from '$lib/types';
 
 	import BudgetSummary from '$lib/money/components/BudgetSummary.svelte';
 	import SettleUpFlow from '$lib/money/components/SettleUpFlow.svelte';
 	import ExpenseForm from '$lib/money/components/ExpenseForm.svelte';
+	import MoneyUnitsManager from '$lib/money/components/MoneyUnitsManager.svelte';
 
 	let { data, form } = $props();
 
 	let notifications = $state<Notification[]>(untrack(() => data.notifications ?? []));
 	let unreadCount = $state(untrack(() => data.unreadCount ?? 0));
 
-	let debts = $derived(simplifyDebts(data.expenses, data.settlements));
-	let myDebts = $derived(
-		debts.filter((d) => d.from === data.membership.id || d.to === data.membership.id)
+	// #230 / ADR-0015 — settle-up collapses to unit-nodes. With no units declared this is
+	// EXACTLY per-person (every node is a unit of one). Edges carry representative members
+	// (recordable as a member-level settlement) + unit keys (for labels). Prefer MY member
+	// id as my unit's representative so "You owe / owes you" framing stays correct.
+	let myUnitId = $derived(
+		data.moneyUnits.find((u) => u.members.includes(data.membership.id))?.id ?? data.membership.id
 	);
+	let rawUnitDebts = $derived(
+		unitDebts(
+			data.expenses,
+			data.settlements,
+			data.moneyUnits.map((u) => ({ id: u.id, members: u.members, budget_usd: u.budget_usd })),
+			data.members.map((m) => m.id)
+		)
+	);
+	// Swap in my own member id as the representative for whichever side is my unit.
+	let myDebtEdges = $derived(
+		rawUnitDebts.map((e: UnitDebtEdge) => ({
+			from: e.fromUnit === myUnitId ? data.membership.id : e.fromMember,
+			to: e.toUnit === myUnitId ? data.membership.id : e.toMember,
+			amount: e.amount,
+			fromUnit: e.fromUnit,
+			toUnit: e.toUnit
+		}))
+	);
+	// DebtEdge[] for SettleUpFlow (member-keyed, recordable).
+	let debts = $derived<DebtEdge[]>(
+		myDebtEdges.map((e) => ({ from: e.from, to: e.to, amount: e.amount }))
+	);
+	let myDebts = $derived(
+		myDebtEdges.filter((e) => e.fromUnit === myUnitId || e.toUnit === myUnitId)
+	);
+
+	// Map a representative member id (a debt party) → its unit label, for unit-collapsed
+	// display. A member in no declared unit → just their own name.
+	function unitLabelFor(memberId: string): string {
+		if (memberId === data.membership.id) return 'You';
+		const unit = data.moneyUnits.find((u) => u.members.includes(memberId));
+		if (!unit) return memberName(memberId);
+		return unit.members.map(memberName).join(' & ');
+	}
+	let hasUnits = $derived(data.moneyUnits.length > 0);
+	let showMoneyUnits = $state(false);
 	let hasBudget = $derived(data.budget !== null && (data.budget?.categories.reduce((s, c) => s + c.total, 0) ?? 0) > 0);
 
 	let showSettleUp = $state(false);
@@ -182,7 +223,7 @@
 					{@const iOwe = debt.from === data.membership.id}
 					<div class="flex-shrink-0 rounded-lg border px-4 py-3 min-w-[200px] {iOwe ? 'border-accent/30 bg-accent/5' : 'border-moss/30 bg-moss-tint'}">
 						<p class="text-xs font-medium {iOwe ? 'text-accent' : 'text-moss'}">
-							{iOwe ? `You owe ${memberName(debt.to)}` : `${memberName(debt.from)} owes you`}
+							{iOwe ? `You owe ${unitLabelFor(debt.to)}` : `${unitLabelFor(debt.from)} owes you`}
 						</p>
 						<p class="font-mono text-lg font-semibold {iOwe ? 'text-accent' : 'text-moss'}">
 							${formatAmount(debt.amount)}
@@ -206,6 +247,21 @@
 				<span class="text-sm font-medium text-moss">All squared up!</span>
 			</div>
 		{/if}
+
+		<!-- #230 / ADR-0015 — Money Units: pool members who share a card so settle-up nets
+		     across the group, not between every pair. Quiet entry-point; opens a manager. -->
+		<div class="mb-4">
+			<button
+				type="button"
+				class="border-line text-ink-soft hover:bg-surface-2 flex w-full items-center justify-between rounded-lg border px-4 py-2.5 text-sm"
+				onclick={() => (showMoneyUnits = true)}
+			>
+				<span class="font-medium">Money units</span>
+				<span class="text-ink-muted text-xs">
+					{hasUnits ? `${data.moneyUnits.length} set` : 'Group shared cards'}
+				</span>
+			</button>
+		</div>
 
 		<div class="space-y-2">
 			{#each data.expenses as expense}
@@ -263,6 +319,16 @@
 		{debts}
 		members={data.members}
 		membershipId={data.membership.id}
+		labelFor={hasUnits ? unitLabelFor : undefined}
+		{form}
+	/>
+</BottomSheet>
+
+<BottomSheet bind:open={showMoneyUnits} title="Money units">
+	<MoneyUnitsManager
+		members={data.members}
+		membershipId={data.membership.id}
+		units={data.moneyUnits}
 		{form}
 	/>
 </BottomSheet>

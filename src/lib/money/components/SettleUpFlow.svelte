@@ -10,9 +10,21 @@
 		members: TripMember[];
 		membershipId: string;
 		form: Record<string, unknown> | null;
+		// #230 — when settle-up is unit-collapsed (ADR-0015), the debt from/to are
+		// REPRESENTATIVE members of each unit; this maps a member id to their unit's label
+		// ("You & Abby") for display, while the recorded settlement still uses the member.
+		// Omitted → plain per-person names (unchanged behaviour).
+		labelFor?: (memberId: string) => string;
 	}
 
-	let { debts, members, membershipId, form: formProp }: Props = $props();
+	let { debts, members, membershipId, form: formProp, labelFor }: Props = $props();
+
+	// Display name for a settle-up party: the unit label when unit-collapsed, else the
+	// member name. "You" still wins when the party is the current member's own node.
+	function partyLabel(memberId: string): string {
+		if (labelFor) return labelFor(memberId);
+		return memberName(memberId);
+	}
 
 	type SettleStep = 'list' | 'record' | 'confirmed';
 	let step = $state<SettleStep>('list');
@@ -59,11 +71,11 @@
 					<div>
 						<p class="text-sm font-medium text-ink">
 							{#if iOwe}
-								You owe {memberName(debt.to)}
+								You owe {partyLabel(debt.to)}
 							{:else if owedToMe}
-								{memberName(debt.from)} owes you
+								{partyLabel(debt.from)} owes you
 							{:else}
-								{memberName(debt.from)} owes {memberName(debt.to)}
+								{partyLabel(debt.from)} owes {partyLabel(debt.to)}
 							{/if}
 						</p>
 						<p class="font-mono text-lg font-semibold {iOwe ? 'text-accent' : owedToMe ? 'text-moss' : 'text-ink'}">
@@ -101,7 +113,7 @@
 				<div class="flex h-10 w-10 items-center justify-center rounded-full bg-surface-2 mx-auto text-sm font-semibold text-ink">
 					{memberName(selectedDebt.from).charAt(0)}
 				</div>
-				<p class="mt-1 text-xs text-ink-muted">{memberName(selectedDebt.from)}</p>
+				<p class="mt-1 text-xs text-ink-muted">{partyLabel(selectedDebt.from)}</p>
 			</div>
 			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-ink-muted">
 				<path d="M5 12h14M12 5l7 7-7 7" />
@@ -110,7 +122,7 @@
 				<div class="flex h-10 w-10 items-center justify-center rounded-full bg-surface-2 mx-auto text-sm font-semibold text-ink">
 					{memberName(selectedDebt.to).charAt(0)}
 				</div>
-				<p class="mt-1 text-xs text-ink-muted">{memberName(selectedDebt.to)}</p>
+				<p class="mt-1 text-xs text-ink-muted">{partyLabel(selectedDebt.to)}</p>
 			</div>
 		</div>
 
@@ -165,7 +177,7 @@
 		</div>
 		<p class="font-display text-base font-semibold text-ink">Payment Recorded</p>
 		<p class="mt-1 text-sm text-ink-muted">
-			{memberName(selectedDebt.from)} paid {memberName(selectedDebt.to)} ${settleAmount}
+			{partyLabel(selectedDebt.from)} paid {partyLabel(selectedDebt.to)} ${settleAmount}
 		</p>
 	</div>
 {/if}

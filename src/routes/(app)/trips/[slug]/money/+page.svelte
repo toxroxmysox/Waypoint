@@ -54,6 +54,33 @@
 <main
 	class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-[calc(2rem+env(safe-area-inset-bottom))] space-y-4"
 >
+	<!-- #230 / ADR-0015 — auto-scoped UNIT glance. Shown only when the viewer is in a
+	     declared multi-member Money Unit ("are my wife and I on budget?"). Unit budget =
+	     custom override OR the even share; unit spent = Σ the unit members' shares. Sits
+	     above the per-person figures; deep-links to expenses to manage the unit. -->
+	{#if data.unitScope.isUnit}
+		<a href={expensesHref} class="border-moss/30 bg-moss-tint block rounded-lg border p-4">
+			<div class="flex items-center justify-between">
+				<p class="text-moss text-xs font-medium uppercase tracking-wide">
+					{data.unitScope.label}
+				</p>
+				<span class="text-moss/70 text-[11px]">{data.unitScope.customBudget ? 'custom budget' : 'even-share budget'}</span>
+			</div>
+			{#if data.unitScope.budget == null}
+				<p class="font-display text-ink mt-1.5 text-2xl font-semibold">
+					${fmt(data.unitScope.spent)} <span class="text-ink-muted text-sm font-normal">spent</span>
+				</p>
+			{:else}
+				<p class="font-display text-ink mt-1.5 text-2xl font-semibold">
+					{signedLeft(data.unitScope.left ?? 0)} <span class="text-ink-muted text-sm font-normal">left</span>
+				</p>
+				<p class="text-ink-muted mt-1 text-xs">
+					${fmt(data.unitScope.budget)} budget − ${fmt(data.unitScope.spent)} spent
+				</p>
+			{/if}
+		</a>
+	{/if}
+
 	{#if g.myBudget == null}
 		<!-- NO BUDGET (PRD A3): show what I've consumed, omit "left". -->
 		<Card>

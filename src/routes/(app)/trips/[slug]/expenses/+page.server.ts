@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Expense, Settlement, TripMember, Item, TripBudget } from '$lib/types';
+import type { Expense, Settlement, TripMember, Item, TripBudget, MoneyUnitRecord } from '$lib/types';
 
 export const load: PageServerLoad = async ({ parent, locals, url }) => {
 	const { trip, membership } = await parent();
@@ -10,7 +10,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 	// the filter banner (and null it out if the id isn't a real item this trip).
 	const filterItemId = url.searchParams.get('item') ?? '';
 
-	const [expenses, settlements, members, items] = await Promise.all([
+	const [expenses, settlements, members, items, moneyUnits] = await Promise.all([
 		locals.pb.collection('expenses').getFullList<Expense>({
 			filter: `trip = "${trip.id}"`,
 			sort: '-date,-id',
@@ -28,7 +28,13 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		locals.pb.collection('items').getFullList<Item>({
 			filter: `trip = "${trip.id}"`,
 			sort: '-id'
-		})
+		}),
+		// #230 — Money Units for the unit-collapsed settle-up (ADR-0015). Tolerate the
+		// collection being absent (pre-0050 PB) so the page never 500s on a stale schema.
+		locals.pb
+			.collection('money_units')
+			.getFullList<MoneyUnitRecord>({ filter: `trip = "${trip.id}"`, sort: 'created' })
+			.catch(() => [] as MoneyUnitRecord[])
 	]);
 
 	let budget: TripBudget | null = null;
@@ -57,6 +63,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		items,
 		budget,
 		spentByCategory,
+		moneyUnits,
 		filterItemId: filterItem ? filterItemId : '',
 		filterItemTitle: filterItem?.title ?? ''
 	};
@@ -206,6 +213,78 @@ export const actions: Actions = {
 		} catch (err: unknown) {
 			const message = extractErrorMessage(err) || 'Failed to delete expense.';
 			return fail(400, { deleteExpense: { error: message } });
+		}
+	},
+
+	// #230 / ADR-0015 — create OR update a Money Unit (a shared, trip-scoped pool of
+	// members). `unit_id` present = update; absent = create. `members` is a comma-joined
+	// list of trip_members.id; `budget_usd` is the OPTIONAL absolute override (blank =
+	// even-share default). Split is NEVER touched — this only groups members for settle-up
+	// collapse + the unit glance. PB rules (MEMBER_VIA_TRIP) gate access; leaving is just
+	// an update that drops yourself from `members`.
+	saveMoneyUnit: async ({ request, locals, params }) => {
+		const fd = await request.formData();
+		const unitId = fd.get('unit_id')?.toString() || '';
+		const memberIds = (fd.get('members')?.toString() || '')
+			.split(',')
+			.map((s) => s.trim())
+			.filter(Boolean);
+		const budgetRaw = fd.get('budget_usd')?.toString().trim() || '';
+
+		if (memberIds.length < 1) {
+			return fail(400, { saveMoneyUnit: { error: 'Pick at least one member.' } });
+		}
+		let budgetUsd: number | null = null;
+		if (budgetRaw) {
+			const n = parseFloat(budgetRaw);
+			if (Number.isNaN(n) || n < 0) {
+				return fail(400, { saveMoneyUnit: { error: 'Budget must be a positive number.' } });
+			}
+			budgetUsd = n;
+		}
+
+		try {
+			const trip = await locals.pb
+				.collection('trips')
+				.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+
+			const membership = await locals.pb
+				.collection('trip_members')
+				.getFirstListItem(
+					`trip = "${trip.id}" && user = "${locals.pb.authStore.record?.id}" && removed_at = ""`
+				);
+
+			if (unitId) {
+				await locals.pb.collection('money_units').update(unitId, {
+					members: memberIds,
+					budget_usd: budgetUsd
+				});
+			} else {
+				await locals.pb.collection('money_units').create({
+					trip: trip.id,
+					created_by: membership.id,
+					members: memberIds,
+					budget_usd: budgetUsd
+				});
+			}
+			return { saveMoneyUnit: { success: true } };
+		} catch (err: unknown) {
+			const message = extractErrorMessage(err) || 'Failed to save money unit.';
+			return fail(400, { saveMoneyUnit: { error: message } });
+		}
+	},
+
+	deleteMoneyUnit: async ({ request, locals }) => {
+		const fd = await request.formData();
+		const unitId = fd.get('unit_id')?.toString();
+		if (!unitId) return fail(400, { deleteMoneyUnit: { error: 'Missing unit id.' } });
+
+		try {
+			await locals.pb.collection('money_units').delete(unitId);
+			return { deleteMoneyUnit: { success: true } };
+		} catch (err: unknown) {
+			const message = extractErrorMessage(err) || 'Failed to delete money unit.';
+			return fail(400, { deleteMoneyUnit: { error: message } });
 		}
 	}
 };
