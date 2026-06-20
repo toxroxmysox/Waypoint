@@ -56,7 +56,13 @@ export interface Suggestion {
 	created: string;
 }
 
-export type NotificationType = 'suggestion_added' | 'comment_added' | 'member_joined';
+export type NotificationType =
+	| 'suggestion_added'
+	| 'comment_added'
+	| 'member_joined'
+	// #249/#250 — contribution-loop review outcomes, to the author only.
+	| 'suggestion_approved'
+	| 'suggestion_rejected';
 
 export interface Notification {
 	id: string;

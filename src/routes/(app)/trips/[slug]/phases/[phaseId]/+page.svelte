@@ -17,13 +17,22 @@
 
 	let editing = $state(false);
 	let loading = $state(false);
-	let error = $derived(form?.error ?? '');
+	let error = $derived(form?.error ?? form?.reviewError ?? '');
 	const parkingLotItems = $derived(data.phaseItems.filter((it) => it.status === 'unplanned'));
 	// #248 — pending suggestions for this phase, as Ghost Cards (dotted "pending"),
 	// sourced from the pure parking-lot-cards merge so they tag + sort consistently.
 	const ghostCards = $derived(data.parkingCards.filter((c) => c.kind === 'ghost'));
 	// Viewers see ghosts read-only-but-can-see (no cast buttons).
 	const canVoteGhosts = $derived(data.viewerRole !== 'viewer');
+	// #249/#250 — owner/co_owner get in-place approve/reject on each ghost.
+	const canReviewGhosts = $derived(data.viewerRole === 'owner' || data.viewerRole === 'co_owner');
+
+	// #249/#250 — surface the review outcome as a toast (enhance already re-ran load,
+	// so the ghost has already promoted/left by the time this fires).
+	$effect(() => {
+		if (form?.approved) toast.show('Idea approved');
+		else if (form?.rejected) toast.show('Idea rejected');
+	});
 	const parkingLotCount = $derived(parkingLotItems.length + ghostCards.length);
 
 	// #57 — quick-add an idea into this phase's parking lot.
@@ -286,6 +295,7 @@
 								members={data.members}
 								myMemberId={data.myMemberId}
 								canVote={canVoteGhosts}
+								canReview={canReviewGhosts}
 							/>
 						{/each}
 					</div>

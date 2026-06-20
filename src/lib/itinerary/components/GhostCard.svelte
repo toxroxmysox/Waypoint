@@ -24,7 +24,8 @@
 		card,
 		members = [],
 		myMemberId = '',
-		canVote = false
+		canVote = false,
+		canReview = false
 	}: {
 		card: GhostCard;
 		/** Trip members (with resolved avatars) for the vote stack. */
@@ -33,6 +34,10 @@
 		myMemberId?: string;
 		/** False for viewers (read-only). The author can never vote regardless. */
 		canVote?: boolean;
+		/** #249/#250 — owner/co_owner only. Adds in-place approve + reject (with a
+		 *  required note) on the ghost. Posts to the surface's approveGhost/rejectGhost
+		 *  form actions; on success the ghost promotes (approve) or leaves (reject). */
+		canReview?: boolean;
 	} = $props();
 
 	const payload = $derived(card.suggestion.payload ?? {});
@@ -56,6 +61,12 @@
 	};
 
 	let submitting = $state(false);
+
+	// #249/#250 — owner review affordance state (in-place approve / reject-with-note).
+	let reviewing = $state(false); // approve in flight
+	let rejectOpen = $state(false); // note field expanded
+	let rejectNote = $state('');
+	let rejectSubmitting = $state(false);
 </script>
 
 <!-- Dotted border + recessed paper tint = "pending", distinct from a solid idea
@@ -132,6 +143,95 @@
 					</button>
 				</form>
 			{/each}
+		</div>
+	{/if}
+
+	{#if canReview}
+		<!-- #249/#250 — owner/co_owner review. Approve promotes the ghost in place
+		     (→ real item, author-attributed, votes carried). Reject demands a note
+		     and removes it from every member's parking lot. Same endpoint as the
+		     Inbox. Hidden from travelers/viewers. -->
+		<div class="border-line/70 border-t border-dashed px-3 py-2 space-y-2">
+			{#if !rejectOpen}
+				<div class="flex items-center gap-2" role="group" aria-label="Review this pending idea">
+					<form
+						method="POST"
+						action="?/approveGhost"
+						use:enhance={() => {
+							reviewing = true;
+							return async ({ update }) => {
+								reviewing = false;
+								await update();
+							};
+						}}
+					>
+						<input type="hidden" name="suggestion_id" value={card.suggestion.id} />
+						<button
+							type="submit"
+							disabled={reviewing}
+							class="bg-moss text-paper border-moss inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50"
+						>
+							{reviewing ? 'Approving…' : 'Approve'}
+						</button>
+					</form>
+					<button
+						type="button"
+						onclick={() => (rejectOpen = true)}
+						disabled={reviewing}
+						class="border-line text-ink-muted hover:border-clay/40 hover:text-clay inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50"
+					>
+						Reject
+					</button>
+				</div>
+			{:else}
+				<form
+					method="POST"
+					action="?/rejectGhost"
+					use:enhance={() => {
+						rejectSubmitting = true;
+						return async ({ result, update }) => {
+							rejectSubmitting = false;
+							if (result.type === 'success') {
+								rejectOpen = false;
+								rejectNote = '';
+							}
+							await update();
+						};
+					}}
+					class="space-y-2"
+				>
+					<input type="hidden" name="suggestion_id" value={card.suggestion.id} />
+					<label class="text-ink-soft block text-[11px] font-medium" for="reject-note-{card.suggestion.id}">
+						Reason for rejecting (required)
+					</label>
+					<input
+						id="reject-note-{card.suggestion.id}"
+						name="review_note"
+						type="text"
+						required
+						bind:value={rejectNote}
+						placeholder="Why isn’t this a fit?"
+						class="border-line bg-surface text-ink block w-full rounded-md border px-2.5 py-1.5 text-sm"
+					/>
+					<div class="flex items-center gap-2">
+						<button
+							type="submit"
+							disabled={rejectSubmitting || !rejectNote.trim()}
+							class="bg-clay text-paper border-clay inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50"
+						>
+							{rejectSubmitting ? 'Rejecting…' : 'Confirm reject'}
+						</button>
+						<button
+							type="button"
+							onclick={() => { rejectOpen = false; rejectNote = ''; }}
+							disabled={rejectSubmitting}
+							class="text-ink-muted hover:text-ink-soft inline-flex items-center px-2 py-1 text-xs font-semibold disabled:opacity-50"
+						>
+							Cancel
+						</button>
+					</div>
+				</form>
+			{/if}
 		</div>
 	{/if}
 </div>

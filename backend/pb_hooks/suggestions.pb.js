@@ -258,15 +258,40 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 		throw new ForbiddenError('Only owners and co-owners can review suggestions');
 	}
 
+	// #250 — reject requires a one-line note (no one-tap reject). Stored on the
+	// suggestion (migration 0051 review_note) and carried in the rejection notice.
+	const reviewNote = (info.body && info.body['review_note']) ? String(info.body['review_note']).trim() : '';
+	if (action === 'reject' && !reviewNote) {
+		throw new BadRequestError('A note is required to reject a suggestion');
+	}
+
+	// The suggestion's AUTHOR (a trip_members.id) — the attribution target on
+	// approve (#249) and the sole recipient of the approve/reject notice. NEVER
+	// the reviewer: items.created_by is a trip_members.id (migration 0006), and an
+	// approved idea must read as the contributor's, not the owner's.
+	const authorMemberId = suggestion.get('author');
+
 	const now = new Date().toISOString().replace('T', ' ').replace('Z', '') + 'Z';
 	suggestion.set('status', action === 'approve' ? 'approved' : 'rejected');
 	suggestion.set('reviewed_by', callerMember.id);
 	suggestion.set('reviewed_at', now);
+	if (action === 'reject') suggestion.set('review_note', reviewNote);
 	e.app.save(suggestion);
+
+	// Trip slug — used for both the notification deep link and (approve) the
+	// item's landing spot.
+	let tripSlug = '';
+	try {
+		const tripRec = e.app.findRecordById('trips', tripId);
+		tripSlug = tripRec.get('slug') || '';
+	} catch (_) {}
 
 	// If approving, create the item.
 	// Inlined here because module-scope helpers are not visible in PB 0.27 sandbox.
 	let itemId = '';
+	let landingPhaseId = '';
+	let landingDayId = '';
+	let approvedTitle = '';
 	if (action === 'approve') {
 		let trip;
 		try {
@@ -326,11 +351,94 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 		item.set('assigned_to', Array.isArray(payload.assigned_to) ? payload.assigned_to : []);
 		item.set('confirmation_codes', Array.isArray(payload.confirmation_codes) ? payload.confirmation_codes : []);
 		item.set('sort_order', 0);
-		item.set('created_by', callerMember.id);
+		// #249 LETHAL ATTRIBUTION SCAR — created_by is a trip_members.id (migration
+		// 0006), and approval attributes the item to the SUGGESTION'S AUTHOR, never
+		// the reviewing owner. Fall back to the reviewer only if the author somehow
+		// went missing (data integrity), so created_by is never blank/wrong.
+		item.set('created_by', authorMemberId || callerMember.id);
 		item.set('status', payload.day ? 'planned' : 'unplanned');
 		e.app.save(item);
 		itemId = item.id;
+		landingPhaseId = resolvedPhase;
+		landingDayId = payload.day || '';
+		approvedTitle = payload.title || '';
+
+		// #249 — migrate the ghost's votes onto the new item: each suggestion_vote
+		// (same member + value) becomes a votes row on the real item. The suggestion
+		// + its suggestion_votes freeze as history (not deleted). Inlined per sandbox.
+		try {
+			const ghostVotes = e.app.findRecordsByFilter(
+				'suggestion_votes',
+				'suggestion = {:sid}',
+				'-id', 0, 0,
+				{ sid: suggestionId }
+			);
+			const votesCol = e.app.findCollectionByNameOrId('votes');
+			for (const gv of ghostVotes) {
+				try {
+					const vote = new Record(votesCol);
+					vote.set('trip', tripId);
+					vote.set('item', itemId);
+					vote.set('member', gv.get('member'));
+					vote.set('value', gv.get('value'));
+					e.app.save(vote);
+				} catch (_) {}
+			}
+		} catch (_) {}
 	}
+
+	// #249 / #250 — notify the AUTHOR (and only the author) of the decision. No
+	// group noise: an approval/rejection is between the reviewer and the
+	// contributor. Inlined — notifications.pb.js only fires on suggestion CREATE,
+	// and a status-change isn't a create, so the trigger lives here.
+	try {
+		let payloadTitle = approvedTitle;
+		if (!payloadTitle) {
+			let rp = suggestion.get('payload');
+			if (Array.isArray(rp)) {
+				try { rp = JSON.parse(String.fromCharCode.apply(null, rp)); } catch (_) { rp = {}; }
+			} else if (typeof rp === 'string') {
+				try { rp = JSON.parse(rp); } catch (_) { rp = {}; }
+			}
+			if (rp && rp.title) payloadTitle = rp.title;
+		}
+
+		let link = '';
+		let body = '';
+		if (action === 'approve') {
+			// Link to where it landed: its day (if scheduled) else the phase parking lot.
+			if (tripSlug && landingDayId) link = `/trips/${tripSlug}/days/${landingDayId}`;
+			else if (tripSlug && landingPhaseId) link = `/trips/${tripSlug}/phases/${landingPhaseId}`;
+			else if (tripSlug) link = `/trips/${tripSlug}`;
+			body = payloadTitle ? `Your idea “${payloadTitle}” was approved` : 'Your idea was approved';
+		} else {
+			// Reject — link to the phase for context (where the idea was proposed).
+			let rejPhase = '';
+			let rp = suggestion.get('payload');
+			if (Array.isArray(rp)) {
+				try { rp = JSON.parse(String.fromCharCode.apply(null, rp)); } catch (_) { rp = {}; }
+			} else if (typeof rp === 'string') {
+				try { rp = JSON.parse(rp); } catch (_) { rp = {}; }
+			}
+			if (rp && rp.phase) rejPhase = rp.phase;
+			if (tripSlug && rejPhase) link = `/trips/${tripSlug}/phases/${rejPhase}`;
+			else if (tripSlug) link = `/trips/${tripSlug}`;
+			body = payloadTitle
+				? `Your idea “${payloadTitle}” wasn’t approved: ${reviewNote}`
+				: `Your idea wasn’t approved: ${reviewNote}`;
+		}
+
+		if (authorMemberId) {
+			const notifCol = e.app.findCollectionByNameOrId('notifications');
+			const notif = new Record(notifCol);
+			notif.set('trip', tripId);
+			notif.set('recipient', authorMemberId);
+			notif.set('type', action === 'approve' ? 'suggestion_approved' : 'suggestion_rejected');
+			notif.set('body', body);
+			notif.set('link', link);
+			e.app.save(notif);
+		}
+	} catch (_) {}
 
 	return e.json(200, { ok: true, status: suggestion.get('status'), item_id: itemId });
 });

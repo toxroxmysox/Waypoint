@@ -6,6 +6,11 @@ import { summarizeDays } from '$lib/itinerary/day-card';
 import { withAvatarUrls } from '$lib/collaboration/member-avatar';
 import { parkingLotCards } from '$lib/itinerary/parking-lot-cards';
 
+// #249/#250 — ghost approve/reject reuse the same /api/suggestions/review hook
+// endpoint the Inbox uses (server-side: owner gate + author attribution + vote
+// migration + author notification). Hit it server-to-server with the caller's token.
+const PB_BASE = process.env.PUBLIC_PB_URL || 'http://127.0.0.1:8090';
+
 const IDEA_TYPES = ['activity', 'meal', 'lodging', 'transportation', 'flight', 'note'] as const;
 
 // Raw `suggestions` record (the collection stores `author` as a trip_members.id;
@@ -314,5 +319,62 @@ export const actions: Actions = {
 			const message = err instanceof Error ? err.message : 'Failed to clear vote.';
 			return fail(500, { error: message });
 		}
+	},
+
+	// #249 — approve a pending Ghost Card contextually, in place. Same
+	// /api/suggestions/review endpoint the Inbox uses (owner/co_owner gate +
+	// author attribution + vote migration + author notification live server-side).
+	// On success, enhance re-runs load() → the ghost vanishes from pendingRaw and
+	// its now-real item appears in the parking lot: a promotion in place.
+	approveGhost: async ({ request, locals }) => {
+		const data = await request.formData();
+		const suggestionId = data.get('suggestion_id')?.toString() || '';
+		if (!suggestionId) return fail(400, { reviewError: 'Missing suggestion.' });
+
+		const token = locals.pb.authStore.token;
+		try {
+			const res = await fetch(`${PB_BASE}/api/suggestions/review`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+				body: JSON.stringify({ suggestion_id: suggestionId, action: 'approve' })
+			});
+			if (!res.ok) {
+				const err = await res.json().catch(() => ({}));
+				return fail(res.status, { reviewError: (err as { message?: string }).message || 'Failed to approve.' });
+			}
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : 'Failed to approve.';
+			return fail(500, { reviewError: message });
+		}
+		return { approved: true };
+	},
+
+	// #250 — reject a pending Ghost Card with a REQUIRED one-line note. Same
+	// endpoint as the Inbox; the server enforces the note + archives the
+	// suggestion + notifies the author only. On success the ghost leaves every
+	// member's parking lot (status → rejected, no longer pending).
+	rejectGhost: async ({ request, locals }) => {
+		const data = await request.formData();
+		const suggestionId = data.get('suggestion_id')?.toString() || '';
+		const reviewNote = data.get('review_note')?.toString().trim() || '';
+		if (!suggestionId) return fail(400, { reviewError: 'Missing suggestion.' });
+		if (!reviewNote) return fail(400, { reviewError: 'A note is required to reject.' });
+
+		const token = locals.pb.authStore.token;
+		try {
+			const res = await fetch(`${PB_BASE}/api/suggestions/review`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+				body: JSON.stringify({ suggestion_id: suggestionId, action: 'reject', review_note: reviewNote })
+			});
+			if (!res.ok) {
+				const err = await res.json().catch(() => ({}));
+				return fail(res.status, { reviewError: (err as { message?: string }).message || 'Failed to reject.' });
+			}
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : 'Failed to reject.';
+			return fail(500, { reviewError: message });
+		}
+		return { rejected: true };
 	}
 };
