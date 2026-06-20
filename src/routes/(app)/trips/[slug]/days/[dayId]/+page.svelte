@@ -6,6 +6,7 @@
 	import Button from '$lib/ui/Button.svelte';
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import FAB from '$lib/shell/components/FAB.svelte';
+	import IdeaCaptureSheet from '$lib/itinerary/components/IdeaCaptureSheet.svelte';
 	import { toast } from '$lib/shell/stores/toast';
 	import DayNav from '$lib/shell/components/DayNav.svelte';
 	import PhaseChip from '$lib/ui/PhaseChip.svelte';
@@ -19,6 +20,9 @@
 	let editingNotes = $state(false);
 	let notesLoading = $state(false);
 	let error = $derived(form?.error ?? '');
+
+	// #252 — consistent capture affordance, defaulting to this day + its phase.
+	let ideaSheetOpen = $state(false);
 
 	// Reset editing state when navigating between days (client-side reuse of component instance).
 	// $effect is safe here: editingNotes starts false (correct SSR value); this only resets a UI flag.
@@ -210,4 +214,14 @@
 	</DragDropTimeline>
 </main>
 
-<FAB href="/trips/{data.trip.slug}/items/new?day={data.day.id}" label="Add item" />
+<!-- #252 — same capture affordance + position as the Overview and Phase Detail;
+     opens the idea/plan fork sheet (defaults to this day + its phase) instead of
+     jumping straight to the fuller items/new flow. -->
+<FAB onclick={() => (ideaSheetOpen = true)} label="Add idea or plan" />
+<IdeaCaptureSheet
+	bind:open={ideaSheetOpen}
+	slug={data.trip.slug}
+	phases={data.phases}
+	defaultPhaseId={data.dayPhases[0]?.id ?? ''}
+	defaultDayId={data.day.id}
+/>

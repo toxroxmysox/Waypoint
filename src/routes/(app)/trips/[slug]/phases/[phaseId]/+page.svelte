@@ -8,10 +8,31 @@
 	import PhaseParkingReorder from '$lib/itinerary/components/PhaseParkingReorder.svelte';
 	import GhostCard from '$lib/itinerary/components/GhostCard.svelte';
 	import DayMetricToggle from '$lib/itinerary/components/DayMetricToggle.svelte';
+	import FAB from '$lib/shell/components/FAB.svelte';
+	import IdeaCaptureSheet from '$lib/itinerary/components/IdeaCaptureSheet.svelte';
 	import { toast } from '$lib/shell/stores/toast';
 	import { titleCase } from '$lib/shell/format';
+	import { page } from '$app/state';
+	import { replaceState } from '$app/navigation';
 
 	let { data, form } = $props();
+
+	// #252 — consistent capture affordance, defaulting to THIS phase.
+	let ideaSheetOpen = $state(false);
+
+	// #252 — show the post-submit toast carried by the /ideas redirect param, then
+	// strip it from the URL so a refresh doesn't re-toast. Matches the expenses/
+	// documents ?action= cleanup: shallow `replaceState` (no navigation, so it never
+	// touches the contextual-back depth counter — ADR-0012 scar).
+	$effect(() => {
+		const msg = page.url.searchParams.get('ideaToast');
+		if (msg) {
+			toast.show(msg);
+			const url = new URL(page.url);
+			url.searchParams.delete('ideaToast');
+			replaceState(url, page.state);
+		}
+	});
 
 	let today = new Date().toISOString().split('T')[0];
 
@@ -311,3 +332,13 @@
 		</section>
 	</div>
 </main>
+
+<!-- #252 — same capture affordance + position as the Overview and day views.
+     Defaults the idea's phase to THIS phase. -->
+<FAB onclick={() => (ideaSheetOpen = true)} label="Add idea or plan" />
+<IdeaCaptureSheet
+	bind:open={ideaSheetOpen}
+	slug={data.trip.slug}
+	phases={data.phases}
+	defaultPhaseId={data.phase.id}
+/>

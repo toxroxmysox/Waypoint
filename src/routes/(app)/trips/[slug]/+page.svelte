@@ -7,6 +7,8 @@
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import SubTabs from '$lib/ui/SubTabs.svelte';
 	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
+	import FAB from '$lib/shell/components/FAB.svelte';
+	import IdeaCaptureSheet from '$lib/itinerary/components/IdeaCaptureSheet.svelte';
 	import PhaseChip from '$lib/ui/PhaseChip.svelte';
 	import MiniListCard from '$lib/itinerary/components/MiniListCard.svelte';
 	import DayCard from '$lib/itinerary/components/DayCard.svelte';
@@ -32,6 +34,9 @@
 
 	let notifications = $state<Notification[]>(untrack(() => data.notifications ?? []));
 	let unreadCount = $state(untrack(() => data.unreadCount ?? 0));
+
+	// #252 — the consistent capture affordance (also on Phase Detail + day views).
+	let ideaSheetOpen = $state(false);
 
 	function formatDateRange(start: string, end: string): string {
 		const s = new Date(start.replace(' ', 'T'));
@@ -106,6 +111,17 @@
 					<span class="font-mono">{data.days.length}</span> days ·
 					<span class="font-mono">{data.phases.length}</span> phase{data.phases.length === 1 ? '' : 's'}
 				</p>
+				<!-- #252 — name the lightweight capture path so "ideas" surfaces here. -->
+				<button
+					type="button"
+					onclick={() => (ideaSheetOpen = true)}
+					class="text-moss hover:text-ink mt-2 inline-flex items-center gap-1 text-xs font-semibold"
+				>
+					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z" />
+					</svg>
+					Capture ideas
+				</button>
 			</div>
 			<div class="flex flex-col items-end gap-2">
 				<Pill variant={data.membership.role === 'owner' ? 'ink' : 'default'} size="sm">
@@ -255,7 +271,7 @@
 		<Card>
 			<div class="p-6 text-center">
 				<p class="font-display text-ink-soft text-base italic">A blank itinerary.</p>
-				<p class="text-ink-muted mt-1 text-sm">Start by adding a phase or scheduling something.</p>
+				<p class="text-ink-muted mt-1 text-sm">Start by adding a phase, capturing ideas, or scheduling something.</p>
 				<div class="mt-4 flex flex-wrap items-center justify-center gap-2">
 					<Button href="/trips/{data.trip.slug}/phases" variant="moss" size="sm">
 						Add a phase
@@ -274,3 +290,11 @@
 		</Card>
 	{/if}
 </main>
+
+<!-- #252 — consistent capture affordance (same position on Phase Detail + day).
+     Opens the idea/plan fork sheet. Only when ≥1 phase exists (the idea path needs
+     a required phase; #217 guarantees one on any real trip). -->
+{#if data.phases.length > 0}
+	<FAB onclick={() => (ideaSheetOpen = true)} label="Add idea or plan" />
+{/if}
+<IdeaCaptureSheet bind:open={ideaSheetOpen} slug={data.trip.slug} phases={data.phases} />
