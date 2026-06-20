@@ -5,6 +5,7 @@
 	import { page } from '$app/stores';
 	import A2HSBanner from '$lib/shell/components/A2HSBanner.svelte';
 	import Toast from '$lib/ui/Toast.svelte';
+	import { installOfflineWriteGuard } from '$lib/shell/offline-write-guard';
 
 	let { children } = $props();
 	let routeAnnouncement = $state('');
@@ -18,7 +19,14 @@
 		};
 		document.addEventListener('wheel', handler, { passive: true });
 
-		return () => document.removeEventListener('wheel', handler);
+		// App-wide offline write-guard (#255): block mutation submits while offline
+		// with a toast; read navigation is unaffected. One capture-phase listener.
+		const teardownGuard = installOfflineWriteGuard();
+
+		return () => {
+			document.removeEventListener('wheel', handler);
+			teardownGuard();
+		};
 	});
 
 	afterNavigate(() => {

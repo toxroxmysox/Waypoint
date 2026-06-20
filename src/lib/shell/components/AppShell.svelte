@@ -3,6 +3,7 @@
 	import SideRail from './SideRail.svelte';
 	import ContextRail from './ContextRail.svelte';
 	import ModePill from './ModePill.svelte';
+	import OfflineBanner from './OfflineBanner.svelte';
 	import AddSheet from '$lib/trip-mode/components/AddSheet.svelte';
 	import type { Snippet } from 'svelte';
 	import type { MemberRole, Phase, Day, Trip } from '$lib/types';
@@ -79,6 +80,9 @@
 		class="md-desktop:hidden"
 		style="--color-accent: {mode === 'trip' ? 'var(--color-clay)' : 'var(--color-moss)'}; --color-accent-tint: {mode === 'trip' ? 'var(--color-clay-tint)' : 'var(--color-moss-tint)'}"
 	>
+		<!-- Automatic offline banner (#255): self-hides when online; prominent at the
+		     top of every trip surface, most so in Trip Mode where the trip title shows. -->
+		<OfflineBanner tripTitle={trip?.title ?? ''} />
 		{#if active}
 			<div class="px-4 pt-3 pb-1">
 				<ModePill {mode} onToggle={toggleMode} />
@@ -106,6 +110,7 @@
 			onAction={handleNavAction}
 		/>
 		<div class="md-desktop:ml-[72px] lg-desktop:ml-[240px] lg-desktop:mr-[320px]">
+			<OfflineBanner tripTitle={trip?.title ?? ''} />
 			{@render children()}
 		</div>
 		<ContextRail {slug} {trip} {phases} {days} />

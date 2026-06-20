@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import Button from '$lib/ui/Button.svelte';
+	import { online } from '$lib/shell/stores/online';
 
 	// Single branded boundary for every thrown error in the app (#171). SvelteKit
 	// renders this in place of the page, still wrapped by the root layout (paper
@@ -8,6 +9,12 @@
 	// depends on whether the visitor is authenticated.
 	const status = $derived(page.status);
 	const authed = $derived(Boolean(page.data?.user));
+
+	// Offline boundary (#255): an in-app navigation to a page that genuinely
+	// wasn't cached fails its data fetch (the SW serves a 503 for an uncached
+	// `__data.json` while offline). Show a friendly "not available offline" state
+	// instead of the raw "something broke" 5xx copy — and never a bare 503 wall.
+	const offlineMiss = $derived(!$online);
 
 	// SvelteKit's default message for the status (e.g. "Not Found") is rarely
 	// useful to a human, so we lead with our own copy and only surface the
@@ -20,6 +27,13 @@
 	type Copy = { eyebrow: string; heading: string; body: string };
 
 	const copy = $derived.by<Copy>(() => {
+		if (offlineMiss) {
+			return {
+				eyebrow: 'Not available offline',
+				heading: "This page isn't saved for offline",
+				body: "You're offline and this page wasn't cached yet. The parts of your active trip you've opened — your days, items, and documents — stay available. Reconnect to load this one."
+			};
+		}
 		if (status === 404) {
 			return {
 				eyebrow: 'Page not found',
