@@ -1,13 +1,18 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Day, Item, Checklist, Task, TripMember, Vote } from '$lib/types';
+import type { Trip, Day, Item, Checklist, Task, TripMember, Vote } from '$lib/types';
 import { tripNow, tripTz } from '$lib/shell/trip-time';
 import { isTripActive } from '$lib/trip-mode/activation';
 import { fetchManualChecklists } from '$lib/itinerary/checklist-loaders';
 import { withAvatarUrls } from '$lib/collaboration/member-avatar';
+import { primaryPhaseForDay } from '$lib/itinerary/phases';
+import { currentPhaseId } from '$lib/trip-mode/current-phase';
+import { computeMovePatch } from '$lib/itinerary/move-item';
+import { promotePlacement } from '$lib/trip-mode/promote';
+import { scoreVotes, sortByVoteScore } from '$lib/collaboration/voting';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
-	const { trip, days } = await parent();
+	const { trip, membership, phases, days } = await parent();
 
 	// Trip Mode is only reachable on an active trip (#204). A deep link on a
 	// planning or past trip would otherwise render trip-mode views under the
@@ -84,6 +89,57 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		tasks: listTasks.filter((t) => t.checklist === c.id)
 	}));
 
+	// #245 Door 1 — "ideas for now". Derive the live phase (the boundary-day core),
+	// then surface THAT phase's parked ideas, vote-score ordered. The strip renders
+	// only at a free-time / nothing-else Focus (the view decides); an empty current
+	// phase yields no ideas → no strip (no widening — every idea already has a phase).
+	let ideas: { item: Item; score: number; votes: Vote[] }[] = [];
+	let derivedPhaseId = '';
+	if (today) {
+		// Forward (later-day) discrete items power the cross-day transition rule
+		// (a late-night arrival's destination may be tomorrow). Earliest-first.
+		const forwardItems = await locals.pb.collection('items').getFullList<Item>({
+			filter: `trip = "${trip.id}" && day != "${today.id}" && day != "" && start_time > "${todayStr}" && end_date = ""`,
+			sort: 'start_time'
+		});
+
+		const fallbackPhaseId = primaryPhaseForDay(today, phases)?.id ?? '';
+		derivedPhaseId = currentPhaseId({ todayItems, now, forwardItems, fallbackPhaseId });
+
+		if (derivedPhaseId) {
+			// The current phase's parked (unplanned) ideas — the existing per-phase
+			// parking zone (#87), scoped to this phase ONLY (not pooled across the day).
+			const phaseIdeas = await locals.pb.collection('items').getFullList<Item>({
+				filter: `trip = "${trip.id}" && status = "unplanned" && phase = "${derivedPhaseId}"`,
+				sort: 'sort_order'
+			});
+
+			const ideaIds = phaseIdeas.map((i) => i.id);
+			const ideaVotes =
+				ideaIds.length > 0
+					? await locals.pb.collection('votes').getFullList<Vote>({
+							filter: ideaIds.map((id) => `item = "${id}"`).join(' || ')
+						})
+					: [];
+			const votesByIdea: Record<string, Vote[]> = {};
+			for (const v of ideaVotes) (votesByIdea[v.item] ??= []).push(v);
+
+			const scoreById: Record<string, number> = {};
+			for (const i of phaseIdeas) scoreById[i.id] = scoreVotes(votesByIdea[i.id] ?? []);
+
+			// Vote-score order (desc), ties by sort_order asc — the parking lot's order.
+			ideas = sortByVoteScore(phaseIdeas, scoreById).map((item) => ({
+				item,
+				score: scoreById[item.id] ?? 0,
+				votes: votesByIdea[item.id] ?? []
+			}));
+		}
+	}
+
+	// #245/SPEC §4 — promote is an item edit: owner/co_owner only. The strip renders
+	// for everyone (travelers/viewers see vote stacks read-only); this gates the tap.
+	const canPromote = membership.role === 'owner' || membership.role === 'co_owner';
+
 	return {
 		todayItems,
 		tomorrowItems,
@@ -93,7 +149,11 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		votesByItem,
 		members: withAvatarUrls(locals.pb, members),
 		hasToday: today !== null,
-		now: now.toISOString()
+		now: now.toISOString(),
+		// #245 Door 1 — current-phase ideas strip (vote-score ordered) + the promote gate.
+		ideas,
+		currentPhaseId: derivedPhaseId,
+		canPromote
 	};
 };
 
@@ -125,6 +185,79 @@ export const actions: Actions = {
 			return { success: true };
 		} catch (err: unknown) {
 			return fail(500, { error: err instanceof Error ? err.message : 'Failed to toggle.' });
+		}
+	},
+
+	// #245 Door 1 — promote a parked idea onto TODAY (Light Replanning, today only).
+	// REUSES computeMovePatch + promote placement (sort-order) — no parallel module
+	// (PRD §7): assign `day` + `planned`, slot into sort_order after the current
+	// moment, NO phase reassignment (the idea keeps its phase, which already
+	// contains today). Owner/co_owner only (SPEC §4); travelers/viewers 403.
+	promoteIdea: async ({ request, params, locals }) => {
+		const trip = await locals.pb
+			.collection('trips')
+			.getFirstListItem<Trip>(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+
+		const membership = await locals.pb
+			.collection('trip_members')
+			.getFirstListItem<TripMember>(
+				`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`
+			);
+		if (membership.role !== 'owner' && membership.role !== 'co_owner') {
+			return fail(403, { error: 'Only the trip owner or a co-owner can promote an idea.' });
+		}
+
+		const data = await request.formData();
+		const itemId = data.get('item_id')?.toString();
+		if (!itemId) return fail(400, { error: 'Missing item ID.' });
+
+		try {
+			// Today's day (Light Replanning boundary — promote targets today only).
+			// Match on the calendar-date prefix, mirroring the loader (PB may store
+			// `date` as a datetime; a string-prefix compare is the robust check).
+			const now = tripNow(tripTz(trip));
+			const todayStr = now.toISOString().split('T')[0];
+			const tripDays = await locals.pb.collection('days').getFullList<Day>({
+				filter: `trip = "${trip.id}"`
+			});
+			const today = tripDays.find((d) => d.date.split(/[T ]/)[0] === todayStr) ?? null;
+			if (!today) return fail(400, { error: 'No day for today.' });
+
+			const item = await locals.pb.collection('items').getOne<Item>(itemId);
+			if (item.trip !== trip.id) return fail(403, { error: 'Not authorized.' });
+
+			// Status/day invariant (no phase change — keep the idea's own phase).
+			const patch = computeMovePatch({
+				currentStatus: item.status,
+				newDay: today.id,
+				newPhase: item.phase
+			});
+			// Attach to the day FIRST so it's part of the day set the whole-day
+			// rebalance renumbers (mirrors pullToPlan).
+			await locals.pb.collection('items').update(itemId, {
+				day: patch.day,
+				phase: patch.phase,
+				status: patch.status
+			});
+
+			// Today's discrete items (timed + the just-attached idea) → placement.
+			const dayItems = await locals.pb.collection('items').getFullList<Item>({
+				filter: `day = "${today.id}" && end_date = ""`,
+				sort: 'start_time,sort_order'
+			});
+			const promoted = dayItems.find((i) => i.id === itemId) ?? { ...item, ...patch };
+			const updates = promotePlacement(dayItems, promoted as Item, now);
+			await Promise.all(
+				updates.map((u) => locals.pb.collection('items').update(u.id, { sort_order: u.sort_order }))
+			);
+
+			return { success: true };
+		} catch (err: unknown) {
+			const e = err as { status?: number };
+			if (e?.status === 403) {
+				return fail(403, { error: 'Only the trip owner or a co-owner can promote an idea.' });
+			}
+			return fail(500, { error: err instanceof Error ? err.message : 'Failed to promote idea.' });
 		}
 	}
 };

@@ -15,6 +15,7 @@
 	import MemberContactStrip from '$lib/trip-mode/components/MemberContactStrip.svelte';
 	import MultiDayBanner from '$lib/itinerary/components/MultiDayBanner.svelte';
 	import TaskRow from '$lib/itinerary/components/TaskRow.svelte';
+	import IdeasStrip from '$lib/trip-mode/components/IdeasStrip.svelte';
 	import { getNowFeed } from '$lib/trip-mode/now-state';
 	import { formatCountdown, formatTime } from '$lib/shell/format';
 	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
@@ -43,6 +44,12 @@
 	// the woven rest, and it isn't the "next" anything. In mid-event the ongoing
 	// item is the Focus, so nothing in the rest is "up next".
 	const nextItemId = $derived(focus.kind === 'free-time' ? focus.nextItem.id : null);
+
+	// #245 Door 1 — the ideas strip opens proactively at the two states where the
+	// need arises: free time (countdown to the next thing) and nothing-else-planned.
+	// Mid-event = engaged; wrapped = day's over (Closeout's territory) — no door.
+	// An empty current phase yields no ideas, so the strip self-hides regardless.
+	const doorOpen = $derived(focus.kind === 'free-time' || focus.kind === 'nothing-else-planned');
 
 	function dayLabel(dateStr: string): string {
 		return new Date(dateStr.replace(' ', 'T')).toLocaleDateString('en-US', {
@@ -163,6 +170,12 @@
 			</Card>
 		{/if}
 	</div>
+
+	<!-- #245 Door 1 — "ideas for now": the current phase's parked ideas at a
+	     free-time / nothing-else Focus. Self-hides when the phase has no ideas. -->
+	{#if doorOpen}
+		<IdeasStrip ideas={data.ideas} members={data.members} slug={data.trip.slug} canPromote={data.canPromote} />
+	{/if}
 
 	<!-- Weight 3: the rest at NORMAL weight (overrides #154's muted later-today
 	     tier). Forward timed items woven with all untimed items. Full cards. -->
