@@ -1275,6 +1275,10 @@ const CANONICAL_MEMBER_RELATIONS = new Set([
 	'tasks.assignee',
 	'checklist_items.checked_by',
 	'notifications.recipient',
+	// money_units (#230, migration 0050) — added at wave-M integration when the
+	// drift test flagged it MISSING from the purge reference list.
+	'money_units.members',
+	'money_units.created_by',
 	// drop (votes — always dropped before the reference scan)
 	'votes.member',
 	'goal_votes.member',

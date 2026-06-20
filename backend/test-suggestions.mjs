@@ -60,7 +60,7 @@ if (fixtureRes.status !== 200) {
 	console.error('FATAL: fixture creation failed', fixtureRes.status, fixtureRes.json);
 	process.exit(1);
 }
-const { tripId } = fixtureRes.json;
+const { tripId, memberIds } = fixtureRes.json;
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -71,18 +71,12 @@ const samplePayload = {
 	description: 'A test suggestion'
 };
 
-// Resolve a role's trip_members.id for this trip (used to assert #249 attribution:
-// an approved item's created_by must be the AUTHOR's member id, not the reviewer's).
-async function memberId(role) {
-	const r = await api(
-		'GET',
-		`/api/collections/trip_members/records?filter=${encodeURIComponent(`trip = "${tripId}" && user.email = "${EMAILS[role]}"`)}`,
-		null,
-		tokens[role]
-	);
-	return r.json?.items?.[0]?.id || '';
-}
-const travelerMemberId = await memberId('traveler');
+// Role → trip_members.id straight from the fixture's authoritative memberIds map
+// (same as test-members.mjs). Querying trip_members by `user.email` as a non-superuser
+// returns empty (listRule + emailVisibility=false), which silently sent empty member
+// ids → the 400s and the empty attribution expectation. Used to assert #249
+// attribution: an approved item's created_by must be the AUTHOR's member id.
+const travelerMemberId = memberIds.traveler;
 
 // ─── 1. Viewer cannot suggest ────────────────────────────────────────────────
 
@@ -298,7 +292,7 @@ console.log('\n12b. Approve migrates suggestion_votes → item votes');
 	const sid = createRes.json.suggestion_id || '';
 	if (sid) {
 		// Co-owner casts a vote on the ghost (not the author → allowed by rule 0049).
-		const coMemberId = await memberId('co_owner');
+		const coMemberId = memberIds.co_owner;
 		const voteRes = await api('POST', '/api/collections/suggestion_votes/records', { suggestion: sid, member: coMemberId, value: 'love' }, tokens.co_owner);
 		voteRes.status === 200 || voteRes.status === 201
 			? pass('co_owner votes the ghost (suggestion_votes create)')

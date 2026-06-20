@@ -405,7 +405,8 @@ routerAdd('GET', '/api/members/can-purge', (e) => {
 		['items', 'booked_by'],
 		['tasks', 'assignee'],
 		['checklist_items', 'checked_by'],
-		['notifications', 'recipient']
+		['notifications', 'recipient'],
+		['money_units', 'created_by']
 	];
 	for (const rel of BLOCK_FIELDS) {
 		try {
@@ -569,6 +570,11 @@ routerAdd('POST', '/api/members/remove', (e) => {
 		// orphan the id / throw a required-FK 400 (block).
 		['checklist_items', 'checked_by', 'block'],
 		['notifications', 'recipient', 'block'],
+		// money_units (#230, migration 0050) landed concurrently in wave M — both
+		// relations are required + no cascade, so a member in a unit (or its creator)
+		// blocks the purge. The #238 drift test (test-rules) caught this at integration.
+		['money_units', 'members', 'block_multi'],
+		['money_units', 'created_by', 'block'],
 		// Votes — dropped above the disposition switch (drop).
 		['votes', 'member', 'drop'],
 		['goal_votes', 'member', 'drop'],
