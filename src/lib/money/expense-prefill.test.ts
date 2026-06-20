@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { expensePrefillParams, expensePrefillQuery, type PrefillItem } from './expense-prefill';
+import {
+	expensePrefillParams,
+	expensePrefillQuery,
+	logPaymentHref,
+	type PrefillItem
+} from './expense-prefill';
 
 const item = (over: Partial<PrefillItem> = {}): PrefillItem => ({
 	id: 'item1',
@@ -70,5 +75,34 @@ describe('expensePrefillQuery', () => {
 		const raw = expensePrefillQuery(item({ cost_estimate_usd: 0 }));
 		expect(raw).not.toContain('amount=');
 		expect(new URLSearchParams(raw).get('linked_item')).toBe('item1');
+	});
+});
+
+describe('logPaymentHref', () => {
+	it('builds the ?action=add deep-link to the trip expenses page with the prefill', () => {
+		const href = logPaymentHref('spain-2026', item());
+		const [path, query] = href.split('?');
+		expect(path).toBe('/trips/spain-2026/expenses');
+		const sp = new URLSearchParams(query);
+		expect(sp.get('action')).toBe('add');
+		expect(sp.get('amount')).toBe('2400');
+		expect(sp.get('description')).toBe('Group Airbnb');
+		expect(sp.get('linked_item')).toBe('item1');
+	});
+
+	it('still carries action=add + linked_item when the item has no estimate', () => {
+		const href = logPaymentHref('t', item({ cost_estimate_usd: undefined }));
+		const sp = new URLSearchParams(href.split('?')[1]);
+		expect(sp.get('action')).toBe('add');
+		expect(sp.has('amount')).toBe(false);
+		expect(sp.get('linked_item')).toBe('item1');
+	});
+
+	it('does NOT carry a split, payer, or date param (form defaults own them — ADR-0014)', () => {
+		const sp = new URLSearchParams(logPaymentHref('t', item()).split('?')[1]);
+		expect(sp.has('split_mode')).toBe(false);
+		expect(sp.has('split_data')).toBe(false);
+		expect(sp.has('paid_by')).toBe(false);
+		expect(sp.has('date')).toBe(false);
 	});
 });

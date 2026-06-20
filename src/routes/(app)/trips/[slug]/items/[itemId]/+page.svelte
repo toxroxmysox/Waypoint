@@ -18,6 +18,7 @@
 	import AssignMemberSheet from '$lib/itinerary/components/AssignMemberSheet.svelte';
 	import Avatar from '$lib/ui/Avatar.svelte';
 	import DocumentSection from '$lib/documents/components/DocumentSection.svelte';
+	import { logPaymentHref } from '$lib/money/expense-prefill';
 	import type { Comment, Task } from '$lib/types';
 
 	let { data, form } = $props();
@@ -28,6 +29,17 @@
 	const itemUrl = $derived(`/trips/${data.trip.slug}/items/${data.item.id}`);
 	const docCount = $derived(data.documents.length);
 	const typeLabel = $derived(getFieldConfig(data.item.type).labels.typeLabel.toLowerCase());
+
+	// #229 / ADR-0014 — the paid-moment money-event affordance. "Log payment" opens the
+	// #228 prefilled add (amount ← estimate, description ← title, linked_item ← this item;
+	// payer = current member + whole-group even split, both editable). The deep-link is
+	// pure (logPaymentHref). The expenses-list link-out (the "Paid $X" state) reuses the
+	// existing ?item=<id> filter.
+	const payHref = $derived(logPaymentHref(data.trip.slug, data.item));
+	const expensesHref = $derived(`/trips/${data.trip.slug}/expenses?item=${data.item.id}`);
+	function formatAmount(n: number): string {
+		return n.toFixed(2);
+	}
 
 	// Comments
 	let commentText = $state('');
@@ -154,20 +166,42 @@
 		}}
 	/>
 
-	<!-- #128 — Cost/Booking nav: only when ≥1 expense links this item. Lands on the
-	     expenses list filtered to this item (multiplicity-safe — never one record). -->
-	{#if data.linkedExpenseCount > 0}
+	<!-- #229 / ADR-0014 — paid-moment money-event affordance. State flip keyed on the
+	     DERIVED paid predicate (≥1 linked expense — no `paid` flag; `booked` is orthogonal
+	     and never consulted). 0 linked → "Log payment" (opens #228's prefilled add); ≥1 →
+	     "Paid $X" (summed) with a link-out to the item's expenses. Shown on every Item Type
+	     except `note`, to any non-viewer. Never nags, never blocks. -->
+	{#if data.paidSummary.isPaid}
 		<a
-			href="/trips/{data.trip.slug}/expenses?item={data.item.id}"
-			class="border-line bg-surface hover:bg-surface-2 flex items-center justify-between rounded-lg border px-4 py-3"
+			href={expensesHref}
+			class="border-moss/30 bg-moss-tint flex items-center justify-between rounded-lg border px-4 py-3"
 		>
-			<span class="text-ink text-sm font-medium">View in expenses</span>
-			<span class="text-ink-muted flex items-center gap-2 text-xs">
-				{data.linkedExpenseCount} linked
+			<span class="flex items-center gap-2">
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-moss">
+					<path d="M20 6 9 17l-5-5" />
+				</svg>
+				<span class="text-moss text-sm font-semibold">Paid ${formatAmount(data.paidSummary.total)}</span>
+			</span>
+			<span class="text-moss/70 flex items-center gap-2 text-xs">
+				{data.paidSummary.count} {data.paidSummary.count === 1 ? 'expense' : 'expenses'}
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<path d="m9 18 6-6-6-6" />
 				</svg>
 			</span>
+		</a>
+	{:else if data.canLogPayment}
+		<a
+			href={payHref}
+			class="border-line bg-surface hover:bg-surface-2 flex items-center justify-between rounded-lg border px-4 py-3"
+		>
+			<span class="flex items-center gap-2">
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-ink-muted">
+					<line x1="12" y1="5" x2="12" y2="19" />
+					<line x1="5" y1="12" x2="19" y2="12" />
+				</svg>
+				<span class="text-ink text-sm font-medium">Log payment</span>
+			</span>
+			<span class="text-ink-muted text-xs">Record what you paid</span>
 		</a>
 	{/if}
 

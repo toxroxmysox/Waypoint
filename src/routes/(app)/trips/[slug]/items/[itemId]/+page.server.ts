@@ -5,6 +5,7 @@ import { VOTE_OPTIONS, type VoteValue } from '$lib/collaboration/voting';
 import { toDocumentView } from '$lib/documents/view';
 import { memberAvatarUrl, withAvatarUrls } from '$lib/collaboration/member-avatar';
 import { computeMovePatch } from '$lib/itinerary/move-item';
+import { paidSummaryForItem } from '$lib/money/linked-expenses';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, membership, phases, days } = await parent();
@@ -56,7 +57,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		// expenses" affordance. id-only fetch; the count is all the detail needs.
 		locals.pb.collection('expenses').getFullList<Expense>({
 			filter: `linked_item = "${item.id}"`,
-			fields: 'id'
+			fields: 'id,amount_usd,linked_item'
 		}).catch(() => [] as Expense[]),
 		// #129 — Goals peek (back-link). The link lives goal-side on
 		// `trip_goals.items`; fetch the trip's goals and keep the ones whose
@@ -97,7 +98,14 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		membership.role === 'co_owner' ||
 		(!!item.created_by && item.created_by === membership.id);
 
-	return { item, checklist, tasks, members: withAvatarUrls(locals.pb, members), comments, votes, myVote, documents, itemDay: day, itemPhase: phase, linkedExpenseCount: linkedExpenses.length, linkedGoals, canEdit };
+	// #229 / ADR-0014 — the paid-moment affordance. "Paid" is DERIVED: paid IFF ≥1 linked
+	// expense (no `paid` flag, no migration). 0 linked → "Log payment" (opens #228's
+	// prefilled add); ≥1 → "Paid $X" (summed) with a link-out. Shown on every Item Type
+	// except `note`, open to any non-viewer. `booked` is orthogonal and never consulted.
+	const paidSummary = paidSummaryForItem(linkedExpenses, item.id);
+	const canLogPayment = membership.role !== 'viewer' && item.type !== 'note';
+
+	return { item, checklist, tasks, members: withAvatarUrls(locals.pb, members), comments, votes, myVote, documents, itemDay: day, itemPhase: phase, linkedExpenseCount: linkedExpenses.length, linkedGoals, canEdit, paidSummary, canLogPayment };
 };
 
 async function getMembership(locals: App.Locals, tripId: string): Promise<TripMember> {

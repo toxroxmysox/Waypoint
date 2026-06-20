@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import type { Expense } from './types';
-import { expensesForItem, countExpensesForItem } from './linked-expenses';
+import { expensesForItem, countExpensesForItem, paidSummaryForItem } from './linked-expenses';
 
-function expense(id: string, linkedItem: string | null): Expense {
+function expense(id: string, linkedItem: string | null, amount = 10): Expense {
 	return {
 		id,
 		trip: 'trip1',
 		paid_by: 'm1',
-		amount_usd: 10,
+		amount_usd: amount,
 		description: id,
 		date: '2026-01-01',
 		category: 'other',
@@ -49,5 +49,34 @@ describe('expensesForItem', () => {
 
 	it('returns empty for an empty id', () => {
 		expect(expensesForItem([expense('e1', 'itemA')], '')).toEqual([]);
+	});
+});
+
+describe('paidSummaryForItem', () => {
+	it('is NOT paid when no expense links the item (0 linked → "Log payment")', () => {
+		const list = [expense('e1', null, 50), expense('e2', 'other', 30)];
+		expect(paidSummaryForItem(list, 'itemA')).toEqual({ count: 0, total: 0, isPaid: false });
+	});
+
+	it('is paid with one linked expense, total = that amount', () => {
+		const list = [expense('e1', 'itemA', 2400), expense('e2', null, 10)];
+		expect(paidSummaryForItem(list, 'itemA')).toEqual({ count: 1, total: 2400, isPaid: true });
+	});
+
+	it('sums a deposit + balance across multiple linked expenses (ADR-0014 multi-payment)', () => {
+		const list = [
+			expense('e1', 'itemA', 500), // deposit
+			expense('e2', 'itemA', 1900), // balance
+			expense('e3', 'itemB', 999)
+		];
+		expect(paidSummaryForItem(list, 'itemA')).toEqual({ count: 2, total: 2400, isPaid: true });
+	});
+
+	it('returns the unpaid zero-summary for an empty id', () => {
+		expect(paidSummaryForItem([expense('e1', 'itemA', 5)], '')).toEqual({
+			count: 0,
+			total: 0,
+			isPaid: false
+		});
 	});
 });

@@ -71,3 +71,20 @@ export function expensePrefillQuery(item: PrefillItem): string {
 	}
 	return sp.toString();
 }
+
+/**
+ * #229 — the full "Log payment" deep-link to the trip's expenses page, pre-filled from the
+ * item: `/trips/<slug>/expenses?action=add&amount=…&description=…&linked_item=…` (the
+ * `?action=add` effect reads these). The payer defaults to the current member and the
+ * split to the whole group (both the form's own ADD defaults — ADR-0014's whole-group
+ * even-split default needs no params; both stay editable). The amount key is dropped when
+ * the item has no estimate, so the form opens with a blank amount.
+ */
+export function logPaymentHref(slug: string, item: PrefillItem): string {
+	const sp = new URLSearchParams({ action: 'add' });
+	const params = expensePrefillParams(item);
+	for (const [k, v] of Object.entries(params)) {
+		if (v != null && v !== '') sp.set(k, v);
+	}
+	return `/trips/${slug}/expenses?${sp.toString()}`;
+}
