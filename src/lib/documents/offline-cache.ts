@@ -35,6 +35,19 @@ export function precacheDocuments(urls: string[]): void {
 }
 
 /**
+ * Ask the active service worker to prefetch the WHOLE active trip into cache
+ * (#254): the `offline-manifest` URL list (every route + `__data.json` payload +
+ * document bytes), so after one online app-open the entire active trip is
+ * browsable offline. Best-effort in the SW (allSettled). No-op without a
+ * controlling SW or an empty list. The caller gates this on the tz-correct
+ * `isTripActive` and scopes it to the one active trip.
+ */
+export function prefetchTrip(urls: string[]): void {
+	if (typeof navigator === 'undefined' || !urls.length) return;
+	navigator.serviceWorker?.controller?.postMessage({ type: 'PREFETCH_TRIP', urls });
+}
+
+/**
  * Ask the active service worker to drop every offline cache (authenticated SSR
  * HTML + data + document bytes). Fire on logout — caches are device-scoped, so a
  * sign-out must not leave the prior account's trip readable (ADR-0010). No-op

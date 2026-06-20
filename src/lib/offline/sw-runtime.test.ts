@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { cacheFirst, networkFirst, SHELL_URL, SHELL_HTML } from './sw-runtime';
+import { cacheFirst, networkFirst, prefetchManifest, SHELL_URL, SHELL_HTML } from './sw-runtime';
+import { buildOfflineManifest } from './offline-manifest';
 
 // ── Minimal in-memory Cache Storage mock ──────────────────────────────────────
 // Keys entries by request URL string (enough for these strategies). `caches.match`
@@ -195,5 +196,91 @@ describe('networkFirst', () => {
 		expect(res.status).toBe(500);
 		const stored = await mockCaches.match(new Request(`${ORIGIN}/trips/x`));
 		expect(stored).toBeUndefined();
+	});
+});
+
+describe('prefetchManifest (SW glue — a prefetch populates the cache from the manifest)', () => {
+	it('fetches every URL the manifest yields and stores each into the cache', async () => {
+		// A real manifest drives the glue end-to-end: builder output → prefetch →
+		// cache populated. This is the #254 "SW glue" assertion.
+		const manifest = buildOfflineManifest({
+			trip: { slug: 'paris' },
+			days: [{ id: 'd1' }, { id: 'd2' }],
+			items: [{ id: 'i1' }],
+			documents: [{ id: 'doc1' }]
+		});
+
+		const fetched: string[] = [];
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async (url: string) => {
+				fetched.push(url);
+				return new Response(`body:${url}`, { status: 200 });
+			})
+		);
+
+		const cached = await prefetchManifest(manifest, 'data');
+
+		// Every manifest URL was requested and every OK response stored.
+		expect(fetched.sort()).toEqual([...manifest].sort());
+		expect(cached).toBe(manifest.length);
+		for (const url of manifest) {
+			const hit = await mockCaches.match(url);
+			expect(hit, `expected ${url} cached`).toBeDefined();
+			expect(await hit!.text()).toBe(`body:${url}`);
+		}
+	});
+
+	it('is best-effort (allSettled): one failing URL does not abort the rest', async () => {
+		const urls = ['/trips/p', '/trips/p/now', '/trips/p/documents'];
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async (url: string) => {
+				if (url === '/trips/p/now') throw new TypeError('Failed to fetch');
+				return new Response('ok', { status: 200 });
+			})
+		);
+
+		const cached = await prefetchManifest(urls, 'data');
+
+		expect(cached).toBe(2); // the two reachable URLs
+		expect(await mockCaches.match('/trips/p')).toBeDefined();
+		expect(await mockCaches.match('/trips/p/now')).toBeUndefined();
+		expect(await mockCaches.match('/trips/p/documents')).toBeDefined();
+	});
+
+	it('does NOT cache a non-ok (e.g. 404) response, and counts it as a miss', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async (url: string) =>
+				url.endsWith('/file')
+					? new Response('gone', { status: 404 })
+					: new Response('ok', { status: 200 })
+			)
+		);
+
+		const cached = await prefetchManifest(['/trips/p', '/trips/p/documents/x/file'], 'data');
+
+		expect(cached).toBe(1);
+		expect(await mockCaches.match('/trips/p/documents/x/file')).toBeUndefined();
+	});
+
+	it('resolves to 0 with no fetch on an empty manifest', async () => {
+		const fetchSpy = vi.fn();
+		vi.stubGlobal('fetch', fetchSpy);
+		expect(await prefetchManifest([], 'data')).toBe(0);
+		expect(fetchSpy).not.toHaveBeenCalled();
+	});
+
+	it('caches nothing when fully offline (every fetch rejects)', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => {
+				throw new TypeError('offline');
+			})
+		);
+		const cached = await prefetchManifest(['/trips/p', '/trips/p/now'], 'data');
+		expect(cached).toBe(0);
+		expect(await mockCaches.match('/trips/p')).toBeUndefined();
 	});
 });

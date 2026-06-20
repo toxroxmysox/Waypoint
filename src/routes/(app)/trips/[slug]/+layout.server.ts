@@ -1,6 +1,9 @@
 import { error } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
-import type { Trip, TripMember, Phase, Day, Notification } from '$lib/types';
+import type { Trip, TripMember, Phase, Day, Notification, Item } from '$lib/types';
+import type { Document } from '$lib/documents/types';
+import { isTripActive } from '$lib/trip-mode/activation';
+import { buildOfflineManifest } from '$lib/offline/offline-manifest';
 
 export const load: LayoutServerLoad = async ({ params, locals }) => {
 	let trip: Trip;
@@ -47,5 +50,30 @@ export const load: LayoutServerLoad = async ({ params, locals }) => {
 
 	const unreadCount = notifications.filter((n) => !n.read_at).length;
 
-	return { trip, membership, phases, days, notifications, unreadCount };
+	// Whole-trip offline prefetch manifest (#254). ONLY for the active trip
+	// (story 16: inactive/future trips aren't bulk-prefetched), so the two id-only
+	// queries are skipped entirely otherwise. The client posts this URL list to
+	// the SW on app-open during the active window; the SW best-effort caches it so
+	// the whole trip (every day/item/overview + Documents list + bytes) is offline.
+	let offlinePrefetchUrls: string[] = [];
+	if (isTripActive(trip)) {
+		const [items, documents] = await Promise.all([
+			locals.pb.collection('items').getFullList<Item>({
+				filter: `trip = "${trip.id}"`,
+				fields: 'id'
+			}),
+			locals.pb.collection('documents').getFullList<Document>({
+				filter: `trip = "${trip.id}"`,
+				fields: 'id'
+			})
+		]);
+		offlinePrefetchUrls = buildOfflineManifest({
+			trip: { slug: trip.slug },
+			days: days.map((d) => ({ id: d.id })),
+			items: items.map((i) => ({ id: i.id })),
+			documents: documents.map((doc) => ({ id: doc.id }))
+		});
+	}
+
+	return { trip, membership, phases, days, notifications, unreadCount, offlinePrefetchUrls };
 };

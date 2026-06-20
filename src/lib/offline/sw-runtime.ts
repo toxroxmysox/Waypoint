@@ -61,6 +61,29 @@ export async function cacheFirst(request: Request, cacheName: string): Promise<R
 }
 
 /**
+ * Best-effort whole-trip prefetch (#254). Fetch every URL in `urls` and store
+ * each OK response into `cacheName`, isolating failures with `allSettled` so one
+ * dead URL never aborts the batch (the existing document precache uses the same
+ * shape). Called on app-open during the active window with the `offline-manifest`
+ * list for the ONE active trip. Returns the number of URLs successfully cached
+ * (observable for the glue test). Resolves even when offline — every fetch just
+ * rejects and nothing is cached.
+ */
+export async function prefetchManifest(urls: string[], cacheName: string): Promise<number> {
+	if (!urls.length) return 0;
+	const cache = await caches.open(cacheName);
+	const results = await Promise.allSettled(
+		urls.map(async (url) => {
+			const res = await fetch(url);
+			if (!res.ok) throw new Error(`prefetch ${url} → ${res.status}`);
+			await cache.put(url, res);
+			return true;
+		})
+	);
+	return results.filter((r) => r.status === 'fulfilled').length;
+}
+
+/**
  * network-first: try the network (refreshing `cacheName`), fall back to the
  * cached copy when offline. For a navigation, a cache miss while offline yields
  * the precached shell (`fallbackToShell`) instead of a 503.

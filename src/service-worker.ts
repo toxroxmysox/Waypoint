@@ -11,8 +11,14 @@
 // and the whole set is cleared on logout (CLEAR_CACHES message).
 
 import { build, files, version } from '$service-worker';
-import { decideStrategy } from '$lib/offline/cache-policy';
-import { SHELL_URL, cacheFirst, networkFirst, shellResponse } from '$lib/offline/sw-runtime';
+import { decideStrategy, isDocumentFilePath } from '$lib/offline/cache-policy';
+import {
+	SHELL_URL,
+	cacheFirst,
+	networkFirst,
+	prefetchManifest,
+	shellResponse
+} from '$lib/offline/sw-runtime';
 
 declare const self: ServiceWorkerGlobalScope;
 
@@ -52,20 +58,37 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('message', (event) => {
 	const data = event.data;
-	if (data?.type === 'PRECACHE_DOCS') {
-		// Precache the active trip's documents while online. Per-URL fetch+put so
-		// one failure doesn't abort the batch (unlike cache.addAll).
+	if (data?.type === 'PREFETCH_TRIP') {
+		// Whole-trip prefetch (#254): the `offline-manifest` URL list for the ONE
+		// active trip, fired on app-open during its active window. Best-effort —
+		// document bytes go to DOCS_CACHE (where cache-first reads them), every
+		// route + `__data.json` payload to DATA_CACHE (where network-first falls
+		// back). Split so the version-eviction + CLEAR_CACHES scheme stays coherent.
 		const urls: string[] = data.urls ?? [];
+		const byteUrls: string[] = [];
+		const pageUrls: string[] = [];
+		for (const u of urls) {
+			let pathname = u;
+			try {
+				pathname = new URL(u, self.location.origin).pathname;
+			} catch {
+				/* keep the raw string */
+			}
+			(isDocumentFilePath(pathname) ? byteUrls : pageUrls).push(u);
+		}
 		event.waitUntil(
-			caches.open(DOCS_CACHE).then((cache) =>
-				Promise.allSettled(
-					urls.map(async (url) => {
-						const res = await fetch(url);
-						if (res.ok) await cache.put(url, res);
-					})
-				)
-			)
+			Promise.all([
+				prefetchManifest(pageUrls, DATA_CACHE),
+				prefetchManifest(byteUrls, DOCS_CACHE)
+			])
 		);
+	} else if (data?.type === 'PRECACHE_DOCS') {
+		// Precache the active trip's documents while online. Per-URL fetch+put so
+		// one failure doesn't abort the batch (unlike cache.addAll). Retained as a
+		// narrower path; the whole-trip PREFETCH_TRIP above subsumes it for the
+		// active trip, but the Documents tab still fires it as new uploads land.
+		const urls: string[] = data.urls ?? [];
+		event.waitUntil(prefetchManifest(urls, DOCS_CACHE));
 	} else if (data?.type === 'CLEAR_CACHES') {
 		// Logout: caches hold authenticated SSR HTML + data, so they're device-scoped
 		// and wiped on sign-out (ADR-0010). Drop every waypoint-* cache.
