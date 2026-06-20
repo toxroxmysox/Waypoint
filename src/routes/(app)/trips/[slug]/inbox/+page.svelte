@@ -12,6 +12,10 @@
 
 	let rejecting = $state<string | null>(null);
 	let approving = $state<string | null>(null);
+	// #250 — reject demands a one-line note. Track which card's note field is open
+	// and its text, keyed by suggestion id.
+	let rejectOpenId = $state<string | null>(null);
+	let rejectNote = $state('');
 
 	const rejectForm = $derived((form?.reject ?? null) as { success?: boolean; error?: string } | null);
 	const approveForm = $derived((form?.approve ?? null) as { success?: boolean; error?: string } | null);
@@ -118,6 +122,21 @@
 								Edit &amp; Approve
 							</a>
 
+							{#if rejectOpenId !== s.id}
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									disabled={approving === s.id || rejecting === s.id}
+									onclick={() => { rejectOpenId = s.id; rejectNote = ''; }}
+								>
+									Reject
+								</Button>
+							{/if}
+						</div>
+
+						{#if rejectOpenId === s.id}
+							<!-- #250 — reject requires a one-line note (no one-tap reject). -->
 							<form
 								method="POST"
 								action="?/reject"
@@ -125,22 +144,45 @@
 									rejecting = s.id;
 									return async ({ update, result }) => {
 										rejecting = null;
-										if (result.type === 'success') toast.show('Suggestion rejected');
+										if (result.type === 'success') {
+											rejectOpenId = null;
+											rejectNote = '';
+											toast.show('Suggestion rejected');
+										}
 										await update();
 									};
 								}}
+								class="space-y-2"
 							>
 								<input type="hidden" name="suggestion_id" value={s.id} />
-								<Button
-									type="submit"
-									variant="ghost"
-									size="sm"
-									disabled={approving === s.id || rejecting === s.id}
-								>
-									{rejecting === s.id ? 'Rejecting…' : 'Reject'}
-								</Button>
+								<label for="reject-note-{s.id}" class="text-ink-soft block text-xs font-medium">
+									Reason for rejecting (required)
+								</label>
+								<input
+									id="reject-note-{s.id}"
+									name="review_note"
+									type="text"
+									required
+									bind:value={rejectNote}
+									placeholder="Why isn’t this a fit?"
+									class="border-line bg-surface text-ink block w-full rounded-md border px-3 py-2 text-sm"
+								/>
+								<div class="flex items-center gap-2">
+									<Button type="submit" variant="outline" size="sm" disabled={rejecting === s.id || !rejectNote.trim()}>
+										{rejecting === s.id ? 'Rejecting…' : 'Confirm reject'}
+									</Button>
+									<Button
+										type="button"
+										variant="ghost"
+										size="sm"
+										disabled={rejecting === s.id}
+										onclick={() => { rejectOpenId = null; rejectNote = ''; }}
+									>
+										Cancel
+									</Button>
+								</div>
 							</form>
-						</div>
+						{/if}
 					</div>
 				</Card>
 			{/each}

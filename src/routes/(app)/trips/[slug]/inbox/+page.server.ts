@@ -36,10 +36,15 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 };
 
 export const actions: Actions = {
+	// #250 — reject requires a one-line note (no one-tap reject). The note is
+	// stored on the suggestion and carried in the suggestion_rejected notice; the
+	// server re-validates, but we guard here to surface a clean in-context error.
 	reject: async ({ request, locals }) => {
 		const data = await request.formData();
 		const suggestionId = data.get('suggestion_id')?.toString() || '';
+		const reviewNote = data.get('review_note')?.toString().trim() || '';
 		if (!suggestionId) return fail(400, { reject: { error: 'suggestion_id is required' } });
+		if (!reviewNote) return fail(400, { reject: { error: 'A note is required to reject.' } });
 
 		const token = locals.pb.authStore.token;
 
@@ -50,7 +55,7 @@ export const actions: Actions = {
 					'Content-Type': 'application/json',
 					Authorization: `Bearer ${token}`
 				},
-				body: JSON.stringify({ suggestion_id: suggestionId, action: 'reject' })
+				body: JSON.stringify({ suggestion_id: suggestionId, action: 'reject', review_note: reviewNote })
 			});
 			if (!res.ok) {
 				const err = await res.json().catch(() => ({}));

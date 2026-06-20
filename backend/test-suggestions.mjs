@@ -71,6 +71,19 @@ const samplePayload = {
 	description: 'A test suggestion'
 };
 
+// Resolve a role's trip_members.id for this trip (used to assert #249 attribution:
+// an approved item's created_by must be the AUTHOR's member id, not the reviewer's).
+async function memberId(role) {
+	const r = await api(
+		'GET',
+		`/api/collections/trip_members/records?filter=${encodeURIComponent(`trip = "${tripId}" && user.email = "${EMAILS[role]}"`)}`,
+		null,
+		tokens[role]
+	);
+	return r.json?.items?.[0]?.id || '';
+}
+const travelerMemberId = await memberId('traveler');
+
 // ─── 1. Viewer cannot suggest ────────────────────────────────────────────────
 
 console.log('\n1. Viewer blocked from suggesting');
@@ -213,24 +226,38 @@ if (pendingSuggestionId) {
 		: fail('traveler review → 403', `got ${r2.status}`);
 }
 
-// ─── 11. Owner rejects a suggestion ──────────────────────────────────────────
+// ─── 11. Owner rejects a suggestion (#250 — note REQUIRED) ───────────────────
 
-console.log('\n11. Owner reject');
+console.log('\n11. Owner reject (note required)');
 let rejectTargetId = '';
 {
 	const createRes = await api('POST', '/api/suggestions/create', { trip_id: tripId, payload: { ...samplePayload, title: 'To be rejected' } }, tokens.traveler);
 	rejectTargetId = createRes.json.suggestion_id || '';
 
 	if (rejectTargetId) {
-		const r = await api('POST', '/api/suggestions/review', { suggestion_id: rejectTargetId, action: 'reject' }, tokens.owner);
+		// #250 — no one-tap reject: a reject with no note is a 400.
+		const rNoNote = await api('POST', '/api/suggestions/review', { suggestion_id: rejectTargetId, action: 'reject' }, tokens.owner);
+		rNoNote.status === 400
+			? pass('reject without note → 400')
+			: fail('reject without note → 400', `got ${rNoNote.status} ${JSON.stringify(rNoNote.json)}`);
+
+		// With a note → rejected.
+		const note = 'Not a fit for this trip';
+		const r = await api('POST', '/api/suggestions/review', { suggestion_id: rejectTargetId, action: 'reject', review_note: note }, tokens.owner);
 		r.status === 200 && r.json.status === 'rejected'
-			? pass('owner reject → 200 + status=rejected')
-			: fail('owner reject → 200', `${r.status} ${JSON.stringify(r.json)}`);
+			? pass('owner reject with note → 200 + status=rejected')
+			: fail('owner reject with note → 200', `${r.status} ${JSON.stringify(r.json)}`);
 		!r.json.item_id
 			? pass('reject → no item created')
 			: fail('reject → no item created', 'item_id returned');
 
-		const r2 = await api('POST', '/api/suggestions/review', { suggestion_id: rejectTargetId, action: 'reject' }, tokens.owner);
+		// #250 — the note is persisted on the suggestion (migration 0051 review_note).
+		const detail = await api('GET', `/api/collections/suggestions/records/${rejectTargetId}`, null, tokens.owner);
+		detail.json?.review_note === note
+			? pass('reject → review_note stored on suggestion')
+			: fail('reject → review_note stored', `got "${detail.json?.review_note}"`);
+
+		const r2 = await api('POST', '/api/suggestions/review', { suggestion_id: rejectTargetId, action: 'reject', review_note: note }, tokens.owner);
 		r2.status === 400
 			? pass('double-reject → 400')
 			: fail('double-reject → 400', `got ${r2.status}`);
@@ -239,9 +266,9 @@ let rejectTargetId = '';
 	}
 }
 
-// ─── 12. Owner approves a suggestion → item created ──────────────────────────
+// ─── 12. Owner approves a suggestion → item created + AUTHOR-attributed (#249) ─
 
-console.log('\n12. Owner approve → item created');
+console.log('\n12. Owner approve → item created + author-attributed');
 if (pendingSuggestionId) {
 	const r = await api('POST', '/api/suggestions/review', { suggestion_id: pendingSuggestionId, action: 'approve' }, tokens.owner);
 	r.status === 200 && r.json.status === 'approved'
@@ -250,6 +277,48 @@ if (pendingSuggestionId) {
 	r.json.item_id
 		? pass('owner approve → item created')
 		: fail('owner approve → item created', 'no item_id returned');
+
+	// #249 LETHAL ATTRIBUTION SCAR — the approved item's created_by is a
+	// trip_members.id and must be the AUTHOR (traveler) member id, NEVER the
+	// reviewing owner's. pendingSuggestionId was authored by the traveler.
+	if (r.json.item_id) {
+		const itemRes = await api('GET', `/api/collections/items/records/${r.json.item_id}`, null, tokens.owner);
+		itemRes.json?.created_by === travelerMemberId
+			? pass('approve → item created_by = author (traveler) member id, not reviewer')
+			: fail('approve → item created_by = author', `got "${itemRes.json?.created_by}", expected traveler "${travelerMemberId}"`);
+	}
+}
+
+// ─── 12b. Approve migrates the ghost's votes → item votes (#249) ──────────────
+
+console.log('\n12b. Approve migrates suggestion_votes → item votes');
+{
+	// Fresh pending suggestion authored by the traveler.
+	const createRes = await api('POST', '/api/suggestions/create', { trip_id: tripId, payload: { ...samplePayload, title: 'Voted then approved' } }, tokens.traveler);
+	const sid = createRes.json.suggestion_id || '';
+	if (sid) {
+		// Co-owner casts a vote on the ghost (not the author → allowed by rule 0049).
+		const coMemberId = await memberId('co_owner');
+		const voteRes = await api('POST', '/api/collections/suggestion_votes/records', { suggestion: sid, member: coMemberId, value: 'love' }, tokens.co_owner);
+		voteRes.status === 200 || voteRes.status === 201
+			? pass('co_owner votes the ghost (suggestion_votes create)')
+			: fail('co_owner votes the ghost', `${voteRes.status} ${JSON.stringify(voteRes.json)}`);
+
+		// Owner approves → the love vote should appear as a votes row on the item.
+		const appr = await api('POST', '/api/suggestions/review', { suggestion_id: sid, action: 'approve' }, tokens.owner);
+		const itemId = appr.json?.item_id || '';
+		if (itemId) {
+			const votesRes = await api('GET', `/api/collections/votes/records?filter=${encodeURIComponent(`item = "${itemId}"`)}`, null, tokens.owner);
+			const migrated = (votesRes.json?.items || []).filter((v) => v.value === 'love' && v.member === coMemberId);
+			migrated.length >= 1
+				? pass('approve → ghost love vote migrated to item votes (same member + value)')
+				: fail('approve → vote migrated', `votes: ${JSON.stringify(votesRes.json?.items)}`);
+		} else {
+			fail('approve → vote migrated', 'no item_id from approve');
+		}
+	} else {
+		fail('vote-migration → could not create target suggestion');
+	}
 }
 
 // ─── 13. Edit-and-approve: approve with modified payload ─────────────────────
