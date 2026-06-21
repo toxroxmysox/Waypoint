@@ -15,6 +15,7 @@
 	import DayMetricToggle from '$lib/itinerary/components/DayMetricToggle.svelte';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import WrapUpBanner from '$lib/trip-mode/components/WrapUpBanner.svelte';
+	import RecordView from '$lib/portability/components/RecordView.svelte';
 	import { titleCase } from '$lib/shell/format';
 	import { isTripActive } from '$lib/trip-mode/activation';
 	import { untrack } from 'svelte';
@@ -26,11 +27,13 @@
 	// mode pill — one mode, one home (#204).
 	const tripActive = $derived(isTripActive(data.trip));
 
-	// Lifecycle router (#239/#195): `wrap-up` swaps the top of the Overview (the
-	// trip-details card + Flights & Stays) for the wrap-up banner; Itinerary/Days stay
-	// below. Computed in server load and read here — $derived (never $effect, which
-	// doesn't run in SSR and would render the wrong top on first paint).
+	// Lifecycle router (#239/#195/#242): `wrap-up` swaps the top of the Overview (the
+	// trip-details card + Flights & Stays) for the wrap-up banner; `closed` replaces the
+	// WHOLE Overview body with the read-only Record view (no planning chrome leaks in).
+	// Computed in server load and read here — $derived (never $effect, which doesn't run
+	// in SSR and would render the wrong content on first paint).
 	const isWrapUp = $derived(data.lifecycle === 'wrap-up');
+	const isClosed = $derived(data.lifecycle === 'closed');
 
 	let notifications = $state<Notification[]>(untrack(() => data.notifications ?? []));
 	let unreadCount = $state(untrack(() => data.unreadCount ?? 0));
@@ -88,7 +91,11 @@
 ]} />
 
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-6">
-	{#if isWrapUp}
+	{#if isClosed && data.record && data.share}
+		<!-- Closed record (#242): read-only resting state. Renders ONLY the record —
+		     no planning chrome (lists, itinerary, FAB, capture) leaks in. -->
+		<RecordView record={data.record} share={data.share} canManage={data.canManage} />
+	{:else if isWrapUp}
 		<!-- Wrap-up (#239/#195): ONE bordered banner replaces the trip-details card +
 		     Flights & Stays. Itinerary/Days still render below, unchanged. -->
 		<WrapUpBanner
@@ -165,6 +172,7 @@
 	{/if}
 	{/if}
 
+	{#if !isClosed}
 	{#if tripLists.length > 0}
 		<!-- Whole-trip checklist previews (#51) -->
 		<section class="space-y-1.5">
@@ -289,12 +297,14 @@
 			</div>
 		</Card>
 	{/if}
+	{/if}
 </main>
 
 <!-- #252 — consistent capture affordance (same position on Phase Detail + day).
      Opens the idea/plan fork sheet. Only when ≥1 phase exists (the idea path needs
-     a required phase; #217 guarantees one on any real trip). -->
-{#if data.phases.length > 0}
+     a required phase; #217 guarantees one on any real trip). SUPPRESSED on a closed
+     trip (#242) — a read-only record has no capture/plan affordance. -->
+{#if data.phases.length > 0 && !isClosed}
 	<FAB onclick={() => (ideaSheetOpen = true)} label="Add idea or plan" />
 {/if}
 <IdeaCaptureSheet bind:open={ideaSheetOpen} slug={data.trip.slug} phases={data.phases} />

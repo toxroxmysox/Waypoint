@@ -537,7 +537,8 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 - Inline quick-add during closeout for spontaneous items
 - ~~Auto-publish public archive after `end_date + N days`~~ → **explicit owner publish** via `archive_publish_at` (#241, TRIP_WRAPUP_PRD); auto-publish retired
 - Public archive view: done items, day/phase structure, photo link, title/dates/location only
-- Public URL = `/archive/{public_share_token}`
+- Public URL = `/archive/{public_share_token}` (absolute link surfaced on the closed Record view's Share panel, #242)
+- **Closed trip home = read-only Record view (#242):** reuses the archive builder, visibly marked closed, with the Share affordance (copyable absolute link + `publishStatus` line + change-date/disable) and a low-emphasis **Reopen** control. Reopen sets `archived:false` (re-derives lifecycle from dates) and clears `archive_publish_at` (publish paused until re-closeout) — closed is reversible, not a trap.
 - Bulk actions: "mark all planned → done" for days that went as planned
 - JSON export of full trip (per-trip download)
 - JSON import (load trip from backup)
