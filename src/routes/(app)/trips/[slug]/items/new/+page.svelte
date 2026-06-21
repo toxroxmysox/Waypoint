@@ -157,7 +157,7 @@
 		/>
 
 		<div
-			class="save-bar sticky z-sticky bg-paper -mx-4 px-4 py-3"
+			class="save-bar fixed inset-x-0 bottom-0 z-sticky mx-auto w-full max-w-lg md-desktop:max-w-2xl bg-paper px-4"
 			class:save-bar--keyboard={inputFocused}
 		>
 			<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="w-full">
@@ -165,27 +165,36 @@
 			</Button>
 		</div>
 	</form>
+	<div class="save-bar-spacer" aria-hidden="true"></div>
 </main>
 
 <style>
 	/* #236: anchored Save bar — see edit/+page.svelte for the full rationale.
-	   Pinned to bottom:0; the BottomNav clearance is an OUTER margin (not padding) so
-	   the bg-paper box hugs the button (centered), its bottom meeting the nav top
-	   (margin == nav height: safe-area + 4rem). Keyboard open (mobile): bar hidden,
-	   returns on dismiss. Desktop (>=900px): display restored, 1rem margin. */
+	   position:fixed at the viewport bottom so the Save button stays reachable while
+	   scrolling and never rests mid-page (no "stranded too high" dead space). Opaque
+	   bg-paper covers content behind it; padding-bottom clears the BottomNav; the bar
+	   is width-capped/centered to the form column. .save-bar-spacer at the end of <main>
+	   reserves room so the last fields clear the bar. Keyboard open (mobile): bar
+	   hidden, returns on dismiss. Desktop (>=900px): display restored, small pad. */
 	.save-bar {
-		bottom: 0;
-		margin-bottom: calc(env(safe-area-inset-bottom, 0px) + 4rem);
+		padding-top: 0.75rem;
+		padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5rem);
 	}
 	.save-bar.save-bar--keyboard {
 		display: none;
 	}
+	.save-bar-spacer {
+		height: calc(env(safe-area-inset-bottom, 0px) + 8.5rem);
+	}
 	@media (min-width: 900px) {
 		.save-bar {
-			margin-bottom: 1rem;
+			padding-bottom: 0.75rem;
 		}
 		.save-bar.save-bar--keyboard {
 			display: block;
+		}
+		.save-bar-spacer {
+			height: 4rem;
 		}
 	}
 </style>

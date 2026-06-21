@@ -131,7 +131,7 @@
 		/>
 
 		<div
-			class="save-bar sticky z-sticky bg-paper -mx-4 px-4 py-3"
+			class="save-bar fixed inset-x-0 bottom-0 z-sticky mx-auto w-full max-w-lg md-desktop:max-w-2xl bg-paper px-4"
 			class:save-bar--keyboard={inputFocused}
 		>
 			<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="w-full">
@@ -180,31 +180,39 @@
 			</form>
 		{/if}
 	</div>
+	<div class="save-bar-spacer" aria-hidden="true"></div>
 </main>
 
 <style>
-	/* #236: anchored Save bar. Pinned to bottom:0; the BottomNav clearance is an
-	   OUTER margin (not padding), so the opaque bg-paper box hugs the button and
-	   stays centered rather than stranded atop a tall strip. The box's bottom edge
-	   meets the BottomNav top (margin == nav height: safe-area + 4rem), so nothing
-	   peeks between them and the button rides just above the nav.
-	   - Keyboard OPEN (mobile): BottomNav unmounts on input focus and the bar would
-	     otherwise float above the keyboard, so it is hidden; returns on dismiss.
-	   - Desktop (>=900px): no soft keyboard, so a focused field must NOT hide the
-	     bar (display restored), and there is no BottomNav: a small 1rem margin. */
+	/* #236: anchored Save bar. position:fixed at the viewport bottom so it stays
+	   reachable while scrolling (you never scroll to the end to Save) and never rests
+	   mid-page, so there is no "stranded too high" dead space. Opaque bg-paper covers
+	   content behind it and padding-bottom clears the BottomNav; the bar is width-capped
+	   and centered to the form column. The .save-bar-spacer at the end of <main> reserves
+	   room so the last fields + Delete clear the fixed bar.
+	   - Keyboard OPEN (mobile): BottomNav unmounts on focus and the bar would float
+	     above the keyboard, so it is hidden; returns on dismiss.
+	   - Desktop (>=900px): no soft keyboard (focused field must NOT hide the bar) and
+	     no BottomNav, so just a small bottom padding. */
 	.save-bar {
-		bottom: 0;
-		margin-bottom: calc(env(safe-area-inset-bottom, 0px) + 4rem);
+		padding-top: 0.75rem;
+		padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5rem);
 	}
 	.save-bar.save-bar--keyboard {
 		display: none;
 	}
+	.save-bar-spacer {
+		height: calc(env(safe-area-inset-bottom, 0px) + 8.5rem);
+	}
 	@media (min-width: 900px) {
 		.save-bar {
-			margin-bottom: 1rem;
+			padding-bottom: 0.75rem;
 		}
 		.save-bar.save-bar--keyboard {
 			display: block;
+		}
+		.save-bar-spacer {
+			height: 4rem;
 		}
 	}
 </style>
