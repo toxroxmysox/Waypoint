@@ -35,6 +35,52 @@ async function createPastTrip(page: import('@playwright/test').Page): Promise<st
 	return slug;
 }
 
+// Walk the closeout day-by-day wizard from the first day to the Summary step,
+// where the "Finish & close out trip" button lives. The forward button reads
+// "Next Day" mid-walk, then "Review ideas" or "Review Summary" on the last day;
+// an optional ideas-review step ("Continue") may sit between the last day and the
+// summary. Click whichever forward affordance is present each iteration until the
+// finish button shows. Bounded so a stuck wizard fails the assertion, not hangs.
+async function walkCloseoutToSummary(page: import('@playwright/test').Page) {
+	const finishBtn = page
+		.getByRole('button', { name: /Finish & close out trip/i })
+		.filter({ visible: true });
+	const forwardNames = ['Review Summary', 'Review ideas', 'Continue', 'Next Day'];
+	for (let i = 0; i < 30; i++) {
+		if ((await finishBtn.count()) > 0) return;
+		let advanced = false;
+		for (const name of forwardNames) {
+			const btn = page.getByRole('button', { name }).filter({ visible: true }).first();
+			if (await btn.isVisible().catch(() => false)) {
+				await btn.click();
+				advanced = true;
+				break;
+			}
+		}
+		if (!advanced) {
+			// No forward affordance and no finish button yet — wait briefly for the
+			// next step to render, then re-check (covers a load()/enhance refresh).
+			await page.waitForTimeout(250);
+		}
+	}
+	// Surface a clear failure if the summary never appeared.
+	await expect(finishBtn.first()).toBeVisible({ timeout: 5000 });
+}
+
+// Select "Publish" on the summary's PublishControl. The radio is sr-only inside a
+// <label>; click the label's visible "Publish" text — the label association toggles
+// the radio. Then confirm the publish date field appeared (proves the toggle took).
+async function selectPublish(page: import('@playwright/test').Page) {
+	await page
+		.getByText('Publish', { exact: true })
+		.filter({ visible: true })
+		.first()
+		.click();
+	await expect(page.locator('input[name="publish_date"]:visible').first()).toBeVisible({
+		timeout: 5000
+	});
+}
+
 test.describe('Closed Record view + Share + reopen (#242)', () => {
 	test.skip(!process.env.E2E_TEST_EMAIL, 'Set E2E_TEST_EMAIL to run E2E tests');
 
@@ -44,10 +90,7 @@ test.describe('Closed Record view + Share + reopen (#242)', () => {
 		await page.waitForURL(`${BASE}/trips`, { timeout: 10000 });
 	});
 
-	// QUARANTINED (#261): closeout-wizard walk (Next Day→Review Summary→Publish→Finish)
-	// has write-but-never-run selector/flow bugs. #242 product verified by check+unit
-	// (archive-visibility 14 + archive-view 13) + m5-closure/closeout-checklist + router seam.
-	test.fixme('wrap-up → closeout → Publish now → finish → record view with a live absolute link', async ({
+	test('wrap-up → closeout → Publish now → finish → record view with a live absolute link', async ({
 		page
 	}) => {
 		const slug = await createPastTrip(page);
@@ -60,30 +103,16 @@ test.describe('Closed Record view + Share + reopen (#242)', () => {
 			.click();
 		await page.waitForURL(`**/trips/${slug}/closeout`);
 
-		// Walk to the summary: click the forward button until "Review Summary" → it.
-		// The button reads "Next Day" mid-walk and "Review Summary" on the last day.
-		for (let i = 0; i < 12; i++) {
-			const reviewBtn = page
-				.getByRole('button', { name: 'Review Summary' })
-				.filter({ visible: true })
-				.first();
-			if (await reviewBtn.isVisible().catch(() => false)) {
-				await reviewBtn.click();
-				break;
-			}
-			const nextBtn = page
-				.getByRole('button', { name: 'Next Day' })
-				.filter({ visible: true })
-				.first();
-			if (await nextBtn.isVisible().catch(() => false)) {
-				await nextBtn.click();
-			} else {
-				break;
-			}
-		}
+		// Walk the day cards to the summary. The forward button reads "Next Day"
+		// mid-walk, then "Review ideas" (if the trip has unplanned parking-lot ideas)
+		// or "Review Summary" on the last day; a freshly created trip has no items so
+		// it reads "Review Summary", but handle "Review ideas"→"Continue" defensively.
+		await walkCloseoutToSummary(page);
 
-		// Publish step (owner): select Publish (inline date defaults to today = now).
-		await page.getByText('Publish', { exact: true }).filter({ visible: true }).first().click();
+		// Publish step (owner): select Publish. The radio is sr-only inside its <label>;
+		// click the label (carrying the visible "Publish" text) to toggle it. Inline date
+		// defaults to today = publish now.
+		await selectPublish(page);
 
 		// Finish & close out.
 		await page
@@ -112,25 +141,16 @@ test.describe('Closed Record view + Share + reopen (#242)', () => {
 		).toBeVisible();
 	});
 
-	test.fixme('closed record view + share are usable at 375px, and reopen is offered to the owner', async ({
+	test('closed record view + share are usable at 375px, and reopen is offered to the owner', async ({
 		page
 	}) => {
 		await page.setViewportSize({ width: 375, height: 812 });
 		const slug = await createPastTrip(page);
 
-		// Fast-path to closed: walk closeout, publish, finish (same as above).
+		// Fast-path to closed: walk closeout, finish (same as above).
 		await page.locator('[data-testid="wrapup-closeout"]').filter({ visible: true }).first().click();
 		await page.waitForURL(`**/trips/${slug}/closeout`);
-		for (let i = 0; i < 12; i++) {
-			const reviewBtn = page.getByRole('button', { name: 'Review Summary' }).filter({ visible: true }).first();
-			if (await reviewBtn.isVisible().catch(() => false)) {
-				await reviewBtn.click();
-				break;
-			}
-			const nextBtn = page.getByRole('button', { name: 'Next Day' }).filter({ visible: true }).first();
-			if (await nextBtn.isVisible().catch(() => false)) await nextBtn.click();
-			else break;
-		}
+		await walkCloseoutToSummary(page);
 		// Keep private this time (default) — still closes; the record view still renders.
 		await page
 			.getByRole('button', { name: /Finish & close out trip/i })

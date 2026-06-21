@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { goto } from '$app/navigation';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import CloseoutDayCard from '$lib/itinerary/components/CloseoutDayCard.svelte';
 	import PublishControl from '$lib/portability/components/PublishControl.svelte';
@@ -234,8 +235,18 @@
 					action="?/finishCloseout"
 					use:enhance={() => {
 						finishing = true;
-						return async () => {
+						return async ({ result, update }) => {
 							finishing = false;
+							// finishCloseout redirects (303) to the now-closed Record view on
+							// success. A custom enhance callback overrides the DEFAULT redirect
+							// handling, so follow it explicitly here (matches trips/new + clone) —
+							// otherwise the trip archives server-side but the page stays stuck on
+							// the closeout summary. On fail(), update() surfaces form.error.
+							if (result.type === 'redirect') {
+								await goto(result.location);
+							} else {
+								await update();
+							}
 						};
 					}}
 				>
