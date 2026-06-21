@@ -12,6 +12,10 @@ export interface Trip extends RecordModel {
 	photo_album_url: string;
 	archive_enabled: boolean;
 	archive_publish_after_days: number;
+	/** #241 — explicit publish gate (date). "" = unpublished / reopen-paused. */
+	archive_publish_at: string;
+	/** #241/#243 — opt-in public budget summary. Default off. */
+	archive_show_budget: boolean;
 	public_share_token: string;
 	auto_approve_suggestions: boolean;
 	created_by: string;

@@ -31,6 +31,8 @@ function makeTrip(overrides: Partial<Trip> = {}): Trip {
 		photo_album_url: '',
 		archive_enabled: false,
 		archive_publish_after_days: 7,
+		archive_publish_at: '',
+		archive_show_budget: false,
 		public_share_token: '',
 		auto_approve_suggestions: true,
 		created_by: 'user1',

@@ -130,7 +130,7 @@ export const actions: Actions = {
 		}
 	},
 
-	finishCloseout: async ({ locals, params }) => {
+	finishCloseout: async ({ request, locals, params }) => {
 		try {
 			const trip = await locals.pb
 				.collection('trips')
@@ -143,11 +143,11 @@ export const actions: Actions = {
 				);
 			// Closeout (the walk + the `archived: true` transition) is open to anyone who
 			// traveled — owner/co_owner/traveler. Viewers can't get here (loader bounces
-			// them); guard the write too so a hand-crafted POST is rejected. The PUBLISH
-			// decision stays owner/co_owner-only and lives in its own action (Slice 3).
+			// them); guard the write too so a hand-crafted POST is rejected.
 			if (membership.role === 'viewer') {
 				return fail(403, { error: 'Viewers cannot close out a trip.' });
 			}
+			const canPublish = membership.role === 'owner' || membership.role === 'co_owner';
 
 			// Done-leak guard (#240): finishing the walk must leave NO planned item silently
 			// unmarked — every still-`planned` itinerary item is resolved to `done` so the
@@ -163,9 +163,32 @@ export const actions: Actions = {
 			);
 
 			const updates: Record<string, unknown> = { archived: true };
-			if (trip.archive_enabled && !trip.public_share_token) {
-				const { generateArchiveToken } = await import('$lib/portability/archive-token');
-				updates.public_share_token = generateArchiveToken();
+
+			// Publish choice (#241) — the owner's final closeout step. SERVER-ENFORCED to
+			// owner/co_owner only: a traveler's finish ignores any publish form fields
+			// entirely (their wizard has no publish step). Binary: Keep private (default)
+			// clears archive_publish_at; Publish sets it to the chosen date (inline date
+			// defaults to today → "publish now"; a future date schedules). Sharing is
+			// enabled + a token minted only when actually publishing.
+			if (canPublish) {
+				const data = await request.formData();
+				const publish = data.get('publish')?.toString() === 'on';
+				const showBudget = data.get('show_budget')?.toString() === 'on';
+				if (publish) {
+					const rawDate = (data.get('publish_date')?.toString() || '').split(/[T ]/)[0];
+					const today = new Date().toISOString().split('T')[0];
+					const day = rawDate || today;
+					updates.archive_publish_at = `${day} 00:00:00.000Z`;
+					updates.archive_enabled = true;
+					updates.archive_show_budget = showBudget;
+					if (!trip.public_share_token) {
+						const { generateArchiveToken } = await import('$lib/portability/archive-token');
+						updates.public_share_token = generateArchiveToken();
+					}
+				} else {
+					// Keep private (the default + a real terminal state): no publish date.
+					updates.archive_publish_at = '';
+				}
 			}
 
 			await locals.pb.collection('trips').update(trip.id, updates);

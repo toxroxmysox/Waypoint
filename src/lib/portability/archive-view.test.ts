@@ -7,7 +7,8 @@ function makeTrip(): Trip {
 		id: 'trip1', collectionId: '', collectionName: 'trips', created: '', updated: '',
 		slug: 't', title: 'Trip', start_date: '2026-06-01', end_date: '2026-06-07',
 		timezone: 'UTC', location_summary: '', countries: [], cover_image: '', photo_album_url: '',
-		archive_enabled: true, archive_publish_after_days: 7, public_share_token: 'tok',
+		archive_enabled: true, archive_publish_after_days: 7, archive_publish_at: '',
+		archive_show_budget: false, public_share_token: 'tok',
 		auto_approve_suggestions: true, created_by: 'u', archived: true
 	} as Trip;
 }

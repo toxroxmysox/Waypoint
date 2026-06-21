@@ -2,13 +2,25 @@
 	import { enhance } from '$app/forms';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import CloseoutDayCard from '$lib/itinerary/components/CloseoutDayCard.svelte';
+	import PublishControl from '$lib/portability/components/PublishControl.svelte';
 	import type { Day, Item } from '$lib/types';
 	import { untrack } from 'svelte';
 
 	let { data } = $props();
 
+	// owner/co_owner curate + decide publishing; travelers do the item walk only and
+	// their wizard ends at "submit review → closed" (no publish step).
+	const canCurate = $derived(data.canCurate ?? false);
+
 	let currentDayIndex = $state(0);
 	let finishing = $state(false);
+
+	// Publish choice (#241) — owner/co_owner only. Binary Keep-private (default) /
+	// Publish + inline date defaulting to today; the opt-in budget summary (#243) rides
+	// the same control.
+	let publish = $state(false);
+	let publishDate = $state('');
+	let showBudget = $state(false);
 
 	const isOffline = $derived(
 		typeof window !== 'undefined' && typeof navigator !== 'undefined' && !navigator.onLine
@@ -144,12 +156,33 @@
 						};
 					}}
 				>
+					{#if canCurate}
+						<!-- Owner/co_owner final step: choose whether the public record publishes.
+						     Server re-enforces owner/co_owner before honoring these fields (#241). -->
+						<div class="border-line mb-4 rounded-xl border p-4">
+							<h3 class="text-ink text-sm font-semibold">Share the record</h3>
+							<p class="text-ink-muted mt-0.5 mb-3 text-xs">
+								Closing out finishes the trip's record. Choose whether to make it public —
+								you can change this any time.
+							</p>
+							<PublishControl
+								bind:publish
+								bind:publishDate
+								bind:showBudget
+								showBudgetToggle={true}
+							/>
+						</div>
+					{/if}
 					<button
 						type="submit"
 						disabled={finishing}
 						class="bg-ink text-on-ink w-full rounded-lg px-4 py-3 text-sm font-medium disabled:opacity-40"
 					>
-						{finishing ? 'Archiving...' : 'Finish & Archive Trip'}
+						{#if finishing}
+							{canCurate ? 'Finishing…' : 'Submitting…'}
+						{:else}
+							{canCurate ? 'Finish & close out trip' : 'Submit review & finish'}
+						{/if}
 					</button>
 				</form>
 

@@ -82,11 +82,18 @@
 		<h1 class="font-display text-ink mt-6 text-3xl font-semibold tracking-tight">
 			This trip's story is still being written
 		</h1>
-		<p class="text-ink-soft mt-3 text-base">
-			<strong class="text-ink">{data.tripTitle}</strong> publishes on
-			<span class="whitespace-nowrap">{publishDateLabel}</span>. Check back then — the full
-			itinerary and highlights will be waiting for you here.
-		</p>
+		{#if publishDateLabel}
+			<p class="text-ink-soft mt-3 text-base">
+				<strong class="text-ink">{data.tripTitle}</strong> publishes on
+				<span class="whitespace-nowrap">{publishDateLabel}</span>. Check back then — the full
+				itinerary and highlights will be waiting for you here.
+			</p>
+		{:else}
+			<p class="text-ink-soft mt-3 text-base">
+				<strong class="text-ink">{data.tripTitle}</strong> isn't published yet. Check back later —
+				the full itinerary and highlights will be waiting for you here.
+			</p>
+		{/if}
 		<p class="text-ink-muted mt-6 text-sm">Bookmark this page so it's easy to find.</p>
 	</main>
 {:else}

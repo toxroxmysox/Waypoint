@@ -5,6 +5,7 @@ import PocketBase from 'pocketbase';
 import { PUBLIC_PB_URL } from '$env/static/public';
 import { env } from '$env/dynamic/private';
 import { buildArchiveView } from '$lib/portability/archive-view';
+import { isArchiveVisible, publishStatus } from '$lib/portability/archive-visibility';
 
 export const load: PageServerLoad = async ({ params }) => {
 	const pb = new PocketBase(PUBLIC_PB_URL);
@@ -25,19 +26,19 @@ export const load: PageServerLoad = async ({ params }) => {
 		error(404, 'Archive not found');
 	}
 
-	const now = new Date();
-	const endDate = new Date(trip.end_date);
-	const publishDate = new Date(endDate);
-	publishDate.setDate(publishDate.getDate() + (trip.archive_publish_after_days || 7));
-
-	if (!trip.archived && now < publishDate) {
-		// Pre-publish window: the token is valid but the story isn't live yet.
-		// Render a friendly "publishes on {date}" page instead of a dead-end 404
-		// (grandma may open this link the moment the trip ends — see WP-A-002).
+	// #241: the publish gate is now the EXPLICIT `archive_publish_at` date (via the pure
+	// archive-visibility module), NOT the legacy `end_date + archive_publish_after_days`
+	// math (that derivation published trips the owner never consented to — WP-B-019).
+	// Pre-publish (scheduled-future) OR unpublished/reopen-paused → a friendly branded
+	// screen, never error(404) (grandma may open this link the moment the trip ends).
+	if (!isArchiveVisible(trip)) {
+		const status = publishStatus(trip);
 		return {
 			pending: true as const,
 			tripTitle: trip.title,
-			publishDate: publishDate.toISOString()
+			// Scheduled → the date to show ("publishes on [date]"). Unpublished /
+			// reopen-paused → no date; the screen drops the date sentence.
+			publishDate: status.status === 'scheduled' ? status.date : ''
 		};
 	}
 

@@ -101,7 +101,7 @@ All test harnesses require PocketBase running via `./backend/start.sh` with `WAY
 | Invite Co-Owners | ✓ | ✓ | — | — | — |
 | Promote Traveler → Co-Owner | ✓ | ✓ | — | — | — |
 | Remove members | ✓ | ✓ | — | — | — |
-| View archive (post-trip) | ✓ | ✓ | ✓ | ✓ | ✓ (after end_date + N days) |
+| View archive (post-trip) | ✓ | ✓ | ✓ | ✓ | ✓ (when `archive_publish_at` reached, #241) |
 
 *Traveler-suggested items can be auto-approved via per-trip setting (default: yes).
 
@@ -116,7 +116,7 @@ All test harnesses require PocketBase running via `./backend/start.sh` with `WAY
 - The original creator is the Owner; they can promote Travelers to Co-Owner. A trip can have any number of Co-Owners.
 - Co-Owners cannot remove the original Owner. Owner cannot demote themselves if they are the only Owner.
 - Travelers can invite (lowers friction for "tell your friend Jake to join the trip"). They invite as Traveler/Viewer, not as Co-Owner.
-- Public archive link is **not live by default**. Owner enables it, and it auto-publishes `end_date + N days` (default 7, configurable).
+- Public archive link is **not live by default** (#241). The owner publishes it **explicitly** — a binary Keep-private (default) / Publish choice with an inline date defaulting to today (today = publish now; a future date schedules), offered as the final closeout step and as a standalone "Publish record" control. The gate is `archive_publish_at`; the legacy `end_date + archive_publish_after_days` auto-publish is retired (derived/legacy field only). Closed-and-private is a normal terminal state.
 
 ---
 
@@ -143,8 +143,10 @@ PocketBase collections. Field types use PocketBase notation. All collections inc
 | countries | json (array of ISO codes) | For filtering, archive metadata |
 | cover_image | file | Optional |
 | photo_album_url | url | Linkout to Apple/Google Photos |
-| archive_enabled | bool | Owner toggle |
-| archive_publish_after_days | int, default 7 | Days after end_date until public |
+| archive_enabled | bool | Owner toggle — sharing on/off |
+| archive_publish_at | date, nullable (#241) | **The publish gate.** "" = unpublished (default + reopen-pause); a date = the moment the public `/archive/[token]` route opens (today/past = live, future = scheduled). Owner-set at closeout or via the Publish control. |
+| archive_show_budget | bool, default off (#241/#243) | Opt-in public budget summary (trip total + rough per-person only; never itemized expenses or who-owes-whom). |
+| archive_publish_after_days | int, default 7 | **Derived/legacy (#241).** No longer the gate — import/export/clone-compat only; may seed `archive_publish_at` when an owner picks "wait N days". |
 | public_share_token | text, unique | URL-safe random token for public archive |
 | vault_password_hash | text | Argon2 hash; null = vault unused |
 | auto_approve_suggestions | bool, default true | Per-trip toggle |
@@ -533,7 +535,7 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 **Features:**
 - Trip Closeout Wizard: walks day by day through planned items — mark each done or considered. At end of each phase, reviews unplanned items: keep for archive (mark considered) or remove, with bulk auto-consider option. New items can be added during closeout for things that happened spontaneously.
 - Inline quick-add during closeout for spontaneous items
-- Auto-publish public archive after `end_date + N days` (configurable per trip)
+- ~~Auto-publish public archive after `end_date + N days`~~ → **explicit owner publish** via `archive_publish_at` (#241, TRIP_WRAPUP_PRD); auto-publish retired
 - Public archive view: done items, day/phase structure, photo link, title/dates/location only
 - Public URL = `/archive/{public_share_token}`
 - Bulk actions: "mark all planned → done" for days that went as planned
