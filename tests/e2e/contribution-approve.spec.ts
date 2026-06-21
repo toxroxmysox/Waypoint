@@ -186,9 +186,13 @@ test.describe('#249 approve ghost → real item', () => {
 		expect(votes.items.length).toBeGreaterThanOrEqual(1);
 		expect(votes.items.some((v) => v.value === 'love')).toBe(true);
 
-		// 5) Author notification (suggestion_approved) — QUARANTINED: blocked by #260
-		// (notifications materialize with only `id` on a fresh migrate → never persist).
-		// The attribution + vote-migration assertions above are the real #249 coverage;
-		// restore this check when #260 lands.
+		// 5) The author (traveler) is notified of the approval (#260 fixed: 0053
+		//    materializes the notifications fields so the hook persists the record).
+		const travelerToken = await token(EMAILS.traveler);
+		const notifRes = await fetch(`${PB_BASE}/api/notifications/list?limit=50`, {
+			headers: { Authorization: `Bearer ${travelerToken}` }
+		});
+		const notifs = (await notifRes.json()) as { items: Array<{ type: string; body: string }> };
+		expect(notifs.items.some((n) => n.type === 'suggestion_approved')).toBe(true);
 	});
 });

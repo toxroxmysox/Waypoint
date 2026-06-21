@@ -119,8 +119,24 @@ test.describe('#250 reject ghost → note + archive', () => {
 			await owner.ctx.close();
 		}
 
-		// Author + no-noise notifications (suggestion_rejected) — QUARANTINED: blocked by #260
-		// (notifications never persist on a fresh migrate). The required-note + ghost-leaves-
-		// parking-lot assertions above are the real #250 coverage; restore when #260 lands.
+		// The author (traveler) — and only the author — is notified, the note carried.
+		// (#260 fixed: 0053 materializes the notifications fields so the hook persists.)
+		const travelerToken = await token(EMAILS.traveler);
+		const notifRes = await fetch(`${PB_BASE}/api/notifications/list?limit=50`, {
+			headers: { Authorization: `Bearer ${travelerToken}` }
+		});
+		const notifs = (await notifRes.json()) as { items: Array<{ type: string; body: string }> };
+		const rejNotif = notifs.items.find((n) => n.type === 'suggestion_rejected' && n.body.includes(note));
+		expect(rejNotif).toBeTruthy();
+
+		// No group rejection noise: the co_owner did NOT get a suggestion_rejected.
+		const coOwnerToken = await token(EMAILS.co_owner);
+		const coNotifRes = await fetch(`${PB_BASE}/api/notifications/list?limit=50`, {
+			headers: { Authorization: `Bearer ${coOwnerToken}` }
+		});
+		const coNotifs = (await coNotifRes.json()) as { items: Array<{ type: string; body: string }> };
+		expect(coNotifs.items.some((n) => n.type === 'suggestion_rejected' && n.body.includes(note))).toBe(
+			false
+		);
 	});
 });
