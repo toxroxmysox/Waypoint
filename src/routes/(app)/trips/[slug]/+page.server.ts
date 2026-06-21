@@ -80,7 +80,10 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 			wrapUp: { balanceOwed: false },
 			lists: [] as ReturnType<typeof rollupChecklists>,
 			daySummaries: {} as ReturnType<typeof summarizeDays>,
-			keyItems: [] as { id: string; type: ItemType; title: string }[]
+			keyItems: [] as { id: string; type: ItemType; title: string }[],
+			// First-run hero (#111/ES-1) keys the empty state on CONTENT, never day count
+			// (days always exist on a real trip). A closed trip is never "fresh".
+			totalItems: recordItems.length
 		};
 	}
 
@@ -121,6 +124,10 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		keyItems: items
 			.filter((i) => i.type === 'flight' || i.type === 'lodging')
 			.map((i) => ({ id: i.id, type: i.type, title: i.title })),
+		// First-run hero (#111/ES-1): the empty state is keyed on CONTENT — zero items AND
+		// zero phases — not day count (the PB hook auto-creates day rows, so days are always
+		// > 0 on a real trip and can never gate a first-run state). Reuses the items fetch above.
+		totalItems: items.length,
 		// Closed-only keys, absent here (the page reads them only under `isClosed`).
 		record: undefined as ReturnType<typeof buildArchiveView> | undefined,
 		share: undefined as ClosedShare | undefined,

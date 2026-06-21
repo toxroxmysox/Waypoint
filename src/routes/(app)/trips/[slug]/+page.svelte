@@ -65,6 +65,16 @@
 	let firstDayId = $derived(data.days[0]?.id);
 	let today = new Date().toISOString().split('T')[0];
 
+	// First-run hero (#111/ES-1). Key the empty state on CONTENT, not day count: the PB
+	// hook auto-creates day rows on trip create, so `days.length` is always > 0 and the
+	// old day-count branch was dead. A trip is "fresh" only when nothing has been added —
+	// no items AND no phases. Owner-tier (owner|co_owner, same gate as canManage) gets the
+	// phase/day/invite hero; travelers + viewers are pointed at the goals capture wizard.
+	let isFresh = $derived((data.totalItems ?? 0) === 0 && data.phases.length === 0);
+	let isOwnerTier = $derived(
+		data.membership.role === 'owner' || data.membership.role === 'co_owner'
+	);
+
 	// Checklist previews (#51)
 	let tripLists = $derived((data.lists ?? []).filter((l) => !l.phase));
 	function listsForPhase(phaseId: string) {
@@ -173,6 +183,45 @@
 	{/if}
 
 	{#if !isClosed}
+	{#if isFresh}
+		<!-- First-run hero (#111/ES-1). Renders ABOVE the day list (the days stay — they
+		     teach the trip's shape) and is keyed on content, not day count. Role-aware:
+		     owner-tier gets the phase/day/invite doors; travelers + viewers are pointed at
+		     the goals capture wizard (the ideal first contribution). -->
+		<Card>
+			<div class="p-6 text-center">
+				{#if isOwnerTier}
+					<p class="font-display text-ink-soft text-base italic">A blank itinerary.</p>
+					<p class="text-ink-muted mt-1 text-sm">
+						Your days are ready. Group them into phases — city, leg, whatever fits — or drop the
+						first plan straight onto a day.
+					</p>
+					<div class="mt-4 flex flex-wrap items-center justify-center gap-2">
+						<Button href="/trips/{data.trip.slug}/phases" variant="moss" size="sm">Add a phase</Button>
+						{#if firstDayId}
+							<Button href="/trips/{data.trip.slug}/days/{firstDayId}" variant="ghost" size="sm">
+								Open day one
+							</Button>
+						{/if}
+						<Button href="/trips/{data.trip.slug}/members" variant="ghost" size="sm">
+							Invite the group
+						</Button>
+					</div>
+				{:else}
+					<p class="font-display text-ink-soft text-base italic">Nothing planned yet.</p>
+					<p class="text-ink-muted mt-1 text-sm">
+						Start with what you want out of this trip — the itinerary grows from there.
+					</p>
+					<div class="mt-4 flex flex-wrap items-center justify-center gap-2">
+						<Button href="/trips/{data.trip.slug}/goals/capture" variant="moss" size="sm">
+							Add &amp; review goals
+						</Button>
+					</div>
+				{/if}
+			</div>
+		</Card>
+	{/if}
+
 	{#if tripLists.length > 0}
 		<!-- Whole-trip checklist previews (#51) -->
 		<section class="space-y-1.5">
@@ -261,7 +310,10 @@
 			</section>
 		{/if}
 	{:else if data.days.length > 0}
-		<!-- No phases: flat day list -->
+		<!-- No phases: flat day list. On a fresh trip this is the REAL first-run render
+		     (the PB hook seeds day rows, so days always exist); the #111/ES-1 hero above
+		     teaches what to do. The old `{:else}` "A blank itinerary." card was dead code —
+		     `days.length === 0` never holds on a real trip — and was removed (ES-1). -->
 		<section class="space-y-1.5">
 			<SectionH>Days</SectionH>
 			<div class="space-y-1">
@@ -275,27 +327,6 @@
 				{/each}
 			</div>
 		</section>
-	{:else}
-		<Card>
-			<div class="p-6 text-center">
-				<p class="font-display text-ink-soft text-base italic">A blank itinerary.</p>
-				<p class="text-ink-muted mt-1 text-sm">Start by adding a phase, capturing ideas, or scheduling something.</p>
-				<div class="mt-4 flex flex-wrap items-center justify-center gap-2">
-					<Button href="/trips/{data.trip.slug}/phases" variant="moss" size="sm">
-						Add a phase
-					</Button>
-					{#if firstDayId}
-						<Button
-							href="/trips/{data.trip.slug}/items/new?day={firstDayId}"
-							variant="ghost"
-							size="sm"
-						>
-							Add a day item
-						</Button>
-					{/if}
-				</div>
-			</div>
-		</Card>
 	{/if}
 	{/if}
 </main>
