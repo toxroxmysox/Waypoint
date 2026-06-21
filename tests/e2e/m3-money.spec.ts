@@ -105,6 +105,59 @@ test.describe('M3 Money', () => {
 		}
 	});
 
+	test('quick-split presets set the split and stay in sync (#258)', async ({ browser }) => {
+		const { page, ctx } = await devLogin(browser, EMAILS.owner);
+
+		try {
+			// Mobile-first bottom-sheet flow at the standard 375px width.
+			await page.setViewportSize({ width: 375, height: 812 });
+			await page.goto(`${BASE}/trips/${tripSlug}/expenses`);
+
+			// Open the Add Expense sheet via FAB.
+			await page.getByRole('button', { name: /add expense/i }).filter({ visible: true }).first().click();
+			await expect(page.getByText(/amount/i).filter({ visible: true }).first()).toBeVisible({ timeout: 5000 });
+
+			// Reveal the split config. ADD mode has TWO "Change" buttons (Paid by + Split);
+			// scope to the one in the row that shows "Split ... among" (it carries the
+			// `among` text the Paid-by row lacks).
+			const splitRow = page
+				.locator('div')
+				.filter({ hasText: /Split\s+(equally|by amount)\s+among/ })
+				.filter({ has: page.getByRole('button', { name: 'Change', exact: true }) })
+				.filter({ visible: true })
+				.last();
+			await splitRow.getByRole('button', { name: 'Change', exact: true }).click();
+
+			const wholeGroup = page.getByRole('button', { name: 'Whole group', exact: true }).filter({ visible: true }).first();
+			const justMe = page.getByRole('button', { name: 'Just me', exact: true }).filter({ visible: true }).first();
+			await expect(wholeGroup).toBeVisible();
+			await expect(justMe).toBeVisible();
+
+			// Default ADD split is whole-group → that chip reads active.
+			await expect(wholeGroup).toHaveAttribute('aria-pressed', 'true');
+
+			// One tap → Just me; chips swap their active state.
+			await justMe.click();
+			await expect(justMe).toHaveAttribute('aria-pressed', 'true');
+			await expect(wholeGroup).toHaveAttribute('aria-pressed', 'false');
+
+			// One tap back to Whole group.
+			await wholeGroup.click();
+			await expect(wholeGroup).toHaveAttribute('aria-pressed', 'true');
+			await expect(justMe).toHaveAttribute('aria-pressed', 'false');
+
+			// Manually unchecking a member must de-highlight Whole group (the active
+			// preset can't lie, acceptance #2). The fixture trip has >=2 members, so the
+			// equal-split checklist has >=2 boxes; uncheck the second.
+			const memberBoxes = page.locator('.space-y-1\\.5 > label input[type="checkbox"]:visible');
+			await memberBoxes.nth(1).uncheck();
+			await expect(wholeGroup).toHaveAttribute('aria-pressed', 'false');
+			await expect(justMe).toHaveAttribute('aria-pressed', 'false');
+		} finally {
+			await ctx.close();
+		}
+	});
+
 	test('budget page loads with categories, save works', async ({ browser }) => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 

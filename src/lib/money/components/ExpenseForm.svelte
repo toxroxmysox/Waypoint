@@ -5,6 +5,7 @@
 	import Button from '$lib/ui/Button.svelte';
 	import { toast } from '$lib/shell/stores/toast';
 	import { buildSplitData } from '$lib/money/build-split-data';
+	import { presetMembers, activePreset, type SplitPreset } from '$lib/money/split-presets';
 	import type { Expense, ExpenseCategory, TripMember } from '$lib/types';
 
 	interface Props {
@@ -111,6 +112,21 @@
 
 	function computeSplitData(): string {
 		return buildSplitData(splitMode, splitMembers, splitAmounts);
+	}
+
+	// #258 — quick-split presets. `members` is already active-only (page load filters
+	// removed_at = ""), so "Whole group" = every member here, "Just me" = current member.
+	// `selectedPreset` is DERIVED from the live split state (not a separate flag), so a
+	// manual checkbox toggle de-highlights the chip automatically — the active preset
+	// never lies (acceptance #2).
+	let memberIds = $derived(members.map((m) => m.id));
+	let selectedPreset = $derived(
+		activePreset(splitMode, splitMembers, memberIds, membershipId)
+	);
+
+	function applyPreset(preset: SplitPreset) {
+		splitMode = 'equal';
+		splitMembers = presetMembers(preset, memberIds, membershipId);
 	}
 </script>
 
@@ -246,6 +262,26 @@
 
 	{#if showSplitConfig}
 		<div class="mb-4 rounded-md border border-line p-3 space-y-3">
+			<!-- #258 — one-tap quick-split presets. Active chip is derived from the live
+			     split state, so toggling a member off de-highlights it automatically. -->
+			<div>
+				<span class="mb-1.5 block text-xs font-medium text-ink-muted">Quick split</span>
+				<div class="flex gap-2">
+					<button
+						type="button"
+						aria-pressed={selectedPreset === 'whole_group'}
+						class="flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors {selectedPreset === 'whole_group' ? 'bg-ink text-paper' : 'bg-surface-2 text-ink-soft hover:bg-line'}"
+						onclick={() => applyPreset('whole_group')}
+					>Whole group</button>
+					<button
+						type="button"
+						aria-pressed={selectedPreset === 'just_me'}
+						class="flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors {selectedPreset === 'just_me' ? 'bg-ink text-paper' : 'bg-surface-2 text-ink-soft hover:bg-line'}"
+						onclick={() => applyPreset('just_me')}
+					>Just me</button>
+				</div>
+			</div>
+
 			<div class="flex gap-2">
 				<button
 					type="button"
