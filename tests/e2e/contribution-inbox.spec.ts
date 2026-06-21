@@ -18,7 +18,8 @@ const EMAILS = {
 	owner: 'rules-owner@e2e.test',
 	co_owner: 'rules-coowner@e2e.test',
 	traveler: 'rules-traveler@e2e.test',
-	viewer: 'rules-viewer@e2e.test'
+	viewer: 'rules-viewer@e2e.test',
+	non_member: 'rules-nonmember@e2e.test'
 };
 
 const FIXTURE_SLUG = 'e2e-rules-test-inbox';

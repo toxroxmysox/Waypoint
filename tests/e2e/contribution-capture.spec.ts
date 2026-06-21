@@ -24,7 +24,8 @@ const EMAILS = {
 	owner: 'rules-owner@e2e.test',
 	co_owner: 'rules-coowner@e2e.test',
 	traveler: 'rules-traveler@e2e.test',
-	viewer: 'rules-viewer@e2e.test'
+	viewer: 'rules-viewer@e2e.test',
+	non_member: 'rules-nonmember@e2e.test'
 };
 
 const FIXTURE_SLUG = 'e2e-rules-test-capture';
@@ -72,8 +73,12 @@ test.describe('#252 easy capture — idea/plan fork sheet', () => {
 		const owner = await devLogin(browser, EMAILS.owner);
 		try {
 			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}`);
+			// The capture affordance surfaces on the Overview as the consistent FAB
+			// ("Add idea or plan"). The rules-fixture trip is past-dated → wrap-up
+			// lifecycle, so the inline "Capture ideas" link in the stats card is replaced
+			// by the wrap-up banner (#239); the FAB persists in every lifecycle state.
 			await expect(
-				owner.page.getByText(/ideas/i).filter({ visible: true }).first()
+				owner.page.getByRole('button', { name: /add idea or plan/i }).filter({ visible: true }).first()
 			).toBeVisible({ timeout: 10000 });
 		} finally {
 			await owner.ctx.close();

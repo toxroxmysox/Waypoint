@@ -15,7 +15,9 @@ const BASE = 'http://localhost:4173';
 async function createPastTrip(page: import('@playwright/test').Page): Promise<string> {
 	const stamp = Date.now().toString(36);
 	const title = `Wrapup E2E ${stamp}`;
-	const slug = `e2e-wrapup-${stamp}`;
+	// App slugifies the title (lowercase, spaces→hyphens): "Wrapup E2E x" → "wrapup-e2e-x".
+	// Deterministic — don't guess word order, and don't race the /trips/new URL.
+	const slug = title.toLowerCase().replace(/\s+/g, '-');
 
 	await page.goto(`${BASE}/trips/new`);
 	await page.waitForURL('**/trips/new');
