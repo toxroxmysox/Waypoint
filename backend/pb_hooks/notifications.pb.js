@@ -216,7 +216,9 @@ routerAdd('GET', '/api/notifications/list', (e) => {
 		const members = e.app.findRecordsByFilter(
 			'trip_members',
 			'user = {:uid}',
-			'-id', 0, 0,
+			// (sort, limit, offset) — was (…, 0, 0): limit=0 returned NO members, so the
+			// list was always empty. Cap memberships high; offset 0. (#260 follow-up bug.)
+			'-id', 500, 0,
 			{ uid: authRecord.id }
 		);
 		memberIds = members.map((m) => m.id);
@@ -243,7 +245,9 @@ routerAdd('GET', '/api/notifications/list', (e) => {
 				const recs = e.app.findRecordsByFilter(
 					'notifications',
 					'recipient = {:mid}',
-					'-id', 0, limit,
+					// (sort, limit, offset) — was (…, 0, limit): limit=0 + offset=limit
+					// returned NO records. Correct order: limit=request, offset 0.
+					'-id', limit, 0,
 					{ mid: memberId }
 				);
 				records = records.concat(recs);
