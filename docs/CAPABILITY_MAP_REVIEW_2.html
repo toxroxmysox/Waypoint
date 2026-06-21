@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Capability Map — Council Pass 2: Opportunity Horizon</title>
+<style>
+  :root{
+    --paper:#faf8f3; --ink:#2b2b2b; --ink-soft:#6b6b6b;
+    --moss:#5a7a5a; --clay:#b5734f; --gold:#c9a227; --sky:#6b8fb5;
+    --line:#e7e2d6;
+    --now:#2b8a3e; --next:#1971c2; --later:#868e96; --moonshot:#7048e8;
+    --backed:#2b8a3e; --split:#c9a227; --pass:#9a8f7a;
+    --card:#fffdf8;
+    --shadow:0 1px 2px rgba(43,43,43,.05), 0 2px 8px rgba(43,43,43,.04);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.55; font-size:16px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1040px; margin:0 auto; padding:40px 22px 96px}
+  header.masthead{border-bottom:2px solid var(--ink); padding-bottom:22px; margin-bottom:8px}
+  h1{font-size:2.05rem; line-height:1.12; margin:0 0 6px; letter-spacing:-.01em; font-weight:760}
+  .subtitle{color:var(--ink-soft); font-size:1.02rem; margin:0 0 16px; max-width:62ch}
+  .method{
+    display:flex; flex-wrap:wrap; gap:8px 10px; align-items:center;
+    font-size:.83rem; color:var(--ink-soft);
+  }
+  .method .pill{
+    background:var(--card); border:1px solid var(--line); border-radius:999px;
+    padding:4px 11px; white-space:nowrap; box-shadow:var(--shadow);
+  }
+  .method .pill strong{color:var(--ink); font-weight:680}
+  h2.section{
+    font-size:1.42rem; margin:54px 0 6px; letter-spacing:-.01em; font-weight:740;
+    padding-bottom:8px; border-bottom:1px solid var(--line);
+  }
+  h2.section .lead-tag{
+    display:inline-block; vertical-align:middle; margin-left:10px;
+    font-size:.62rem; letter-spacing:.13em; text-transform:uppercase; font-weight:760;
+    color:#fff; background:var(--clay); padding:3px 9px; border-radius:5px;
+  }
+  .section-note{color:var(--ink-soft); font-size:.95rem; margin:8px 0 26px; max-width:74ch}
+  h3.horizon-head{
+    display:flex; align-items:center; gap:11px; flex-wrap:wrap;
+    font-size:1.06rem; margin:34px 0 4px; font-weight:700;
+  }
+  h3.horizon-head .count{color:var(--ink-soft); font-weight:500; font-size:.84rem}
+
+  /* horizon badges */
+  .hz{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; font-weight:760;
+    color:#fff; padding:4px 10px; border-radius:6px; line-height:1;
+  }
+  .hz::before{content:""; width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.85)}
+  .hz.now{background:var(--now)} .hz.next{background:var(--next)}
+  .hz.later{background:var(--later)} .hz.moonshot{background:var(--moonshot)}
+
+  .horizon-rule{font-size:.86rem; color:var(--ink-soft); margin:4px 0 20px; max-width:74ch}
+
+  /* opportunity cards */
+  .cards{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:10px}
+  @media(max-width:720px){ .cards{grid-template-columns:1fr} }
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:13px;
+    padding:17px 18px 16px; box-shadow:var(--shadow); position:relative;
+    border-left:4px solid var(--line);
+  }
+  .card.now{border-left-color:var(--now)}
+  .card.next{border-left-color:var(--next)}
+  .card.later{border-left-color:var(--later)}
+  .card.moonshot{border-left-color:var(--moonshot)}
+  .card .rank{
+    position:absolute; top:-9px; right:-9px;
+    width:26px; height:26px; border-radius:50%;
+    background:var(--ink); color:var(--paper);
+    font-size:.72rem; font-weight:740; display:flex; align-items:center; justify-content:center;
+    box-shadow:var(--shadow);
+  }
+  .card h4{margin:0 0 4px; font-size:1.04rem; line-height:1.25; font-weight:720; padding-right:14px}
+  .card .warn{color:var(--clay); font-weight:760; margin-left:4px}
+  .card .extends{
+    font-size:.76rem; color:var(--ink-soft); margin:0 0 9px;
+    text-transform:uppercase; letter-spacing:.04em; font-weight:620;
+  }
+  .card .extends b{color:var(--moss); font-weight:720}
+  .card .idea{font-size:.92rem; margin:0 0 12px; color:#3a3a37}
+  .card .meta{
+    display:flex; flex-wrap:wrap; gap:7px; align-items:center;
+    border-top:1px dashed var(--line); padding-top:11px;
+  }
+  .tag{
+    font-size:.68rem; letter-spacing:.06em; text-transform:uppercase; font-weight:700;
+    padding:4px 9px; border-radius:6px; line-height:1; white-space:nowrap;
+  }
+  .tag.lev-high{background:#e7f3ea; color:#216e36; border:1px solid #bfe0c8}
+  .tag.lev-medium{background:#f4eddc; color:#8a6d18; border:1px solid #e3d4a6}
+  .consensus{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:.68rem; letter-spacing:.05em; text-transform:uppercase; font-weight:760;
+    padding:4px 9px; border-radius:6px; line-height:1; white-space:nowrap;
+  }
+  .consensus .dots{display:inline-flex; gap:3px}
+  .consensus .dot{width:7px; height:7px; border-radius:50%; background:currentColor; opacity:.28}
+  .consensus .dot.on{opacity:1}
+  .consensus.backed{background:#e7f3ea; color:var(--backed); border:1px solid #bfe0c8}
+  .consensus.split{background:#f7f0d8; color:#9a7d12; border:1px solid #e7d59a}
+  .consensus.pass{background:#efeae0; color:#7d7363; border:1px solid #ddd5c5}
+  .card .sknote{
+    font-size:.8rem; color:var(--ink-soft); margin:10px 0 0; padding-top:9px;
+    border-top:1px dashed var(--line);
+  }
+  .card .sknote b{color:var(--ink); font-weight:680}
+
+  /* headline next-build block */
+  .nextbuild{
+    background:linear-gradient(180deg,#f3f8f1,#eef5ec);
+    border:1px solid #cfe3cb; border-left:6px solid var(--now);
+    border-radius:14px; padding:22px 24px; margin:8px 0 12px;
+    box-shadow:var(--shadow);
+  }
+  .nextbuild .eyebrow{
+    font-size:.7rem; letter-spacing:.16em; text-transform:uppercase; font-weight:780;
+    color:var(--now); margin:0 0 6px;
+  }
+  .nextbuild h3{margin:0 0 8px; font-size:1.5rem; letter-spacing:-.01em; font-weight:760}
+  .nextbuild p{margin:0 0 12px; font-size:.97rem; color:#36423a}
+  .nextbuild p:last-child{margin-bottom:0}
+  .nextbuild .why{
+    display:grid; grid-template-columns:1fr 1fr; gap:10px 18px; margin:14px 0 4px;
+  }
+  @media(max-width:640px){ .nextbuild .why{grid-template-columns:1fr} }
+  .nextbuild .why .k{
+    font-size:.86rem; padding-left:16px; position:relative; color:#374239;
+  }
+  .nextbuild .why .k::before{content:"▸"; position:absolute; left:0; color:var(--now); font-size:.8rem; top:1px}
+  .pair{
+    margin-top:16px; padding-top:14px; border-top:1px solid #cfe3cb;
+    font-size:.9rem; color:#3a463c;
+  }
+
+  /* sequencing rails */
+  .seq{display:grid; grid-template-columns:1fr; gap:12px; margin:20px 0 0}
+  .seq .rail{
+    background:var(--card); border:1px solid var(--line); border-radius:11px;
+    padding:14px 16px; box-shadow:var(--shadow); border-left:5px solid var(--line);
+  }
+  .seq .rail.now{border-left-color:var(--now)}
+  .seq .rail.next{border-left-color:var(--next)}
+  .seq .rail.later{border-left-color:var(--later)}
+  .seq .rail.moonshot{border-left-color:var(--moonshot)}
+  .seq .rail h4{margin:0 0 7px; font-size:.96rem; display:flex; align-items:center; gap:9px}
+  .seq .rail ol{margin:0; padding-left:20px; font-size:.9rem; color:#3a3a37}
+  .seq .rail ol li{margin:3px 0}
+  .seq .rail li .w{color:var(--clay); font-weight:760}
+
+  /* review section */
+  .review-grid{display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:6px}
+  @media(max-width:720px){ .review-grid{grid-template-columns:1fr} }
+  .panel{
+    background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:16px 18px; box-shadow:var(--shadow);
+  }
+  .panel h3{margin:0 0 10px; font-size:1.02rem; font-weight:720; display:flex; align-items:center; gap:8px}
+  .panel.holds h3{color:var(--moss)}
+  .panel.fixes h3{color:var(--clay)}
+  .panel ul{margin:0; padding:0; list-style:none}
+  .panel li{
+    font-size:.88rem; padding:9px 0 9px 22px; position:relative; border-top:1px solid var(--line);
+    color:#3a3a37;
+  }
+  .panel li:first-child{border-top:none}
+  .panel.holds li::before{content:"✓"; position:absolute; left:0; top:9px; color:var(--moss); font-weight:760}
+  .panel.fixes li::before{content:"⟳"; position:absolute; left:2px; top:9px; color:var(--clay); font-weight:760}
+  .panel li b{color:var(--ink); font-weight:680}
+  .panel li .src{color:var(--ink-soft); font-size:.8rem}
+
+  /* horizon map */
+  .map-legend{display:flex; flex-wrap:wrap; gap:8px 14px; margin:2px 0 22px; font-size:.78rem; color:var(--ink-soft)}
+  .map-legend .it{display:inline-flex; align-items:center; gap:6px}
+  .map-legend .sw{width:11px; height:11px; border-radius:3px; display:inline-block}
+  .mat{
+    display:inline-flex; align-items:center; gap:5px; font-size:.66rem; font-weight:740;
+    letter-spacing:.04em; text-transform:uppercase; padding:2px 7px; border-radius:5px;
+  }
+  .mat.mature{background:#d9f2df; color:#1e6a32}
+  .mat.building{background:#fdf0c4; color:#8a6712}
+  .mat.gap{background:#fadddd; color:#a52a2a}
+  .mat.enabling{background:#eceef0; color:#5b636b}
+
+  .capgrid{display:grid; grid-template-columns:1fr 1fr; gap:15px}
+  @media(max-width:760px){ .capgrid{grid-template-columns:1fr} }
+  .cap{
+    background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:14px 16px 13px; box-shadow:var(--shadow);
+  }
+  .cap.enable{background:#f7f5ef}
+  .cap .caphd{display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-bottom:3px}
+  .cap .caphd .nm{font-weight:730; font-size:1.0rem}
+  .cap .caphd .nm .num{color:var(--ink-soft); font-weight:600; margin-right:4px}
+  .cap .outcome{font-size:.82rem; color:var(--ink-soft); margin:0 0 11px; line-height:1.4}
+  .future{margin:0; padding:0; list-style:none; border-top:1px dashed var(--line); padding-top:9px}
+  .future.empty{color:var(--ink-soft); font-size:.8rem; font-style:italic; border-top:1px dashed var(--line); padding-top:9px}
+  .future li{
+    font-size:.83rem; padding:5px 0 5px 0; display:flex; gap:8px; align-items:flex-start; line-height:1.35;
+  }
+  .future li .fb{
+    flex:0 0 auto; margin-top:2px;
+    font-size:.58rem; letter-spacing:.08em; text-transform:uppercase; font-weight:760;
+    color:#fff; padding:2px 6px; border-radius:4px; line-height:1.25;
+  }
+  .future li .fb.now{background:var(--now)} .future li .fb.next{background:var(--next)}
+  .future li .fb.later{background:var(--later)} .future li .fb.moonshot{background:var(--moonshot)}
+  .future li .ft{color:#3a3a37}
+  .future li .ft .w{color:var(--clay); font-weight:760}
+  .cap .keystone{
+    margin-top:9px; font-size:.76rem; color:var(--ink-soft); background:#f3efe5;
+    border-radius:7px; padding:7px 9px; border:1px dashed var(--line);
+  }
+  .cap .keystone b{color:var(--moss)}
+
+  .guardrail{
+    margin-top:26px; background:#f6f2fb; border:1px solid #ddd2f0; border-left:5px solid var(--moonshot);
+    border-radius:12px; padding:16px 18px; box-shadow:var(--shadow);
+  }
+  .guardrail h3{margin:0 0 7px; font-size:1.0rem; color:#5a3fb8; font-weight:740}
+  .guardrail p{margin:0; font-size:.9rem; color:#3a3640}
+  .guardrail b{color:#4a35a0}
+
+  .legend-row{
+    display:flex; flex-wrap:wrap; gap:10px 16px; margin:18px 0 0; padding-top:14px;
+    border-top:1px solid var(--line); font-size:.8rem; color:var(--ink-soft);
+  }
+  .legend-row .it{display:inline-flex; align-items:center; gap:7px}
+
+  footer{margin-top:60px; padding-top:18px; border-top:1px solid var(--line); font-size:.8rem; color:var(--ink-soft)}
+  footer code{background:#f0ece2; padding:1px 6px; border-radius:4px; font-size:.92em}
+  a{color:var(--sky)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <h1>Capability Map — Council Pass&nbsp;2: Opportunity&nbsp;Horizon</h1>
+  <p class="subtitle">A blue-sky-weighted second council over the revised Waypoint capability map — what to build next, where the leverage is, and which ideas brush the charter's bright lines.</p>
+  <div class="method">
+    <span class="pill"><strong>15 agents</strong></span>
+    <span class="pill">6 blue-sky lenses</span>
+    <span class="pill">4 review lenses</span>
+    <span class="pill">3 skeptic red-teamers</span>
+    <span class="pill">Pass&nbsp;2 · weighted to opportunity</span>
+    <span class="pill"><strong>2026-06-21</strong></span>
+  </div>
+  <p class="section-note" style="margin-top:16px">
+    <b>Consensus rule.</b> Each opportunity was judged independently by 3 skeptics on <i>isHighLeverage</i>.
+    <span class="consensus backed" style="vertical-align:middle"><span class="dots"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span></span>Backed</span> = ≥2 of 3 ·
+    <span class="consensus split" style="vertical-align:middle"><span class="dots"><span class="dot on"></span><span class="dot"></span><span class="dot"></span></span>Split</span> = exactly 1 ·
+    <span class="consensus pass" style="vertical-align:middle"><span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>Pass</span> = 0.
+    A <span style="color:var(--clay);font-weight:760">⚠</span> marks an idea that brushes or crosses the charter NOT-list.
+    "Pass" ≠ kill — every passed item is still a real, on-thesis beat; the skeptics rated it a cheap polish/derived win, not a leverage multiplier.
+  </p>
+</header>
+
+<!-- ============================================================ -->
+<!-- SECTION 2 — OPPORTUNITY HORIZON (HEADLINE) -->
+<!-- ============================================================ -->
+<h2 class="section">Opportunity Horizon<span class="lead-tag">Headline</span></h2>
+<p class="section-note">
+  Twenty blue-sky opportunities, grouped by build horizon and ranked by leverage within each band. The map is now <b>7 of 8 core capabilities mature or building</b> — so the binding constraint on thesis value has shifted from feature depth to the <b>cold-start moment</b> and the <b>re-engagement spine</b>. Eleven of twenty are <span class="consensus backed" style="vertical-align:middle;padding:2px 7px"><span class="dots"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span></span>Backed</span>; the cluster at <b>now/next</b> is where the leverage concentrates.
+</p>
+
+<!-- NOW -->
+<h3 class="horizon-head"><span class="hz now">Now</span> <span>Thin slices over shipped surfaces · zero-code decisions that gate everything downstream</span></h3>
+<p class="horizon-rule">Builds that reuse 100% shipped infrastructure, plus the one decision doc that must land before any AI surface ships.</p>
+<div class="cards">
+
+  <div class="card now">
+    <div class="rank">1</div>
+    <h4>Onboarding — thin first-contribution slice</h4>
+    <p class="extends">extends <b>People &amp; Membership → Onboarding</b> · transitively all 8</p>
+    <p class="idea">Build the <i>post-join landing</i>, not an intro wizard. Join Link → oriented trip home (extend the warm pre-auth context card #118 past the auth boundary) → one "here's the one thing to do" CTA wired to the shipped /goals capture deck. Add the one piece of state it implies: a per-member first-contribution signal.</p>
+    <div class="meta">
+      <span class="tag lev-high">High leverage</span>
+      <span class="consensus backed"><span class="dots"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span></span>Backed 3/3</span>
+    </div>
+    <p class="sknote"><b>Why it leads:</b> the only gap whose absence <i>discounts already-shipped value</i> rather than leaving new value unbuilt. A first-timer on an unexplained trip home is silenced at the front door (test V2), forfeiting Itinerary + Money + Documents + Group Input at once. Resist the #111 "tour" framing — Scott's documented system-builder trap (teaches chrome, not contribution).</p>
+  </div>
+
+  <div class="card now">
+    <div class="rank">2</div>
+    <h4>AI-assist posture ADR</h4>
+    <p class="extends">extends <b>Integrations &amp; Syncing</b> · cross-cuts 6 capabilities</p>
+    <p class="idea">Zero code. Fix the posture before any AI feature: (1) self-hosted small model default (Ollama/llama.cpp on the home server) vs a proprietary-API exception that must clear "significantly better"; (2) the LLM connector lives under Integrations; (3) standing guardrail — AI <b>summarizes / extracts / answers</b> over owned trip data, <b>never generates</b> the plan, never auto-commits, always human-confirmed.</p>
+    <div class="meta">
+      <span class="tag lev-high">High leverage</span>
+      <span class="consensus backed"><span class="dots"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span></span>Backed 3/3</span>
+    </div>
+    <p class="sknote"><b>The keystone that unblocks the rest.</b> Six AI surfaces (digest narration, sentiment read, NL Q&amp;A, expense categorization, recap, capture classification) touch six capabilities with no node, facet, or ADR — so model/privacy/placement get decided implicitly by whoever ships first, against Scott's open-source-first rule over PII-dense data (faces per ADR-0007, emails, finances). <b>Keep it a one-pager</b> — a decision, not a system to build.</p>
+  </div>
+
+</div>
+
+<!-- NEXT -->
+<h3 class="horizon-head"><span class="hz next">Next</span> <span>Highest thesis leverage — mostly assembly of proven parts</span></h3>
+<p class="horizon-rule">The retention + acquisition spine. Real but bounded new work: two collections here, a schema relaxation there, composition over shipped engines.</p>
+<div class="cards">
+
+  <div class="card next">
+    <div class="rank">3</div>
+    <h4>Ideation When / Availability — the date-finding wedge</h4>
+    <p class="extends">extends <b>Ideation (When + Availability)</b> → Itinerary → People &amp; Membership</p>
+    <p class="idea">Own "when can WE actually go" — the moment that today happens entirely in Doodle/When2Meet before anyone opens Waypoint. (1) Relax NOT-NULL on <code style="font-size:.85em">trips.start_date/end_date</code> behind a "forming" lifecycle state; (2) build Availability (member × date-range × yes/maybe/no) as a paint-the-grid heatmap; (3) winning window one-taps into dates. <b>The poll IS the invite</b> — answering it creates the Member.</p>
+    <div class="meta">
+      <span class="tag lev-high">High leverage</span>
+      <span class="consensus backed"><span class="dots"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span></span>Backed 3/3</span>
+    </div>
+    <p class="sknote"><b>The single moment upstream of the decision to use any tool</b> — whoever owns date-finding owns the trip's birth, and it doubles as the viral invite. Schema blocker verified real (<code style="font-size:.85em">required:true</code> in 0002_trips.js) — sequence the When/Availability half <i>first</i>. Hard line: ranks group-supplied candidates, must <b>never auto-suggest destinations</b> (brushes "not a discovery tool").</p>
+  </div>
+
+  <div class="card next">
+    <div class="rank">4</div>
+    <h4>Email Digest → Re-engagement</h4>
+    <p class="extends">extends <b>Integrations &amp; Syncing</b> + Group Input, Ideation, People</p>
+    <p class="idea">Promote the committed one-way digest into the re-engagement spine: a weekly "what changed" email, LLM-narrated over the change-feed, carrying inline tokenized one-tap actions — vote, mark availability, RSVP — that write straight back via signed per-member token links (same trust primitive as join links), landing the member already-authed and already-counted.</p>
+    <div class="meta">
+      <span class="tag lev-high">High leverage</span>
+      <span class="consensus backed"><span class="dots"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span></span>Backed 3/3</span>
+    </div>
+    <p class="sknote"><b>Highest leverage-per-hour on the map.</b> Attacks the charter's literal success definition ("the non-technical people actually use it") via the <i>only</i> sanctioned re-engagement lever — push is off the table. Resend + tokens already ship; this is composition. Two gates: <b>structured writes only</b> (reply-to-thread crosses "messaging beyond comments"); LLM narration waits on the AI ADR — ship the dumb cron'd diff first.</p>
+  </div>
+
+  <div class="card next">
+    <div class="rank">5</div>
+    <h4>Per-item participation — a 5th input mechanism</h4>
+    <p class="extends">extends <b>Group Input</b> + Money (split source) + Itinerary Item</p>
+    <p class="idea">A per-item participation mark distinct from <code style="font-size:.85em">assigned_to</code> (which means "I'm responsible," not "I'm attending"): member × item → in/out, a one-tap "I'm in" on optional activity/meal items. Wire it as the <b>default feeder</b> for the Paid-Moment split so the split is right by construction, editable after.</p>
+    <div class="meta">
+      <span class="tag lev-high">High leverage</span>
+      <span class="consensus backed"><span class="dots"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span></span>Backed 3/3</span>
+    </div>
+    <p class="sknote"><b>Sharpest timing argument on the map.</b> Code-verified: ExpenseForm prefills the split to the whole roster, so every non-whole-group dinner forces the payer to hand-deselect — the exact Splitwise friction Waypoint exists to kill (V1). <b>Grill before #230 (Money Units) ships</b> and bakes a whole-group-split assumption; the two-axis model (unit = settlement collapse; participation = split membership) must stay independent.</p>
+  </div>
+
+  <div class="card next">
+    <div class="rank">6</div>
+    <h4>Decision provenance — persist the resolved choice + reasoning</h4>
+    <p class="extends">extends <b>Group Input / Ideation</b> → Records &amp; Archive</p>
+    <p class="idea">When a scenario/poll resolves, mint a small immutable Decision record: options weighed, the vote snapshot, the winning rationale, a link to what it produced. Distinct from a Comment (transient) and a Vote (a tally) — the outcome <i>with its reasoning attached</i>. Pairs with a "Consensus Lock" promote moment.</p>
+    <div class="meta">
+      <span class="tag lev-high">High leverage</span>
+      <span class="consensus backed"><span class="dots"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span></span>Backed 3/3</span>
+    </div>
+    <p class="sknote"><b>Extends the one thing the council says Waypoint already beats competitors at</b> (the decision board) and is the structural antidote to the #1 group-text relapse: re-litigating closed decisions. Cheap — one row at promote-time, structured not messaging, nothing on the NOT-list touches it. Caveat: compounds with the Ideation wedge, so ship it alongside. Keep it a snapshot, not a discussion log.</p>
+  </div>
+
+  <div class="card next">
+    <div class="rank">7</div>
+    <h4>Plan Health — deterministic structural intelligence</h4>
+    <p class="extends">extends <b>Itinerary</b> + Trip Execution, Availability</p>
+    <p class="idea">Deterministic, explainable checks over the existing item graph + Availability + coords: anchor-time conflicts ("two things at 7pm"), day density ("Day 3 is a death march"), empty days, checkout-vs-departure mismatch, travel-time between coords, items outside a member's stated availability. Rule core first (no AI); LLM phrasing is optional polish. It surfaces; the owner decides.</p>
+    <div class="meta">
+      <span class="tag lev-high">High leverage</span>
+      <span class="consensus backed"><span class="dots"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span></span>Backed 3/3</span>
+    </div>
+    <p class="sknote"><b>Makes Itinerary the only group planner with an opinion</b> — the difference between a shared document and a tool that tells you your plan is broken before trip day. Boundary is the whole ballgame: the NOT-list bars <i>authoring</i> the plan, not the plan being self-aware. Strong with the novice lens. Ship 2–3 high-signal checks, not a 15-rule linter nobody reads.</p>
+  </div>
+
+  <div class="card next">
+    <div class="rank">8</div>
+    <h4>Live Money Pulse — group "are we overspending?"</h4>
+    <p class="extends">extends <b>Money</b> (Glance / Budgeting) + Trip Execution</p>
+    <p class="idea">Extend the Money Glance from personal ("what I have left") to a group-pace lens in Trip Execution: spent-vs-budget burn rate, projected end-of-trip total, a quiet per-category hot-flag — unit-scoped per ADR-0015 with a group rollup. Derived only; single-currency; quiet/findable-not-nagging, never itemized to shame anyone.</p>
+    <div class="meta">
+      <span class="tag lev-medium">Medium leverage</span>
+      <span class="consensus pass"><span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>Pass 0/3</span>
+    </div>
+    <p class="sknote"><b>Skeptics: on-thesis but a derived polish beat, not a multiplier.</b> The collective "as a group, are we on pace?" question drives groups back to a shared Sheet — a place Splitwise structurally can't follow — and the data already exists. But it sharpens an already-present number rather than closing a seam. Build <i>after</i> the two-axis Money model settles.</p>
+  </div>
+
+  <div class="card next">
+    <div class="rank">9</div>
+    <h4>Anticipation — name the front porch</h4>
+    <p class="extends">extends <b>new beat (Ideation→Itinerary)</b> / pre-live Trip Execution</p>
+    <p class="idea">A <i>mobile</i> trip-home countdown banner mirroring the wrap-up banner at the opposite end of the timeline: days-to-go + what's-still-unbooked (the Readiness rollup) + who-said-they're-excited (Goals). Zero new data, pure composition. In-app only.</p>
+    <div class="meta">
+      <span class="tag lev-medium">Medium leverage</span>
+      <span class="consensus pass"><span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>Pass 0/3</span>
+    </div>
+    <p class="sknote"><b>Skeptics: worth naming now, a small build later.</b> The charter names four pillars but the spine is build/trip/record — anticipation, the loudest group-text moment, has no owned surface (only an lg-desktop-gated line invisible on the phone). <span style="color:var(--clay);font-weight:760">⚠</span> Guardrail is the whole game: <b>hype without push, in-app only</b> — the wrap-up PRD killed cron for a reason; don't smuggle push back in.</p>
+  </div>
+
+  <div class="card next">
+    <div class="rank">10</div>
+    <h4>Settle-up confirmation receipt + "all settled" zero-state</h4>
+    <p class="extends">extends <b>Money / Settlement</b> + Records (D5 wrap-up)</p>
+    <p class="idea">A settle-confirmation beat: a clear settled/unsettled state per Money Unit pair, an explicit "mark as settled" both sides see, and a satisfying "all settled up" zero-state on the Money glance. Scope to Money Units (debts wash within a unit per ADR-0015). Wire into the D5 sequence. Surface on open — no push reminders.</p>
+    <div class="meta">
+      <span class="tag lev-medium">Medium leverage</span>
+      <span class="consensus pass"><span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>Pass 0/3</span>
+    </div>
+    <p class="sknote"><b>Skeptics: high-ROI closure beat, not a multiplier.</b> Money transplants Splitwise's debt-simplification, but the <code style="font-size:.85em">settlements</code> collection has no confirmation beat — task-path #31 ends at the calculation, not the acknowledgment. Splitwise's retention engine is the closure dopamine; transplant the closure, not the nagging. Cheap; reads cleanest after Money Units land.</p>
+  </div>
+
+</div>
+
+<!-- LATER -->
+<h3 class="horizon-head"><span class="hz later">Later</span> <span>Gated builds — the multi-trip layer and the felt-story payoff</span></h3>
+<p class="horizon-rule">High-leverage destinations that must wait on an explicit product-unit decision or on an upstream capability shipping first.</p>
+<div class="cards">
+
+  <div class="card later">
+    <div class="rank">11</div>
+    <h4>Durable group / Crew — the cross-trip layer</h4>
+    <p class="extends">extends <b>People &amp; Membership</b> · net-new, currently unmapped</p>
+    <p class="idea">A user-level Crew above People &amp; Membership: a named, persistent set of people a trip can be <i>started from</i> (pre-fills roster, seeds Money Units, warm onboarding) and <i>contributed back to</i> after. Start derived if needed — even "people you've traveled with before" from past members is a tracer bullet. The parent that recurring series, preference memory, and the living record all hang off.</p>
+    <div class="meta">
+      <span class="tag lev-high">High leverage</span>
+      <span class="consensus backed"><span class="dots"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span></span>Backed 3/3</span>
+    </div>
+    <p class="sknote"><b>The keystone the multi-trip flywheel hangs on</b> — yet the single biggest scope-creep risk if mis-sequenced. The thesis is "the home for a GROUP trip," but every people-primitive is trip-scoped. <b>Guardrail (D1 + scale invariant):</b> an explicitly-decided shift of the product unit (trip → account), never a centralizing "mission control" hub; a Crew of one is just you. <b>Do clone-carries-roster first</b> as the cheap down-payment.</p>
+  </div>
+
+  <div class="card later">
+    <div class="rank">12</div>
+    <h4>Members-only Trip Recap — the trip told back as a story</h4>
+    <p class="extends">extends <b>Records &amp; Archive</b> + Trip Memory, Money, Itinerary</p>
+    <p class="idea">A members-only post-trip Recap as a sibling to the Public Archive — <i>not a new store</i>, a read-composition: the day timeline threaded with reviewed Memories + the estimate-vs-actual money epilogue (#195) + goals-set-vs-hit. Public Archive = sanitized plan for the world; Trip Recap = felt story for the travelers. Optionally LLM-narrated for the private variant only.</p>
+    <div class="meta">
+      <span class="tag lev-high">High leverage</span>
+      <span class="consensus backed"><span class="dots"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span></span>Backed 3/3</span>
+    </div>
+    <p class="sknote"><b>Nobody owns the trip told back to the group as a story</b> — the emotional payoff of the whole app. <span style="color:var(--clay);font-weight:760">⚠</span> <b>Hard ADR-0007 constraint:</b> a public recap draws <i>only</i> from done-items + budget, never memory thoughts (faces/PII); a memory-inclusive recap is private-keepsake-only. Bake the exclusion into the code path. Gated behind Trip Memory shipping first.</p>
+  </div>
+
+  <div class="card later">
+    <div class="rank">13</div>
+    <h4>Replicable Archive — archive → stranger → new trip</h4>
+    <p class="extends">extends <b>Records &amp; Archive</b> + Ideation, Itinerary, Onboarding</p>
+    <p class="idea">Let a non-member viewing a public archive spin it into a fresh draft trip they own — structure, goals, and the curated "what we considered" recommendations, PII already stripped. The internal Clone is the member half; this archive→stranger→new-trip path is the viral half nobody owns. Frame "what we considered" as a Letterboxd-style list with one-tap "plan your own version."</p>
+    <div class="meta">
+      <span class="tag lev-medium">Medium leverage</span>
+      <span class="consensus split"><span class="dots"><span class="dot on"></span><span class="dot"></span><span class="dot"></span></span>Split 1/3</span>
+    </div>
+    <p class="sknote"><b>Skeptics split.</b> One rates it high (the only organic acquisition loop besides the date-poll invite); two hold it medium — a growth bet whose payoff assumes archives get shared at volume (unproven), and it sits closest to the "not a discovery tool" line of any non-flagged item. Charter #39 names it exactly. Disposition both sides agree on: <b>grill the boundary before building</b>, and the internal Clone must be solid first.</p>
+  </div>
+
+  <div class="card later">
+    <div class="rank">14</div>
+    <h4>clone-carries-roster — the cheap Crew down-payment</h4>
+    <p class="extends">extends <b>People &amp; Membership</b> (Clone) · review-fix elevated</p>
+    <p class="idea">Clone copies phases/days/items/checklists but carries <i>zero</i> co-travelers — so "start next year's trip from this one" (#36) reproduces the itinerary then makes the owner re-invite the same friends one email at a time. Add an opt-in "bring the same people" step that re-creates prior active members as placeholders with <code style="font-size:.85em">placeholder_email</code> pre-filled, so accept/claim is one tap per person.</p>
+    <div class="meta">
+      <span class="tag lev-high">High leverage</span>
+      <span class="consensus split"><span class="dots"><span class="dot on"></span><span class="dot"></span><span class="dot"></span></span>Split 1/3</span>
+    </div>
+    <p class="sknote"><b>Not in the opportunities array — surfaced as a review-fix and elevated.</b> Only one skeptic scored it explicitly (high): "the highest-leverage-per-effort item adjacent to the Crew keystone." Code-verified the gap (clone hook recreates only the owner). A self-contained slice reusing shipped invite/claim machinery that <b>delivers the Crew payoff before the full entity exists</b> — and the cheapest way to test demand for Crew.</p>
+  </div>
+
+  <div class="card later">
+    <div class="rank">15</div>
+    <h4>Durable member facts — diet / accessibility / budget ceiling</h4>
+    <p class="extends">extends <b>People &amp; Membership (Identity)</b> → Itinerary + Money</p>
+    <p class="idea">A lightweight per-member "trip profile": a small curated set of structured, optional, member-authored constraint fields. Consult-points: meal-item planning surfaces diet flags; a Money Unit budget override seeds from a member ceiling. A curated short list (like Memory's cap discipline), not a free-form profile. Co-traveler-visible only (ADR-0006).</p>
+    <div class="meta">
+      <span class="tag lev-medium">Medium leverage</span>
+      <span class="consensus pass"><span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>Pass 0/3</span>
+    </div>
+    <p class="sknote"><b>Skeptics: real modeling gap, weak standalone — ride the Crew decision.</b> A dietary restriction is a standing fact, not a preference you "vote" once and lose in a thread — yet nothing in the map carries member state that persists and gets consulted by other capabilities. But its payoff materializes at the durable-member level, so trip-scoped first risks throwaway work. Watch the scope edge: "won't-fly-redeye" is where a curated list quietly becomes a profile builder.</p>
+  </div>
+
+  <div class="card later">
+    <div class="rank">16</div>
+    <h4>Calendar feed — webcal subscribe</h4>
+    <p class="extends">extends <b>Integrations &amp; Syncing → Calendar sync</b></p>
+    <p class="idea">A per-trip <code style="font-size:.85em">webcal://</code> subscribed feed (each item keyed by id as UID so edits/deletes propagate with no duplicates) that puts the itinerary into Google/Apple Calendar once and keeps it correct forever, with a download-.ics fallback. A read-projection — a feed/linkout, never an embedded calendar.</p>
+    <div class="meta">
+      <span class="tag lev-medium">Medium leverage</span>
+      <span class="consensus pass"><span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>Pass 0/3</span>
+    </div>
+    <p class="sknote"><b>Skeptics: useful passive-presence nicety, not a thesis-mover.</b> Waypoint dates don't live where lives already are — the phone calendar — and subscribe-not-export earns daily lock-screen presence for the friend who never opens the app. Already backlog-specced; stays a feed/linkout (embeds off the table). <b>Sequence after the Email Digest</b> — prove the higher-leverage outbound channel first.</p>
+  </div>
+
+  <div class="card later">
+    <div class="rank">17</div>
+    <h4>Universal Capture — one "add anything" front door</h4>
+    <p class="extends">extends <b>Platform</b> · cross-cuts Itinerary, Documents, Money, Records, Ideation</p>
+    <p class="idea">A Platform-level single "add anything" affordance (the Trip Execution Add FAB generalized app-wide): photo / link / text / paste → classify → route to the right capability with a confirm step. A confirmation → Document, a restaurant link → Item-or-Saved-Reference, a thought → Memory, a receipt → Expense. The user never has to know Waypoint's taxonomy to feed it.</p>
+    <div class="meta">
+      <span class="tag lev-medium">Medium leverage</span>
+      <span class="consensus pass"><span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>Pass 0/3</span>
+    </div>
+    <p class="sknote"><span style="color:var(--clay);font-weight:760">⚠ One skeptic flags it a shiny distraction.</span> The friction is real (capture fragmented across ~7 surfaces), but the cure is a large horizontal classify-and-route engine bolted across six capabilities — the "over-build systems instead of using them" pattern. It hard-depends on the AI ADR and overlaps the Add FAB. If pursued, start as the <b>narrowest single-input slice</b> (paste-a-link routing), not an omnibox. Correctly sequenced last-ish.</p>
+  </div>
+
+</div>
+
+<!-- MOONSHOT -->
+<h3 class="horizon-head"><span class="hz moonshot">Moonshot</span> <span>The 3-year north star — gated, flagged, not for now</span></h3>
+<p class="horizon-rule">High-leverage as a <i>destination</i>; explicitly parked behind Crew, dogfood demand, and a hard charter guardrail.</p>
+<div class="cards">
+
+  <div class="card moonshot">
+    <div class="rank">18</div>
+    <h4>Cross-trip Living Record</h4>
+    <p class="extends">extends <b>Records &amp; Archive</b> + People &amp; Membership / Crew</p>
+    <p class="idea">A user-level thread of curated memories + places + co-travelers across every trip ("two years ago this week we were in Lisbon"), anchored on the durable Crew rather than one trip's photos. Turns Waypoint from a tool you abandon after each trip into a product with a reason to open <i>between</i> trips; it compounds — every trip enriches the log, the log warms the next trip's planning.</p>
+    <div class="meta">
+      <span class="tag lev-high">High leverage</span>
+      <span class="consensus backed"><span class="dots"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span></span>Backed 3/3</span>
+    </div>
+    <p class="sknote"><span style="color:var(--clay);font-weight:760">⚠ Flagged NOT-list-crosser — and the only one the skeptics still back.</span> The most true-to-thesis expansion (plan/execute/<b>remember</b> — the one pillar with no home beyond a frozen per-trip page). Stays on the right side <i>only</i> if the ADR-0007 per-day cap holds (no full-roll import, no albums); the moment it grows those, it crosses. Requires the trip→account shift (D1). <b>The one action now:</b> when Trip Memory ships, keep the author resolvable to the user across trips so this is additive, not a migration.</p>
+  </div>
+
+</div>
+
+<p class="section-note" style="margin-top:26px">
+  <b>Two opportunities from the synthesis are not carded above as standalone builds</b> — they are the build targets behind cards 3 and the Memory work: <i>Ideation Where</i> (a thinner second slice reusing propose→vote over Saved References, sequenced after When) and the <i>Trip Memory build itself</i> (the cheapest de-risked gap — PRD grilled, ADR-0007 accepted; schedulable whenever upstream work needs a breather; pull the shared <code>heic.ts</code> module off the shelf first). Both are in the Horizon Map below.
+</p>
+
+<!-- ============================================================ -->
+<!-- SECTION 3 — HIGHEST-LEVERAGE NEXT BUILD -->
+<!-- ============================================================ -->
+<h2 class="section">Highest-leverage next build</h2>
+
+<div class="nextbuild">
+  <p class="eyebrow">The call — unanimous across all three skeptics</p>
+  <h3>Onboarding — the thin first-contribution slice</h3>
+  <p>Not an intro wizard. <b>One vertical slice:</b> a joiner taps the Join Link → lands on an oriented trip home (extend the warm pre-auth context card #118 past the auth boundary) → sees a single "here's the one thing to do" CTA wired to the cheapest shipped surface (a Goal via the /goals capture deck, which already does location-aware prompts). Joiner lands → sees trip + their first prompt → casts or adds one thing. Give the capability the one piece of state it implies: a per-member first-contribution / onboarding-complete signal.</p>
+
+  <div class="why">
+    <div class="k">The only gap whose absence <b>discounts already-shipped value</b> — not one that leaves new value unbuilt.</div>
+    <div class="k">With 7 of 8 capabilities mature/building, the binding constraint is the <b>cold-start moment</b>, not feature depth.</div>
+    <div class="k">A first-timer on an unexplained trip home is <b>silenced at the front door</b> (test V2) — forfeiting Itinerary + Money + Documents + Group Input simultaneously.</div>
+    <div class="k">Reuses <b>100% shipped infra</b> (Join Link #118, /goals deck). Pre-blessed as a first-class P1/P2 gap in the charter (D2).</div>
+  </div>
+
+  <p style="margin-top:14px"><b>The discipline that keeps it ship-not-optimize:</b> resist the #111 "tour/wizard" framing — that is exactly Scott's documented system-builder trap (teaches chrome, not contribution). The thin first-contribution slice is the whole point. Verify against task-paths #4 and #5.</p>
+
+  <div class="pair">
+    <b>Pair it with the zero-code AI-posture ADR.</b> Onboarding wins session 1; the Email Digest wins sessions 2–10 — but the digest's narration, plus five other AI surfaces, all wait on a posture decision that gets made implicitly by whoever ships first if it isn't written down. The ADR is no-code and unblocks the entire NEXT band. Two now-items, one a build and one a one-page decision.
+  </div>
+</div>
+
+<div class="seq">
+  <div class="rail now">
+    <h4><span class="hz now">Now</span> thin slices + gating decisions</h4>
+    <ol>
+      <li><b>Onboarding first-contribution slice</b> — the multiplier.</li>
+      <li><b>AI-assist posture ADR</b> — zero code; must precede any AI surface (self-hosted-default vs proprietary-exception; LLM under Integrations; summarize/extract/answer-never-generate).</li>
+      <li>The cheap map-coherence review-fixes (see next section).</li>
+      <li>Settle the two-axis Money model <span class="w">before #230</span> bakes a whole-group split default.</li>
+    </ol>
+  </div>
+  <div class="rail next">
+    <h4><span class="hz next">Next</span> highest thesis leverage</h4>
+    <ol>
+      <li><b>Ideation When/Availability</b> — the acquisition wedge; build the When/Availability half first (heatmap, dateless "forming" state, one-tap promote). Unifies the When gap and Onboarding gap via poll-is-the-invite.</li>
+      <li><b>Email Digest → Re-engagement</b> — ship the dumb cron'd diff first; layer LLM narration + tokenized one-tap actions once the AI ADR lands.</li>
+      <li><b>Per-item participation</b> — <span class="w">grill before #230</span> so fair splits are right by construction.</li>
+      <li><b>Decision provenance + Consensus Lock</b> — extends the validated decision-board moat.</li>
+      <li><b>Plan Health</b> (deterministic core). · <b>Trip Memory</b> (cheapest de-risked gap; pull <code>heic.ts</code> off the shelf). · Live Money Pulse · Anticipation banner · Settle-up receipt — cheap derived/composition beats.</li>
+    </ol>
+  </div>
+  <div class="rail later">
+    <h4><span class="hz later">Later</span> gated on the product-unit decision</h4>
+    <ol>
+      <li><b>clone-carries-roster</b> — the cheap down-payment on Crew.</li>
+      <li><b>Crew / durable-group keystone</b> — <span class="w">gated behind the explicit trip→account decision (D1)</span>.</li>
+      <li>Cross-trip preference memory · Trip Recap · Replicable Archive (grill the boundary) · Universal Capture (after AI ADR; start narrow) · member-profile facts · Calendar feed.</li>
+    </ol>
+  </div>
+  <div class="rail moonshot">
+    <h4><span class="hz moonshot">Moonshot</span> the north star</h4>
+    <ol>
+      <li><b>Cross-trip Living Record</b> — <span class="w">gated behind Crew + dogfood demand + the per-day-cap guardrail</span>. NOT-list-adjacent; keep the Memory schema author-resolvable across trips now so it stays additive.</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 4 — REVIEW OF THE REVISED MAP -->
+<!-- ============================================================ -->
+<h2 class="section">Review of the revised map</h2>
+<p class="section-note">A lighter re-review — the first council already fixed the structural defects. These are the sharpest modeling calls that <b>hold</b> under blue-sky pressure, plus the coherence/placement fixes that are still cheap edits.</p>
+
+<div class="review-grid">
+  <div class="panel holds">
+    <h3>What holds (validated across the lenses)</h3>
+    <ul>
+      <li><b>Availability as a distinct 4th mechanism.</b> Member × date-range → yes/maybe/no, explicitly not a Vote — the map's sharpest modeling call, confirmed across 6 lenses. A "maybe" is a first-class third value with no Vote analog; aggregation is range-overlap, not score-sort. Folding it into <code>goal_votes</code> would have produced When2Meet-in-a-side-tab. <span class="src">Protect it against future "just reuse Vote" pressure.</span></li>
+      <li><b>Trip Execution kept at L1.</b> Its zero-native-data is a feature, not a demotion signal — the pure live-lens surface where the most emotionally differentiated future work lands (capture fast-path, live nudges, in-the-moment memory, proactive replanning). Demoting it would have flattened the emotional spine into a CRUD app.</li>
+      <li><b>Logistics demoted to an Itinerary sub.</b> Code-true: its code lives in <code>lib/itinerary/</code>; "ready by trip day" is a stage of the plan's outcome, not a peer outcome. <span class="src">(But see fixes — it stopped one notch too high.)</span></li>
+      <li><b>The "high bar before attaching to Item" guard.</b> Matters <i>more</i> under expansion pressure — nearly every adjacent idea (Crew, Series, preference memory, participation) is tempting to bolt onto the over-loaded Item graph. The discipline pushes them toward new primitives instead.</li>
+      <li><b>Paid Moment decoupled from <code>booked</code>.</b> Paid derived from a linked Expense, never a stored flag — the naive booked-flip toast mis-captures exactly the big group line items the feature exists for (deposit-then-balance) and trains reflexive dismissal.</li>
+      <li><b>Trip Memory's hard cap (ADR-0007).</b> One photo + one thought per member per day, DB-enforced, member-only. The cap <i>is</i> the feature — it keeps Waypoint out of the photo-album NOT-zone and dodges the image-PII problem for the Public Archive by construction. Resist expanding it into a shared stream.</li>
+      <li><b>Onboarding as a sub of People &amp; Membership (not Platform).</b> Onboarding is a person becoming a participant, not the app loading. A zero-data sub is legitimate when its outcome is real and owner-assignable — same logic that keeps Trip Execution at L1.</li>
+    </ul>
+  </div>
+
+  <div class="panel fixes">
+    <h3>Coherence &amp; placement fixes (cheap edits)</h3>
+    <ul>
+      <li><b>Dissolve the Logistics sub one notch further.</b> Only checklists/tasks (migration 0030) are owned; "readiness rollup" and "travel view" are pure projections. Move <b>Booking</b> under Itinerary directly; promote <b>Item/Trip Readiness (booked·paid·documented)</b> to a named cross-capability projection owned by none, fed by three; let Checklist/Task stand alone.</li>
+      <li><b>Fix the double-homed Checklist/Task.</b> The Logistics Data line tags it 🟢-owned with no borrow-marker, so a reader gets two owners for one primitive. Mark it borrowed: <code>🔗 Checklist/Task (Itinerary-owned, ADR-0003)</code> and state Logistics owns zero native data.</li>
+      <li><b>Differentiate Comment from Vote in the keystone section.</b> Vote is 🟢 shipped/reused across three collections; <b>Comment is 🔵 latent</b> (a suggestions row, item-only — the polymorphic collection doesn't exist). Money and Documents both lean on Comment — planned-on-planned. Elevate "polymorphic comments collection" to a named <b>blocking dependency</b>; block expense-comments from shipping on the suggestions-row shape. Write the inverse-of-ADR-0004/0009 ADR (why Comment unifies where Vote stays split).</li>
+      <li><b>Promote Availability into the keystone-primitives section</b> as the 4th input mechanism with its borrowers named (When-to-go, optional-Tuesday-hike, who's-around-for-dinner, the Travel view is an Availability projection nobody connected). Annotate its true blocker: gated on a dateless-trip lifecycle state (<code>start_date/end_date</code> must become nullable-until-resolved) — distinct from the other Ideation 🔵 objects, which are not schema-blocked.</li>
+      <li><b>Add Memory to Trip Execution's Add workflow.</b> ADR-0007 says a Memory is "created during, consumed after," and charter #26 is mid-day capture — yet the live lens has no authoring door. Add Memory to the Add-workflow list; note authoring is dual-sited (in-the-moment + Closeout). Keep the collection Records-owned; only the surface is borrowed — same pattern as Glance.</li>
+      <li><b>Assign Saved Reference an owner.</b> The map declares it "not a capability" but leaves it owned by nobody, violating its own ownership rule. Recommend <b>Integrations &amp; Syncing</b> (literally "the manual twin of enrichment"), with Documents as the alternative. Pick one.</li>
+      <li><b>Rename Records &amp; Archive to lead with the feeling.</b> A filing-cabinet name carries the entire Remember pillar (the most emotional quarter of the lifecycle). Either rename (Memory &amp; Record / Keepsake &amp; Archive) or reorder the outcome to lead with the keepsake and demote portability to last; promote Trip Memory in the outcome line even while it stays a 🔴 sub.</li>
+      <li><b>State the Trip-Execution-kept / Logistics-demoted rule explicitly.</b> Council rec #7 challenged both on identical grounds; the split reads as preference unless the discriminator is named: <i>in-the-moment/offline is a temporally-distinct stance with its own surfaces; "ready by trip day" is continuous with planning.</i> One sentence in the disposition.</li>
+      <li><b>Add an emotional-register clause to the NOT-list.</b> The list guards logistical exclusions only — not the emotional versions of the same temptations (countdown hype → push; shared moments → feed/reactions; recap → AI authorship). One line: <b>hype without push, shared moments without a feed or reactions, recap without AI authorship or auto-notify.</b> Mark clones' roster-carry as a deliberate gap, not done.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 5 — HORIZON MAP -->
+<!-- ============================================================ -->
+<h2 class="section">Horizon map</h2>
+<p class="section-note">The 8 core + 2 enabling capabilities, with the top <b>Backed</b> opportunities hung off the capability each extends as a dotted "future" layer. Each future item carries its build-horizon badge; <span style="color:var(--clay);font-weight:760">⚠</span> marks a NOT-list brush.</p>
+
+<div class="map-legend">
+  <span class="it"><span class="hz now" style="padding:2px 7px">Now</span></span>
+  <span class="it"><span class="hz next" style="padding:2px 7px">Next</span></span>
+  <span class="it"><span class="hz later" style="padding:2px 7px">Later</span></span>
+  <span class="it"><span class="hz moonshot" style="padding:2px 7px">Moonshot</span></span>
+  <span class="it" style="margin-left:6px"><span class="mat mature">mature</span></span>
+  <span class="it"><span class="mat building">building</span></span>
+  <span class="it"><span class="mat gap">gap</span></span>
+  <span class="it"><span class="mat enabling">enabling</span></span>
+</div>
+
+<div class="capgrid">
+
+  <!-- 1 Ideation -->
+  <div class="cap">
+    <div class="caphd"><span class="nm"><span class="num">1 ·</span>Ideation</span><span class="mat gap">gap</span></div>
+    <p class="outcome">The group decides where, when, and why — enough to commit to dates.</p>
+    <ul class="future">
+      <li><span class="fb next">next</span><span class="ft"><b>When / Availability date-finding wedge</b> — When2Meet heatmap; dateless "forming" state; one-tap promote-to-dates; <span class="w">the poll IS the invite</span>.</span></li>
+      <li><span class="fb next">next</span><span class="ft"><b>Decision provenance + Consensus Lock</b> — persist resolved choice + reasoning at promote-time (shared with Group Input).</span></li>
+      <li><span class="fb later">later</span><span class="ft"><b>Where</b> — paste-a-link Saved-Reference shelf feeding propose→vote (thinner second slice, after When).</span></li>
+    </ul>
+  </div>
+
+  <!-- 2 Itinerary -->
+  <div class="cap">
+    <div class="caphd"><span class="nm"><span class="num">2 ·</span>Itinerary</span><span class="mat mature">mature</span></div>
+    <p class="outcome">A shared plan, built and made ready, where nothing's lost between idea and trip day.</p>
+    <ul class="future">
+      <li><span class="fb next">next</span><span class="ft"><b>Plan Health</b> — deterministic conflict/density/gap/travel-time checks; explainable, <b>not generative</b>.</span></li>
+      <li><span class="fb next">next</span><span class="ft"><b>Arrival/Departure choreography</b> — ride-share grouping, first-in/last-out over flight Items; linkout-only.</span></li>
+    </ul>
+    <div class="keystone">Logistics sub → dissolve into a <b>Booking</b> facet + a cross-capability <b>Item/Trip Readiness</b> projection (booked·paid·documented), owned by none, fed by Itinerary + Money + Documents.</div>
+  </div>
+
+  <!-- 3 Group Input -->
+  <div class="cap">
+    <div class="caphd"><span class="nm"><span class="num">3 ·</span>Group Input</span><span class="mat building">building</span></div>
+    <p class="outcome">Every member's opinion is known — fast (vote) or in depth (comment) — and converges into the plan.</p>
+    <ul class="future">
+      <li><span class="fb next">next</span><span class="ft"><b>Per-item participation</b> — member × item → in/out; a 5th mechanism; <span class="w">default feeder for splits</span>.</span></li>
+      <li><span class="fb next">next</span><span class="ft"><b>Decision records</b> (shared with Ideation).</span></li>
+      <li><span class="fb later">later</span><span class="ft">AI group-sentiment read over existing votes (summarize, never recommend; inherits AI ADR).</span></li>
+    </ul>
+    <div class="keystone"><b>Comment is 🔵 latent</b>, not yet a real collection — distinguish from shipped Vote; promote the polymorphic <code>comments</code> collection to a named blocking dependency.</div>
+  </div>
+
+  <!-- 4 People & Membership -->
+  <div class="cap">
+    <div class="caphd"><span class="nm"><span class="num">4 ·</span>People &amp; Membership</span><span class="mat mature">mature</span></div>
+    <p class="outcome">The right people, with the right access and a recognizable identity; the record survives joins and departures.</p>
+    <ul class="future">
+      <li><span class="fb now">now</span><span class="ft"><b>Onboarding first-contribution slice</b> — THE multiplier; reuses Join Link #118 + /goals deck.</span></li>
+      <li><span class="fb later">later</span><span class="ft"><b>clone-carries-roster</b> — the cheap down-payment on Crew.</span></li>
+      <li><span class="fb later">later</span><span class="ft"><b>Crew / durable group</b> — cross-trip parent; <span class="w">gated behind explicit trip→account decision (D1)</span>.</span></li>
+      <li><span class="fb later">later</span><span class="ft">Durable member facts (diet/accessibility/budget ceiling; Identity facet; rides Crew).</span></li>
+    </ul>
+  </div>
+
+  <!-- 5 Money -->
+  <div class="cap">
+    <div class="caphd"><span class="nm"><span class="num">5 ·</span>Money</span><span class="mat building">building</span></div>
+    <p class="outcome">No one returns to Splitwise — everyone knows what they owe, what's spent, what's left; the group settles fairly.</p>
+    <ul class="future">
+      <li><span class="fb now">now</span><span class="ft"><b>Settle the two-axis model</b> (unit = settlement collapse; participation = split membership) <span class="w">before #230</span>.</span></li>
+      <li><span class="fb next">next</span><span class="ft">Live Money Pulse (group burn-rate/projection, unit-scoped, quiet).</span></li>
+      <li><span class="fb next">next</span><span class="ft">Settle-up confirmation receipt + "all settled" zero-state.</span></li>
+      <li><span class="fb next">next</span><span class="ft">AI expense categorization (suggest-on-type, editable; inherits AI ADR; good self-hosted candidate).</span></li>
+    </ul>
+  </div>
+
+  <!-- 6 Documents -->
+  <div class="cap">
+    <div class="caphd"><span class="nm"><span class="num">6 ·</span>Documents</span><span class="mat building">building</span></div>
+    <p class="outcome">Every booking reference — file or code — is one tap away; never dig the group text.</p>
+    <ul class="future">
+      <li><span class="fb later">later</span><span class="ft"><span class="w">⚠</span> paste-email → extract {item, code, date} prefill — reopen of the V4 "no OCR" cut; rides ADR-0016; strongest case for a self-hosted model.</span></li>
+    </ul>
+  </div>
+
+  <!-- 7 Trip Execution -->
+  <div class="cap">
+    <div class="caphd"><span class="nm"><span class="num">7 ·</span>Trip Execution</span><span class="mat building">building</span></div>
+    <p class="outcome">On the trip, you always know what's now and next, can act one-handed, and it works without signal.</p>
+    <ul class="future">
+      <li><span class="fb now">now</span><span class="ft"><b>Add Memory to the Add workflow</b> — mid-trip capture has no door today (charter #26). <i>fix</i></span></li>
+      <li><span class="fb later">later</span><span class="ft">Grounded NL Q&amp;A over trip data ("when is our flight?"; deterministic offline fallback; inherits AI ADR).</span></li>
+      <li><span class="fb next">next</span><span class="ft">Anchors Live Money Pulse, Plan Health surfacing, the Anticipation pre-live extension.</span></li>
+    </ul>
+    <div class="keystone">Zero-native-data is a feature — the live experience surface where the most differentiated work lands.</div>
+  </div>
+
+  <!-- 8 Records & Archive -->
+  <div class="cap">
+    <div class="caphd"><span class="nm"><span class="num">8 ·</span>Records &amp; Archive</span><span class="mat building">building</span></div>
+    <p class="outcome">The trip ends well and lives on — a private keepsake and a public record — and the data stays yours.</p>
+    <ul class="future">
+      <li><span class="fb next">next</span><span class="ft"><b>Trip Memory build</b> — cheapest de-risked gap (PRD grilled, ADR-0007 accepted); pull <code>heic.ts</code> off the shelf.</span></li>
+      <li><span class="fb next">next</span><span class="ft">Anticipation countdown beat (mobile; mirrors wrap-up banner; <span class="w">⚠ in-app only, no push</span>).</span></li>
+      <li><span class="fb later">later</span><span class="ft">Members-only Trip Recap (read-composition; <span class="w">⚠ public variant = done-items+budget only</span>).</span></li>
+      <li><span class="fb later">later</span><span class="ft">Replicable Archive (archive → stranger → new trip; <span class="w">⚠ grill the "not a discovery tool" line</span>).</span></li>
+      <li><span class="fb moonshot">moonshot</span><span class="ft"><span class="w">⚠</span> Cross-trip Living Record (gated behind Crew + dogfood + per-day-cap guardrail).</span></li>
+    </ul>
+    <div class="keystone">Rename to lead with the feeling; promote Trip Memory in the outcome line.</div>
+  </div>
+
+  <!-- Platform -->
+  <div class="cap enable">
+    <div class="caphd"><span class="nm">Platform</span><span class="mat enabling">enabling</span></div>
+    <p class="outcome">The invisible floor — signed in, loads, works offline, navigates, keeps time.</p>
+    <ul class="future">
+      <li><span class="fb later">later</span><span class="ft">Universal Capture ("add anything" → classify → route with confirm; after the AI ADR; start narrow).</span></li>
+    </ul>
+  </div>
+
+  <!-- Integrations -->
+  <div class="cap enable">
+    <div class="caphd"><span class="nm">Integrations &amp; Syncing</span><span class="mat enabling">enabling</span></div>
+    <p class="outcome">Waypoint plays well with the outside world — pull in, push out, link across.</p>
+    <ul class="future">
+      <li><span class="fb now">now</span><span class="ft"><b>AI-assist posture ADR</b> — self-hosted default; LLM lives here; summarize/extract/answer-never-generate — <b>the keystone that unblocks every AI surface</b>.</span></li>
+      <li><span class="fb next">next</span><span class="ft"><b>Email Digest → Re-engagement</b> — LLM-narrated + tokenized one-tap write-back; <span class="w">⚠ structured writes only</span>.</span></li>
+      <li><span class="fb later">later</span><span class="ft">Calendar feed (webcal subscribe, UID=item id; <span class="w">⚠ feed/linkout, never embedded</span>).</span></li>
+      <li><span class="fb later">later</span><span class="ft">Weather as Ideation decision data (climate-normals per candidate date-range), not only packing/Now.</span></li>
+    </ul>
+    <div class="keystone">Also: <b>assign Saved Reference an owner here</b> ("the manual twin of enrichment").</div>
+  </div>
+
+</div>
+
+<div class="guardrail">
+  <h3>Cross-cutting north-star guardrail</h3>
+  <p>Every blue-sky capability lands as a <b>contextual surface</b> or an <b>explicitly-decided product-unit shift (trip → account)</b> — never a centralizing hub (D1). Emotional features honor: <b>hype without push, shared moments without a feed or reactions, recap without AI authorship or auto-notify.</b> The cross-trip moonshots are gated behind that explicit decision before any build.</p>
+</div>
+
+<div class="legend-row">
+  <span class="it"><span class="consensus backed" style="padding:2px 7px"><span class="dots"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span></span>Backed</span> ≥2 of 3 skeptics call it high-leverage</span>
+  <span class="it"><span class="consensus split" style="padding:2px 7px"><span class="dots"><span class="dot on"></span><span class="dot"></span><span class="dot"></span></span>Split</span> exactly 1</span>
+  <span class="it"><span class="consensus pass" style="padding:2px 7px"><span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>Pass</span> 0 — still a real beat, just not a multiplier</span>
+  <span class="it"><span style="color:var(--clay);font-weight:760">⚠</span> brushes / crosses the charter NOT-list</span>
+</div>
+
+<footer>
+  <p><b>Method.</b> Pass 2 of the Waypoint capability-map council — 15 agents (6 blue-sky opportunity lenses + 4 review lenses + 3 skeptic red-teamers), weighted toward blue-sky with a lighter re-review. Consensus computed per opportunity from the 3 skeptics' <code>isHighLeverage</code> verdicts. Inputs: the revised <code>docs/CAPABILITY_MAP.md</code>, the charter at <code>docs/app-audit/charter.md</code> (NOT-list, tests V1/V2/V3, decisions D1–D6, task-path suite), the synthesis JSON (opportunities · review fixes · sequencing · horizon overlay), and the three skeptic verdict sets.</p>
+  <p>Generated 2026-06-21 · self-contained, no network calls · supersedes nothing in the map; this is a forward-looking opportunity overlay. Pairs with the Pass-1 report at <code>docs/CAPABILITY_MAP_REVIEW.html</code>.</p>
+</footer>
+
+</div>
+</body>
+</html>

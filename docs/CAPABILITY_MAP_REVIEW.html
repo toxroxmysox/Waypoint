@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Waypoint Capability Map — Council Review</title>
+<style>
+  :root{
+    --paper:#faf8f3; --ink:#2b2b2b; --ink-soft:#6b6b6b;
+    --moss:#5a7a5a; --clay:#b5734f; --gold:#c9a227; --line:#e7e2d6;
+    --green:#2b8a3e; --amber:#e8590c; --blue:#1971c2; --red:#c92a2a; --grey:#868e96;
+    --card:#fffdf8;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.55; font-size:16px;
+  }
+  .wrap{max-width:1080px; margin:0 auto; padding:40px 24px 96px}
+  header.masthead{border-bottom:2px solid var(--ink); padding-bottom:22px; margin-bottom:14px}
+  h1{font-size:30px; line-height:1.15; margin:0 0 6px; letter-spacing:-.01em}
+  .sub{color:var(--ink-soft); font-size:15px; margin:0}
+  .method{
+    margin-top:18px; background:var(--card); border:1px solid var(--line);
+    border-left:4px solid var(--moss); border-radius:8px; padding:14px 18px; font-size:14.5px;
+  }
+  .method b{color:var(--ink)}
+  .method .pill{
+    display:inline-block; background:#eef2ec; color:var(--moss); border:1px solid #d7e2d4;
+    border-radius:999px; padding:1px 10px; font-size:12.5px; font-weight:600; margin:0 2px;
+  }
+  h2{
+    font-size:21px; margin:54px 0 4px; letter-spacing:-.01em;
+    border-bottom:1px solid var(--line); padding-bottom:8px;
+  }
+  h2 .n{color:var(--clay); font-weight:700; margin-right:8px; font-variant-numeric:tabular-nums}
+  .lead{color:var(--ink-soft); font-size:14.5px; margin:6px 0 20px; max-width:760px}
+
+  /* maturity dots + legend */
+  .legend{display:flex; flex-wrap:wrap; gap:14px; margin:0 0 22px; font-size:13px; color:var(--ink-soft)}
+  .dot{display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; vertical-align:middle}
+  .dot.green{background:var(--green)} .dot.amber{background:var(--amber)}
+  .dot.blue{background:var(--blue)} .dot.red{background:var(--red)} .dot.grey{background:var(--grey)}
+
+  /* capability card grid */
+  .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px}
+  @media(max-width:980px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:640px){.grid{grid-template-columns:1fr}}
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:16px 16px 14px; position:relative; overflow:hidden;
+  }
+  .card::before{content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--accent,var(--grey))}
+  .card.green{--accent:var(--green)} .card.amber{--accent:var(--amber)}
+  .card.blue{--accent:var(--blue)} .card.red{--accent:var(--red)} .card.grey{--accent:var(--grey)}
+  .card .head{display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-bottom:3px}
+  .card h3{font-size:15.5px; margin:0; letter-spacing:-.01em}
+  .card h3 .idx{color:var(--ink-soft); font-weight:700; margin-right:5px; font-variant-numeric:tabular-nums}
+  .card .mat{font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; white-space:nowrap; color:var(--accent,var(--grey))}
+  .card .out{font-size:13.5px; color:var(--ink); margin:6px 0 10px; line-height:1.45}
+  .card .subs{list-style:none; padding:0; margin:0; border-top:1px dashed var(--line); padding-top:9px}
+  .card .subs li{font-size:12.5px; color:var(--ink-soft); padding:2px 0 2px 14px; position:relative}
+  .card .subs li::before{content:"›"; position:absolute; left:0; color:var(--clay); font-weight:700}
+  .card .subs li b{color:var(--ink); font-weight:600}
+  .card .subs .none{padding-left:0; font-style:italic; opacity:.8}
+  .card .subs li .sd{font-size:9px; vertical-align:1px; margin-left:5px}
+  .card.enabling{background:#f6f5f1}
+
+  /* findings */
+  .theme{margin:0 0 26px}
+  .theme h3{
+    font-size:15px; margin:0 0 12px; display:flex; align-items:center; gap:9px;
+    text-transform:uppercase; letter-spacing:.04em; color:var(--ink);
+  }
+  .theme h3 .tag{width:10px; height:10px; border-radius:2px; display:inline-block}
+  .finding{
+    background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:13px 15px; margin-bottom:10px; display:grid; grid-template-columns:1fr auto; gap:6px 16px; align-items:start;
+  }
+  .finding .body{grid-column:1}
+  .finding .body p{margin:0; font-size:14px}
+  .finding .body .m{color:var(--ink-soft); font-size:12.5px; margin-top:4px}
+  .finding .meta{grid-column:2; text-align:right; white-space:nowrap; font-size:11px}
+  .finding .lens{display:inline-block; background:#eef1f5; color:#3a4a5a; border:1px solid #dbe2ea; border-radius:6px; padding:1px 8px; font-weight:600}
+  .sev{display:inline-block; border-radius:6px; padding:1px 8px; font-weight:700; font-size:10.5px; text-transform:uppercase; letter-spacing:.03em; margin-top:5px}
+  .sev.high{background:#fbe7e7; color:var(--red); border:1px solid #f3cccc}
+  .sev.med{background:#fdeede; color:var(--amber); border:1px solid #f6d8b6}
+  .sev.low{background:#eef2ec; color:var(--moss); border:1px solid #d7e2d4}
+  @media(max-width:640px){
+    .finding{grid-template-columns:1fr}
+    .finding .meta{grid-column:1; text-align:left; margin-top:4px}
+    .sev{margin-top:0}
+  }
+
+  /* recommendations table */
+  .tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:12px; background:var(--card)}
+  table{border-collapse:collapse; width:100%; min-width:760px; font-size:13.5px}
+  thead th{
+    background:#f1efe7; text-align:left; padding:11px 13px; font-size:11.5px; text-transform:uppercase;
+    letter-spacing:.04em; color:var(--ink-soft); border-bottom:1px solid var(--line); white-space:nowrap; vertical-align:bottom;
+  }
+  tbody td{padding:12px 13px; border-bottom:1px solid var(--line); vertical-align:top}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:nth-child(even){background:#fcfbf6}
+  td .rank{font-weight:800; color:var(--clay); font-variant-numeric:tabular-nums}
+  td .chg{font-weight:600; color:var(--ink)}
+  td .why{color:var(--ink-soft); font-size:12.5px; margin-top:3px; display:block; max-width:340px}
+  td .aff{font-size:12px; color:var(--ink-soft)}
+  .chip{display:inline-block; border-radius:6px; padding:1px 7px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.02em}
+  .conf-high{background:#fbe7e7; color:var(--red)}
+  .conf-med{background:#fdeede; color:var(--amber)}
+  .badge{display:inline-block; border-radius:999px; padding:2px 10px; font-size:11px; font-weight:800; letter-spacing:.03em}
+  .b-conf{background:#def5e4; color:#1d6b2c; border:1px solid #b9e3c4}
+  .b-cont{background:#fdeede; color:#a8480d; border:1px solid #f5cfa6}
+  .b-rej{background:#fbe7e7; color:var(--red); border:1px solid #f0c4c4}
+  .note-creep{display:block; font-size:10.5px; color:var(--amber); margin-top:4px; font-weight:600}
+
+  /* proposed tree */
+  .tree{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:8px 10px}
+  .conv{display:flex; flex-wrap:wrap; gap:10px; margin:0 0 18px; font-size:11.5px}
+  .conv .ch{display:inline-flex; align-items:center; gap:5px; color:var(--ink-soft)}
+  .diff{display:inline-block; border-radius:5px; padding:0px 6px; font-size:10px; font-weight:800; letter-spacing:.03em; text-transform:uppercase; vertical-align:middle}
+  .d-add{background:#def5e4; color:#1d6b2c}
+  .d-move{background:#d8eafc; color:#0f4f8a}
+  .d-rem{background:#fbe2e2; color:var(--red)}
+  .d-ren{background:#fbeecb; color:#8a6a09}
+  .d-merge{background:#ece3f7; color:#5b3a8a}
+  .d-un{background:#eceae2; color:var(--grey)}
+  .node{padding:7px 8px; border-radius:8px}
+  .node.l1{border:1px solid var(--line); margin:7px 0; background:#fffdf8}
+  .node .nh{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+  .node .nt{font-weight:700; font-size:14.5px}
+  .node .nt .idx{color:var(--ink-soft); margin-right:5px}
+  .node .no{color:var(--ink-soft); font-size:12.5px; font-style:italic; flex-basis:100%; margin-top:1px}
+  .node ul{list-style:none; margin:7px 0 2px; padding:0 0 0 4px}
+  .node ul li{font-size:12.5px; padding:3px 0 3px 14px; position:relative; color:var(--ink)}
+  .node ul li::before{content:"–"; position:absolute; left:2px; color:var(--clay)}
+  .node ul li .sd{font-size:9px; vertical-align:1px; margin:0 4px}
+  .node.removed .nt{text-decoration:line-through; color:var(--ink-soft)}
+  .node.removed{opacity:.78; background:#fcf4f4; border-color:#f0d9d9}
+  .section-lbl{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--clay); font-weight:700; margin:18px 0 4px; padding-left:4px}
+  .keystone{background:#f3f6f2; border:1px solid #dde6da; border-radius:10px; padding:10px 12px; margin:6px 0 4px}
+  .keystone li::before{content:"◆"; font-size:9px; top:4px}
+  .notline{font-size:12px; color:var(--ink-soft); padding:5px 8px; background:#fbf7ef; border-left:3px solid var(--gold); border-radius:0 6px 6px 0; margin:7px 0}
+  .migbox{font-size:12.5px; color:var(--ink); background:#f6f5f1; border:1px dashed var(--line); border-radius:8px; padding:10px 12px; margin-top:14px}
+  footer{margin-top:60px; padding-top:18px; border-top:1px solid var(--line); color:var(--ink-soft); font-size:12.5px}
+  code{background:#f1efe7; border:1px solid var(--line); border-radius:4px; padding:0 4px; font-size:.88em; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .ghost{color:var(--ink-soft)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <h1>Waypoint Capability Map — Council Review</h1>
+    <p class="sub">An adversarial review of the grilled capability model · the home for a group trip: plan, execute, remember · solo to 12+.</p>
+    <div class="method">
+      <b>Method.</b> The grilled map (<code>docs/CAPABILITY_MAP.md</code>) was put through a
+      <span class="pill">9-lens council</span> (DDD / bounded-context, status-quo, data architect, adversarial, charter-fit, competitive, completeness, modeling-rules, provenance)
+      and then independently red-teamed by <span class="pill">3 skeptics</span> — <b>14 agents total</b> — each verifying load-bearing claims against the live PocketBase schema, ADRs, and <code>SPEC_BACKLOG.md</code>.
+      Every recommendation carries a <b>skeptic consensus</b>: <span class="badge b-conf">CONFIRMED</span> (≥2 of 3 call it real), <span class="badge b-cont">CONTESTED</span> (1), <span class="badge b-rej">REJECTED</span> (0).
+      Schema claims below were re-verified in this worktree. &nbsp;<b>Date:</b> 2026-06-21.
+    </div>
+  </header>
+
+  <!-- ============ SECTION 2 : MAP AFTER GRILL ============ -->
+  <h2><span class="n">1</span>Map after our grill</h2>
+  <p class="lead">The model the council reviewed: 9 CORE capabilities + 2 ENABLING, each with a single outcome and its sub-capabilities. Keystone primitives (<code>Item</code> / <code>Vote+Comment</code> / <code>Member+Role</code>) cross the spine — one physical record surfaced in N capabilities, never copied (🔗 = borrows).</p>
+
+  <div class="legend">
+    <span><span class="dot green"></span>mature</span>
+    <span><span class="dot amber"></span>building</span>
+    <span><span class="dot blue"></span>planned</span>
+    <span><span class="dot red"></span>gap</span>
+    <span><span class="dot grey"></span>enabling</span>
+  </div>
+
+  <div class="grid">
+
+    <div class="card red">
+      <div class="head"><h3><span class="idx">1</span>Ideation</h3><span class="mat">gap</span></div>
+      <p class="out">The group decides <b>where, when, why</b> — enough to commit to dates.</p>
+      <ul class="subs">
+        <li><b>Where</b> — destinations, regions, route order <span class="dot red sd"></span></li>
+        <li><b>When</b> — weeks, ranges, trip length <span class="dot red sd"></span></li>
+        <li><b>Why · Goals</b> — persistent aspirations <span class="dot amber sd"></span></li>
+      </ul>
+    </div>
+
+    <div class="card green">
+      <div class="head"><h3><span class="idx">2</span>Itinerary</h3><span class="mat">mature</span></div>
+      <p class="out">A shared plan where nothing's lost between idea and trip day.</p>
+      <ul class="subs">
+        <li class="none">No subs — Trip structure, Items, Parking Lot, Scheduling are facets</li>
+        <li>Owns keystone <b><code>Item</code></b></li>
+      </ul>
+    </div>
+
+    <div class="card amber">
+      <div class="head"><h3><span class="idx">3</span>Group Input</h3><span class="mat">building</span></div>
+      <p class="out">Every member's opinion/question/preference converges into the plan — fast (vote) or deep (comment).</p>
+      <ul class="subs">
+        <li class="none">No subs — one capability</li>
+        <li>Owns <b><code>Vote</code> + <code>Comment</code></b></li>
+      </ul>
+    </div>
+
+    <div class="card green">
+      <div class="head"><h3><span class="idx">4</span>People &amp; Membership</h3><span class="mat">mature</span></div>
+      <p class="out">Right people, right access, recognizable identity — record survives joins, claims, departures.</p>
+      <ul class="subs">
+        <li><b>Identity</b> — avatars, display names <span class="dot amber sd"></span></li>
+        <li>Owns <b><code>Member</code> + <code>Role</code></b></li>
+      </ul>
+    </div>
+
+    <div class="card amber">
+      <div class="head"><h3><span class="idx">5</span>Money</h3><span class="mat">building</span></div>
+      <p class="out">No one returns to Splitwise — what you owe, spent, have left, and a fair settle-up.</p>
+      <ul class="subs">
+        <li><b>Budgeting</b> — forward control <span class="dot green sd"></span></li>
+      </ul>
+    </div>
+
+    <div class="card amber">
+      <div class="head"><h3><span class="idx">6</span>Documents</h3><span class="mat">building</span></div>
+      <p class="out">Every booking reference — file or code — one tap away.</p>
+      <ul class="subs">
+        <li class="none">No subs</li>
+      </ul>
+    </div>
+
+    <div class="card amber">
+      <div class="head"><h3><span class="idx">7</span>Logistics</h3><span class="mat">building</span></div>
+      <p class="out">The plan gets ready &amp; tracked — booked, packed, confirmed, travel known.</p>
+      <ul class="subs">
+        <li><b>Booking</b> — smart list + mark <code>booked</code> <span class="dot green sd"></span></li>
+      </ul>
+    </div>
+
+    <div class="card amber">
+      <div class="head"><h3><span class="idx">8</span>Trip Execution</h3><span class="mat">building</span></div>
+      <p class="out">On the trip you know what's now/next, act one-handed, works without signal.</p>
+      <ul class="subs">
+        <li><b>Light Replanning</b> — manage the unplanned <span class="dot blue sd"></span></li>
+      </ul>
+    </div>
+
+    <div class="card amber">
+      <div class="head"><h3><span class="idx">9</span>Records &amp; Archive</h3><span class="mat">building</span></div>
+      <p class="out">The trip ends well and lives on — keepsake + public record, data stays yours.</p>
+      <ul class="subs">
+        <li><b>Trip Memory</b> — 1 photo + 1 thought / member / day <span class="dot red sd"></span></li>
+      </ul>
+    </div>
+
+    <div class="card enabling grey">
+      <div class="head"><h3>Platform</h3><span class="mat">enabling</span></div>
+      <p class="out">The invisible floor — signed in, loads, offline, navigates, keeps time.</p>
+      <ul class="subs">
+        <li><b>Notifications</b> — in-app bell (event sink)</li>
+        <li>Auth (email+OTP) · PWA · nav · tokens · clock</li>
+      </ul>
+    </div>
+
+    <div class="card enabling grey">
+      <div class="head"><h3>Integrations &amp; Syncing</h3><span class="mat">enabling</span></div>
+      <p class="out">Plays well with the outside world — pull in, push out, link across.</p>
+      <ul class="subs">
+        <li>Places · Flights · Resend · Map linkouts</li>
+        <li>Calendar sync · Umami <span class="ghost">(planned)</span></li>
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- ============ SECTION 3 : COUNCIL FINDINGS ============ -->
+  <h2><span class="n">2</span>Council findings</h2>
+  <p class="lead">The signal that survived 14 agents, grouped by theme. The dominant pattern: the map asserts <b>present-tense ownership</b> of collections and fields the database does not have — several rationalized from ADRs the grilling walk authored hours earlier. <b>"ADR accepted ≠ shipped"</b> is the spine of the review.</p>
+
+  <!-- THEME: overlooked / misstated -->
+  <div class="theme">
+    <h3><span class="tag" style="background:var(--red)"></span>Overlooked &amp; misstated — as-built vs as-intended</h3>
+
+    <div class="finding">
+      <div class="body">
+        <p><b>The Data facet asserts ownership the schema doesn't back.</b> Re-verified here: no <code>money_unit</code> collection or migration exists; <code>confirmation_codes</code> still lives on <code>items</code> (<code>0006_items.js:39</code>) while <code>0032_documents.js</code> stores files only; <code>booked_by</code>/<code>paid_by</code>/<code>cost_actual_usd</code> sit dead in the Item schema. ADR-0016 is dated 2026-06-21 — the map claimed ownership from an ADR with zero migration behind it.</p>
+        <p class="m">A reader trusting the Data facet models Documents/Money as code-owner and finds the data in Itinerary. The single most pervasive defect — touches 3 of 9 capabilities.</p>
+      </div>
+      <div class="meta"><span class="lens">DDD · status-quo · data architect</span><br><span class="sev high">High</span></div>
+    </div>
+
+    <div class="finding">
+      <div class="body">
+        <p><b>Group Input "owns Vote + Comment" overclaims.</b> Three <em>deliberately unmerged</em> vote collections exist (<code>votes</code> 0024, <code>goal_votes</code> 0042, <code>suggestion_votes</code> 0049 — ADR-0004/0009 forbid a polymorphic table). So Group Input owns a <em>pattern</em> (<code>voting.ts</code>), not one aggregate. <code>Comment</code> is not a collection at all — it's a <code>suggestions.target_type='comment'</code> row, item-only. The map's own Frontier admits both, contradicting its headline.</p>
+        <p class="m">Read literally, "owns the Vote primitive" licenses the exact table merge two ADRs reject. (Value model is Love/Like/Flexible/<b>Dislike</b>, not "Pass".)</p>
+      </div>
+      <div class="meta"><span class="lens">DDD · modeling-rules</span><br><span class="sev high">High</span></div>
+    </div>
+  </div>
+
+  <!-- THEME: status-quo bias -->
+  <div class="theme">
+    <h3><span class="tag" style="background:var(--amber)"></span>Status-quo bias — granularity inherited from folders, not outcomes</h3>
+
+    <div class="finding">
+      <div class="body">
+        <p><b>The 9-box spine maps ~1:1 onto <code>src/lib/</code> folders.</b> Folder layout — not outcome analysis — plausibly set the granularity. Two nodes fail the map's <em>own</em> admission test (own data <b>or</b> earn a distinct outcome): <b>Trip Execution</b> owns zero native data (SPEC.md models it as "Trip Mode", UI state) and <b>Logistics</b>' only owned data is the Checklist/Task primitive — everything else is a view over borrowed data, which is a reporting layer, not a bounded context. The map applies the catch-all test to Logistics and Records but exempts Trip Execution.</p>
+        <p class="m">Demoting both lets the same <code>items</code>/<code>expenses</code> count toward two L1s instead of inflating the L1 count.</p>
+      </div>
+      <div class="meta"><span class="lens">DDD · adversarial · provenance</span><br><span class="sev med">Medium</span></div>
+    </div>
+
+    <div class="finding">
+      <div class="body">
+        <p><b>"Supersedes CONTEXT.md" is asserted but never mapped.</b> <code>lib/collaboration/</code> alone spans three of the map's capabilities (voting → Group Input, member-avatar → Membership, NotificationBell → Platform). The map instructs the reader to reconcile against a mapping that isn't written down — unactionable until an old-context → new-capability + <code>lib/</code>-split table exists.</p>
+      </div>
+      <div class="meta"><span class="lens">provenance</span><br><span class="sev high">High</span></div>
+    </div>
+  </div>
+
+  <!-- THEME: external -->
+  <div class="theme">
+    <h3><span class="tag" style="background:var(--moss)"></span>External capabilities worth stealing — &amp; the validated moat</h3>
+
+    <div class="finding">
+      <div class="body">
+        <p><b>The Candidate Scenario / decision board is genuinely ahead of the field.</b> Doodle and When2Meet poll one axis; Trello and Pinterest don't structure a decision. Bundling several proposals into one weighable option is differentiating scaffolding — the Ideation fixes should plug into it, not replace it. Likewise <b>Money</b> correctly scopes to retire Splitwise (per-expense split + debt simplification + settlements + Paid Moment deriving "paid" from a linked Expense) — the strongest competitive front on the map.</p>
+        <p class="m">Validated by the council, not changed. Keystone owns-vs-borrows model affirmed as the map's strongest DDD move.</p>
+      </div>
+      <div class="meta"><span class="lens">competitive</span><br><span class="sev low">Keep</span></div>
+    </div>
+
+    <div class="finding">
+      <div class="body">
+        <p><b>Two committed connectors are missing from the canonical model.</b> <code>SPEC_BACKLOG.md</code> commits <b>Weather</b> (Open-Meteo, no key — feeds packing readiness + Now-tab forecast) and an outbound <b>Email Digest</b> (Resend weekly "what changed"). The digest is verbatim "<em>the realistic engagement lever for non-technical friends who won't open the PWA</em>" — the only outbound re-engagement channel with push off-table, mapping straight onto the charter's core bar (the non-technical friend actually uses it).</p>
+      </div>
+      <div class="meta"><span class="lens">completeness · charter-fit</span><br><span class="sev med">Medium</span></div>
+    </div>
+  </div>
+
+  <!-- THEME: gaps -->
+  <div class="theme">
+    <h3><span class="tag" style="background:var(--blue)"></span>Modeling gaps — unowned outcomes the charter flags</h3>
+
+    <div class="finding">
+      <div class="body">
+        <p><b>"When" cannot ride the Vote primitive — availability ≠ preference.</b> A member can <em>Love</em> a week and be <em>unavailable</em> that week; they're orthogonal axes. The map justifies the Where/When/Why split by distinct outcomes yet assigns all three the same borrowed mechanism — an internal contradiction. An implementer reading it builds Vote-on-date-ranges and the group keeps a When2Meet tab open: a V1 charter failure. Needs a fourth mechanism — an <b>Availability mark</b> (member × date-range → yes/maybe/no overlap).</p>
+      </div>
+      <div class="meta"><span class="lens">modeling-rules · charter-fit</span><br><span class="sev high">High</span></div>
+    </div>
+
+    <div class="finding">
+      <div class="body">
+        <p><b>Three real seams have no home in the model.</b> (a) Post-join onboarding / "first five minutes" — charter D2, explicitly a likely-P1 gap — sits between Membership and Group Input. (b) Pre-trip soft-commit ("who's even in" before firm dates), a consequence of the verified dates-required hard-reject at trip creation. (c) The phase→phase idea hand-off (parked ideas stranded when a phase ends), an Itinerary/Parking-Lot edge. These are notes, not new L1s — building RSVP/onboarding as standalone capabilities is the scope-creep trap to avoid.</p>
+      </div>
+      <div class="meta"><span class="lens">charter-fit · adversarial</span><br><span class="sev med">Medium</span></div>
+    </div>
+
+    <div class="finding">
+      <div class="body">
+        <p><b>Money Unit (ADR-0015) introduces a second people-grouping with a leave-able lifecycle</b> that overlaps Membership's <code>Member+Role</code>. Without a stated cross-aggregate rule, "leave-able unit" + "removable member" yields orphaned or double-counted pooled debt — specifically the unstated case is a Member <em>tombstoned</em> mid-trip (ADR-0008) with balances. Cheap to state now (Money Unit references <code>Member</code> 🔗, never a second member store; resolves on tombstone). The map is silent; the heavier "promote Money Unit to keystone tier" idea is correctly rejected.</p>
+      </div>
+      <div class="meta"><span class="lens">data architect · DDD</span><br><span class="sev med">Medium</span></div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 4 : RECOMMENDATIONS ============ -->
+  <h2><span class="n">3</span>Recommendations</h2>
+  <p class="lead">Ranked by leverage. <b>Skeptic consensus</b> reflects how many of the 3 red-teamers independently verified the recommendation as real. All nine cleared the ≥2 bar — <b>nine CONFIRMED</b> — but two carry minority scope-creep flags worth honoring (narrow, don't drop).</p>
+
+  <div class="tablewrap">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Change</th>
+        <th>Affects</th>
+        <th>Council<br>confidence</th>
+        <th>Skeptic<br>consensus</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="rank">1</span></td>
+        <td>
+          <span class="chg">Add an as-built vs as-intended status discipline.</span>
+          <span class="why">Tag every Data object 🟢 shipped / 🔵 planned; state "ADR accepted ≠ shipped". Demote Confirmation code (still on <code>items</code>), Money Unit (no collection) and the inert ghost fields out of present-tense Data.</span>
+        </td>
+        <td class="aff">Documents · Money · Itinerary &amp; the Data-facet convention globally</td>
+        <td><span class="chip conf-high">High</span></td>
+        <td><span class="badge b-conf">CONFIRMED</span><span style="display:block;font-size:10.5px;color:var(--ink-soft);margin-top:4px">3 / 3 real</span></td>
+      </tr>
+      <tr>
+        <td><span class="rank">2</span></td>
+        <td>
+          <span class="chg">Reword Group Input's keystone to "owns the vote/comment MECHANISMS".</span>
+          <span class="why">Pattern reused across 3 intentionally-separate collections (cite ADR-0004/0009 inline — don't merge). Mark <code>Comment</code> 🔵 latent (today a <code>suggestions</code> row, item-only).</span>
+        </td>
+        <td class="aff">Group Input</td>
+        <td><span class="chip conf-high">High</span></td>
+        <td><span class="badge b-conf">CONFIRMED</span><span style="display:block;font-size:10.5px;color:var(--ink-soft);margin-top:4px">3 / 3 real</span></td>
+      </tr>
+      <tr>
+        <td><span class="rank">3</span></td>
+        <td>
+          <span class="chg">Add an Availability primitive to Ideation's "When".</span>
+          <span class="why">A fourth cross-cutting mechanism (member × date-range → yes/maybe/no overlap) — explicitly <b>not</b> the Vote primitive. Note in Group Input that Vote doesn't cover availability.</span>
+        </td>
+        <td class="aff">Ideation · Group Input</td>
+        <td><span class="chip conf-high">High</span></td>
+        <td><span class="badge b-conf">CONFIRMED</span><span style="display:block;font-size:10.5px;color:var(--ink-soft);margin-top:4px">3 / 3 real</span></td>
+      </tr>
+      <tr>
+        <td><span class="rank">4</span></td>
+        <td>
+          <span class="chg">Reconcile the map with code module structure.</span>
+          <span class="why">Add an old-context → new-capability + <code>lib/</code>-split table (urgent: <code>lib/collaboration/</code> spans 3 capabilities) and a per-L1 provenance note (earned-by-outcome vs inherited-from-folder). Keep CONTEXT.md's contexts until the table exists.</span>
+        </td>
+        <td class="aff">Whole map (root taxonomy) · Platform</td>
+        <td><span class="chip conf-high">High</span></td>
+        <td><span class="badge b-conf">CONFIRMED</span><span style="display:block;font-size:10.5px;color:var(--ink-soft);margin-top:4px">3 / 3 real</span></td>
+      </tr>
+      <tr>
+        <td><span class="rank">5</span></td>
+        <td>
+          <span class="chg">Add Weather + outbound Email Digest as planned (🔵) connectors.</span>
+          <span class="why">Both committed in SPEC_BACKLOG, invisible in the canonical model. Digest is the highest-leverage absence vs the charter's "non-technical friend uses it" bar; push stays off-table.</span>
+        </td>
+        <td class="aff">Integrations · Platform · Itinerary · Trip Execution</td>
+        <td><span class="chip conf-high">High</span></td>
+        <td><span class="badge b-conf">CONFIRMED</span><span style="display:block;font-size:10.5px;color:var(--ink-soft);margin-top:4px">3 / 3 real</span></td>
+      </tr>
+      <tr>
+        <td><span class="rank">6</span></td>
+        <td>
+          <span class="chg">Add a NOT-list section + three explicit gap/seam notes.</span>
+          <span class="why">Mirror the charter NOT-list so the model carries its own boundaries. Add 🔴 seams: onboarding / first-five-minutes (D2), pre-trip soft-commit, phase→phase idea hand-off. Notes, not new capabilities.</span>
+        </td>
+        <td class="aff">Root taxonomy · Ideation · Membership · Itinerary</td>
+        <td><span class="chip conf-med">Medium</span></td>
+        <td>
+          <span class="badge b-conf">CONFIRMED</span><span style="display:block;font-size:10.5px;color:var(--ink-soft);margin-top:4px">3 / 3 real</span>
+          <span class="note-creep">⚠ 1 / 3 flag: NOT-list mirror is mild duplication — keep the seam notes, treat the mirror as a pointer to the charter.</span>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="rank">7</span></td>
+        <td>
+          <span class="chg">Demote Trip Execution from L1 to a cross-cutting Mode.</span>
+          <span class="why">Live twin of Planning Mode; owns zero data. Move Light Replanning under Itinerary; keep Now/Today/Focus as Platform nav surfaces. SPEC.md already models it as "Trip Mode".</span>
+        </td>
+        <td class="aff">Trip Execution → Mode · Light Replanning → Itinerary</td>
+        <td><span class="chip conf-med">Medium</span></td>
+        <td><span class="badge b-conf">CONFIRMED</span><span style="display:block;font-size:10.5px;color:var(--ink-soft);margin-top:4px">3 / 3 real</span></td>
+      </tr>
+      <tr>
+        <td><span class="rank">8</span></td>
+        <td>
+          <span class="chg">Dissolve Logistics as an L1; re-home its views to Itinerary.</span>
+          <span class="why">All its code lives in <code>lib/itinerary/</code>; Checklist/Task is a standalone primitive (ADR-0003). Re-home Booking / readiness rollup / Travel as Itinerary lenses; keep "Readiness &amp; Prep" only if the "ready by trip day" outcome survives.</span>
+        </td>
+        <td class="aff">Logistics → dissolved into Itinerary · Checklist/Task → primitive</td>
+        <td><span class="chip conf-med">Medium</span></td>
+        <td><span class="badge b-conf">CONFIRMED</span><span style="display:block;font-size:10.5px;color:var(--ink-soft);margin-top:4px">3 / 3 real</span></td>
+      </tr>
+      <tr>
+        <td><span class="rank">9</span></td>
+        <td>
+          <span class="chg">Name Money Unit's consistency boundary.</span>
+          <span class="why">State Money Unit is a Money-owned grouping that references <code>Member</code> 🔗 (never a second member store) and resolves on tombstone (ADR-0008). Add it to the borrow graph. Reject "promote to keystone tier".</span>
+        </td>
+        <td class="aff">Money · People &amp; Membership</td>
+        <td><span class="chip conf-med">Medium</span></td>
+        <td>
+          <span class="badge b-conf">CONFIRMED</span><span style="display:block;font-size:10.5px;color:var(--ink-soft);margin-top:4px">3 / 3 real</span>
+          <span class="note-creep">⚠ 2 / 3 flag scope-creep: designing-for-vapor. Narrow to the ADR-0008 tombstone seam + the 🔵 borrow-graph edge; leave the full lifecycle rule to ADR-0015 when built.</span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ============ SECTION 5 : PROPOSED MAP ============ -->
+  <h2><span class="n">4</span>Proposed map after the council</h2>
+  <p class="lead">The after-council tree, diffed against the grilled map. Convention added: Data tagged 🟢 shipped / 🔵 planned — <b>ADR accepted ≠ shipped</b>. Borrow rule: a borrower (🔗) reads but never mutates the owner's invariant fields.</p>
+
+  <div class="conv">
+    <span class="ch"><span class="diff d-add">added</span></span>
+    <span class="ch"><span class="diff d-move">moved</span></span>
+    <span class="ch"><span class="diff d-ren">renamed</span></span>
+    <span class="ch"><span class="diff d-merge">merged</span></span>
+    <span class="ch"><span class="diff d-rem">removed</span></span>
+    <span class="ch"><span class="diff d-un">unchanged</span></span>
+  </div>
+
+  <div class="tree">
+
+    <div class="section-lbl">Keystone primitives (cross-cutting graph)</div>
+    <div class="keystone">
+      <ul class="subs" style="border:none;padding-top:0">
+        <li><b>Itinerary → <code>Item</code></b> <span class="diff d-un">unchanged</span> — keystone entity; borrowed by Money/Documents/Group Input/Membership. Highest bar to attach anything new.</li>
+        <li><b>Group Input → vote/comment MECHANISMS</b> <span class="diff d-ren">renamed</span> — was "owns Vote+Comment primitives". The <code>voting.ts</code> scoring + Love/Like/Flexible/Dislike model, reused across <code>votes</code>/<code>goal_votes</code>/<code>suggestion_votes</code> (ADR-0004/0009 — do not merge). Comment 🔵 latent.</li>
+        <li><b>People &amp; Membership → <code>Member</code> + <code>Role</code></b> <span class="diff d-un">unchanged</span> — people-source + access primitive.</li>
+        <li><b>Availability mark</b> <span class="diff d-add">added</span> — fourth mechanism, scoped to Ideation·When (member × date-range → yes/maybe/no). NOT the Vote primitive.</li>
+        <li><span class="ghost"><em>Saved Reference</em> = a data type (public external link), not a capability. <span class="diff d-un">unchanged</span></span></li>
+      </ul>
+    </div>
+
+    <div class="section-lbl">Core</div>
+
+    <div class="node l1 red">
+      <div class="nh"><span class="nt"><span class="idx">1</span>Ideation <span class="dot red sd"></span></span> <span class="diff d-un">unchanged</span></div>
+      <div class="no">decide where/when/why, enough to commit to dates.</div>
+      <ul>
+        <li><b>Where</b> <span class="dot red sd"></span> — group DECISION among member-proposed destinations (never sources — NOT-list); mechanism = Vote + comparison board. <span class="diff d-un">unchanged</span></li>
+        <li><b>When</b> <span class="dot red sd"></span> — converge a window; mechanism = <b>Availability mark</b>, not Vote. <span class="diff d-ren">renamed</span></li>
+        <li><b>Why · Goals</b> <span class="dot amber sd"></span> — persistent aspirations. <span class="diff d-un">unchanged</span></li>
+        <li class="notline">Seam: pre-trip soft-commit / "who's even in" before firm dates has no home <span class="dot red sd"></span>. <span class="diff d-add">added</span></li>
+        <li>Data: Proposal 🔵, Candidate Scenario 🔵, Goal 🟢. <span class="diff d-add">status tags added</span></li>
+      </ul>
+    </div>
+
+    <div class="node l1 green">
+      <div class="nh"><span class="nt"><span class="idx">2</span>Itinerary <span class="dot green sd"></span></span> <span class="diff d-un">unchanged</span> <span class="diff d-merge">absorbs Logistics</span></div>
+      <div class="no">a shared plan where nothing's lost between idea and trip day.</div>
+      <ul>
+        <li><b>Readiness &amp; Prep</b> <span class="diff d-move">moved from Logistics</span> — outcome "ready by trip day": Booking (mark <code>booked</code>), readiness rollup (booked←Itinerary / paid←Money / documented←Documents), Travel view (lens over flight Items).</li>
+        <li><b>Light Replanning</b> <span class="dot blue sd"></span> <span class="diff d-move">moved from Trip Execution</span> — manage the unplanned mid-trip (#166).</li>
+        <li>Facets: Trip structure, Items, Parking Lot, Scheduling. <span class="diff d-un">unchanged</span></li>
+        <li>Data: <code>trips</code>/<code>phases</code>/<code>days</code>/<b><code>items</code></b> 🟢; <code>cost_estimate_usd</code> (read by Money). <em>Inert ghost fields</em>: <code>booked_by</code>, <code>paid_by</code>, <code>cost_actual_usd</code> (in schema, dead). <span class="diff d-add">added</span></li>
+        <li class="notline">Seam: phase→phase idea hand-off (stranded parked ideas) owned here <span class="dot red sd"></span>. <span class="diff d-add">added</span></li>
+      </ul>
+    </div>
+
+    <div class="node l1 amber">
+      <div class="nh"><span class="nt"><span class="idx">3</span>Group Input <span class="dot amber sd"></span></span> <span class="diff d-un">unchanged</span></div>
+      <div class="no">every member's opinion/question/preference, fast or deep, converges into the plan.</div>
+      <ul>
+        <li>Data: vote mechanism across 3 collections 🟢; Comment 🔵 (extract from <code>suggestions</code>); ghost/proposed Item (<code>suggestions</code>) 🟢. <span class="diff d-ren">status + framing</span></li>
+      </ul>
+    </div>
+
+    <div class="node l1 green">
+      <div class="nh"><span class="nt"><span class="idx">4</span>People &amp; Membership <span class="dot green sd"></span></span> <span class="diff d-un">unchanged</span></div>
+      <div class="no">right people, right access, recognizable identity, surviving departures.</div>
+      <ul>
+        <li><b>Identity</b> <span class="dot amber sd"></span> — user-level avatars/display names. <span class="diff d-un">unchanged</span></li>
+        <li><b>Onboarding / first five minutes</b> <span class="dot red sd"></span> <span class="diff d-add">added</span> — joined member lands oriented &amp; makes a first contribution (charter D2, P1); seam to Group Input.</li>
+        <li>Data: <b><code>Member</code></b>/<b><code>Role</code></b> 🟢, <code>pending_invites</code>, <code>join_tokens</code>, tombstones. <span class="diff d-un">unchanged</span></li>
+      </ul>
+    </div>
+
+    <div class="node l1 amber">
+      <div class="nh"><span class="nt"><span class="idx">5</span>Money <span class="dot amber sd"></span></span> <span class="diff d-un">unchanged</span></div>
+      <div class="no">no one returns to Splitwise.</div>
+      <ul>
+        <li><b>Budgeting</b> <span class="dot green sd"></span> — forward control (own data, owner-only roles). <span class="diff d-un">unchanged</span></li>
+        <li>Data: <code>expenses</code> 🟢 (borrows Item+Member 🔗), <code>settlements</code> 🟢, <code>trip_budgets</code> 🟢; <b>Money Unit</b> 🔵 <span class="diff d-ren">status renamed</span> — Money-owned grouping that <b>references Member 🔗</b> (never a second member store), resolves on Member tombstone (ADR-0008); Glance 🔵.</li>
+      </ul>
+    </div>
+
+    <div class="node l1 amber">
+      <div class="nh"><span class="nt"><span class="idx">6</span>Documents <span class="dot amber sd"></span></span> <span class="diff d-un">unchanged</span></div>
+      <div class="no">every booking reference, file or code, one tap away.</div>
+      <ul>
+        <li>Data: File artifact (<code>documents</code>) 🟢; <b>Confirmation code</b> 🔵 <span class="diff d-ren">status renamed</span> — ADR-0016 accepted, <b>unmigrated</b>; today lives on <code>items.confirmation_codes</code> (Itinerary).</li>
+      </ul>
+    </div>
+
+    <div class="node l1 amber">
+      <div class="nh"><span class="nt"><span class="idx">9</span>Records &amp; Archive <span class="dot amber sd"></span></span> <span class="diff d-un">unchanged</span></div>
+      <div class="no">the trip ends well and lives on; data stays yours.</div>
+      <ul>
+        <li><b>Trip Memory</b> <span class="dot red sd"></span> — private, one photo + one thought / member / day (cap = the boundary, ADR-0007; cap non-negotiable). <span class="diff d-un">unchanged</span></li>
+        <li><b>Closeout</b> <span class="dot amber sd"></span> <span class="diff d-add">added sub</span> — owner-gated done/considered walk (distinct outcome + roles).</li>
+        <li>Export/Import/Clone 🟢. <span class="diff d-un">unchanged</span></li>
+      </ul>
+    </div>
+
+    <div class="node l1 removed">
+      <div class="nh"><span class="nt"><span class="idx">7</span>Logistics</span> <span class="diff d-rem">removed as L1</span></div>
+      <div class="no">dissolved into Itinerary · Readiness &amp; Prep. Checklist/Task kept as a standalone primitive (ADR-0003), not a capability.</div>
+    </div>
+
+    <div class="node l1 removed">
+      <div class="nh"><span class="nt"><span class="idx">8</span>Trip Execution</span> <span class="diff d-rem">removed as L1</span> <span class="diff d-move">→ Trip Mode</span></div>
+      <div class="no">becomes a cross-cutting Mode (live twin of Planning Mode; owns zero data). Now/Today/Focus = Platform nav surfaces.</div>
+    </div>
+
+    <div class="section-lbl">Enabling</div>
+
+    <div class="node l1 grey">
+      <div class="nh"><span class="nt">Platform <span class="dot grey sd"></span></span> <span class="diff d-un">unchanged</span></div>
+      <div class="no">auth (email+OTP), PWA/offline, navigation, design tokens, trip clock.</div>
+      <ul>
+        <li><b>Notifications</b> — in-app bell; type semantics owned by the emitting capability, Platform is a downstream event sink. <span class="diff d-un">unchanged</span></li>
+        <li>Data: <code>users</code> 🟢, <code>notifications</code> 🟢, SW cache. <span class="diff d-add">status tags</span></li>
+      </ul>
+    </div>
+
+    <div class="node l1 grey">
+      <div class="nh"><span class="nt">Integrations &amp; Syncing <span class="dot grey sd"></span></span> <span class="diff d-un">unchanged</span></div>
+      <div class="no">pull in / push out / link across.</div>
+      <ul>
+        <li>Connectors: Places 🟢, Flights 🟢, Resend 🟢, Map linkouts 🟢, Calendar sync 🔵, Photo-album linkout, Umami 🔵. <span class="diff d-add">status tags</span></li>
+        <li><b>Weather (Open-Meteo)</b> 🔵 <span class="diff d-add">added</span> — feeds packing readiness + forecast on Now.</li>
+        <li><b>Email digest (Resend)</b> 🔵 <span class="diff d-add">added</span> — weekly "what changed"; sole outbound re-engagement channel (push stays off-table).</li>
+      </ul>
+    </div>
+
+    <div class="section-lbl">Explicitly NOT capabilities <span class="diff d-add">added — mirrors charter</span></div>
+    <div class="notline" style="border-left-color:var(--red)">
+      No AI itineraries · no group chat (Comment-on-target is the ceiling) · no realtime co-editing · no discovery/inspiration feed (Saved Reference is the minimal answer) · no photo dump/print book (capped Memory is the answer) · off-table: multi-currency, push, embedded maps, native apps.
+    </div>
+
+    <div class="migbox">
+      <b>Migration table needed</b> <span class="diff d-add">added</span> — old CONTEXT context → new capability + <code>lib/</code> dir to split/rename. Most urgent: <code>lib/collaboration/</code> → Group Input + People &amp; Membership + Notifications. Keep CONTEXT.md's Bounded Contexts section until this table exists.
+    </div>
+
+  </div>
+
+  <footer>
+    Waypoint Capability Map — Council Review · 9-lens council + 3 adversarial skeptics (14 agents) · 2026-06-21.<br>
+    Source map: <code>docs/CAPABILITY_MAP.md</code> · charter: <code>docs/app-audit/charter.md</code> · all schema claims re-verified against <code>backend/pb_migrations/</code> and <code>docs/SPEC_BACKLOG.md</code> in this worktree.
+  </footer>
+
+</div>
+</body>
+</html>

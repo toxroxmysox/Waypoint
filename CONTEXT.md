@@ -42,7 +42,7 @@ Terms are authoritative. Use these in code, issues, and conversation. Synonyms i
 | **Money Unit** | *(planned — #230; ADR-0015.)* A self-declared, shared, leave-able grouping of trip members who pool money (a couple, or any ad-hoc pool); a solo member is a unit of one. **Settle-up collapses to the unit**: debts between unit members wash, and any one member can settle the unit's net debt to others — splitting is unaffected (always per-person). The Money glance **auto-scopes to the viewer's own unit** (spent and budget summed across its members). A unit may set a **custom budget override** — an absolute target, decoupled (it does not redistribute to other units or change the group total). | money circle, couple, household, money pool |
 | **Vote** | A member's preference on a votable target. One vote per member per target. Four options (value id → surfaced label): Love (+2), Like (+1), Flexible (0), `dislike` (-2, surfaced as **"Pass"** per `VoteButtons.svelte` — the id stays `dislike`). Score is never shown numerically — only the relative order and who voted what (avatar stacks). *(On item **cards**, vote avatars are replaced by an **icon + count** pill — the card avatar slot now shows [[Assignment\|assignees]] per ADR-0011; the who-voted-what avatar stacks remain on item **detail**.)* Two independent targets, each its own collection: **items** (`votes`) sort the parking lot; **goals** (`goal_votes`) sort the Goals/capture view. Votes never roll up across the goal↔item link — a goal's score is its goal-votes only, an item's its item-votes only (you can Love a goal yet Dislike a linked item). The shared scoring/stack logic lives in `voting.ts`; only the collection differs. | rating, star, like |
 | **Swipe-Quiz** | *(v4 — shipped: `/swipe/[phaseId]`, immersive, launched from the Phases sub-tab.)* A card-stack minigame for *harvesting* member preferences: walks one member through trip items, one card at a time, casting a [[Vote]] per card. The deck holds only items that member **hasn't voted on yet** (planned **and** unplanned); a voted card drops off, so the stack drains to empty. Scope is **phase-scoped** (v4 — whole-trip sweep deferred); finishing one phase offers to continue to the next. Launches from a card on the **Phases sub-tab**. Writes the same `votes` records as the per-item vote buttons (one vote per member per item); re-voting happens on item detail, not in the deck. The *harvest* half of the group-input cluster; the *capture* half is the [[Trip Goal]] minigame. | swipe deck, tinder, quiz |
-| **Document** | *(v4 — shipped: S0–S2 + offline precache; clipboard paste #73 and preview surfaces #72 pending.)* An **artifact** — a file (PDF) or image — uploaded to a trip. Has a **parent scope**: attaches to exactly one Item, or directly to the Trip — no Phase scope. Item-scoped documents are execution-critical confirmations (boarding pass, hotel voucher, train ticket, tour confirmation); trip-scoped documents have no single item (travel insurance, master packing PDF). Artifacts only — copy-pasteable text codes live on the Item's `confirmation_codes` field, **not** here. Added via file-picker upload **or clipboard paste** (e.g. a screenshot of a confirmation email). **Plain-stored, no encryption** — protected by the same trip-membership rules that gate all trip data. One `documents` collection. Available offline in Trip Mode. | attachment, file |
+| **Document** | *(v4 — shipped: S0–S2 + offline precache; clipboard paste #73 and preview surfaces #72 pending.)* An **artifact** — a file (PDF) or image — uploaded to a trip. Has a **parent scope**: attaches to exactly one Item, or directly to the Trip — no Phase scope. Item-scoped documents are execution-critical confirmations (boarding pass, hotel voucher, train ticket, tour confirmation); trip-scoped documents have no single item (travel insurance, master packing PDF). Documents also natively owns **confirmation codes** (ADR-0016): a text *code* (label + value) alongside file artifacts, surfaced in the same Documents window on the item; the legacy `items.confirmation_codes` field is migrated in and left inert. Added via file-picker upload **or clipboard paste** (e.g. a screenshot of a confirmation email). **Plain-stored, no encryption** — protected by the same trip-membership rules that gate all trip data. One `documents` collection. Available offline in Trip Mode. | attachment, file |
 | **Trip Documents** | The aggregate view of all Documents in a trip — a read-only list unioning every item-attached and trip-attached Document. A *view* over Documents, not a copy: each artifact is one record surfaced in two places (its Item detail and the Trip Documents list). **Grouped by Item Type** (Lodging, Flights, Transportation, Activities, Meals, Notes) plus a **Trip-level** section for trip-scoped Documents. Occupies the nav slot formerly held by the **Vault**. | document folder, files tab |
 | **Vault** | *(Retired in v4.)* Was client-side-encrypted storage for sensitive text (booking codes, passwords) — AES-GCM + PBKDF2, lossy if password forgotten. **Encryption removed and the module renamed to [[Trip Documents]]**: a new app hasn't earned the trust to win a security contest against LastPass/1Password, and the marginal protection (operator/at-rest only — trip members share the password) didn't justify the cost. Booking codes now live as plain text on the Item's `confirmation_codes` field; artifacts live in [[Trip Documents]]. | encrypted store, secure store | |
 | **Memory** | *(v4 — not yet built.)* One [[Trip Member]]'s captured recollection of one [[Day]]: an optional **photo** *and* an optional short **thought** (text) — **at most one of each, per member, per day** (a hard cap, enforced by the data model — a curated highlight, *not* a journal). Authored and editable only by its member; **visible to all trip members**; **never** surfaced in the [[Public Archive]] (memories are for the travelers, not the world). Created via the end-of-day **Note Before Bed** prompt, live during the day, or retroactively during [[Closeout]]. Distinct from a [[Document]]: a Document is a reference artifact used *during* the trip; a Memory is for remembering it *after*. | journal entry, photo, note, post, log |
@@ -62,37 +62,53 @@ Terms are authoritative. Use these in code, issues, and conversation. Synonyms i
 | **Focus** | The single emphasised block at the top of the [[Now]] view. Always present; its content varies by state — the **ongoing** activity (large, with time remaining), a **Free time** countdown to the next activity (with the next item shown normal-weight below), an end-of-day **summary** (items done) once past the evening cutoff, or **"nothing else planned"** when the day is open but empty ahead. A multi-day [[Ongoing]] item never becomes the Focus (it shows as a slim context banner instead). | now card, hero card |
 | **Design Tokens** | Semantic CSS custom properties in layout.css: colors (ink, paper, moss, clay, gold, sky, error), fonts (Fraunces display, Inter body, JetBrains Mono mono), shadows, z-index, breakpoints. Full reference: `docs/design-system.md`. | |
 
-## Bounded Contexts
+## Capabilities
 
-Waypoint is a single-context app (no microservices). Internally, the domain splits into these functional areas:
+> **Canonical model: `docs/CAPABILITY_MAP.md`** (full per-capability facets, maturity, cross-edges). This is the glossary-level summary. Replaces the former 7 "Bounded Contexts": the old **Collaboration** split into **Group Input** + **People & Membership**; **Trip Mode** → **Trip Execution**; **Shell** → **Platform**; and **Documents**, **Logistics**, **Ideation**, and **Integrations & Syncing** are now first-class.
 
-1. **Itinerary** -- Trips, Phases, Days, Items, Checklist Items, Parking Lot. The core planning model.
-2. **Collaboration** -- Trip Members, Roles, Invites, Placeholder Claims, Suggestions, Comments, Notifications, Votes. Multi-user coordination and group decision-making.
-3. **Money** -- Expenses, Settlements, Budgets, Debt Simplification. Financial tracking.
-4. **Trip Mode** -- The live-trip experience: NowCard, today timeline, mode switching, ongoing state detection. Active only when a trip's status is "active."
-5. **Archive & Portability** -- Public Archive, Export, Import, Clone, Closeout. Trip lifecycle beyond active use.
-6. **Trip Memory** -- Memory (per-member, per-day photo + thought), Note Before Bed capture, member-only review woven into Closeout. Experiential capture for remembering the trip *after*; distinct from the plan (Itinerary) and from execution artifacts (Documents). Excluded from the Public Archive.
-7. **Shell** -- Auth (OTP), PWA (service worker, A2HS, offline), AppShell (responsive layout, Planning Mode nav, Trip Mode nav), Design Tokens, Navigation (view transitions, DayNav). Infrastructure that wraps the domain.
+**8 core capabilities:**
 
-**Not a bounded context but a standalone module:** Vault (AES-GCM encryption, trip-scoped password). A technical capability used by the domain, not a domain boundary itself.
+1. **Ideation** -- decide where/when/why to go (proposals, candidate scenarios, availability, goals). Mostly a frontier today.
+2. **Itinerary** -- the shared plan, built and made ready: Trips, Phases, Days, Items (keystone), Parking Lot, Scheduling; **sub: Logistics** (Checklists, Tasks, readiness rollup, travel view; sub-sub: Booking).
+3. **Group Input** -- converge the group: the Vote + Comment **mechanisms** (3 separate vote collections per ADR-0004/0009; Comment latent), the suggestion/contribution loop, swipe-quiz.
+4. **People & Membership** -- right people, right access: Members + Roles (keystone), invites, join links, claims, tombstones; subs: Identity, Onboarding.
+5. **Money** -- expenses, splits, settle-up, the per-person glance; sub: Budgeting.
+6. **Documents** -- trip-private artifacts and confirmation codes (ADR-0016).
+7. **Trip Execution** -- the live day-of lens (Now/Today, offline); sub: Light Replanning. Owns no native data.
+8. **Records & Archive** -- the trip's legacy: Closeout, Public Archive, Portability; sub: Trip Memory.
+
+**2 enabling capabilities:**
+
+- **Platform** -- Auth (OTP), PWA/offline, Navigation, Design Tokens, Trip clock, Notifications. Infrastructure under the domain.
+- **Integrations & Syncing** -- external connectors: Google Places + AeroDataBox enrichment, Resend email, map linkouts, calendar sync, photo-album linkout.
+
+**Not a capability — a data type:** **Saved Reference** (a public/general external link; the manual twin of enrichment; distinct from a trip-private Document). *(Vault retired — ADR-0005.)*
 
 ## Collection Ownership
 
-| Collection | Functional Area |
+> Live collections (from migrations) → capability. `vault_entries` retired (migration 0031); `checklist_items` legacy/inert (superseded by `checklists` + `tasks`); `memories` planned (Trip Memory unbuilt).
+
+| Collection | Capability |
 |-----------|----------------|
-| users | Shell |
+| users | Platform |
+| notifications | Platform |
 | trips | Itinerary |
-| trip_members | Collaboration |
 | phases | Itinerary |
 | days | Itinerary |
-| items | Itinerary |
-| checklist_items | Itinerary |
-| pending_invites | Collaboration |
-| suggestions | Collaboration |
-| notifications | Collaboration |
+| items | Itinerary (keystone) |
+| trip_members | People & Membership |
+| pending_invites | People & Membership |
+| join_tokens | People & Membership |
+| votes | Group Input |
+| goal_votes | Group Input |
+| suggestions | Group Input |
+| suggestion_votes | Group Input |
+| trip_goals | Ideation (Goals) |
 | expenses | Money |
 | settlements | Money |
 | trip_budgets | Money |
-| votes | Collaboration |
-| memories | Trip Memory |
-| vault_entries | Vault (module) |
+| documents | Documents |
+| checklists | Itinerary (Logistics) |
+| tasks | Itinerary (Logistics) |
+| checklist_items | Itinerary (Logistics, legacy/inert) |
+| memories | Records & Archive (planned) |
