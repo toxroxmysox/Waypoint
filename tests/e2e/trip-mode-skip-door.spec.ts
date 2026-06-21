@@ -14,6 +14,19 @@ const BASE_URL = 'http://localhost:4173';
 const PLANNED_TITLE = 'Tonight: closed restaurant';
 const IDEA_TITLE = 'Backup: street food market';
 
+// Pin trip-local "now" near noon so today's Focus is deterministic (free-time /
+// nothing-else, never the wall-clock 8pm+ wrapped state). The skip strip itself is
+// sticky via justSkipped so it's tz-robust, but pinning keeps the planned card's
+// placement predictable. Etc/GMT-N = UTC+N (inverted sign). See ideas-door spec.
+function noonTimezone(): string {
+	const utcHour = new Date().getUTCHours();
+	let offset = 12 - utcHour;
+	if (offset > 12) offset -= 24;
+	if (offset < -12) offset += 24;
+	if (offset === 0) return 'UTC';
+	return offset > 0 ? `Etc/GMT-${offset}` : `Etc/GMT+${-offset}`;
+}
+
 test.describe('Trip Mode Door 2 — skip → parking lot + ideas strip (#246)', () => {
 	test.skip(!process.env.E2E_TEST_EMAIL, 'Set E2E_TEST_EMAIL to run E2E tests');
 
@@ -23,9 +36,7 @@ test.describe('Trip Mode Door 2 — skip → parking lot + ideas strip (#246)', 
 		await page.waitForURL(`${BASE_URL}/trips`, { timeout: 10000 });
 	});
 
-	// QUARANTINED (#261): flaky multi-step flow — passes item creation + Now render, races
-	// on the post-skip removal step. Skip logic is unit-verified. Un-fixme via #261.
-	test.fixme('skip a today item → it leaves Today and returns to ideas; promote it back', async ({
+	test('skip a today item → it leaves Today and returns to ideas; promote it back', async ({
 		page
 	}) => {
 		await page.setViewportSize({ width: 375, height: 812 });
@@ -43,6 +54,8 @@ test.describe('Trip Mode Door 2 — skip → parking lot + ideas strip (#246)', 
 		await page.fill('input[name="start_date"]', start);
 		await page.fill('input[name="end_date"]', end);
 		await page.fill('input[name="location_summary"]', 'Test Location');
+		// Pin tz so today's Focus is deterministic regardless of wall-clock hour.
+		await page.fill('input[name="timezone"]', noonTimezone());
 		await page.getByRole('button', { name: /create|save/i }).click();
 		await page.waitForURL(`${BASE_URL}/trips/${tripSlug}`, { timeout: 10000 });
 
@@ -92,14 +105,24 @@ test.describe('Trip Mode Door 2 — skip → parking lot + ideas strip (#246)', 
 		await card.getByRole('button', { name: 'Item actions' }).click();
 		await card.getByRole('menuitem', { name: /Skip/ }).click();
 
-		// After the skip: the item is GONE from Today (it's unplanned now), and the
-		// ideas strip is visible at the freed gap, offering the parked backup.
+		// After the skip the planned item is GONE from the "Coming up" rest list — it's
+		// unplanned now. Scope the negative to the rest-list CARD (TripModeCard's
+		// `.relative.rounded-xl` container), NOT the whole page: skip returns the item to
+		// THIS phase's parking lot, so it correctly REAPPEARS in the ideas strip below as a
+		// re-promotable backup (an <a> inside an <li>, not a card). A page-wide
+		// link-count-0 would falsely catch that legitimate strip occurrence.
 		await expect(
-			page.getByRole('link', { name: PLANNED_TITLE }).filter({ visible: true })
+			page
+				.locator('.relative.rounded-xl', { hasText: PLANNED_TITLE })
+				.filter({ visible: true })
 		).toHaveCount(0, { timeout: 7000 });
+
+		// The ideas strip is visible at the freed gap, offering the parked backup AND the
+		// just-skipped item (both are this phase's parking-lot ideas now).
 		const strip = page.locator('section[aria-label="Ideas for now"]:visible').first();
 		await expect(strip).toBeVisible({ timeout: 5000 });
 		await expect(strip.getByText(IDEA_TITLE)).toBeVisible();
+		await expect(strip.getByText(PLANNED_TITLE)).toBeVisible();
 
 		// --- Reversible: the skipped item is back in the phase parking lot. ---
 		await page.goto(`${BASE_URL}${phaseHref}`);
