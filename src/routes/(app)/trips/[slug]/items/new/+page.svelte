@@ -157,7 +157,7 @@
 		/>
 
 		<div
-			class="save-bar sticky z-sticky bg-paper -mx-4 px-4 pt-2"
+			class="save-bar sticky z-sticky bg-paper -mx-4 px-4 py-3"
 			class:save-bar--keyboard={inputFocused}
 		>
 			<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="w-full">
@@ -169,21 +169,23 @@
 
 <style>
 	/* #236: anchored Save bar — see edit/+page.svelte for the full rationale.
-	   Pinned to bottom:0 with the BottomNav clearance as INTERNAL padding-bottom, so
-	   the opaque bg-paper fills the strip to the viewport bottom (content behind it
-	   never peeks through a gap) while the button clears the nav. Keyboard closed:
-	   safe-area + 5rem. Keyboard open: BottomNav gone → safe-area only. Desktop: 1rem. */
+	   Pinned to bottom:0; the BottomNav clearance is an OUTER margin (not padding) so
+	   the bg-paper box hugs the button (centered), its bottom meeting the nav top
+	   (margin == nav height: safe-area + 4rem). Keyboard open (mobile): bar hidden,
+	   returns on dismiss. Desktop (>=900px): display restored, 1rem margin. */
 	.save-bar {
 		bottom: 0;
-		padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5.5rem);
+		margin-bottom: calc(env(safe-area-inset-bottom, 0px) + 4rem);
 	}
 	.save-bar.save-bar--keyboard {
-		padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+		display: none;
 	}
 	@media (min-width: 900px) {
-		.save-bar,
+		.save-bar {
+			margin-bottom: 1rem;
+		}
 		.save-bar.save-bar--keyboard {
-			padding-bottom: 1rem;
+			display: block;
 		}
 	}
 </style>
