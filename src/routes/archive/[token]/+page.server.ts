@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import type { Trip, Phase, Day, Item } from '$lib/types';
+import type { Trip, Phase, Day, Item, Expense, TripMember } from '$lib/types';
 import PocketBase from 'pocketbase';
 import { PUBLIC_PB_URL } from '$env/static/public';
 import { env } from '$env/dynamic/private';
@@ -57,6 +57,22 @@ export const load: PageServerLoad = async ({ params }) => {
 		})
 	]);
 
+	// Opt-in budget summary (#243): ONLY when the owner enabled archive_show_budget do
+	// we load expenses + the active member count — and even then only the AGGREGATE
+	// total + rough per-person are surfaced (buildArchiveView never emits itemized
+	// expenses or who-owes-whom). Default off → these queries are skipped entirely.
+	let expenses: Expense[] = [];
+	let memberCount = 0;
+	if (trip.archive_show_budget) {
+		[expenses, memberCount] = await Promise.all([
+			pb.collection('expenses').getFullList<Expense>({ filter: `trip = "${trip.id}"` }),
+			pb
+				.collection('trip_members')
+				.getFullList<TripMember>({ filter: `trip = "${trip.id}" && removed_at = ""` })
+				.then((m) => m.length)
+		]);
+	}
+
 	// Checklists are intentionally NOT loaded — the archive excludes them.
-	return buildArchiveView(trip, phases, days, items);
+	return buildArchiveView(trip, phases, days, items, { expenses, memberCount });
 };

@@ -121,6 +121,25 @@
 		{/if}
 	</header>
 
+	{#if data.budgetSummary}
+		<!-- Opt-in budget summary (#243): aggregate total + rough per-person ONLY.
+		     Never itemized expenses or who-owes-whom (those stay members-only). -->
+		<div class="bg-surface border-border mb-6 rounded-xl border p-5 text-center">
+			<p class="text-ink-muted text-[10px] font-bold tracking-[0.14em] uppercase">What the trip cost</p>
+			<div class="mt-3 flex items-center justify-center gap-8">
+				<div>
+					<p class="text-ink text-2xl font-bold">${data.budgetSummary.total.toLocaleString()}</p>
+					<p class="text-ink-muted text-xs">total</p>
+				</div>
+				<div class="bg-border h-10 w-px"></div>
+				<div>
+					<p class="text-ink text-2xl font-bold">${data.budgetSummary.perPerson.toLocaleString()}</p>
+					<p class="text-ink-muted text-xs">≈ per person</p>
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<div class="space-y-4">
 		{#each data.days as day (day.id)}
 			{@const dayItems = data.doneItems.filter((i) => i.day === day.id)}

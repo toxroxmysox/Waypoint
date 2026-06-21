@@ -38,7 +38,24 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 			filter: `trip = "${trip.id}"`,
 			sort: 'day,sort_order'
 		});
-		const record = buildArchiveView(trip, phases as Phase[], days as Day[], recordItems);
+		// Opt-in budget summary (#243): only load expenses + member count when the owner
+		// enabled it; buildArchiveView surfaces the aggregate total + rough per-person
+		// only (never itemized / who-owes-whom).
+		let recordExpenses: Expense[] = [];
+		let recordMemberCount = 0;
+		if (trip.archive_show_budget) {
+			[recordExpenses, recordMemberCount] = await Promise.all([
+				locals.pb.collection('expenses').getFullList<Expense>({ filter: `trip = "${trip.id}"` }),
+				locals.pb
+					.collection('trip_members')
+					.getFullList<TripMember>({ filter: `trip = "${trip.id}" && removed_at = ""` })
+					.then((m) => m.length)
+			]);
+		}
+		const record = buildArchiveView(trip, phases as Phase[], days as Day[], recordItems, {
+			expenses: recordExpenses,
+			memberCount: recordMemberCount
+		});
 		const status = publishStatus(trip);
 		const canManage = membership.role === 'owner' || membership.role === 'co_owner';
 		return {

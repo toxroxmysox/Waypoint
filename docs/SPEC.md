@@ -539,6 +539,8 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 - Public archive view: done items, day/phase structure, photo link, title/dates/location only
 - Public URL = `/archive/{public_share_token}` (absolute link surfaced on the closed Record view's Share panel, #242)
 - **Closed trip home = read-only Record view (#242):** reuses the archive builder, visibly marked closed, with the Share affordance (copyable absolute link + `publishStatus` line + change-date/disable) and a low-emphasis **Reopen** control. Reopen sets `archived:false` (re-derives lifecycle from dates) and clears `archive_publish_at` (publish paused until re-closeout) — closed is reversible, not a trap.
+- **"What we considered" = public recommendations (#243):** the public record's considered section = explicitly-`considered` items + **kept parking-lot ideas** (an OPTIONAL owner/co_owner closeout step, skipped by default, marks each unplanned idea keep→`considered` or drop; bulk "keep all"). Never stray `planned`, never `done` mislabeled. These are recommendations for outsiders asking "what'd you do?", not group nostalgia. Travelers never see this step. **Goals review is NOT built** (killed — goals don't appear in the record for v1).
+- **Opt-in public budget summary (#243):** `archive_show_budget` (default off) toggled at publish. When on, the public record + the closed Record view show a **summary only** — trip total + rough per-person (`archiveBudgetSummary`) — **never** itemized expenses or who-owes-whom (those stay members-only).
 - Bulk actions: "mark all planned → done" for days that went as planned
 - JSON export of full trip (per-trip download)
 - JSON import (load trip from backup)

@@ -83,6 +83,25 @@
 		{canManage}
 	/>
 
+	{#if record.budgetSummary}
+		<!-- Opt-in budget summary (#243): aggregate total + rough per-person only. This is
+		     the SAME summary outsiders see — never itemized expenses or who-owes-whom. -->
+		<div class="border-line bg-surface shadow-card rounded-lg border p-5 text-center">
+			<p class="text-ink-muted text-[9.5px] font-bold tracking-[0.14em] uppercase">What the trip cost (public)</p>
+			<div class="mt-3 flex items-center justify-center gap-8">
+				<div>
+					<p class="text-ink text-2xl font-bold">${record.budgetSummary.total.toLocaleString()}</p>
+					<p class="text-ink-muted text-xs">total</p>
+				</div>
+				<div class="bg-line h-10 w-px"></div>
+				<div>
+					<p class="text-ink text-2xl font-bold">${record.budgetSummary.perPerson.toLocaleString()}</p>
+					<p class="text-ink-muted text-xs">≈ per person</p>
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<!-- The record: done items, day by day (reusing the public archive's sanitized view). -->
 	<div class="space-y-1.5">
 		<div class="text-ink-muted px-0.5 text-[9.5px] font-bold tracking-[0.14em] uppercase">What we did</div>

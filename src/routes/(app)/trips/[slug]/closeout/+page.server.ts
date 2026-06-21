@@ -81,6 +81,58 @@ export const actions: Actions = {
 		}
 	},
 
+	// Ideas-review (#243) — owner/co_owner only (server-enforced). Keep a parking-lot
+	// idea for the public record → status:considered (it becomes a "what we considered"
+	// recommendation). Dropping an idea needs NO write: unplanned items are already
+	// excluded from the record, so "drop" is a client-side dismissal only.
+	keepIdea: async ({ request, locals, params }) => {
+		const data = await request.formData();
+		const itemId = data.get('item_id')?.toString();
+		if (!itemId) return fail(400, { error: 'Missing item ID.' });
+		try {
+			const trip = await locals.pb
+				.collection('trips')
+				.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+			const membership = await locals.pb
+				.collection('trip_members')
+				.getFirstListItem<TripMember>(
+					`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`
+				);
+			if (membership.role !== 'owner' && membership.role !== 'co_owner') {
+				return fail(403, { error: 'Only owners or co-owners can curate the record.' });
+			}
+			await locals.pb.collection('items').update(itemId, { status: 'considered' });
+			return { ideaKept: true };
+		} catch (err: unknown) {
+			return fail(500, { error: err instanceof Error ? err.message : 'Failed to keep idea.' });
+		}
+	},
+
+	keepAllIdeas: async ({ request, locals, params }) => {
+		const data = await request.formData();
+		const itemIds = data.getAll('item_ids').map((id) => id.toString());
+		if (itemIds.length === 0) return fail(400, { error: 'No ideas to keep.' });
+		try {
+			const trip = await locals.pb
+				.collection('trips')
+				.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+			const membership = await locals.pb
+				.collection('trip_members')
+				.getFirstListItem<TripMember>(
+					`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`
+				);
+			if (membership.role !== 'owner' && membership.role !== 'co_owner') {
+				return fail(403, { error: 'Only owners or co-owners can curate the record.' });
+			}
+			await Promise.all(
+				itemIds.map((id) => locals.pb.collection('items').update(id, { status: 'considered' }))
+			);
+			return { ideasKept: itemIds.length };
+		} catch (err: unknown) {
+			return fail(500, { error: err instanceof Error ? err.message : 'Failed to keep ideas.' });
+		}
+	},
+
 	trimEnd: async ({ request, locals }) => {
 		const data = await request.formData();
 		const itemId = data.get('item_id')?.toString();

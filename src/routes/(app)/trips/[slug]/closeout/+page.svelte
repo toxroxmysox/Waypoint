@@ -14,6 +14,14 @@
 
 	let currentDayIndex = $state(0);
 	let finishing = $state(false);
+	// Ideas-review step gate (#243): owner/co_owner only, optional, skipped by default.
+	// Once reviewed (keep/drop/skip) it advances to the summary. Kept as a flag (not an
+	// index bump) so #257's currentDayIndex survival isn't disturbed.
+	let ideasReviewed = $state(false);
+	// Dropped ideas — client-side dismissal only (unplanned items are already excluded
+	// from the record, so dropping needs no write). Kept items leave the pool naturally:
+	// keepIdea flips status→considered, then update() re-runs load().
+	let droppedIds = $state<string[]>([]);
 
 	// Publish choice (#241) — owner/co_owner only. Binary Keep-private (default) /
 	// Publish + inline date defaulting to today; the opt-in budget summary (#243) rides
@@ -33,7 +41,26 @@
 	const totalDays = $derived(sortedDays.length);
 	const currentDay = $derived(sortedDays[currentDayIndex]);
 	const isLastDay = $derived(currentDayIndex >= totalDays - 1);
-	const showSummary = $derived(currentDayIndex >= totalDays);
+
+	// Unplanned parking-lot ideas — the owner-only "what we considered" curation pool.
+	// Travelers never see this (canCurate is false for them). Each idea: keep-for-record
+	// (→ considered, becomes a public recommendation) or drop (stays unplanned, excluded
+	// from the record). Goals review is NOT built (killed in the resolutions).
+	const unplannedIdeas = $derived(
+		data.items.filter((i) => i.status === 'unplanned' && !droppedIds.includes(i.id))
+	);
+	// Whether the step EXISTS at all — based on the trip having unplanned ideas at load,
+	// independent of in-session drops (so dropping the last idea doesn't yank the step
+	// out from under the user mid-review). Derived from the unfiltered set.
+	const hasIdeasStep = $derived(
+		canCurate && data.items.some((i) => i.status === 'unplanned')
+	);
+
+	// After the day walk: the optional owner ideas step, then the summary.
+	const showIdeas = $derived(currentDayIndex >= totalDays && hasIdeasStep && !ideasReviewed);
+	const showSummary = $derived(
+		currentDayIndex >= totalDays && (!hasIdeasStep || ideasReviewed)
+	);
 
 	function itemsForDay(day: Day): Item[] {
 		return data.items.filter((i) => i.day === day.id);
@@ -83,7 +110,7 @@
 		<div class="bg-surface border-border mt-8 rounded-xl border p-6 text-center">
 			<p class="text-ink-muted text-sm">No days to review. This trip has no itinerary days.</p>
 		</div>
-	{:else if !showSummary}
+	{:else if !showSummary && !showIdeas}
 		<div class="mb-4">
 			<div class="flex items-center justify-between">
 				<p class="text-ink-muted text-sm font-medium">Day {currentDayIndex + 1} of {totalDays}</p>
@@ -118,7 +145,63 @@
 				onclick={() => (currentDayIndex++)}
 				class="bg-ink text-on-ink rounded-lg px-4 py-2 text-sm font-medium"
 			>
-				{isLastDay ? 'Review Summary' : 'Next Day'}
+				{isLastDay ? (hasIdeasStep ? 'Review ideas' : 'Review Summary') : 'Next Day'}
+			</button>
+		</div>
+	{:else if showIdeas}
+		<!-- Owner ideas-review step (#243): OPTIONAL, skipped by default. Each unplanned
+		     parking-lot idea: keep-for-record (→ a public "what we considered"
+		     recommendation) or drop (stays out of the record). Bulk "keep all". Travelers
+		     never reach this (canCurate-gated). Goals review is NOT built (killed). -->
+		<div class="mb-4">
+			<p class="text-ink text-lg font-semibold">Review your ideas</p>
+			<p class="text-ink-muted mt-1 text-sm">
+				Ideas you collected but didn't schedule. Keep the good ones as public
+				recommendations for anyone who asks "what'd you do?" — or drop them. Optional;
+				skip to publish as-is.
+			</p>
+		</div>
+
+		<div class="space-y-2" data-testid="ideas-review">
+			{#each unplannedIdeas as idea (idea.id)}
+				<div class="bg-surface border-border flex items-center gap-3 rounded-xl border px-4 py-3">
+					<span class="min-w-0 flex-1">
+						<span class="text-ink block truncate text-sm font-medium">{idea.title}</span>
+						{#if idea.location_name}
+							<span class="text-ink-muted block truncate text-xs">{idea.location_name}</span>
+						{/if}
+					</span>
+					<form method="POST" action="?/keepIdea" use:enhance={() => async ({ update }) => update({ reset: false })}>
+						<input type="hidden" name="item_id" value={idea.id} />
+						<button type="submit" class="rounded-lg bg-moss-tint px-3 py-1.5 text-xs font-semibold text-moss">Keep</button>
+					</form>
+					<!-- Drop = client-side dismissal; unplanned items are already excluded from
+					     the record, so no write is needed. -->
+					<button
+						type="button"
+						onclick={() => (droppedIds = [...droppedIds, idea.id])}
+						class="text-ink-muted hover:text-ink px-2 py-1.5 text-xs font-medium"
+					>
+						Drop
+					</button>
+				</div>
+			{/each}
+		</div>
+
+		<div class="mt-5 flex items-center justify-between gap-2">
+			<form method="POST" action="?/keepAllIdeas" use:enhance={() => async ({ update }) => update({ reset: false })}>
+				{#each unplannedIdeas as idea (idea.id)}
+					<input type="hidden" name="item_ids" value={idea.id} />
+				{/each}
+				<button type="submit" class="text-moss text-sm font-semibold">Keep all</button>
+			</form>
+			<button
+				type="button"
+				onclick={() => (ideasReviewed = true)}
+				data-testid="ideas-continue"
+				class="bg-ink text-on-ink rounded-lg px-4 py-2 text-sm font-medium"
+			>
+				Continue
 			</button>
 		</div>
 	{:else}
