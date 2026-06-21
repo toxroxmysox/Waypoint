@@ -16,6 +16,25 @@ import { test, expect } from '@playwright/test';
 const BASE_URL = 'http://localhost:4173';
 const IDEA_TITLE = 'Sunset rooftop drinks';
 
+// Pin the trip to a fixed-offset timezone where trip-local "now" lands at ~noon,
+// so an empty today derives to `nothing-else-planned` (door OPEN) — NOT the 8pm+
+// `wrapped-summary` (door CLOSED), which is what made this flaky: the Focus state
+// is wall-clock-derived (now-state.ts CUTOFF_HOUR), so a CI run after 8pm machine
+// time would close Door 1 and the strip would never render. Etc/GMT-N is UTC+N
+// (the sign is inverted in the Etc zones). offset = 12 - utcHour keeps trip-local
+// now near midday and shifts the calendar date by <1 day (the trip spans ±2d, so
+// "today" stays in range). Returns a tz string the trips/new form accepts.
+function noonTimezone(): string {
+	const utcHour = new Date().getUTCHours();
+	// Target trip-local hour 12. offset in hours to add to UTC.
+	let offset = 12 - utcHour; // range: 12-23 .. 12-0 → -11 .. 12
+	if (offset > 12) offset -= 24;
+	if (offset < -12) offset += 24;
+	// Etc/GMT-N = UTC+N ; Etc/GMT+N = UTC-N.
+	if (offset === 0) return 'UTC';
+	return offset > 0 ? `Etc/GMT-${offset}` : `Etc/GMT+${-offset}`;
+}
+
 test.describe('Trip Mode Door 1 — ideas for now (#245)', () => {
 	test.skip(!process.env.E2E_TEST_EMAIL, 'Set E2E_TEST_EMAIL to run E2E tests');
 
@@ -25,9 +44,7 @@ test.describe('Trip Mode Door 1 — ideas for now (#245)', () => {
 		await page.waitForURL(`${BASE_URL}/trips`, { timeout: 10000 });
 	});
 
-	// QUARANTINED (#261): flaky multi-step flow — passes item creation + Now render, races
-	// on the post-promote strip-visibility step. Promote logic is unit-verified. Un-fixme via #261.
-	test.fixme('free-time → ideas strip → promote → item renders on Today', async ({ page }) => {
+	test('free-time → ideas strip → promote → item renders on Today', async ({ page }) => {
 		await page.setViewportSize({ width: 375, height: 812 });
 
 		const stamp = Date.now().toString(36);
@@ -46,6 +63,9 @@ test.describe('Trip Mode Door 1 — ideas for now (#245)', () => {
 		await page.fill('input[name="start_date"]', start);
 		await page.fill('input[name="end_date"]', end);
 		await page.fill('input[name="location_summary"]', 'Test Location');
+		// Pin tz so today's Focus is deterministically free-time/nothing-else (door OPEN),
+		// never the wall-clock 8pm+ wrapped-summary (door CLOSED). See noonTimezone().
+		await page.fill('input[name="timezone"]', noonTimezone());
 		await page.getByRole('button', { name: /create|save/i }).click();
 		await page.waitForURL(`${BASE_URL}/trips/${tripSlug}`, { timeout: 10000 });
 
@@ -74,16 +94,24 @@ test.describe('Trip Mode Door 1 — ideas for now (#245)', () => {
 		await page.goto(`${BASE_URL}/trips/${tripSlug}/now`);
 		await page.waitForURL('**/now');
 
-		// The door is open (one of the two trigger states is the live Focus).
+		// The door is open. With the pinned noon tz an empty today is `nothing-else-planned`
+		// (never the wall-clock-only "Day wrapped"), so the strip renders. Match only the
+		// two door-OPEN states — "Day wrapped" would be a FALSE pass (it closes the door).
 		await expect(
 			page
-				.locator(':visible', { hasText: /Free time|Nothing else planned|Day wrapped/ })
+				.locator(':visible', { hasText: /Free time|Nothing else planned/ })
 				.first()
-		).toBeVisible({ timeout: 5000 });
+		).toBeVisible({ timeout: 7000 });
 
-		// The ideas strip is visible and lists the parked idea.
+		// The ideas strip is visible and lists the parked idea. A fresh trip's idea write +
+		// current-phase derivation is occasionally a beat behind the first /now paint —
+		// reload once if the strip hasn't rendered yet (the strip is loader-driven, idempotent).
 		const strip = page.locator('section[aria-label="Ideas for now"]:visible').first();
-		await expect(strip).toBeVisible({ timeout: 5000 });
+		if (!(await strip.isVisible().catch(() => false))) {
+			await page.reload();
+			await page.waitForURL('**/now');
+		}
+		await expect(strip).toBeVisible({ timeout: 7000 });
 		await expect(strip.getByText(IDEA_TITLE)).toBeVisible();
 
 		// --- One-tap promote ("Do this") → the idea moves onto today. ---
