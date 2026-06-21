@@ -21,10 +21,12 @@ test.describe('Closeout leaves checklists untouched (#53)', () => {
 		await page.getByRole('link', { name: 'New Trip' }).click();
 		await page.waitForURL(`${BASE}/trips/new`);
 		await page.fill('input[name="title"]', `E2E Closeout ${stamp}`);
-		const today = new Date().toISOString().split('T')[0];
-		const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-		await page.fill('input[name="start_date"]', today);
-		await page.fill('input[name="end_date"]', nextWeek);
+		// #240: closeout is lifecycle-gated to wrap-up/closed — the trip MUST be past its
+		// end_date to reach the wizard. Both dates ~a month in the past (a 7-day span).
+		const start = new Date(Date.now() - 37 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+		const end = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+		await page.fill('input[name="start_date"]', start);
+		await page.fill('input[name="end_date"]', end);
 		await page.fill('input[name="location_summary"]', 'Test Location');
 		await page.getByRole('button', { name: /create|save/i }).click();
 		await page.waitForURL(`${BASE}/trips/${tripSlug}`, { timeout: 10000 });
@@ -73,10 +75,12 @@ test.describe('Closeout leaves checklists untouched (#53)', () => {
 		await page.getByRole('link', { name: 'New Trip' }).click();
 		await page.waitForURL(`${BASE}/trips/new`);
 		await page.fill('input[name="title"]', `E2E Closeout AllDone ${stamp}`);
-		const today = new Date().toISOString().split('T')[0];
-		const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-		await page.fill('input[name="start_date"]', today);
-		await page.fill('input[name="end_date"]', nextWeek);
+		// #240: closeout is lifecycle-gated to wrap-up/closed — past end_date required.
+		// Multi-day span (7 days) so we can navigate to Day 2 and prove we stay there.
+		const start = new Date(Date.now() - 37 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+		const end = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+		await page.fill('input[name="start_date"]', start);
+		await page.fill('input[name="end_date"]', end);
 		await page.fill('input[name="location_summary"]', 'Test Location');
 		await page.getByRole('button', { name: /create|save/i }).click();
 		await page.waitForURL(`${BASE}/trips/${tripSlug}`, { timeout: 10000 });

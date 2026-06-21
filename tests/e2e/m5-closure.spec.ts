@@ -26,7 +26,22 @@ test.describe('M5 Closure', () => {
 	});
 
 	test('closeout wizard renders day cards', async ({ page }) => {
-		const slug = await openTripSlug(page);
+		// #240: closeout is lifecycle-gated to wrap-up/closed. The shared first trip is
+		// active (loads in trip mode) → an active trip is now redirected OFF /closeout,
+		// so create a dedicated past-dated (wrap-up) trip to reach the wizard.
+		const stamp = Date.now().toString(36);
+		const slug = `e2e-m5-closeout-${stamp}`;
+		await page.getByRole('link', { name: 'New Trip' }).click();
+		await page.waitForURL(`${BASE}/trips/new`);
+		await page.fill('input[name="title"]', `E2E M5 Closeout ${stamp}`);
+		const start = new Date(Date.now() - 37 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+		const end = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+		await page.fill('input[name="start_date"]', start);
+		await page.fill('input[name="end_date"]', end);
+		await page.fill('input[name="location_summary"]', 'Test Location');
+		await page.getByRole('button', { name: /create|save/i }).click();
+		await page.waitForURL(`${BASE}/trips/${slug}`, { timeout: 10000 });
+
 		await page.goto(`${BASE}/trips/${slug}/closeout`);
 		await page.waitForURL('**/closeout');
 

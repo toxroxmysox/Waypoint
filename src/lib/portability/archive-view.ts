@@ -33,8 +33,12 @@ export function buildArchiveView(trip: Trip, phases: Phase[], days: Day[], items
 		phases,
 		days,
 		doneItems: sanitizedItems.filter((i) => i.status === 'done'),
-		consideredItems: sanitizedItems.filter(
-			(i) => i.status === 'planned' || i.status === 'considered'
-		)
+		// Planned-leak guard (#240, Grill Resolution #16): "what we considered" is the
+		// public recommendations list — explicitly-`considered` items only (plus, in
+		// Slice 5, kept parking-lot ideas), NEVER stray `planned`. A planned item that
+		// never got walked must not masquerade as something the group weighed. The
+		// closeout walk's done-leak guard ensures planned items get resolved on finish,
+		// so a closed trip has no `planned` left to leak here.
+		consideredItems: sanitizedItems.filter((i) => i.status === 'considered')
 	};
 }

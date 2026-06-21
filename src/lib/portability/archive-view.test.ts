@@ -52,3 +52,25 @@ describe('buildArchiveView (#53 — Public Archive excludes checklists)', () => 
 		expect(view.trip).not.toHaveProperty('public_share_token');
 	});
 });
+
+describe('buildArchiveView planned-leak guard (#240 — Grill Resolution #16)', () => {
+	const items = [
+		makeItem({ id: 'done1', status: 'done', title: 'Visited the museum' }),
+		makeItem({ id: 'cons1', status: 'considered', title: 'Considered the hike' }),
+		makeItem({ id: 'plan1', status: 'planned', title: 'Never-walked plan' }),
+		makeItem({ id: 'unpl1', status: 'unplanned', title: 'Parking-lot idea' })
+	];
+	const view = buildArchiveView(makeTrip(), [] as Phase[], [] as Day[], items);
+
+	it('"what we considered" = explicitly-considered only, never stray planned', () => {
+		const ids = view.consideredItems.map((i) => i.id);
+		expect(ids).toEqual(['cons1']);
+		expect(ids).not.toContain('plan1'); // a planned item must not masquerade as considered
+		expect(ids).not.toContain('done1');
+		expect(ids).not.toContain('unpl1');
+	});
+
+	it('done set = done items only', () => {
+		expect(view.doneItems.map((i) => i.id)).toEqual(['done1']);
+	});
+});

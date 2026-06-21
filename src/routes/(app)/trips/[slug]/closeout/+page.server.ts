@@ -1,11 +1,42 @@
 import { fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Item, TripMember } from '$lib/types';
+import { getTripLifecycle } from '$lib/trip-mode/trip-lifecycle';
 
+// Closeout wizard loader (#240/#195 — Slice 2).
+//
+// Two gates, both server-side:
+//  1. Lifecycle gate: the wizard runs ONLY when the trip is `wrap-up` (past its end
+//     date, not archived) or `closed` (archived — re-review). A planning/active trip
+//     can't reach closeout, so an owner can never mark items "done" or archive a LIVE
+//     trip during planning (kills the WP-A-007 / WP-B-018 premature-entry bug).
+//  2. Role gate: relaxed from owner/co_owner to owner/co_owner/**traveler** (deliberate
+//     SPEC §4 change). Viewers get the read-only record (the trip Overview's closed/
+//     wrap-up view), never the wizard.
+//
+// Travelers walk the done/considered of PLANNED items only — they never review or even
+// see the unplanned [[Parking Lot]] ideas (that curation is owner-only, Slice 5). The
+// day-by-day walk is already day-scoped (unplanned ideas carry an empty `day` and never
+// appear), so `canCurate` simply gates the owner-only ideas step the UI adds in Slice 5.
 export const load: PageServerLoad = async ({ parent, locals, params }) => {
 	const { trip, membership, days, phases } = await parent();
 
-	if (membership.role !== 'owner' && membership.role !== 'co_owner') {
+	// Viewers never reach the wizard — bounce them to the read-only record (Overview).
+	if (membership.role === 'viewer') {
+		redirect(303, `/trips/${params.slug}`);
+	}
+	if (
+		membership.role !== 'owner' &&
+		membership.role !== 'co_owner' &&
+		membership.role !== 'traveler'
+	) {
+		redirect(303, `/trips/${params.slug}`);
+	}
+
+	// Lifecycle gate — closeout is reachable only after the trip is actually over
+	// (wrap-up) or already closed (re-review). Mirror the home router's derivation.
+	const lifecycle = getTripLifecycle(trip);
+	if (lifecycle !== 'wrap-up' && lifecycle !== 'closed') {
 		redirect(303, `/trips/${params.slug}`);
 	}
 
@@ -14,7 +45,11 @@ export const load: PageServerLoad = async ({ parent, locals, params }) => {
 		sort: 'day,sort_order'
 	});
 
-	return { trip, membership, days, phases, items };
+	// owner/co_owner curate the public record (the optional ideas-review step is theirs,
+	// Slice 5); travelers do the item walk only and never see the parking-lot ideas.
+	const canCurate = membership.role === 'owner' || membership.role === 'co_owner';
+
+	return { trip, membership, days, phases, items, canCurate };
 };
 
 export const actions: Actions = {
@@ -103,10 +138,29 @@ export const actions: Actions = {
 
 			const membership = await locals.pb
 				.collection('trip_members')
-				.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`);
-			if (membership.role !== 'owner' && membership.role !== 'co_owner') {
-				return fail(403, { error: 'Only trip owners can archive.' });
+				.getFirstListItem<TripMember>(
+					`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`
+				);
+			// Closeout (the walk + the `archived: true` transition) is open to anyone who
+			// traveled — owner/co_owner/traveler. Viewers can't get here (loader bounces
+			// them); guard the write too so a hand-crafted POST is rejected. The PUBLISH
+			// decision stays owner/co_owner-only and lives in its own action (Slice 3).
+			if (membership.role === 'viewer') {
+				return fail(403, { error: 'Viewers cannot close out a trip.' });
 			}
+
+			// Done-leak guard (#240): finishing the walk must leave NO planned item silently
+			// unmarked — every still-`planned` itinerary item is resolved to `done` so the
+			// record's done-set is real, and the "considered" set stays explicitly-considered
+			// only (the inverse planned-leak guard lives in buildArchiveView). Unplanned
+			// parking-lot ideas are untouched (they were never part of the walk).
+			const planned = await locals.pb.collection('items').getFullList<Item>({
+				filter: `trip = "${trip.id}" && status = "planned"`,
+				fields: 'id'
+			});
+			await Promise.all(
+				planned.map((i) => locals.pb.collection('items').update(i.id, { status: 'done' }))
+			);
 
 			const updates: Record<string, unknown> = { archived: true };
 			if (trip.archive_enabled && !trip.public_share_token) {
