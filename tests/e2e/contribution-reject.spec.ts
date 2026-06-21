@@ -55,6 +55,11 @@ async function devLogin(browser: Browser, email: string) {
 }
 
 test.describe('#250 reject ghost → note + archive', () => {
+	// Serial: this is a multi-context flow (traveler submit → owner reject → notify)
+	// over a shared fixture trip. Serializing keeps any future sibling test in this
+	// describe from racing the same fixture under parallel workers (#261 diagnosis —
+	// the original flake surfaced under parallel load on the shared :8090).
+	test.describe.configure({ mode: 'serial' });
 	test.skip(!process.env.E2E_TEST_EMAIL, 'Set E2E_TEST_EMAIL to run E2E tests');
 
 	let ids: FixtureIds;
@@ -63,32 +68,32 @@ test.describe('#250 reject ghost → note + archive', () => {
 		ids = await setupFixture();
 	});
 
-	// QUARANTINED (#261): flaky at the multi-context ghost-card visibility step (~line 97)
-	// under parallel load — same class as the Replan specs. #250 logic is verified by
-	// test-suggestions.mjs (24/0); the #260 notification fix by contribution-approve + the
-	// API probe. Un-fixme when the contribution multi-context flows are stabilized.
-	test.fixme('owner rejects → note required → ghost leaves parking lot → author notified with the note', async ({
+	test('owner rejects → note required → ghost leaves parking lot → author notified with the note', async ({
 		browser
 	}) => {
 		const ideaTitle = `Reject me ${Date.now()}`;
 		const note = 'Out of budget this trip';
 		const phaseUrl = `${BASE}/trips/${FIXTURE_SLUG}/phases/${ids.phaseId}`;
 
-		// Traveler submits an idea (auto_approve OFF → a pending Ghost Card).
-		const traveler = await devLogin(browser, EMAILS.traveler);
-		try {
-			await traveler.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/items/new?phase=${ids.phaseId}`);
-			// input[name="title"]:visible — duplicate title id across the dual tree (#56).
-			await traveler.page.locator('input[name="title"]:visible').first().fill(ideaTitle);
-			await traveler.page
-				.getByRole('button', { name: /submit suggestion/i })
-				.filter({ visible: true })
-				.first()
-				.click();
-			await traveler.page.waitForURL(new RegExp(`/trips/${FIXTURE_SLUG}`), { timeout: 10000 });
-		} finally {
-			await traveler.ctx.close();
-		}
+		// Traveler submits an idea (auto_approve OFF → a pending Ghost Card). Seed it via
+		// the same /api/suggestions/create endpoint the traveler UI posts to — directly,
+		// not through the items/new form. Under parallel load the form submit was the flake
+		// source: a slow ItemForm hydration could drop the preselected phase, the suggest
+		// POST would fail, and the page stayed on /items/new — which still matched the loose
+		// waitForURL(/trips/<slug>/) substring, so the test marched on to a never-created
+		// ghost. The API seed carries payload.phase deterministically (the phase-detail page
+		// scopes ghosts by payload.phase), and the OWNER's reject UI — the actual feature
+		// under test — is still driven through the GhostCard below.
+		const travelerToken0 = await token(EMAILS.traveler);
+		const createRes = await fetch(`${PB_BASE}/api/suggestions/create`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${travelerToken0}` },
+			body: JSON.stringify({
+				trip_id: ids.tripId,
+				payload: { title: ideaTitle, type: 'activity', phase: ids.phaseId }
+			})
+		});
+		expect(createRes.ok, `suggestion create failed: ${createRes.status}`).toBeTruthy();
 
 		// Owner rejects the ghost in place — a note is required.
 		const owner = await devLogin(browser, EMAILS.owner);
@@ -98,6 +103,13 @@ test.describe('#250 reject ghost → note + archive', () => {
 				.locator('[aria-label="Pending idea: ' + ideaTitle + '"]')
 				.filter({ visible: true })
 				.first();
+			// The owner's phase load is a separate session from the traveler's submit; if
+			// the owner navigated before the suggestion write was queryable, the ghost isn't
+			// in the first server render (and load already ran — it won't appear on its own).
+			// Reload once as a robust fallback (the ghost is loader-driven, idempotent).
+			if (!(await ghost.isVisible({ timeout: 5000 }).catch(() => false))) {
+				await owner.page.reload();
+			}
 			await expect(ghost).toBeVisible({ timeout: 10000 });
 
 			// Open the reject affordance → reveals the required note field.
