@@ -1,299 +1,264 @@
 # SPEC_BACKLOG
 
-Deferred and future work, organized by domain. Each domain lists what's **shipped** today and what's **backlog** (not yet built). Backlog entries note what/why/target.
+Genuine unbuilt **frontier**, indexed by capability. One section per L1 capability, mirroring `docs/CAPABILITY_MAP.md` (8 core + 2 enabling). The Map is the canonical model; this file is the *to-build* slice of it.
 
-Before starting anything here, amend `SPEC.md` per the CLAUDE.md scope-change protocol. When promoting an entry into a milestone, cut it from this file in the same commit that amends `SPEC.md`. Entries are removed only when built or during an explicit backlog audit — never auto-pruned for sitting too long.
+**Rules of the file:**
+- Entries are **frontier only** — not-yet-built work. Shipped work lives in the Map (status tags) and the code, not here.
+- Before starting an entry, amend `docs/SPEC.md` per the CLAUDE.md scope-change protocol. When promoting an entry into a milestone / issue, cut it from this file in the **same** commit that amends `SPEC.md`.
+- Entries leave only when **built** or during an **explicit backlog audit** — never auto-pruned for sitting.
+- *ADR-accepted ≠ shipped.* Several entries below are decided (ADR exists) but unbuilt; the ADR is the design, this is the queue.
 
-Domains mirror the bounded contexts in `CONTEXT.md` §"Bounded Contexts", plus three proposed new ones (Documents, Tasks, Trip Memory) and a cross-cutting Integrations group.
+> **Rewritten 2026-06-21 (BUILD_PLAN S1):** was organized by the old `CONTEXT.md` bounded contexts and ~70% fossil (describing shipped work). Re-indexed to the capability Map; confirmed-shipped items cut. A short **Cleanup pass** stub at the end lists the verify-then-delete items not yet swept.
 
 ---
 
-## Itinerary
+## 1 · Ideation 🔴 *gap*
 
-*The core planning model: Trips, Phases, Days, Items, Parking Lot.*
+*Decide where, when, and why — enough to commit to dates. Largely unbuilt; only Goals exist.*
 
-**Shipped:**
-- Trips, Phases (auto-bucket days by date overlap), Days (multi-phase), Items (7 types: lodging, transportation, flight, activity, meal, note, checklist)
-- Anchor times, derived Time Slots, Sort Order (gap-based drag-reorder)
-- Item status lifecycle (unplanned ↔ planned → done | considered)
-- Parking lot (unplanned items, phase-scoped)
-- Day view timeline (anchor-pinned + untimed flow, drag interactions)
-- Multi-day items via `end_date` (#41 — hotel/rental spans, `MultiDayBanner`)
-- Next/previous day navigation (`DayNav`, swipeable)
-- Clone (date-offset shift)
+### When + availability — the date-finding wedge *(headline bet)*
+- **What:** A **new** Availability mechanism (member × date-range → yes/maybe/no overlap), aggregated by range-overlap to rank **group candidate windows**. "Maybe" is a first-class third value. The winning window one-taps into real dates (the `forming → dated` promotion). "The poll is the invite."
+- **Not:** a Vote, nor a reskin of `votes`/`goal_votes`/`suggestion_votes` (kept separate per ADR-0004/0009). **Never** auto-suggests destinations (charter: no AI-generated itineraries) — it ranks the group's own proposed windows.
+- **Blocked by:** the `forming` soft-trip lifecycle (Itinerary prereq below). Integrates with Onboarding (the poll *is* the join surface) but is **not** blocked by it.
+- **Slices:** new collection → paint-the-grid heatmap UI → winning-window promotion. Grill the data-model + aggregation semantics separately from the UI/promotion slices.
+- **Ref:** `CAPABILITY_MAP.md` §1.
 
-**Backlog:**
+### Why — Goal → "Plan this" commit pathway
+- **What:** Goal detail gains a "Plan this" → `items/new?goal={id}` with the goal pre-linked. Closes the missing **commit moment** in the group-input cluster (capture + harvest exist; goals otherwise rot as wishes).
+- **Note:** standout cheap tracer-bullet code win. The link is already captured goal-side (`trip_goals.items` via `syncGoalLinks`); this is the forward pathway.
 
-### Trip Goal *(v4)*
-- **What:** A trip-level aspiration too vague to be an item ("try paella," "do a wine tasting"). No phase, location, or time. Items can address a goal. The *capture* half of the group-input cluster.
-- **Why deferred:** Not in v3 scope. Every item requires a phase; goals are phase-less by definition.
-- **Target:** v4. **Notes:** CONTEXT.md glossary. Grill together with the Swipe-Quiz (Collaboration) — capture vs. harvest halves of the same flow.
+### Why — render linked goals in item detail
+- **What:** Show the [[Trip Goal]]s an item addresses on the item detail page. The back-link is stored (`trip_goals.items`) but detail hardcodes `linked_goal_ids: []` and renders nothing. Needs the detail loader to fetch the back-link.
+- **Ref:** `docs/CARD_CONTENT_SPEC.md` §6c. "Smart, no clutter."
+
+> **Where** (compare/decide destinations) is deferred until **When** proves the Ideation engine.
+
+---
+
+## 2 · Itinerary 🟢 *mature*
+
+*The shared plan. Core is shipped and stable; frontier is the soft-trip data prereq + a couple of model cleanups.*
+
+### `forming` lifecycle state — soft-trip *(keystone unblock for ALL of Ideation)*
+- **What:** A dateless / pre-dates trip lifecycle state. Today the schema **forbids** it — `backend/pb_migrations/0002_trips.js:12-13` makes both dates `required:true`, and no `status`/lifecycle field exists. Relax the NOT-NULL behind a lifecycle status; build the `forming → promote-to-dates` hand-off.
+- **Grill:** the state machine (`forming → dated`), what's allowed in `forming`, nav/empty-state, whether "active" still defers to `isTripActive` (`src/lib/trip-mode/activation.ts`).
+- **Constraint:** append-only migration (CLAUDE.md PB rule).
+- **Why here:** it's an Itinerary data-model change, but it unblocks the entire Ideation capability.
 
 ### Tri-State Booking Pill
-- **What:** Booking status cycles `not booked` → `partially booked` → `booked` (currently boolean).
-- **Why deferred:** Boolean shipped first. Middle state matters for multi-leg transit and grouped lodging.
-- **Target:** v4. **Notes:** Migration widens the column; UI has pill space. Feeds the booking to-do view (Tasks domain).
-
-### Linked goals in item detail
-- **What:** Render the [[Trip Goal]]s an item is linked to on the item detail page. The link is captured (form "Addresses goal(s)" → `syncGoalLinks`, stored goal-side on `trip_goals.items`) but detail hardcodes `linked_goal_ids: []` and shows nothing.
-- **Why deferred:** Add-render over real data; carved out of the card-content spec to keep the redesign build lean.
-- **Target:** v4. **Notes:** `docs/CARD_CONTENT_SPEC.md` §6c. Needs the detail loader to fetch the back-link; do it "smart, no clutter."
-
-### Flight timezone capture
-- **What:** Persist `start_tz`/`end_tz` on flight items. `FlightLookup` (AeroDataBox) already returns them; `handleFlightSelect` currently drops them on the floor (no state, no hidden input). Capture only — **never shown in the UI** (deliberate; needed for correct cross-zone time handling, not display).
-- **Why deferred:** ~2 hidden inputs + persist; not blocking.
-- **Target:** v4. **Notes:** `docs/CARD_CONTENT_SPEC.md` §6b. Flight-only, no manual field.
+- **What:** Booking status cycles `not booked → partially booked → booked` (boolean today). Middle state matters for multi-leg transit + grouped lodging. Migration widens the column; UI has pill space. Feeds the booking smart list (Logistics).
+- **Note:** dogfood-driven priority.
 
 ### Flight type vs. transportation-subtype ambiguity
 - **What:** `flight` is a valid item type (migration 0027, full field config) but `ItemForm.svelte` omits it from the type-pill list; flight is also reachable as a `transportation` subtype (which wires `FlightLookup`). Two paths to the same thing.
-- **Why deferred:** Both work; not blocking.
-- **Target:** Resolve when touching ItemForm. Decision: pick one canonical path.
+- **Resolve:** when next touching `ItemForm` — pick one canonical path. Not blocking.
+
+### IA — merge Phases index into Overview → one "Plan" surface *(refactor, low)*
+- **What:** Collapse `/trips/[slug]/phases` into the trip Overview (phase cards w/ day chips + parking-count + inline quick-add + per-phase lists; management verbs behind an "Edit phases" toggle; `/phases` → redirect). Itinerary SubTabs 4→3 (Plan | Lists | Goals). Drops parking-lot capture from 3 taps to 1–2.
+- **Note:** the biggest IA bite of the audit; **needs its own plan when picked up**; entangles with #159/#160 (ContextRail parking drag) + #89 (phase-detail layout). `layers.md`. Post-gap, dogfood-driven.
 
 ---
 
-## Collaboration
+## 2a · Logistics 🟡 *(Itinerary sub)*
 
-*Multi-user coordination and group decision-making.*
+*Get the planned trip ready for trip day: booked, packed, confirmed.*
 
-**Shipped:**
-- Trip Members, Roles (owner / co_owner / traveler / viewer)
-- Invites (Resend email, code, 7-day expiry), Placeholder members + Claim
-- Suggestions (review queue, auto-approve setting)
-- Comments (item-scoped) — **this is the agreed ceiling for messaging; see scope note**
-- Notifications (in-app only: suggestion_added, comment_added, member_joined)
-- Vote model (`votes` collection, `VoteButtons.svelte`) — values: Love +2 / Like +1 / Flexible 0 / Dislike −2
+### Tasks model — generalize checklists / packing / grocery / booking-to-do
+- **What:** The Checklist/Task primitive is shipped (`checklists`/`tasks`, ADR-0003). Frontier is the **views** that compose it:
+  - **Packing list** — manual entries, per-person assignable; optionally weather-aware (→ Integrations · Weather).
+  - **Booking to-do** — auto-filled from planned-but-unbooked items + manual add; checking one off can flip the item's booking status (Tri-State Booking Pill).
+  - **Grocery list** — a community (shared, not per-person) list with a location/time trigger; generalizes to "location/time-triggered checklist."
+- **Note:** the primitive is one model; do **not** ship the three lists as three separate features. Some of this entangles with the readiness rollup (Map §2a).
 
-**Scope decision — messaging stays minimal.** No trip-level discussion thread, no text decision log. Status transitions (unplanned → planned) *are* the decision record. Rationale: groups will keep using WhatsApp/iMessage; earn the right to compete before trying to replace. Revisit only on real dogfood demand.
-
-**Backlog:**
-
-### Item Voting UI ([#30](https://github.com/toxroxmysox/Waypoint/issues/30))
-- **What:** Vote buttons on item detail, avatar stacks on cards (no numeric score), parking lot sorted by aggregate vote score.
-- **Status:** Model + PB collection exist; frontend not built. Issue is planned/afk.
-- **Target:** v4.
-
-### Swipe-Quiz Voting Experience *(v4)*
-- **What:** Tinder-style card stack that walks a traveler through planned + unplanned items one at a time, swiping Love/Like/Flexible/Dislike. The *harvest* half of group input.
-- **Why deferred:** Only the vote model is specced. Swipe-deck interaction (card stack, session scope, order, multi-traveler reconciliation, gestures) is undesigned.
-- **Target:** v4. Needs a grill; rides on #30. **Open question:** operates on a phase, a day, the whole trip, or just the parking lot?
-
-### Collaboration polish (small, well-specified)
-- **Invite resend** — "resend invite email" button (currently revoke + recreate). Target: v4.
-- **Role downgrade** — promote endpoint only upgrades traveler → co_owner; downgrade missing. Target: v4.
-- **Notification dedup / batching** — debounce comment storms into one digest notification. Target: dogfood-driven.
-- **Notification realtime** — bell count is page-load only; new notifications don't update the badge live. Target: when offline/realtime work happens anyway.
-- **Edit-and-approve inbox UI** — backend `/api/suggestions/review` accepts a `payload` override; UI exposes no edit form. Target: v4 polish.
-- **Comment edit / delete** — comments immutable by design; only pull in on real friction.
-- **Traveler auto-approve E2E test** — test 6 in `test-suggestions.mjs` SKIPped (needs PB admin creds in `.env.local`). Target: add creds, un-skip.
+### Pre-departure "unbooked sweep" *(low conviction)*
+- **What:** A T-minus-N "you leave Saturday and the riad isn't booked" surface — the one concrete sliver of the dropped proactive next-step engine.
+- **Note:** the full engine was dropped (brushes the no-hub charter line); fold into Booking Smart List work (#198-adjacent). dogfood-driven. `pathways.md` P-4.
 
 ---
 
-## Money
+## 3 · Group Input 🟡 *building*
 
-*Financial tracking. The most complete domain after Itinerary.*
+*Make opinions known fast (vote) or in depth (comment); converge into the plan.*
 
-**Shipped:**
-- Expenses (who paid, split modes), Settlements, Budgets (per_day / total)
-- Debt Simplification (greedy creditor/debtor matching)
+### Swipe-deck completion → owner signal + ranked door
+- **What:** Draining a phase's deck writes one in-app notification ("X finished voting on Paris" — a **4th notif type**) + a "k of n voted" phase-card line, both deep-linking to the vote-sorted parking lot. Harvest is write-only today, so "did everyone vote, what won?" currently happens in the group text.
+- **Note:** D1-safe (async, in-app). `pathways.md` P-5.
 
-**Backlog:**
-- **Multi-currency — OFF THE TABLE** (CLAUDE.md). Single-currency by design. Recorded here so it isn't re-proposed.
+### Swipe-quiz comment pathway
+- **What:** The swipe deck has no comment pathway — a frontier seam noted in the Map (§3). Pull when the polymorphic `comments` extraction lands.
 
-### Item ↔ Expense two-way navigation
-- **What:** Make the `expenses.linked_item` relation navigable in **both** directions. Today it's captured on expense create but rendered nowhere. (a) Item detail: a conditional "View in expenses" affordance on the Cost slot, present only when ≥1 expense links the item, jumping to the **expenses list filtered to that item** (multiplicity-safe — an item can have 0..N linked expenses). (b) Expense row: a "View item" link back to the linked item.
-- **Why deferred:** Carved out of the card-content spec so the redesign ships the single Cost number first. Needs a loader query + render slot on each side.
-- **Target:** v4. **Notes:** `docs/CARD_CONTENT_SPEC.md` §1 / Deferred follow-ups. Keeps the link two-way without a second source of truth for "paid" (payment stays on [[Expense]]).
+> **Deferred:** polymorphic `comments` collection extraction (today `Comment` is a `suggestions` row, item-only — 🔵 latent per Map). Pull before the swipe-comment pathway.
 
 ---
 
-## Trip Mode
+## 4 · People & Membership 🟢 *mature*
 
-*The live-trip experience. Active only when trip status = active.*
+*Right people, right access, recognizable identity; the who-did-what record survives joins/claims/departures.*
 
-**Shipped:**
-- Now tab (3 states: mid-event, between-things/FREE TIME, day-wrapped)
-- Today timeline (past dimmed, current highlighted, auto-scroll, tap-to-edit)
-- Add button (add item to today / add expense)
-- Mode switching (derived activation + symmetric pills), ongoing-state detection
+### Onboarding — first-five-minutes *(🔴 gap, NOW next-build)*
+- **What:** join/claim → **oriented** trip home → **one** "first contribution" CTA → a per-member onboarding-complete signal. A stranger currently lands on a bare planning tool; no onboarding-complete signal exists anywhere today (net-new).
+- **Stitches shipped parts** — `/join/[token]` already redirects to `/trips/[slug]`; `/claim`, `/goals`, `/swipe` all exist. Not greenfield.
+- **First-contribution CTA targets `/goals` (capture), not `/swipe`** — a brand-new trip has no seeded swipe candidates.
+- **Resist the "wizard" framing** (#111's title). Fuse the first-timer hero with the trip-home decision (the homepage FLEX branch — a lifecycle-aware hero band on the existing `/trips/[slug]/+page.svelte`, a reversible swap, **not** a new route; the app-home half `/trips/+page.svelte` already buckets active/upcoming/past).
+- **Ref:** `#111` (OPEN).
 
-**Backlog (v4 concepts — deferred from V3_PRD §5, none grilled):**
-- **Inline contextual parking lot** — collapsed "ideas waiting" card between time-slot headers on the timeline.
-- **Trip Mode Quick Actions** — Add expense / Quick note / Photo log buttons (Photo log → the [[Memory]] composer, see `docs/TRIP_MEMORY_PRD.md`; Quick note → Tasks/Memory).
-- **Ideas from Free Time** — parking lot surfaced via a tap on the FREE TIME card.
-- **Note Before Bed** — end-of-day prompt → the [[Memory]] composer (one photo + one thought). **Grilled & specced in `docs/TRIP_MEMORY_PRD.md`** (Trip Memory context); reviewed at Closeout.
-- **Day Wrapped Stats** — items / distance / spent summary on the day-wrapped state.
+### Self-leave UI
+- **What:** Backend exists (ADR-0008); the member-facing self-leave affordance is unbuilt. Enhancement.
 
----
+### Role downgrade
+- **What:** The promote endpoint only upgrades traveler → co_owner; downgrade is missing.
 
-## Archive & Portability
+### Invite resend
+- **What:** A "resend invite email" button (today the only path is revoke + recreate).
 
-*Trip lifecycle beyond active use.*
+### Edit-and-approve inbox UI
+- **What:** Backend `/api/suggestions/review` accepts a `payload` override; the UI exposes no edit form.
 
-**Shipped:**
-- Public Archive (token-gated, PII-stripped, configurable publish delay)
-- Export (JSON), Import, Clone, Closeout wizard
-
-**Backlog:**
-- **Archive stays plan-only — resolved (Trip Memory grill, 2026-06-09).** The earlier idea of "extend the archive to plan + memory" was **rejected**: [[Memory]] records are for the travelers, never the public (no tractable PII-strip for images). Memories are reviewed member-only at **Closeout**, not exposed in the [[Public Archive]]. See `docs/TRIP_MEMORY_PRD.md` / `docs/adr/0007-trip-memory-separate-capped-context.md`. The deferred cross-trip *private* "living record of all trips" is a separate future grill.
+> **Dogfood-driven (pull only on real friction):** notification dedup/batching · notification realtime (bell is page-load only) · traveler auto-approve E2E test (test 6 in `test-suggestions.mjs` SKIPped — needs PB admin creds in `.env.local`). Comment edit/delete: comments are immutable **by design**, not a gap.
 
 ---
 
-## Vault *(module — RETIRED v4)*
+## 5 · Money 🟡 *building*
 
-*Was client-side-encrypted storage for sensitive text (booking codes, passwords). **Removed in v4** — see ADR-0005. Encryption with a trip-shared password protected only against the operator/at-rest, not against fellow members, and a new app hasn't earned the trust to win a security contest against LastPass. The nav slot becomes [[Trip Documents]]; booking codes live on Item `confirmation_codes`.*
+*No one returns to Splitwise. Core (expenses/splits/settlements/budgets/debt-simplify) is shipped; frontier is the two-axis model + Paid Moments + Money Units.*
 
-**Removal scope (v4):** drop `vault_entries` collection (deliberate exception to append-only migrations — no production data), remove `crypto.ts`, `vault-password.ts`, `/api/vault/unlock`, vault route. Tracked with the Documents work.
+### Two-axis Money model *(ADR — research, gates Money Units)*
+- **What:** Keep the two axes independent — **unit** (settlement collapse) and **participation** (split membership). Conflating them re-creates Splitwise friction. ADR amend (extends ADR-0015).
+- **Note:** only Money Units truly needs this. Subset already decided: #259's narrow reassign-disposition call.
 
----
+### Paid-Moment affordance + prefilled add-expense
+- **What:** #228/#229 closed as **ADR-0014 decisions — no code shipped** (no `Log payment` string, no `initial*` props). Build the #228 URL-param/prefill **substrate** first, then the #229 affordance on top. "Paid" is **derived** from the linked-expense predicate (`src/lib/money/linked-expenses.ts`), not a new flag.
+- **Ref:** ADR-0014.
 
-## Documents *(NEW domain — grilled 2026-06-07)*
+### Money Units collection + unit-aggregated debt-simplify
+- **What:** ADR-0015 decided, **code not shipped** (no `money_units` collection, no unit pre-aggregation). A new trip-scoped unit that **references `Member`** (never a second member store) and **resolves on tombstone** (ADR-0008). The defined-unit preset rides the Paid-Moment prefill.
+- **Blocked by:** the two-axis ADR + the Paid-Moment substrate. Settle-up math change → verify on `pnpm test:e2e:clean`.
+- **Ref:** ADR-0015.
 
-*File/image artifacts — booking PDFs, tickets, tour vouchers, boarding passes. The "email folder of confirmations" the current stack relies on. Nothing exists today; PocketBase native file storage is unused.*
+### IA — Money one-page with budget header *(low)*
+- **What:** Collapse Expenses|Budget sub-tabs into a single Money page: estimated-vs-spent header (math already in `budget/+page.svelte`), balances + Settle Up above the ledger, header-tap → budget editor (`/budget` survives as editor only). Read drops from 2 taps + a guess → 0 taps.
+- **Note:** design alongside #198 (plan-vs-budget) + #211 (trip-mode Money summary). `layers.md`.
 
-**Full design:** `docs/V4_DOCUMENTS_PRD.md`. Decision record: `docs/adr/0005-retire-vault-no-client-side-encryption.md`. Glossary: [[Document]], [[Trip Documents]] in `CONTEXT.md`.
-
-**Shipped (2026-06-08):** S0 retire Vault (#69), S1 attach/view/delete on item (#70), S2 Trip Documents aggregate + trip-scoped upload (#71). Vault fully removed (migration 0031). `documents` collection (0032, + autodate fix 0041).
-
-**Backlog (remaining v4 slices):** S3 clipboard paste (#73), S4 preview surfaces (#72), S5 offline precache (#74).
-
-**Original design notes (kept for the remaining slices):**
-
-### Documents domain
-- **What:** Plain (unencrypted) artifacts (PDF/image), one `documents` collection. Parent scope {Item | Trip}, no Phase. One file per record, many per item. Membership-gated; no encryption, no sensitive flag (see ADR-0005). Added via file-picker upload **or clipboard paste** (screenshots). Types PDF+images, 10 MB cap, no count cap. Text codes stay on Item `confirmation_codes`.
-- **Trip Documents aggregate view:** read-only union of all Documents, grouped by Item Type + a Trip-level section. Takes the **retired Vault's nav slot**. Per-item Documents section on item detail.
-- **Offline:** automatic precache of the **active trip's** Documents (service-worker); cache-on-view for planning mode.
-- **Permissions:** upload = non-viewer members (no review queue); delete = uploader or owner/co_owner; viewers read-only.
+> **Decided against (recorded so it isn't re-proposed):** **multi-currency** — single-currency by design (charter / CLAUDE.md).
 
 ---
 
-## Tasks *(NEW domain — generalizes checklists, packing, grocery, booking to-do)*
+## 6 · Documents 🟡 *building*
 
-*One primitive: a checkable thing, optionally owned by a member, optionally with an execution context (a time or place). The three "lists" are views of this one model — do not ship them as three separate features.*
+*Every booking reference — file or code — one tap away. Core upload/view/delete + Trip Documents aggregate are shipped (Vault retired, ADR-0005).*
 
-**Shipped (partial, as the legacy `checklist` item type):**
-- `checklist` item type + `checklist_items` collection + `parent_item` self-relation. Currently shoehorned into the Item model (no anchor times, no location, no multi-day) — the odd type out.
+### codes → Documents migration *(ADR-0016, refactor)*
+- **What:** Confirmation codes still live on `items.confirmation_codes`, **read across 26 files** (incl. export/portability/clone/import). ADR-0016 moves them into Documents. Correctness-neutral plumbing, low urgency.
+- **Split into 3 sub-PRs:** (1) append-only migration + new code object + backfill; (2) repoint readers capability-by-capability; (3) leave `items.confirmation_codes` inert. Touches export/portability → needs `pnpm test:e2e`.
+- **Ref:** ADR-0016.
 
-**Backlog:**
+### Remaining v4 slices
+- **Clipboard paste** (#73 — paste screenshots) · **Preview surfaces** (#72) · **Offline precache** of the active trip's Documents (#74).
+- **Ref:** `docs/V4_DOCUMENTS_PRD.md`.
 
-### Task model + per-person assignments
-- **What:** A Task: title, checked state, optional `owner` (member), optional execution context (time and/or place). Absorbs `checklist` (resolves [#45](https://github.com/toxroxmysox/Waypoint/issues/45) — checklist stops being a janky item type) and gives assignments for free ("who's booking the Airbnb, who's driving").
-- **Target:** v4. **Notes:** This single model is the high-leverage move — three list features collapse into one domain.
+### Receipt on the expense — 3rd Document parent scope
+- **What:** Optional attach/paste a receipt on an expense, stored as a Document with **parent scope = Expense** (extends {Item|Trip} via the same entry-point principle); a "Receipts" group in Trip Documents. Receipts are half of why groups keep Splitwise. Append-only enum-widen migration.
+- **Note:** Documents ∩ Money. `pathways.md` T-3.
 
-### View: Packing list
-- **What:** Manual entries, per-person assignable. Optionally weather-aware (see Integrations → Weather).
-- **Target:** v4.
-
-### View: Booking to-do
-- **What:** Auto-filled from planned-but-unbooked items + manual add. Checking one off can flip the item's booking status (Tri-State Booking Pill, Itinerary).
-- **Target:** v4.
-
-### View: Grocery list (the edge case)
-- **What:** A community list executed at a specific place/time (when someone goes to the store). I.e. a Task with a location/time trigger and shared (not per-person) ownership.
-- **Target:** v4. **Notes:** Generalizes to "location/time-triggered checklist" — same primitive, just a place trigger.
+### Document upload → "Mark booked?" chip
+- **What:** On `uploadDocument` success for `requires_booking && !booked`, a one-tap chip does the same `booked=true` write as the Smart List. The PDF *is* evidence of booking, yet booking truth drops between Documents and Itinerary today.
+- **Note:** Documents ∩ Itinerary. `pathways.md` P-2.
 
 ---
 
-## Trip Memory *(NEW context — grilled 2026-06-09, PRD shelved)*
+## 7 · Trip Execution 🟡 *building*
 
-*Captures what the trip actually felt like, not just the plan. Each member captures **one photo + one short thought, per day** — a curated highlight, not a journal. For the travelers, reviewed together at Closeout; never public.*
+*On the trip: always know now/next, act one-handed, works without signal. Owns zero native data — surfaces + process over borrowed data.*
 
-**Full design:** `docs/TRIP_MEMORY_PRD.md`. Decision record: `docs/adr/0007-trip-memory-separate-capped-context.md`. Glossary: [[Memory]], [[Note Before Bed]] in `CONTEXT.md`; new bounded context #6.
+### Light Replanning doors
+- **What:** Manage the unplanned/unexpected — promote a parked idea, skip/swap (#166). Planned per Map §7.
 
-**Shipped:** Nothing.
+### Phase-exit sweep — "Leaving Paris tomorrow, N ideas still parked"
+- **What:** On a phase's last day (when a later phase exists), Today renders a keep/let-go card writing only the `phase` field (day-less items) + a "Review in planning" door. The unowned **phase→phase** seam: parking ideas are phase-scoped, so leaving a phase strands its un-promoted ideas (replanning is same-phase; closeout is weeks too late).
+- **Note:** `pathways.md` T-1.
 
-**Status:** Grilled and fully specced; kept as a **firm PRD on the backlog, not sliced into issues** (issues are perishable — slice at milestone promotion, the Documents precedent). Not promoted into a milestone; `SPEC.md` untouched.
+### Document chip on Trip-Mode item cards
+- **What:** Cards for items with ≥1 Document get an artifact chip → one-tap open from the offline cache. Boarding-pass-at-the-gate is a 3-hop hunt today. Rides #203 + `CARD_CONTENT_SPEC`.
+- **Note:** Trip Execution ∩ Documents. `pathways.md` T-2.
 
-**Decisions (see PRD/ADR for full rationale):**
-- **Memory ≠ Document** — separate entity/collection/context. Documents = used *during* the trip; Memory = remembering it *after*. Scope by entry point, no OCR.
-- **Hard cap: one photo + one thought, per member, per day** (unique `(day, author)` index). The cap *is* the boundary that keeps this from becoming Apple Photos / Day One.
-- **Member-only, excluded from the Public Archive** (archive stays plan-only — resolves the deferred "Documents/memory in archive" question too).
-- **Capture:** Note Before Bed (Trip Mode, end of day) + live composer + retroactively in Closeout. **Review:** Trip Mode Today + Closeout. **No standalone gallery** (that's the deferred cross-trip "living record" product).
-- **Storage:** PB file storage now, NAS later (reversible config, no ADR; cap kills the scale worry).
+### IA — Today one-scroll, drop the upcoming sub-tab *(low)*
+- **What:** Today as one scroll: timeline → inline checklists (#52) → collapsed "Next 3 days" (today/upcoming inlined, route redirects). `today/upcoming` is 68 lines of read-only lookahead behind a sub-tab.
+- **Note:** afternoon-sized, independent of the Plan merge. `layers.md`.
 
-**Remaining (shelved, not issues yet):**
-- **HEIC transcoding** — designed in the PRD as a *shared* Memory+Documents capability (client-side WASM, pre-upload); retires the HEIC caveat for both domains. Pull off the shelf at promotion.
+> **Day-Wrapped Stats** (items/distance/spent on the day-wrapped state) is the one surviving sliver of the dropped Trip-Mode v4 concept batch (rest absorbed by #166/#211). Pull opportunistically.
 
 ---
 
-## Integrations *(cross-cutting)*
+## 8 · Records & Archive 🟡 *building*
 
-**Shipped:**
-- Google Places (New) — autocomplete + details, session tokens
-- AeroDataBox — flight lookup
-- Resend — invite/transactional email
-- Umami — self-hosted analytics
+*The trip ends well and lives on — private keepsake + public record; the data stays yours.*
 
-**Backlog:**
+### Trip Memory *(🔴 gap — firm PRD, ADR-0007 accepted, unbuilt)*
+- **What:** Each member captures **one photo + one short thought, per day** — a curated highlight, not a journal. **No `memories` collection exists.** The **DB-enforced cap** (unique `(day, author)` index) *is the whole personality* — it's what keeps this from becoming Apple Photos / Day One.
+- **Decisions (PRD/ADR):** Memory ≠ Document (separate entity/collection/context; scope by entry point, no OCR). Member-only, **excluded from the Public Archive**. Capture: Note Before Bed (Trip Mode, end of day) + live composer + retroactively in Closeout; review: Trip Mode Today + Closeout. **No standalone gallery** (that's the deferred cross-trip "living record"). Storage: PB file storage now, NAS later. Keep author **USER-resolvable** (so the Crew moonshot stays additive).
+- **Build:** SKIP grill (PRD pre-grilled) → SPEC amend → `to-issues` → exec. Add a capture door to the Trip Execution Add workflow.
+- **`heic.ts` does NOT exist** — HEIC transcoding (client-side WASM, pre-upload; a *shared* Memory+Documents capability) is its **own** slice, not a free pull.
+- **Ref:** `docs/TRIP_MEMORY_PRD.md` · ADR-0007.
 
-### Calendar feed (subscribe, not export)
-- **What:** A stable `webcal://` subscribed feed per trip; each event keyed by item id as its `UID`. Subscribe once → auto-syncs forever; edits/deletes propagate with zero further taps. Works for Google Calendar + iCloud.
-- **Why a feed, not `.ics` export:** A one-time export creates the duplicate/delete problem. A subscribed feed meets all constraints (no dupes, no manual delete, one tap). A download-`.ics` button can exist as a fallback.
-- **Target:** v4.
+### Wrap-up completion
+- **What:** Post-end orchestration (triggers settle → closeout → publish). #195. Partly shipped (wrap-up banner); completion is frontier per Map §8.
+
+### Clone with memory
+- **What:** Clone gains opt-ins to **bring ideas we never did** (considered/unplanned → unplanned, day-less, phase-mapped) and **unmet goals** (non-done `trip_goals`). Clone hard-sets `status='planned'` and ignores goals today, so the Remember→Plan seam discards exactly the regret data closeout curated.
+- **Note:** rides #173 (clone fix). `pathways.md` PT-1.
+
+### Money epilogue → fold into wrap-up (#195)
+- **What:** Read-only estimate-vs-actual recap (Σ `cost_estimate` vs Σ expenses; per-member paid/owed) as the **settle-step landing in the wrap-up PRD #195**, **not** a standalone build. The trip→record seam drops the money story today.
+- **Note:** `pathways.md` PT-2.
+
+> **Decided against (recorded so it isn't re-proposed):** **archive-memory** — the "extend the archive to plan + memory" idea was **rejected** (Trip Memory grill, 2026-06-09). Memory records are for the travelers, never the public (no tractable PII-strip for images); reviewed member-only at Closeout. Archive stays **plan-only**. The deferred cross-trip *private* "living record of all trips" is a separate future grill. See ADR-0007.
+
+---
+
+## Enabling · Platform ⚪
+
+*The invisible floor: signed in, loads, offline, navigates, keeps time.*
+
+### Anticipation countdown component *(in-app only)*
+- **What:** A pre-trip countdown surfaced on the trip-home hero band + `/trips` Upcoming card. Build once, consume twice. Emotional register: anticipation/hype welcome — **never via push** (charter; in-app only).
+- **Note:** **dedup-check `ContextRail.svelte` first** (it already does context-rail time work); reuse `src/lib/shell/format.ts` + `now-state.ts`. Presentational polish — do **not** preempt gap/correctness work.
+
+> **P3 polish batches — pull opportunistically** (detail lives in each exploration file under `docs/app-audit/v2/explorations/`, the single source of truth): landing & post-action contract (`landing-map.md`) · empty-state copy/CTA gaps (`empty-states.md`) · desktop shell / ContextRail branches + BottomSheet centered-modal variant (`desktop.md`) · terminology nits (`terminology.md`).
+
+---
+
+## Enabling · Integrations & Syncing ⚪
+
+*Play well with the outside world — pull in, push out, link across.*
+
+### Email Digest *(highest-leverage absence; elevate)*
+- **What:** Outbound cron'd "here's what changed on your trip" email via Resend. Push is off-the-table, so **email is the only re-engagement lever** for non-technical friends who won't open the PWA unprompted.
+- **Phase 1:** a dumb structured diff — **no AI dependency.** **Confirm the scheduled-trigger mechanism exists** in the grill (Resend outbound is shipped; the *cron* infra is unstated). **Structured writes only** (reply-to-thread is off-table).
+- **Later phases (gated on the AI-assist posture ADR):** LLM narration + tokenized one-tap write-back (vote/availability/RSVP).
 
 ### Weather (Open-Meteo)
-- **What:** Free, open-source, no API key (fits open-source-first). Planning-side: feeds the packing list. Execution-side: forecast on the Now tab.
-- **Target:** v4. Widget, not a domain.
+- **What:** Free, no API key (fits open-source-first). Planning-side feeds the packing list; execution-side forecast on the Now tab. A widget, not a domain.
 
-### Maps deep-links ("Open in Maps")
-- **What:** Deep-link out to the device's map app (`maps://` / `https://maps.google.com/?q=`) from an item's stored Places coords. NOT an embedded map (embeds are off the table) — a link out.
-- **Target:** v4. Execution glue.
+### Calendar feed (subscribe, not export)
+- **What:** A stable `webcal://` subscribed feed per trip, each event keyed by item id as its `UID`. Subscribe once → auto-syncs forever; edits/deletes propagate with zero further taps (Google Calendar + iCloud). A one-time `.ics` export creates the duplicate/delete problem; a download-`.ics` button can exist as a fallback.
 
-### Email digest (not push)
-- **What:** Weekly "here's what changed on your trip" email via Resend. The realistic engagement lever for non-technical friends who won't open the PWA unprompted (push notifications are off the table).
-- **Target:** v4.
+### Maps deep-link ("Open in Maps")
+- **What:** Deep-link out to the device's map app (`maps://` / `https://maps.google.com/?q=`) from an item's stored Places coords. **Not** an embedded map (embeds off the table) — a link out. Execution glue.
+- **Note:** verify 🟢 coverage before scheduling (see Cleanup pass).
 
 ---
 
-## Exploration backlog (#116 app audit)
+## Cleanup pass (verify-then-delete)
 
-Phase-3 explorations (`docs/app-audit/v2/explorations/`) surfaced these as future work — appetite-walked with Scott 2026-06-13 and all routed here (none built this pass). Feature-sized entries carry full detail; P3 polish batches point at their exploration file (the single source of truth). Domain tags let a per-domain reader still find them. Already-owned proposals were folded into existing issues (cited there): traveler-suggestion landing → #202, quick-add `from=trip` → #169, closeout→record → #195, parking doors → #166, booked-moment expense → #211, no-mode-toggle 900–1279px → #168, placeholder→join nudge → #210.
+Not yet swept — confirm on disk, then delete from this file (a later doc-hygiene pass, per BUILD_PLAN S1; these do **not** gate the rewrite):
 
-### IA / navigation refactors — `layers.md`
-
-#### Merge the Phases index into Overview → one "Plan" surface *(refactor · Itinerary)*
-- **What:** Collapse `/trips/[slug]/phases` (the L2 index) into the trip Overview: phase cards with day chips + parking-count + inline quick-add + per-phase lists, management verbs behind an "Edit phases" toggle, swipe-launch card kept; `/phases` becomes a redirect (parking-lot→phases LEGACY-redirect precedent). Itinerary SubTabs 4→3 (Plan | Lists | Goals).
-- **Why:** Overview already renders the full skeleton; the index's only unique value is CRUD verbs + swipe launch — a duplicate L2 surface (designer P2), and the split is why parking-lot capture sits at 3 taps. Merge drops capture to 1–2 taps and kills the novice Overview-vs-Phases fork (S1/2/7/8).
-- **Target:** refactor — **needs its own plan when picked up**; entangles with #159/#160 (ContextRail parking drag) and #89 (phase-detail layout) — different surfaces, not discarded. The biggest IA bite of the audit.
-
-#### Money — one page with a budget header *(Money)*
-- **What:** Collapse Expenses|Budget sub-tabs into a single Money page: estimated-vs-spent header (math already in `budget/+page.svelte`), balances + Settle Up above the ledger, header-tap → budget editor (`/budget` survives as editor only).
-- **Why:** The sub-tabs split one dataset by record type, not by user question; "can we afford this" (S8) is 2 taps + a guess. Read → 0 taps.
-- **Target:** v4 — design alongside #198 (plan-vs-budget) + #211 (trip-mode Money summary).
-
-#### Today — inline "Next 3 days", drop the trip-mode sub-tab *(Trip Mode)*
-- **What:** Today as one scroll: timeline → inline checklists (#52) → collapsed "Next 3 days" (today/upcoming inlined, route redirects).
-- **Why:** `today/upcoming` is 68 lines of read-only lookahead behind a sub-tab — a nav event for "keep scrolling past tonight," burning the SubTabs row in the one-handed mode where vertical space is scarcest.
-- **Target:** v4 (afternoon-sized, independent of the Plan merge).
-
-### Connective-tissue pathways — `pathways.md`
-
-Each closes a lifecycle seam the audit found unowned; all pass a charter V-test; none duplicate a filed finding. Net-new.
-
-- **Goal → "Plan this" → item** *(P-1 · Itinerary — V2):* goal detail gains a "Plan this" → `items/new?goal={id}` with the goal pre-linked. The group-input cluster has capture + harvest but **no commit moment** — goals rot as wishes unless re-entered by hand. v4.
-- **Document upload → "Mark booked?" chip** *(P-2 · Itinerary/Documents — V3):* on `uploadDocument` success for `requires_booking && !booked`, a one-tap chip does the same `booked=true` write as the Smart List. The PDF is evidence of booking, yet `needsBooking()` stays wrong until someone visits the list — booking truth drops between Documents and Itinerary. v4.
-- **Pre-departure "unbooked sweep"** *(P-4 trimmed · Itinerary):* the one concrete sliver of the dropped next-step-strip engine — a T-minus-N "you leave Saturday and the riad isn't booked" surface. **Low conviction**; the full proactive engine was dropped (brushes D1 no-hub) and the booking Smart List (#198-adjacent) half-owns this. Fold into Smart List work. dogfood-driven.
-- **Swipe-deck completion → owner signal + ranked door** *(P-5 · Collaboration — V1/V2):* draining a phase's deck writes one in-app notification ("X finished voting on Paris" — 4th notif type) + a "k of n voted" phase-card line, both deep-linking to the vote-sorted parking lot. Harvest is write-only today, so "did everyone vote, what won?" happens in the group text. D1-safe (async, in-app). v4.
-- **Phase-exit sweep — "Leaving Paris tomorrow, N ideas still parked"** *(T-1 · Trip Mode — V3):* on a phase's last day (when a later phase exists), Today renders a keep/let-go card writing only the `phase` field (day-less items, stays in D3 bounds) + a "Review in planning" door. The unlisted **phase→phase** seam: parking ideas are phase-scoped, so leaving Paris strands its un-promoted ideas (replanning is same-phase; closeout is weeks too late). v4.
-- **Document chip on Trip-Mode item cards** *(T-2 · Trip Mode/Documents — V1):* cards for items with ≥1 Document get an artifact chip → one-tap open from the offline cache. Boarding-pass-at-the-gate is a 3-hop hunt today; its absence reopens the email folder. Rides #203 + CARD_CONTENT_SPEC. v4.
-- **Receipt on the expense — 3rd Document parent scope** *(T-3 · Money/Documents — V1):* optional attach/paste receipt on an expense, stored as a Document with **parent scope = Expense** (extends {Item|Trip} via the same entry-point principle); "Receipts" group in Trip Documents. Receipts are half of why groups keep Splitwise. Append-only enum-widen migration. v4.
-- **Clone with memory** *(PT-1 · Archive & Portability — V1):* clone gains opt-ins to **bring ideas we never did** (considered/unplanned → unplanned, day-less, phase-mapped) and **unmet goals** (non-done `trip_goals`). Clone hard-sets `status='planned'` and ignores goals today, so the Remember→Plan seam discards exactly the regret data closeout curated. Rides #173 (clone fix). v4.
-- **Money epilogue → fold into #195** *(PT-2 · Archive/Money — V1):* read-only estimate-vs-actual recap (Σ cost_estimate vs Σ expenses; per-member paid/owed) as the **settle-step landing in the wrap-up PRD #195**, not a standalone build — the trip→record seam drops the money story, so "what did it actually cost?" gets rebuilt in a spreadsheet.
-
-### P3 polish batches (detail lives in each exploration file)
-
-- **Landing & post-action** — `landing-map.md`: stay-on-phase-detail after `?/update`; Unscheduled-item lands in the parking lot, not Overview; archive share URL gets copy+toast (like join links). Plus a proposed 4-convention post-action contract for `design-system.md`. *(traveler-suggestion landing → #202; `from=trip` → #169; closeout→record → #195.)*
-- **Empty states** — `empty-states.md`: 11 P3 copy/CTA gaps to the app's own empty-state voice (booking never-filled-vs-drained, inbox suggestion-teach, pre-trip Trip-Mode countdown, free-day Today card, budget zero-state, Documents "Tap +", + the ES-8…12 batch). One polish pass. *(ES-1, the P2 unreachable trip-home teaching state → #111.)*
-- **Desktop shell / ContextRail** — `desktop.md`: Money/Inbox/goals/lists/item rail branches (data already loaded), FAB desktop anchoring, BottomSheet centered-modal variant (CLAUDE.md tablet+ rule), parking-treatment consistency. *(DESK-01, P1 no-mode-toggle 900–1279px → #168.)*
-- **Terminology** — `terminology.md`: glossary calls applied to CONTEXT.md this pass (List, offline member, mode-pill labels, D6 Closeout/Trip-Mode nav). Remaining copy: Documents "{n} file(s)"→"document(s)" (avoid-list) + minor nits (Upcoming/Next-3-Days, Transport/Transportation, Co-Owner casing, dead `typeLabel`). *(goal "plan"→"item" + mode-pill relabel fixed in code this pass.)*
+- **Flight timezone capture** — `start_tz`/`end_tz` fields exist; confirm `handleFlightSelect` actually persists them (capture-only, never shown). If persisted → delete.
+- **Maps deep-link coverage** — confirm whether "Open in Maps" already ships across item surfaces before scheduling the Integrations entry above.
+- **Collaboration polish triage** — re-confirm which of the People & Membership small items (invite-resend / role-downgrade / edit-approve) are still genuinely unbuilt vs. shipped.
+- **App Icon Refresh (#38)** — likely done (regenerated paper/ink/moss PNGs + apple-touch-icon, maskable safe area). Confirm, then delete; relates to open bug #38 (iOS wrong icon).
 
 ---
 
-## Misc / Polish
+## Off the table
 
-- **App Icon Artwork Refresh** — regenerate `icon-192.png` / `icon-512.png` + apple-touch-icon in the paper/ink/moss palette. Related: open bug [#38](https://github.com/toxroxmysox/Waypoint/issues/38) (iOS wrong icon). Maskable variant keeps safe area.
-
----
-
-## Off the table (recorded so they aren't re-proposed)
-
-Per CLAUDE.md: multi-currency, push notifications, embedded maps, real-time co-editing, native apps, AI-generated itineraries. Plus (this session): trip-level messaging/discussion beyond item comments.
+**Not a 4th copy.** The authoritative NOT-list lives in `docs/agents/charter.md` (mirrored as a pointer in `CAPABILITY_MAP.md` §"NOT on the map"): multi-currency · push notifications · embedded maps · real-time co-editing · native apps · AI-generated itineraries · trip-level messaging/discussion beyond item comments. **Anticipation/hype is welcome — but in-app only, never via push.**
