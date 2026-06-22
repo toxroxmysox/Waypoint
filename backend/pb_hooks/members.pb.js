@@ -742,11 +742,85 @@ routerAdd('POST', '/api/members/remove', (e) => {
 			}
 		}
 	};
+	// #259 — transfer split PARTICIPATION (move-to-target, MERGE). The authored-
+	// record rewrites move what the departed member PAID/owns; this moves what they
+	// OWE — every expense whose split_data names the departed id is rewritten
+	// departed→target so computeBalances/debt-simplify attribute the share to
+	// `reassignTo`, not the tombstone. FAITHFUL JS PORT of the Vitest-proven
+	// src/lib/money/transfer-split.ts (transferSplitParticipation) — keep the two in
+	// lock-step. goja can't import the TS, so it is inlined here. Semantics: equal
+	// {members:[…]} replace+dedupe; by_amount {amounts:{…}} move, SUM if the target
+	// already owes, drop the departed key. Reads split_data via the same byte-array
+	// decode as existsBlockRef / expenses.pb.js; writes the rewritten plain object
+	// back via .set (PB serializes a JS object into the JSON field).
+	const transferSplitParticipation = (fromId, toId) => {
+		if (!fromId || !toId || fromId === toId) return;
+		let expenses = [];
+		try {
+			expenses = e.app.findRecordsByFilter('expenses', 'trip = {:tripId}', '', 0, 0, { tripId: tripId });
+		} catch (_) {
+			return;
+		}
+		for (const exp of expenses) {
+			let split = exp.get('split_data');
+			if (Array.isArray(split) && split.length > 0 && typeof split[0] === 'number') {
+				try { split = JSON.parse(String.fromCharCode.apply(null, split)); } catch (_) { split = null; }
+			} else if (typeof split === 'string') {
+				try { split = JSON.parse(split); } catch (_) { split = null; }
+			}
+			if (!split || typeof split !== 'object') continue;
+
+			let changed = false;
+			let nextSplit = null;
+			const mem = split.members;
+			if (Array.isArray(mem)) {
+				if (mem.indexOf(fromId) === -1) continue; // departed not a participant
+				const next = [];
+				for (let i = 0; i < mem.length; i++) {
+					const id = mem[i];
+					if (id === fromId || id === toId) {
+						if (next.indexOf(toId) === -1) next.push(toId); // replace/keep target once (dedupe)
+					} else {
+						next.push(id);
+					}
+				}
+				nextSplit = { members: next };
+				changed = true;
+			} else {
+				const amounts = split.amounts;
+				if (amounts && typeof amounts === 'object') {
+					if (!Object.prototype.hasOwnProperty.call(amounts, fromId)) continue; // not a participant
+					const next = {};
+					for (const k in amounts) {
+						if (k === fromId) continue; // drop departed key; folded into target below
+						if (Object.prototype.hasOwnProperty.call(amounts, k)) next[k] = amounts[k];
+					}
+					const moved = amounts[fromId];
+					const existing = Object.prototype.hasOwnProperty.call(next, toId) ? next[toId] : 0;
+					next[toId] = existing + moved; // SUM if the target already owed a share
+					nextSplit = { amounts: next };
+					changed = true;
+				}
+			}
+
+			if (changed && nextSplit) {
+				exp.set('split_data', nextSplit);
+				try {
+					e.app.save(exp);
+				} catch (err) {
+					console.log('members.remove: split_data transfer failed for expense ' + exp.id + ': ' + err);
+				}
+			}
+		}
+	};
 
 	if (disposition === 'reassign') {
 		// Money — never deleted; identity transfers to the reassignment target.
 		rewriteSingle('expenses', 'paid_by', reassignTo);
 		rewriteSingle('expenses', 'created_by', reassignTo);
+		// #259 — also transfer who each expense splits ACROSS (the departed's owed
+		// share), not just who paid; without this the share lands on the tombstone.
+		transferSplitParticipation(target.id, reassignTo);
 		rewriteSingle('settlements', 'from_member', reassignTo);
 		rewriteSingle('settlements', 'to_member', reassignTo);
 		rewriteSingle('settlements', 'created_by', reassignTo);
