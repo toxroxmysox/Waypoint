@@ -261,4 +261,4 @@ Not yet swept — confirm on disk, then delete from this file (a later doc-hygie
 
 ## Off the table
 
-**Not a 4th copy.** The authoritative NOT-list lives in `docs/agents/charter.md` (mirrored as a pointer in `CAPABILITY_MAP.md` §"NOT on the map"): multi-currency · push notifications · embedded maps · real-time co-editing · native apps · AI-generated itineraries · trip-level messaging/discussion beyond item comments. **Anticipation/hype is welcome — but in-app only, never via push.**
+**Not a 4th copy.** The authoritative NOT-list lives in `docs/app-audit/charter.md` (mirrored as a pointer in `CAPABILITY_MAP.md` §"NOT on the map"): multi-currency · push notifications · embedded maps · real-time co-editing · native apps · AI-generated itineraries · trip-level messaging/discussion beyond item comments. **Anticipation/hype is welcome — but in-app only, never via push.**

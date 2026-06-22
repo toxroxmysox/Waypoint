@@ -173,7 +173,7 @@ Old `CONTEXT.md` "Bounded Contexts" → this map, with **why each L1 exists** (e
 ---
 
 ## NOT on the map (boundary — points to charter, not mirrored)
-Off the table per the charter & `CLAUDE.md`: multi-currency · push notifications · embedded maps · real-time co-editing · native apps · AI-generated itineraries · trip-level messaging beyond comments. **Emotional register:** anticipation/hype is welcome (e.g. a trip **countdown** on the landing / trip-home) but **never via push** — in-app only. *(See `docs/agents/charter.md` for the authoritative NOT-list; this is a pointer.)*
+Off the table per the charter & `CLAUDE.md`: multi-currency · push notifications · embedded maps · real-time co-editing · native apps · AI-generated itineraries · trip-level messaging beyond comments. **Emotional register:** anticipation/hype is welcome (e.g. a trip **countdown** on the landing / trip-home) but **never via push** — in-app only. *(See `docs/app-audit/charter.md` for the authoritative NOT-list; this is a pointer.)*
 
 ## Open seams (🔴 hand-offs that drop data — notes, not capabilities)
 - **Onboarding / first-five-minutes** (D2, #111) — a sub-capability under People & Membership.
@@ -192,4 +192,4 @@ Off the table per the charter & `CLAUDE.md`: multi-currency · push notification
 **Pass 2 — opportunity horizon (2026-06-21, `docs/CAPABILITY_MAP_REVIEW_2.html`):** 20 opportunities (11 skeptic-backed); the revision was confirmed sound. **Adopted:** **Onboarding** as the NOW next-build (reuses Join Link #118 + the `/goals` deck); the **date-finding wedge** ("the poll is the invite" — Ideation When/Availability) as the headline opportunity; an **anticipation countdown** on the landing / trip-home; and **local-AI *assist* surfaces** (sentiment summary, packing-list draft, booking-extraction-from-email, conflict surfacing, "when's our flight", expense categorization) — endorsed **pending a zero-code AI-assist posture ADR** (local-first; must precede any AI surface). **Rejected:** dissolving the **Logistics** sub — kept, its booking lifecycle is a distinct logistics outcome.
 
 ## Provenance
-Derived from `CONTEXT.md`, `docs/agents/charter.md`, `docs/SPEC.md`, the 14 PRDs, the 15 ADRs, the `docs/app-audit/`, a 2026-06-20 code sweep, a capability-by-capability grilling walk, and the 2026-06-21 council review.
+Derived from `CONTEXT.md`, `docs/app-audit/charter.md`, `docs/SPEC.md`, the 14 PRDs, the 15 ADRs, the `docs/app-audit/`, a 2026-06-20 code sweep, a capability-by-capability grilling walk, and the 2026-06-21 council review.
