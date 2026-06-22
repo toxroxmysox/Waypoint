@@ -14,6 +14,10 @@ export const load: PageServerLoad = async ({ url, locals, parent }) => {
 	const dayId = url.searchParams.get('day');
 	const phaseIdParam = url.searchParams.get('phase');
 	const suggestionId = url.searchParams.get('suggestion') || '';
+	// #263 — Goal → "Plan this": the composer arrives seeded from a goal. The
+	// goal id pre-checks "Addresses goal(s)" and seeds the title/notes from the
+	// goal so the new item links straight back (goal-side write on create).
+	const goalIdParam = url.searchParams.get('goal') || '';
 
 	// If a day was preselected and no phase was explicitly passed, infer the
 	// phase from the day's first matched phase so the form arrives filled in.
@@ -40,6 +44,28 @@ export const load: PageServerLoad = async ({ url, locals, parent }) => {
 		sort: 'sort_order',
 		fields: 'id,title'
 	});
+
+	// #263 — seed from the originating goal (the "Plan this" pathway). Validated
+	// against the trip; an unknown / cross-trip goal is silently ignored (empty
+	// composer) rather than erroring. Title seeds the item title; the goal's
+	// description carries over as the item's notes.
+	let prefillGoalId = '';
+	let prefillGoalTitle = '';
+	let prefillGoalDescription = '';
+	if (goalIdParam) {
+		try {
+			const g = await locals.pb
+				.collection('trip_goals')
+				.getOne<TripGoal>(goalIdParam, { fields: 'id,title,description,trip' });
+			if (g.trip === trip.id) {
+				prefillGoalId = g.id;
+				prefillGoalTitle = g.title ?? '';
+				prefillGoalDescription = g.description ?? '';
+			}
+		} catch {
+			// Unknown goal — fall through to an empty composer.
+		}
+	}
 
 	// Pre-fill from suggestion if editing for approval.
 	let prefill: Record<string, unknown> | null = null;
@@ -106,7 +132,10 @@ export const load: PageServerLoad = async ({ url, locals, parent }) => {
 		tripStartDate: String(trip.start_date || '').split(/[T ]/)[0],
 		tripEndDate: String(trip.end_date || '').split(/[T ]/)[0],
 		submitAsSuggestion,
-		prefill
+		prefill,
+		prefillGoalId,
+		prefillGoalTitle,
+		prefillGoalDescription
 	};
 };
 

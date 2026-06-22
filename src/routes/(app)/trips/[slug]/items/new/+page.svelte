@@ -74,12 +74,19 @@
 	// item fell into the no-surface limbo). day + phase flow through the
 	// create-mode context preselect (server seeds them from the payload), so
 	// they're not repeated here; everything else is set on initialData.
+	// #263 — Goal → "Plan this": when the composer arrives seeded from a goal
+	// (and not an Edit & Approve), the goal title/notes seed the item and the
+	// originating goal is pre-checked under "Addresses goal(s)".
+	let goalPrefillId = $derived(data.prefillGoalId ?? '');
+	let goalPrefillTitle = $derived(data.prefillGoalTitle ?? '');
+	let goalPrefillDescription = $derived(data.prefillGoalDescription ?? '');
+
 	let initialData: ItemFormData = $derived({
 		...buildEmptyFormData((prefill?.type as ItemType) ?? 'activity'),
 		type: (prefill?.type as ItemType) ?? 'activity',
 		subtype: (prefill?.subtype as string) ?? '',
-		title: (prefill?.title as string) ?? '',
-		description: (prefill?.description as string) ?? '',
+		title: (prefill?.title as string) ?? goalPrefillTitle,
+		description: (prefill?.description as string) ?? goalPrefillDescription,
 		start_time: (prefill?.start_time as string) ?? '',
 		end_time: (prefill?.end_time as string) ?? '',
 		end_date: (prefill?.end_date as string) ?? '',
@@ -94,6 +101,7 @@
 		free_cancellation: prefill?.free_cancellation === true,
 		cost_estimate_usd: Number(prefill?.cost_estimate_usd) || 0,
 		assigned_to: Array.isArray(prefill?.assigned_to) ? (prefill.assigned_to as string[]) : [],
+		linked_goal_ids: goalPrefillId ? [goalPrefillId] : [],
 	});
 </script>
 

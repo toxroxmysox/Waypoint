@@ -152,8 +152,14 @@
 	<!-- Actions. -->
 	{#if data.canEdit}
 		<div class="space-y-3">
-			<Button type="button" variant="moss" size="md" class="w-full" onclick={() => (linkOpen = true)}>
-				Link an item
+			<!-- #263 — "Plan this": one-tap from a captured goal into the composer,
+			     pre-seeded from this goal (title/notes) and pre-linked back to it. -->
+			<Button href="/trips/{data.trip.slug}/items/new?goal={goal.id}" variant="moss" size="md" class="w-full">
+				Plan this
+			</Button>
+
+			<Button type="button" variant="outline" size="md" class="w-full" onclick={() => (linkOpen = true)}>
+				Link an existing item
 			</Button>
 
 			<!-- Manual status only while the goal has zero links (otherwise derived wins). -->
