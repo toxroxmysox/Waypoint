@@ -62,37 +62,53 @@ Terms are authoritative. Use these in code, issues, and conversation. Synonyms i
 | **Focus** | The single emphasised block at the top of the [[Now]] view. Always present; its content varies by state — the **ongoing** activity (large, with time remaining), a **Free time** countdown to the next activity (with the next item shown normal-weight below), an end-of-day **summary** (items done) once past the evening cutoff, or **"nothing else planned"** when the day is open but empty ahead. A multi-day [[Ongoing]] item never becomes the Focus (it shows as a slim context banner instead). | now card, hero card |
 | **Design Tokens** | Semantic CSS custom properties in layout.css: colors (ink, paper, moss, clay, gold, sky, error), fonts (Fraunces display, Inter body, JetBrains Mono mono), shadows, z-index, breakpoints. Full reference: `docs/design-system.md`. | |
 
-## Bounded Contexts
+## Capabilities
 
-Waypoint is a single-context app (no microservices). Internally, the domain splits into these functional areas:
+> **Canonical model: `docs/CAPABILITY_MAP.md`** (full per-capability facets, maturity, cross-edges). This is the glossary-level summary. Replaces the former 7 "Bounded Contexts": the old **Collaboration** split into **Group Input** + **People & Membership**; **Trip Mode** → **Trip Execution**; **Shell** → **Platform**; and **Documents**, **Logistics**, **Ideation**, and **Integrations & Syncing** are now first-class.
 
-1. **Itinerary** -- Trips, Phases, Days, Items, Checklist Items, Parking Lot. The core planning model.
-2. **Collaboration** -- Trip Members, Roles, Invites, Placeholder Claims, Suggestions, Comments, Notifications, Votes. Multi-user coordination and group decision-making.
-3. **Money** -- Expenses, Settlements, Budgets, Debt Simplification. Financial tracking.
-4. **Trip Mode** -- The live-trip experience: NowCard, today timeline, mode switching, ongoing state detection. Active only when a trip's status is "active."
-5. **Archive & Portability** -- Public Archive, Export, Import, Clone, Closeout. Trip lifecycle beyond active use.
-6. **Trip Memory** -- Memory (per-member, per-day photo + thought), Note Before Bed capture, member-only review woven into Closeout. Experiential capture for remembering the trip *after*; distinct from the plan (Itinerary) and from execution artifacts (Documents). Excluded from the Public Archive.
-7. **Shell** -- Auth (OTP), PWA (service worker, A2HS, offline), AppShell (responsive layout, Planning Mode nav, Trip Mode nav), Design Tokens, Navigation (view transitions, DayNav). Infrastructure that wraps the domain.
+**8 core capabilities:**
 
-**Not a bounded context but a standalone module:** Vault (AES-GCM encryption, trip-scoped password). A technical capability used by the domain, not a domain boundary itself.
+1. **Ideation** -- decide where/when/why to go (proposals, candidate scenarios, availability, goals). Mostly a frontier today.
+2. **Itinerary** -- the shared plan, built and made ready: Trips, Phases, Days, Items (keystone), Parking Lot, Scheduling; **sub: Logistics** (Checklists, Tasks, readiness rollup, travel view; sub-sub: Booking).
+3. **Group Input** -- converge the group: the Vote + Comment **mechanisms** (3 separate vote collections per ADR-0004/0009; Comment latent), the suggestion/contribution loop, swipe-quiz.
+4. **People & Membership** -- right people, right access: Members + Roles (keystone), invites, join links, claims, tombstones; subs: Identity, Onboarding.
+5. **Money** -- expenses, splits, settle-up, the per-person glance; sub: Budgeting.
+6. **Documents** -- trip-private artifacts and confirmation codes (ADR-0016).
+7. **Trip Execution** -- the live day-of lens (Now/Today, offline); sub: Light Replanning. Owns no native data.
+8. **Records & Archive** -- the trip's legacy: Closeout, Public Archive, Portability; sub: Trip Memory.
+
+**2 enabling capabilities:**
+
+- **Platform** -- Auth (OTP), PWA/offline, Navigation, Design Tokens, Trip clock, Notifications. Infrastructure under the domain.
+- **Integrations & Syncing** -- external connectors: Google Places + AeroDataBox enrichment, Resend email, map linkouts, calendar sync, photo-album linkout.
+
+**Not a capability — a data type:** **Saved Reference** (a public/general external link; the manual twin of enrichment; distinct from a trip-private Document). *(Vault retired — ADR-0005.)*
 
 ## Collection Ownership
 
-| Collection | Functional Area |
+> Live collections (from migrations) → capability. `vault_entries` retired (migration 0031); `checklist_items` legacy/inert (superseded by `checklists` + `tasks`); `memories` planned (Trip Memory unbuilt).
+
+| Collection | Capability |
 |-----------|----------------|
-| users | Shell |
+| users | Platform |
+| notifications | Platform |
 | trips | Itinerary |
-| trip_members | Collaboration |
 | phases | Itinerary |
 | days | Itinerary |
-| items | Itinerary |
-| checklist_items | Itinerary |
-| pending_invites | Collaboration |
-| suggestions | Collaboration |
-| notifications | Collaboration |
+| items | Itinerary (keystone) |
+| trip_members | People & Membership |
+| pending_invites | People & Membership |
+| join_tokens | People & Membership |
+| votes | Group Input |
+| goal_votes | Group Input |
+| suggestions | Group Input |
+| suggestion_votes | Group Input |
+| trip_goals | Ideation (Goals) |
 | expenses | Money |
 | settlements | Money |
 | trip_budgets | Money |
-| votes | Collaboration |
-| memories | Trip Memory |
-| vault_entries | Vault (module) |
+| documents | Documents |
+| checklists | Itinerary (Logistics) |
+| tasks | Itinerary (Logistics) |
+| checklist_items | Itinerary (Logistics, legacy/inert) |
+| memories | Records & Archive (planned) |
