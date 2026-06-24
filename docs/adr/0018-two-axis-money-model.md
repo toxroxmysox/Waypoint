@@ -1,8 +1,8 @@
 # ADR-0018: Money has two independent axes — unit (settlement collapse) and participation (split membership)
 
-**Status:** Proposed
+**Status:** Accepted (ratified by Scott, 2026-06-23)
 **Date:** 2026-06-23
-**Deciders:** Scott (ratifies)
+**Deciders:** Scott
 **Context:** BUILD_PLAN S8 · capability **Money** · research, no PR. Amends/extends `docs/adr/0015-money-units-collapse-settle-up.md`. Issue #267. Money Units (S10, #266) must not bake a whole-group-split assumption into its data model: if "who pools money" (unit) and "who an expense splits across" (participation) are stored or reasoned about as one thing, Waypoint re-creates the exact Splitwise friction ADR-0015 set out to avoid — every expense silently splitting the whole roster, the unit becoming a de-facto split scope, and "just me and my wife paid for the cab" becoming impossible to express cleanly. ADR-0015 already asserted these are orthogonal ("the unit is orthogonal to splitting"; "Split is never affected") but did so as a property of one decision; #266 needs it stated as a **standing invariant** that constrains the data model before any code lands. The #259 transfer-on-reassign (shipped) is the participation axis already in motion — proof the two axes move independently in live code. This ADR is the **model**, not an implementation: it builds no money_units and chooses no UI.
 
 ## Decision
