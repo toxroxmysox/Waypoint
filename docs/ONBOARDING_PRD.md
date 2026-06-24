@@ -64,9 +64,9 @@ A *light* improvement to the empty `/trips` state (today just *"No trips yet." [
 - Verified at **375px**; `pnpm check` green; `pnpm test:e2e` (adds links/buttons).
 
 ## Slices → implementation issues (tracer-bullet vertical slices)
-1. **Spine (tracer bullet):** `users.onboarded_at` migration + `needsOnboarding(user)` + the member-keyed welcome card on the trip overview (basic CTA) + set-complete on action/dismiss + **absorb ES-1's empty hero**. End-to-end: a first-visit member sees the card and completes it.
-2. **Adaptive CTA:** detect votable content → vote/swipe vs goals.
-3. **Re-trigger:** "Replay intro" in Settings / More.
-4. **Organic polish:** empty `/trips` → into-a-trip → same welcome card.
+1. **Spine (tracer bullet) — #274:** `users.onboarded_at` migration + `needsOnboarding(user)` + the member-keyed welcome card on the trip overview (basic CTA) + set-complete on action/dismiss + **absorb ES-1's empty hero**. End-to-end: a first-visit member sees the card and completes it. *(Blocks the rest.)*
+2. **Adaptive CTA — #275:** detect votable content → vote/swipe vs goals.
+3. **Re-trigger — #276:** "Replay intro" in Settings / More.
+4. **Organic polish — #277:** empty `/trips` → into-a-trip → same welcome card.
 
-Each slice ships its own e2e + 375px verification.
+Each slice ships its own e2e + 375px verification. **Deferred (separate, #278):** the app-home / direct-visitor *acquisition* surface.

@@ -75,15 +75,13 @@ Order = **leverage × dependency × cheapness**, hard gates respected:
 
 ### Wave 1 — Onboarding + the front door (the NOW gap)
 
-**S4. Onboarding thin-slice — GRILL (incl. homepage FLEX branch)** — feature(grill) · People & Membership → Onboarding · flex
-**Why:** Council's unanimous NOW pick; a 🔴 gap; highest activation leverage (a stranger currently lands on a bare planning tool). **Cheap** — it *stitches shipped parts* (`/join/[token]` already redirects to `/trips/[slug]`; `/claim`, `/goals`, `/swipe` all exist), not greenfield. It also forces the homepage fork, so it must precede any landing-target commit.
-**How:** grill → plan (session 1 of 2). Resist #111's "wizard" framing (the issue is literally titled *wizard*). Fuse the first-timer hero with the trip-home decision. Open code in S5, not here.
-**Ref:** `#111` (OPEN)
+**S4. Onboarding — GRILL** — feature(grill) · People & Membership → Onboarding · ✅ **DONE (2026-06-22)**
+**Outcome:** grilled → **`docs/ONBOARDING_PRD.md`**; #111 closed in favor of the PRD. Reframed: invited-member-first; a **single per-user once-ever welcome card** (not a wizard), **adaptive** first-action CTA (vote if votable content, else goals), keyed on the member not on trip-emptiness (fixes the ES-1 content-keyed gap), re-triggerable, **absorbs ES-1's hero**. App-home/visitor *acquisition* surface deferred (#278). No ADR (glossary carries the data-model call).
+**Ref:** `docs/ONBOARDING_PRD.md` · `CONTEXT.md` Onboarding term
 
-**S5. Onboarding thin-slice — EXECUTE** — feature · People & Membership → Onboarding · firm
-**Why:** Wire join/claim → oriented trip home → **one** "first contribution" CTA → add a per-member onboarding-complete signal (verified: **no such signal exists anywhere today** — net-new).
-**How:** exec → PR (session 2). **Blocked by S4.** `hitl`. **First-contribution CTA targets `/goals` (capture), not `/swipe`** — a brand-new trip has no seeded swipe candidates, so the deck would be empty. Run `pnpm test:e2e` after (adds links/buttons).
-**Ref:** `#111` + fresh build issue from S2
+**S5. Onboarding — EXECUTE** — feature · People & Membership → Onboarding · **sliced, ready**
+**How:** sliced into **#274 spine (tracer bullet) → #275 adaptive CTA · #276 re-trigger · #277 organic polish** (the last three blocked by #274). Labeled `afk` (fully PRD-specced). Signal = `users.onboarded_at` (append-only; **goja DateField-truthy scar** — use `getString`/boolean). 375px + `pnpm test:e2e` per slice.
+**Ref:** `docs/ONBOARDING_PRD.md` §Slices · `#274`–`#277`
 
 ---
 
