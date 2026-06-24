@@ -365,7 +365,12 @@
 			{#if (typeEditable ? selectedType : initialData.type) === 'flight'}
 				<div>
 					<div class="text-ink-soft text-sm font-medium mb-1">Flight lookup</div>
-					<FlightLookup onSelect={handleFlightSelect} />
+					<FlightLookup
+						onSelect={handleFlightSelect}
+						defaultDate={selectedDayDate || context.tripStartDate}
+						minDate={context.tripStartDate}
+						maxDate={context.tripEndDate}
+					/>
 					<!-- #130 — flight tz: stored-not-shown. No visible field; carried for persistence only. -->
 					<input type="hidden" name="start_tz" value={startTzValue} />
 					<input type="hidden" name="end_tz" value={endTzValue} />

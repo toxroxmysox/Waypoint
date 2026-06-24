@@ -11,13 +11,17 @@
 		tripId,
 		dayId,
 		phaseId,
-		days = []
+		days = [],
+		// #273 — clamp the trim-end picker to the trip end (an item can't extend past
+		// the trip). Empty = dateless trip → no upper bound.
+		tripEndDate = ''
 	}: {
 		item: Item;
 		tripId: string;
 		dayId: string;
 		phaseId: string;
 		days?: Day[];
+		tripEndDate?: string;
 	} = $props();
 
 	let localState = $state<'pending' | 'done' | 'skipped' | 'replacing'>('pending');
@@ -71,6 +75,7 @@
 							name="end_date"
 							value={range.end}
 							min={range.start}
+							max={tripEndDate || undefined}
 							class="border-line bg-surface text-ink rounded border px-1.5 py-1 text-xs"
 						/>
 						<button type="submit" class="text-sky text-xs font-medium">Save</button>

@@ -8,13 +8,16 @@
 		items,
 		phases,
 		tripId,
-		days = []
+		days = [],
+		// #273 — passed straight to the trim-end picker in each row.
+		tripEndDate = ''
 	}: {
 		day: Day;
 		items: Item[];
 		phases: Phase[];
 		tripId: string;
 		days?: Day[];
+		tripEndDate?: string;
 	} = $props();
 
 	const phaseMap = $derived(new Map(phases.map((p) => [p.id, p])));
@@ -91,6 +94,7 @@
 				dayId={day.id}
 				phaseId={day.phases?.[0] || ''}
 				{days}
+				{tripEndDate}
 			/>
 		{/each}
 	{/if}

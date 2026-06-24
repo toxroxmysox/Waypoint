@@ -4,7 +4,11 @@
 
 	let {
 		onSelect,
-		defaultDate = ''
+		defaultDate = '',
+		// #273 — constrain the flight-date picker to the trip range so the user can't
+		// scroll to months outside the trip. Empty = no bound (dateless trip).
+		minDate = '',
+		maxDate = ''
 	}: {
 		onSelect: (flight: {
 			title: string;
@@ -17,6 +21,8 @@
 			description: string;
 		}) => void;
 		defaultDate?: string;
+		minDate?: string;
+		maxDate?: string;
 	} = $props();
 
 	let flightNumber = $state('');
@@ -85,6 +91,8 @@
 		<input
 			type="date"
 			bind:value={flightDate}
+			min={minDate || undefined}
+			max={maxDate || undefined}
 			aria-label="Flight date"
 			class="border-line bg-surface text-ink w-full rounded-md border px-3 py-2 text-sm sm:w-auto"
 		/>

@@ -296,6 +296,8 @@
 		initialDescription={prefill.description}
 		initialDate={prefill.date}
 		initialLinkedItem={prefill.linkedItem}
+		tripStartDate={data.trip.start_date}
+		tripEndDate={data.trip.end_date}
 		onclose={() => (showAddExpense = false)}
 	/>
 </BottomSheet>
@@ -308,6 +310,8 @@
 			expense={selectedExpense}
 			linkedItemHref={selectedLinkedItem ? `/trips/${data.trip.slug}/items/${selectedLinkedItem.id}` : ''}
 			linkedItemTitle={selectedLinkedItem?.title ?? ''}
+			tripStartDate={data.trip.start_date}
+			tripEndDate={data.trip.end_date}
 			{form}
 			onclose={() => { showExpenseDetail = false; selectedExpense = null; }}
 		/>

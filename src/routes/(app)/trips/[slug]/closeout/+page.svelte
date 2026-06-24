@@ -130,6 +130,7 @@
 			phases={data.phases}
 			tripId={data.trip.id}
 			days={data.days}
+			tripEndDate={data.trip.end_date}
 		/>
 
 		<div class="mt-4 flex justify-between">

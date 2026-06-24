@@ -9,6 +9,11 @@
 
 	let { data, form } = $props();
 
+	// #273 — constrain phase date pickers to the trip range and prefill a new phase to
+	// the trip start (in-range) rather than today/blank. Empty = dateless trip.
+	const tripStart = $derived(String(data.trip.start_date || '').split(/[T ]/)[0]);
+	const tripEnd = $derived(String(data.trip.end_date || '').split(/[T ]/)[0]);
+
 	let showCreate = $state(false);
 	let loading = $state(false);
 	let error = $derived(form?.error ?? '');
@@ -155,6 +160,9 @@
 							id="start_date"
 							name="start_date"
 							required
+							value={tripStart}
+							min={tripStart || undefined}
+							max={tripEnd || undefined}
 							class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
 						/>
 					</div>
@@ -165,6 +173,9 @@
 							id="end_date"
 							name="end_date"
 							required
+							value={tripStart}
+							min={tripStart || undefined}
+							max={tripEnd || undefined}
 							class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
 						/>
 					</div>

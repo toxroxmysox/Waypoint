@@ -14,6 +14,11 @@
 		expense?: Expense | null;
 		form: Record<string, unknown> | null;
 		onclose: () => void;
+		// #273 — trip date range. Constrains the date picker to the trip and anchors an
+		// empty ADD to the trip start (not today) so it lands in-range. Empty string =
+		// dateless trip → no constraint / no prefill (falls back to today).
+		tripStartDate?: string;
+		tripEndDate?: string;
 		// #128 — when this expense's linked_item is set, the page resolves the item
 		// and passes its detail href + title so we can render a "View item" link.
 		linkedItemHref?: string;
@@ -48,8 +53,14 @@
 		initialPaidBy = '',
 		initialLinkedItem = '',
 		initialSplitMode,
-		initialSplitMembers
+		initialSplitMembers,
+		tripStartDate = '',
+		tripEndDate = ''
 	}: Props = $props();
+
+	// #273 — normalize to YYYY-MM-DD (strip any stored time portion).
+	const tripStart = $derived(tripStartDate.split(/[T ]/)[0]);
+	const tripEnd = $derived(tripEndDate.split(/[T ]/)[0]);
 
 	let isEdit = $derived(expense !== null);
 	let submitting = $state(false);
@@ -74,8 +85,12 @@
 	// `expense` is set the record's own values seed the fields; the prefill is ignored).
 	let amount = $state(untrack(() => expense?.amount_usd.toString() ?? initialAmount));
 	let description = $state(untrack(() => expense?.description ?? initialDescription));
+	// #273 — empty ADD anchors to the trip start (in-range) rather than today. Edit
+	// (expense.date) and explicit prefill (initialDate) still win; today is the last
+	// resort for a dateless trip.
 	let expenseDate = $state(untrack(() =>
-		expense?.date?.split(/[T ]/)[0] ?? (initialDate || new Date().toISOString().split('T')[0])
+		expense?.date?.split(/[T ]/)[0] ??
+		(initialDate || tripStart || new Date().toISOString().split('T')[0])
 	));
 	let category = $state<ExpenseCategory>(untrack(() =>
 		(expense?.category as ExpenseCategory) ?? 'other'
@@ -242,6 +257,8 @@
 				id="expense-date"
 				type="date"
 				bind:value={expenseDate}
+				min={tripStart || undefined}
+				max={tripEnd || undefined}
 				class="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-moss focus:outline-none"
 			/>
 		</div>
@@ -365,6 +382,8 @@
 					id="expense-date"
 					type="date"
 					bind:value={expenseDate}
+					min={tripStart || undefined}
+					max={tripEnd || undefined}
 					class="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-moss focus:outline-none"
 				/>
 			</div>

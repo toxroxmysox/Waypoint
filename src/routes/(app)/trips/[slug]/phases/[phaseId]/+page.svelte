@@ -17,6 +17,11 @@
 
 	let { data, form } = $props();
 
+	// #273 — constrain the phase date pickers to the trip range (a phase span lives
+	// inside the trip). Empty = dateless trip → no bound.
+	const tripStart = $derived(String(data.trip.start_date || '').split(/[T ]/)[0]);
+	const tripEnd = $derived(String(data.trip.end_date || '').split(/[T ]/)[0]);
+
 	// #252 — consistent capture affordance, defaulting to THIS phase.
 	let ideaSheetOpen = $state(false);
 
@@ -168,6 +173,8 @@
 							name="start_date"
 							required
 							value={data.phase.start_date.split('T')[0].split(' ')[0]}
+							min={tripStart || undefined}
+							max={tripEnd || undefined}
 							class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
 						/>
 					</div>
@@ -179,6 +186,8 @@
 							name="end_date"
 							required
 							value={data.phase.end_date.split('T')[0].split(' ')[0]}
+							min={tripStart || undefined}
+							max={tripEnd || undefined}
 							class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
 						/>
 					</div>
