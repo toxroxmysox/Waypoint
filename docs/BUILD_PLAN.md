@@ -13,7 +13,7 @@ Order = **leverage × dependency × cheapness**, hard gates respected:
 1. **Cheap-high-leverage first.** A 30-min docs rewrite that stops every future session re-reading lies, and a one-page ADR that unblocks a class of work, beat any feature. Pay them down first — but **time-box them** (the owner over-builds systems; don't let meta-work become the work).
 2. **Aim the "build a lot" urge at the 🔴 gaps, not the mature 🔵 frontier.** The three gaps — **Onboarding, date-finding wedge, Trip Memory** — and the one live **Money correctness bug (#259)** outrank IA consolidation and frontier slivers on 🟢 trunks. Don't strip-mine the frontier.
 3. **Respect data-model + ADR prerequisites.** *ADR-accepted ≠ shipped.* The date-wedge is **hard-blocked** on a `forming` soft-trip migration (`trips.start_date/end_date` are `required:true` today — verified `0002_trips.js:12-13`). Money Units, Paid-Moment, and codes→Documents are all decided-but-unbuilt. Sequence the unblocker before the feature.
-4. **Gate AI behind the posture ADR.** Six assist surfaces are endorsed *pending* a zero-code AI-assist ADR. It's research (no PR), cheap, parallel — nothing in the 2-week window blocks on it, but no AI surface is planned until it lands.
+4. **AI posture decided (ADR-0017, Accepted 2026-06-22); the six surfaces are DEFERRED.** AI *assists over owned data, never generates the trip*; on/off is **per-trip, per-feature, opt-in**; runtime (local vs cloud) **left open to a future grill**. The six assist surfaces are **not a priority — collectively deferred**, no AI work scheduled. **Email Digest (S15) is NOT gated on AI.**
 5. **Never run two planning-only sessions back-to-back.** Interleave a cheap **code-win** (Goal→"Plan this", or the open #236 bug) between grills/ADRs so the session ledger keeps shipping. Momentum is the thing the owner actually asked to maximize.
 6. **Split a one-line bug fix from the strategic decision it touches.** #259 is a *live* settle-up data bug; make only the *narrow* disposition call it needs and ship it — don't let it wait on the full two-axis Money model.
 7. **Keep FLEX explicit.** The homepage question is an **open decision inside the Onboarding grill**, not pre-bound in code. The recommendation (lifecycle hero-band on the existing trip-home page) is a reversible swap.
@@ -66,10 +66,10 @@ Order = **leverage × dependency × cheapness**, hard gates respected:
 **How:** Run the `to-issues` skill once to slice: Onboarding build, #259 split_data fix, Paid-Moment substrate+affordance, Money Units, codes→Documents, Trip Memory, date-wedge slices. Label each `afk`/`hitl` + capability. No PR. No blockers (do alongside S1).
 **Ref:** ADR-0007/0014/0015/0016 · `#111` (Onboarding, already open) · `#259` (already open)
 
-**S3. Zero-code AI-assist posture ADR (local-first)** — research · Integrations (enabling) · firm
-**Why:** Hard gate before *any* AI surface; draws the assist-vs-generate line; unblocks 6 future assist surfaces. Nothing in this window blocks on it.
-**How:** Research → **ADR-0017, no PR.** Runs fully parallel — must **not** gate Wave 1.
-**Ref:** new (ADR-0017)
+**S3. AI-assist posture ADR** — research · Integrations (enabling) · ✅ **DONE (#264, ADR-0017 Accepted 2026-06-22)**
+**Why:** Posture before any AI surface; draws the assist-vs-generate line + the control model. **Outcome:** AI *assists over owned data, never generates*; on/off **per-trip, per-feature, opt-in**; **runtime left open** to a future grill; the six surfaces are **deferred** (no AI work scheduled).
+**How:** Research → ADR-0017, no PR. Shipped.
+**Ref:** `docs/adr/0017-ai-assist-posture.md`
 
 ---
 
@@ -148,7 +148,7 @@ Order = **leverage × dependency × cheapness**, hard gates respected:
 
 **S15. Email Digest Phase 1 — cron'd "what changed" diff** — feature · Integrations (enabling) · flex
 **Why:** The Map's "highest-leverage absence" vs the non-technical-friend bar. Push is off-the-table, so **email is the only re-engagement lever.** Phase 1 has **no AI dependency** — a dumb structured diff.
-**How:** light grill (cadence / content / opt-out) → plan → PR. **Confirm the scheduled-trigger mechanism exists in the grill** — Resend (outbound) is shipped, but the *cron* infra for outbound digests is unstated; don't let Phase 1 stall on missing scheduling plumbing. **Structured writes only** (reply-to-thread is off-table). Narration + tokenized one-tap write-back are *later phases* gated on ADR-0017 (S3).
+**How:** light grill (cadence / content / opt-out) → plan → PR. **Confirm the scheduled-trigger mechanism exists in the grill** — Resend (outbound) is shipped, but the *cron* infra for outbound digests is unstated; don't let Phase 1 stall on missing scheduling plumbing. **Structured writes only** (reply-to-thread is off-table). **NOT gated on AI** (ADR-0017): the digest ships independently. Tokenized one-tap write-back is a later structured-writes phase; any *optional* AI narration would just be one more per-trip AI feature toggle — but the digest never waits on AI.
 **Ref:** fresh issue from S2
 
 **S16. Trip Memory — `memories` collection + capture/review surfaces** — feature · Records → Trip Memory · firm
@@ -185,7 +185,7 @@ Single-session each; use them as the **code-wins interleaved between early grill
 3. **Two-axis Money model (S8)** — **unit** (settlement collapse) and **participation** (split membership) stay independent. Conflating them re-creates Splitwise friction. Blocks only Money Units (S10).
 4. **`forming` state machine (S11)** — what's allowed in `forming`; the pre-trip threshold; does "active" still defer to `isTripActive` (`trip-mode/activation.ts`). Shapes the entire Ideation substrate.
 5. **Availability mechanism (S13)** — confirm a **new collection**, NOT a reskin of `votes`/`goal_votes`/`suggestion_votes`. "Maybe" is a first-class third value; aggregation = range-overlap, not score-sort.
-6. **Email Digest write-back (S15)** — Phase-1 dumb diff ships independently; tokenized one-tap write-back (vote/availability/RSVP) and LLM narration are *later* phases gated on ADR-0017. Confirm the cron mechanism in the grill. Structured writes only.
+6. **Email Digest write-back (S15)** — Phase-1 dumb diff ships independently; **NOT gated on AI** (ADR-0017). Tokenized one-tap write-back (vote/availability/RSVP) is a later structured-writes phase; any optional AI narration is just a per-trip AI toggle, never a blocker. Confirm the cron mechanism in the grill. Structured writes only.
 7. **Per-item participation (deferred)** — a 5th input mechanism feeding the default split. Grill *before* Money Units if Money becomes a later focus.
 8. **Crew / trip→account product-unit (D1)** — **PARKED.** Do clone-carries-roster first as the demand test before unparking.
 
