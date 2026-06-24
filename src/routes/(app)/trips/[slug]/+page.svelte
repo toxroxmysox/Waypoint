@@ -19,6 +19,7 @@
 	import { titleCase } from '$lib/shell/format';
 	import { isTripActive } from '$lib/trip-mode/activation';
 	import { untrack } from 'svelte';
+	import { enhance } from '$app/forms';
 	import type { Notification } from '$lib/types';
 
 	let { data } = $props();
@@ -65,15 +66,45 @@
 	let firstDayId = $derived(data.days[0]?.id);
 	let today = new Date().toISOString().split('T')[0];
 
-	// First-run hero (#111/ES-1). Key the empty state on CONTENT, not day count: the PB
-	// hook auto-creates day rows on trip create, so `days.length` is always > 0 and the
-	// old day-count branch was dead. A trip is "fresh" only when nothing has been added —
-	// no items AND no phases. Owner-tier (owner|co_owner, same gate as canManage) gets the
-	// phase/day/invite hero; travelers + viewers are pointed at the goals capture wizard.
-	let isFresh = $derived((data.totalItems ?? 0) === 0 && data.phases.length === 0);
+	// Empty-trip state (#111/ES-1, absorbed by #274). Keyed on user CONTENT = ITEMS.
+	// The old ES-1 also required `phases.length === 0`, but #217 auto-seeds a default
+	// "Trip" phase on EVERY trip create, so that clause was provably dead (no real trip
+	// ever has zero phases) — it silently suppressed the owner blank-itinerary branch.
+	// The lone auto-seeded phase is chrome, not user content, so "empty" = zero items.
+	// (Days are likewise hook-seeded and never gate this.)
+	let isEmptyTrip = $derived((data.totalItems ?? 0) === 0);
 	let isOwnerTier = $derived(
 		data.membership.role === 'owner' || data.membership.role === 'co_owner'
 	);
+
+	// #274 Onboarding spine. The unified welcome card. Two keys folded into one card
+	// (no stacking, per PRD §6):
+	//   • welcomeMode — the member-keyed onboarding state (server `showWelcome`,
+	//     null `users.onboarded_at`). Dismissible ("Got it"); set-complete stamps the
+	//     once-ever signal. Auto-shows REGARDLESS of trip content — the fix for the
+	//     ES-1 gap (an invited member joining a POPULATED trip got nothing).
+	//   • else isEmptyTrip — the already-onboarded veteran on a brand-new empty trip
+	//     still gets ES-1's structural "blank itinerary" guidance (NOT dismissible —
+	//     it's empty-state help, not onboarding).
+	// Render the card when EITHER fires. The empty-trip branch (owner-tier blank-
+	// itinerary doors) lives INSIDE it, so a brand-new creator on an empty trip sees
+	// ONE unified card.
+	let welcomeMode = $derived(data.showWelcome === true);
+	let showWelcomeCard = $derived(welcomeMode || isEmptyTrip);
+	let onboardSubmitting = $state(false);
+
+	// Set-complete enhance handler. On a "Got it" (no redirect) success, re-run load
+	// via `update()` so the now-stamped `showWelcome=false` re-derives and the card
+	// vanishes WITHOUT a full remount (cerebrum [2026-06-19]: never reload() in an
+	// enhance callback — it wipes page $state). A redirect result (first-action CTA)
+	// is followed by the kit automatically; we just clear the spinner.
+	function onboardEnhance() {
+		onboardSubmitting = true;
+		return async ({ update }: { update: (opts?: { reset?: boolean }) => Promise<void> }) => {
+			await update({ reset: false });
+			onboardSubmitting = false;
+		};
+	}
 
 	// Checklist previews (#51)
 	let tripLists = $derived((data.lists ?? []).filter((l) => !l.phase));
@@ -183,14 +214,41 @@
 	{/if}
 
 	{#if !isClosed}
-	{#if isFresh}
-		<!-- First-run hero (#111/ES-1). Renders ABOVE the day list (the days stay — they
-		     teach the trip's shape) and is keyed on content, not day count. Role-aware:
-		     owner-tier gets the phase/day/invite doors; travelers + viewers are pointed at
-		     the goals capture wizard (the ideal first contribution). -->
+	{#if showWelcomeCard}
+		<!-- #274 Onboarding spine — the unified welcome card. Renders ABOVE the day list
+		     (the days stay — they teach the trip's shape). Two keys folded (PRD §6, ES-1
+		     absorbed): `welcomeMode` is the member-keyed onboarding state (auto-shows on a
+		     member's first visit, REGARDLESS of trip content — the fix for the ES-1 gap);
+		     otherwise `isEmptyTrip` is the structural blank-itinerary guidance for an
+		     already-onboarded veteran on a new empty trip. One card, never two stacked. -->
 		<Card>
-			<div class="p-6 text-center">
-				{#if isOwnerTier}
+			<div class="p-6 text-center" data-testid="welcome-card">
+				{#if welcomeMode && !isEmptyTrip}
+					<!-- Member-keyed welcome on a POPULATED trip — the common invited case ES-1
+					     misses today. Orientation: name the doors, one primary CTA (basic =
+					     /goals/capture; the adaptive vote-vs-goals CTA is slice #275). -->
+					<p class="font-display text-ink-soft text-base italic">Welcome aboard.</p>
+					<p class="text-ink-muted mt-1 text-sm">
+						This is the trip's home. From here you can <strong class="text-ink-soft">see the plan</strong>,
+						<strong class="text-ink-soft">weigh in on ideas</strong>, and
+						<strong class="text-ink-soft">add what you want</strong> out of it.
+					</p>
+					<div class="mt-4 flex flex-wrap items-center justify-center gap-2">
+						<!-- Primary CTA = first action. Stamps the once-ever signal, then forwards
+						     to /goals/capture (server redirect → works without JS). -->
+						<form method="POST" action="?/completeOnboarding" use:enhance={onboardEnhance}>
+							<input type="hidden" name="redirect_to" value="/trips/{data.trip.slug}/goals/capture" />
+							<Button type="submit" variant="moss" size="sm" loading={onboardSubmitting}>
+								Add what you want
+							</Button>
+						</form>
+						<!-- Dismiss = "Got it". Stamps + stays. -->
+						<form method="POST" action="?/completeOnboarding" use:enhance={onboardEnhance}>
+							<Button type="submit" variant="ghost" size="sm" loading={onboardSubmitting}>Got it</Button>
+						</form>
+					</div>
+				{:else if isOwnerTier}
+					<!-- Empty-trip, owner-tier: ES-1's "blank itinerary" doors (absorbed). -->
 					<p class="font-display text-ink-soft text-base italic">A blank itinerary.</p>
 					<p class="text-ink-muted mt-1 text-sm">
 						Your days are ready. Group them into phases — city, leg, whatever fits — or drop the
@@ -207,15 +265,37 @@
 							Invite the group
 						</Button>
 					</div>
+					{#if welcomeMode}
+						<!-- Onboarding on an empty trip (brand-new creator's first visit): one
+						     dismiss folds the welcome + ES-1 into a single card. -->
+						<div class="mt-3 flex items-center justify-center">
+							<form method="POST" action="?/completeOnboarding" use:enhance={onboardEnhance}>
+								<Button type="submit" variant="ghost" size="sm" loading={onboardSubmitting}>Got it</Button>
+							</form>
+						</div>
+					{/if}
 				{:else}
+					<!-- Empty-trip, traveler/viewer: ES-1's goals-capture door (absorbed). -->
 					<p class="font-display text-ink-soft text-base italic">Nothing planned yet.</p>
 					<p class="text-ink-muted mt-1 text-sm">
 						Start with what you want out of this trip — the itinerary grows from there.
 					</p>
 					<div class="mt-4 flex flex-wrap items-center justify-center gap-2">
-						<Button href="/trips/{data.trip.slug}/goals/capture" variant="moss" size="sm">
-							Add &amp; review goals
-						</Button>
+						{#if welcomeMode}
+							<form method="POST" action="?/completeOnboarding" use:enhance={onboardEnhance}>
+								<input type="hidden" name="redirect_to" value="/trips/{data.trip.slug}/goals/capture" />
+								<Button type="submit" variant="moss" size="sm" loading={onboardSubmitting}>
+									Add what you want
+								</Button>
+							</form>
+							<form method="POST" action="?/completeOnboarding" use:enhance={onboardEnhance}>
+								<Button type="submit" variant="ghost" size="sm" loading={onboardSubmitting}>Got it</Button>
+							</form>
+						{:else}
+							<Button href="/trips/{data.trip.slug}/goals/capture" variant="moss" size="sm">
+								Add &amp; review goals
+							</Button>
+						{/if}
 					</div>
 				{/if}
 			</div>

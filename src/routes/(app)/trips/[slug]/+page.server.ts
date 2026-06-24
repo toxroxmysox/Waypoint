@@ -7,6 +7,7 @@ import { getTripLifecycle } from '$lib/trip-mode/trip-lifecycle';
 import { simplifyDebts } from '$lib/money/debt-simplify';
 import { buildArchiveView } from '$lib/portability/archive-view';
 import { publishStatus } from '$lib/portability/archive-visibility';
+import { needsOnboarding } from '$lib/collaboration/onboarding';
 
 // Overview checklist previews (#51): roll up each manual, non-item-scoped
 // Checklist's done/total so the Overview can show compact mini-cards under the
@@ -26,6 +27,14 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 	const { trip, membership, days, phases } = await parent();
 
 	const lifecycle = getTripLifecycle(trip);
+
+	// #274 Onboarding spine. The member-keyed welcome card auto-shows on a member's
+	// first visit, gated by the per-user once-ever signal — REGARDLESS of trip
+	// content. This is the fix for the ES-1 gap (the old `isFresh` hero was keyed
+	// on trip content and missed an invited member joining a populated trip).
+	// `locals.user` is the full auth record (hooks.server.ts authRefresh), so it
+	// carries `onboarded_at`.
+	const showWelcome = needsOnboarding(locals.user);
 
 	// Closed → the read-only Record view (#242). Reuse buildArchiveView (same
 	// sanitization as the public archive) for the done-items record + the curated
@@ -60,6 +69,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		const canManage = membership.role === 'owner' || membership.role === 'co_owner';
 		return {
 			lifecycle,
+			showWelcome,
 			record,
 			canManage,
 			share: {
@@ -113,6 +123,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 
 	return {
 		lifecycle,
+		showWelcome,
 		// Wrap-up banner facts (only meaningful when lifecycle === 'wrap-up'). Close-out
 		// is always outstanding in wrap-up (it's how you LEAVE wrap-up). Settle-up is
 		// outstanding only when a balance is owed.
@@ -164,6 +175,39 @@ async function requireOwner(
 }
 
 export const actions: Actions = {
+	// #274 Onboarding spine — set-complete. Stamp the per-user once-ever signal when
+	// the member completes their first action OR taps "Got it" on the welcome card.
+	// Gates ONLY the auto-show (the card never auto-reappears on any trip afterward).
+	// `users.updateRule = SELF_ONLY` (0014) authorizes a member to update their own
+	// record via the authed client; we only ever touch the caller's own row.
+	// Idempotent: if already stamped we leave the original timestamp untouched.
+	completeOnboarding: async ({ request, locals, params }) => {
+		// Optional `redirect_to` — set when the member completes their FIRST ACTION
+		// (the primary CTA stamps + forwards to /goals/capture). Absent when they tap
+		// "Got it" (stamp + stay). Guarded to same-origin app paths only (no open
+		// redirect): must be a leading-slash path under this trip OR /trips.
+		const data = await request.formData();
+		const raw = data.get('redirect_to')?.toString() ?? '';
+		const safeRedirect =
+			raw.startsWith(`/trips/${params.slug}/`) || raw === `/trips/${params.slug}` ? raw : '';
+		try {
+			const user = locals.user;
+			if (!user) return fail(401, { error: 'Not signed in.' });
+			if (needsOnboarding(user)) {
+				await locals.pb.collection('users').update(user.id, {
+					onboarded_at: new Date().toISOString().replace('T', ' ')
+				});
+			}
+			if (safeRedirect) redirect(303, safeRedirect);
+			return { onboarded: true };
+		} catch (err: unknown) {
+			if (isRedirect(err)) throw err;
+			return fail(500, {
+				error: err instanceof Error ? err.message : 'Failed to finish onboarding.'
+			});
+		}
+	},
+
 	// Standalone Publish/share control on the closed Record view (#242/#241). Owner/
 	// co_owner ONLY, SERVER-ENFORCED, gated on role alone (an owner can publish an
 	// already-closed trip later — closed-and-private is a normal terminal state).
