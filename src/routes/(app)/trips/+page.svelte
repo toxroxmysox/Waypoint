@@ -80,9 +80,22 @@
 	{/if}
 
 	{#if isEmpty}
-		<div class="py-16 text-center">
-			<p class="font-display text-ink text-lg italic">No trips yet.</p>
-			<p class="text-ink-muted mt-1 text-sm">Plan your first one.</p>
+		<!-- #277 Organic-path polish (ONBOARDING_PRD §7). A direct/creator user with no
+		     trips lands here. Make the empty state a clear on-ramp INTO a trip + the shared
+		     intro — not a dead-end "No trips yet." Creating a trip drops a fresh user
+		     (`onboarded_at == null`) onto the overview, where the SAME member-keyed welcome
+		     card auto-shows: the convergence point invited + organic users both reach. The
+		     copy previews that card's doors ("see the plan · weigh in · add what you want")
+		     so the on-ramp signals what's on the other side. Minimal — NOT the deferred
+		     curated-create / "were you invited?" fork (#278). -->
+		<div class="py-16 text-center" data-testid="trips-empty-onramp">
+			<p class="font-display text-ink text-lg italic">Start your first trip.</p>
+			<p class="text-ink-muted mx-auto mt-2 max-w-xs text-sm">
+				Spin one up and you'll land on its home, where you can
+				<strong class="text-ink-soft">see the plan</strong>,
+				<strong class="text-ink-soft">weigh in on ideas</strong>, and
+				<strong class="text-ink-soft">add what you want</strong> out of it.
+			</p>
 			<div class="mt-5 space-y-2">
 				<Button href="/trips/new" variant="moss" size="md">New trip</Button>
 				<p>
