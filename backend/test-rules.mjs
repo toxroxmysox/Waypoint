@@ -258,12 +258,22 @@ const EXPECT = {
 		update: ALLOW_MEMBERS_DENY_NONMEMBER,
 		delete: ALLOW_MEMBERS_DENY_NONMEMBER
 	},
+	// trip_members (#279 — AUTHZ-1):
+	//   update: a NON-role edit (the matrix PATCHes the owner row's display_name)
+	//           stays at MEMBER_VIA_TRIP — any member passes. trip_members.pb.js only
+	//           gates `role` CHANGES (owner/co_owner only) — see the novel
+	//           role-escalation cases below.
+	//   delete: owner/co_owner only. The matrix deletes the childless `spare`
+	//           placeholder (user=""), so it's never a self-leave for any role;
+	//           trip_members.pb.js requires owner/co_owner to delete someone else's
+	//           row, so traveler + viewer now deny (was the wide-open MEMBER rule).
+	//           Self-leave + sole-owner cap are exercised in the novel cases.
 	trip_members: {
 		list: ALLOW_MEMBERS_DENY_NONMEMBER,
 		view: ALLOW_MEMBERS_DENY_NONMEMBER,
 		create: DENY_ALL,
 		update: ALLOW_MEMBERS_DENY_NONMEMBER,
-		delete: ALLOW_MEMBERS_DENY_NONMEMBER
+		delete: OWNER_COOWNER_ONLY
 	},
 	// phases (#175):
 	//   list/view: any member sees the trip's phases.
@@ -1355,6 +1365,118 @@ function printMemberRelationDriftReport() {
 	}
 }
 
+// --- #279 (AUTHZ-1) trip_members role + delete gate ------------------------
+// The fixed matrix proves the wide gates (delete is now OWNER_COOWNER_ONLY), but
+// the load-bearing #279 behaviors need bespoke cases via direct PB REST:
+//   - a viewer/traveler CANNOT change any member's `role` (incl. their OWN row) —
+//     the self-escalation-to-owner exploit the issue describes;
+//   - owner/co_owner CAN change a role directly (the privileged path);
+//   - a non-role edit (display_name) still works for every member, incl. self;
+//   - a member may DELETE their own row (self-leave), but the sole active owner
+//     cannot be deleted (even by themselves).
+// Each mutating case uses a fresh fixture. trip_members.update PATCHes hit the
+// caller's OWN row (resolved from the fixture memberIds) for the self-escalation
+// cases, and other members' rows for the cross-member cases.
+const MEMBER_ROLE_GATE_OPS = [
+	'self_escalate_viewer',
+	'self_escalate_traveler',
+	'escalate_other_traveler',
+	'owner_change_role_ok',
+	'coowner_change_role_ok',
+	'self_display_name_viewer',
+	'self_display_name_traveler',
+	'self_leave_allowed_by_hook',
+	'delete_sole_owner_denied'
+];
+
+async function runMemberRoleGateNovelCases(tokens) {
+	// 1. Viewer self-escalates to owner on their OWN row → deny.
+	let fixture = await setupFixture();
+	const vEsc = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.viewer}`, {
+		token: tokens.viewer,
+		body: { role: 'owner' }
+	});
+	recordResult('trip_members', 'self_escalate_viewer', 'viewer', 'deny', classifyWrite(vEsc.status), vEsc.status);
+
+	// 2. Traveler self-escalates to co_owner on their OWN row → deny.
+	fixture = await setupFixture();
+	const tEsc = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.traveler}`, {
+		token: tokens.traveler,
+		body: { role: 'co_owner' }
+	});
+	recordResult('trip_members', 'self_escalate_traveler', 'traveler', 'deny', classifyWrite(tEsc.status), tEsc.status);
+
+	// 3. Traveler escalates ANOTHER member (the viewer) to owner → deny.
+	fixture = await setupFixture();
+	const tOther = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.viewer}`, {
+		token: tokens.traveler,
+		body: { role: 'owner' }
+	});
+	recordResult('trip_members', 'escalate_other_traveler', 'traveler', 'deny', classifyWrite(tOther.status), tOther.status);
+
+	// 4. Owner promotes the traveler to co_owner directly → allow (privileged path).
+	fixture = await setupFixture();
+	const oChange = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.traveler}`, {
+		token: tokens.owner,
+		body: { role: 'co_owner' }
+	});
+	recordResult('trip_members', 'owner_change_role_ok', 'owner', 'allow', classifyWrite(oChange.status), oChange.status);
+
+	// 5. Co_owner changes the viewer to traveler → allow.
+	fixture = await setupFixture();
+	const coChange = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.viewer}`, {
+		token: tokens.co_owner,
+		body: { role: 'traveler' }
+	});
+	recordResult('trip_members', 'coowner_change_role_ok', 'co_owner', 'allow', classifyWrite(coChange.status), coChange.status);
+
+	// 6. Viewer edits their OWN display_name (no role change) → allow (the edit the
+	//    roster UI does; the hook only gates role changes).
+	fixture = await setupFixture();
+	const vName = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.viewer}`, {
+		token: tokens.viewer,
+		body: { display_name: 'Viewer renamed self' }
+	});
+	recordResult('trip_members', 'self_display_name_viewer', 'viewer', 'allow', classifyWrite(vName.status), vName.status);
+
+	// 7. Traveler edits their OWN display_name → allow.
+	fixture = await setupFixture();
+	const tName = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.traveler}`, {
+		token: tokens.traveler,
+		body: { display_name: 'Traveler renamed self' }
+	});
+	recordResult('trip_members', 'self_display_name_traveler', 'traveler', 'allow', classifyWrite(tName.status), tName.status);
+
+	// 8. Self-leave is PERMITTED BY THE HOOK (a non-owner may delete their OWN row).
+	//    The fixture traveler authored a trip_goal (created_by, required + non-cascade),
+	//    so a RAW collection DELETE 400s on the PB FK constraint — which is exactly
+	//    why the product's real self-leave goes through /api/members/remove (tombstone,
+	//    no hard delete). What this case proves is that trip_members.pb.js does NOT
+	//    403 a self-leave on the authority gate (a 403 would mean the hook wrongly
+	//    blocked the member from leaving). So the pass condition is "not 403": 204
+	//    (no references) or 400 (FK) are both the hook letting it through.
+	fixture = await setupFixture();
+	const selfLeave = await pbRequest('DELETE', `/api/collections/trip_members/records/${fixture.memberIds.traveler}`, {
+		token: tokens.traveler
+	});
+	recordResult('trip_members', 'self_leave_allowed_by_hook', 'traveler', 'yes', selfLeave.status !== 403 ? 'yes' : 'no', selfLeave.status);
+
+	// 9. Owner tries to DELETE their OWN row while sole owner → deny (sole-owner cap).
+	fixture = await setupFixture();
+	const soleOwner = await pbRequest('DELETE', `/api/collections/trip_members/records/${fixture.memberIds.owner}`, {
+		token: tokens.owner
+	});
+	recordResult('trip_members', 'delete_sole_owner_denied', 'owner', 'deny', classifyWrite(soleOwner.status), soleOwner.status);
+}
+
+function printMemberRoleGateReport() {
+	console.log('\n[#279 trip_members — block role escalation, gate cross-member delete, allow self-leave + display_name; sole-owner cap]');
+	for (const r of results.filter((x) => MEMBER_ROLE_GATE_OPS.includes(x.op))) {
+		const mark = r.passed ? 'PASS' : 'FAIL';
+		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+	}
+}
+
 // --- #118 shared Join Link novel cases -------------------------------------
 const JOIN_LINK_OPS = [
 	'create_co_owner_denied',
@@ -1389,13 +1511,21 @@ async function runJoinLinkNovelCases(tokens) {
 	const ownerUserId = fixture.userIds.owner;
 
 	const slug = 'e2e-joinlink-' + Date.now();
+	// Dates MUST be relative to now, not hardcoded: join-link expiry is capped at
+	// trip end, so a link on a past-dated trip is born expired. Hardcoded
+	// 2026-06-15..2026-06-25 dates silently rotted past once the wall clock crossed
+	// them (every happy-path join cell went red as "expired"). Anchor the window
+	// tomorrow..+30d so the link always has a live future window.
+	const toPbDate = (d) => d.toISOString().replace('T', ' ').replace('Z', '') + 'Z';
+	const jlStart = toPbDate(new Date(Date.now() + 24 * 60 * 60 * 1000));
+	const jlEnd = toPbDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
 	const tripRes = await pbRequest('POST', '/api/collections/trips/records', {
 		token: tokens.owner,
 		body: {
 			slug,
 			title: 'Join Link Test Trip',
-			start_date: '2026-06-15 00:00:00.000Z',
-			end_date: '2026-06-25 00:00:00.000Z',
+			start_date: jlStart,
+			end_date: jlEnd,
 			timezone: 'UTC',
 			created_by: ownerUserId
 		}
@@ -1659,6 +1789,9 @@ async function main() {
 	console.log('#238 case: member-relation schema drift (purge reference set is complete)');
 	await runMemberRelationDriftCase();
 
+	console.log('#279 cases: trip_members role gate (block escalation, gate cross-member delete, self-leave, sole-owner cap)');
+	await runMemberRoleGateNovelCases(tokens);
+
 	console.log('#118 cases: shared join link (role cap, join-at-role, revoke/expiry, clamp, tombstone)');
 	await runJoinLinkNovelCases(tokens);
 
@@ -1678,6 +1811,7 @@ async function main() {
 	printSuggestionsReport();
 	printMemberRemovalReport();
 	printMemberRelationDriftReport();
+	printMemberRoleGateReport();
 	printJoinLinkReport();
 	printSelfAssignReport();
 	printCreatorEditReport();
