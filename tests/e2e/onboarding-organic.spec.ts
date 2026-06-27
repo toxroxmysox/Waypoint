@@ -70,6 +70,24 @@ test.describe('#277 Organic-path onboarding (empty /trips → welcome card)', ()
 		await ensureUsers();
 	});
 
+	// The 375px on-ramp check runs FIRST: it needs `non_member`'s /trips EMPTY, and
+	// the create test below adds a trip for that same (only trip-less) user.
+	test('375px: empty /trips on-ramp present, no horizontal overflow', async ({ browser }) => {
+		const { page, ctx } = await devLogin(browser, EMAILS.non_member);
+		try {
+			await page.setViewportSize({ width: 375, height: 812 });
+			await page.goto(`${BASE}/trips`);
+
+			await expect(page.getByTestId('trips-empty-onramp')).toBeVisible({ timeout: 10000 });
+
+			const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
+			const viewportWidth = await page.evaluate(() => window.innerWidth);
+			expect(bodyWidth).toBeLessThanOrEqual(viewportWidth);
+		} finally {
+			await ctx.close();
+		}
+	});
+
 	test('empty /trips on-ramp → new trip → unified welcome card auto-shows', async ({
 		browser
 	}) => {
@@ -90,15 +108,20 @@ test.describe('#277 Organic-path onboarding (empty /trips → welcome card)', ()
 			await onramp.getByRole('link', { name: /new trip/i }).click();
 			await page.waitForURL(/\/trips\/new$/, { timeout: 10000 });
 
+			// timezone auto-fills from the browser zone on mount; title + dates are the
+			// only fields the user must supply.
 			await page.fill('input[name="title"]', 'Organic Onramp Trip');
 			await page.fill('input[name="start_date"]', '2026-09-01');
 			await page.fill('input[name="end_date"]', '2026-09-05');
 			await page.getByRole('button', { name: /create trip/i }).click();
 
 			// The create action redirects (303) to /trips/<slug>: the convergence point.
-			await page.waitForURL(/\/trips\/[^/]+$/, { timeout: 15000 });
-			expect(page.url()).not.toMatch(/\/trips\/new$/);
-			expect(page.url()).not.toMatch(/\/trips$/);
+			// Wait for a slug that is NOT `new` — `/trips/new` itself matches a naive
+			// `/trips/[^/]+` pattern and would resolve before the redirect even fires.
+			await page.waitForURL(
+				(url) => /^\/trips\/[^/]+$/.test(url.pathname) && url.pathname !== '/trips/new',
+				{ timeout: 15000 }
+			);
 
 			// The SAME member-keyed welcome card an invited member sees. The organic
 			// creator's trip is brand-new + empty, so the unified card folds the
@@ -106,22 +129,6 @@ test.describe('#277 Organic-path onboarding (empty /trips → welcome card)', ()
 			const card = page.getByTestId('welcome-card').filter({ visible: true }).first();
 			await expect(card).toBeVisible({ timeout: 10000 });
 			await expect(card.getByRole('button', { name: /got it/i })).toBeVisible();
-		} finally {
-			await ctx.close();
-		}
-	});
-
-	test('375px: empty /trips on-ramp present, no horizontal overflow', async ({ browser }) => {
-		const { page, ctx } = await devLogin(browser, EMAILS.non_member);
-		try {
-			await page.setViewportSize({ width: 375, height: 812 });
-			await page.goto(`${BASE}/trips`);
-
-			await expect(page.getByTestId('trips-empty-onramp')).toBeVisible({ timeout: 10000 });
-
-			const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
-			const viewportWidth = await page.evaluate(() => window.innerWidth);
-			expect(bodyWidth).toBeLessThanOrEqual(viewportWidth);
 		} finally {
 			await ctx.close();
 		}
