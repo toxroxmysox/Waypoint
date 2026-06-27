@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { checkFile } from '$lib/documents/files';
+	import { isStrippableImage, reencodeStripMetadata } from '$lib/image/strip-exif';
 
 	let {
 		action = '?/uploadDocument',
@@ -121,7 +122,18 @@
 	method="POST"
 	{action}
 	enctype="multipart/form-data"
-	use:enhance={() => {
+	use:enhance={async ({ formData }) => {
+		// Strip EXIF/GPS from pasted images before upload (#290). Screenshots carry
+		// no GPS, but a copied photo file might; route everything through the same
+		// helper. Falls back to the original if the strip fails.
+		const picked = formData.get('file');
+		if (picked instanceof File && picked.size > 0 && isStrippableImage(picked)) {
+			try {
+				formData.set('file', await reencodeStripMetadata(picked));
+			} catch {
+				// keep the original file
+			}
+		}
 		uploading = true;
 		return async ({ update, result }) => {
 			uploading = false;

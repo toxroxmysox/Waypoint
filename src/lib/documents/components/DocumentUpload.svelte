@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { FILE_ACCEPT, checkFile } from '$lib/documents/files';
+	import { isStrippableImage, reencodeStripMetadata } from '$lib/image/strip-exif';
 
 	let {
 		action = '?/uploadDocument',
@@ -50,7 +51,19 @@
 	method="POST"
 	{action}
 	enctype="multipart/form-data"
-	use:enhance={() => {
+	use:enhance={async ({ formData }) => {
+		// Strip EXIF/GPS from image uploads before they leave the browser (#290).
+		// Canvas re-encode drops all metadata; HEIC is transcoded to JPEG where the
+		// browser can decode it. If the strip fails (e.g. HEIC on Chrome/Firefox),
+		// fall back to the original — PB still gates type/size.
+		const picked = formData.get('file');
+		if (picked instanceof File && picked.size > 0 && isStrippableImage(picked)) {
+			try {
+				formData.set('file', await reencodeStripMetadata(picked));
+			} catch {
+				// keep the original file
+			}
+		}
 		uploading = true;
 		return async ({ update, result }) => {
 			uploading = false;
