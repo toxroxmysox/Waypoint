@@ -23,7 +23,7 @@
 	);
 </script>
 
-<NavBar title="Waypoint">
+<NavBar title="Waypoint" homeLink={false}>
 	{#snippet right()}
 		<div class="flex items-center gap-3">
 			<form method="POST" action="/logout" onsubmit={() => clearOfflineCaches()}>
