@@ -35,7 +35,16 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 	// on trip content and missed an invited member joining a populated trip).
 	// `locals.user` is the full auth record (hooks.server.ts authRefresh), so it
 	// carries `onboarded_at`.
-	const showWelcome = needsOnboarding(locals.user);
+	//
+	// #276 Re-trigger ("Replay intro"). The More menu links here with `?welcome=1`,
+	// which FORCE-SHOWS the welcome card on demand — IGNORING the once-ever signal
+	// (PRD §5). The override neither depends on nor clears `onboarded_at`: the
+	// auto-show stays gated by `needsOnboarding`, and the replayed card's
+	// completeOnboarding action is a no-op on an already-stamped user (it only
+	// stamps when `needsOnboarding(user)` — see the action below). So a veteran can
+	// replay the intro freely without altering their flag.
+	const forceWelcome = url.searchParams.get('welcome') === '1';
+	const showWelcome = forceWelcome || needsOnboarding(locals.user);
 
 	// Closed → the read-only Record view (#242). Reuse buildArchiveView (same
 	// sanitization as the public archive) for the done-items record + the curated

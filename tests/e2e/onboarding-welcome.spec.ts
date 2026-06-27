@@ -42,13 +42,18 @@ const FIXTURE_SLUG = 'e2e-onboarding-274';
 
 type Fixture = { tripId: string; phaseId: string; itemId: string; itemId2: string };
 
-async function setupFixture(email: string): Promise<Fixture> {
-	const bypassRes = await fetch(`${PB_BASE}/api/dev/auth-bypass`, {
+async function bypassAuth(email: string): Promise<{ token: string; userId: string }> {
+	const res = await fetch(`${PB_BASE}/api/dev/auth-bypass`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ email })
 	});
-	const { token } = (await bypassRes.json()) as { token: string };
+	const body = (await res.json()) as { token: string; record: { id: string } };
+	return { token: body.token, userId: body.record.id };
+}
+
+async function setupFixture(email: string): Promise<Fixture> {
+	const { token } = await bypassAuth(email);
 
 	const res = await fetch(`${PB_BASE}/api/dev/rules-fixture`, {
 		method: 'POST',
@@ -56,6 +61,30 @@ async function setupFixture(email: string): Promise<Fixture> {
 		body: JSON.stringify({ emails: EMAILS, slug: FIXTURE_SLUG })
 	});
 	return (await res.json()) as Fixture;
+}
+
+// #276 — stamp a member's once-ever onboarding signal directly via PB REST, the
+// same authed-self PATCH the app uses. `users.updateRule = SELF_ONLY` (0014) lets
+// a member write their own `onboarded_at`. Hitting PB REST directly (rather than
+// the welcome card's form action) keeps the test deterministic and dodges the
+// SvelteKit CSRF/Origin form-POST scar — cerebrum [2026-06-26].
+async function stampOnboarded(email: string): Promise<void> {
+	const { token, userId } = await bypassAuth(email);
+	const res = await fetch(`${PB_BASE}/api/collections/users/records/${userId}`, {
+		method: 'PATCH',
+		headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+		body: JSON.stringify({ onboarded_at: new Date().toISOString().replace('T', ' ') })
+	});
+	expect(res.ok).toBeTruthy();
+}
+
+async function readOnboardedAt(email: string): Promise<string> {
+	const { token, userId } = await bypassAuth(email);
+	const res = await fetch(`${PB_BASE}/api/collections/users/records/${userId}`, {
+		headers: { Authorization: `Bearer ${token}` }
+	});
+	const body = (await res.json()) as { onboarded_at?: string };
+	return (body.onboarded_at ?? '').trim();
 }
 
 async function devLogin(browser: Browser, email: string) {
@@ -158,6 +187,69 @@ test.describe('#274 + #275 Onboarding welcome card', () => {
 			// Reload the same trip — still gone (the signal persists).
 			await page.goto(`${BASE}/trips/${tripSlug}`);
 			await expect(page.getByTestId('welcome-card')).toHaveCount(0, { timeout: 10000 });
+		} finally {
+			await ctx.close();
+		}
+	});
+
+	test('#276 "Replay intro" force-shows the card for an onboarded member without altering onboarded_at', async ({
+		browser
+	}) => {
+		// The owner is used only by beforeAll's auth-bypass (never clicks a card CTA),
+		// so stamp its once-ever signal explicitly to make this test self-contained:
+		// the subject is a fully ONBOARDED veteran whose card never auto-shows.
+		await stampOnboarded(EMAILS.owner);
+		const before = await readOnboardedAt(EMAILS.owner);
+		expect(before).not.toEqual('');
+
+		const { page, ctx } = await devLogin(browser, EMAILS.owner);
+		try {
+			// 1. Onboarded → the welcome card does NOT auto-show on the trip overview.
+			await page.goto(`${BASE}/trips/${tripSlug}`);
+			await expect(page.getByTestId('welcome-card')).toHaveCount(0, { timeout: 10000 });
+
+			// 2. The "Replay intro" entry lives in the trip "More" menu.
+			await page.goto(`${BASE}/trips/${tripSlug}/more`);
+			const replay = page.getByTestId('replay-intro').filter({ visible: true }).first();
+			await expect(replay).toBeVisible({ timeout: 10000 });
+
+			// 3. Tapping it lands on the overview with the welcome card FORCE-SHOWN —
+			//    the manual override ignores the once-ever signal (`?welcome=1`).
+			await replay.click();
+			await page.waitForURL((u) => /welcome=1/.test(u.search), { timeout: 10000 });
+			const card = page.getByTestId('welcome-card').filter({ visible: true }).first();
+			await expect(card).toBeVisible({ timeout: 10000 });
+			await expect(card.getByText(/welcome aboard/i)).toBeVisible();
+
+			// 4. The override neither depended on nor cleared the flag: still stamped,
+			//    unchanged from before the replay (this is a manual override, not a reset).
+			const after = await readOnboardedAt(EMAILS.owner);
+			expect(after).toEqual(before);
+		} finally {
+			await ctx.close();
+		}
+	});
+
+	test('#276 direct ?welcome=1 force-shows the card even for an onboarded member', async ({
+		browser
+	}) => {
+		// The force-show mechanism is the `?welcome=1` query param itself — independent
+		// of the More-menu link. An already-onboarded member who hits the URL directly
+		// (e.g. the link the More entry points at) sees the card; the auto-show path
+		// (no param) stays gated by onboarded_at.
+		await stampOnboarded(EMAILS.owner);
+
+		const { page, ctx } = await devLogin(browser, EMAILS.owner);
+		try {
+			// No param → gated → no card.
+			await page.goto(`${BASE}/trips/${tripSlug}`);
+			await expect(page.getByTestId('welcome-card')).toHaveCount(0, { timeout: 10000 });
+
+			// ?welcome=1 → force-shown regardless of the stamped flag.
+			await page.goto(`${BASE}/trips/${tripSlug}?welcome=1`);
+			await expect(
+				page.getByTestId('welcome-card').filter({ visible: true }).first()
+			).toBeVisible({ timeout: 10000 });
 		} finally {
 			await ctx.close();
 		}
