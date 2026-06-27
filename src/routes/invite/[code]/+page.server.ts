@@ -111,8 +111,8 @@ export const actions: Actions = {
 			const result = await locals.pb.collection('users').requestOTP(email);
 			return { otpId: result.otpId, email };
 		} catch (err: unknown) {
-			const message = err instanceof Error ? err.message : 'Failed to send code.';
-			return fail(500, { email, error: message });
+			console.error('[invite requestOTP] failed:', err);
+			return fail(500, { email, error: 'Failed to send code. Please try again.' });
 		}
 	},
 

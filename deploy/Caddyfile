@@ -1,11 +1,26 @@
 :8080 {
-	# PocketBase API + admin UI — served under /pb/ prefix, stripped before proxying
-	handle_path /pb/* {
-		reverse_proxy localhost:8090
+	# Coarse request-body cap (DoS backstop). PB's per-field maxSize (20MB docs /
+	# 10MB cover / 5MB avatar) is the precise gate; this just stops absurd bodies
+	# from streaming into PB. Headroom above 20MB for multipart overhead.
+	request_body {
+		max_size 32MB
 	}
 
-	# Everything else goes to SvelteKit
-	handle {
-		reverse_proxy localhost:3000
+	route {
+		# Block the dev-only auth-bypass routes (dev-auth.pb.js) from ever being
+		# reachable. They're already fail-closed on WAYPOINT_DEV_MODE — this is
+		# defense-in-depth so a leaked dev flag can't expose them publicly.
+		@devroutes path /pb/api/dev/*
+		respond @devroutes 403
+
+		# PocketBase API + admin UI — served under /pb/ prefix, stripped before proxying.
+		handle_path /pb/* {
+			reverse_proxy localhost:8090
+		}
+
+		# Everything else goes to SvelteKit.
+		handle {
+			reverse_proxy localhost:3000
+		}
 	}
 }
