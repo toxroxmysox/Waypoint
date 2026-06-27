@@ -20,8 +20,11 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	const response = await resolve(event);
 
-	// Sync auth cookie back to browser
-	const cookie = pb.authStore.exportToCookie({ httpOnly: false, sameSite: 'lax', secure: !dev });
+	// Sync auth cookie back to browser. #291: httpOnly so the JWT is unreadable by
+	// page JS (no XSS → session-theft escalation). Safe — auth is restored server-side
+	// from the request cookie header each request (createPb in this hook); no client
+	// reads the cookie.
+	const cookie = pb.authStore.exportToCookie({ httpOnly: true, sameSite: 'lax', secure: !dev });
 	response.headers.append('set-cookie', cookie);
 
 	return response;
