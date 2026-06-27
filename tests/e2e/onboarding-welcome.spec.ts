@@ -121,7 +121,9 @@ test.describe('#274 + #275 Onboarding welcome card', () => {
 			for (const itemId of [fixture.itemId, fixture.itemId2]) {
 				const res = await page.request.post(
 					`${BASE}/trips/${tripSlug}/swipe/${fixture.phaseId}?/vote`,
-					{ form: { item: itemId, value: 'like' } }
+					// SvelteKit CSRF rejects a cross-origin form POST without an Origin
+					// header (page.request omits it) — supply it so the action runs.
+					{ form: { item: itemId, value: 'like' }, headers: { origin: BASE } }
 				);
 				expect(res.ok()).toBeTruthy();
 			}
