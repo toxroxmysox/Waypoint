@@ -62,10 +62,24 @@
 {#if dndEnabled}
 	<!-- Drop zone: always rendered (even empty/collapsed) so the first item can be
 	     parked. When collapsed, items become zero-height placeholders — the zone is
-	     still a drop target but the cards are hidden behind the divider (#87). -->
+	     still a drop target but the cards are hidden behind the divider (#87).
+	     Collapsed: a visible dashed "drop strip" so the hit area matches the
+	     affordance (#294); the strip's centered hint reads inside the zone, not as a
+	     detached <p> below it. `dropTargetClasses` tints the strip moss while any
+	     itinerary-item is in flight so the user sees where they can drop (#294). -->
 	<section
-		class={collapsed ? 'min-h-[2.5rem]' : 'min-h-[3rem] space-y-1.5'}
-		use:dndzone={{ items, dragDisabled, type: 'itinerary-item', flipDurationMs: FLIP_MS, dropTargetStyle: {} }}
+		class="parking-dropzone {collapsed
+			? 'parking-dropzone--collapsed flex min-h-[2.75rem] items-center justify-center rounded-lg border border-dashed border-line px-2'
+			: 'min-h-[3rem] space-y-1.5'}"
+		data-empty={items.length === 0}
+		use:dndzone={{
+			items,
+			dragDisabled,
+			type: 'itinerary-item',
+			flipDurationMs: FLIP_MS,
+			dropTargetStyle: {},
+			dropTargetClasses: ['parking-dropzone--over']
+		}}
 		onconsider={onConsider}
 		onfinalize={onFinalize}
 	>
@@ -75,7 +89,9 @@
 			     card is hidden behind the divider (#87). -->
 			<div
 				animate:flip={{ duration: FLIP_MS }}
-				class={collapsed ? 'no-callout h-0 overflow-hidden' : 'no-callout flex items-stretch gap-1'}
+				class={collapsed
+					? 'no-callout h-0 w-0 shrink-0 basis-0 overflow-hidden'
+					: 'no-callout flex items-stretch gap-1'}
 				aria-hidden={collapsed}
 			>
 				{#if !collapsed}
@@ -141,11 +157,7 @@
 			</div>
 		{/each}
 	</section>
-	{#if collapsed}
-		{#if items.length === 0}
-			<p class="text-ink-muted px-2 py-2 text-center text-xs italic">Drop here to unschedule.</p>
-		{/if}
-	{:else if items.length === 0}
+	{#if !collapsed && items.length === 0}
 		<p class="text-ink-muted mt-1.5 px-2 py-3 text-center text-xs italic">Drag an item here to unschedule it.</p>
 	{/if}
 {:else if unplannedItems.length === 0}

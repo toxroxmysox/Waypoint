@@ -328,3 +328,47 @@ input[type='color']::-moz-color-swatch {
 	border: none;
 	border-radius: 0.25rem;
 }
+
+/* Parking-lot drop zone (#294). svelte-dnd-action adds `parking-dropzone--over`
+   via JS classList while any itinerary-item is in flight, so these selectors are
+   GLOBAL (a Svelte-scoped class wouldn't match a runtime-added class). The visible
+   strip = the real hit area: when collapsed the zone is a dashed strip whose
+   centered hint reads inside the zone, not as a detached line below it. */
+.parking-dropzone {
+	transition:
+		background-color 120ms ease,
+		border-color 120ms ease;
+}
+/* Collapsed strip: a clear, tappable target sitting right under the divider
+   header. Its hint lives in the zone via ::after so the affordance and the hit
+   area coincide. Hidden zero-height cards still map 1:1 to the bound array. */
+.parking-dropzone--collapsed::after {
+	content: 'Drag here to unschedule';
+	color: var(--color-ink-muted);
+	font-size: 0.6875rem; /* text-[11px] */
+	font-style: italic;
+	letter-spacing: 0.02em;
+	pointer-events: none;
+}
+.parking-dropzone--collapsed[data-empty='false']::after {
+	content: 'Drop here to unschedule';
+}
+/* Drag-active: every itinerary-item drag lights the parking zone moss so the
+   user sees where they can drop. moss-tint fill (NOT text-line — that's ~1.2:1
+   invisible per the #201 scar). The expanded zone has no border of its own, so a
+   rounded ring stands in for one without forcing layout. */
+.parking-dropzone--over {
+	background-color: var(--color-moss-tint);
+	border-radius: 0.5rem;
+	box-shadow: inset 0 0 0 1px var(--color-moss-soft);
+}
+/* Collapsed strip already carries a dashed border — promote it to solid moss. */
+.parking-dropzone--over.parking-dropzone--collapsed {
+	border-color: var(--color-moss-soft) !important;
+	border-style: solid;
+	box-shadow: none;
+}
+.parking-dropzone--over.parking-dropzone--collapsed::after,
+.parking-dropzone--over .text-ink-muted {
+	color: var(--color-moss);
+}
