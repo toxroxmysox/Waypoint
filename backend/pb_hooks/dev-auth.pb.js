@@ -202,7 +202,37 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 	const slug = (info.body && info.body['slug']) || 'e2e-rules-test';
 	try {
 		const existing = e.app.findFirstRecordByFilter('trips', 'slug = {:slug}', { slug: slug });
-		if (existing) e.app.delete(existing);
+		if (existing) {
+			// Delete child records that block the trip teardown BEFORE the trip
+			// cascade. Two failure modes, both 400 → silently swallowed below → the
+			// recreate then collides on the unique slug (every setupFixture after the
+			// first one 400s):
+			//   1. REQUIRED, NON-cascade FK to a trip_members row. The fixture (and
+			//      the pending_invites after-create hook) seed: documents.uploaded_by
+			//      (0032), suggestions.author (0017), trip_goals.created_by (0040),
+			//      and notifications.recipient (0020/0053) — all required, none
+			//      cascadeDelete. When PB cascades the trip it can't delete a member
+			//      still referenced by one of these ("part of a required relation
+			//      reference"), so the member delete (and thus the trip delete) 400s.
+			//   2. notifications additionally has a REQUIRED, NON-cascade `trip` FK
+			//      (0020/0053 never set cascadeDelete on it), so leftover notifications
+			//      block the TRIP delete directly too.
+			// PB gives no ordering guarantee between direct cascade children, so we
+			// can't rely on the blockers going first — clear them explicitly to make
+			// teardown order-independent on a fresh PB. (Vote children —
+			// suggestion_votes, goal_votes — cascade off suggestions/trip_goals, so
+			// deleting the parents drops them too.) `notifications` is listed first
+			// since it pins both a member and the trip.
+			for (const col of ['notifications', 'documents', 'suggestions', 'trip_goals']) {
+				try {
+					const rows = e.app.findRecordsByFilter(col, 'trip = {:tripId}', '', 0, 0, { tripId: existing.id });
+					for (const row of rows) {
+						try { e.app.delete(row); } catch (_) {}
+					}
+				} catch (_) {}
+			}
+			e.app.delete(existing);
+		}
 	} catch (_) {
 		// No existing fixture trip; nothing to clean up.
 	}
