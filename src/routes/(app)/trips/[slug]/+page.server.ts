@@ -1,7 +1,8 @@
 import { fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Item, ItemType, Day, Phase, Expense, Settlement, TripMember } from '$lib/types';
+import type { Item, ItemType, Day, Phase, Expense, Settlement, TripMember, Vote } from '$lib/types';
 import { fetchManualChecklists, rollupChecklists } from '$lib/itinerary/checklist-loaders';
+import { firstVotablePhase } from '$lib/collaboration/swipe-deck';
 import { summarizeDays } from '$lib/itinerary/day-card';
 import { getTripLifecycle } from '$lib/trip-mode/trip-lifecycle';
 import { simplifyDebts } from '$lib/money/debt-simplify';
@@ -87,6 +88,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 			// Planning-Overview keys, defaulted — the page never reads them when closed,
 			// but a consistent shape keeps the page-data union from narrowing them to
 			// `undefined` in the other branches.
+			votable: { hasVotable: false, unratedTotal: 0, swipeHref: null as string | null },
 			wrapUp: { balanceOwed: false },
 			lists: [] as ReturnType<typeof rollupChecklists>,
 			daySummaries: {} as ReturnType<typeof summarizeDays>,
@@ -101,9 +103,32 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		fetchManualChecklists(locals.pb, trip.id),
 		locals.pb.collection('items').getFullList<Item>({
 			filter: `trip = "${trip.id}"`,
-			fields: 'id,day,end_date,type,title,status,booked,requires_booking,cost_estimate_usd'
+			fields: 'id,phase,day,end_date,type,title,status,booked,requires_booking,cost_estimate_usd'
 		})
 	]);
+
+	// #275 Adaptive onboarding CTA. Detect whether THIS member has votable content
+	// to weigh in on — an unrated planned|unplanned item (the swipe deck's
+	// eligibility). The overview already rode the items fetch above; the only extra
+	// cost is the member's own votes (one small query, same shape Goals already
+	// pays for the launch door). Populated for a vote → vote-deck CTA; nothing to
+	// rate (bare trip, or all rated) → goals CTA. The card always names both doors;
+	// only the PRIMARY action flips. `swipeHref` is null when there's no launch
+	// phase, which is exactly when the CTA falls back to goals.
+	const myVotes = await locals.pb.collection('votes').getFullList<Vote>({
+		filter: `trip = "${trip.id}" && member = "${membership.id}"`,
+		fields: 'item'
+	});
+	const { phaseId: votablePhaseId, unratedTotal } = firstVotablePhase(
+		items,
+		myVotes,
+		(phases as Phase[]).map((p) => p.id)
+	);
+	const votable = {
+		hasVotable: !!votablePhaseId,
+		unratedTotal,
+		swipeHref: votablePhaseId ? `/trips/${trip.slug}/swipe/${votablePhaseId}` : null
+	};
 
 	// Settle-up is gated on BALANCE, not lifecycle (Grill Resolution #6): the row shows
 	// only when an outstanding debt exists. `simplifyDebts` already nets expenses against
@@ -124,6 +149,8 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 	return {
 		lifecycle,
 		showWelcome,
+		// #275 — drives the welcome card's adaptive primary CTA (vote vs goals).
+		votable,
 		// Wrap-up banner facts (only meaningful when lifecycle === 'wrap-up'). Close-out
 		// is always outstanding in wrap-up (it's how you LEAVE wrap-up). Settle-up is
 		// outstanding only when a balance is owed.

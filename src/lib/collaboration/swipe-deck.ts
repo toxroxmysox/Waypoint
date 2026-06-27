@@ -143,6 +143,33 @@ export function buildDeck(
 	return { queue, nextPhaseId };
 }
 
+/**
+ * Where the swipe deck would launch for the current member, and how many cards
+ * are still unrated — the cheap "is there votable content?" check the overview's
+ * adaptive onboarding CTA (#275) and the Goals/Phases launch doors (#207) share.
+ *
+ * Votable = an item the member hasn't voted on yet whose status is planned|
+ * unplanned (same eligibility as `buildDeck` — done/considered are closeout-only).
+ * `phaseId` is the FIRST phase, in `phaseOrder`, that still has ≥1 such card (where
+ * the deck kicks off), or null when nothing is left to rate. Pure (no IO).
+ */
+export function firstVotablePhase(
+	items: Pick<DeckCandidate, 'id' | 'phase' | 'status'>[],
+	myVotes: { item: string }[],
+	phaseOrder: string[]
+): { phaseId: string | null; unratedTotal: number } {
+	const votedItemIds = new Set(myVotes.map((v) => v.item));
+	const unratedByPhase: Record<string, number> = {};
+	let unratedTotal = 0;
+	for (const it of items) {
+		if (!ELIGIBLE_STATUSES.has(it.status) || votedItemIds.has(it.id)) continue;
+		unratedByPhase[it.phase] = (unratedByPhase[it.phase] ?? 0) + 1;
+		unratedTotal++;
+	}
+	const phaseId = phaseOrder.find((p) => (unratedByPhase[p] ?? 0) > 0) ?? null;
+	return { phaseId, unratedTotal };
+}
+
 // ── Capture deck (goal wizard) ─────────────────────────────────────────────
 //
 // The capture wizard runs on the same SwipeDeck substrate but interleaves two

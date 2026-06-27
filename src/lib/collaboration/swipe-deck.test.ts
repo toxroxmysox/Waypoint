@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
 	buildDeck,
 	buildCaptureDeck,
+	firstVotablePhase,
 	voteFromIntent,
 	COMMIT_PX,
 	type DeckCandidate,
@@ -371,5 +372,60 @@ describe('voteFromIntent — gesture map', () => {
 
 	it('exposes the ~88px commit threshold', () => {
 		expect(COMMIT_PX).toBe(88);
+	});
+});
+
+describe('firstVotablePhase — adaptive onboarding CTA detection (#275)', () => {
+	// Narrowed candidate: only id/phase/status matter to this helper.
+	type V = Parameters<typeof firstVotablePhase>[0][number];
+	const it_ = (id: string, phase: string, status: V['status'] = 'unplanned'): V => ({
+		id,
+		phase,
+		status
+	});
+
+	it('returns null phaseId + 0 total when there are no items', () => {
+		expect(firstVotablePhase([], [], ['p1', 'p2'])).toEqual({ phaseId: null, unratedTotal: 0 });
+	});
+
+	it('flags votable content + the first phase (in order) with an unrated card', () => {
+		const items = [it_('a', 'p2'), it_('b', 'p1'), it_('c', 'p2')];
+		const r = firstVotablePhase(items, [], ['p1', 'p2']);
+		expect(r.unratedTotal).toBe(3);
+		expect(r.phaseId).toBe('p1'); // first in phaseOrder with a card, not first item
+	});
+
+	it('skips phases the member has fully rated → lands on the next with cards', () => {
+		const items = [it_('a', 'p1'), it_('b', 'p2')];
+		const r = firstVotablePhase(items, [{ item: 'a' }], ['p1', 'p2']);
+		expect(r.unratedTotal).toBe(1);
+		expect(r.phaseId).toBe('p2');
+	});
+
+	it('returns null phaseId once the member has voted on everything', () => {
+		const items = [it_('a', 'p1'), it_('b', 'p2')];
+		const r = firstVotablePhase(items, [{ item: 'a' }, { item: 'b' }], ['p1', 'p2']);
+		expect(r).toEqual({ phaseId: null, unratedTotal: 0 });
+	});
+
+	it('ignores done/considered items (closeout-only, never votable)', () => {
+		const items = [it_('a', 'p1', 'done'), it_('b', 'p1', 'considered')];
+		expect(firstVotablePhase(items, [], ['p1'])).toEqual({ phaseId: null, unratedTotal: 0 });
+	});
+
+	it('counts both planned and unplanned as votable', () => {
+		const items = [it_('a', 'p1', 'planned'), it_('b', 'p1', 'unplanned')];
+		const r = firstVotablePhase(items, [], ['p1']);
+		expect(r.unratedTotal).toBe(2);
+		expect(r.phaseId).toBe('p1');
+	});
+
+	it('returns null when an unrated card sits in a phase absent from phaseOrder', () => {
+		// A card whose phase is not in the order has no launch point — treated as
+		// non-votable (mirrors the deck launcher, which only enters known phases).
+		const items = [it_('a', 'ghost')];
+		const r = firstVotablePhase(items, [], ['p1', 'p2']);
+		expect(r.unratedTotal).toBe(1); // it IS unrated...
+		expect(r.phaseId).toBe(null); // ...but there's nowhere to launch
 	});
 });

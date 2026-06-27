@@ -302,6 +302,10 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 	item.set('day', day.id);
 	item.set('type', 'activity');
 	item.set('title', 'Test Activity');
+	// Explicit planned status → the item is VOTABLE (the swipe deck's eligibility
+	// is status planned|unplanned). Without this, a select field saves "" and the
+	// fixture trip has zero votable content, which would mask #275's vote branch.
+	item.set('status', 'planned');
 	item.set('created_by', memberIds.owner);
 	e.app.save(item);
 
@@ -313,6 +317,7 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 	item2.set('day', day.id);
 	item2.set('type', 'activity');
 	item2.set('title', 'Test Activity 2');
+	item2.set('status', 'planned'); // votable (see item above)
 	item2.set('created_by', memberIds.owner);
 	e.app.save(item2);
 

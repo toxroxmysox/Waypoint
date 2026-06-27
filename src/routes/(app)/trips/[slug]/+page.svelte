@@ -231,8 +231,13 @@
 			<div class="p-6 text-center" data-testid="welcome-card">
 				{#if welcomeMode && !isEmptyTrip}
 					<!-- Member-keyed welcome on a POPULATED trip — the common invited case ES-1
-					     misses today. Orientation: name the doors, one primary CTA (basic =
-					     /goals/capture; the adaptive vote-vs-goals CTA is slice #275). -->
+					     misses today. Orientation: name all the doors, one ADAPTIVE primary CTA
+					     (#275). The invited member usually lands in an already-populated trip, so
+					     a one-tap VOTE is the lowest-friction first win — but only when there's
+					     something left to rate. `data.votable.hasVotable` flips the primary action:
+					     unrated content → "Weigh in on what's been suggested" (→ swipe deck);
+					     nothing to rate (all voted) → "Add what you want" (→ /goals/capture). The
+					     other doors are always NAMED in the copy regardless. -->
 					<p class="font-display text-ink-soft text-base italic">Welcome aboard.</p>
 					<p class="text-ink-muted mt-1 text-sm">
 						This is the trip's home. From here you can <strong class="text-ink-soft">see the plan</strong>,
@@ -241,13 +246,22 @@
 					</p>
 					<div class="mt-4 flex flex-wrap items-center justify-center gap-2">
 						<!-- Primary CTA = first action. Stamps the once-ever signal, then forwards
-						     to /goals/capture (server redirect → works without JS). -->
-						<form method="POST" action="?/completeOnboarding" use:enhance={onboardEnhance}>
-							<input type="hidden" name="redirect_to" value="/trips/{data.trip.slug}/goals/capture" />
-							<Button type="submit" variant="moss" size="sm" loading={onboardSubmitting}>
-								Add what you want
-							</Button>
-						</form>
+						     (server redirect → works without JS). Adaptive target. -->
+						{#if data.votable.hasVotable && data.votable.swipeHref}
+							<form method="POST" action="?/completeOnboarding" use:enhance={onboardEnhance}>
+								<input type="hidden" name="redirect_to" value={data.votable.swipeHref} />
+								<Button type="submit" variant="moss" size="sm" loading={onboardSubmitting}>
+									Weigh in on what's been suggested
+								</Button>
+							</form>
+						{:else}
+							<form method="POST" action="?/completeOnboarding" use:enhance={onboardEnhance}>
+								<input type="hidden" name="redirect_to" value="/trips/{data.trip.slug}/goals/capture" />
+								<Button type="submit" variant="moss" size="sm" loading={onboardSubmitting}>
+									Add what you want
+								</Button>
+							</form>
+						{/if}
 						<!-- Dismiss = "Got it". Stamps + stays. -->
 						<form method="POST" action="?/completeOnboarding" use:enhance={onboardEnhance}>
 							<Button type="submit" variant="ghost" size="sm" loading={onboardSubmitting}>Got it</Button>
