@@ -6,6 +6,7 @@ import { PUBLIC_PB_URL } from '$env/static/public';
 import { env } from '$env/dynamic/private';
 import { buildPublicTripExport } from '$lib/portability/export';
 import { fetchManualChecklists } from '$lib/itinerary/checklist-loaders';
+import { isArchiveVisible } from '$lib/portability/archive-visibility';
 
 // #208 — public "Use as template / Export plan" download. Same gating as the
 // archive page (superuser-auth, published-only), but returns a PII-STRIPPED
@@ -24,16 +25,13 @@ export const GET: RequestHandler = async ({ params }) => {
 		error(404, 'Archive not found');
 	}
 
-	if (!trip.archive_enabled) {
-		error(404, 'Archive not found');
-	}
-
-	// Don't let the plan leak before the archive is live (mirrors the page's
-	// pre-publish gate — the token is valid but the story isn't public yet).
-	const now = new Date();
-	const publishDate = new Date(trip.end_date);
-	publishDate.setDate(publishDate.getDate() + (trip.archive_publish_after_days || 7));
-	if (!trip.archived && now < publishDate) {
+	// #282: gate export on the SAME explicit `archive_publish_at` source of truth as
+	// the page route (`isArchiveVisible`), NOT the retired `end_date +
+	// archive_publish_after_days` math (#241/WP-B-019). That derivation leaked the
+	// plan when the owner kept-private, reopened/un-published, or scheduled a future
+	// date — page went private, export kept serving the full PII-stripped itinerary.
+	// `isArchiveVisible` already returns false when `archive_enabled` is off.
+	if (!isArchiveVisible(trip)) {
 		error(404, 'Archive not found');
 	}
 

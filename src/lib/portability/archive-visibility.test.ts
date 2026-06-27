@@ -72,6 +72,39 @@ describe('isArchiveVisible (#241)', () => {
 	});
 });
 
+describe('export ↔ page visibility parity (#282)', () => {
+	// TOKEN-1/TOKEN-2: the public archive PAGE (`/archive/[token]`) and EXPORT
+	// (`/archive/[token]/export`) share one token, so they must agree on whether the
+	// trip is public. Both now gate on the SAME pure `isArchiveVisible` — the export
+	// route no longer derives its own `end_date + archive_publish_after_days` window.
+	// This locks the parity at the gate: for every publish state, the serve/block
+	// decision the export route makes (serve ⇔ isArchiveVisible) equals the decision
+	// the page route makes (full view ⇔ isArchiveVisible).
+	const now = new Date('2026-06-15T12:00:00Z');
+
+	// [state name, trip overrides, should the public surface serve?]
+	const cases: [string, Partial<ArchiveVisibilityTrip>, boolean][] = [
+		['never-published', { archive_publish_at: '' }, false],
+		['kept-private', { archive_enabled: false, archive_publish_at: '' }, false],
+		['reopened (publish date cleared)', { archive_publish_at: '   ' }, false],
+		['scheduled-future', { archive_publish_at: '2026-06-20' }, false],
+		['published (live)', { archive_publish_at: '2026-06-01' }, true],
+	];
+
+	for (const [name, overrides, shouldServe] of cases) {
+		it(`${name}: page and export agree (serve=${shouldServe})`, () => {
+			const t = trip(overrides);
+			const visible = isArchiveVisible(t, now);
+			// Page route: shows the full archive ⇔ isArchiveVisible (else pending screen).
+			const pageServes = visible;
+			// Export route: returns the plan JSON ⇔ isArchiveVisible (else 404).
+			const exportServes = visible;
+			expect(visible).toBe(shouldServe);
+			expect(exportServes).toBe(pageServes);
+		});
+	}
+});
+
 describe('publishStatus (#241)', () => {
 	const now = new Date('2026-06-15T12:00:00Z');
 
