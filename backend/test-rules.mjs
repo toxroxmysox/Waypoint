@@ -1691,6 +1691,126 @@ function printMoneyUnitReport() {
 	}
 }
 
+// --- #283 (AUTHZ-3) checklists/tasks write gate (block viewers) -------------
+// Neither collection is in the fixed matrix and the fixture seeds none, so these
+// cases create a checklist + task and drive checklists.pb.js / tasks.pb.js
+// directly. CONFIRMED tier (SPEC §4): traveler+ write, viewers read-only. Asserts
+// viewers are denied create/update/delete on BOTH collections, and a traveler can
+// create + tick a task (the in-app task-management the tier exists for). tasks
+// resolve their trip via checklist.trip (no trip field on tasks).
+const CHECKLIST_TASK_OPS = [
+	'checklist_create_viewer_denied',
+	'checklist_create_traveler_ok',
+	'checklist_update_viewer_denied',
+	'checklist_delete_viewer_denied',
+	'task_create_viewer_denied',
+	'task_create_traveler_ok',
+	'task_update_viewer_denied',
+	'task_tick_traveler_ok',
+	'task_delete_viewer_denied'
+];
+
+async function makeChecklist(tokens, fixture, token) {
+	const res = await pbRequest('POST', '/api/collections/checklists/records', {
+		token: token || tokens.owner,
+		body: { trip: fixture.tripId, title: 'Harness checklist', kind: 'manual', order: 0 }
+	});
+	return res.data?.id;
+}
+async function makeTask(tokens, checklistId, token) {
+	const res = await pbRequest('POST', '/api/collections/tasks/records', {
+		token: token || tokens.owner,
+		body: { checklist: checklistId, title: 'Harness task', order: 0 }
+	});
+	return res.data?.id;
+}
+
+async function runChecklistTaskNovelCases(tokens) {
+	// --- checklists ---
+	// 1. Viewer creates a checklist → deny.
+	let fixture = await setupFixture();
+	const clVCreate = await pbRequest('POST', '/api/collections/checklists/records', {
+		token: tokens.viewer,
+		body: { trip: fixture.tripId, title: 'Viewer checklist', kind: 'manual', order: 0 }
+	});
+	recordResult('checklists', 'checklist_create_viewer_denied', 'viewer', 'deny', classifyWrite(clVCreate.status), clVCreate.status);
+
+	// 2. Traveler creates a checklist → allow (traveler+ tier).
+	const clTCreate = await pbRequest('POST', '/api/collections/checklists/records', {
+		token: tokens.traveler,
+		body: { trip: fixture.tripId, title: 'Traveler checklist', kind: 'manual', order: 1 }
+	});
+	recordResult('checklists', 'checklist_create_traveler_ok', 'traveler', 'allow', classifyWrite(clTCreate.status), clTCreate.status);
+
+	// 3. Viewer edits an existing checklist → deny.
+	fixture = await setupFixture();
+	let checklistId = await makeChecklist(tokens, fixture);
+	const clVUpdate = await pbRequest('PATCH', `/api/collections/checklists/records/${checklistId}`, {
+		token: tokens.viewer,
+		body: { title: 'Viewer edit' }
+	});
+	recordResult('checklists', 'checklist_update_viewer_denied', 'viewer', 'deny', classifyWrite(clVUpdate.status), clVUpdate.status);
+
+	// 4. Viewer deletes a checklist → deny.
+	fixture = await setupFixture();
+	checklistId = await makeChecklist(tokens, fixture);
+	const clVDelete = await pbRequest('DELETE', `/api/collections/checklists/records/${checklistId}`, {
+		token: tokens.viewer
+	});
+	recordResult('checklists', 'checklist_delete_viewer_denied', 'viewer', 'deny', classifyWrite(clVDelete.status), clVDelete.status);
+
+	// --- tasks (trip resolved via checklist.trip) ---
+	// 5. Viewer creates a task → deny.
+	fixture = await setupFixture();
+	checklistId = await makeChecklist(tokens, fixture);
+	const tkVCreate = await pbRequest('POST', '/api/collections/tasks/records', {
+		token: tokens.viewer,
+		body: { checklist: checklistId, title: 'Viewer task', order: 0 }
+	});
+	recordResult('tasks', 'task_create_viewer_denied', 'viewer', 'deny', classifyWrite(tkVCreate.status), tkVCreate.status);
+
+	// 6. Traveler creates a task → allow.
+	const tkTCreate = await pbRequest('POST', '/api/collections/tasks/records', {
+		token: tokens.traveler,
+		body: { checklist: checklistId, title: 'Traveler task', order: 1 }
+	});
+	recordResult('tasks', 'task_create_traveler_ok', 'traveler', 'allow', classifyWrite(tkTCreate.status), tkTCreate.status);
+
+	// 7. Viewer ticks/edits a task → deny.
+	fixture = await setupFixture();
+	checklistId = await makeChecklist(tokens, fixture);
+	let taskId = await makeTask(tokens, checklistId);
+	const tkVUpdate = await pbRequest('PATCH', `/api/collections/tasks/records/${taskId}`, {
+		token: tokens.viewer,
+		body: { checked: true }
+	});
+	recordResult('tasks', 'task_update_viewer_denied', 'viewer', 'deny', classifyWrite(tkVUpdate.status), tkVUpdate.status);
+
+	// 8. Traveler ticks a task → allow (the in-app task management the tier is for).
+	const tkTTick = await pbRequest('PATCH', `/api/collections/tasks/records/${taskId}`, {
+		token: tokens.traveler,
+		body: { checked: true }
+	});
+	recordResult('tasks', 'task_tick_traveler_ok', 'traveler', 'allow', classifyWrite(tkTTick.status), tkTTick.status);
+
+	// 9. Viewer deletes a task → deny.
+	fixture = await setupFixture();
+	checklistId = await makeChecklist(tokens, fixture);
+	taskId = await makeTask(tokens, checklistId);
+	const tkVDelete = await pbRequest('DELETE', `/api/collections/tasks/records/${taskId}`, {
+		token: tokens.viewer
+	});
+	recordResult('tasks', 'task_delete_viewer_denied', 'viewer', 'deny', classifyWrite(tkVDelete.status), tkVDelete.status);
+}
+
+function printChecklistTaskReport() {
+	console.log('\n[#283 checklists/tasks — viewers blocked on write (traveler+ tier, SPEC §4)]');
+	for (const r of results.filter((x) => CHECKLIST_TASK_OPS.includes(x.op))) {
+		const mark = r.passed ? 'PASS' : 'FAIL';
+		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+	}
+}
+
 // --- #118 shared Join Link novel cases -------------------------------------
 const JOIN_LINK_OPS = [
 	'create_co_owner_denied',
@@ -2012,6 +2132,9 @@ async function main() {
 	console.log('#281 cases: money_units edit/delete gate (unit-member or owner·co_owner; no unilateral self-add)');
 	await runMoneyUnitNovelCases(tokens);
 
+	console.log('#283 cases: checklists/tasks write gate (viewers blocked, traveler+ allowed)');
+	await runChecklistTaskNovelCases(tokens);
+
 	console.log('#118 cases: shared join link (role cap, join-at-role, revoke/expiry, clamp, tombstone)');
 	await runJoinLinkNovelCases(tokens);
 
@@ -2034,6 +2157,7 @@ async function main() {
 	printMemberRoleGateReport();
 	printTripsGateReport();
 	printMoneyUnitReport();
+	printChecklistTaskReport();
 	printJoinLinkReport();
 	printSelfAssignReport();
 	printCreatorEditReport();
