@@ -125,7 +125,7 @@ Old `CONTEXT.md` "Bounded Contexts" → this map, with **why each L1 exists** (e
 ## 5 · Money 🟡 *building*
 **Outcome:** no one returns to Splitwise — everyone knows what they owe, what's been spent, and what they have left, and the group settles fairly.
 **Sub-capabilities:** **Budgeting** 🟢 (forward control; owner-only).
-**Data:** `expenses` 🟢 (borrows **Item** 🔗 + **Member** 🔗) · `settlements` 🟢 · `trip_budgets` 🟢 · **Glance** 🟢 (derived "what I have left", Money-owned, surfaced by Trip Execution) · **Money Unit** 🔵 (no collection yet, #230) — a Money-owned grouping that **references `Member` 🔗 (never a second member store)** and **resolves on tombstone (ADR-0008)**; not a keystone. *Borrows the **Comment** mechanism (comments on an expense).*
+**Data:** `expenses` 🟢 (borrows **Item** 🔗 + **Member** 🔗) · `settlements` 🟢 · `trip_budgets` 🟢 · **Glance** 🟢 (derived "what I have left", Money-owned, surfaced by Trip Execution) · `money_units` 🟢 (migration 0050, #230/ADR-0015; edit/delete gated to unit members or owner·co_owner by money_units.pb.js, #281) — a Money-owned grouping that **references `Member` 🔗 (never a second member store)** and **resolves on tombstone (ADR-0008)**; not a keystone. *Borrows the **Comment** mechanism (comments on an expense).*
 **Applications/services:** `/expenses` · `/budget` · Trip-Mode `/money` (the glance) · debt-simplification service.
 **Business processes:** log expense + split · **Paid Moment** 🔵 (log payment prefilled from an item; → receipt in Documents) · **settle up** · set/adjust budget · check the glance.
 **Roles:** payer · participant · settler · money unit · budget-owner.

@@ -1583,6 +1583,114 @@ function printTripsGateReport() {
 	}
 }
 
+// --- #281 (AUTHZ-6) money_units edit/delete gate ---------------------------
+// money_units isn't in the fixed COLLECTIONS matrix (the fixture seeds none), so
+// these cases create a unit and drive money_units.pb.js directly. Unit membership
+// = [co_owner, traveler] (a "couple"); viewer is the outside member, owner is the
+// outside admin. Asserts:
+//   - a non-unit member (viewer) cannot self-add, edit, or delete the unit;
+//   - an existing unit member (traveler) can self-remove and delete the unit;
+//   - an existing unit member (co_owner) can add another member (the consent path);
+//   - an owner (not in the unit) can manage it.
+// created_by / members hold trip_members.id. Each mutating case rebuilds the unit
+// on a fresh fixture so state doesn't leak between cases.
+const MONEY_UNIT_OPS = [
+	'nonmember_self_add_denied',
+	'nonmember_edit_denied',
+	'nonmember_delete_denied',
+	'member_self_remove_ok',
+	'member_delete_ok',
+	'member_consent_add_ok',
+	'owner_manage_ok'
+];
+
+async function makeMoneyUnit(tokens, fixture) {
+	// Owner declares a unit of {co_owner, traveler}. createRule = MEMBER_VIA_TRIP.
+	const res = await pbRequest('POST', '/api/collections/money_units/records', {
+		token: tokens.owner,
+		body: {
+			trip: fixture.tripId,
+			members: [fixture.memberIds.co_owner, fixture.memberIds.traveler],
+			created_by: fixture.memberIds.owner
+		}
+	});
+	return res.data?.id;
+}
+
+async function runMoneyUnitNovelCases(tokens) {
+	// 1. Viewer (not in unit, not privileged) PATCHes members to insert their OWN id
+	//    → deny (the "silently joining a couple's pool" exploit).
+	let fixture = await setupFixture();
+	let unitId = await makeMoneyUnit(tokens, fixture);
+	const vAdd = await pbRequest('PATCH', `/api/collections/money_units/records/${unitId}`, {
+		token: tokens.viewer,
+		body: { members: [fixture.memberIds.co_owner, fixture.memberIds.traveler, fixture.memberIds.viewer] }
+	});
+	recordResult('money_units', 'nonmember_self_add_denied', 'viewer', 'deny', classifyWrite(vAdd.status), vAdd.status);
+
+	// 2. Viewer edits the unit's budget (not in unit) → deny.
+	fixture = await setupFixture();
+	unitId = await makeMoneyUnit(tokens, fixture);
+	const vEdit = await pbRequest('PATCH', `/api/collections/money_units/records/${unitId}`, {
+		token: tokens.viewer,
+		body: { budget_usd: 999 }
+	});
+	recordResult('money_units', 'nonmember_edit_denied', 'viewer', 'deny', classifyWrite(vEdit.status), vEdit.status);
+
+	// 3. Viewer deletes the unit → deny.
+	fixture = await setupFixture();
+	unitId = await makeMoneyUnit(tokens, fixture);
+	const vDel = await pbRequest('DELETE', `/api/collections/money_units/records/${unitId}`, {
+		token: tokens.viewer
+	});
+	recordResult('money_units', 'nonmember_delete_denied', 'viewer', 'deny', classifyWrite(vDel.status), vDel.status);
+
+	// 4. Traveler (in unit) removes ONLY themselves → allow (the consent valve).
+	fixture = await setupFixture();
+	unitId = await makeMoneyUnit(tokens, fixture);
+	const tLeave = await pbRequest('PATCH', `/api/collections/money_units/records/${unitId}`, {
+		token: tokens.traveler,
+		body: { members: [fixture.memberIds.co_owner] }
+	});
+	recordResult('money_units', 'member_self_remove_ok', 'traveler', 'allow', classifyWrite(tLeave.status), tLeave.status);
+
+	// 5. Traveler (in unit) deletes the whole unit → allow.
+	fixture = await setupFixture();
+	unitId = await makeMoneyUnit(tokens, fixture);
+	const tDel = await pbRequest('DELETE', `/api/collections/money_units/records/${unitId}`, {
+		token: tokens.traveler
+	});
+	recordResult('money_units', 'member_delete_ok', 'traveler', 'allow', classifyWrite(tDel.status), tDel.status);
+
+	// 6. Co_owner (in unit) adds the viewer — an EXISTING member granting entry is
+	//    the consent path → allow. (Distinct from case 1: a unit member is doing the
+	//    adding, not the joiner self-adding.)
+	fixture = await setupFixture();
+	unitId = await makeMoneyUnit(tokens, fixture);
+	const consent = await pbRequest('PATCH', `/api/collections/money_units/records/${unitId}`, {
+		token: tokens.co_owner,
+		body: { members: [fixture.memberIds.co_owner, fixture.memberIds.traveler, fixture.memberIds.viewer] }
+	});
+	recordResult('money_units', 'member_consent_add_ok', 'co_owner', 'allow', classifyWrite(consent.status), consent.status);
+
+	// 7. Owner (NOT in the unit) edits it → allow (trip admin can manage any unit).
+	fixture = await setupFixture();
+	unitId = await makeMoneyUnit(tokens, fixture);
+	const oManage = await pbRequest('PATCH', `/api/collections/money_units/records/${unitId}`, {
+		token: tokens.owner,
+		body: { budget_usd: 250 }
+	});
+	recordResult('money_units', 'owner_manage_ok', 'owner', 'allow', classifyWrite(oManage.status), oManage.status);
+}
+
+function printMoneyUnitReport() {
+	console.log('\n[#281 money_units — unit-member or owner·co_owner edits/deletes; no unilateral self-add; self-removal free]');
+	for (const r of results.filter((x) => MONEY_UNIT_OPS.includes(x.op))) {
+		const mark = r.passed ? 'PASS' : 'FAIL';
+		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+	}
+}
+
 // --- #118 shared Join Link novel cases -------------------------------------
 const JOIN_LINK_OPS = [
 	'create_co_owner_denied',
@@ -1901,6 +2009,9 @@ async function main() {
 	console.log('#280 cases: trips lifecycle/publishing gate (protected fields owner·co_owner only; ordinary edits + reconcile unaffected)');
 	await runTripsGateNovelCases(tokens);
 
+	console.log('#281 cases: money_units edit/delete gate (unit-member or owner·co_owner; no unilateral self-add)');
+	await runMoneyUnitNovelCases(tokens);
+
 	console.log('#118 cases: shared join link (role cap, join-at-role, revoke/expiry, clamp, tombstone)');
 	await runJoinLinkNovelCases(tokens);
 
@@ -1922,6 +2033,7 @@ async function main() {
 	printMemberRelationDriftReport();
 	printMemberRoleGateReport();
 	printTripsGateReport();
+	printMoneyUnitReport();
 	printJoinLinkReport();
 	printSelfAssignReport();
 	printCreatorEditReport();
