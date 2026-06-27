@@ -12,6 +12,7 @@
 	import { getNavConfig, resolveChromeMode } from '$lib/shell/nav-tabs';
 	import { tripToday, tripTz } from '$lib/shell/trip-time';
 	import { goto } from '$app/navigation';
+	import { markReplaceNavigation } from '$lib/shell/stores/nav-depth';
 	import { page } from '$app/state';
 
 	let {
@@ -55,7 +56,13 @@
 		// #80: switching modes must also navigate to that mode's home — Trip view
 		// lands on Now, Edit plan lands on the itinerary. Without this the toggle
 		// only swapped the nav tabs while leaving the user on the current page.
-		goto(next === 'trip' ? `/trips/${slug}/now` : `/trips/${slug}`);
+		// #296: replace (don't push) — a mode switch is a lateral re-frame of the
+		// SAME trip, not a drill-down. Pushing stacked a history entry per toggle,
+		// so back-button behaviour broke (each switch needed an extra back tap, and
+		// back from planning landed in trip mode again). afterNavigate can't see the
+		// replaceState flag, so announce it at the call site (ADR-0012 nav-depth).
+		markReplaceNavigation();
+		goto(next === 'trip' ? `/trips/${slug}/now` : `/trips/${slug}`, { replaceState: true });
 	}
 
 	let addSheetOpen = $state(false);
