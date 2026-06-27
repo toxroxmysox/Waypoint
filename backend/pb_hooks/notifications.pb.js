@@ -154,9 +154,22 @@ onRecordAfterCreateSuccess((e) => {
 	const newMemberId = e.record.id;
 	const newMemberRole = e.record.get('role');
 
+	// Resolve the joiner's name. On a REAL join the trip_members row's own
+	// display_name/placeholder_name are EMPTY (the name lives on the linked
+	// users record), so resolving them first always fell back to "Someone"
+	// (#295). Prefer any snapshotted display_name, then the linked user's
+	// name/email, then placeholder_name (for placeholder rows), then "Someone".
 	let newMemberName = 'Someone';
 	try {
-		newMemberName = e.record.get('display_name') || e.record.get('placeholder_name') || 'Someone';
+		let resolved = (e.record.get('display_name') || '').trim();
+		if (!resolved && userId) {
+			try {
+				const u = e.app.findRecordById('users', userId);
+				resolved = (u.get('name') || u.email() || '').trim();
+			} catch (_) {}
+		}
+		if (!resolved) resolved = (e.record.get('placeholder_name') || '').trim();
+		if (resolved) newMemberName = resolved;
 	} catch (_) {}
 
 	let tripSlug = '';
