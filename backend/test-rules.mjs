@@ -343,16 +343,19 @@ const EXPECT = {
 			non_member: 'deny'
 		}
 	},
-	// votes (#30):
+	// votes (#30 / #286):
 	//   list/view: any member can see the trip's votes
-	//   create: any member can vote (createBody votes as the acting member, on a
-	//           second item so it doesn't collide with the seeded fixture vote)
+	//   create: owner·co_owner·traveler may vote; VIEWERS are denied (#286 —
+	//           votes.createRule gained `&& member.role != "viewer"` in migration
+	//           0055, mirroring goal_votes/suggestion_votes; SPEC.md:99 lists Viewer
+	//           = denied for voting). createBody votes as the acting member on a
+	//           second item so it doesn't collide with the seeded fixture vote.
 	//   update/delete: own vote only (rule: member.user = @request.auth.id). The
 	//           fixture vote belongs to the owner, so only owner passes — SELF_ONLY.
 	votes: {
 		list: ALLOW_MEMBERS_DENY_NONMEMBER,
 		view: ALLOW_MEMBERS_DENY_NONMEMBER,
-		create: ALLOW_MEMBERS_DENY_NONMEMBER,
+		create: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' },
 		update: SELF_ONLY,
 		delete: SELF_ONLY
 	},
