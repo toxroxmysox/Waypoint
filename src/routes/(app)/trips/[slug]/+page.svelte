@@ -38,6 +38,12 @@
 
 	let notifications = $state<Notification[]>(untrack(() => data.notifications ?? []));
 	let unreadCount = $state(untrack(() => data.unreadCount ?? 0));
+	// #297: re-seed from server data when it changes (e.g. after a mark-read
+	// invalidates the layout, or on navigation) so persisted read_at survives.
+	$effect(() => {
+		notifications = data.notifications ?? [];
+		unreadCount = data.unreadCount ?? 0;
+	});
 
 	// #252 — the consistent capture affordance (also on Phase Detail + day views).
 	let ideaSheetOpen = $state(false);

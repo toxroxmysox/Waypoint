@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import { invalidate } from '$app/navigation';
 	import type { Notification } from '$lib/types';
 
 	let {
@@ -35,28 +35,53 @@
 	}
 
 	async function markRead(id: string) {
+		// Snapshot for rollback if the write fails.
+		const prevNotifications = notifications;
+		const prevUnread = unreadCount;
+
 		// Optimistically update local state.
 		notifications = notifications.map((n) =>
 			n.id === id ? { ...n, read_at: new Date().toISOString() } : n
 		);
 		unreadCount = Math.max(0, unreadCount - 1);
 
-		await fetch('/api/notifications/mark-read', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ ids: [id] })
-		}).catch(() => {});
+		try {
+			const res = await fetch('/api/notifications/mark-read', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ ids: [id] })
+			});
+			if (!res.ok) throw new Error('mark-read failed');
+			// #297: re-fetch the layout's notifications so the persisted read_at
+			// survives navigation between sibling pages (the optimistic mutation
+			// alone is lost when a new page seeds its state from stale layout data).
+			await invalidate('app:notifications');
+		} catch {
+			// Roll back the optimistic change so the bell never lies.
+			notifications = prevNotifications;
+			unreadCount = prevUnread;
+		}
 	}
 
 	async function markAllRead() {
+		const prevNotifications = notifications;
+		const prevUnread = unreadCount;
+
 		notifications = notifications.map((n) => ({ ...n, read_at: n.read_at || new Date().toISOString() }));
 		unreadCount = 0;
 
-		await fetch('/api/notifications/mark-read', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ all: true })
-		}).catch(() => {});
+		try {
+			const res = await fetch('/api/notifications/mark-read', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ all: true })
+			});
+			if (!res.ok) throw new Error('mark-read failed');
+			await invalidate('app:notifications');
+		} catch {
+			notifications = prevNotifications;
+			unreadCount = prevUnread;
+		}
 	}
 </script>
 

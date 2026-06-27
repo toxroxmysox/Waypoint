@@ -5,7 +5,13 @@ import type { Document } from '$lib/documents/types';
 import { isTripActive } from '$lib/trip-mode/activation';
 import { buildOfflineManifest } from '$lib/offline/offline-manifest';
 
-export const load: LayoutServerLoad = async ({ params, locals }) => {
+export const load: LayoutServerLoad = async ({ params, locals, depends }) => {
+	// #297: register a custom dependency so the NotificationBell can force a
+	// reload of `notifications`/`unreadCount` (re-fetching the persisted
+	// read_at) after a mark-read, even when navigating between sibling pages
+	// that share this layout (which would NOT otherwise re-run this load).
+	depends('app:notifications');
+
 	let trip: Trip;
 	try {
 		trip = await locals.pb

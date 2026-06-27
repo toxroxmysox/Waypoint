@@ -27,6 +27,11 @@
 	// Docs, More). Notifications ride the shared trip layout load.
 	let notifications = $state(untrack(() => data.notifications ?? []));
 	let unreadCount = $state(untrack(() => data.unreadCount ?? 0));
+	// #297: re-seed from server data so persisted read_at survives navigation.
+	$effect(() => {
+		notifications = data.notifications ?? [];
+		unreadCount = data.unreadCount ?? 0;
+	});
 
 	const nowIso = untrack(() => data.now);
 	const now = new Date(nowIso);

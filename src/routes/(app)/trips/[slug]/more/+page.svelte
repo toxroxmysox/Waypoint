@@ -13,6 +13,11 @@
 
 	let notifications = $state<Notification[]>(untrack(() => data.notifications ?? []));
 	let unreadCount = $state(untrack(() => data.unreadCount ?? 0));
+	// #297: re-seed from server data so persisted read_at survives navigation.
+	$effect(() => {
+		notifications = data.notifications ?? [];
+		unreadCount = data.unreadCount ?? 0;
+	});
 </script>
 
 <NavBar

@@ -24,6 +24,11 @@
 
 	let notifications = $state<Notification[]>(untrack(() => data.notifications ?? []));
 	let unreadCount = $state(untrack(() => data.unreadCount ?? 0));
+	// #297: re-seed from server data so persisted read_at survives navigation.
+	$effect(() => {
+		notifications = data.notifications ?? [];
+		unreadCount = data.unreadCount ?? 0;
+	});
 
 	// #230 / ADR-0015 — settle-up collapses to unit-nodes. With no units declared this is
 	// EXACTLY per-person (every node is a unit of one). Edges carry representative members

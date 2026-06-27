@@ -18,6 +18,11 @@
 	// (Overview, Now, Today, Money) per the #180 placement rule.
 	let notifications = $state(untrack(() => data.notifications ?? []));
 	let unreadCount = $state(untrack(() => data.unreadCount ?? 0));
+	// #297: re-seed from server data so persisted read_at survives navigation.
+	$effect(() => {
+		notifications = data.notifications ?? [];
+		unreadCount = data.unreadCount ?? 0;
+	});
 
 	const g = $derived(data.glance);
 	const slug = $derived(data.trip.slug);
