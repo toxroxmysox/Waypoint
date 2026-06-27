@@ -1,7 +1,9 @@
 # Stage 1: Build SvelteKit
 FROM node:22-slim AS builder
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Pin pnpm (was pnpm@latest — floated; the lockfile is frozen but the resolver wasn't).
+# Keep in sync with package.json "packageManager".
+RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
