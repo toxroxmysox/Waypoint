@@ -1477,6 +1477,112 @@ function printMemberRoleGateReport() {
 	}
 }
 
+// --- #280 (AUTHZ-2) trips lifecycle/publishing role gate -------------------
+// The fixed trips.update matrix PATCHes location_summary (an ORDINARY field) and
+// stays ALLOW_MEMBERS_DENY_NONMEMBER — proving the gate doesn't over-reach. These
+// cases drive the PROTECTED fields (archived / archive_publish_at / archive_enabled
+// / archive_show_budget / public_share_token / auto_approve_suggestions): a
+// viewer + traveler must be denied each, owner/co_owner must still pass, an
+// ordinary title+date edit by a traveler must still work, and the day-reconcile
+// hook must still run after the gate when an owner changes the dates.
+const TRIPS_GATE_OPS = [
+	'protected_viewer_archived',
+	'protected_traveler_publish',
+	'protected_traveler_share_token',
+	'protected_traveler_autoapprove',
+	'protected_owner_archive_enabled',
+	'protected_coowner_publish_at',
+	'ordinary_traveler_title_date',
+	'reconcile_after_gate'
+];
+
+async function runTripsGateNovelCases(tokens) {
+	// 1. Viewer flips archived → deny.
+	let fixture = await setupFixture();
+	const vArch = await pbRequest('PATCH', `/api/collections/trips/records/${fixture.tripId}`, {
+		token: tokens.viewer,
+		body: { archived: true }
+	});
+	recordResult('trips', 'protected_viewer_archived', 'viewer', 'deny', classifyWrite(vArch.status), vArch.status);
+
+	// 2. Traveler enables publishing (archive_enabled + archive_publish_at) → deny —
+	//    the issue's headline "push the private itinerary public" exploit.
+	fixture = await setupFixture();
+	const tPub = await pbRequest('PATCH', `/api/collections/trips/records/${fixture.tripId}`, {
+		token: tokens.traveler,
+		body: { archive_enabled: true, archive_publish_at: '2026-06-02 00:00:00.000Z' }
+	});
+	recordResult('trips', 'protected_traveler_publish', 'traveler', 'deny', classifyWrite(tPub.status), tPub.status);
+
+	// 3. Traveler sets a public_share_token → deny.
+	fixture = await setupFixture();
+	const tTok = await pbRequest('PATCH', `/api/collections/trips/records/${fixture.tripId}`, {
+		token: tokens.traveler,
+		body: { public_share_token: 'sneaky-token-' + Date.now() }
+	});
+	recordResult('trips', 'protected_traveler_share_token', 'traveler', 'deny', classifyWrite(tTok.status), tTok.status);
+
+	// 4. Traveler flips auto_approve_suggestions → deny (self-promote their own ghosts).
+	fixture = await setupFixture();
+	const tAuto = await pbRequest('PATCH', `/api/collections/trips/records/${fixture.tripId}`, {
+		token: tokens.traveler,
+		body: { auto_approve_suggestions: true }
+	});
+	recordResult('trips', 'protected_traveler_autoapprove', 'traveler', 'deny', classifyWrite(tAuto.status), tAuto.status);
+
+	// 5. Owner sets archive_enabled → allow (privileged path unaffected).
+	fixture = await setupFixture();
+	const oArch = await pbRequest('PATCH', `/api/collections/trips/records/${fixture.tripId}`, {
+		token: tokens.owner,
+		body: { archive_enabled: true }
+	});
+	recordResult('trips', 'protected_owner_archive_enabled', 'owner', 'allow', classifyWrite(oArch.status), oArch.status);
+
+	// 6. Co_owner sets archive_publish_at (the date field) → allow.
+	fixture = await setupFixture();
+	const coPub = await pbRequest('PATCH', `/api/collections/trips/records/${fixture.tripId}`, {
+		token: tokens.co_owner,
+		body: { archive_publish_at: '2026-06-03 00:00:00.000Z' }
+	});
+	recordResult('trips', 'protected_coowner_publish_at', 'co_owner', 'allow', classifyWrite(coPub.status), coPub.status);
+
+	// 7. Traveler edits ordinary fields (title + dates) → allow (MEMBER allowance kept).
+	fixture = await setupFixture();
+	const tOrdinary = await pbRequest('PATCH', `/api/collections/trips/records/${fixture.tripId}`, {
+		token: tokens.traveler,
+		body: { title: 'Traveler renamed trip', start_date: '2026-06-01 00:00:00.000Z', end_date: '2026-06-04 00:00:00.000Z' }
+	});
+	recordResult('trips', 'ordinary_traveler_title_date', 'traveler', 'allow', classifyWrite(tOrdinary.status), tOrdinary.status);
+
+	// 8. Day-reconcile still runs after the gate: owner extends the trip by a day,
+	//    the new day must be materialized by the reconcile handler that runs after
+	//    the gate calls e.next(). Fixture trip is 2026-06-01..03 (3 days); extend to
+	//    06-04 and assert a day for 2026-06-04 now exists.
+	fixture = await setupFixture();
+	const ext = await pbRequest('PATCH', `/api/collections/trips/records/${fixture.tripId}`, {
+		token: tokens.owner,
+		body: { end_date: '2026-06-04 00:00:00.000Z' }
+	});
+	let reconciled = false;
+	if (ext.status >= 200 && ext.status < 300) {
+		const days = await pbRequest(
+			'GET',
+			`/api/collections/days/records?perPage=200&filter=${filterQuery(fixture.tripId, '')}`,
+			{ token: tokens.owner }
+		);
+		reconciled = (days.data?.items || []).some((d) => (d.date || '').substring(0, 10) === '2026-06-04');
+	}
+	recordResult('trips', 'reconcile_after_gate', 'owner', 'yes', reconciled ? 'yes' : 'no', ext.status);
+}
+
+function printTripsGateReport() {
+	console.log('\n[#280 trips — gate archive/publish/share/auto-approve to owner·co_owner; ordinary edits + day-reconcile unaffected]');
+	for (const r of results.filter((x) => TRIPS_GATE_OPS.includes(x.op))) {
+		const mark = r.passed ? 'PASS' : 'FAIL';
+		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+	}
+}
+
 // --- #118 shared Join Link novel cases -------------------------------------
 const JOIN_LINK_OPS = [
 	'create_co_owner_denied',
@@ -1792,6 +1898,9 @@ async function main() {
 	console.log('#279 cases: trip_members role gate (block escalation, gate cross-member delete, self-leave, sole-owner cap)');
 	await runMemberRoleGateNovelCases(tokens);
 
+	console.log('#280 cases: trips lifecycle/publishing gate (protected fields owner·co_owner only; ordinary edits + reconcile unaffected)');
+	await runTripsGateNovelCases(tokens);
+
 	console.log('#118 cases: shared join link (role cap, join-at-role, revoke/expiry, clamp, tombstone)');
 	await runJoinLinkNovelCases(tokens);
 
@@ -1812,6 +1921,7 @@ async function main() {
 	printMemberRemovalReport();
 	printMemberRelationDriftReport();
 	printMemberRoleGateReport();
+	printTripsGateReport();
 	printJoinLinkReport();
 	printSelfAssignReport();
 	printCreatorEditReport();

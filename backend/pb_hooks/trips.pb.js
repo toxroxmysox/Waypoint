@@ -1,5 +1,83 @@
 /// <reference path="../pb_data/types.d.ts" />
 
+// #280 (AUTHZ-2) — trips lifecycle/publishing role gate.
+//
+// THE GAP: trips.updateRule = MEMBER_VIA_TRIP (any member), and the only trips
+// update hook (the day-reconcile below) just calls e.next() with no role check.
+// So any member could PATCH the publishing/lifecycle flags via direct PB REST —
+// flip archive_enabled + archive_publish_at to push the private itinerary public,
+// set archived to lock the trip, or auto_approve_suggestions to auto-promote their
+// own suggestions. requireOwner() is UI-only.
+//
+// This gate rejects changes to the protected fields unless the caller is
+// owner/co_owner, comparing new vs original PER FIELD so ORDINARY member edits
+// (title, dates, location_summary, timezone, ...) keep their MEMBER_VIA_TRIP
+// allowance. It is registered FIRST (above the day-reconcile handler) so a denied
+// write throws before any e.next() in the chain runs (PB runs onRecordUpdateRequest
+// handlers in registration order; cerebrum [2026-06-14]).
+//
+// goja: all inlined, handler-first signature, string-coerced compares (empty /
+// date fields read back as truthy objects — use getString for the date field).
+onRecordUpdateRequest((e) => {
+	const authId = e.requestInfo().auth?.id;
+	if (!authId) throw new UnauthorizedError('Authentication required');
+
+	const original = e.record.original();
+
+	// Protected lifecycle/publishing fields. archive_publish_at is a DATE — compare
+	// via getString (goja returns a truthy DateTime object for an empty date, so a
+	// get()-based compare would misfire). The rest are bool/text — string-coerce.
+	const boolTextFields = [
+		'archived',
+		'archive_enabled',
+		'archive_show_budget',
+		'public_share_token',
+		'auto_approve_suggestions'
+	];
+
+	let protectedChanged = false;
+	for (let i = 0; i < boolTextFields.length; i++) {
+		const f = boolTextFields[i];
+		if ('' + e.record.get(f) !== '' + original.get(f)) {
+			protectedChanged = true;
+			break;
+		}
+	}
+	if (!protectedChanged) {
+		if (e.record.getString('archive_publish_at') !== original.getString('archive_publish_at')) {
+			protectedChanged = true;
+		}
+	}
+
+	// No protected field touched → an ordinary member edit; let it proceed to the
+	// reconcile handler at the MEMBER rule allowance.
+	if (!protectedChanged) {
+		e.next();
+		return;
+	}
+
+	// A protected field changed → owner/co_owner only.
+	let callerMember;
+	try {
+		callerMember = e.app.findFirstRecordByFilter(
+			'trip_members',
+			'trip = {:tripId} && user = {:uid} && removed_at = ""',
+			{ tripId: e.record.id, uid: authId }
+		);
+	} catch (_) {
+		throw new ForbiddenError('You are not a member of this trip');
+	}
+
+	const callerRole = callerMember.get('role');
+	if (callerRole !== 'owner' && callerRole !== 'co_owner') {
+		throw new ForbiddenError(
+			'Only an owner or co-owner can change a trip’s publishing or lifecycle settings'
+		);
+	}
+
+	e.next();
+}, 'trips');
+
 // After trip creation: add creator as owner + generate day records.
 // Callback in PocketBase's JS hook runtime doesn't see outer-file helpers
 // (isolated sandbox). Logic is inlined here for that reason.
