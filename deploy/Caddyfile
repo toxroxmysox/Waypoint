@@ -13,6 +13,15 @@
 		@devroutes path /pb/api/dev/*
 		respond @devroutes 403
 
+		# PB admin UI: reachable only locally / over Tailscale. Public requests arrive
+		# through the Cloudflare tunnel and carry CF-Connecting-IP — 403 those. Local
+		# requests (the 127.0.0.1:8091 tailnet-admin path) have no CF header → allowed.
+		@public_admin {
+			path /pb/_ /pb/_/*
+			header CF-Connecting-IP *
+		}
+		respond @public_admin 403
+
 		# PocketBase API + admin UI — served under /pb/ prefix, stripped before proxying.
 		handle_path /pb/* {
 			reverse_proxy localhost:8090
