@@ -54,6 +54,44 @@ onRecordCreateRequest((e) => {
 	// Pin uploaded_by to the caller regardless of what the client sent.
 	record.set('uploaded_by', callerMember.id);
 
+	// --- file-XOR-code structural validation (#268 / ADR-0016) ---
+	// PB's schema can't express "exactly one of file / code"; enforce it here.
+	// `kind` defaults to 'file' (a non-required select otherwise stores "").
+	let kind = record.getString('kind');
+	if (kind === '') {
+		kind = 'file';
+		record.set('kind', 'file');
+	}
+	if (kind === 'code') {
+		// A code Document carries a non-empty code_value instead of a file.
+		if (record.getString('code_value') === '') {
+			throw new BadRequestError('A code document requires a non-empty code_value');
+		}
+	} else {
+		// kind === 'file': must carry a file artifact. At before-create time a
+		// freshly UPLOADED file is a PENDING-upload object (has .name/.size), so
+		// getString('file') is still "" — checking only the string yields a false
+		// negative on the real upload path. A file is present if EITHER the stored
+		// filename is set (getString) OR get() returns a non-empty pending upload
+		// (object with a .name, or a non-empty array of them).
+		const fileStr = record.getString('file');
+		let hasFile = fileStr !== '';
+		if (!hasFile) {
+			const raw = record.get('file');
+			if (raw) {
+				if (Array.isArray(raw)) {
+					hasFile = raw.length > 0;
+				} else if (typeof raw === 'object') {
+					// pending upload object — has a generated .name
+					hasFile = !!(raw.name || raw.originalName);
+				}
+			}
+		}
+		if (!hasFile) {
+			throw new BadRequestError('A file document requires a file');
+		}
+	}
+
 	e.next();
 }, 'documents');
 
