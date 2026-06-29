@@ -1,4 +1,29 @@
 :8080 {
+	# Baseline response security headers (issue #288). Applied globally — Caddy's
+	# `header` directive runs on every response regardless of the routing below,
+	# so the 403s, admin gate, and both reverse proxies all carry these. A strict
+	# Content-Security-Policy is intentionally OUT OF SCOPE (needs nonce wiring,
+	# separate task) and is NOT set here.
+	header {
+		# Stop MIME-type sniffing.
+		X-Content-Type-Options "nosniff"
+		# Trim referrer to origin on cross-origin navigations; full URL same-origin.
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# Disallow framing entirely (clickjacking). X-Frame-Options for legacy UAs;
+		# CSP frame-ancestors is the modern equivalent and is the only CSP directive
+		# we set (it does not require nonce wiring).
+		X-Frame-Options "DENY"
+		Content-Security-Policy "frame-ancestors 'none'"
+		# Force HTTPS for a year incl. subdomains. Origin sits behind a Cloudflare
+		# tunnel; asserting HSTS at the origin is correct hardening (CF may also
+		# assert it). No `preload` — that needs explicit sign-off.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		# Deny powerful browser features the app never uses.
+		Permissions-Policy "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), usb=()"
+		# Don't advertise the server software.
+		-Server
+	}
+
 	# Coarse request-body cap (DoS backstop). PB's per-field maxSize (20MB docs /
 	# 10MB cover / 5MB avatar) is the precise gate; this just stops absurd bodies
 	# from streaming into PB. Headroom above 20MB for multipart overhead.
