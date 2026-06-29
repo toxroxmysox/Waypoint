@@ -1,10 +1,16 @@
 import { json, error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
+import { checkRateLimit } from '$lib/server/rate-limit';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ url, locals }) => {
 	if (!locals.user) {
 		error(401, 'Unauthorized');
+	}
+	// Per-user cost-DoS throttle (#285): 120 req/min, burst 240. Stays UNCACHED
+	// (query-varying); Google session tokens + this bucket are the cost guard.
+	if (!checkRateLimit('places-autocomplete', locals.user.id)) {
+		error(429, 'Too many requests');
 	}
 	if (!env.GOOGLE_MAPS_API_KEY) {
 		error(503, 'Places service unavailable');
