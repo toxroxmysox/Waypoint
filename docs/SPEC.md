@@ -31,8 +31,8 @@ A self-hosted, mobile-first PWA that replaces the Google Doc / Google Sheet / Sp
 | Email delivery | **Resend** | Free tier 3000/month; clean API |
 | Analytics | **Umami** (self-hosted) | Privacy-first, no cookies, lightweight |
 | Reverse proxy + SSL | **Caddy** | Auto Let's Encrypt; trivial config |
-| Hosting (production) | **Home server ("basecamp" NAS) — live** (migrated off Fly.io 2026-06-27, public via Cloudflare Tunnel) | Open-source, self-hosted, low cost |
-| Hosting (preview) | Local dev / isolated PocketBase over Tailscale | The Fly.io bridge was retired once the NAS went live |
+| Hosting (production) | **Home server "basecamp"** — self-hosted, public via Cloudflare Tunnel. Infra → `homeserver-stacks/BASECAMP.md`; deploy → `docs/NAS_MIGRATION_RUNBOOK.md` | Open-source, self-hosted, low cost |
+| Hosting (preview) | Local dev / isolated PocketBase over Tailscale | — |
 | Backups | Nightly cron rsync of PocketBase SQLite to second location (B2/S3 or another box) | Cheap, simple, sufficient |
 
 ---

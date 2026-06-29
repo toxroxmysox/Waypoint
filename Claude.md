@@ -82,7 +82,17 @@ Multi-currency, push notifications, embedded maps, real-time co-editing, native 
 ## Dev environment
 
 `pnpm dev` (frontend) + `./backend/start.sh` (PB — never run pocketbase binary directly, it skips env vars).
-Deploys via GitHub Actions on push to main. Config in `deploy/`.
+
+## Deployment — basecamp
+
+Live on home server `basecamp` (migrated off Fly.io 2026-06-27; Fly + its CI removed). Shared infra facts (SSH, /volume1 layout, Caddy, DNS, restic→B2, secrets, gotchas) are canonical in `homeserver-stacks/BASECAMP.md` — don't restate them here.
+
+This app on basecamp:
+- Stack: `/volume1/docker/stacks/waypoint/`
+- Container @ port: `waypoint` @ host `127.0.0.1:8091` → internal `:8080`
+- Public: `app.vandenwarsen.com` (Cloudflare Tunnel); `/pb/_/` admin tailnet-only (`127.0.0.1:8091/pb/_/`)
+- Secrets: ~11 runtime (SMTP/Resend, `PB_ADMIN_*`, Maps, AeroDataBox) — LastPass; on-box `waypoint.env` chmod 600
+- Deploy runbook: `docs/NAS_MIGRATION_RUNBOOK.md`
 
 ---
 
