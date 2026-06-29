@@ -11,8 +11,11 @@ import type { Document } from '$lib/documents/types';
 // the browser a tokened PB URL) keeps tokens off the client and lets the future
 // service worker precache same-origin bytes (offline = S5).
 //
-// `?download=1` forces a download (Content-Disposition: attachment); otherwise
-// the browser renders inline (image in an <img>, PDF in its native viewer).
+// `?download=1` forces a download (Content-Disposition: attachment). Without
+// it, only PDFs and images render inline (image in an <img>, PDF in its native
+// viewer); any other content-type still downloads. Responses also carry
+// `X-Content-Type-Options: nosniff` so the browser can't sniff bytes into an
+// active type.
 export const GET: RequestHandler = async ({ params, locals, url }) => {
 	if (!locals.user) throw error(401, 'Not authenticated');
 
@@ -33,7 +36,13 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
 	}
 
 	const contentType = upstream.headers.get('content-type') ?? 'application/octet-stream';
-	const disposition = url.searchParams.has('download') ? 'attachment' : 'inline';
+	// Only render inline for content we trust the browser to display safely:
+	// PDFs and raster images (the upload allowlist is PDF + raster only — no
+	// SVG/HTML). Anything else downloads rather than renders, even on a GET
+	// without `?download`. An explicit `?download` always forces attachment.
+	const inlineable = contentType === 'application/pdf' || contentType.startsWith('image/');
+	const disposition =
+		url.searchParams.has('download') || !inlineable ? 'attachment' : 'inline';
 	// The stored filename carries a PB-generated suffix; keep it simple for the
 	// download name by using the caption when present, else the stored name.
 	const downloadName = (doc.caption?.trim() || doc.file).replace(/"/g, '');
@@ -41,6 +50,10 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
 	const headers = new Headers({
 		'content-type': contentType,
 		'content-disposition': `${disposition}; filename="${downloadName}"`,
+		// Belt-and-suspenders against MIME sniffing — the browser must honor the
+		// declared content-type and not re-interpret these bytes as something
+		// active (e.g. HTML).
+		'x-content-type-options': 'nosniff',
 		// These bytes are immutable per record; allow private caching.
 		'cache-control': 'private, max-age=3600'
 	});
