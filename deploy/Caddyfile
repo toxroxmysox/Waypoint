@@ -16,8 +16,11 @@
 		Content-Security-Policy "frame-ancestors 'none'"
 		# Force HTTPS for a year incl. subdomains. Origin sits behind a Cloudflare
 		# tunnel; asserting HSTS at the origin is correct hardening (CF may also
-		# assert it). No `preload` — that needs explicit sign-off.
-		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		# assert it). `preload` is set (Scott signed off, #288); the header alone is
+		# reversible — actual enforcement only begins once `app.vandenwarsen.com` is
+		# submitted at hstspreload.org (a manual step). Submit the APP host, not the
+		# apex, so includeSubDomains stays scoped to the app.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 		# Deny powerful browser features the app never uses.
 		Permissions-Policy "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), usb=()"
 		# Don't advertise the server software.
