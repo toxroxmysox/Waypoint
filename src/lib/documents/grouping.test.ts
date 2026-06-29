@@ -15,6 +15,9 @@ function doc(id: string, item: string, item_type?: string): DocumentView {
 		file: `${id}.pdf`,
 		caption: '',
 		uploaded_by: 'm1',
+		kind: 'file',
+		code_label: '',
+		code_value: '',
 		file_href: '',
 		uploader_name: 'A',
 		uploader_role: 'owner',
@@ -73,48 +76,75 @@ describe('documentTypeBreakdown', () => {
 	});
 });
 
-describe('itemsWithCodes', () => {
-	function item(id: string, type: ItemType, codes: { label: string; value: string }[]) {
-		return { id, title: id.toUpperCase(), type, confirmation_codes: codes };
+describe('itemsWithCodes (#268 — codes sourced from kind:code Documents)', () => {
+	function item(id: string, type: ItemType) {
+		return { id, title: id.toUpperCase(), type };
+	}
+	// A minimal kind:code Document shape (the helper only reads these fields).
+	function codeDoc(item: string, label: string, value: string) {
+		return { item, code_label: label, code_value: value, kind: 'code' as const };
 	}
 
-	it('returns one entry per code-bearing item, in input (sort_order) order', () => {
-		const out = itemsWithCodes([
-			item('a', 'lodging', [{ label: 'Conf #', value: 'ABC123' }]),
-			item('b', 'flight', [{ label: 'PNR', value: 'XYZ789' }])
-		]);
+	it('returns one entry per code-bearing item, in item (sort_order) order', () => {
+		const out = itemsWithCodes(
+			[item('a', 'lodging'), item('b', 'flight')],
+			[codeDoc('a', 'Conf #', 'ABC123'), codeDoc('b', 'PNR', 'XYZ789')]
+		);
 		expect(out.map((e) => e.item_id)).toEqual(['a', 'b']);
 		expect(out[0].item_type).toBe('lodging');
 		expect(out[0].codes).toHaveLength(1);
+		expect(out[0].codes[0]).toEqual({ label: 'Conf #', value: 'ABC123' });
 	});
 
-	it('omits items with no codes — independent of whether they have a document', () => {
-		const out = itemsWithCodes([
-			item('a', 'meal', []),
-			item('b', 'lodging', [{ label: 'C', value: 'X' }])
-		]);
+	it('omits items with no code docs — independent of whether they have a file', () => {
+		const out = itemsWithCodes(
+			[item('a', 'meal'), item('b', 'lodging')],
+			[codeDoc('b', 'C', 'X')]
+		);
 		expect(out.map((e) => e.item_id)).toEqual(['b']);
 	});
 
-	it('drops blank-value codes, and the item if every code is blank', () => {
-		const out = itemsWithCodes([
-			item('a', 'lodging', [{ label: 'C', value: '   ' }]),
-			item('b', 'flight', [
-				{ label: 'PNR', value: 'OK' },
-				{ label: 'Seat', value: '' }
-			])
-		]);
+	it('drops blank-value code docs, and the item if every code is blank', () => {
+		const out = itemsWithCodes(
+			[item('a', 'lodging'), item('b', 'flight')],
+			[codeDoc('a', 'C', '   '), codeDoc('b', 'PNR', 'OK'), codeDoc('b', 'Seat', '')]
+		);
 		expect(out.map((e) => e.item_id)).toEqual(['b']);
 		expect(out[0].codes).toHaveLength(1);
 	});
 
-	it('handles a missing confirmation_codes field and empty input', () => {
-		expect(itemsWithCodes([{ id: 'a', title: 'A', type: 'note' }])).toEqual([]);
-		expect(itemsWithCodes([])).toEqual([]);
+	it('groups multiple code docs onto the same item, in input order', () => {
+		const out = itemsWithCodes(
+			[item('a', 'lodging')],
+			[codeDoc('a', 'Conf #', 'ABC'), codeDoc('a', 'PIN', '4242')]
+		);
+		expect(out).toHaveLength(1);
+		expect(out[0].codes.map((c) => c.value)).toEqual(['ABC', '4242']);
+	});
+
+	it('ignores trip-scoped (item-less) code docs and non-code docs', () => {
+		const out = itemsWithCodes(
+			[item('a', 'lodging')],
+			[
+				codeDoc('', 'Trip', 'WIFI'), // trip-scoped — dropped
+				{ item: 'a', code_label: '', code_value: '', kind: 'file' as const }, // file — dropped
+				codeDoc('a', 'C', 'X')
+			]
+		);
+		expect(out.map((e) => e.item_id)).toEqual(['a']);
+		expect(out[0].codes).toHaveLength(1);
+	});
+
+	it('handles empty input', () => {
+		expect(itemsWithCodes([{ id: 'a', title: 'A', type: 'note' }], [])).toEqual([]);
+		expect(itemsWithCodes([], [])).toEqual([]);
 	});
 
 	it('falls back to "Item" when the title is blank', () => {
-		const out = itemsWithCodes([item('', 'activity', [{ label: 'C', value: 'X' }])]);
+		const out = itemsWithCodes(
+			[{ id: 'x', title: '', type: 'activity' as ItemType }],
+			[codeDoc('x', 'C', 'X')]
+		);
 		expect(out[0].item_title).toBe('Item');
 	});
 });

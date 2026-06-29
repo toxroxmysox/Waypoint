@@ -9,10 +9,12 @@ import type {
 	Expense,
 	Settlement,
 	TripGoal,
-	GoalVote
+	GoalVote,
+	Document
 } from '$lib/types';
 import { buildTripExport } from '$lib/portability/export';
 import { fetchManualChecklists } from '$lib/itinerary/checklist-loaders';
+import { codesByItem } from '$lib/documents/codes';
 
 export const GET: RequestHandler = async ({ params, locals }) => {
 	if (!locals.user) {
@@ -44,6 +46,14 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 
 	// Trip/phase-scoped manual checklists + their tasks (ADR-0003 §7).
 	const { checklists, tasks: checklistTasks } = await fetchManualChecklists(locals.pb, trip.id);
+
+	// #268 / ADR-0016 — confirmation codes now live as `kind: 'code'` Documents.
+	// Fetch them (oldest-first → creation order) and key by item id for the export.
+	const codeDocs = await locals.pb.collection('documents').getFullList<Document>({
+		filter: `trip = "${trip.id}" && kind = "code"`,
+		sort: 'created'
+	});
+	const codesByItemId = codesByItem(codeDocs);
 
 	// Snapshot-only sections (money ledger + goals + member key). Exported for the
 	// record; import deliberately skips them — see EXPORT COVERAGE in export.ts.
@@ -94,7 +104,8 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 		expenses,
 		settlements,
 		goals,
-		goalVotes
+		goalVotes,
+		codesByItemId
 	);
 	const filename = `waypoint-${trip.slug}-${new Date().toISOString().split('T')[0]}.json`;
 

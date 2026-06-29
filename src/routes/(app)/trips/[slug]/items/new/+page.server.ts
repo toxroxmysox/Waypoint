@@ -5,6 +5,7 @@ import { datetimeToTime } from '$lib/shell/format';
 import { combineDateTime } from '$lib/shell/trip-time';
 import { nextSortOrder } from '$lib/itinerary/sort-order';
 import { syncGoalLinks } from '$lib/itinerary/goal-links';
+import { reconcileItemCodes } from '$lib/documents/reconcile-codes';
 
 const PB_BASE = process.env.PUBLIC_PB_URL || 'http://127.0.0.1:8090';
 
@@ -342,12 +343,21 @@ export const actions: Actions = {
 			});
 			const nextOrder = nextSortOrder(existingItems.map((i) => Number(i.sort_order)));
 
+			// #268 / ADR-0016 — codes persist as `kind: 'code'` Documents, reconciled
+			// after the item exists (below). Drop them from the item create so the
+			// legacy json field stays inert.
+			const { confirmation_codes: _codes, ...itemPayload } = payload;
 			const created = await locals.pb.collection('items').create<{ id: string }>({
-				...payload,
+				...itemPayload,
 				sort_order: nextOrder,
 				created_by: membership.id,
 				status: day ? 'planned' : 'unplanned'
 			});
+
+			// Reconcile the new item's code Documents from the submitted list (create
+			// only — there are none yet to update/delete). Goes through locals.pb so
+			// rules + the file-XOR-code hook apply.
+			await reconcileItemCodes(locals.pb, trip.id, created.id, confirmationCodes);
 
 			// Link the new item to the goals it addresses (goal-side write).
 			if (goalIds.length > 0) {

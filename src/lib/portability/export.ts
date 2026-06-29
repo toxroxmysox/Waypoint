@@ -10,7 +10,8 @@ import type {
 	Settlement,
 	TripGoal,
 	GoalVote,
-	TripExport
+	TripExport,
+	ConfirmationCode
 } from '$lib/types';
 
 /**
@@ -64,7 +65,12 @@ export function buildTripExport(
 	expenses: Expense[] = [],
 	settlements: Settlement[] = [],
 	goals: TripGoal[] = [],
-	goalVotes: GoalVote[] = []
+	goalVotes: GoalVote[] = [],
+	// #268 / ADR-0016 — codes now live as `kind: 'code'` Documents, not on the item.
+	// Callers source them from documents and pass them here keyed by item id; when
+	// omitted, fall back to the item's (now-inert) legacy field so unit fixtures and
+	// the public-strip path keep working.
+	codesByItemId?: Map<string, ConfirmationCode[]>
 ): TripExport {
 	const phaseMap = new Map(phases.map((p) => [p.id, p]));
 	const dayMap = new Map(days.map((d) => [d.id, d]));
@@ -125,7 +131,11 @@ export function buildTripExport(
 				status: item.status,
 				booked: item.booked,
 				requires_booking: item.requires_booking ?? false,
-				confirmation_codes: item.confirmation_codes || [],
+				// #268 / ADR-0016 — prefer the documents-sourced codes; fall back to the
+				// item's inert legacy field only when the caller passed no map.
+				confirmation_codes: codesByItemId
+					? (codesByItemId.get(item.id) ?? [])
+					: item.confirmation_codes || [],
 				cost_estimate_usd: item.cost_estimate_usd || 0,
 				cost_actual_usd: item.cost_actual_usd || 0,
 				reservation_url: item.reservation_url || '',

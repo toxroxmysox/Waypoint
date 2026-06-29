@@ -3,6 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 import type { Item, Checklist, Task, TripMember, Vote, Comment, Document, Expense, TripGoal } from '$lib/types';
 import { VOTE_OPTIONS, type VoteValue } from '$lib/collaboration/voting';
 import { toDocumentView } from '$lib/documents/view';
+import { isFileDocument, codesForItem } from '$lib/documents/codes';
 import { memberAvatarUrl, withAvatarUrls } from '$lib/collaboration/member-avatar';
 import { computeMovePatch } from '$lib/itinerary/move-item';
 import { paidSummaryForItem } from '$lib/money/linked-expenses';
@@ -72,7 +73,15 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 
 	const linkedGoals = tripGoals.filter((g) => (g.items ?? []).includes(item.id));
 
-	const documents = rawDocuments.map((d) => toDocumentView(d, trip.slug, item));
+	// #268 / ADR-0016 — codes are now `kind: 'code'` Documents. Only file docs
+	// render as cards in the DocumentSection; code docs re-source the item's
+	// `confirmation_codes` (oldest-first → creation order) so the inline editor and
+	// the view-mode Booking section read from the canonical home.
+	const documents = rawDocuments
+		.filter(isFileDocument)
+		.map((d) => toDocumentView(d, trip.slug, item));
+	const codeDocsOldestFirst = [...rawDocuments].reverse();
+	item.confirmation_codes = codesForItem(codeDocsOldestFirst, item.id);
 
 	// Annotate comments with author display info from the expand.
 	const comments = rawComments.map((c) => {

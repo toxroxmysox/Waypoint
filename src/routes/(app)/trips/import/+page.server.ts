@@ -91,7 +91,7 @@ export const actions: Actions = {
 			for (const item of importData.items) {
 				const phaseId = item.phase_name ? phaseMap.get(item.phase_name) || '' : '';
 				const dayId = item.day_date ? dayMap.get(item.day_date) || '' : '';
-				await locals.pb.collection('items').create({
+				const createdItem = await locals.pb.collection('items').create<{ id: string }>({
 					trip: trip.id,
 					phase: phaseId,
 					day: dayId,
@@ -111,13 +111,29 @@ export const actions: Actions = {
 					status: item.status || 'planned',
 					booked: item.booked || false,
 					requires_booking: item.requires_booking || false,
-					confirmation_codes: item.confirmation_codes || [],
+					// #268 / ADR-0016 — codes import as `kind: 'code'` Documents (below),
+					// not on the item. The legacy json field stays inert.
 					cost_estimate_usd: item.cost_estimate_usd || 0,
 					cost_actual_usd: item.cost_actual_usd || 0,
 					reservation_url: item.reservation_url || '',
 					notes: item.notes || '',
 					order: 0
 				});
+
+				// #268 / ADR-0016 — re-create the item's confirmation codes as code
+				// Documents. Through locals.pb so the documents create hook pins
+				// uploaded_by to the importing owner + the XOR guard applies.
+				for (const code of item.confirmation_codes || []) {
+					const value = (code?.value ?? '').trim();
+					if (!value) continue;
+					await locals.pb.collection('documents').create({
+						kind: 'code',
+						trip: trip.id,
+						item: createdItem.id,
+						code_label: (code?.label ?? '').trim(),
+						code_value: value
+					});
+				}
 			}
 
 			// Checklists + tasks (ADR-0003 §7). Re-link phase via phase_name;

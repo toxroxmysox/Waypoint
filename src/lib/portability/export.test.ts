@@ -117,6 +117,32 @@ describe('buildTripExport', () => {
 		expect(result.items[0].requires_booking).toBe(true);
 	});
 
+	// #268 / ADR-0016 — codes now come from `kind:code` Documents, passed as a
+	// map keyed by item id. The map WINS over the item's (inert) legacy field.
+	it('sources confirmation_codes from the documents map when provided', () => {
+		const items = [
+			{ id: 'i1', type: 'lodging', title: 'Hotel', status: 'planned', confirmation_codes: [{ label: 'STALE', value: 'OLD' }] } as Item,
+			{ id: 'i2', type: 'flight', title: 'Flight', status: 'planned' } as Item
+		];
+		const codesByItemId = new Map([
+			['i1', [{ label: 'Conf #', value: 'ABC123' }]],
+			['i2', [{ label: 'PNR', value: 'XYZ789' }]]
+		]);
+		const result = buildTripExport(makeTrip(), [], [], items, null, [], [], [], [], [], [], [], codesByItemId);
+		// Documents map wins over the legacy field; the item with no doc gets its map entry.
+		expect(result.items[0].confirmation_codes).toEqual([{ label: 'Conf #', value: 'ABC123' }]);
+		expect(result.items[1].confirmation_codes).toEqual([{ label: 'PNR', value: 'XYZ789' }]);
+	});
+
+	it('emits empty confirmation_codes for an item absent from the documents map', () => {
+		const items = [
+			{ id: 'i1', type: 'lodging', title: 'Hotel', status: 'planned', confirmation_codes: [{ label: 'STALE', value: 'OLD' }] } as Item
+		];
+		// Empty map → the item has no code docs → no codes exported (legacy field ignored).
+		const result = buildTripExport(makeTrip(), [], [], items, null, [], [], [], [], [], [], [], new Map());
+		expect(result.items[0].confirmation_codes).toEqual([]);
+	});
+
 	it('exports checklists with checked preserved and assignee stripped (#53)', () => {
 		const phases: Phase[] = [
 			{ id: 'p1', trip: 'trip1', name: 'Barcelona', location: '', country_code: '', start_date: '', end_date: '', order: 0, collectionId: '', collectionName: 'phases', created: '', updated: '' }

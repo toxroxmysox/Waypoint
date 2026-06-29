@@ -113,12 +113,38 @@ routerAdd('POST', '/api/suggestions/create', (e) => {
 		item.set('cost_estimate_usd', Number(payload.cost_estimate_usd) || 0);
 		item.set('cost_actual_usd', Number(payload.cost_actual_usd) || 0);
 		item.set('assigned_to', Array.isArray(payload.assigned_to) ? payload.assigned_to : []);
-		item.set('confirmation_codes', Array.isArray(payload.confirmation_codes) ? payload.confirmation_codes : []);
+		// #268 / ADR-0016 — codes persist as `kind: 'code'` Documents, not on the
+		// item. Leave the legacy json field inert; create code docs below.
 		item.set('sort_order', 0);
 		item.set('created_by', callerMember.id);
 		item.set('status', payload.day ? 'planned' : 'unplanned');
 		e.app.save(item);
 		itemId = item.id;
+
+		// #268 / ADR-0016 — persist the submitted confirmation codes as `kind: 'code'`
+		// Documents (rows), scoped to the new item. uploaded_by = the suggesting
+		// member (this is a direct save in admin context — the documents.pb.js request
+		// hooks don't fire, so set it explicitly). Value-less codes are skipped.
+		const submittedCodes = Array.isArray(payload.confirmation_codes)
+			? payload.confirmation_codes
+			: [];
+		if (submittedCodes.length > 0) {
+			const docsCol = e.app.findCollectionByNameOrId('documents');
+			for (const entry of submittedCodes) {
+				if (!entry || typeof entry !== 'object') continue;
+				const label = entry.label == null ? '' : String(entry.label).trim();
+				const value = entry.value == null ? '' : String(entry.value).trim();
+				if (value === '') continue;
+				const codeDoc = new Record(docsCol);
+				codeDoc.set('kind', 'code');
+				codeDoc.set('trip', tripId);
+				codeDoc.set('item', itemId);
+				codeDoc.set('code_label', label);
+				codeDoc.set('code_value', value);
+				codeDoc.set('uploaded_by', callerMember.id);
+				e.app.save(codeDoc);
+			}
+		}
 	}
 
 	return e.json(200, {
@@ -351,7 +377,8 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 		item.set('cost_estimate_usd', Number(payload.cost_estimate_usd) || 0);
 		item.set('cost_actual_usd', Number(payload.cost_actual_usd) || 0);
 		item.set('assigned_to', Array.isArray(payload.assigned_to) ? payload.assigned_to : []);
-		item.set('confirmation_codes', Array.isArray(payload.confirmation_codes) ? payload.confirmation_codes : []);
+		// #268 / ADR-0016 — codes persist as `kind: 'code'` Documents, not on the
+		// item. Leave the legacy json field inert; create code docs below.
 		item.set('sort_order', 0);
 		// #249 LETHAL ATTRIBUTION SCAR — created_by is a trip_members.id (migration
 		// 0006), and approval attributes the item to the SUGGESTION'S AUTHOR, never
@@ -364,6 +391,33 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 		landingPhaseId = resolvedPhase;
 		landingDayId = payload.day || '';
 		approvedTitle = payload.title || '';
+
+		// #268 / ADR-0016 — persist the (possibly owner-edited) confirmation codes as
+		// `kind: 'code'` Documents scoped to the approved item. uploaded_by = the
+		// suggestion author (mirrors created_by attribution), falling back to the
+		// reviewer. Direct save in admin context — set uploaded_by explicitly; the
+		// documents.pb.js request hooks don't fire. Value-less codes are skipped.
+		const submittedCodes = Array.isArray(payload.confirmation_codes)
+			? payload.confirmation_codes
+			: [];
+		if (submittedCodes.length > 0) {
+			const docsCol = e.app.findCollectionByNameOrId('documents');
+			const codeUploader = authorMemberId || callerMember.id;
+			for (const entry of submittedCodes) {
+				if (!entry || typeof entry !== 'object') continue;
+				const label = entry.label == null ? '' : String(entry.label).trim();
+				const value = entry.value == null ? '' : String(entry.value).trim();
+				if (value === '') continue;
+				const codeDoc = new Record(docsCol);
+				codeDoc.set('kind', 'code');
+				codeDoc.set('trip', tripId);
+				codeDoc.set('item', itemId);
+				codeDoc.set('code_label', label);
+				codeDoc.set('code_value', value);
+				codeDoc.set('uploaded_by', codeUploader);
+				e.app.save(codeDoc);
+			}
+		}
 
 		// #249 — migrate the ghost's votes onto the new item: each suggestion_vote
 		// (same member + value) becomes a votes row on the real item. The suggestion
