@@ -3,11 +3,16 @@ import type { Actions, PageServerLoad } from './$types';
 import type { Document, Item } from '$lib/types';
 import { toDocumentView } from '$lib/documents/view';
 import { documentTypeBreakdown, itemsWithCodes } from '$lib/documents/grouping';
+import { isFileDocument } from '$lib/documents/codes';
 
 export const load: PageServerLoad = async ({ parent, locals }) => {
 	const { trip, membership } = await parent();
 
-	const [rawDocuments, items] = await Promise.all([
+	// #268 / ADR-0016 — codes now live as `kind: 'code'` Documents. Fetch the whole
+	// trip's documents once; split file rows (the cards) from code rows (the codes
+	// section). File rows keep newest-first; code rows come back oldest-first so the
+	// section reads in creation order.
+	const [allDocuments, items] = await Promise.all([
 		locals.pb.collection('documents').getFullList<Document>({
 			filter: `trip = "${trip.id}"`,
 			sort: '-created',
@@ -16,14 +21,19 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 		locals.pb.collection('items').getFullList<Item>({
 			filter: `trip = "${trip.id}"`,
 			sort: 'sort_order',
-			// confirmation_codes rides along so the Documents tab can surface every
-			// code-bearing item (#205), even ones with no uploaded file. No schema change.
-			fields: 'id,type,title,confirmation_codes'
+			fields: 'id,type,title'
 		})
 	]);
 
 	const itemMap = new Map(items.map((i) => [i.id, i]));
-	const documents = rawDocuments.map((d) => toDocumentView(d, trip.slug, itemMap.get(d.item)));
+	// Only file artifacts render as document cards; code rows surface in the codes
+	// section below (a code doc has no file → would render as a broken card).
+	const fileDocs = allDocuments.filter(isFileDocument);
+	const documents = fileDocs.map((d) => toDocumentView(d, trip.slug, itemMap.get(d.item)));
+
+	// Code docs, oldest-first (reverse the newest-first fetch) so the codes section
+	// reads in creation order.
+	const codeDocs = allDocuments.filter((d) => d.kind === 'code').reverse();
 
 	// Lightweight list for the add-sheet scope selector ("Whole trip" or an item).
 	const itemOptions = items.map((i) => ({ id: i.id, title: i.title, type: i.type }));
@@ -34,7 +44,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 		documents,
 		itemOptions,
 		// Every item carrying a confirmation code, for the dedicated Documents section.
-		itemCodes: itemsWithCodes(items),
+		itemCodes: itemsWithCodes(items, codeDocs),
 		documentSummary: {
 			total: documents.length,
 			breakdown: documentTypeBreakdown(documents)

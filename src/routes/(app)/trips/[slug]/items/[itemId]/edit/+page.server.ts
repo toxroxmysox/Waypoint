@@ -4,6 +4,9 @@ import type { Item, TripGoal, TripMember } from '$lib/types';
 import { datetimeToTime } from '$lib/shell/format';
 import { combineDateTime } from '$lib/shell/trip-time';
 import { syncGoalLinks } from '$lib/itinerary/goal-links';
+import type { Document } from '$lib/types';
+import { codesForItem } from '$lib/documents/codes';
+import { reconcileItemCodes } from '$lib/documents/reconcile-codes';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, membership, phases, days } = await parent();
@@ -46,12 +49,21 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	});
 	const linkedGoalIds = goals.filter((g) => (g.items ?? []).includes(item.id)).map((g) => g.id);
 
+	// #268 / ADR-0016 — reshape the item's `kind: 'code'` Documents back into the
+	// `{ label, value }[]` the inline editor expects (oldest-first → creation order),
+	// so the form populates from the canonical home, not the inert legacy json field.
+	const codeDocs = await locals.pb.collection('documents').getFullList<Document>({
+		filter: `item = "${item.id}" && kind = "code"`,
+		sort: 'created'
+	});
+
 	return {
 		item: {
 			...item,
 			start_time: datetimeToTime(item.start_time ?? ''),
 			end_time: datetimeToTime(item.end_time ?? ''),
 			end_date: String(item.end_date ?? '').split(/[T ]/)[0],
+			confirmation_codes: codesForItem(codeDocs, item.id),
 			linked_goal_ids: linkedGoalIds
 		},
 		members,
@@ -191,13 +203,20 @@ export const actions: Actions = {
 				end_tz: resolvedType === 'flight' ? endTzRaw : '',
 				booked,
 				requires_booking: requiresBooking,
-				confirmation_codes: confirmationCodes,
+				// #268 / ADR-0016 — codes no longer persist on the item; they reconcile
+				// into `kind: 'code'` Documents below. The legacy json field is left inert.
 				reservation_url: reservationUrl,
 				free_cancellation: freeCancellation,
 				cost_estimate_usd: costEstimate,
 				assigned_to: assignedTo,
 				status: resolvedStatus
 			});
+
+			// #268 / ADR-0016 — reconcile the item's code Documents against the
+			// submitted list: upsert by (label, value), delete the removed. Touches
+			// only this item's code docs; goes through locals.pb so rules + the
+			// file-XOR-code hook apply.
+			await reconcileItemCodes(locals.pb, item['trip'] as string, params.itemId, confirmationCodes);
 
 			// Reconcile goal links (add to newly-selected goals, remove from de-selected).
 			await syncGoalLinks(locals.pb, trip.id, params.itemId, goalIds);

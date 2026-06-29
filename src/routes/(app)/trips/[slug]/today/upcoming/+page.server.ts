@@ -1,6 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import type { Day, Item } from '$lib/types';
+import type { Day, Item, Document } from '$lib/types';
+import { attachCodesToItems } from '$lib/documents/codes';
 import { tripNow, tripTz } from '$lib/shell/trip-time';
 import { isTripActive } from '$lib/trip-mode/activation';
 
@@ -27,6 +28,16 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 				sort: 'day,start_time,sort_order'
 			})
 		: [];
+
+	// #268 / ADR-0016 — the TripModeCard renders `item.confirmation_codes`, which now
+	// live as `kind: 'code'` Documents. Re-source them onto the cards.
+	if (items.length > 0) {
+		const codeDocs = await locals.pb.collection('documents').getFullList<Document>({
+			filter: `trip = "${trip.id}" && kind = "code"`,
+			sort: 'created'
+		});
+		attachCodesToItems(items, codeDocs);
+	}
 
 	return { items, now: now.toISOString() };
 };

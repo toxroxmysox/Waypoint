@@ -1,6 +1,7 @@
 import type { ItemType } from '$lib/types';
 import type { ConfirmationCode } from '$lib/itinerary/types';
-import type { DocumentView } from './types';
+import type { Document, DocumentView } from './types';
+import { codesByItem } from './codes';
 
 // Aggregate grouping for the Trip Documents view (#71): the Trip-level group
 // first, then item-type groups in a fixed order. Empty groups are omitted.
@@ -67,12 +68,16 @@ export function documentTypeBreakdown(docs: DocumentView[]): { label: string; co
 	return groupDocuments(docs).map((g) => ({ label: g.label, count: g.docs.length }));
 }
 
-// Confirmation codes live on the item, not the file (#205). A member hunting for
-// "the hotel code" looks in Documents — so the aggregate surfaces every
-// code-bearing item in one dedicated section, INDEPENDENT of whether that item
-// has an uploaded document (a booking often has a code and no PDF). Read-only;
-// edits stay on item detail. Items arrive in itinerary (sort_order) order; blank
-// values are dropped, and an item with no non-blank codes is omitted entirely.
+// Confirmation codes live in the Documents collection as `kind: 'code'` rows
+// (#268 / ADR-0016), not on the item. A member hunting for "the hotel code" looks
+// in Documents — so the aggregate surfaces every code-bearing item in one
+// dedicated section, INDEPENDENT of whether that item also has an uploaded file (a
+// booking often has a code and no PDF). Read-only here; edits stay on item detail.
+//
+// Code Documents are passed already ordered (the loader fetches oldest-first);
+// items supply the title/type and the itinerary (sort_order) ordering of the
+// sections. Trip-scoped code docs (no item) are dropped — codes are item-bound in
+// the UI. An item with no codes is omitted entirely.
 export interface ItemCodes {
 	item_id: string;
 	item_title: string;
@@ -81,12 +86,14 @@ export interface ItemCodes {
 }
 
 export function itemsWithCodes(
-	items: { id: string; title: string; type: ItemType; confirmation_codes?: ConfirmationCode[] }[]
+	items: { id: string; title: string; type: ItemType }[],
+	codeDocs: Pick<Document, 'item' | 'code_label' | 'code_value' | 'kind'>[]
 ): ItemCodes[] {
+	const byItem = codesByItem(codeDocs);
 	const out: ItemCodes[] = [];
 	for (const it of items) {
-		const codes = (it.confirmation_codes ?? []).filter((c) => c.value?.trim());
-		if (codes.length === 0) continue;
+		const codes = byItem.get(it.id);
+		if (!codes || codes.length === 0) continue;
 		out.push({ item_id: it.id, item_title: it.title || 'Item', item_type: it.type, codes });
 	}
 	return out;

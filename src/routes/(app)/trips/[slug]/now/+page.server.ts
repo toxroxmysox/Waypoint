@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Trip, Day, Item, Checklist, Task, TripMember, Vote } from '$lib/types';
+import type { Trip, Day, Item, Checklist, Task, TripMember, Vote, Document } from '$lib/types';
+import { attachCodesToItems } from '$lib/documents/codes';
 import { tripNow, tripTz } from '$lib/shell/trip-time';
 import { isTripActive } from '$lib/trip-mode/activation';
 import { fetchManualChecklists } from '$lib/itinerary/checklist-loaders';
@@ -79,6 +80,16 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	]);
 	const votesByItem: Record<string, Vote[]> = {};
 	for (const v of votes) (votesByItem[v.item] ??= []).push(v);
+
+	// #268 / ADR-0016 — the TripModeCard renders `item.confirmation_codes`, but codes
+	// now live as `kind: 'code'` Documents (the legacy json field is inert). Re-source
+	// them onto today's + tomorrow's cards (oldest-first → creation order).
+	const codeDocs = await locals.pb.collection('documents').getFullList<Document>({
+		filter: `trip = "${trip.id}" && kind = "code"`,
+		sort: 'created'
+	});
+	attachCodesToItems(todayItems, codeDocs);
+	attachCodesToItems(tomorrowItems, codeDocs);
 
 	// Trip Mode checklists (#52): read + check-off in place (Slice B). Trip/phase-
 	// scoped manual lists only; item-scoped lists stay on their Item.
