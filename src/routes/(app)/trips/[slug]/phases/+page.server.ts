@@ -1,6 +1,8 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Item, Phase, Vote } from '$lib/types';
+import { validateNewPhaseStart, toDay } from '$lib/itinerary/phase-tiling';
+import { applyRetile } from '$lib/itinerary/phase-tiling.server';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
 	const { trip, membership, phases } = await parent();
@@ -49,39 +51,40 @@ export const actions: Actions = {
 		const location = data.get('location')?.toString().trim() || '';
 		const countryCode = data.get('country_code')?.toString().trim() || '';
 		const startDate = data.get('start_date')?.toString();
-		const endDate = data.get('end_date')?.toString();
 		if (!name) return fail(400, { error: 'Phase name is required.' });
-		if (!startDate || !endDate) return fail(400, { error: 'Start and end dates are required.' });
-		if (new Date(startDate) > new Date(endDate)) {
-			return fail(400, { error: 'Start date must be before end date.' });
-		}
+		if (!startDate) return fail(400, { error: 'A start day is required.' });
 
-		const tripStart = (trip['start_date'] as string).split('T')[0].split(' ')[0];
-		const tripEnd = (trip['end_date'] as string).split('T')[0].split(' ')[0];
-		if (startDate < tripStart || endDate > tripEnd) {
-			return fail(400, {
-				error: `Phase dates must fall within the trip (${tripStart} to ${tripEnd}). Edit the trip dates first if you need a wider range.`
-			});
-		}
+		const tripStart = toDay(String(trip['start_date']));
+		const tripEnd = toDay(String(trip['end_date']));
+
+		// Boundary model (ADR-0021): a phase is defined by its start day; its end is
+		// derived from the next phase's start. Validate the start splits an existing
+		// segment; applyRetile then recomputes every phase's end + order.
+		const existing = await locals.pb.collection('phases').getFullList({
+			filter: `trip = "${trip.id}"`,
+			fields: 'start_date'
+		});
+		const validationError = validateNewPhaseStart(
+			startDate,
+			tripStart,
+			tripEnd,
+			existing.map((p) => String(p['start_date']))
+		);
+		if (validationError) return fail(400, { error: validationError });
 
 		try {
-			const existing = await locals.pb.collection('phases').getFullList({
-				filter: `trip = "${trip.id}"`,
-				sort: '-order',
-				fields: 'order'
-			});
-			const nextOrder = existing.length > 0 ? Number(existing[0]['order']) + 1 : 0;
-
+			// Placeholder end = trip end; applyRetile immediately corrects it to the
+			// next phase's start. order is likewise corrected by applyRetile.
 			await locals.pb.collection('phases').create({
 				trip: trip.id,
 				name,
 				location,
 				country_code: countryCode,
-				start_date: startDate + ' 00:00:00.000Z',
-				end_date: endDate + ' 00:00:00.000Z',
-				order: nextOrder
+				start_date: toDay(startDate) + ' 00:00:00.000Z',
+				end_date: tripEnd + ' 00:00:00.000Z',
+				order: 0
 			});
-
+			await applyRetile(locals.pb, trip.id, tripEnd);
 			return { success: true };
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : 'Failed to create phase.';

@@ -152,33 +152,19 @@
 					/>
 				</div>
 
-				<div class="grid grid-cols-2 gap-3">
-					<div class="min-w-0">
-						<label for="start_date" class="text-ink-soft block text-sm font-medium">Start</label>
-						<input
-							type="date"
-							id="start_date"
-							name="start_date"
-							required
-							value={tripStart}
-							min={tripStart || undefined}
-							max={tripEnd || undefined}
-							class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
-						/>
-					</div>
-					<div class="min-w-0">
-						<label for="end_date" class="text-ink-soft block text-sm font-medium">End</label>
-						<input
-							type="date"
-							id="end_date"
-							name="end_date"
-							required
-							value={tripStart}
-							min={tripStart || undefined}
-							max={tripEnd || undefined}
-							class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
-						/>
-					</div>
+				<div>
+					<label for="start_date" class="text-ink-soft block text-sm font-medium">Starts</label>
+					<input
+						type="date"
+						id="start_date"
+						name="start_date"
+						required
+						value={tripStart}
+						min={tripStart || undefined}
+						max={tripEnd || undefined}
+						class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
+					/>
+					<p class="text-ink-muted mt-1 text-xs">Runs until the next phase begins (or the end of the trip).</p>
 				</div>
 
 				<div>
