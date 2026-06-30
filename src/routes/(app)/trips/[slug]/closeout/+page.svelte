@@ -4,6 +4,7 @@
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import CloseoutDayCard from '$lib/itinerary/components/CloseoutDayCard.svelte';
 	import PublishControl from '$lib/portability/components/PublishControl.svelte';
+	import { tripToday, tripTz } from '$lib/shell/trip-time';
 	import type { Day, Item } from '$lib/types';
 	import { untrack } from 'svelte';
 
@@ -265,6 +266,7 @@
 								bind:publishDate
 								bind:showBudget
 								showBudgetToggle={true}
+								today={tripToday(tripTz(data.trip))}
 							/>
 						</div>
 					{/if}

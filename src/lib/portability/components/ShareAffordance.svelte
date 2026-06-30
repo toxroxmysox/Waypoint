@@ -20,6 +20,7 @@
 		archiveEnabled = false,
 		publishDate = '',
 		showBudget = false,
+		today = '',
 		canManage = false
 	}: {
 		url?: string;
@@ -27,6 +28,8 @@
 		archiveEnabled?: boolean;
 		publishDate?: string;
 		showBudget?: boolean;
+		/** Trip-LOCAL today (YYYY-MM-DD) for the publish-date default (#301). */
+		today?: string;
 		canManage?: boolean;
 	} = $props();
 
@@ -124,7 +127,7 @@
 					editing = false;
 					await update({ reset: false });
 				}}>
-					<PublishControl bind:publish bind:publishDate={editDate} bind:showBudget={editBudget} showBudgetToggle={true} />
+					<PublishControl bind:publish bind:publishDate={editDate} bind:showBudget={editBudget} showBudgetToggle={true} {today} />
 					<div class="mt-3 flex items-center gap-2">
 						<button type="submit" class="bg-ink text-on-ink rounded-md px-3 py-1.5 text-xs font-semibold">Save</button>
 						<button type="button" onclick={() => (editing = false)} class="text-ink-muted px-2 py-1.5 text-xs">Cancel</button>

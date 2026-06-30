@@ -7,7 +7,8 @@ import { summarizeDays } from '$lib/itinerary/day-card';
 import { getTripLifecycle } from '$lib/trip-mode/trip-lifecycle';
 import { simplifyDebts } from '$lib/money/debt-simplify';
 import { buildArchiveView } from '$lib/portability/archive-view';
-import { publishStatus } from '$lib/portability/archive-visibility';
+import { publishStatus, resolvePublishDay } from '$lib/portability/archive-visibility';
+import { tripToday, tripTz } from '$lib/shell/trip-time';
 import { needsOnboarding } from '$lib/collaboration/onboarding';
 
 // Overview checklist previews (#51): roll up each manual, non-item-scoped
@@ -92,7 +93,9 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 				archiveEnabled: trip.archive_enabled,
 				// Pre-seed the date control on re-edit: a scheduled record carries its date.
 				publishDate: status.status === 'scheduled' ? status.date : '',
-				showBudget: trip.archive_show_budget
+				showBudget: trip.archive_show_budget,
+				// #301: trip-LOCAL today for the publish-date default (matches the gate).
+				today: tripToday(tripTz(trip))
 			},
 			// Planning-Overview keys, defaulted — the page never reads them when closed,
 			// but a consistent shape keeps the page-data union from narrowing them to
@@ -188,6 +191,7 @@ type ClosedShare = {
 	archiveEnabled: boolean;
 	publishDate: string;
 	showBudget: boolean;
+	today: string;
 };
 
 // Helper inlined per action (server load can't share a closure with actions): resolve
@@ -265,13 +269,15 @@ export const actions: Actions = {
 				updates.archive_enabled = false;
 				updates.archive_publish_at = '';
 			} else if (publish) {
-				const rawDate = (data.get('publish_date')?.toString() || '').split(/[T ]/)[0];
-				const today = new Date().toISOString().split('T')[0];
-				const day = rawDate || today;
+				// #301: default "publish now" to the trip-LOCAL today (matching the
+				// visibility gate), never the UTC date — see resolvePublishDay.
+				const trip = await locals.pb.collection('trips').getOne(gate.tripId);
+				const day = resolvePublishDay(data.get('publish_date')?.toString() || '', {
+					timezone: trip.timezone
+				});
 				updates.archive_publish_at = `${day} 00:00:00.000Z`;
 				updates.archive_enabled = true;
 				updates.archive_show_budget = showBudget;
-				const trip = await locals.pb.collection('trips').getOne(gate.tripId);
 				if (!trip.public_share_token) {
 					const { generateArchiveToken } = await import('$lib/portability/archive-token');
 					updates.public_share_token = generateArchiveToken();

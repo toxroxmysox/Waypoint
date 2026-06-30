@@ -2,6 +2,7 @@ import { fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Item, TripMember } from '$lib/types';
 import { getTripLifecycle } from '$lib/trip-mode/trip-lifecycle';
+import { resolvePublishDay } from '$lib/portability/archive-visibility';
 
 // Closeout wizard loader (#240/#195 — Slice 2).
 //
@@ -227,9 +228,12 @@ export const actions: Actions = {
 				const publish = data.get('publish')?.toString() === 'on';
 				const showBudget = data.get('show_budget')?.toString() === 'on';
 				if (publish) {
-					const rawDate = (data.get('publish_date')?.toString() || '').split(/[T ]/)[0];
-					const today = new Date().toISOString().split('T')[0];
-					const day = rawDate || today;
+					// #301: default "publish now" to the trip-LOCAL today (matching the
+					// visibility gate), never the UTC date — a blank/today value must read
+					// live, not schedule to tomorrow, evening in a behind-UTC zone.
+					const day = resolvePublishDay(data.get('publish_date')?.toString() || '', {
+						timezone: trip.timezone
+					});
 					updates.archive_publish_at = `${day} 00:00:00.000Z`;
 					updates.archive_enabled = true;
 					updates.archive_show_budget = showBudget;

@@ -86,7 +86,15 @@ test.describe('Closeout leaves checklists untouched (#53)', () => {
 		await page.waitForURL(`${BASE}/trips/${tripSlug}`, { timeout: 10000 });
 
 		// Add an item to Day 2 so its card has something to mark "All done".
-		const dayLinks = page.locator(`a[href^="/trips/${tripSlug}/days/"]:visible`);
+		// Scope to the itinerary DAY CARDS, not every "/days/" anchor: the empty-trip
+		// welcome card renders an "Open day one" hero that ALSO links to days/<firstDayId>
+		// (= Day 1's href). Counting raw anchors put nth(1) on that duplicate (Day 1)
+		// instead of Day 2, so the item landed on Day 1 and the Day-2 card stayed empty —
+		// "All done" never rendered (#300). Day cards always render the "N items" metric;
+		// the hero button does not, so filter on it to select real day cards in date order.
+		const dayLinks = page
+			.locator(`a[href^="/trips/${tripSlug}/days/"]:visible`)
+			.filter({ hasText: /\bitems?\b/ });
 		await expect(dayLinks.nth(1)).toBeVisible({ timeout: 5000 });
 		await dayLinks.nth(1).click();
 		await page.getByRole('link', { name: /^Add item$/i }).filter({ visible: true }).first().click();

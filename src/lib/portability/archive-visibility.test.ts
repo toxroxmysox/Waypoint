@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isArchiveVisible, publishStatus } from './archive-visibility';
+import { isArchiveVisible, publishStatus, resolvePublishDay } from './archive-visibility';
 import type { ArchiveVisibilityTrip } from './archive-visibility';
 
 // Prior art: archive-view.test.ts. These assert EXTERNAL behavior — (trip, now) in,
@@ -135,5 +135,43 @@ describe('publishStatus (#241)', () => {
 		expect(publishStatus(trip({ archive_publish_at: '2026-06-01' }), now)).toEqual({
 			status: 'live'
 		});
+	});
+});
+
+describe('resolvePublishDay (#301)', () => {
+	it('an explicit date is used as-is (date portion only)', () => {
+		expect(resolvePublishDay('2026-07-04', trip(), new Date('2026-06-15T12:00:00Z'))).toBe(
+			'2026-07-04'
+		);
+		expect(
+			resolvePublishDay('2026-07-04 00:00:00.000Z', trip(), new Date('2026-06-15T12:00:00Z'))
+		).toBe('2026-07-04');
+	});
+
+	it('a blank value defaults to the trip-LOCAL today, never UTC', () => {
+		// 2026-06-15 02:00Z == 2026-06-14 22:00 New York. The UTC date is the 15th, but
+		// the trip-local date is still the 14th — "publish now" must store the 14th.
+		const n = new Date('2026-06-15T02:00:00Z');
+		expect(resolvePublishDay('', trip({ timezone: 'America/New_York' }), n)).toBe('2026-06-14');
+		expect(resolvePublishDay('', trip({ timezone: 'UTC' }), n)).toBe('2026-06-15');
+	});
+
+	it('round-trip: "publish now" after UTC midnight in a behind-UTC zone reads LIVE, not scheduled', () => {
+		// The exact #301 window: evening US-Eastern, UTC already rolled to tomorrow.
+		// 2026-06-28 01:30Z == 2026-06-27 21:30 New York. "Publish now" (blank date) must
+		// resolve to the trip-local today (06-27) so the visibility gate reads it live —
+		// the old UTC default stored 06-28 → publishStatus returned scheduled/tomorrow.
+		const n = new Date('2026-06-28T01:30:00Z');
+		const t = trip({ timezone: 'America/New_York' });
+		const day = resolvePublishDay('', t, n);
+		expect(day).toBe('2026-06-27');
+		const stored = trip({ timezone: 'America/New_York', archive_publish_at: `${day} 00:00:00.000Z` });
+		expect(publishStatus(stored, n)).toEqual({ status: 'live' });
+		expect(isArchiveVisible(stored, n)).toBe(true);
+	});
+
+	it('falls back to UTC for an invalid/blank timezone (tripTz guards it)', () => {
+		const n = new Date('2026-06-15T02:00:00Z');
+		expect(resolvePublishDay('', trip({ timezone: '' }), n)).toBe('2026-06-15');
 	});
 });

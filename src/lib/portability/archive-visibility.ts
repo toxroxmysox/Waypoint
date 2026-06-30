@@ -27,6 +27,25 @@ export type PublishStatus =
 	| { status: 'scheduled'; date: string }
 	| { status: 'unpublished' };
 
+/**
+ * Resolve the day to store in `archive_publish_at` from a (possibly blank) form
+ * value. An explicit `rawDate` is used as-is; a blank value defaults to the trip's
+ * LOCAL "today" — never the UTC date. This MUST mirror the visibility gate below
+ * (which compares against `tripToday(tripTz(trip))`): defaulting to the UTC date
+ * here while the gate reads trip-local meant that, in the window after UTC midnight
+ * but before the trip-local day rolled (evening in a behind-UTC zone), "publish
+ * today" stored tomorrow's UTC date → the record read `scheduled` ("Publishes on
+ * <tomorrow>") instead of going live now (#301). Returns a "YYYY-MM-DD" day.
+ */
+export function resolvePublishDay(
+	rawDate: string,
+	trip: ArchiveVisibilityTrip,
+	now: Date = new Date()
+): string {
+	const explicit = (rawDate ?? '').split(/[T ]/)[0];
+	return explicit || tripToday(tripTz(trip), now);
+}
+
 /** The publish-date day portion ("YYYY-MM-DD"), or "" when unset/blank. */
 function publishDay(trip: ArchiveVisibilityTrip): string {
 	const raw = (trip.archive_publish_at ?? '').trim();

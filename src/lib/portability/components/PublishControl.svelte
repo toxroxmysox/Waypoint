@@ -17,23 +17,32 @@
 		publish = $bindable(false),
 		publishDate = $bindable(''),
 		showBudget = $bindable(false),
-		showBudgetToggle = false
+		showBudgetToggle = false,
+		today = ''
 	}: {
 		publish?: boolean;
 		publishDate?: string;
 		showBudget?: boolean;
 		/** Slice 5: surface the opt-in public budget summary toggle when publishing. */
 		showBudgetToggle?: boolean;
+		/**
+		 * Trip-LOCAL "today" (YYYY-MM-DD) used to default the inline date. MUST be the
+		 * trip-local date, not UTC: the visibility gate (publishStatus) reads trip-local,
+		 * so a UTC default scheduled "publish now" to tomorrow evening in a behind-UTC
+		 * zone -> "Publishes on <tomorrow>" instead of live (#301). Callers pass
+		 * tripToday(tripTz(trip)). Falls back to the UTC date only if unset.
+		 */
+		today?: string;
 	} = $props();
 
-	const today = new Date().toISOString().split('T')[0];
+	const defaultDay = $derived(today || new Date().toISOString().split('T')[0]);
 	// Default the inline date to today so "Publish" with no further interaction = now.
 	// Set it on the toggle event (not via $effect, which doesn't run in SSR and would
 	// fire post-hydration — cerebrum scar 2026-06-02). If the parent pre-seeds publish
 	// (record view re-edit), it passes publishDate too, so the field is never blank.
 	function selectPublish() {
 		publish = true;
-		if (!publishDate) publishDate = today;
+		if (!publishDate) publishDate = defaultDay;
 	}
 </script>
 
