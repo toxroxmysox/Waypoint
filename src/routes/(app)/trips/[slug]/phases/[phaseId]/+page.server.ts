@@ -5,6 +5,8 @@ import { nextSortOrder, insertBetween, reorderUpdates } from '$lib/itinerary/sor
 import { summarizeDays } from '$lib/itinerary/day-card';
 import { withAvatarUrls } from '$lib/collaboration/member-avatar';
 import { parkingLotCards } from '$lib/itinerary/parking-lot-cards';
+import { retilePhases, validateMovePhaseStart, toDay } from '$lib/itinerary/phase-tiling';
+import { applyRetile } from '$lib/itinerary/phase-tiling.server';
 
 // #249/#250 — ghost approve/reject reuse the same /api/suggestions/review hook
 // endpoint the Inbox uses (server-side: owner gate + author attribution + vote
@@ -124,29 +126,31 @@ export const actions: Actions = {
 		const location = data.get('location')?.toString().trim() || '';
 		const countryCode = data.get('country_code')?.toString().trim() || '';
 		const startDate = data.get('start_date')?.toString();
-		const endDate = data.get('end_date')?.toString();
 		if (!name) return fail(400, { error: 'Phase name is required.' });
-		if (!startDate || !endDate) return fail(400, { error: 'Start and end dates are required.' });
-		if (new Date(startDate) > new Date(endDate)) {
-			return fail(400, { error: 'Start date must be before end date.' });
-		}
+		if (!startDate) return fail(400, { error: 'A start day is required.' });
 
-		const tripStart = (trip['start_date'] as string).split('T')[0].split(' ')[0];
-		const tripEnd = (trip['end_date'] as string).split('T')[0].split(' ')[0];
-		if (startDate < tripStart || endDate > tripEnd) {
-			return fail(400, {
-				error: `Phase dates must fall within the trip (${tripStart} to ${tripEnd}). Edit the trip dates first if you need a wider range.`
-			});
-		}
+		const tripStart = toDay(String(trip['start_date']));
+		const tripEnd = toDay(String(trip['end_date']));
+
+		// Boundary model (ADR-0021): editing a phase moves its start boundary.
+		// validateMovePhaseStart keeps it strictly between its neighbours (and pins
+		// the first phase to the trip start); applyRetile then recomputes the ends.
+		const all = await locals.pb.collection('phases').getFullList({
+			filter: `trip = "${trip.id}"`,
+			fields: 'id,start_date,end_date,order'
+		});
+		const tiled = retilePhases(all as unknown as { id: string; start_date: string }[], tripEnd);
+		const moveError = validateMovePhaseStart(params.phaseId, startDate, tiled, tripStart, tripEnd);
+		if (moveError) return fail(400, { error: moveError });
 
 		try {
 			await locals.pb.collection('phases').update(params.phaseId, {
 				name,
 				location,
 				country_code: countryCode,
-				start_date: startDate + ' 00:00:00.000Z',
-				end_date: endDate + ' 00:00:00.000Z'
+				start_date: toDay(startDate) + ' 00:00:00.000Z'
 			});
+			await applyRetile(locals.pb, trip.id, tripEnd);
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : 'Failed to update phase.';
 			return fail(500, { error: message });

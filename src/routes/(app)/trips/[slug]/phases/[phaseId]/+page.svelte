@@ -21,6 +21,11 @@
 	// inside the trip). Empty = dateless trip → no bound.
 	const tripStart = $derived(String(data.trip.start_date || '').split(/[T ]/)[0]);
 	const tripEnd = $derived(String(data.trip.end_date || '').split(/[T ]/)[0]);
+	// #323 — the first phase (start == trip start) is pinned; under the tiling model
+	// (ADR-0021) its boundary can't move, so its start picker is locked to trip start.
+	const isFirstPhase = $derived(
+		String(data.phase.start_date || '').split(/[T ]/)[0] === tripStart
+	);
 
 	// #252 — consistent capture affordance, defaulting to THIS phase.
 	let ideaSheetOpen = $state(false);
@@ -164,33 +169,23 @@
 					/>
 				</div>
 
-				<div class="grid grid-cols-2 gap-3">
-					<div class="min-w-0">
-						<label for="start_date" class="text-ink-soft block text-sm font-medium">Start</label>
-						<input
-							type="date"
-							id="start_date"
-							name="start_date"
-							required
-							value={data.phase.start_date.split('T')[0].split(' ')[0]}
-							min={tripStart || undefined}
-							max={tripEnd || undefined}
-							class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
-						/>
-					</div>
-					<div class="min-w-0">
-						<label for="end_date" class="text-ink-soft block text-sm font-medium">End</label>
-						<input
-							type="date"
-							id="end_date"
-							name="end_date"
-							required
-							value={data.phase.end_date.split('T')[0].split(' ')[0]}
-							min={tripStart || undefined}
-							max={tripEnd || undefined}
-							class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
-						/>
-					</div>
+				<div>
+					<label for="start_date" class="text-ink-soft block text-sm font-medium">Starts</label>
+					<input
+						type="date"
+						id="start_date"
+						name="start_date"
+						required
+						value={data.phase.start_date.split('T')[0].split(' ')[0]}
+						min={tripStart || undefined}
+						max={(isFirstPhase ? tripStart : tripEnd) || undefined}
+						class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
+					/>
+					<p class="text-ink-muted mt-1 text-xs">
+						{isFirstPhase
+							? 'The first phase always starts when the trip begins.'
+							: 'Runs until the next phase begins (or the end of the trip).'}
+					</p>
 				</div>
 
 				<div>
