@@ -5,6 +5,7 @@
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import FAB from '$lib/shell/components/FAB.svelte';
 	import DocumentRow from '$lib/documents/components/DocumentRow.svelte';
+	import CodeChip from '$lib/documents/components/CodeChip.svelte';
 	import DocumentLightbox from '$lib/documents/components/DocumentLightbox.svelte';
 	import DocumentAddSheet from '$lib/documents/components/DocumentAddSheet.svelte';
 	import { groupDocuments } from '$lib/documents/grouping';
@@ -117,12 +118,11 @@
 									<TypeIcon type={entry.item_type} size={22} />
 									<span class="truncate">{entry.item_title}</span>
 								</a>
-								<div class="space-y-1">
+								<!-- #268 slice 2b — each code is a distinct copyable chip, not a
+								     file card. Tap to copy the value (toast confirms). No attribution. -->
+								<div class="flex flex-wrap gap-2">
 									{#each entry.codes as code}
-										<div class="bg-surface-2 flex items-center justify-between gap-3 rounded px-3 py-1.5">
-											<span class="text-ink-muted text-xs tracking-wide uppercase">{code.label}</span>
-											<span class="text-ink font-mono text-sm font-semibold select-all">{code.value}</span>
-										</div>
+										<CodeChip {code} />
 									{/each}
 								</div>
 							</div>
