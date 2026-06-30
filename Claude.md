@@ -92,7 +92,7 @@ This app on basecamp:
 - Container @ port: `waypoint` @ host `127.0.0.1:8091` → internal `:8080`
 - Public: `app.vandenwarsen.com` (Cloudflare Tunnel); `/pb/_/` admin tailnet-only (`127.0.0.1:8091/pb/_/`)
 - Secrets: ~11 runtime (SMTP/Resend, `PB_ADMIN_*`, Maps, AeroDataBox) — LastPass; on-box `waypoint.env` chmod 600
-- Deploy runbook: `docs/NAS_MIGRATION_RUNBOOK.md`
+- **Redeploy (steady-state, every ship): `docs/DEPLOY_RUNBOOK.md`** — backup → `git archive | ssh | tar` into `repo/` → `docker compose up -d --build` → verify. One-time Fly→NAS migration: `docs/NAS_MIGRATION_RUNBOOK.md` (historical).
 
 ---
 
