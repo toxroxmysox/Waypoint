@@ -61,10 +61,10 @@ test.describe('M1 Happy Path', () => {
 
 		await page.getByRole('button', { name: 'Add Phase' }).filter({ visible: true }).first().click();
 		await page.locator('input[name="name"]:visible').first().fill('Phase One');
-		await page.locator('input[name="start_date"]:visible').first().fill(today);
-
-		const midpoint = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-		await page.locator('input[name="end_date"]:visible').first().fill(midpoint);
+		// #323 boundary model: a new phase starts strictly inside the trip; its end is
+		// derived from the next boundary (or trip end) — there is no end-date picker.
+		const phaseStart = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+		await page.locator('input[name="start_date"]:visible').first().fill(phaseStart);
 
 		await page.getByRole('button', { name: /create phase/i }).filter({ visible: true }).first().click();
 		await expect(

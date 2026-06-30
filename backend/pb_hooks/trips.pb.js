@@ -116,7 +116,7 @@ onRecordAfterCreateSuccess((e) => {
 		const phasesCollection = e.app.findCollectionByNameOrId('phases');
 		const seedPhase = new Record(phasesCollection);
 		seedPhase.set('trip', e.record.id);
-		seedPhase.set('name', 'Trip');
+		seedPhase.set('name', 'Phase 1');
 		seedPhase.set('start_date', rawStart.substring(0, 10) + ' 00:00:00.000Z');
 		seedPhase.set('end_date', rawEnd.substring(0, 10) + ' 00:00:00.000Z');
 		seedPhase.set('order', 0);
