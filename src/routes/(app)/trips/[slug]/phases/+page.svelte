@@ -198,7 +198,7 @@
 	{/if}
 
 	<div class="space-y-2">
-		{#each data.phases as phase, i}
+		{#each data.phases as phase}
 			<Card>
 				<div class="flex items-start justify-between p-4">
 					<a href="/trips/{data.trip.slug}/phases/{phase.id}" class="min-w-0 flex-1">
@@ -214,39 +214,6 @@
 					</a>
 
 					<div class="flex shrink-0 items-center gap-1">
-						{#if i > 0}
-							<form method="POST" action="?/reorder" use:enhance>
-								<input type="hidden" name="phase_id" value={phase.id} />
-								<input type="hidden" name="direction" value="up" />
-								<button
-									type="submit"
-									class="text-ink-muted hover:bg-surface-2 hover:text-ink-soft rounded p-1"
-									title="Move up"
-									aria-label="Move up"
-								>
-									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<path d="M5 15l7-7 7 7" />
-									</svg>
-								</button>
-							</form>
-						{/if}
-						{#if i < data.phases.length - 1}
-							<form method="POST" action="?/reorder" use:enhance>
-								<input type="hidden" name="phase_id" value={phase.id} />
-								<input type="hidden" name="direction" value="down" />
-								<button
-									type="submit"
-									class="text-ink-muted hover:bg-surface-2 hover:text-ink-soft rounded p-1"
-									title="Move down"
-									aria-label="Move down"
-								>
-									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<path d="M19 9l-7 7-7-7" />
-									</svg>
-								</button>
-							</form>
-						{/if}
-
 						{#if confirmDeleteId === phase.id}
 							<form
 								method="POST"
