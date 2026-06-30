@@ -175,9 +175,11 @@ PocketBase collections. Field types use PocketBase notation. All collections inc
 | name | text, required | "Barcelona", "Granada" |
 | location | text | City name |
 | country_code | text | ISO 3166-1 alpha-2 |
-| start_date | date | |
-| end_date | date | |
-| order | int | Manual order, for reorderable phases |
+| start_date | date | The phase boundary — the only field the user sets (ADR-0021) |
+| end_date | date | **Derived + maintained:** the next phase's `start_date` (the shared travel day), or the trip's `end_date` for the last phase (ADR-0021) |
+| order | int | **Derived** from start order (ADR-0021) — no manual reorder |
+
+Phases **tile** the trip (ADR-0021, #323): they partition it with no gaps, and adjacent phases share only their boundary day (the travel day). A phase is defined by its **start day**; adding one splits the covering segment, deleting one merges into the previous neighbour. A trip always has ≥1 phase (seeded as "Phase 1" spanning the trip, subdivided as you plan). Arbitrary overlap is impossible by construction.
 
 Phase indicators use the active mode's accent color (moss in Planning Mode, clay in Trip Mode), not per-phase colors. See GitHub issue #11.
 
@@ -189,7 +191,7 @@ Phase indicators use the active mode's accent color (moss in Planning Mode, clay
 | date | date, required | |
 | notes | text | Day-level free notes |
 
-Days can be auto-generated from trip start/end dates and re-bucketed when phases shift.
+Days are auto-generated from trip start/end dates and re-bucketed (multi-relation `day.phases`) whenever phases change. Under tiling (ADR-0021) a day belongs to **exactly one phase, or two on a shared travel day** (a phase boundary).
 
 ### `items`
 | Field | Type | Notes |

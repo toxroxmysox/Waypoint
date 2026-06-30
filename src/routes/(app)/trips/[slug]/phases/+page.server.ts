@@ -125,6 +125,17 @@ export const actions: Actions = {
 				}
 			}
 
+			// Deleting the FIRST phase: the next phase must extend back to cover the
+			// trip start (retilePhases adjusts ends, not starts), or days at the trip
+			// head are left phase-less. Pull the target's start to the deleted phase's
+			// start (= the trip start). Non-first deletes merge via the previous
+			// phase's end growing in applyRetile, so no start change is needed there.
+			if (idx === 0 && target) {
+				await locals.pb.collection('phases').update(target.id, {
+					start_date: tiled[idx].start + ' 00:00:00.000Z'
+				});
+			}
+
 			await locals.pb.collection('phases').delete(phaseId);
 			await applyRetile(locals.pb, trip.id, tripEnd);
 			return { success: true };
