@@ -134,11 +134,11 @@ Old `CONTEXT.md` "Bounded Contexts" → this map, with **why each L1 exists** (e
 ## 6 · Documents 🟡 *building*
 **Outcome:** every booking reference — file **or** code — is one tap away; never dig the group text.
 **Sub-capabilities:** none.
-**Data:** **File artifact** (`documents`) 🟢 · **Confirmation code** 🔵 (**still on `items.confirmation_codes` today**; moves into Documents per ADR-0016 — migration pending). Both scope to an Item or the Trip. Borrows **Item** 🔗 + **Member** 🔗.
+**Data:** **File artifact** (`documents`) 🟢 · **Confirmation code** 🟢 (now first-class `kind:'code'` Documents per ADR-0016 — **BUILT** #268; legacy `items.confirmation_codes` field left inert). Both scope to an Item or the Trip. Borrows **Item** 🔗 + **Member** 🔗.
 **Applications/services:** the Documents window on the item card · `/documents` (Trip Documents aggregate) · `/documents/[docId]/file`.
 **Business processes:** upload · paste (🔵 #73) · scope to item/trip · view/preview (🔵 #72) · delete · offline-precache (🔵 #74).
 **Roles:** uploader (traveler+) · viewer (everyone) · deleter (uploader, or owner/co-owner).
-**Frontier:** codes migration (ADR-0016) · paste · preview · offline precache · expense-scoped receipts.
+**Frontier:** paste · preview · offline precache · expense-scoped receipts.
 
 ## 7 · Trip Execution 🟡 *building*
 **Outcome:** on the trip, you always know what's now and next, can act one-handed, and it works without signal. *(Retained as L1 despite council rec #7 — it earns its spot by **outcome**, not by owned data.)*

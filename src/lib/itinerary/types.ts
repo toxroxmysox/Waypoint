@@ -68,6 +68,12 @@ export interface Item extends RecordModel {
 	booked: boolean;
 	booked_by: string;
 	paid_by: string;
+	// #268 / ADR-0016 — the PB record field `items.confirmation_codes` is INERT
+	// (no longer written or read; left in place per the append-only rule). Codes
+	// are canonical as `kind:'code'` Documents. This in-memory field remains the
+	// shape the item FORM uses: loaders hydrate it from code Documents (see
+	// `src/lib/documents/codes.ts`) and the edit/new actions reconcile it back into
+	// Documents (`src/lib/documents/reconcile-codes.ts`). Don't read it off a PB record.
 	confirmation_codes: ConfirmationCode[];
 	reservation_url: string;
 	free_cancellation: boolean;
