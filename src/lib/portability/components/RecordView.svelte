@@ -28,6 +28,7 @@
 			archiveEnabled: boolean;
 			publishDate: string;
 			showBudget: boolean;
+			today: string;
 		};
 		canManage?: boolean;
 	} = $props();
@@ -80,6 +81,7 @@
 		archiveEnabled={share.archiveEnabled}
 		publishDate={share.publishDate}
 		showBudget={share.showBudget}
+		today={share.today}
 		{canManage}
 	/>
 
