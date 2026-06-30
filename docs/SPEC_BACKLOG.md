@@ -147,9 +147,9 @@ Genuine unbuilt **frontier**, indexed by capability. One section per L1 capabili
 
 *Every booking reference — file or code — one tap away. Core upload/view/delete + Trip Documents aggregate are shipped (Vault retired, ADR-0005).*
 
-### codes → Documents migration *(ADR-0016, refactor)*
-- **What:** Confirmation codes still live on `items.confirmation_codes`, **read across 26 files** (incl. export/portability/clone/import). ADR-0016 moves them into Documents. Correctness-neutral plumbing, low urgency.
-- **Split into 3 sub-PRs:** (1) append-only migration + new code object + backfill; (2) repoint readers capability-by-capability; (3) leave `items.confirmation_codes` inert. Touches export/portability → needs `pnpm test:e2e`.
+### codes → Documents migration *(ADR-0016, refactor)* — ✅ SHIPPED (#268, 2026-06-29)
+- **What:** Confirmation codes are now first-class `kind:'code'` Documents (migration `0057` + backfill). All readers repointed; the item form reconciles codes into Documents; the legacy `items.confirmation_codes` field is inert (append-only, not deleted). Codes render as a distinct copyable chip in the Documents window.
+- **Shipped as:** slice 1 (migration + code object + backfill) · 2a (read+write cutover) · 2b (chip UI) · 3 (legacy inert).
 - **Ref:** ADR-0016.
 
 ### Remaining v4 slices
