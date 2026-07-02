@@ -33,6 +33,11 @@
 	// Collapsed by default — the day stays focused on the plan, ideas one tap away.
 	let expanded = $state(false);
 	const label = $derived(phaseName ? `${phaseName} · ${items.length}` : `Parking lot · ${items.length}`);
+	// #325: when there ARE parked ideas, the header must read as a tap-to-reveal control
+	// (a first-time user missed the tiny chevron on a divider-styled header). A count pill.
+	const hasIdeas = $derived(items.length > 0);
+	const zoneName = $derived(phaseName ?? 'Parking lot');
+	const countLabel = $derived(`${items.length} ${items.length === 1 ? 'idea' : 'ideas'}`);
 </script>
 
 <section class="space-y-1.5">
@@ -44,23 +49,35 @@
 		onclick={() => (expanded = !expanded)}
 	>
 		<span class="border-line flex-1 border-t"></span>
-		<span class="flex items-center gap-1 text-[11px] font-medium tracking-wider whitespace-nowrap uppercase">
-			{label}
-			<svg
-				width="12"
-				height="12"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-				class="transition-transform duration-150 {expanded ? 'rotate-180' : ''}"
-				aria-hidden="true"
-			>
-				<polyline points="6 9 12 15 18 9" />
-			</svg>
-		</span>
+		{#if hasIdeas}
+			<!-- #325: a pill that clearly reads as a tap-to-expand control (bordered, raised)
+			     with the idea count + a moss chevron; collapses back to the divider line. -->
+			<span class="border-line bg-surface-2 flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium whitespace-nowrap">
+				<span class="text-ink-soft">{zoneName}</span>
+				<span class="text-ink-muted">·</span>
+				<span class="text-ink">{expanded ? 'Hide' : countLabel}</span>
+				<svg
+					width="14"
+					height="14"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					class="text-moss transition-transform duration-150 {expanded ? 'rotate-180' : ''}"
+					aria-hidden="true"
+				>
+					<polyline points="6 9 12 15 18 9" />
+				</svg>
+			</span>
+		{:else}
+			<!-- Empty zone (e.g. a boundary day where this phase has no ideas): a plain
+			     divider label — nothing to reveal, but still a drop target (#324). -->
+			<span class="text-ink-muted flex items-center gap-1 text-[11px] font-medium tracking-wider whitespace-nowrap uppercase">
+				{label}
+			</span>
+		{/if}
 		<span class="border-line flex-1 border-t"></span>
 	</button>
 

@@ -69,7 +69,7 @@
 	     itinerary-item is in flight so the user sees where they can drop (#294). -->
 	<section
 		class="parking-dropzone {collapsed
-			? 'parking-dropzone--collapsed flex min-h-[2.75rem] items-center justify-center rounded-lg border border-dashed border-line px-2'
+			? `parking-dropzone--collapsed flex ${dragDisabled ? 'min-h-[2.75rem]' : 'min-h-[5.5rem]'} items-center justify-center rounded-lg border border-dashed border-line px-2 transition-[min-height] duration-150`
 			: 'min-h-[3rem] space-y-1.5'}"
 		data-empty={items.length === 0}
 		use:dndzone={{
