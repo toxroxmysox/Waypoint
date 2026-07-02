@@ -44,19 +44,6 @@
 <header
 	class="border-line bg-paper/95 sticky top-0 z-sticky flex items-center gap-3 border-b px-4 py-3 backdrop-blur"
 >
-	{#if homeLink}
-		<!-- #299: mobile-only wordmark → /trips. Hidden at md-desktop where the
-		     SideRail already renders the logo (don't duplicate into that tree). -->
-		<a
-			href="/trips"
-			class="font-display text-moss -ml-1 flex h-11 w-8 shrink-0 items-center justify-center text-lg font-semibold leading-none md-desktop:hidden"
-			aria-label="All trips"
-			title="All trips"
-		>
-			W
-		</a>
-	{/if}
-
 	<div class="flex w-10 shrink-0 items-center">
 		{#if back}
 			<button
@@ -73,7 +60,18 @@
 	</div>
 
 	<div class="min-w-0 flex-1 text-center">
-		<h1 class="font-display text-ink truncate text-lg font-semibold leading-tight tracking-[-0.2px]" title={title}>{title}</h1>
+		<!-- #334: the title itself is the escape hatch to /trips (was a separate left
+		     wordmark that shoved the title off-centre). Back arrow stays upper-left;
+		     with no wordmark the left (back) and right (actions) slots balance so the
+		     title truly centres. Non-linked when homeLink is off (e.g. the /trips list
+		     title would self-link). -->
+		<h1 class="font-display text-ink truncate text-lg font-semibold leading-tight tracking-[-0.2px]" title={title}>
+			{#if homeLink}
+				<a href="/trips" class="hover:text-moss transition-colors" aria-label="{title} — all trips">{title}</a>
+			{:else}
+				{title}
+			{/if}
+		</h1>
 		{#if subtitle}
 			{#if subtitleStyle === 'tagline'}
 				<div class="text-ink-soft truncate text-[13px] leading-tight font-medium" title={subtitle}>

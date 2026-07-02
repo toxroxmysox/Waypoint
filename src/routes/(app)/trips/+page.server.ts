@@ -1,6 +1,7 @@
 import type { PageServerLoad } from './$types';
 import type { Trip, TripMember } from '$lib/types';
 import { tripToday, tripTz } from '$lib/shell/trip-time';
+import { pbFileUrl } from '$lib/shell/pb-file-url';
 import { PUBLIC_PB_URL } from '$env/static/public';
 
 export const load: PageServerLoad = async ({ locals, fetch }) => {
@@ -49,7 +50,8 @@ export const load: PageServerLoad = async ({ locals, fetch }) => {
 
 	// Header identity → links to /account (the Profile surface, #104).
 	const u = locals.user!;
-	const avatarUrl = u.avatar ? locals.pb.files.getURL(u, u.avatar) : '';
+	// Browser-facing avatar URL → PUBLIC base, not the SSR client's internal base.
+	const avatarUrl = u.avatar ? pbFileUrl(u, u.avatar as string) : '';
 
 	// #179c: pending placeholder claims the user skipped at login are otherwise
 	// unreachable until the next fresh login. Surface a count here so the user

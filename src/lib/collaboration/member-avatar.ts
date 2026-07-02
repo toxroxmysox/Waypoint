@@ -1,5 +1,6 @@
 import type PocketBase from 'pocketbase';
 import type { User } from '$lib/shell/types';
+import { pbFileUrl } from '$lib/shell/pb-file-url';
 import type { TripMember } from './types';
 
 // A trip_member loaded with `expand: 'user'`. Placeholders have no user, so
@@ -24,7 +25,8 @@ export type MemberWithAvatar = TripMember & { avatarUrl?: string };
 export function memberAvatarUrl(pb: PocketBase, member: MemberWithUser): string {
 	const user = member.expand?.user;
 	if (!user || !user.avatar) return '';
-	return pb.files.getURL(user, user.avatar);
+	// Browser-facing → PUBLIC base, not the SSR client's internal base. See pbFileUrl.
+	return pbFileUrl(user, user.avatar);
 }
 
 /**

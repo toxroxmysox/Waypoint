@@ -1,5 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
+import { pbFileUrl } from '$lib/shell/pb-file-url';
 
 // /account ("Profile") — the first user-level settings surface (#104 / PRD #59).
 // Self-edit only; covered by the existing users.updateRule = self-only, so no
@@ -13,7 +14,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	// runs before the action, so locals.user is pre-update when load re-runs in
 	// the same request. The own row is always self-readable.
 	const user = await locals.pb.collection('users').getOne(locals.user!.id);
-	const avatarUrl = user.avatar ? locals.pb.files.getURL(user, user.avatar) : '';
+	const avatarUrl = user.avatar ? pbFileUrl(user, user.avatar as string) : '';
 	return {
 		profile: { id: user.id, name: user.name as string, avatar: user.avatar as string },
 		avatarUrl
