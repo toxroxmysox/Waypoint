@@ -13,12 +13,12 @@
 	import type { DebtEdge } from '$lib/money/debt-simplify';
 	import { expensesForItem } from '$lib/money/linked-expenses';
 	import { unitDebts, type UnitDebtEdge } from '$lib/money/money-units';
+	import { moneyTabs } from '$lib/money/money-tabs';
 	import type { Notification, Expense, ExpenseCategory, ItemType } from '$lib/types';
 
 	import BudgetSummary from '$lib/money/components/BudgetSummary.svelte';
 	import SettleUpFlow from '$lib/money/components/SettleUpFlow.svelte';
 	import ExpenseForm from '$lib/money/components/ExpenseForm.svelte';
-	import MoneyUnitsManager from '$lib/money/components/MoneyUnitsManager.svelte';
 
 	let { data, form } = $props();
 
@@ -72,7 +72,6 @@
 		return unit.members.map(memberName).join(' & ');
 	}
 	let hasUnits = $derived(data.moneyUnits.length > 0);
-	let showMoneyUnits = $state(false);
 	let hasBudget = $derived(data.budget !== null && (data.budget?.categories.reduce((s, c) => s + c.total, 0) ?? 0) > 0);
 
 	let showSettleUp = $state(false);
@@ -168,10 +167,7 @@
 		<NotificationBell bind:notifications bind:unreadCount />
 	{/snippet}
 </NavBar>
-<SubTabs tabs={[
-	{ id: 'expenses', label: 'Expenses', href: `/trips/${data.trip.slug}/expenses` },
-	{ id: 'budget', label: 'Budget', href: `/trips/${data.trip.slug}/budget` }
-]} />
+<SubTabs tabs={moneyTabs(data.trip.slug)} />
 
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-24">
 	{#if data.expenses.length === 0}
@@ -253,21 +249,6 @@
 			</div>
 		{/if}
 
-		<!-- #230 / ADR-0015 — Money Units: pool members who share a card so settle-up nets
-		     across the group, not between every pair. Quiet entry-point; opens a manager. -->
-		<div class="mb-4">
-			<button
-				type="button"
-				class="border-line text-ink-soft hover:bg-surface-2 flex w-full items-center justify-between rounded-lg border px-4 py-2.5 text-sm"
-				onclick={() => (showMoneyUnits = true)}
-			>
-				<span class="font-medium">Money units</span>
-				<span class="text-ink-muted text-xs">
-					{hasUnits ? `${data.moneyUnits.length} set` : 'Group shared cards'}
-				</span>
-			</button>
-		</div>
-
 		<div class="space-y-2">
 			{#each data.expenses as expense}
 				{@const payerName = memberName(expense.paid_by)}
@@ -333,11 +314,3 @@
 	/>
 </BottomSheet>
 
-<BottomSheet bind:open={showMoneyUnits} title="Money units">
-	<MoneyUnitsManager
-		members={data.members}
-		membershipId={data.membership.id}
-		units={data.moneyUnits}
-		{form}
-	/>
-</BottomSheet>

@@ -7,6 +7,7 @@
 	import Button from '$lib/ui/Button.svelte';
 	import Card from '$lib/ui/Card.svelte';
 	import { titleCase } from '$lib/shell/format';
+	import { moneyTabs } from '$lib/money/money-tabs';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import type { Notification, BudgetCategory, ExpenseCategory, ItemType } from '$lib/types';
 	import { toast } from '$lib/shell/stores/toast';
@@ -103,10 +104,7 @@
 		<NotificationBell bind:notifications bind:unreadCount />
 	{/snippet}
 </NavBar>
-<SubTabs tabs={[
-	{ id: 'expenses', label: 'Expenses', href: `/trips/${data.trip.slug}/expenses` },
-	{ id: 'budget', label: 'Budget', href: `/trips/${data.trip.slug}/budget` }
-]} />
+<SubTabs tabs={moneyTabs(data.trip.slug)} />
 
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8">
 	<!-- Budget envelope total. Header names the BUDGET (the limit you set), not the
