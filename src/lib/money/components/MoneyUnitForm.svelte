@@ -37,7 +37,9 @@
 	let selected = $state<Set<string>>(
 		untrack(() => new Set(unit ? unit.members : [membershipId]))
 	);
-	let budget = $state(untrack(() => (unit?.budget_usd != null ? String(unit.budget_usd) : '')));
+	// PB stores unset number fields as 0 (can't hold null), so treat 0 as "no custom
+	// budget" — prefill blank, not "0", when there's no real override.
+	let budget = $state(untrack(() => (unit?.budget_usd ? String(unit.budget_usd) : '')));
 	let submitting = $state(false);
 
 	function toggle(id: string) {

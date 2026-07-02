@@ -99,7 +99,7 @@
 							<div class="min-w-0">
 								<p class="text-ink truncate text-sm font-medium">{unitLabel(unit)}</p>
 								<p class="text-ink-muted mt-0.5 text-xs">
-									{#if unit.budget_usd != null}
+									{#if unit.budget_usd}
 										<span class="font-mono">${unit.budget_usd.toFixed(2)}</span> budget (custom)
 									{:else}
 										Even-share budget
