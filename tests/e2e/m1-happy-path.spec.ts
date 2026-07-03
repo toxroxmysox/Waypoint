@@ -59,17 +59,11 @@ test.describe('M1 Happy Path', () => {
 		await page.getByRole('link', { name: 'Phases', exact: true }).filter({ visible: true }).first().click();
 		await page.waitForURL(`${BASE_URL}/trips/${tripSlug}/phases`);
 
-		await page.getByRole('button', { name: 'Add Phase' }).filter({ visible: true }).first().click();
-		await page.locator('input[name="name"]:visible').first().fill('Phase One');
-		// #323 boundary model: a new phase starts strictly inside the trip; its end is
-		// derived from the next boundary (or trip end) — there is no end-date picker.
-		const phaseStart = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-		await page.locator('input[name="start_date"]:visible').first().fill(phaseStart);
-
-		await page.getByRole('button', { name: /create phase/i }).filter({ visible: true }).first().click();
-		await expect(
-			page.getByRole('heading', { name: 'Phase One', level: 3 }).filter({ visible: true }).first()
-		).toBeVisible({ timeout: 5000 });
+		// #330 calendar editor: a phase is added by tapping a day to split the seed phase.
+		// The trip is 8 days (today..+7); tapping day 4 (strictly inside) splits it in two.
+		await page.locator('[data-day="4"]:visible').first().click();
+		await expect(page.getByText(/2 phases/).filter({ visible: true }).first()).toBeVisible({ timeout: 5000 });
+		await expect(page.getByText('New phase').filter({ visible: true }).first()).toBeVisible();
 
 		// --- Navigate to first day via overview ---
 		await page.getByRole('link', { name: 'Overview', exact: true }).filter({ visible: true }).first().click();

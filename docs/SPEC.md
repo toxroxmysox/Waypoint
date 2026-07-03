@@ -636,6 +636,12 @@ Every "add item" form has an optional **lookup field** at the top.
 - Visible on day views as phase-scoped suggestion cards.
 - Sorted by aggregate vote score descending, then sort_order.
 
+### Phase editor (calendar) — #330 / ADR-0021
+- Phases are edited on a **calendar grid** at `/trips/[slug]/phases` (replaces the start-only date-picker forms from #323). Phases **tile the trip**: a phase = a START day; its end is derived as the next phase's start (the shared **travel day**).
+- Direct manipulation: **drag a route handle** on a travel-day cell to move a boundary; **tap a normal day** to split it into a new phase; **tap a name** to rename.
+- Every gesture **live-persists on commit** via the tiling engine (`validateMovePhaseStart` / `validateNewPhaseStart` + `applyRetile`) — no batch/draft save. Phase colours are **derived by order** (moss/sky/gold/clay cycle), never stored.
+- The page still hosts the rate-your-ideas launch deck and the legacy phase-less "unsorted ideas" re-home list above the editor.
+
 ### Mode switching
 - Planning Mode ↔ Trip Mode toggle in trip header. Mode is UI state, not data.
 - Trip Mode available only when the trip's **derived lifecycle** (`getTripLifecycle` → planning/active/wrap-up/closed; only `archived` persists) is `active`. Default mode for active trips.

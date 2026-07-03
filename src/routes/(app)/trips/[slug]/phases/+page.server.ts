@@ -1,7 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Item, Phase, Vote } from '$lib/types';
-import { validateNewPhaseStart, retilePhases, toDay } from '$lib/itinerary/phase-tiling';
+import { validateNewPhaseStart, validateMovePhaseStart, retilePhases, toDay } from '$lib/itinerary/phase-tiling';
 import { applyRetile } from '$lib/itinerary/phase-tiling.server';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
@@ -89,6 +89,55 @@ export const actions: Actions = {
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : 'Failed to create phase.';
 			return fail(500, { error: message });
+		}
+	},
+
+	// #330 — the calendar editor drives boundary moves + renames from THIS page
+	// (live-persist, no redirect). moveStart mirrors the phase-detail update's boundary
+	// validation; rename touches only the name. Both retile after (rename doesn't need
+	// it, but it's a cheap no-op that keeps ends/order canonical).
+	moveStart: async ({ request, locals, params }) => {
+		const data = await request.formData();
+		const phaseId = data.get('phase_id')?.toString();
+		const startDate = data.get('start_date')?.toString();
+		if (!phaseId || !startDate) return fail(400, { error: 'Missing phase or start day.' });
+
+		const trip = await locals.pb
+			.collection('trips')
+			.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+		const tripStart = toDay(String(trip['start_date']));
+		const tripEnd = toDay(String(trip['end_date']));
+
+		const all = await locals.pb.collection('phases').getFullList({
+			filter: `trip = "${trip.id}"`,
+			fields: 'id,start_date'
+		});
+		const tiled = retilePhases(all as unknown as { id: string; start_date: string }[], tripEnd);
+		const moveError = validateMovePhaseStart(phaseId, startDate, tiled, tripStart, tripEnd);
+		if (moveError) return fail(400, { error: moveError });
+
+		try {
+			await locals.pb
+				.collection('phases')
+				.update(phaseId, { start_date: toDay(startDate) + ' 00:00:00.000Z' });
+			await applyRetile(locals.pb, trip.id, tripEnd);
+			return { success: true };
+		} catch (err: unknown) {
+			return fail(500, { error: err instanceof Error ? err.message : 'Failed to move boundary.' });
+		}
+	},
+
+	rename: async ({ request, locals }) => {
+		const data = await request.formData();
+		const phaseId = data.get('phase_id')?.toString();
+		const name = data.get('name')?.toString().trim();
+		if (!phaseId) return fail(400, { error: 'Missing phase ID.' });
+		if (!name) return fail(400, { error: 'Phase name is required.' });
+		try {
+			await locals.pb.collection('phases').update(phaseId, { name });
+			return { success: true };
+		} catch (err: unknown) {
+			return fail(500, { error: err instanceof Error ? err.message : 'Failed to rename phase.' });
 		}
 	},
 
