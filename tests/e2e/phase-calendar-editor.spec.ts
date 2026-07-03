@@ -42,6 +42,24 @@ test.describe('#330 phase calendar editor', () => {
 			// Phase Detail is still reachable from each row (add-ideas path preserved).
 			await expect(page.locator('a[href^="/trips/e2e-active-trip/phases/"]:visible').first()).toBeVisible();
 
+			// Drag the boundary handle day 5 → day 7 (a real Pointer-Event drag, multiple
+			// days). Regression guard: the handle used to lose pointer capture after 1 day
+			// (drag "stopped" + never persisted); capture now lives on the stable grid.
+			const handle = page.locator('[data-handle]:visible').first();
+			const target = page.locator('[data-day="7"]:visible').first();
+			const hb = await handle.boundingBox();
+			const tb = await target.boundingBox();
+			if (!hb || !tb) throw new Error('handle/target not measurable');
+			await page.mouse.move(hb.x + hb.width / 2, hb.y + hb.height / 2);
+			await page.mouse.down();
+			await page.mouse.move(tb.x + tb.width / 2, tb.y + tb.height / 2, { steps: 10 });
+			await page.mouse.up();
+			await expect(page.getByText('Days 1–7').filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
+			await expect(page.getByText('Days 7–9').filter({ visible: true }).first()).toBeVisible();
+			// Persisted: a reload keeps the moved boundary (not just optimistic local state).
+			await page.reload();
+			await expect(page.getByText('Days 1–7').filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
+
 			// Rename the new phase via its pill → inline input → Enter.
 			await page.getByRole('button', { name: 'New phase', exact: true }).filter({ visible: true }).first().click();
 			const input = page.locator('input:not([type="hidden"]):visible').first();

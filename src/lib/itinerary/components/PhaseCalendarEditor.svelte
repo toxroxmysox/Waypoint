@@ -124,33 +124,56 @@
 		const hi = phaseIndex < rows.length - 1 ? rows[phaseIndex + 1].dayStart : totalDays;
 		return { lo, hi };
 	}
-	function onHandleDown(e: PointerEvent, phaseIndex: number) {
+	// Pointer capture lives on the STABLE grid element, not the handle button — the
+	// optimistic re-tile re-renders the travel cell (and its handle) on every move, so
+	// capturing on the handle loses it after 1 day (drag "stops" + never fires pointerup
+	// → no save). Capturing on the grid wrapper survives the re-render, so the whole drag
+	// tracks and commits on release. `dragOriginDay` is the pre-drag start (rows[i] already
+	// reflects the optimistic move, so we compare against the origin to decide whether to
+	// persist).
+	let gridEl = $state<HTMLElement>();
+	let dragBoundaryIndex = $state<number | null>(null);
+	let dragOriginDay = 0;
+
+	function onGridPointerDown(e: PointerEvent) {
+		const handle = (e.target as HTMLElement | null)?.closest('[data-handle]') as HTMLElement | null;
+		if (!handle) return; // a drag only starts when a route handle is grabbed
 		e.preventDefault();
-		e.stopPropagation();
-		const el = e.currentTarget as HTMLElement;
-		el.setPointerCapture(e.pointerId);
-		dragPhaseId = rows[phaseIndex].id;
-		dragStart = rows[phaseIndex].start;
+		const idx = Number(handle.dataset.handle);
+		dragBoundaryIndex = idx;
+		dragPhaseId = rows[idx].id;
+		dragStart = rows[idx].start;
+		dragOriginDay = rows[idx].dayStart;
+		try {
+			gridEl?.setPointerCapture(e.pointerId);
+		} catch {
+			/* capture unavailable (e.g. synthetic events) — the drag still tracks via handlers */
+		}
 	}
-	function onHandleMove(e: PointerEvent, phaseIndex: number) {
-		if (dragPhaseId !== rows[phaseIndex].id) return;
-		const target = document.elementFromPoint(e.clientX, e.clientY);
-		const cell = target?.closest('[data-day]') as HTMLElement | null;
+	function onGridPointerMove(e: PointerEvent) {
+		if (dragBoundaryIndex == null) return;
+		const cell = document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-day]') as HTMLElement | null;
 		if (!cell) return;
 		const day = Number(cell.getAttribute('data-day'));
 		if (!day) return;
-		const { lo, hi } = boundsFor(phaseIndex);
+		const { lo, hi } = boundsFor(dragBoundaryIndex);
 		const clamped = Math.min(hi - 1, Math.max(lo + 1, day));
 		dragStart = addDays(tripStart, clamped - 1);
 	}
-	function onHandleUp(e: PointerEvent, phaseIndex: number) {
-		if (dragPhaseId !== rows[phaseIndex].id) return;
-		(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-		const committedDay = dragStart ? dayDiff(tripStart, dragStart) + 1 : rows[phaseIndex].dayStart;
-		const id = rows[phaseIndex].id;
+	function onGridPointerUp(e: PointerEvent) {
+		if (dragBoundaryIndex == null) return;
+		try {
+			gridEl?.releasePointerCapture(e.pointerId);
+		} catch {
+			/* capture may already be gone */
+		}
+		const id = rows[dragBoundaryIndex].id;
+		const committedDay = dragStart ? dayDiff(tripStart, dragStart) + 1 : dragOriginDay;
+		const origin = dragOriginDay;
+		dragBoundaryIndex = null;
 		dragPhaseId = null;
 		dragStart = null;
-		if (committedDay !== rows[phaseIndex].dayStart) commitMove(id, committedDay);
+		if (committedDay !== origin) commitMove(id, committedDay);
 	}
 
 	function fmtShort(date: string): string {
@@ -245,8 +268,19 @@
 		{/each}
 	</div>
 
-	<!-- calendar grid -->
-	<div class="grid touch-none grid-cols-7 gap-[5px]">
+	<!-- calendar grid. Pointer handling lives HERE (stable across re-tiles), not on the
+	     handle button which gets re-rendered every move. The grid only DELEGATES pointer
+	     events for the drag; the interactive elements (cells, handles) carry their own
+	     roles/labels. -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div
+		bind:this={gridEl}
+		class="grid touch-none grid-cols-7 gap-[5px]"
+		onpointerdown={onGridPointerDown}
+		onpointermove={onGridPointerMove}
+		onpointerup={onGridPointerUp}
+		onpointercancel={onGridPointerUp}
+	>
 		{#each model.weeks as week}
 			{#each week as cell}
 				{#if !cell}
@@ -261,22 +295,24 @@
 					>
 						<span class="text-clay absolute top-[5px] left-[6px] font-mono text-[11px] font-semibold">{cell.date.slice(8, 10)}</span>
 						{#if cell.monthTag}<span class="text-clay absolute top-[5px] right-[5px] text-[7px] font-bold tracking-[0.08em]">{cell.monthTag}</span>{/if}
-						<!-- route handle: drag to move this boundary (phase index = cell.phaseIndex) -->
-						<button
-							type="button"
+						<!-- route handle: drag to move this boundary. data-handle carries the phase
+						     index; the grid wrapper reads it on pointerdown and owns the drag. -->
+						<div
+							role="slider"
 							aria-label="Move boundary"
-							class="border-line shadow-elevated absolute top-1/2 left-1/2 z-[6] flex h-7 w-[50px] -translate-x-1/2 -translate-y-1/2 cursor-grab touch-none items-center justify-center rounded-[14px] border bg-white transition-transform"
-							style={dragPhaseId === rows[cell.phaseIndex]?.id ? 'pointer-events:none;' : ''}
-							onpointerdown={(e) => onHandleDown(e, cell.phaseIndex)}
-							onpointermove={(e) => onHandleMove(e, cell.phaseIndex)}
-							onpointerup={(e) => onHandleUp(e, cell.phaseIndex)}
+							aria-valuenow={cell.tripDay}
+							aria-valuemin={1}
+							aria-valuemax={totalDays}
+							tabindex="0"
+							data-handle={cell.phaseIndex}
+							class="border-line shadow-elevated absolute top-1/2 left-1/2 z-[6] flex h-7 w-[50px] -translate-x-1/2 -translate-y-1/2 cursor-grab touch-none items-center justify-center rounded-[14px] border bg-white transition-transform {dragBoundaryIndex === cell.phaseIndex ? 'shadow-dropdown scale-110' : ''}"
 						>
 							<svg width="30" height="14" viewBox="0 0 30 14" fill="none" stroke="var(--color-clay)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 								<line x1="6" y1="7" x2="24" y2="7" stroke-dasharray="2.5 2.5" />
 								<polyline points="9 3.5 5 7 9 10.5" />
 								<polyline points="21 3.5 25 7 21 10.5" />
 							</svg>
-						</button>
+						</div>
 					</div>
 				{:else}
 					{@const pal = paletteFor(cell.phaseIndex)}
