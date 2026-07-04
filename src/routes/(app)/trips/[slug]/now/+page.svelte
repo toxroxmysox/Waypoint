@@ -16,9 +16,11 @@
 	import MultiDayBanner from '$lib/itinerary/components/MultiDayBanner.svelte';
 	import TaskRow from '$lib/itinerary/components/TaskRow.svelte';
 	import IdeasStrip from '$lib/trip-mode/components/IdeasStrip.svelte';
+	import MemorySheet from '$lib/memory/components/MemorySheet.svelte';
 	import { getNowFeed } from '$lib/trip-mode/now-state';
 	import { formatCountdown, formatTime } from '$lib/shell/format';
 	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
+	import { page } from '$app/state';
 	import { untrack, tick, onMount } from 'svelte';
 
 	let { data } = $props();
@@ -71,10 +73,40 @@
 		});
 	}
 
+	// #269 Trip Memory — the one composer, opened from three doors on this page:
+	// Note Before Bed (day-wrapped Focus), the center Add sheet (?capture=memory),
+	// and the Today's-memories edit affordance. Viewers never author.
+	let memorySheetOpen = $state(false);
+	const canCapture = $derived((data.canCapture ?? false) && !!data.todayDayId);
+	const myMemory = $derived(data.myMemory ?? null);
+	const myPhotoSrc = $derived(
+		myMemory?.photo ? `/trips/${data.trip.slug}/memories/${myMemory.id}/photo` : ''
+	);
+
+	// Note Before Bed (PRD §Surfaces): optional and dismissable, NEVER nagging —
+	// a dismissal sticks for the rest of that trip-local day (localStorage), and
+	// a day with a captured memory never prompts again.
+	const nbbKey = $derived(`waypoint-nbb-${data.trip.id}-${todayStr}`);
+	let nbbDismissed = $state(true); // assume dismissed until the client checks
+	$effect(() => {
+		nbbDismissed = localStorage.getItem(nbbKey) === '1';
+	});
+	function dismissNbb() {
+		localStorage.setItem(nbbKey, '1');
+		nbbDismissed = true;
+	}
+	const showNoteBeforeBed = $derived(
+		focus.kind === 'wrapped-summary' && canCapture && !myMemory && !nbbDismissed
+	);
+
 	// Auto-scroll to the Focus on open (the contract's anchor). This naturally
 	// pushes the faded past above the fold → "reveal on scroll-up". Mirrors
 	// TodayTimeline's onMount scroll. No-op on SSR / when there's no past to hide.
 	onMount(() => {
+		// Add-sheet door: /now?capture=memory opens the composer directly.
+		if (page.url.searchParams.get('capture') === 'memory' && canCapture) {
+			memorySheetOpen = true;
+		}
 		if (pastItems.length === 0) return;
 		tick().then(() => {
 			document.getElementById('now-focus')?.scrollIntoView({ behavior: 'auto', block: 'start' });
@@ -187,6 +219,31 @@
 		{/if}
 	</div>
 
+	<!-- #269 Note Before Bed — the day-wrapped capture prompt. Optional and
+	     dismissable ("Not tonight" sticks for the day); a captured memory or a
+	     viewer role means it never renders. Never nagging. -->
+	{#if showNoteBeforeBed}
+		<Card>
+			<div class="p-5">
+				<p class="text-ink-muted text-[11px] font-medium uppercase tracking-wide">Note before bed</p>
+				<p class="text-ink font-display mt-1.5 text-lg font-semibold">What made today, today?</p>
+				<p class="text-ink-muted mt-1 text-sm">One photo, one thought — before it fades.</p>
+				<div class="mt-4 flex items-center gap-3">
+					<button
+						type="button"
+						onclick={() => (memorySheetOpen = true)}
+						class="bg-ink text-on-ink rounded-lg px-4 py-2 text-sm font-medium"
+					>
+						Capture today
+					</button>
+					<button type="button" onclick={dismissNbb} class="text-ink-muted px-2 py-2 text-sm">
+						Not tonight
+					</button>
+				</div>
+			</div>
+		</Card>
+	{/if}
+
 	<!-- #245 Door 1 / #246 Door 2 — "ideas for now": the current phase's parked
 	     ideas, shown at a free-time / nothing-else Focus (Door 1) OR after a
 	     just-skipped slot (Door 2 — accepting one promotes it into the gap). Same
@@ -286,3 +343,15 @@
 	<!-- #244: Members left the Trip nav — surface tap-to-contact a fellow traveller here. -->
 	<MemberContactStrip members={data.members} selfUserId={data.membership.user} />
 </main>
+
+<!-- #269 — the one memory composer (photo slot + 280-char thought). -->
+{#if canCapture && data.todayDayId}
+	<MemorySheet
+		bind:open={memorySheetOpen}
+		dayId={data.todayDayId}
+		existing={myMemory}
+		photoSrc={myPhotoSrc}
+		title="Tonight's memory"
+		subtitle="One photo, one thought — the day's highlight."
+	/>
+{/if}

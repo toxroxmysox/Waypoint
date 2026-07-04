@@ -28,6 +28,13 @@
 		open = false;
 		goto(`/trips/${slug}/documents?action=add`);
 	}
+
+	// #269 — live memory capture door: the Now page opens the composer when it
+	// sees ?capture=memory (viewers are gated there; the sheet no-ops for them).
+	function addMemory() {
+		open = false;
+		goto(`/trips/${slug}/now?capture=memory`);
+	}
 </script>
 
 <BottomSheet bind:open title="Add">
@@ -80,5 +87,25 @@
 				<p class="text-ink-muted text-xs">Attach a PDF or image</p>
 			</div>
 		</button>
+
+		{#if todayDayId}
+			<button
+				type="button"
+				class="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left hover:bg-surface-2 transition-colors"
+				onclick={addMemory}
+			>
+				<div class="bg-clay-tint text-clay flex h-10 w-10 items-center justify-center rounded-full">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+						<circle cx="8.5" cy="8.5" r="1.5" />
+						<polyline points="21 15 16 10 5 21" />
+					</svg>
+				</div>
+				<div>
+					<p class="text-ink text-sm font-semibold">Add memory</p>
+					<p class="text-ink-muted text-xs">Today's photo + thought</p>
+				</div>
+			</button>
+		{/if}
 	</div>
 </BottomSheet>

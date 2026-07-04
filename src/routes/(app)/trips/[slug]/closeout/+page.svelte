@@ -4,8 +4,10 @@
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import CloseoutDayCard from '$lib/itinerary/components/CloseoutDayCard.svelte';
 	import PublishControl from '$lib/portability/components/PublishControl.svelte';
+	import MemorySheet from '$lib/memory/components/MemorySheet.svelte';
 	import { tripToday, tripTz } from '$lib/shell/trip-time';
 	import type { Day, Item } from '$lib/types';
+	import type { Memory } from '$lib/memory/types';
 	import { untrack } from 'svelte';
 
 	let { data } = $props();
@@ -67,6 +69,25 @@
 	function itemsForDay(day: Day): Item[] {
 		return data.items.filter((i) => i.day === day.id);
 	}
+
+	// #269 Trip Memory — the retroactive per-day capture door. During wrap-up any
+	// walker (owner/co_owner/traveler) can add/edit THEIR OWN memory for the day
+	// under review; a closed trip's closeout is read-only for memories too.
+	let memorySheetOpen = $state(false);
+	const canCaptureMemories = $derived(data.canCaptureMemories ?? false);
+	const myMemoryForDay = $derived.by((): Memory | null => {
+		if (!currentDay) return null;
+		return (
+			(data.memories ?? []).find(
+				(m: Memory) => m.day === currentDay.id && m.author === data.membership.id
+			) ?? null
+		);
+	});
+	const myPhotoSrc = $derived(
+		myMemoryForDay?.photo
+			? `/trips/${data.trip.slug}/memories/${myMemoryForDay.id}/photo`
+			: ''
+	);
 
 	const summary = $derived.by(() => {
 		let done = 0;
@@ -133,6 +154,23 @@
 			days={data.days}
 			tripEndDate={data.trip.end_date}
 		/>
+
+		<!-- #269 — retroactive memory capture: add/edit YOUR memory for the day
+		     under review (wrap-up only; a closed trip's walk is read-only). -->
+		{#if canCaptureMemories}
+			<button
+				type="button"
+				onclick={() => (memorySheetOpen = true)}
+				class="border-line text-ink-soft hover:border-ink-muted hover:text-ink mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed px-3 py-2.5 text-sm font-medium transition-colors"
+			>
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+					<rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+					<circle cx="8.5" cy="8.5" r="1.5" />
+					<polyline points="21 15 16 10 5 21" />
+				</svg>
+				{myMemoryForDay ? 'Edit your memory for this day' : 'Add a memory for this day'}
+			</button>
+		{/if}
 
 		<div class="mt-4 flex justify-between">
 			<button
@@ -294,3 +332,15 @@
 		</div>
 	{/if}
 </main>
+
+<!-- #269 — the one memory composer, scoped to the day under review. -->
+{#if canCaptureMemories && currentDay}
+	<MemorySheet
+		bind:open={memorySheetOpen}
+		dayId={currentDay.id}
+		existing={myMemoryForDay}
+		photoSrc={myPhotoSrc}
+		title="Your memory — day {currentDayIndex + 1}"
+		subtitle="One photo, one thought for this day."
+	/>
+{/if}

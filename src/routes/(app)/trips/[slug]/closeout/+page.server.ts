@@ -3,6 +3,8 @@ import type { Actions, PageServerLoad } from './$types';
 import type { Item, TripMember } from '$lib/types';
 import { getTripLifecycle } from '$lib/trip-mode/trip-lifecycle';
 import { resolvePublishDay } from '$lib/portability/archive-visibility';
+import { handleSaveMemory } from '$lib/memory/save-memory.server';
+import type { Memory } from '$lib/memory/types';
 
 // Closeout wizard loader (#240/#195 — Slice 2).
 //
@@ -50,10 +52,24 @@ export const load: PageServerLoad = async ({ parent, locals, params }) => {
 	// Slice 5); travelers do the item walk only and never see the parking-lot ideas.
 	const canCurate = membership.role === 'owner' || membership.role === 'co_owner';
 
-	return { trip, membership, days, phases, items, canCurate };
+	// #269 Trip Memory — day-by-day reminiscence: ALL travelers' memories surface
+	// alongside the items being reviewed. Capture (add/edit your own, retroactive
+	// per-day) is open during wrap-up; a CLOSED trip's closeout stays openable
+	// with memories read-only (PRD §Surfaces). Viewers never reach this loader.
+	const memories = await locals.pb.collection('memories').getFullList<Memory>({
+		filter: `trip = "${trip.id}"`,
+		sort: 'created'
+	});
+	const canCaptureMemories = lifecycle === 'wrap-up';
+
+	return { trip, membership, days, phases, items, canCurate, memories, canCaptureMemories };
 };
 
 export const actions: Actions = {
+	// #269 — retroactive per-day memory add/edit from the closeout walk. Shared
+	// composer handler; PB rules (author-only) + memories.pb.js enforce.
+	saveMemory: handleSaveMemory,
+
 	markDone: async ({ request, locals }) => {
 		const data = await request.formData();
 		const itemId = data.get('item_id')?.toString();
