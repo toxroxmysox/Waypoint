@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { validateForm } from '$lib/shell/actions/validate-form';
 	import NavBar from '$lib/ui/NavBar.svelte';
@@ -9,6 +10,12 @@
 
 	let loading = $state(false);
 	let deleting = $state(false);
+	let savingDigest = $state(false);
+	// #272 — client-owned so Svelte can't clobber the user's toggle on a flush:
+	// an UNBOUND `checked={expr}` input is re-synced to the expression on any
+	// template-effect re-run, silently reverting the tap before submit (same
+	// class as the money-units checkbox race — cerebrum 2026-07-02).
+	let digestOn = $state(untrack(() => !data.membership.digest_opt_out));
 	let confirmDelete = $state(false);
 	let error = $derived(form?.error ?? '');
 	let success = $derived(form?.success ?? false);
@@ -183,6 +190,69 @@
 		</div>
 	</Card>
 
+	{:else}
+	<Card>
+		<div class="p-4 space-y-3">
+			<p class="text-ink-muted text-xs">Only an owner or co-owner can change trip settings.</p>
+			<dl class="space-y-2 text-sm">
+				<div><dt class="text-ink-muted text-xs">Trip name</dt><dd class="text-ink">{data.trip.title}</dd></div>
+				<div><dt class="text-ink-muted text-xs">Dates</dt><dd class="text-ink">{data.trip.start_date.split('T')[0].split(' ')[0]} – {data.trip.end_date.split('T')[0].split(' ')[0]}</dd></div>
+				<div><dt class="text-ink-muted text-xs">Timezone</dt><dd class="text-ink">{data.trip.timezone || 'UTC'}</dd></div>
+				<div><dt class="text-ink-muted text-xs">Location</dt><dd class="text-ink">{data.trip.location_summary || '—'}</dd></div>
+			</dl>
+		</div>
+	</Card>
+	{/if}
+
+	<!-- #272 — per-member digest preference: visible to every active member
+	     (incl. viewers), unlike the owner-only cards above. -->
+	<Card>
+		<div class="p-4 space-y-3">
+			<h2 class="text-ink text-sm font-semibold">Email digest</h2>
+			<p class="text-ink-muted text-xs">
+				A morning email with what changed on this trip — only on days something changed.
+			</p>
+
+			{#if form?.digestError}
+				<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{form.digestError}</div>
+			{/if}
+			{#if form?.digestSuccess}
+				<div class="border-moss/30 bg-moss-tint text-moss rounded-md border p-3 text-sm">
+					Digest emails {form.digestOn ? 'on' : 'off'} for this trip.
+				</div>
+			{/if}
+
+			<form
+				method="POST"
+				action="?/digest"
+				use:enhance={() => {
+					savingDigest = true;
+					return async ({ update, result }) => {
+						savingDigest = false;
+						if (result.type === 'success') toast.show('Digest preference saved');
+						await update({ reset: false });
+					};
+				}}
+				class="space-y-3"
+			>
+				<label class="flex items-center gap-3">
+					<input
+						type="checkbox"
+						name="digest_emails"
+						bind:checked={digestOn}
+						class="border-line h-4 w-4 rounded"
+					/>
+					<span class="text-ink text-sm font-medium">Send me digest emails for this trip</span>
+				</label>
+
+				<Button type="submit" disabled={savingDigest} variant="ghost" size="sm">
+					{savingDigest ? 'Saving…' : 'Save digest preference'}
+				</Button>
+			</form>
+		</div>
+	</Card>
+
+	{#if privileged}
 	<div class="border-error/30 rounded-lg border p-4">
 		<h2 class="text-error text-sm font-semibold">Danger zone</h2>
 		<p class="text-error/80 mt-1 text-xs">
@@ -226,17 +296,5 @@
 			</form>
 		{/if}
 	</div>
-	{:else}
-	<Card>
-		<div class="p-4 space-y-3">
-			<p class="text-ink-muted text-xs">Only an owner or co-owner can change trip settings.</p>
-			<dl class="space-y-2 text-sm">
-				<div><dt class="text-ink-muted text-xs">Trip name</dt><dd class="text-ink">{data.trip.title}</dd></div>
-				<div><dt class="text-ink-muted text-xs">Dates</dt><dd class="text-ink">{data.trip.start_date.split('T')[0].split(' ')[0]} – {data.trip.end_date.split('T')[0].split(' ')[0]}</dd></div>
-				<div><dt class="text-ink-muted text-xs">Timezone</dt><dd class="text-ink">{data.trip.timezone || 'UTC'}</dd></div>
-				<div><dt class="text-ink-muted text-xs">Location</dt><dd class="text-ink">{data.trip.location_summary || '—'}</dd></div>
-			</dl>
-		</div>
-	</Card>
 	{/if}
 </main>

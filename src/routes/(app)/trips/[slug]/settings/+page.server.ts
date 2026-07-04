@@ -77,6 +77,33 @@ export const actions: Actions = {
 		}
 	},
 
+	// #272 — per-member digest preference. Any active member (incl. viewers)
+	// can set their OWN row; the membership is resolved server-side from the
+	// session, never from form input.
+	digest: async ({ request, locals, params }) => {
+		const data = await request.formData();
+		const digestOn = data.get('digest_emails') === 'on';
+
+		try {
+			const trip = await locals.pb
+				.collection('trips')
+				.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+
+			const membership = await locals.pb
+				.collection('trip_members')
+				.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`);
+
+			await locals.pb.collection('trip_members').update(membership.id, {
+				digest_opt_out: !digestOn
+			});
+
+			return { digestSuccess: true, digestOn };
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : 'Failed to update digest preference.';
+			return fail(500, { digestError: message });
+		}
+	},
+
 	toggleArchive: async ({ request, locals, params }) => {
 		const data = await request.formData();
 		const archiveEnabled = data.get('archive_enabled') === 'on';
