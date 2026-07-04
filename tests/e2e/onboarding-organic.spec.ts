@@ -111,6 +111,8 @@ test.describe('#277 Organic-path onboarding (empty /trips → welcome card)', ()
 			// timezone auto-fills from the browser zone on mount; title + dates are the
 			// only fields the user must supply.
 			await page.fill('input[name="title"]', 'Organic Onramp Trip');
+			// #270: dates live behind the optional "I know the dates" expander on /trips/new.
+			await page.locator('summary', { hasText: 'I know the dates' }).click();
 			await page.fill('input[name="start_date"]', '2026-09-01');
 			await page.fill('input[name="end_date"]', '2026-09-05');
 			await page.getByRole('button', { name: /create trip/i }).click();

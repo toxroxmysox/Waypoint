@@ -73,40 +73,68 @@
 			</div>
 
 			<div>
-				<div class="flex items-end gap-3">
-					<div class="min-w-0 flex-1">
-						<label for="start_date" class="text-ink-soft block text-sm font-medium">Start date</label>
-						<input
-							type="date"
-							id="start_date"
-							name="start_date"
-							required
-							bind:value={startDate}
-							max={endDate || undefined}
-							class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
-						/>
-					</div>
-					<div class="text-ink-muted font-mono pb-2 text-xs">
-						{#if duration}
-							{duration} {duration === 1 ? 'day' : 'days'}
-						{:else}
-							→
-						{/if}
-					</div>
-					<div class="min-w-0 flex-1">
-						<label for="end_date" class="text-ink-soft block text-sm font-medium">End date</label>
-						<input
-							type="date"
-							id="end_date"
-							name="end_date"
-							required
-							bind:value={endDate}
-							min={startDate || undefined}
-							class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
-						/>
+				<label for="location_summary" class="text-ink-soft block text-sm font-medium">
+					Location <span class="text-ink-muted font-normal">(optional)</span>
+				</label>
+				<input
+					type="text"
+					id="location_summary"
+					name="location_summary"
+					class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+					placeholder="Spain & Portugal"
+				/>
+				<p class="text-ink-muted mt-1 text-xs">
+					Freeform — city, country, region, whatever fits.
+				</p>
+			</div>
+
+			<!-- #270 / ADR-0022 — name-first create: dates are OPTIONAL, tucked behind
+			     this expander. Skipping them creates a dateless trip you can shape
+			     first (ideas, people, goals) and date later. <details> so the fold
+			     works without JS (progressive enhancement house rule). -->
+			<details class="border-line rounded-md border">
+				<summary
+					class="text-ink-soft cursor-pointer select-none px-3 py-2.5 text-sm font-medium marker:text-ink-muted"
+				>
+					I know the dates
+					<span class="text-ink-muted block pl-4 text-xs font-normal">
+						No dates yet? Skip this — you can set them anytime.
+					</span>
+				</summary>
+				<div class="px-3 pt-1 pb-3">
+					<div class="flex items-end gap-3">
+						<div class="min-w-0 flex-1">
+							<label for="start_date" class="text-ink-soft block text-sm font-medium">Start date</label>
+							<input
+								type="date"
+								id="start_date"
+								name="start_date"
+								bind:value={startDate}
+								max={endDate || undefined}
+								class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
+							/>
+						</div>
+						<div class="text-ink-muted font-mono pb-2 text-xs">
+							{#if duration}
+								{duration} {duration === 1 ? 'day' : 'days'}
+							{:else}
+								→
+							{/if}
+						</div>
+						<div class="min-w-0 flex-1">
+							<label for="end_date" class="text-ink-soft block text-sm font-medium">End date</label>
+							<input
+								type="date"
+								id="end_date"
+								name="end_date"
+								bind:value={endDate}
+								min={startDate || undefined}
+								class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
+							/>
+						</div>
 					</div>
 				</div>
-			</div>
+			</details>
 
 			<div>
 				<label for="timezone" class="text-ink-soft block text-sm font-medium">Timezone</label>
@@ -147,22 +175,6 @@
 					<option value="Pacific/Auckland"></option>
 				</datalist>
 				<p class="text-ink-muted mt-1 text-xs">Leave blank to use your local timezone.</p>
-			</div>
-
-			<div>
-				<label for="location_summary" class="text-ink-soft block text-sm font-medium">
-					Location <span class="text-ink-muted font-normal">(optional)</span>
-				</label>
-				<input
-					type="text"
-					id="location_summary"
-					name="location_summary"
-					class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
-					placeholder="Spain & Portugal"
-				/>
-				<p class="text-ink-muted mt-1 text-xs">
-					Freeform — city, country, region, whatever fits.
-				</p>
 			</div>
 
 			<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="w-full">
