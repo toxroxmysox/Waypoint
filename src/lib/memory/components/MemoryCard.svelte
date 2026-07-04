@@ -7,6 +7,7 @@
 	import { isRenderablePhoto } from '$lib/memory/memory';
 	import type { Memory } from '$lib/memory/types';
 	import type { MemberWithAvatar } from '$lib/collaboration/member-avatar';
+	import type { User } from '$lib/types';
 
 	let {
 		memory,
@@ -27,9 +28,14 @@
 		onEdit?: () => void;
 	} = $props();
 
-	const name = $derived(
-		member ? member.display_name || member.placeholder_name || '?' : 'Former member'
-	);
+	// Same fallback chain as MemberContactStrip — memberships created by the
+	// join/claim flows may carry only the expanded user's name.
+	type MemberRow = MemberWithAvatar & { expand?: { user?: User } };
+	const name = $derived.by(() => {
+		if (!member) return 'Former member';
+		const m = member as MemberRow;
+		return m.display_name || m.expand?.user?.name || m.placeholder_name || 'Member';
+	});
 	const photoUrl = $derived(memory.photo ? `/trips/${slug}/memories/${memory.id}/photo` : '');
 	const renderable = $derived(isRenderablePhoto(memory.photo));
 	// A non-rendering photo (HEIC, v4 caveat) falls back to a download link.

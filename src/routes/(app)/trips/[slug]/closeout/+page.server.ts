@@ -5,6 +5,7 @@ import { getTripLifecycle } from '$lib/trip-mode/trip-lifecycle';
 import { resolvePublishDay } from '$lib/portability/archive-visibility';
 import { handleSaveMemory } from '$lib/memory/save-memory.server';
 import type { Memory } from '$lib/memory/types';
+import { withAvatarUrls } from '$lib/collaboration/member-avatar';
 
 // Closeout wizard loader (#240/#195 — Slice 2).
 //
@@ -62,7 +63,25 @@ export const load: PageServerLoad = async ({ parent, locals, params }) => {
 	});
 	const canCaptureMemories = lifecycle === 'wrap-up';
 
-	return { trip, membership, days, phases, items, canCurate, memories, canCaptureMemories };
+	// Roster (with avatars) for the memory cards' author names. Includes
+	// tombstones deliberately: a departed member's memories stay attributed
+	// ("Former member" renders when the author row is gone entirely).
+	const members = await locals.pb.collection('trip_members').getFullList<TripMember>({
+		filter: `trip = "${trip.id}"`,
+		expand: 'user'
+	});
+
+	return {
+		trip,
+		membership,
+		days,
+		phases,
+		items,
+		canCurate,
+		memories,
+		canCaptureMemories,
+		members: withAvatarUrls(locals.pb, members)
+	};
 };
 
 export const actions: Actions = {

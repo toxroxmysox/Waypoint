@@ -17,6 +17,7 @@
 	import TaskRow from '$lib/itinerary/components/TaskRow.svelte';
 	import IdeasStrip from '$lib/trip-mode/components/IdeasStrip.svelte';
 	import MemorySheet from '$lib/memory/components/MemorySheet.svelte';
+	import MemoryCard from '$lib/memory/components/MemoryCard.svelte';
 	import { getNowFeed } from '$lib/trip-mode/now-state';
 	import { formatCountdown, formatTime } from '$lib/shell/format';
 	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
@@ -82,6 +83,8 @@
 	const myPhotoSrc = $derived(
 		myMemory?.photo ? `/trips/${data.trip.slug}/memories/${myMemory.id}/photo` : ''
 	);
+	const memories = $derived(data.memories ?? []);
+	const memberById = $derived(new Map(data.members.map((m) => [m.id, m])));
 
 	// Note Before Bed (PRD §Surfaces): optional and dismissable, NEVER nagging —
 	// a dismissal sticks for the rest of that trip-local day (localStorage), and
@@ -232,7 +235,7 @@
 					<button
 						type="button"
 						onclick={() => (memorySheetOpen = true)}
-						class="bg-ink text-on-ink rounded-lg px-4 py-2 text-sm font-medium"
+						class="bg-ink text-paper rounded-lg px-4 py-2 text-sm font-medium"
 					>
 						Capture today
 					</button>
@@ -275,6 +278,49 @@
 					onSkipped={() => (justSkipped = true)}
 				/>
 			{/each}
+		</section>
+	{/if}
+
+	<!-- #269 — today's memories from ALL travelers as small cards (the Trip Mode
+	     review surface). A member with no memory today simply has no card. The
+	     empty state offers capture on an active trip — gently, never a nag. -->
+	{#if data.hasToday}
+		<section class="border-line space-y-2 border-t pt-4" data-testid="today-memories">
+			<SectionH>Today's memories</SectionH>
+			{#if memories.length > 0}
+				{#each memories as memory (memory.id)}
+					<MemoryCard
+						{memory}
+						member={memberById.get(memory.author) ?? null}
+						slug={data.trip.slug}
+						mine={memory.author === data.membership.id}
+						editable={canCapture}
+						onEdit={() => (memorySheetOpen = true)}
+					/>
+				{/each}
+				{#if canCapture && !myMemory}
+					<button
+						type="button"
+						onclick={() => (memorySheetOpen = true)}
+						class="text-ink-muted hover:text-ink-soft w-full py-1 text-center text-xs font-medium"
+					>
+						Add yours
+					</button>
+				{/if}
+			{:else}
+				<div class="py-2 text-center">
+					<p class="text-ink-muted text-sm">No memories yet</p>
+					{#if canCapture}
+						<button
+							type="button"
+							onclick={() => (memorySheetOpen = true)}
+							class="text-ink-soft hover:text-ink mt-1 text-xs font-medium underline-offset-2 hover:underline"
+						>
+							Capture today's
+						</button>
+					{/if}
+				</div>
+			{/if}
 		</section>
 	{/if}
 

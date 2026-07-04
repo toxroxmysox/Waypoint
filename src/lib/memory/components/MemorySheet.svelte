@@ -272,7 +272,7 @@
 		<button
 			type="submit"
 			disabled={saving || saveOp === 'reject_empty'}
-			class="bg-ink text-on-ink w-full rounded-lg px-4 py-3 text-sm font-medium disabled:opacity-40"
+			class="bg-ink text-paper w-full rounded-lg px-4 py-3 text-sm font-medium disabled:opacity-40"
 		>
 			{#if saving}
 				Saving…
