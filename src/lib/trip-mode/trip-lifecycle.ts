@@ -4,10 +4,13 @@ import type { TripDateInfo } from './activation';
 /**
  * The trip's derived lifecycle — there is NO stored `status` field; only `archived`
  * persists. Everything else is computed from the trip's dates against "now", in the
- * trip-local timezone (#167). The four states are mutually exclusive:
+ * trip-local timezone (#167). The five states are mutually exclusive:
  *
- *  - `planning` — today < start_date. A DATE-LESS trip is ALWAYS planning (explicit
- *    guard) — an empty end_date must never read as past-end and flip to wrap-up.
+ *  - `forming`  — start_date is empty (#270 / ADR-0022). A trip may exist without
+ *    dates: collect ideas, invite people, set goals. Promotion to a dated trip is
+ *    the first date-set (one-way — the hook rejects clearing dates). "Forming" is
+ *    internal vocabulary, never a UI label.
+ *  - `planning` — today < start_date.
  *  - `active`   — start_date ≤ today ≤ end_date (the `isTripActive` truth).
  *  - `wrap-up`  — today > end_date AND not archived (the day after the trip ends).
  *  - `closed`   — archived. Takes precedence over the date comparison: an archived
@@ -15,7 +18,7 @@ import type { TripDateInfo } from './activation';
  *    on a past-end trip drops back to `wrap-up` (or `active` if still in range);
  *    there is no special "reopened" state.
  */
-export type TripLifecycle = 'planning' | 'active' | 'wrap-up' | 'closed';
+export type TripLifecycle = 'forming' | 'planning' | 'active' | 'wrap-up' | 'closed';
 
 /**
  * Derive a trip's lifecycle from its dates + `archived`, comparing in the trip-local
@@ -26,10 +29,16 @@ export function getTripLifecycle(trip: TripDateInfo, now: Date = new Date()): Tr
 	// even mid-range. Reopening (archived → false) re-runs the date logic below.
 	if (trip.archived) return 'closed';
 
-	// A date-less trip is always planning — never let an empty end_date read as
-	// "today > end" and flip the trip to wrap-up. (An empty start_date can't be
-	// "active" either; both gaps collapse to the safe planning default.)
-	if (!trip.start_date || !trip.end_date) return 'planning';
+	// Forming ⇔ start_date empty (ADR-0022). PB stores an unset date as '', so
+	// this is a plain truthiness check in TS (the hooks must use getString —
+	// goja returns a truthy DateTime for an empty date field).
+	if (!trip.start_date) return 'forming';
+
+	// A start-only trip shouldn't exist (both-or-neither is enforced at the app
+	// layer), but if one slips through, never let the empty end_date read as
+	// "today > end" and flip the trip to wrap-up — collapse to the safe
+	// planning default.
+	if (!trip.end_date) return 'planning';
 
 	// Compare against the trip-local calendar date, not UTC — otherwise an ahead-of-
 	// UTC trip flips mid-evening on its last day, and a behind-UTC trip flips to

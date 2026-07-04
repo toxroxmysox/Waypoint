@@ -78,9 +78,26 @@ onRecordUpdateRequest((e) => {
 	e.next();
 }, 'trips');
 
+// #270 / ADR-0022 — both-or-neither dates on create. A trip is either dateless
+// (forming) or fully dated; a start-only / end-only trip must never exist. The
+// schema can't express a cross-field requirement (0062 relaxed both to
+// optional), so the invariant lives here + in the form actions. getString, not
+// get(): goja returns a TRUTHY DateTime for an empty date field (cerebrum).
+onRecordCreateRequest((e) => {
+	const start = e.record.getString('start_date');
+	const end = e.record.getString('end_date');
+	if ((start && !end) || (!start && end)) {
+		throw new BadRequestError('A trip needs both dates or neither.');
+	}
+	e.next();
+}, 'trips');
+
 // After trip creation: add creator as owner + generate day records.
 // Callback in PocketBase's JS hook runtime doesn't see outer-file helpers
 // (isolated sandbox). Logic is inlined here for that reason.
+// #270: a DATELESS create (forming trip) gets the owner membership only — the
+// early return below skips phase seeding + day generation. Those run at
+// promotion (first date-set) via the update hook's promotion branch.
 onRecordAfterCreateSuccess((e) => {
 	// --- Auto-add creator as owner ---
 	const createdBy = e.record.get('created_by');
@@ -173,19 +190,58 @@ onRecordAfterCreateSuccess((e) => {
 }, 'trips');
 
 // After trip update: reconcile days if dates changed.
+// #270 / ADR-0022 additions (all BEFORE e.next(), so a denied write rejects):
+//   * both-or-neither — a trip has either no dates (forming) or both.
+//   * one-way promotion — clearing dates on a dated trip is rejected (days /
+//     phases / items exist by then; un-dating is destructive).
+// And AFTER e.next(): the empty→set PROMOTION branch seeds the "Phase 1"
+// phase (mirroring the create hook) before the day-generation below buckets
+// the new days into it, then re-homes any phase-less forming ideas.
 onRecordUpdateRequest((e) => {
 	const oldStartDate = e.record.original().getString('start_date');
 	const oldEndDate = e.record.original().getString('end_date');
 
-	e.next();
-
+	// getString, never get(): goja returns a truthy DateTime for an EMPTY date
+	// field, so a get()-based truthiness check would always read "set".
 	const newStartDate = e.record.getString('start_date');
 	const newEndDate = e.record.getString('end_date');
+
+	if ((newStartDate && !newEndDate) || (!newStartDate && newEndDate)) {
+		throw new BadRequestError('A trip needs both dates or neither.');
+	}
+	if (oldStartDate && !newStartDate) {
+		throw new BadRequestError(
+			'This trip already has dates — they can be changed, but not removed.'
+		);
+	}
+
+	e.next();
 
 	if (oldStartDate === newStartDate && oldEndDate === newEndDate) return;
 
 	// --- Reconcile days (inlined for same sandbox reasons) ---
 	if (!newStartDate || !newEndDate) return;
+
+	// --- Promotion (#270): first-dating a forming trip. Seed the "Phase 1"
+	// phase spanning the whole trip BEFORE the phases query below, so the day
+	// generation buckets every new day into it — the exact create-path shape
+	// (#217/ADR-0021: a dated trip always has at least one phase). Inlined:
+	// hooks run in isolated sandboxes, no shared helpers.
+	const isPromotion = !oldStartDate && !!newStartDate;
+	if (isPromotion) {
+		try {
+			const phasesCollection = e.app.findCollectionByNameOrId('phases');
+			const seedPhase = new Record(phasesCollection);
+			seedPhase.set('trip', e.record.id);
+			seedPhase.set('name', 'Phase 1');
+			seedPhase.set('start_date', newStartDate.substring(0, 10) + ' 00:00:00.000Z');
+			seedPhase.set('end_date', newEndDate.substring(0, 10) + ' 00:00:00.000Z');
+			seedPhase.set('order', 0);
+			e.app.save(seedPhase);
+		} catch (_) {
+			// Best-effort, matching the create hook: still generate days below.
+		}
+	}
 
 	const daysCollection = e.app.findCollectionByNameOrId('days');
 
@@ -266,5 +322,39 @@ onRecordUpdateRequest((e) => {
 			// No items to unlink
 		}
 		e.app.delete(day);
+	}
+
+	// --- Promotion follow-through (#270): re-home phase-less forming ideas.
+	// Ideas collected while forming carry phase='' (no phase existed). Every
+	// parking/idea surface on a dated trip is phase-scoped (#196), so leave
+	// them phase-less and they'd render nowhere. Attach them to the trip's
+	// first phase (the just-seeded "Phase 1") — ideas intact across promotion.
+	if (isPromotion) {
+		try {
+			const firstPhase = e.app.findRecordsByFilter(
+				'phases',
+				'trip = {:tripId}',
+				'+order',
+				1,
+				0,
+				{ tripId: e.record.id }
+			);
+			if (firstPhase && firstPhase.length > 0) {
+				const orphans = e.app.findRecordsByFilter(
+					'items',
+					'trip = {:tripId} && phase = ""',
+					'',
+					0,
+					0,
+					{ tripId: e.record.id }
+				);
+				for (const orphan of orphans) {
+					orphan.set('phase', firstPhase[0].id);
+					e.app.save(orphan);
+				}
+			}
+		} catch (_) {
+			// No orphaned ideas to re-home.
+		}
 	}
 }, 'trips');
