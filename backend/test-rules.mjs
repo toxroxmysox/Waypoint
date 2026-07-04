@@ -28,7 +28,7 @@ const EMAILS = {
 };
 
 const ROLES = ['owner', 'co_owner', 'traveler', 'viewer', 'non_member'];
-const COLLECTIONS = ['users', 'trips', 'trip_members', 'phases', 'days', 'items', 'checklist_items', 'pending_invites', 'votes', 'trip_goals', 'goal_votes', 'suggestion_votes', 'documents'];
+const COLLECTIONS = ['users', 'trips', 'trip_members', 'phases', 'days', 'items', 'checklist_items', 'pending_invites', 'votes', 'trip_goals', 'goal_votes', 'suggestion_votes', 'documents', 'memories'];
 
 // Collections whose create requires a multipart body (a file field). `documents`
 // (#70) takes a single file; the harness uploads a valid 1x1 PNG so PB's
@@ -138,6 +138,8 @@ function fixtureRecordId(fixture, collection) {
 			return fixture.suggestionVoteId;
 		case 'documents':
 			return fixture.documentId;
+		case 'memories':
+			return fixture.memoryId;
 		default:
 			throw new Error('unknown collection ' + collection);
 	}
@@ -433,6 +435,24 @@ const EXPECT = {
 		create: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' },
 		update: DENY_ALL,
 		delete: { owner: 'allow', co_owner: 'allow', traveler: 'deny', viewer: 'deny', non_member: 'deny' }
+	},
+	// memories (#269 / ADR-0007):
+	//   list/view: ALL trip members, including viewers — memories are reviewed
+	//           together (Trip Mode Today + Closeout). Never public.
+	//   create: owner·co_owner·traveler authoring as THEMSELVES; viewers are
+	//           read-only (createRule: author.user = auth && author.role !=
+	//           "viewer", mirroring trip_goals). createBody targets dayId2 so it
+	//           never collides with the seeded (day1, owner) fixture memory under
+	//           the unique (day, author) cap.
+	//   update/delete: AUTHOR ONLY — personal expression, deliberately stricter
+	//           than documents (no owner/co_owner override, PRD §Permissions).
+	//           The fixture memory is owner-authored, so only owner passes.
+	memories: {
+		list: ALLOW_MEMBERS_DENY_NONMEMBER,
+		view: ALLOW_MEMBERS_DENY_NONMEMBER,
+		create: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' },
+		update: SELF_ONLY,
+		delete: SELF_ONLY
 	}
 };
 
@@ -535,6 +555,18 @@ function createBody(collection, role, fixture) {
 				manual_status: 'unplanned',
 				sort_order: 99
 			};
+		case 'memories':
+			// Thought-only memory (JSON — no file needed to satisfy the hook's
+			// at-least-one-of check). Authored as the acting member on the SECOND
+			// day, so the seeded (day1, owner) memory never collides under the
+			// unique (day, author) index. non_member falls back to the owner's
+			// member id, whose user != the non_member auth → rule denies.
+			return {
+				trip: fixture.tripId,
+				day: fixture.dayId2,
+				author: fixture.memberIds[role] || fixture.memberIds.owner,
+				thought: `Harness memory ${role} ${stamp}`
+			};
 		default:
 			throw new Error('no body for ' + collection);
 	}
@@ -571,6 +603,10 @@ function updateBody(collection) {
 		case 'documents':
 			// updateRule is null, so PB rejects before validating the payload.
 			return { caption: 'Harness updated' };
+		case 'memories':
+			// A non-empty thought keeps the at-least-one-of hook satisfied, so the
+			// matrix result reflects the author-only rule, not the backstop.
+			return { thought: 'Harness updated' };
 		default:
 			throw new Error('no body for ' + collection);
 	}
@@ -1281,6 +1317,9 @@ const CANONICAL_MEMBER_RELATIONS = new Set([
 	'suggestions.reviewed_by',
 	'trip_goals.created_by',
 	'documents.uploaded_by',
+	// memories (#269, migration 0058) — block; never reassigned (unique (day,
+	// author) cap + personal expression), dropped on cascade disposition.
+	'memories.author',
 	'items.created_by',
 	'items.paid_by',
 	'items.booked_by',
@@ -2037,6 +2076,72 @@ function printJoinLinkReport() {
 	}
 }
 
+// #269 (ADR-0007) — memories novel cases. The fixed matrix proves membership +
+// author-as-self + author-only; these drive the two load-bearing constraints it
+// can't express: the unique (day, author) CAP (the feature's whole personality)
+// and the at-least-one-of {photo, thought} hook (create + the clear-both update
+// backstop). Plus one multipart photo-only create, so the file path (mimeTypes,
+// pending-upload detection in the hook) is exercised — the matrix creates are
+// thought-only JSON.
+const MEMORIES_OPS = ['photo_create', 'cap_second_memory', 'empty_create', 'clear_both_update'];
+
+async function runMemoriesNovelCases(tokens) {
+	const fixture = await setupFixture();
+
+	// 1. PHOTO-ONLY multipart create (owner, day2) → allow. No thought; the
+	//    pending-upload photo alone must satisfy the at-least-one-of hook.
+	const form = new FormData();
+	form.set('trip', fixture.tripId);
+	form.set('day', fixture.dayId2);
+	form.set('author', fixture.memberIds.owner);
+	form.set('photo', new Blob([PNG_1x1], { type: 'image/png' }), 'memory.png');
+	const photo = await pbRequest('POST', '/api/collections/memories/records', {
+		token: tokens.owner,
+		form
+	});
+	recordResult('memories', 'photo_create', 'owner', 'allow', classifyWrite(photo.status), photo.status);
+
+	// 2. THE CAP — owner already holds the seeded (day1, owner) slot; a second
+	//    memory on day1 must 400 on the unique index → deny. Editing replaces;
+	//    two memories for the same member+day can never exist (ADR-0007).
+	const dup = await pbRequest('POST', '/api/collections/memories/records', {
+		token: tokens.owner,
+		body: {
+			trip: fixture.tripId,
+			day: fixture.dayId,
+			author: fixture.memberIds.owner,
+			thought: 'Second memory, same day — must never exist'
+		}
+	});
+	recordResult('memories', 'cap_second_memory', 'owner', 'deny', classifyWrite(dup.status), dup.status);
+
+	// 3. EMPTY create — neither photo nor thought → deny (memories.pb.js: a
+	//    record with neither does not exist). Traveler on day2 (their slot is
+	//    free, so the rejection is the hook's, not the index's).
+	const empty = await pbRequest('POST', '/api/collections/memories/records', {
+		token: tokens.traveler,
+		body: { trip: fixture.tripId, day: fixture.dayId2, author: fixture.memberIds.traveler }
+	});
+	recordResult('memories', 'empty_create', 'traveler', 'deny', classifyWrite(empty.status), empty.status);
+
+	// 4. CLEAR-BOTH update backstop — the fixture memory is thought-only; the
+	//    author PATCHing thought:'' would empty the record → deny (the app
+	//    composer deletes instead; a direct API clear-both must be rejected).
+	const clear = await pbRequest('PATCH', `/api/collections/memories/records/${fixture.memoryId}`, {
+		token: tokens.owner,
+		body: { thought: '' }
+	});
+	recordResult('memories', 'clear_both_update', 'owner', 'deny', classifyWrite(clear.status), clear.status);
+}
+
+function printMemoriesReport() {
+	console.log('\n[#269 memories — cap (day,author), at-least-one-of hook, photo multipart]');
+	for (const r of results.filter((x) => MEMORIES_OPS.includes(x.op))) {
+		const mark = r.passed ? 'PASS' : 'FAIL';
+		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+	}
+}
+
 function printReport() {
 	const ops = ['list', 'view', 'create', 'update', 'delete'];
 	const allRoles = [...ROLES, 'anon'];
@@ -2150,6 +2255,9 @@ async function main() {
 	console.log('#217 cases: last-phase delete block (deny removing the only phase)');
 	await runLastPhaseDeleteCases(tokens);
 
+	console.log('#269 cases: memories (unique (day,author) cap, at-least-one-of, photo multipart)');
+	await runMemoriesNovelCases(tokens);
+
 	printReport();
 	printNovelReport();
 	printSuggestionVotesReport();
@@ -2165,6 +2273,7 @@ async function main() {
 	printSelfAssignReport();
 	printCreatorEditReport();
 	printLastPhaseDeleteReport();
+	printMemoriesReport();
 
 	const failed = results.some((r) => !r.passed);
 	exit(failed ? 1 : 0);

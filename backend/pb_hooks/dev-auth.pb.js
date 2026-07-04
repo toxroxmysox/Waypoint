@@ -210,7 +210,7 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 			//   1. REQUIRED, NON-cascade FK to a trip_members row. The fixture (and
 			//      the pending_invites after-create hook) seed: documents.uploaded_by
 			//      (0032), suggestions.author (0017), trip_goals.created_by (0040),
-			//      and notifications.recipient (0020/0053) — all required, none
+			//      memories.author (0058), and notifications.recipient (0020/0053) — all required, none
 			//      cascadeDelete. When PB cascades the trip it can't delete a member
 			//      still referenced by one of these ("part of a required relation
 			//      reference"), so the member delete (and thus the trip delete) 400s.
@@ -223,7 +223,7 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 			// suggestion_votes, goal_votes — cascade off suggestions/trip_goals, so
 			// deleting the parents drops them too.) `notifications` is listed first
 			// since it pins both a member and the trip.
-			for (const col of ['notifications', 'documents', 'suggestions', 'trip_goals']) {
+			for (const col of ['notifications', 'documents', 'memories', 'suggestions', 'trip_goals']) {
 				try {
 					const rows = e.app.findRecordsByFilter(col, 'trip = {:tripId}', '', 0, 0, { tripId: existing.id });
 					for (const row of rows) {
@@ -315,14 +315,18 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 		seededPhaseId = '';
 	}
 
-	// Pick the first auto-generated day for fixture references.
-	const days = e.app.findRecordsByFilter('days', 'trip = {:tripId}', '+date', 1, 0, {
+	// Pick the first TWO auto-generated days for fixture references. The second
+	// day (#269) is the memories create-matrix target: the seeded fixture memory
+	// occupies (day1, owner) under the unique (day, author) index, so create
+	// attempts land on day2 where every role's slot is free.
+	const days = e.app.findRecordsByFilter('days', 'trip = {:tripId}', '+date', 2, 0, {
 		tripId: trip.id
 	});
-	if (days.length === 0) {
+	if (days.length < 2) {
 		throw new Error('Fixture: trip after-create hook did not generate days');
 	}
 	const day = days[0];
+	const day2 = days[1];
 
 	// Create an item.
 	const itemsCol = e.app.findCollectionByNameOrId('items');
@@ -537,11 +541,26 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 	document.set('file', docFile);
 	e.app.save(document);
 
+	// Seed a THOUGHT-ONLY memory authored by the owner on day 1 (#269 / ADR-0007)
+	// — the memories fixture record for list/view/update/delete (author-only →
+	// SELF_ONLY). Thought-only keeps the update backstop testable (clearing the
+	// thought empties the record → memories.pb.js rejects) and occupies the
+	// (day1, owner) slot so the harness can assert the unique-cap 400. Direct
+	// save bypasses the create hook.
+	const memoriesCol = e.app.findCollectionByNameOrId('memories');
+	const memory = new Record(memoriesCol);
+	memory.set('trip', trip.id);
+	memory.set('day', day.id);
+	memory.set('author', memberIds.owner);
+	memory.set('thought', 'Fixture memory — day one felt like the start of something.');
+	e.app.save(memory);
+
 	return e.json(200, {
 		tripId: trip.id,
 		phaseId: phase.id,
 		phaseId2: seededPhaseId,
 		dayId: day.id,
+		dayId2: day2.id,
 		itemId: item.id,
 		itemId2: item2.id,
 		voteId: vote.id,
@@ -558,6 +577,7 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 		pendingInviteId: invite.id,
 		pendingInviteCode: inviteCode,
 		documentId: document.id,
+		memoryId: memory.id,
 		memberIds: memberIds,
 		userIds: userIds
 	});
