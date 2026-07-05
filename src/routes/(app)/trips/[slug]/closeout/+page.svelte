@@ -4,8 +4,11 @@
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import CloseoutDayCard from '$lib/itinerary/components/CloseoutDayCard.svelte';
 	import PublishControl from '$lib/portability/components/PublishControl.svelte';
+	import MemorySheet from '$lib/memory/components/MemorySheet.svelte';
+	import MemoryCard from '$lib/memory/components/MemoryCard.svelte';
 	import { tripToday, tripTz } from '$lib/shell/trip-time';
 	import type { Day, Item } from '$lib/types';
+	import type { Memory } from '$lib/memory/types';
 	import { untrack } from 'svelte';
 
 	let { data } = $props();
@@ -67,6 +70,35 @@
 	function itemsForDay(day: Day): Item[] {
 		return data.items.filter((i) => i.day === day.id);
 	}
+
+	// #269 Trip Memory — the retroactive per-day capture door. During wrap-up any
+	// walker (owner/co_owner/traveler) can add/edit THEIR OWN memory for the day
+	// under review; a closed trip's closeout is read-only for memories too.
+	let memorySheetOpen = $state(false);
+	const canCaptureMemories = $derived(data.canCaptureMemories ?? false);
+	const myMemoryForDay = $derived.by((): Memory | null => {
+		if (!currentDay) return null;
+		return (
+			(data.memories ?? []).find(
+				(m: Memory) => m.day === currentDay.id && m.author === data.membership.id
+			) ?? null
+		);
+	});
+	const myPhotoSrc = $derived(
+		myMemoryForDay?.photo
+			? `/trips/${data.trip.slug}/memories/${myMemoryForDay.id}/photo`
+			: ''
+	);
+
+	// All travelers' memories for the day under review — the reminiscence moment
+	// (PRD §Surfaces: Closeout review). A member with no memory has no card.
+	const dayMemories = $derived.by((): Memory[] => {
+		if (!currentDay) return [];
+		return (data.memories ?? []).filter((m: Memory) => m.day === currentDay.id);
+	});
+	const memberById = $derived(
+		new Map((data.members ?? []).map((m: (typeof data.members)[number]) => [m.id, m]))
+	);
 
 	const summary = $derived.by(() => {
 		let done = 0;
@@ -133,6 +165,39 @@
 			days={data.days}
 			tripEndDate={data.trip.end_date}
 		/>
+
+		<!-- #269 — the day's memories, all travelers, alongside the item review
+		     (the reminiscence moment). Mine is editable during wrap-up; a CLOSED
+		     trip renders the cards read-only — and NOTHING when there are none. -->
+		{#if dayMemories.length > 0 || canCaptureMemories}
+			<section class="mt-4 space-y-2" data-testid="closeout-memories">
+				<p class="text-ink-muted text-[11px] font-medium uppercase tracking-wide">Memories</p>
+				{#each dayMemories as memory (memory.id)}
+					<MemoryCard
+						{memory}
+						member={memberById.get(memory.author) ?? null}
+						slug={data.trip.slug}
+						mine={memory.author === data.membership.id}
+						editable={canCaptureMemories}
+						onEdit={() => (memorySheetOpen = true)}
+					/>
+				{/each}
+				{#if canCaptureMemories && !myMemoryForDay}
+					<button
+						type="button"
+						onclick={() => (memorySheetOpen = true)}
+						class="border-line text-ink-soft hover:border-ink-muted hover:text-ink flex w-full items-center justify-center gap-2 rounded-xl border border-dashed px-3 py-2.5 text-sm font-medium transition-colors"
+					>
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+							<rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+							<circle cx="8.5" cy="8.5" r="1.5" />
+							<polyline points="21 15 16 10 5 21" />
+						</svg>
+						{dayMemories.length === 0 ? 'No memories yet — add one for this day' : 'Add your memory for this day'}
+					</button>
+				{/if}
+			</section>
+		{/if}
 
 		<div class="mt-4 flex justify-between">
 			<button
@@ -294,3 +359,15 @@
 		</div>
 	{/if}
 </main>
+
+<!-- #269 — the one memory composer, scoped to the day under review. -->
+{#if canCaptureMemories && currentDay}
+	<MemorySheet
+		bind:open={memorySheetOpen}
+		dayId={currentDay.id}
+		existing={myMemoryForDay}
+		photoSrc={myPhotoSrc}
+		title="Your memory — day {currentDayIndex + 1}"
+		subtitle="One photo, one thought for this day."
+	/>
+{/if}

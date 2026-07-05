@@ -11,6 +11,8 @@ import { currentPhaseId } from '$lib/trip-mode/current-phase';
 import { computeMovePatch } from '$lib/itinerary/move-item';
 import { promotePlacement } from '$lib/trip-mode/promote';
 import { scoreVotes, sortByVoteScore } from '$lib/collaboration/voting';
+import { handleSaveMemory } from '$lib/memory/save-memory.server';
+import type { Memory } from '$lib/memory/types';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, membership, phases, days } = await parent();
@@ -151,6 +153,17 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	// for everyone (travelers/viewers see vote stacks read-only); this gates the tap.
 	const canPromote = membership.role === 'owner' || membership.role === 'co_owner';
 
+	// #269 Trip Memory — today's memories from ALL travelers (review cards) +
+	// the caller's own (the composer's upsert target). Viewers see, never author.
+	const memories = today
+		? await locals.pb.collection('memories').getFullList<Memory>({
+				filter: `trip = "${trip.id}" && day = "${today.id}"`,
+				sort: 'created'
+			})
+		: [];
+	const myMemory = memories.find((m) => m.author === membership.id) ?? null;
+	const canCapture = membership.role !== 'viewer';
+
 	return {
 		todayItems,
 		tomorrowItems,
@@ -160,7 +173,12 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		votesByItem,
 		members: withAvatarUrls(locals.pb, members),
 		hasToday: today !== null,
+		todayDayId: today?.id ?? null,
 		now: now.toISOString(),
+		// #269 — today's memory cards + the caller's own memory (composer target).
+		memories,
+		myMemory,
+		canCapture,
 		// #245 Door 1 — current-phase ideas strip (vote-score ordered) + the promote gate.
 		ideas,
 		currentPhaseId: derivedPhaseId,
@@ -169,6 +187,10 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 };
 
 export const actions: Actions = {
+	// #269 Trip Memory — the composer's save (upsert-or-delete the caller's
+	// (day, author) record). Shared handler; PB rules + memories.pb.js enforce.
+	saveMemory: handleSaveMemory,
+
 	// Check-only toggle for Trip Mode (#154 Slice B), mirroring Today's action.
 	// Membership-gated, viewer read-only.
 	toggleTask: async ({ request, params, locals }) => {

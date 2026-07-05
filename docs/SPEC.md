@@ -97,6 +97,8 @@ All test harnesses require PocketBase running via `./backend/start.sh` with `WAY
 | Approve suggestions | ✓ | ✓ | — | — | — |
 | Comment on items | ✓ | ✓ | ✓ | ✓ | — |
 | Vote on items | ✓ | ✓ | ✓ | — | — |
+| Capture/edit own daily Memory (#269, ADR-0007) | ✓ | ✓ | ✓ | — | — |
+| View trip memories | ✓ | ✓ | ✓ | ✓ | — (never public) |
 | Invite Travelers / Viewers | ✓ | ✓ | ✓ | — | — |
 | Invite Co-Owners | ✓ | ✓ | — | — | — |
 | Promote Traveler → Co-Owner | ✓ | ✓ | — | — | — |
@@ -266,6 +268,23 @@ Days are auto-generated from trip start/end dates and re-bucketed (multi-relatio
 | created | datetime | |
 
 Unique constraint on (item, member). One vote per member per item. Updating a vote replaces the previous value. UI shows avatar stacks per vote option, not aggregate scores. Unplanned items sort by aggregate vote score as the default ordering.
+
+### `memories` (#269, ADR-0007 — Trip Memory context)
+| Field | Type | Notes |
+|---|---|---|
+| trip | relation→trips, required | cascadeDelete |
+| day | relation→days, required | cascadeDelete — memories group by day, the experiential timeline |
+| author | relation→trip_members, required | Auto-pinned to the caller in `memories.pb.js` |
+| photo | file, single image, nullable | jpg/png/webp/heic, 20 MB, `protected` (token-proxied). No PDF — a memory is never a document |
+| thought | text, max 280, nullable | Tweet-length — "one thought," not an essay |
+
+**Unique constraint on (day, author)** — the hard cap: one photo + one thought, per member,
+per day (the cap IS the feature — ADR-0007). Editing replaces (the UI upserts). **At least one
+of {photo, thought}** enforced in `memories.pb.js`; clearing both deletes the record.
+Edit/delete = **author only** (stricter than documents — no owner override). Visible to all
+trip members including viewers; **excluded from the Public Archive** (plan-only stays
+plan-only). Capture: Note Before Bed (Trip Mode day-wrapped), Trip Mode Add, Closeout
+per-day. Review: Trip Mode Today + Closeout. No standalone gallery/nav tab (v4).
 
 ### `expenses`
 | Field | Type | Notes |
@@ -601,10 +620,10 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 13. **Vault** — password unlock screen, then list of entries
 14. **Trip Settings** — slug, archive toggle, auto-approve toggle, vault password setup, danger zone
 15. **Notifications** — list, mark read
-16. **Closeout Wizard** — day-by-day planned items (done/considered), phase-level unplanned review with bulk auto-consider, inline item add
-17. **Trip Mode — Now** — what's happening now, next up, ongoing items
-18. **Trip Mode — Today** — today timeline, planned items + parking lot
-19. **Trip Mode — Add** — quick-add item during trip
+16. **Closeout Wizard** — day-by-day planned items (done/considered), phase-level unplanned review with bulk auto-consider, inline item add; per-day trip memories review + retroactive memory add/edit (#269)
+17. **Trip Mode — Now** — what's happening now, next up, ongoing items; Note Before Bed memory prompt in the day-wrapped state (#269)
+18. **Trip Mode — Today** — today timeline, planned items + parking lot; today's memories from all travelers as small cards (#269)
+19. **Trip Mode — Add** — quick-add item, expense, or today's memory during trip (#269)
 20. **Trip Mode — Money** (`/money`) — read-only per-person glance: "how much do *I* have left to spend?" Two labeled figures — **N1** left-to-spend (my budget − my reconciliation-aware share) and **N2** left-for-unplanned (N1 − my share of remaining planned estimates) — each as a per-day rate (the hero) + a total. Deep-links to /budget and /expenses to settle/edit. Bottom-nav tab landed with #244 (#227).
 21. **Trip Mode — Vault** — password-gated encrypted entries
 
