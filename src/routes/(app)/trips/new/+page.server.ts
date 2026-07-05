@@ -27,8 +27,13 @@ export const actions: Actions = {
 		const locationSummary = data.get('location_summary')?.toString().trim() || '';
 
 		if (!title) return fail(400, { error: 'Title is required.' });
-		if (!startDate || !endDate) return fail(400, { error: 'Start and end dates are required.' });
-		if (new Date(startDate) > new Date(endDate)) {
+		// #270 / ADR-0022 — name-first create: dates are optional. Skipping both
+		// creates a dateless (forming) trip; the PB hook skips phase/day seeding
+		// and the promotion (first date-set) seeds them later. Both or neither.
+		if ((startDate && !endDate) || (!startDate && endDate)) {
+			return fail(400, { error: 'Set both dates, or leave both empty.' });
+		}
+		if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
 			return fail(400, { error: 'Start date must be before end date.' });
 		}
 		if (!isValidTimeZone(timezone)) {
@@ -51,8 +56,8 @@ export const actions: Actions = {
 			const trip = await locals.pb.collection('trips').create({
 				title,
 				slug,
-				start_date: startDate + ' 00:00:00.000Z',
-				end_date: endDate + ' 00:00:00.000Z',
+				start_date: startDate ? startDate + ' 00:00:00.000Z' : '',
+				end_date: endDate ? endDate + ' 00:00:00.000Z' : '',
 				timezone,
 				location_summary: locationSummary,
 				created_by: locals.user!.id,

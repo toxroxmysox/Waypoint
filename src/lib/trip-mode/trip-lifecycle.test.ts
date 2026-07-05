@@ -105,21 +105,31 @@ describe('getTripLifecycle', () => {
 		});
 	});
 
-	describe('the date-less → planning guard (never wrap-up via empty end_date)', () => {
-		it('no start and no end → planning', () => {
-			expect(getTripLifecycle(trip('', ''), new Date('2026-06-05'))).toBe('planning');
+	describe('forming — the derived dateless state (#270 / ADR-0022)', () => {
+		it('no start and no end → forming', () => {
+			expect(getTripLifecycle(trip('', ''), new Date('2026-06-05'))).toBe('forming');
 		});
 
-		it('empty end_date → planning, NOT wrap-up (the explicit guard)', () => {
+		it('empty start_date → forming (forming ⇔ start_date empty)', () => {
+			expect(getTripLifecycle(trip('', '2026-06-10'), new Date('2026-06-05'))).toBe('forming');
+		});
+
+		it('empty end_date only → planning, NOT wrap-up (the defensive guard: a start-only trip is not forming)', () => {
 			expect(getTripLifecycle(trip('2026-06-01', ''), new Date('2026-06-05'))).toBe('planning');
 		});
 
-		it('empty start_date → planning', () => {
-			expect(getTripLifecycle(trip('', '2026-06-10'), new Date('2026-06-05'))).toBe('planning');
+		it('a date-less trip still closes when archived (archived wins over forming)', () => {
+			expect(getTripLifecycle(trip('', '', true), new Date('2026-06-05'))).toBe('closed');
 		});
 
-		it('a date-less trip still closes when archived (archived wins over the guard)', () => {
-			expect(getTripLifecycle(trip('', '', true), new Date('2026-06-05'))).toBe('closed');
+		it('promotion: setting dates moves forming → planning (future dates)', () => {
+			const now = new Date('2026-06-05');
+			expect(getTripLifecycle(trip('', ''), now)).toBe('forming');
+			expect(getTripLifecycle(trip('2026-07-01', '2026-07-10'), now)).toBe('planning');
+		});
+
+		it('a forming trip is never active (isTripActive untouched — empty dates cannot satisfy the window)', () => {
+			expect(isTripActive(trip('', ''), new Date('2026-06-05'))).toBe(false);
 		});
 	});
 

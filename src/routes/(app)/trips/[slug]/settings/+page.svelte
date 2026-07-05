@@ -63,6 +63,8 @@
 				/>
 			</div>
 
+			<!-- #270: a forming (dateless) trip may stay dateless — required only once
+			     dated (dates can move, never be removed; the action + hook enforce). -->
 			<div class="grid grid-cols-2 gap-3">
 				<div class="min-w-0">
 					<label for="start_date" class="text-ink-soft block text-sm font-medium">Start date</label>
@@ -70,7 +72,7 @@
 						type="date"
 						id="start_date"
 						name="start_date"
-						required
+						required={!!data.trip.start_date}
 						value={data.trip.start_date.split('T')[0].split(' ')[0]}
 						class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
 					/>
@@ -81,7 +83,7 @@
 						type="date"
 						id="end_date"
 						name="end_date"
-						required
+						required={!!data.trip.start_date}
 						value={data.trip.end_date.split('T')[0].split(' ')[0]}
 						class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
 					/>

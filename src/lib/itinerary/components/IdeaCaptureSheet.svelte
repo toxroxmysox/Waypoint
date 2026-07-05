@@ -21,7 +21,8 @@
 		slug,
 		phases = [],
 		defaultPhaseId = '',
-		defaultDayId = ''
+		defaultDayId = '',
+		forming = false
 	}: {
 		open: boolean;
 		slug: string;
@@ -31,9 +32,16 @@
 		defaultPhaseId?: string;
 		/** When opened from a day, "Plan it for a day" preselects this day. */
 		defaultDayId?: string;
+		/**
+		 * #270 / ADR-0022 — a forming (dateless) trip has no phases and no days:
+		 * the fork collapses to the idea mini-form (no "plan it for a day"), and
+		 * the phase picker is hidden (ideas are phase-less until promotion).
+		 */
+		forming?: boolean;
 	} = $props();
 
 	// Two-step within the sheet: the fork (choose), then the idea mini-form.
+	// Forming skips the fork — ideas are the only capture path without days.
 	let mode = $state<'fork' | 'idea'>('fork');
 	let title = $state('');
 	let phaseId = $state('');
@@ -45,7 +53,7 @@
 	// Reset the sheet each time it opens, seeding the phase from context.
 	$effect(() => {
 		if (open) {
-			mode = 'fork';
+			mode = forming ? 'idea' : 'fork';
 			title = '';
 			phaseId = defaultPhaseId || phases[0]?.id || '';
 			type = 'activity';
@@ -138,21 +146,23 @@
 				/>
 			</div>
 
-			<div>
-				<label for="idea-cap-phase" class="text-ink-soft block text-sm font-medium">Phase</label>
-				<select
-					id="idea-cap-phase"
-					name="phase"
-					required
-					bind:value={phaseId}
-					class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
-				>
-					{#each phases as p (p.id)}
-						<option value={p.id}>{p.name}</option>
-					{/each}
-				</select>
-				<p class="text-ink-muted mt-1 text-xs">Every idea lives in a phase.</p>
-			</div>
+			{#if !forming}
+				<div>
+					<label for="idea-cap-phase" class="text-ink-soft block text-sm font-medium">Phase</label>
+					<select
+						id="idea-cap-phase"
+						name="phase"
+						required
+						bind:value={phaseId}
+						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+					>
+						{#each phases as p (p.id)}
+							<option value={p.id}>{p.name}</option>
+						{/each}
+					</select>
+					<p class="text-ink-muted mt-1 text-xs">Every idea lives in a phase.</p>
+				</div>
+			{/if}
 
 			<div>
 				<label for="idea-cap-type" class="text-ink-soft block text-sm font-medium">Type</label>
@@ -169,12 +179,14 @@
 			</div>
 
 			<div class="flex items-center gap-2 pt-1">
-				<Button type="submit" variant="moss" size="md" disabled={submitting || !title.trim() || !phaseId} class="flex-1">
+				<Button type="submit" variant="moss" size="md" disabled={submitting || !title.trim() || (!forming && !phaseId)} class="flex-1">
 					{submitting ? 'Sending…' : 'Add idea'}
 				</Button>
-				<Button type="button" variant="ghost" size="md" disabled={submitting} onclick={() => (mode = 'fork')}>
-					Back
-				</Button>
+				{#if !forming}
+					<Button type="button" variant="ghost" size="md" disabled={submitting} onclick={() => (mode = 'fork')}>
+						Back
+					</Button>
+				{/if}
 			</div>
 		</form>
 	{/if}

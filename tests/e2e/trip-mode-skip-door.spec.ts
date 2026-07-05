@@ -51,6 +51,8 @@ test.describe('Trip Mode Door 2 — skip → parking lot + ideas strip (#246)', 
 		const start = new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0];
 		const end = new Date(Date.now() + 2 * 86400000).toISOString().split('T')[0];
 		await page.fill('input[name="title"]', tripTitle);
+		// #270: dates live behind the optional "I know the dates" expander on /trips/new.
+		await page.locator('summary', { hasText: 'I know the dates' }).click();
 		await page.fill('input[name="start_date"]', start);
 		await page.fill('input[name="end_date"]', end);
 		await page.fill('input[name="location_summary"]', 'Test Location');
