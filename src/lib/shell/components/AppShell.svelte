@@ -37,6 +37,10 @@
 
 	const active = $derived(trip ? isTripActive(trip) : false);
 
+	// #270 / ADR-0022 — forming ⇔ start_date empty (PB stores an unset date as
+	// ''). Gates the nav to the forming scope: Ideas + Members + Goals + More.
+	const forming = $derived(!!trip && !trip.start_date);
+
 	let userOverride = $state<TripViewMode | null>(null);
 
 	// Chrome mode is derived from the URL (SSR-safe $derived, never $effect): a
@@ -48,7 +52,7 @@
 		if (!active) userOverride = null;
 	});
 
-	const navConfig = $derived(getNavConfig(slug, mode));
+	const navConfig = $derived(getNavConfig(slug, mode, forming));
 
 	function toggleMode() {
 		const next: TripViewMode = mode === 'trip' ? 'planning' : 'trip';

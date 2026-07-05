@@ -27,6 +27,8 @@ test.describe('Inline item checklist (#48 primitive · #55 ledger)', () => {
 		await page.fill('input[name="title"]', tripTitle);
 		const today = new Date().toISOString().split('T')[0];
 		const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+		// #270: dates live behind the optional "I know the dates" expander on /trips/new.
+		await page.locator('summary', { hasText: 'I know the dates' }).click();
 		await page.fill('input[name="start_date"]', today);
 		await page.fill('input[name="end_date"]', nextWeek);
 		await page.fill('input[name="location_summary"]', 'Test Location');

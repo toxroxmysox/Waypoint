@@ -25,6 +25,8 @@ test.describe('Closeout leaves checklists untouched (#53)', () => {
 		// end_date to reach the wizard. Both dates ~a month in the past (a 7-day span).
 		const start = new Date(Date.now() - 37 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 		const end = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+		// #270: dates live behind the optional "I know the dates" expander on /trips/new.
+		await page.locator('summary', { hasText: 'I know the dates' }).click();
 		await page.fill('input[name="start_date"]', start);
 		await page.fill('input[name="end_date"]', end);
 		await page.fill('input[name="location_summary"]', 'Test Location');
@@ -79,6 +81,8 @@ test.describe('Closeout leaves checklists untouched (#53)', () => {
 		// Multi-day span (7 days) so we can navigate to Day 2 and prove we stay there.
 		const start = new Date(Date.now() - 37 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 		const end = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+		// #270: dates live behind the optional "I know the dates" expander on /trips/new.
+		await page.locator('summary', { hasText: 'I know the dates' }).click();
 		await page.fill('input[name="start_date"]', start);
 		await page.fill('input[name="end_date"]', end);
 		await page.fill('input[name="location_summary"]', 'Test Location');

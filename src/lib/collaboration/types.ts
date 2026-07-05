@@ -13,6 +13,8 @@ export interface TripMember extends RecordModel {
 	joined_at: string;
 	/** #133: empty = active member; non-empty = Departed Member tombstone. */
 	removed_at: string;
+	/** #272: true = this member opted out of digest emails for this trip (default false = digests ON). */
+	digest_opt_out?: boolean;
 	/** Set by the M2c auto-merge hook when a placeholder is claimable. */
 	claimable_by?: string;
 }

@@ -19,8 +19,13 @@ export const actions: Actions = {
 		const autoApproveSuggestions = data.get('auto_approve_suggestions') === 'on';
 
 		if (!title) return fail(400, { error: 'Title is required.' });
-		if (!startDate || !endDate) return fail(400, { error: 'Start and end dates are required.' });
-		if (new Date(startDate) > new Date(endDate)) {
+		// #270 / ADR-0022 — both dates or neither. A forming trip may stay
+		// dateless; setting both promotes it (the PB update hook seeds Phase 1 +
+		// days). Clearing dates on a dated trip is rejected below (one-way).
+		if ((startDate && !endDate) || (!startDate && endDate)) {
+			return fail(400, { error: 'Set both dates, or leave both empty.' });
+		}
+		if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
 			return fail(400, { error: 'Start date must be before end date.' });
 		}
 		if (timezone && !isValidTimeZone(timezone)) {
@@ -39,10 +44,19 @@ export const actions: Actions = {
 				return fail(403, { error: 'Only trip owners can change settings.' });
 			}
 
+			// One-way promotion (#270): a dated trip's dates can move but never
+			// be removed — days/phases/items exist by then. (The PB hook enforces
+			// this too; failing here gives the form a friendly message.)
+			if (trip.start_date && !startDate) {
+				return fail(400, {
+					error: 'This trip already has dates — they can be changed, but not removed.'
+				});
+			}
+
 			await locals.pb.collection('trips').update(trip.id, {
 				title,
-				start_date: startDate + ' 00:00:00.000Z',
-				end_date: endDate + ' 00:00:00.000Z',
+				start_date: startDate ? startDate + ' 00:00:00.000Z' : '',
+				end_date: endDate ? endDate + ' 00:00:00.000Z' : '',
 				timezone,
 				location_summary: locationSummary,
 				auto_approve_suggestions: autoApproveSuggestions
@@ -74,6 +88,33 @@ export const actions: Actions = {
 			if (isRedirect(err)) throw err;
 			const message = err instanceof Error ? err.message : 'Failed to delete trip.';
 			return fail(500, { error: message });
+		}
+	},
+
+	// #272 — per-member digest preference. Any active member (incl. viewers)
+	// can set their OWN row; the membership is resolved server-side from the
+	// session, never from form input.
+	digest: async ({ request, locals, params }) => {
+		const data = await request.formData();
+		const digestOn = data.get('digest_emails') === 'on';
+
+		try {
+			const trip = await locals.pb
+				.collection('trips')
+				.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+
+			const membership = await locals.pb
+				.collection('trip_members')
+				.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`);
+
+			await locals.pb.collection('trip_members').update(membership.id, {
+				digest_opt_out: !digestOn
+			});
+
+			return { digestSuccess: true, digestOn };
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : 'Failed to update digest preference.';
+			return fail(500, { digestError: message });
 		}
 	},
 

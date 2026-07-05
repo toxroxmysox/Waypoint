@@ -19,7 +19,10 @@
 	}
 
 	let isEmpty = $derived(
-		data.active.length === 0 && data.upcoming.length === 0 && data.past.length === 0
+		data.active.length === 0 &&
+			data.upcoming.length === 0 &&
+			data.forming.length === 0 &&
+			data.past.length === 0
 	);
 </script>
 
@@ -149,6 +152,35 @@
 								<p class="text-ink-muted font-mono mt-1 text-[12px]">
 									{formatDateRange(trip?.start_date ?? '', trip?.end_date ?? '')}
 								</p>
+								{#if trip?.location_summary}
+									<p class="font-display text-ink-soft mt-1 text-sm italic">
+										{trip.location_summary}
+									</p>
+								{/if}
+							</div>
+						</Card>
+					{/each}
+				</section>
+			{/if}
+
+			{#if data.forming.length > 0}
+				<!-- #270 / ADR-0022 — dateless (forming) trips: still alive, sorted ahead
+				     of past. Subtle "No dates yet" badge where a date range would sit. -->
+				<section class="space-y-2">
+					<div class="flex items-baseline justify-between pt-1">
+						<h2 class="text-moss text-[11px] font-bold tracking-[0.2em] uppercase">
+							Taking shape
+						</h2>
+					</div>
+					{#each data.forming as { trip }}
+						<Card href="/trips/{trip?.slug}">
+							<div class="p-4">
+								<div class="flex items-start justify-between gap-2">
+									<h3 class="font-display text-ink text-lg leading-tight font-semibold">
+										{trip?.title}
+									</h3>
+									<Pill size="sm">No dates yet</Pill>
+								</div>
 								{#if trip?.location_summary}
 									<p class="font-display text-ink-soft mt-1 text-sm italic">
 										{trip.location_summary}

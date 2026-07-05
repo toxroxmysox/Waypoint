@@ -29,6 +29,8 @@ test.describe('Trip Mode checklist check-off (#52)', () => {
 		await page.fill('input[name="title"]', `E2E TripMode ${stamp}`);
 		const start = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 		const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+		// #270: dates live behind the optional "I know the dates" expander on /trips/new.
+		await page.locator('summary', { hasText: 'I know the dates' }).click();
 		await page.fill('input[name="start_date"]', start);
 		await page.fill('input[name="end_date"]', nextWeek);
 		await page.fill('input[name="location_summary"]', 'Test Location');

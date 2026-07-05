@@ -22,7 +22,7 @@
 	import { enhance } from '$app/forms';
 	import type { Notification } from '$lib/types';
 
-	let { data } = $props();
+	let { data, form } = $props();
 
 	// Trip Mode chip only shows on an active trip, and lands on /now to match the
 	// mode pill — one mode, one home (#204).
@@ -35,6 +35,12 @@
 	// in SSR and would render the wrong content on first paint).
 	const isWrapUp = $derived(data.lifecycle === 'wrap-up');
 	const isClosed = $derived(data.lifecycle === 'closed');
+	// #270 / ADR-0022 — `forming` (dateless) replaces the WHOLE Overview body with
+	// the forming home: ideas + people + goals + the prominent set-dates door.
+	// "Forming" stays internal vocabulary — the UI says "No dates yet".
+	const isForming = $derived(data.lifecycle === 'forming');
+	let settingDates = $state(false);
+	const dateError = $derived(form?.dateError ?? '');
 
 	let notifications = $state<Notification[]>(untrack(() => data.notifications ?? []));
 	let unreadCount = $state(untrack(() => data.unreadCount ?? 0));
@@ -130,15 +136,161 @@
 		<NotificationBell bind:notifications bind:unreadCount />
 	{/snippet}
 </NavBar>
-<SubTabs tabs={[
-	{ id: 'overview', label: 'Overview', href: `/trips/${data.trip.slug}` },
-	{ id: 'phases', label: 'Phases', href: `/trips/${data.trip.slug}/phases` },
-	{ id: 'lists', label: 'Lists', href: `/trips/${data.trip.slug}/lists` },
-	{ id: 'goals', label: 'Goals', href: `/trips/${data.trip.slug}/goals` }
-]} />
+{#if !isForming}
+	<!-- #270: Phases/Lists are date-scoped surfaces — hidden until the trip is
+	     dated (Goals lives in the forming bottom nav instead). -->
+	<SubTabs tabs={[
+		{ id: 'overview', label: 'Overview', href: `/trips/${data.trip.slug}` },
+		{ id: 'phases', label: 'Phases', href: `/trips/${data.trip.slug}/phases` },
+		{ id: 'lists', label: 'Lists', href: `/trips/${data.trip.slug}/lists` },
+		{ id: 'goals', label: 'Goals', href: `/trips/${data.trip.slug}/goals` }
+	]} />
+{/if}
 
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-6">
-	{#if isClosed && data.record && data.share}
+	{#if isForming}
+		<!-- #270 / ADR-0022 — the forming home. The trip exists; the dates don't
+		     yet. Collect ideas, gather the group, set goals — and promote by
+		     setting dates (one-way; the hook seeds Phase 1 + days). -->
+		<Card>
+			<div class="p-4">
+				<p class="text-ink-soft font-mono text-[12px]">No dates yet</p>
+				<p class="font-display text-ink mt-2 text-base italic">
+					This trip is still taking shape.
+				</p>
+				<p class="text-ink-muted mt-1 text-sm">
+					Collect ideas, gather the group, set some goals. The itinerary starts
+					the moment the dates land.
+				</p>
+			</div>
+		</Card>
+
+		<!-- The promotion door — prominent, owner-tier only. -->
+		{#if data.canSetDates}
+			<Card strong accent="var(--color-moss)">
+				<form
+					method="POST"
+					action="?/setDates"
+					data-testid="set-dates-form"
+					use:enhance={() => {
+						settingDates = true;
+						return async ({ update }) => {
+							settingDates = false;
+							await update();
+						};
+					}}
+					class="p-4"
+				>
+					<p class="text-ink text-sm font-semibold">Know when you're going?</p>
+					<p class="text-ink-muted mt-0.5 text-xs">
+						Setting the dates builds the day-by-day itinerary. Your ideas come along.
+					</p>
+					{#if dateError}
+						<p role="alert" class="text-error-deep mt-2 text-sm">{dateError}</p>
+					{/if}
+					<div class="mt-3 flex items-end gap-3">
+						<div class="min-w-0 flex-1">
+							<label for="forming-start" class="text-ink-soft block text-xs font-medium">Start</label>
+							<input
+								type="date"
+								id="forming-start"
+								name="start_date"
+								required
+								class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
+							/>
+						</div>
+						<div class="min-w-0 flex-1">
+							<label for="forming-end" class="text-ink-soft block text-xs font-medium">End</label>
+							<input
+								type="date"
+								id="forming-end"
+								name="end_date"
+								required
+								class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
+							/>
+						</div>
+					</div>
+					<Button
+						type="submit"
+						variant="moss"
+						size="md"
+						class="mt-3 w-full"
+						disabled={settingDates}
+						loading={settingDates}
+					>
+						{settingDates ? 'Setting up the days…' : 'Set the dates'}
+					</Button>
+				</form>
+			</Card>
+		{:else}
+			<Card>
+				<div class="p-4">
+					<p class="text-ink-soft text-sm">
+						The dates aren't set yet — the organizer can add them anytime. Everything
+						collected here carries over when they do.
+					</p>
+				</div>
+			</Card>
+		{/if}
+
+		<!-- Ideas — the forming trip's working surface. Phase-less until promotion. -->
+		<section class="space-y-1.5">
+			<div class="flex items-center justify-between px-0.5">
+				<span class="text-ink-muted text-[9.5px] font-bold tracking-[0.14em] uppercase">Ideas</span>
+				<button
+					type="button"
+					onclick={() => (ideaSheetOpen = true)}
+					class="text-moss hover:text-ink inline-flex items-center gap-1 text-xs font-semibold"
+				>
+					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z" />
+					</svg>
+					Add an idea
+				</button>
+			</div>
+			{#if data.formingIdeas.length > 0}
+				<div class="grid gap-1.5">
+					{#each data.formingIdeas as idea (idea.id)}
+						<a
+							href="/trips/{data.trip.slug}/items/{idea.id}"
+							class="border-line bg-surface hover:bg-surface-2 flex items-center gap-2.5 rounded-lg border px-3 py-2"
+						>
+							<TypeIcon type={idea.type} size={20} />
+							<span class="text-ink truncate text-sm">{idea.title}</span>
+						</a>
+					{/each}
+				</div>
+			{:else}
+				<Card>
+					<div class="p-4 text-center">
+						<p class="font-display text-ink-soft text-sm italic">Nothing collected yet.</p>
+						<p class="text-ink-muted mt-1 text-xs">
+							Anything goes — a restaurant someone mentioned, a town worth a detour.
+						</p>
+					</div>
+				</Card>
+			{/if}
+		</section>
+
+		<!-- The other two forming doors, also in the bottom nav — named here so the
+		     home teaches the scope. -->
+		<div class="grid grid-cols-2 gap-1.5">
+			<a
+				href="/trips/{data.trip.slug}/members"
+				class="border-line bg-surface hover:bg-surface-2 rounded-lg border px-3 py-3"
+			>
+				<p class="text-ink text-sm font-semibold">People</p>
+				<p class="text-ink-muted mt-0.5 text-xs">Invite the group early</p>
+			</a>
+			<a
+				href="/trips/{data.trip.slug}/goals"
+				class="border-line bg-surface hover:bg-surface-2 rounded-lg border px-3 py-3"
+			>
+				<p class="text-ink text-sm font-semibold">Goals</p>
+				<p class="text-ink-muted mt-0.5 text-xs">What do you want out of it?</p>
+			</a>
+		</div>
+	{:else if isClosed && data.record && data.share}
 		<!-- Closed record (#242): read-only resting state. Renders ONLY the record —
 		     no planning chrome (lists, itinerary, FAB, capture) leaks in. -->
 		<RecordView record={data.record} share={data.share} canManage={data.canManage} />
@@ -219,7 +371,7 @@
 	{/if}
 	{/if}
 
-	{#if !isClosed}
+	{#if !isClosed && !isForming}
 	{#if showWelcomeCard}
 		<!-- #274 Onboarding spine — the unified welcome card. Renders ABOVE the day list
 		     (the days stay — they teach the trip's shape). Two keys folded (PRD §6, ES-1
@@ -435,7 +587,7 @@
      Opens the idea/plan fork sheet. Only when ≥1 phase exists (the idea path needs
      a required phase; #217 guarantees one on any real trip). SUPPRESSED on a closed
      trip (#242) — a read-only record has no capture/plan affordance. -->
-{#if data.phases.length > 0 && !isClosed}
+{#if (data.phases.length > 0 || isForming) && !isClosed}
 	<FAB onclick={() => (ideaSheetOpen = true)} label="Add idea or plan" />
 {/if}
-<IdeaCaptureSheet bind:open={ideaSheetOpen} slug={data.trip.slug} phases={data.phases} />
+<IdeaCaptureSheet bind:open={ideaSheetOpen} slug={data.trip.slug} phases={data.phases} forming={isForming} />

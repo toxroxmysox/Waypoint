@@ -47,6 +47,37 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 	const forceWelcome = url.searchParams.get('welcome') === '1';
 	const showWelcome = forceWelcome || needsOnboarding(locals.user);
 
+	// Forming (#270/ADR-0022) → the dateless-trip home: the idea list + the
+	// prominent set-dates affordance. No days/phases exist yet (the create hook
+	// skips seeding), so none of the planning Overview's day/phase content can
+	// render; ideas are phase-less unplanned items collected until promotion.
+	if (lifecycle === 'forming') {
+		const ideas = await locals.pb.collection('items').getFullList<Item>({
+			filter: `trip = "${trip.id}"`,
+			fields: 'id,type,title,status',
+			sort: '-created'
+		});
+		const canSetDates = membership.role === 'owner' || membership.role === 'co_owner';
+		return {
+			lifecycle,
+			// The onboarding welcome card is a planning-Overview surface; the forming
+			// home carries its own guidance copy instead.
+			showWelcome: false,
+			formingIdeas: ideas.map((i) => ({ id: i.id, type: i.type, title: i.title })),
+			canSetDates,
+			// Shape-consistent defaults (see the closed branch below).
+			votable: { hasVotable: false, unratedTotal: 0, swipeHref: null as string | null },
+			wrapUp: { balanceOwed: false },
+			lists: [] as ReturnType<typeof rollupChecklists>,
+			daySummaries: {} as ReturnType<typeof summarizeDays>,
+			keyItems: [] as { id: string; type: ItemType; title: string }[],
+			totalItems: ideas.length,
+			record: undefined as ReturnType<typeof buildArchiveView> | undefined,
+			share: undefined as ClosedShare | undefined,
+			canManage: false
+		};
+	}
+
 	// Closed → the read-only Record view (#242). Reuse buildArchiveView (same
 	// sanitization as the public archive) for the done-items record + the curated
 	// "what we considered". Compute the Share affordance facts: an ABSOLUTE share URL
@@ -83,6 +114,9 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 			showWelcome,
 			record,
 			canManage,
+			// Forming-only keys, absent here (shape consistency — see forming branch).
+			formingIdeas: [] as { id: string; type: ItemType; title: string }[],
+			canSetDates: false,
 			share: {
 				// Absolute URL so it pastes into a group text as a working link (no
 				// hand-assembled domain). "" token → not yet shareable (Publish mints it).
@@ -181,7 +215,10 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		// Closed-only keys, absent here (the page reads them only under `isClosed`).
 		record: undefined as ReturnType<typeof buildArchiveView> | undefined,
 		share: undefined as ClosedShare | undefined,
-		canManage: false
+		canManage: false,
+		// Forming-only keys, absent here (shape consistency — see forming branch).
+		formingIdeas: [] as { id: string; type: ItemType; title: string }[],
+		canSetDates: false
 	};
 };
 
@@ -215,6 +252,43 @@ async function requireOwner(
 }
 
 export const actions: Actions = {
+	// #270 / ADR-0022 — the promotion door. The forming home's "Set the dates"
+	// form posts here; writing both dates promotes the trip (the trips.pb.js
+	// update hook seeds "Phase 1", generates + buckets the days, and re-homes
+	// the phase-less forming ideas). One-way — the hook rejects un-dating.
+	// Owner/co_owner only, matching the settings date form.
+	setDates: async ({ request, locals, params }) => {
+		try {
+			const gate = await requireOwner(locals, params.slug);
+			if (!gate.ok) return fail(gate.status, { dateError: gate.message });
+
+			const data = await request.formData();
+			const startDate = data.get('start_date')?.toString() || '';
+			const endDate = data.get('end_date')?.toString() || '';
+
+			if (!startDate || !endDate) {
+				return fail(400, { dateError: 'Pick both dates.' });
+			}
+			if (new Date(startDate) > new Date(endDate)) {
+				return fail(400, { dateError: 'Start date must be before end date.' });
+			}
+
+			await locals.pb.collection('trips').update(gate.tripId, {
+				start_date: startDate + ' 00:00:00.000Z',
+				end_date: endDate + ' 00:00:00.000Z'
+			});
+
+			// Reload the Overview — now dated, it renders the planning home with the
+			// freshly seeded days and Phase 1 (ideas intact in its parking lot).
+			redirect(303, `/trips/${params.slug}`);
+		} catch (err: unknown) {
+			if (isRedirect(err)) throw err;
+			return fail(500, {
+				dateError: err instanceof Error ? err.message : 'Failed to set the dates.'
+			});
+		}
+	},
+
 	// #274 Onboarding spine — set-complete. Stamp the per-user once-ever signal when
 	// the member completes their first action OR taps "Got it" on the welcome card.
 	// Gates ONLY the auto-show (the card never auto-reappears on any trip afterward).

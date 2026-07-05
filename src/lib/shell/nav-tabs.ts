@@ -5,20 +5,45 @@ export interface NavTab {
 	id: string;
 	label: string;
 	href: string;
-	icon: 'calendar' | 'dollar' | 'users' | 'more' | 'clock' | 'sun' | 'plus' | 'lock' | 'doc';
+	icon: 'calendar' | 'dollar' | 'users' | 'more' | 'clock' | 'sun' | 'plus' | 'lock' | 'doc' | 'compass';
 	oversized?: boolean;
 	action?: 'add-sheet';
 }
 
+/**
+ * Which chrome the nav renders. `forming` (#270/ADR-0022) is the dateless-trip
+ * scope: Ideas + Members + Goals (+ settings via More — chrome, not a
+ * capability). Never a UI label — it only picks the tab set.
+ */
+export type NavChrome = TripViewMode | 'forming';
+
 export interface NavConfig {
 	tabs: NavTab[];
 	accent: 'moss' | 'clay';
+	chrome: NavChrome;
 }
 
-export function getNavConfig(slug: string, mode: TripViewMode): NavConfig {
+export function getNavConfig(slug: string, mode: TripViewMode, forming = false): NavConfig {
+	// #270 — a forming trip is never date-active, so `mode` is always 'planning'
+	// here; the forming tab set replaces it wholesale. Day/phase/timeline, money,
+	// and documents surfaces stay hidden until the trip is dated (the Overview
+	// carries the prominent set-dates affordance).
+	if (forming) {
+		return {
+			accent: 'moss',
+			chrome: 'forming',
+			tabs: [
+				{ id: 'ideas', label: 'Ideas', href: `/trips/${slug}`, icon: 'sun' },
+				{ id: 'members', label: 'Members', href: `/trips/${slug}/members`, icon: 'users' },
+				{ id: 'goals', label: 'Goals', href: `/trips/${slug}/goals`, icon: 'compass' },
+				{ id: 'more', label: 'More', href: `/trips/${slug}/more`, icon: 'more' }
+			]
+		};
+	}
 	if (mode === 'trip') {
 		return {
 			accent: 'clay',
+			chrome: 'trip',
 			tabs: [
 				// Now absorbs Today (#244): one tab, sub-tabs Today (default, the weighted
 				// view at /now) + Next 3 days (the existing /today/upcoming view). Merging
@@ -34,6 +59,7 @@ export function getNavConfig(slug: string, mode: TripViewMode): NavConfig {
 	}
 	return {
 		accent: 'moss',
+		chrome: 'planning',
 		tabs: [
 			{ id: 'itinerary', label: 'Itinerary', href: `/trips/${slug}`, icon: 'calendar' },
 			{ id: 'money', label: 'Money', href: `/trips/${slug}/expenses`, icon: 'dollar' },
@@ -44,7 +70,16 @@ export function getNavConfig(slug: string, mode: TripViewMode): NavConfig {
 	};
 }
 
-export function getActiveTab(pathname: string, mode: TripViewMode): string {
+export function getActiveTab(pathname: string, mode: NavChrome): string {
+	// #270 — forming chrome: Ideas is the home tab (the Overview doubles as the
+	// idea list on a dateless trip); settings stays reachable under More.
+	if (mode === 'forming') {
+		if (pathname.includes('/members')) return 'members';
+		if (pathname.includes('/goals')) return 'goals';
+		if (pathname.includes('/more') || pathname.includes('/inbox') || pathname.includes('/settings'))
+			return 'more';
+		return 'ideas';
+	}
 	if (mode === 'trip') {
 		if (pathname.includes('/documents')) return 'documents';
 		// #244: Now absorbed Today. Both the weighted view (/now) and the "Next 3 days"

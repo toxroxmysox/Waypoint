@@ -400,6 +400,7 @@ routerAdd('GET', '/api/members/can-purge', (e) => {
 		['suggestions', 'reviewed_by'],
 		['trip_goals', 'created_by'],
 		['documents', 'uploaded_by'],
+		['memories', 'author'],
 		['items', 'created_by'],
 		['items', 'paid_by'],
 		['items', 'booked_by'],
@@ -566,6 +567,11 @@ routerAdd('POST', '/api/members/remove', (e) => {
 		['items', 'booked_by', 'block'],
 		['items', 'assigned_to', 'block_multi'],
 		['tasks', 'assignee', 'block'],
+		// memories (#269, migration 0058) — required + no cascade (block). A
+		// departed member's memories survive on the tombstone; they are NEVER
+		// reassigned (personal expression + the unique (day, author) index would
+		// collide with the target's own memory).
+		['memories', 'author', 'block'],
 		// The two the old #238 body MISSED — no cascade, so a hard-delete would
 		// orphan the id / throw a required-FK 400 (block).
 		['checklist_items', 'checked_by', 'block'],
@@ -834,12 +840,16 @@ routerAdd('POST', '/api/members/remove', (e) => {
 		rewriteSingle('items', 'booked_by', reassignTo);
 		rewriteMulti('items', 'assigned_to', reassignTo);
 		rewriteSingle('tasks', 'assignee', reassignTo);
+		// memories are NOT reassigned (#269): a memory is personal expression, and
+		// rewriting author would collide with the target's own (day, author) row
+		// under the unique cap. They stay attributed to the tombstone.
 	} else if (disposition === 'cascade') {
 		// Money is NEVER cascaded (Resolution 10) — expenses/settlements stay,
 		// pointing at the retained tombstone. Only non-money authored content drops.
 		deleteWhere('suggestions', 'author'); // includes comments (target_type='comment')
 		deleteWhere('trip_goals', 'created_by'); // cascadeDelete drops their goal_votes
 		deleteWhere('documents', 'uploaded_by');
+		deleteWhere('memories', 'author'); // #269 — cascade drops their memories too
 		// Optional authorship on records that stay — null it out.
 		rewriteSingle('suggestions', 'reviewed_by', '');
 		rewriteSingle('items', 'created_by', '');

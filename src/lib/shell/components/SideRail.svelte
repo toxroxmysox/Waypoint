@@ -29,9 +29,7 @@
 		onAction?: (action: string) => void;
 	} = $props();
 
-	const activeTabId = $derived(
-		getActiveTab(page.url.pathname, config.accent === 'clay' ? 'trip' : 'planning')
-	);
+	const activeTabId = $derived(getActiveTab(page.url.pathname, config.chrome));
 </script>
 
 <nav

@@ -11,7 +11,7 @@
 A self-hosted, mobile-first PWA that replaces the Google Doc / Google Sheet / Splitwise / pinned-message stack Scott and Abby use for trip planning, execution, and post-trip sharing. Must be polished enough that non-technical friends will actually contribute, structured enough that nothing gets lost between planning and trip day, and shareable enough that the trip lives on as a public archive afterward.
 
 **Two modes, one view:**
-1. **Planning Mode** — collaborative itinerary building. Default mode. 5-tab moss nav (Itinerary, Money, Activity, Vault, More). Available in every lifecycle state.
+1. **Planning Mode** — collaborative itinerary building. Default mode. 5-tab moss nav (Itinerary, Money, Activity, Vault, More). Available in every lifecycle state. **Forming exception (#270/ADR-0022):** a dateless trip (derived lifecycle `forming`) gates the nav to its scope — 4-tab moss nav (Ideas, Members, Goals, More; settings stays reachable under More as chrome). Day/phase/timeline, money, and documents surfaces hide until dated; the trip home carries a prominent set-dates affordance (the one-way promotion). The trips list shows forming trips with a subtle "No dates yet" badge, sorted ahead of past trips. "Forming" is internal vocabulary — never a UI label.
 2. **Trip Mode** — live-trip execution. Phone-first, one-handed, large cards, offline-capable read. 4-tab clay nav (Now, Money, Add, Docs). Available only when the trip's **derived lifecycle** is `active` (there is no stored `status` field — the lifecycle is computed from dates + `archived`; see §Data Model / CONTEXT.md Trip). Default mode for active trips; user can switch to Planning Mode and back. **Now** absorbed Today (#244): it is one weighted whole-day tab with sub-tabs **Today** (default — the weighted view at `/now`) and **Next 3 days** (`/today/upcoming`); `/today` redirects to `/now`. The **Money** tab is the read-only Trip-Mode per-person money glance at `/trips/[slug]/money` (clay chrome via `resolveChromeMode`) — see §Money; merging Now+Today freed its slot (375px can't hold a 5th tab + the centre Add FAB).
 3. **Public Archive** — read-only post-trip view of what actually happened. Not a mode — rendered automatically for closed trips and via public share link. Linkable from Scott's website.
 
@@ -97,6 +97,8 @@ All test harnesses require PocketBase running via `./backend/start.sh` with `WAY
 | Approve suggestions | ✓ | ✓ | — | — | — |
 | Comment on items | ✓ | ✓ | ✓ | ✓ | — |
 | Vote on items | ✓ | ✓ | ✓ | — | — |
+| Capture/edit own daily Memory (#269, ADR-0007) | ✓ | ✓ | ✓ | — | — |
+| View trip memories | ✓ | ✓ | ✓ | ✓ | — (never public) |
 | Invite Travelers / Viewers | ✓ | ✓ | ✓ | — | — |
 | Invite Co-Owners | ✓ | ✓ | — | — | — |
 | Promote Traveler → Co-Owner | ✓ | ✓ | — | — | — |
@@ -136,8 +138,8 @@ PocketBase collections. Field types use PocketBase notation. All collections inc
 |---|---|---|
 | slug | text, unique, required | URL identifier (e.g. `italy-2026`) |
 | title | text, required | Display title |
-| start_date | date, required | Trip start (in trip timezone) |
-| end_date | date, required | Trip end |
+| start_date | date, optional (#270/ADR-0022) | Trip start (in trip timezone). Empty ⇔ the trip's derived lifecycle is **`forming`** (dateless — no stored status flag). Both-or-neither with `end_date`, enforced at the app layer (forms + `trips.pb.js`); first date-set **promotes** the trip (seeds "Phase 1" + days, re-homes phase-less ideas) and is one-way — un-dating is rejected. |
+| end_date | date, optional (#270/ADR-0022) | Trip end. Both-or-neither with `start_date` (see above). |
 | timezone | text | IANA tz, e.g. `Europe/Rome` |
 | location_summary | text | Free-text "Spain", "Switzerland Alps" |
 | countries | json (array of ISO codes) | For filtering, archive metadata |
@@ -266,6 +268,23 @@ Days are auto-generated from trip start/end dates and re-bucketed (multi-relatio
 | created | datetime | |
 
 Unique constraint on (item, member). One vote per member per item. Updating a vote replaces the previous value. UI shows avatar stacks per vote option, not aggregate scores. Unplanned items sort by aggregate vote score as the default ordering.
+
+### `memories` (#269, ADR-0007 — Trip Memory context)
+| Field | Type | Notes |
+|---|---|---|
+| trip | relation→trips, required | cascadeDelete |
+| day | relation→days, required | cascadeDelete — memories group by day, the experiential timeline |
+| author | relation→trip_members, required | Auto-pinned to the caller in `memories.pb.js` |
+| photo | file, single image, nullable | jpg/png/webp/heic, 20 MB, `protected` (token-proxied). No PDF — a memory is never a document |
+| thought | text, max 280, nullable | Tweet-length — "one thought," not an essay |
+
+**Unique constraint on (day, author)** — the hard cap: one photo + one thought, per member,
+per day (the cap IS the feature — ADR-0007). Editing replaces (the UI upserts). **At least one
+of {photo, thought}** enforced in `memories.pb.js`; clearing both deletes the record.
+Edit/delete = **author only** (stricter than documents — no owner override). Visible to all
+trip members including viewers; **excluded from the Public Archive** (plan-only stays
+plan-only). Capture: Note Before Bed (Trip Mode day-wrapped), Trip Mode Add, Closeout
+per-day. Review: Trip Mode Today + Closeout. No standalone gallery/nav tab (v4).
 
 ### `expenses`
 | Field | Type | Notes |
@@ -601,10 +620,10 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 13. **Vault** — password unlock screen, then list of entries
 14. **Trip Settings** — slug, archive toggle, auto-approve toggle, vault password setup, danger zone
 15. **Notifications** — list, mark read
-16. **Closeout Wizard** — day-by-day planned items (done/considered), phase-level unplanned review with bulk auto-consider, inline item add
-17. **Trip Mode — Now** — what's happening now, next up, ongoing items
-18. **Trip Mode — Today** — today timeline, planned items + parking lot
-19. **Trip Mode — Add** — quick-add item during trip
+16. **Closeout Wizard** — day-by-day planned items (done/considered), phase-level unplanned review with bulk auto-consider, inline item add; per-day trip memories review + retroactive memory add/edit (#269)
+17. **Trip Mode — Now** — what's happening now, next up, ongoing items; Note Before Bed memory prompt in the day-wrapped state (#269)
+18. **Trip Mode — Today** — today timeline, planned items + parking lot; today's memories from all travelers as small cards (#269)
+19. **Trip Mode — Add** — quick-add item, expense, or today's memory during trip (#269)
 20. **Trip Mode — Money** (`/money`) — read-only per-person glance: "how much do *I* have left to spend?" Two labeled figures — **N1** left-to-spend (my budget − my reconciliation-aware share) and **N2** left-for-unplanned (N1 − my share of remaining planned estimates) — each as a per-day rate (the hero) + a total. Deep-links to /budget and /expenses to settle/edit. Bottom-nav tab landed with #244 (#227).
 21. **Trip Mode — Vault** — password-gated encrypted entries
 
@@ -644,8 +663,9 @@ Every "add item" form has an optional **lookup field** at the top.
 
 ### Mode switching
 - Planning Mode ↔ Trip Mode toggle in trip header. Mode is UI state, not data.
-- Trip Mode available only when the trip's **derived lifecycle** (`getTripLifecycle` → planning/active/wrap-up/closed; only `archived` persists) is `active`. Default mode for active trips.
+- Trip Mode available only when the trip's **derived lifecycle** (`getTripLifecycle` → forming/planning/active/wrap-up/closed; only `archived` persists) is `active`. Default mode for active trips.
 - Planning Mode: 5-tab moss nav (Itinerary, Money, Activity, Vault, More).
+- Forming (dateless, #270/ADR-0022): 4-tab moss nav (Ideas, Members, Goals, More). The trip home is the idea list + set-dates promotion door; a forming trip is never active (`isTripActive` unchanged — empty dates can't satisfy the window).
 - Trip Mode: 4-tab clay nav (Now, Money, Add, Docs). Now is one weighted whole-day tab with Today / Next 3 days sub-tabs (#244); Money = the Trip-Mode money glance at `/money`.
 - Archive view auto-rendered for closed trips (also accessible via public share link). Not a mode.
 

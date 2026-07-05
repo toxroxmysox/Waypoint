@@ -151,6 +151,32 @@ The `documents` collection (created 0032) is exercised by the harness as of #70:
 - **delete** — `MEMBER_VIA_TRIP` by rule; the `documents.pb.js` `onRecordDeleteRequest` hook narrows it to the **uploader OR owner/co_owner**. The fixture document is uploaded by the owner, so owner + co_owner pass while traveler/viewer are denied. (Owner override vs. the old vault uploader-only rule — ADR-0005 / PRD §Permissions.)
 - **files are `protected: true`** — downloads require a short-lived file token. The app mints tokens server-side and proxies bytes through `/trips/[slug]/documents/[docId]/file`, so tokens never reach the client and the future service worker can precache same-origin bytes.
 
+## Memories (#269 / ADR-0007)
+
+The `memories` collection (created 0058) — Trip Memory bounded context: one photo + one
+thought, per member, per day. The cap is the unique `(day, author)` index, not UI discipline.
+
+| Collection | list | view | create | update | delete |
+|---|---|---|---|---|---|
+| `memories` | member | member | member except viewer, as self | author only | author only |
+
+- **list/view** — `MEMBER_VIA_TRIP`. ALL trip members including viewers see all memories
+  (review is shared — Trip Mode Today + Closeout). **Never public**: no archive exposure,
+  the Public Archive stays plan-only (ADR-0007).
+- **create** — `MEMBER_VIA_TRIP && author.user = @request.auth.id && author.role != "viewer"`
+  (mirrors `trip_goals`). A `memories.pb.js` `onRecordCreateRequest` hook additionally
+  enforces **at-least-one-of {photo, thought}**, pins `author` to the caller's ACTIVE
+  membership (`removed_at = ""`), and checks the `day` belongs to the same trip.
+- **update / delete** — `MEMBER_VIA_TRIP && author.user = @request.auth.id`. **Author only**
+  — deliberately stricter than documents: no owner/co_owner override (personal expression,
+  PRD §Permissions). The update hook re-asserts at-least-one-of on the patched record
+  (clearing both fields = the app DELETEs the record; a direct clear-both PATCH 400s).
+- **the cap** — unique `(day, author)` index; the harness's `cap_second_memory` novel case
+  proves a second same-day memory 400s. The app upserts (edit-in-place) instead.
+- **photo is `protected: true`** — single image (jpg/png/webp/heic, ≤ 20 MB, NO PDF);
+  served via a server-side token-minting proxy like documents (memory photos carry
+  faces/kids/locations — a leaked URL must be useless).
+
 ## Users — co-traveler read (#103 / ADR-0006)
 
 Migration `0043_users_viewable_by_cotravelers.js` loosens **only** `users.viewRule` from self-only to **co-traveler**, so the avatar wire-up (#59) can read a member's `name` + `avatar` through `expand:user`. Everything else 0014 set on `users` is unchanged.
