@@ -98,17 +98,30 @@
 	}
 
 	// --- rename (inline input on pills + list rows) ---
+	// The same phase renders in TWO places (the top pill and the bottom list row), so the
+	// edit target is (id, surface) — not id alone. Keying on id alone opened an input in
+	// BOTH surfaces at once: two autofocus inputs bound to one draft, so focus landed on the
+	// twin (no visible caret) and clicking the visible box blurred the twin → onblur closed
+	// the editor. Scoping to the originating surface leaves the other as stylised text.
+	type EditSurface = 'pill' | 'list';
 	let editingId = $state<string | null>(null);
+	let editingSurface = $state<EditSurface | null>(null);
 	let draft = $state('');
-	function beginRename(id: string, current: string) {
+	function beginRename(id: string, current: string, surface: EditSurface) {
 		editingId = id;
+		editingSurface = surface;
 		draft = current;
+	}
+	function cancelRename() {
+		editingId = null;
+		editingSurface = null;
 	}
 	async function commitRename() {
 		if (!editingId) return;
 		const name = draft.trim();
 		const id = editingId;
 		editingId = null;
+		editingSurface = null;
 		if (!name || name === nameById.get(id)) return; // no-op keeps prior name
 		fRenameId = id;
 		fRenameName = name;
@@ -232,7 +245,7 @@
 	<!-- phase name pills -->
 	<div class="mb-3 flex flex-wrap gap-2">
 		{#each rows as row (row.id)}
-			{#if editingId === row.id}
+			{#if editingId === row.id && editingSurface === 'pill'}
 				<!-- svelte-ignore a11y_autofocus -->
 				<input
 					class="text-ink font-display rounded-lg border-[1.5px] bg-white px-2.5 py-1 text-sm outline-none"
@@ -240,13 +253,13 @@
 					bind:value={draft}
 					autofocus
 					onblur={commitRename}
-					onkeydown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') editingId = null; }}
+					onkeydown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') cancelRename(); }}
 				/>
 			{:else}
 				<button
 					type="button"
 					class="border-line shadow-card flex items-center gap-1.5 rounded-[20px] border bg-white px-2.5 py-1"
-					onclick={() => beginRename(row.id, row.name)}
+					onclick={() => beginRename(row.id, row.name, 'pill')}
 				>
 					<span class="h-[7px] w-[7px] rounded-full" style="background:{bg(row.palette)};"></span>
 					<span class="font-display text-ink text-[13px] font-semibold">{row.name}</span>
@@ -339,14 +352,14 @@
 			<div class="flex items-center gap-3 py-[11px]">
 				<span class="h-[11px] w-[11px] shrink-0 rounded-[3px]" style="background:{bg(row.palette)};"></span>
 				<div class="min-w-0 flex-1">
-					{#if editingId === row.id}
+					{#if editingId === row.id && editingSurface === 'list'}
 						<!-- svelte-ignore a11y_autofocus -->
 						<input class="text-ink font-display w-full rounded-lg border-[1.5px] bg-white px-2 py-1 text-[15px] outline-none"
 							style="border-color:{bg(row.palette)};"
 							bind:value={draft} autofocus onblur={commitRename}
-							onkeydown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') editingId = null; }} />
+							onkeydown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') cancelRename(); }} />
 					{:else}
-						<button type="button" class="font-display text-ink block truncate text-left text-[15px] font-semibold" onclick={() => beginRename(row.id, row.name)}>{row.name}</button>
+						<button type="button" class="font-display text-ink block truncate text-left text-[15px] font-semibold" onclick={() => beginRename(row.id, row.name, 'list')}>{row.name}</button>
 					{/if}
 					<p class="text-ink-muted font-mono text-[11.5px]">Days {row.dayStart}–{row.dayEnd} · {fmtShort(row.start)}–{fmtShort(row.end)}</p>
 				</div>
