@@ -29,20 +29,28 @@ export const load: PageServerLoad = async ({ locals, fetch }) => {
 			return aStart > bStart ? 1 : aStart < bStart ? -1 : 0;
 		});
 
-	const active = trips.filter((t) => {
+	// #270 / ADR-0022 — forming = dateless (start_date ''). Split FIRST: an empty
+	// start_date compares as '' <= today (true) and '' < today (true), so without
+	// this a forming trip would leak into BOTH the active and past filters.
+	// Forming sorts ahead of past in the list (the page renders the groups in
+	// order: active, upcoming, forming, past).
+	const forming = trips.filter((t) => !t.trip!.start_date);
+	const dated = trips.filter((t) => !!t.trip!.start_date);
+
+	const active = dated.filter((t) => {
 		const today = tripToday(tripTz(t.trip!));
 		const start = t.trip!.start_date.split('T')[0];
 		const end = t.trip!.end_date.split('T')[0];
 		return start <= today && today <= end;
 	});
 
-	const upcoming = trips.filter((t) => {
+	const upcoming = dated.filter((t) => {
 		const today = tripToday(tripTz(t.trip!));
 		const start = t.trip!.start_date.split('T')[0];
 		return start > today;
 	});
 
-	const past = trips.filter((t) => {
+	const past = dated.filter((t) => {
 		const today = tripToday(tripTz(t.trip!));
 		const end = t.trip!.end_date.split('T')[0];
 		return end < today;
@@ -78,6 +86,7 @@ export const load: PageServerLoad = async ({ locals, fetch }) => {
 	return {
 		active,
 		upcoming,
+		forming,
 		past,
 		profileName: u.name,
 		avatarUrl,
