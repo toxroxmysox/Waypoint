@@ -95,17 +95,15 @@ test.describe('#277 Organic-path onboarding (empty /trips → welcome card)', ()
 		try {
 			await page.goto(`${BASE}/trips`);
 
-			// The on-ramp: the empty state is a clear door into a trip + the shared
-			// intro (NOT a dead-end "No trips yet."). It names the welcome card's doors
-			// so the user knows what's on the other side of "New trip".
+			// The on-ramp: the empty state is a warm first-run (#278) — "Where to?" +
+			// one orientation line + a prominent "Plan your first trip" door (NOT a
+			// dead-end "No trips yet."). Replaced #277's welcome-card-door-naming copy.
 			const onramp = page.getByTestId('trips-empty-onramp');
 			await expect(onramp).toBeVisible({ timeout: 10000 });
-			await expect(onramp.getByText(/start your first trip/i)).toBeVisible();
-			await expect(onramp.getByText(/see the plan/i)).toBeVisible();
-			await expect(onramp.getByText(/weigh in on ideas/i)).toBeVisible();
+			await expect(onramp.getByText(/where to/i)).toBeVisible();
 
-			// Walk the real create path: empty state → "New trip" → fill → submit.
-			await onramp.getByRole('link', { name: /new trip/i }).click();
+			// Walk the real create path: empty state → "Plan your first trip" → fill → submit.
+			await onramp.getByRole('link', { name: /plan your first trip/i }).click();
 			await page.waitForURL(/\/trips\/new$/, { timeout: 10000 });
 
 			// timezone auto-fills from the browser zone on mount; title + dates are the
