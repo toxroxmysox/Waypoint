@@ -83,9 +83,14 @@
 		<div class="border-line space-y-2 border-b px-5 py-4">
 			<h2 class="text-ink text-sm font-semibold">{trip.title}</h2>
 			<div class="text-ink-muted flex items-center gap-2 text-xs">
-				<span>{formatTripDate(trip.start_date)} — {formatTripDate(trip.end_date)}</span>
-				<span class="text-line">|</span>
-				<span>{tripDuration} days</span>
+				{#if trip.start_date}
+					<span>{formatTripDate(trip.start_date)} — {formatTripDate(trip.end_date)}</span>
+					<span class="text-line">|</span>
+					<span>{tripDuration} days</span>
+				{:else}
+					<!-- #270: a forming (dateless) trip — never "Invalid Date". -->
+					<span>No dates yet</span>
+				{/if}
 			</div>
 			{#if daysUntilTrip !== null && daysUntilTrip > 0}
 				<p class="text-moss text-xs font-medium">
