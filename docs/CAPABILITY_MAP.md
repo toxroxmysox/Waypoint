@@ -82,10 +82,10 @@ Old `CONTEXT.md` "Bounded Contexts" → this map, with **why each L1 exists** (e
 ## 1 · Ideation 🔴 *gap*
 **Outcome:** the group decides **where, when, and why** we're going — enough to commit to dates. *(Where/When resolve at trip creation → Itinerary; Why persists as Goals.)*
 **Sub-capabilities:** **Where** 🔴 · **When + availability** 🔴 · **Why — Goals** 🟡
-**Data:** Proposal 🔵 (polymorphic candidate) · Candidate Scenario 🔵 (a bundle weighed as one) · **Availability** 🔵 (a *4th mechanism*: member × date-range → yes/maybe/no overlap — explicitly **not** a Vote) · pros/cons 🔵 · Goal 🟢 (`trip_goals`). *Borrows the propose→vote/discuss→promote engine + the Vote mechanism (Group Input); consumes Saved References.*
+**Data:** Proposal 🔵 (polymorphic candidate) · Candidate Scenario 🔵 (a bundle weighed as one) · **Availability** 🔵 (a *4th mechanism*, ADR-0023: member × day → **available|maybe** cells, forming-trip-scoped — explicitly **not** a Vote; **surfaces** consensus (green = all available, else yellow), never ranks; no "unavailable"/red) · pros/cons 🔵 · Goal 🟢 (`trip_goals`). *Borrows the propose→vote/discuss→promote engine + the Vote mechanism (Group Input); consumes Saved References.*
 **Applications/services:** comparison/decision board · route-builder · availability poll · capture (via Saved References).
 **Business processes:** capture → propose → weigh (vote + availability + pros/cons) → select → **promote** into dates / phases / items / budget.
-**Roles:** flat & fluid **participants** (initiator + respondents; no role ladder, no tombstone on leave).
+**Roles:** reuses the standard trip roles + tombstones (ADR-0008/0023) — availability respondents are `trip_members`, poll-link joiners become **Placeholder Members** (join-token #118), first paint creates the member. "Flat & fluid participants" is the UX stance (anyone paints, low friction), **not** a separate membership model. *(Superseded the earlier "no role ladder / no tombstone" framing — ADR-0023.)*
 **Frontier:** the whole capability is largely unbuilt — only Goals exist. The pre-dates "where/when should we go" phase has no home today.
 
 ## 2 · Itinerary 🟢 *mature*
