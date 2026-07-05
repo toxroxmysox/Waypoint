@@ -2,8 +2,6 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Phase } from '$lib/types';
 
-const PB_BASE = process.env.PUBLIC_PB_URL || 'http://127.0.0.1:8090';
-
 // #252 — the idea/plan fork sheet's "Add an idea" submit target. Action-only route:
 // it has no page of its own, so a direct GET bounces to the Overview.
 export const load: PageServerLoad = async ({ params }) => {
@@ -61,27 +59,27 @@ export const actions: Actions = {
 				return fail(400, { error: 'Pick a phase for this trip.' });
 		}
 
-		const token = locals.pb.authStore.token;
 		// An idea is unplanned + phase-scoped: payload names a phase, never a day.
 		// (Forming: no phase exists yet — the suggestions hook stores phase=''.)
 		const payload = phaseId ? { title, type, phase: phaseId } : { title, type };
 
+		// Post through the request-scoped PB client (locals.pb) — its baseURL and auth
+		// token are already correct for this session. A raw fetch to a hardcoded/env
+		// base broke twice over: the token came from locals.pb but the fetch targeted a
+		// DIFFERENT base (→ "Authentication required"), and in prod it routed an SSR call
+		// out through the public Cloudflare Tunnel and back (the cold-tunnel EOF class,
+		// bug-205). `send()` uses the client's own base + attaches the auth header.
 		let status = 'pending';
 		try {
-			const res = await fetch(`${PB_BASE}/api/suggestions/create`, {
+			const body = (await locals.pb.send('/api/suggestions/create', {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-				body: JSON.stringify({ trip_id: trip.id, payload })
-			});
-			if (!res.ok) {
-				const err = await res.json().catch(() => ({}));
-				return fail(res.status, { error: (err as { message?: string }).message || 'Failed to add idea.' });
-			}
-			const body = (await res.json()) as { status?: string };
+				body: { trip_id: trip.id, payload }
+			})) as { status?: string };
 			status = body.status === 'approved' ? 'approved' : 'pending';
 		} catch (err: unknown) {
-			const message = err instanceof Error ? err.message : 'Failed to add idea.';
-			return fail(500, { error: message });
+			const e = err as { status?: number; response?: { message?: string }; message?: string };
+			const code = e.status && e.status >= 400 && e.status < 600 ? e.status : 500;
+			return fail(code, { error: e.response?.message || e.message || 'Failed to add idea.' });
 		}
 
 		// #270 — a forming idea has no phase page to land on; the Overview IS the

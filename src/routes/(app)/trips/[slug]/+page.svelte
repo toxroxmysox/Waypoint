@@ -277,17 +277,25 @@
 		<div class="grid grid-cols-2 gap-1.5">
 			<a
 				href="/trips/{data.trip.slug}/members"
-				class="border-line bg-surface hover:bg-surface-2 rounded-lg border px-3 py-3"
+				class="border-line bg-surface hover:bg-surface-2 flex flex-col rounded-lg border px-3 py-3"
 			>
 				<p class="text-ink text-sm font-semibold">People</p>
 				<p class="text-ink-muted mt-0.5 text-xs">Invite the group early</p>
+				<span class="text-moss mt-2 inline-flex items-center gap-1 text-xs font-semibold">
+					Invite people
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+				</span>
 			</a>
 			<a
 				href="/trips/{data.trip.slug}/goals"
-				class="border-line bg-surface hover:bg-surface-2 rounded-lg border px-3 py-3"
+				class="border-line bg-surface hover:bg-surface-2 flex flex-col rounded-lg border px-3 py-3"
 			>
 				<p class="text-ink text-sm font-semibold">Goals</p>
 				<p class="text-ink-muted mt-0.5 text-xs">What do you want out of it?</p>
+				<span class="text-moss mt-2 inline-flex items-center gap-1 text-xs font-semibold">
+					Add a goal
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+				</span>
 			</a>
 		</div>
 	{:else if isClosed && data.record && data.share}
