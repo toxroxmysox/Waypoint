@@ -31,10 +31,24 @@ for a **forming** trip, when they are free. The tool **surfaces** consensus; it 
 6. **Trip-scoped, growable.** The canvas lives on the trip. "When am I free" is UX framing; a
    later user-level personal-availability asset (cross-trip, like the avatar) is an additive
    migration, not a rebuild.
-7. **Reuses the standard membership model.** Respondents are `trip_members` with normal roles;
-   poll-link joiners become **Placeholder Members** via the existing join-token primitive (#118);
-   **the first paint creates the member.** Tombstones (`removed_at`, ADR-0008) apply. (This amends
-   the CAPABILITY_MAP's "flat participants / no tombstone" line — see Consequences.)
+7. **Two-tier participation (the "poll is the invite" new-user model).** Respondents are
+   `trip_members`; tombstones (`removed_at`, ADR-0008) apply. Two tiers of entry:
+   - **Tier 1 — poll respondent (no OTP).** Tap the share link → the calendar renders immediately →
+     **paint your days, then give a name only** → a **name-only Placeholder Member** is created and
+     your availability cells are saved. No email, no code — the availability poll is the low-friction
+     surface. A soft cookie identity (`soft_token`) keys re-entry so the same person re-paints the
+     *same* placeholder instead of spawning duplicates; a "that's me" re-entry picker (the existing
+     name-only placeholder list from `lookup`) is the fallback.
+   - **Tier 2 — full member (OTP).** To leave the poll and enter **the rest of the trip** (ideas,
+     scenarios, itinerary — everything beyond availability), verify email via OTP. That **claims the
+     placeholder into a real member** (`user` set on the same row — the existing email-match / claim
+     machinery), so no availability cells are orphaned.
+   This is a deliberate, scoped acceptance of a **new anonymous write path** (a `/api/poll/paint`
+   sibling to `accept`) — the one place we trade the unique-`(trip,user)`-index dedup guarantee for
+   zero-friction poll entry, bounded to the availability surface and mitigated by the cookie + re-entry
+   picker. Green counts name-only respondents (they *are* the poll's point); duplicate-across-devices
+   is an accepted residual, softened by the cookie, and an organiser can merge/eject via the existing
+   tombstone. (Amends the CAPABILITY_MAP's "flat participants / no tombstone" line — see Consequences.)
 8. **First-class direct promotion.** Pick a window → "set these dates" → the forming→dated cascade
    (the same one forming set-dates and scenario promotion fire). A trip can find dates via the poll
    with **no scenario at all**; when scenarios exist, availability also colours each scenario's
@@ -71,10 +85,20 @@ for a **forming** trip, when they are free. The tool **surfaces** consensus; it 
 - **SPEC_BACKLOG "When + availability"** updated to match (no red; no ranking).
 - **CONTEXT.md** gains an `[[Availability]]` glossary term (member × day → available|maybe, forming
   only, consensus-coloured, promotes to dates).
-- **The "poll is the invite" new-user path** is the load-bearing UX risk and is being walked
-  separately (link → identify → paint → become member); the lightest honest flow folds into the
-  build spec. The data model must key a respondent's availability so a later account-**claim** never
-  orphans their cells.
+- **The "poll is the invite" new-user path** was walked by three parallel agents (2026-07-05):
+  current-flow, lightest-possible, and the identity/abuse seam. Resolution = the two-tier model in
+  Decision 7 (paint→name→placeholder, OTP to enter the rest of the trip). **Build invariants that
+  MUST hold** (from the identity walk) or dedup/claim/purge break:
+  1. Availability cells reference **`trip_members.id`**, never `user.id` or a cookie — claim mutates
+     the same member row in place, so cells never need re-keying.
+  2. The cell → `trip_members` relation is **`cascadeDelete: true`**, so a zero-ref respondent's
+     hard-purge takes their cells and can't throw a required-FK 400.
+  3. The availability collection is added to the **member-purge reference scan**
+     (`MEMBER_RELATION_FIELDS`, `members.pb.js`) — the `test:rules` drift test goes **RED** until it
+     is (a forcing function, not optional).
+  4. Every availability read filters **`removed_at = ""`**, so a tombstoned member's cells drop out of
+     the green computation automatically.
+  A `soft_token` field on `trip_members` backs cookie re-entry for Tier-1 respondents.
 - **Green un-greens as members join** — accepted and correct; the denominator is the live active
   member set (`removed_at = ""`).
 - **Migration path to user-level availability** stays open (trip-scoped now is a strict subset).
