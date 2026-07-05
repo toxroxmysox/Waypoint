@@ -342,7 +342,13 @@
 	{:else if isClosed && data.record && data.share}
 		<!-- Closed record (#242): read-only resting state. Renders ONLY the record —
 		     no planning chrome (lists, itinerary, FAB, capture) leaks in. -->
-		<RecordView record={data.record} share={data.share} canManage={data.canManage} />
+		<RecordView
+			record={data.record}
+			share={data.share}
+			canManage={data.canManage}
+			decision={data.recordDecision}
+			decisionHref="/trips/{data.trip.slug}/decision"
+		/>
 	{:else if isWrapUp}
 		<!-- Wrap-up (#239/#195): ONE bordered banner replaces the trip-details card +
 		     Flights & Stays. Itinerary/Days still render below, unchanged. -->

@@ -13,6 +13,7 @@ import { needsOnboarding } from '$lib/collaboration/onboarding';
 import { loadScenarioBoard, type ScenarioBoardData } from '$lib/ideation/scenario-board.server';
 import { aggregateDayStatuses, type AvailabilityCell } from '$lib/ideation/availability';
 import type PocketBase from 'pocketbase';
+import type { Decision, DecisionPayload } from '$lib/ideation/types';
 
 /** Availability poll summary for the forming-home entry card (#271). Cheap: one
  *  cells fetch + one active-members fetch, reduced to a green-day count + whether
@@ -140,7 +141,8 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 			totalItems: ideas.length,
 			record: undefined as ReturnType<typeof buildArchiveView> | undefined,
 			share: undefined as ClosedShare | undefined,
-			canManage: false
+			canManage: false,
+			recordDecision: null as RecordDecision
 		};
 	}
 
@@ -155,6 +157,34 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 			filter: `trip = "${trip.id}"`,
 			sort: 'day,sort_order'
 		});
+
+		// #343 — the trip's origin story in its record. Surface the immutable scenario
+		// decision (#337) as a read-only "How this trip came together" section: the chosen
+		// scenario, picked over the others, on its date. At most one decision per trip;
+		// older/non-scenario trips have none — absence is silent (recordDecision stays null).
+		let recordDecision: RecordDecision = null;
+		try {
+			const decision = await locals.pb
+				.collection('decisions')
+				.getFirstListItem<Decision>(`trip = "${trip.id}"`, {
+					sort: '-created',
+					requestKey: null
+				});
+			const payload = (decision.payload || {}) as Partial<DecisionPayload>;
+			const others = (Array.isArray(payload.scenarios) ? payload.scenarios : [])
+				.filter((s) => !s.won)
+				.map((s) => s.title)
+				.filter(Boolean);
+			recordDecision = {
+				decidedAt: payload.decided_at || decision.created,
+				chooserName: payload.chooser_name || 'Someone',
+				chosenTitle: payload.chosen_title || '',
+				otherTitles: others
+			};
+		} catch {
+			// No decision recorded (older/non-scenario trip) — render nothing.
+			recordDecision = null;
+		}
 		// Opt-in budget summary (#243): only load expenses + member count when the owner
 		// enabled it; buildArchiveView surfaces the aggregate total + rough per-person
 		// only (never itemized / who-owes-whom).
@@ -180,6 +210,9 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 			showWelcome,
 			record,
 			canManage,
+			// #343 — the scenario decision snapshot for the record's origin-story section
+			// (null when the trip has no decision; the section renders nothing).
+			recordDecision,
 			// Forming-only keys, absent here (shape consistency — see forming branch).
 			formingIdeas: [] as { id: string; type: ItemType; title: string }[],
 			board: undefined as ScenarioBoardData | undefined,
@@ -285,6 +318,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		record: undefined as ReturnType<typeof buildArchiveView> | undefined,
 		share: undefined as ClosedShare | undefined,
 		canManage: false,
+		recordDecision: null as RecordDecision,
 		// Forming-only keys, absent here (shape consistency — see forming branch).
 		formingIdeas: [] as { id: string; type: ItemType; title: string }[],
 		board: undefined as ScenarioBoardData | undefined,
@@ -293,6 +327,14 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		canSetDates: false
 	};
 };
+
+// #343 — the record's origin-story snapshot (a lean projection of the #337 decision).
+type RecordDecision = {
+	decidedAt: string;
+	chooserName: string;
+	chosenTitle: string;
+	otherTitles: string[];
+} | null;
 
 type ClosedShare = {
 	url: string;

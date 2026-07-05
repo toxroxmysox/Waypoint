@@ -16,10 +16,22 @@
 	// archive stay in lockstep (same sanitization, same fields).
 	type RecordData = ReturnType<typeof buildArchiveView>;
 
+	// #343 — the scenario decision snapshot (#337) surfaced read-only in the record as
+	// the trip's origin story. `null` when the trip has no decision (older/non-scenario
+	// trips) — the section renders nothing.
+	type RecordDecision = {
+		decidedAt: string;
+		chooserName: string;
+		chosenTitle: string;
+		otherTitles: string[];
+	} | null;
+
 	let {
 		record,
 		share,
-		canManage = false
+		canManage = false,
+		decision = null,
+		decisionHref = ''
 	}: {
 		record: RecordData;
 		share: {
@@ -31,7 +43,26 @@
 			today: string;
 		};
 		canManage?: boolean;
+		decision?: RecordDecision;
+		decisionHref?: string;
 	} = $props();
+
+	// #343 — "on [date]" for the origin-story line. Long-form, calm; empty on a bad ISO.
+	function decidedOn(iso: string): string {
+		if (!iso) return '';
+		const dt = new Date(iso);
+		return isNaN(dt.getTime())
+			? ''
+			: dt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+	}
+
+	// #343 — "picked over X and Y" naming the runners-up (a natural-language join).
+	function othersPhrase(titles: string[]): string {
+		if (titles.length === 0) return '';
+		if (titles.length === 1) return titles[0];
+		if (titles.length === 2) return `${titles[0]} and ${titles[1]}`;
+		return `${titles.slice(0, -1).join(', ')}, and ${titles[titles.length - 1]}`;
+	}
 
 	const dateRange = $derived.by(() => {
 		const fmt = (d: string) =>
@@ -73,6 +104,35 @@
 			<p class="text-ink-muted mt-1.5 text-xs">A read-only record of what happened. Reopen it (below) to edit again.</p>
 		</div>
 	</section>
+
+	{#if decision}
+		<!-- #343 How this trip came together — the immutable scenario decision (#337) as
+		     the record's origin story. Read-only; deep-links to the full "How we decided"
+		     record for the weighing detail. Rendered only when a decision exists. -->
+		<section
+			class="border-line bg-surface shadow-card overflow-hidden rounded-lg border"
+			aria-label="How this trip came together"
+		>
+			<div class="p-4">
+				<p class="text-ink-muted text-[9.5px] font-bold tracking-[0.14em] uppercase">
+					How this trip came together
+				</p>
+				<p class="text-ink mt-2 text-sm">
+					Chose <span class="font-semibold">{decision.chosenTitle}</span>{#if decision.otherTitles.length > 0}<span class="text-ink-soft">, over {othersPhrase(decision.otherTitles)}</span>{/if}{#if decidedOn(decision.decidedAt)}<span class="text-ink-soft"> — {decidedOn(decision.decidedAt)}</span>{/if}.
+				</p>
+				<p class="text-ink-muted mt-1 text-xs">Chosen by {decision.chooserName}.</p>
+				{#if decisionHref}
+					<a
+						href={decisionHref}
+						class="text-moss mt-2.5 inline-flex items-center gap-1 text-xs font-semibold"
+					>
+						How we decided
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+					</a>
+				{/if}
+			</div>
+		</section>
+	{/if}
 
 	<!-- Share affordance — the result of closing out, where the group looks. -->
 	<ShareAffordance

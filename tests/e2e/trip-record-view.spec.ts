@@ -26,6 +26,9 @@ async function createPastTrip(page: import('@playwright/test').Page): Promise<st
 	await page.fill('input[name="title"]', title);
 	const start = new Date(Date.now() - 35 * 86_400_000).toISOString().split('T')[0];
 	const end = new Date(Date.now() - 30 * 86_400_000).toISOString().split('T')[0];
+	// #270 (name-first create): dates are OPTIONAL and shown INLINE — no "I know the
+	// dates" disclosure anymore. Fill the visible date fields directly to make a dated
+	// (past) trip → wrap-up. (The old <summary> expander was removed with #270.)
 	await page.fill('input[name="start_date"]', start);
 	await page.fill('input[name="end_date"]', end);
 	await page.fill('input[name="location_summary"]', 'Record Location');
@@ -139,6 +142,13 @@ test.describe('Closed Record view + Share + reopen (#242)', () => {
 		await expect(
 			page.getByText(/Live now/i).filter({ visible: true }).first()
 		).toBeVisible();
+
+		// #343 absence-is-silent: this trip was dated straight from /trips/new (never a
+		// forming→scenario promotion), so it has no `decisions` record. The record view
+		// must render NOTHING for the origin-story section — no empty heading leaks in.
+		await expect(
+			page.getByText('How this trip came together').filter({ visible: true })
+		).toHaveCount(0);
 	});
 
 	test('closed record view + share are usable at 375px, and reopen is offered to the owner', async ({
@@ -168,5 +178,84 @@ test.describe('Closed Record view + Share + reopen (#242)', () => {
 		await expect(
 			page.locator('[data-testid="reopen-trip"]').filter({ visible: true }).first()
 		).toBeVisible();
+	});
+
+	// #343 — when the trip DOES carry a scenario decision (#337), the closed record
+	// surfaces it read-only as "How this trip came together": the chosen scenario,
+	// picked over the others, on its date. `decisions` is hook-only/immutable, so we
+	// mint the snapshot via the isolated PB's superuser API (bypasses the no-client-
+	// write rule), then reload the closed record and assert the section renders.
+	test('closed record surfaces the scenario decision as the origin-story section', async ({
+		page,
+		request
+	}) => {
+		const slug = await createPastTrip(page);
+
+		// Close the trip via the closeout walk (keep private — the record still renders).
+		await page.locator('[data-testid="wrapup-closeout"]').filter({ visible: true }).first().click();
+		await page.waitForURL(`**/trips/${slug}/closeout`);
+		await walkCloseoutToSummary(page);
+		await page
+			.getByRole('button', { name: /Finish & close out trip/i })
+			.filter({ visible: true })
+			.first()
+			.click();
+		await page.waitForURL(`${BASE}/trips/${slug}`, { timeout: 10000 });
+		await expect(page.getByText('Trip closed').filter({ visible: true }).first()).toBeVisible({
+			timeout: 5000
+		});
+
+		// Seed a decision snapshot directly on the isolated PB (superuser bypasses the
+		// hook-only create rule). e2e-clean-pb.sh upserts admin@e2e.test/e2eAdminPass123.
+		const PB = process.env.PUBLIC_PB_URL || 'http://127.0.0.1:8099';
+		const admin = await request.post(`${PB}/api/collections/_superusers/auth-with-password`, {
+			data: { identity: 'admin@e2e.test', password: 'e2eAdminPass123' }
+		});
+		expect(admin.ok()).toBeTruthy();
+		const adminToken = (await admin.json()).token as string;
+
+		const tripRes = await request.get(
+			`${PB}/api/collections/trips/records?filter=${encodeURIComponent(`slug="${slug}"`)}`,
+			{ headers: { Authorization: adminToken } }
+		);
+		const tripId = (await tripRes.json()).items[0].id as string;
+
+		const created = await request.post(`${PB}/api/collections/decisions/records`, {
+			headers: { Authorization: adminToken },
+			data: {
+				trip: tripId,
+				payload: {
+					chosen_title: 'Coastal Portugal, 7 nights',
+					chooser_name: 'Maya',
+					decided_at: new Date().toISOString(),
+					scenarios: [
+						{ id: 'a', title: 'Coastal Portugal, 7 nights', champion_name: 'Maya', won: true },
+						{ id: 'b', title: 'Swiss Alps hiking', champion_name: 'Theo', won: false },
+						{ id: 'c', title: 'Kyoto in autumn', champion_name: 'Priya', won: false }
+					]
+				}
+			}
+		});
+		expect(created.ok()).toBeTruthy();
+
+		// Reload the closed record — the origin-story section now renders.
+		await page.reload();
+		const section = page
+			.getByText('How this trip came together')
+			.filter({ visible: true })
+			.first();
+		await expect(section).toBeVisible({ timeout: 5000 });
+		// Names the chosen scenario, the runners-up, and the chooser.
+		await expect(
+			page.getByText(/Coastal Portugal, 7 nights/).filter({ visible: true }).first()
+		).toBeVisible();
+		await expect(
+			page.getByText(/Swiss Alps hiking and Kyoto in autumn/).filter({ visible: true }).first()
+		).toBeVisible();
+		await expect(page.getByText('Chosen by Maya.').filter({ visible: true }).first()).toBeVisible();
+		// Deep-links to the full "How we decided" record.
+		await expect(
+			page.getByRole('link', { name: /How we decided/ }).filter({ visible: true }).first()
+		).toHaveAttribute('href', `/trips/${slug}/decision`);
 	});
 });
