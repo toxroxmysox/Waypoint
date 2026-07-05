@@ -6,8 +6,42 @@
 	import Avatar from '$lib/ui/Avatar.svelte';
 	import FAB from '$lib/shell/components/FAB.svelte';
 	import { clearOfflineCaches } from '$lib/documents/offline-cache';
+	import { goto } from '$app/navigation';
 
 	let { data } = $props();
+
+	// #278 — paste-invite escape hatch for the signed-up-but-trip-less user who
+	// has an invite. Accept either a full invite URL (…/join/<token>) OR a bare
+	// token, extract the token, and navigate to the EXISTING /join/[token] flow
+	// (no new join logic). Tokens are $security.randomString(40) → 40 alphanumerics.
+	// Client-side parse+goto (not a form action): the destination is a GET route
+	// with the token as a PATH segment, so there's nothing to POST — a form action
+	// would only re-parse and 303 to this same GET. The house "progressive
+	// enhancement, not client fetch" rule governs data mutations; this is pure
+	// navigation to a computed URL, the idiomatic SvelteKit case for goto().
+	let inviteInput = $state('');
+	let inviteError = $state('');
+
+	function extractToken(raw: string): string | null {
+		const trimmed = raw.trim();
+		if (!trimmed) return null;
+		// Pull the /join/<token> segment out of a pasted URL, else treat the whole
+		// string as a bare token. Strip any trailing slash / query / fragment.
+		const urlMatch = trimmed.match(/\/join\/([^/?#\s]+)/i);
+		const candidate = urlMatch ? urlMatch[1] : trimmed;
+		return /^[A-Za-z0-9]{6,}$/.test(candidate) ? candidate : null;
+	}
+
+	function submitInvite(e: SubmitEvent) {
+		e.preventDefault();
+		const token = extractToken(inviteInput);
+		if (!token) {
+			inviteError = "That doesn't look like an invite link. Paste the whole link, or just the code.";
+			return;
+		}
+		inviteError = '';
+		goto(`/join/${token}`);
+	}
 
 	function formatDateRange(start: string, end: string): string {
 		const s = new Date(start.replace(' ', 'T'));
@@ -83,30 +117,53 @@
 	{/if}
 
 	{#if isEmpty}
-		<!-- #277 Organic-path polish (ONBOARDING_PRD §7). A direct/creator user with no
-		     trips lands here. Make the empty state a clear on-ramp INTO a trip + the shared
-		     intro — not a dead-end "No trips yet." Creating a trip drops a fresh user
-		     (`onboarded_at == null`) onto the overview, where the SAME member-keyed welcome
-		     card auto-shows: the convergence point invited + organic users both reach. The
-		     copy previews that card's doors ("see the plan · weigh in · add what you want")
-		     so the on-ramp signals what's on the other side. Minimal — NOT the deferred
-		     curated-create / "were you invited?" fork (#278). -->
-		<div class="py-16 text-center" data-testid="trips-empty-onramp">
-			<p class="font-display text-ink text-lg italic">Start your first trip.</p>
-			<p class="text-ink-muted mx-auto mt-2 max-w-xs text-sm">
-				Spin one up and you'll land on its home, where you can
-				<strong class="text-ink-soft">see the plan</strong>,
-				<strong class="text-ink-soft">weigh in on ideas</strong>, and
-				<strong class="text-ink-soft">add what you want</strong> out of it.
+		<!-- #278 First-run for the signed-up-but-trip-less user (grill 2026-07-05, BINDING).
+		     A warm orientation, not marketing: one plain sentence on what a trip IS, a
+		     prominent "Plan your first trip" → the name-first forming create (#270), and a
+		     quieter "Have an invite?" escape hatch that resolves a pasted link/token to the
+		     existing /join flow. Evolves #277's on-ramp. NO feature tour, NO templates, NO
+		     seeded data. Converges with the in-trip welcome card (#274) once you're in a trip. -->
+		<div class="py-14 text-center" data-testid="trips-empty-onramp">
+			<p class="font-display text-ink text-2xl italic">Where to?</p>
+			<p class="text-ink-muted mx-auto mt-3 max-w-xs text-sm leading-relaxed">
+				A trip is a shared place to plan a journey with the people coming along —
+				gather ideas, weigh dates, and decide together.
 			</p>
-			<div class="mt-5 space-y-2">
-				<Button href="/trips/new" variant="moss" size="md">New trip</Button>
-				<p>
-					<a href="/trips/import" class="text-ink-muted text-xs font-medium hover:text-ink-soft">
-						or import from JSON
-					</a>
-				</p>
+			<div class="mt-6">
+				<Button href="/trips/new" variant="moss" size="md">Plan your first trip</Button>
 			</div>
+
+			<!-- Quieter escape hatch: signed up directly but someone sent you an invite. -->
+			<div class="border-line/60 mx-auto mt-10 max-w-xs border-t pt-6 text-left">
+				<form onsubmit={submitInvite}>
+					<label for="invite-link" class="text-ink-soft block text-center text-sm font-medium">
+						Have an invite? Paste your link.
+					</label>
+					<div class="mt-2 flex items-center gap-2">
+						<input
+							type="text"
+							id="invite-link"
+							name="invite"
+							bind:value={inviteInput}
+							autocomplete="off"
+							autocapitalize="off"
+							spellcheck="false"
+							placeholder="Paste link or code"
+							class="border-line bg-surface text-ink min-w-0 flex-1 rounded-md border px-3 py-2 text-sm"
+						/>
+						<Button type="submit" variant="ghost" size="sm">Go</Button>
+					</div>
+					{#if inviteError}
+						<p role="alert" class="text-error-deep mt-2 text-xs">{inviteError}</p>
+					{/if}
+				</form>
+			</div>
+
+			<p class="mt-8">
+				<a href="/trips/import" class="text-ink-muted text-xs font-medium hover:text-ink-soft">
+					or import from JSON
+				</a>
+			</p>
 		</div>
 	{:else}
 		<div class="space-y-6">
