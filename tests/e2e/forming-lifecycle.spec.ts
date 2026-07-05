@@ -39,12 +39,14 @@ test.describe('Forming lifecycle (#270)', () => {
 		await page.getByRole('button', { name: /create/i }).click();
 		await page.waitForURL(`${BASE}/trips/${slug}`, { timeout: 10000 });
 
-		// --- 2. Forming home: "No dates yet" + the set-dates door.
+		// --- 2. Forming home: the scenario board (#337) leads (empty → "Pitch the
+		// first scenario"), and the direct set-dates escape hatch is reachable behind
+		// its toggle (the board is the primary promotion path now).
 		await expect(
-			page.getByText('No dates yet').filter({ visible: true }).first()
+			page.getByTestId('scenario-empty').filter({ visible: true }).first()
 		).toBeVisible();
 		await expect(
-			page.locator('[data-testid="set-dates-form"]:visible').first()
+			page.getByTestId('set-dates-toggle').filter({ visible: true }).first()
 		).toBeVisible();
 
 		// Nav is gated to the forming scope: Ideas + Members + Goals + More; the
@@ -88,9 +90,12 @@ test.describe('Forming lifecycle (#270)', () => {
 			page.getByText(/no dates yet/i).filter({ visible: true }).first()
 		).toBeVisible();
 
-		// --- 5. Promote: set dates via the affordance. The PB update hook seeds
-		// "Phase 1" + generates days and re-homes the phase-less idea into it.
+		// --- 5. Promote: set dates via the direct escape hatch (open its toggle
+		// first — the board is the primary path, so it's collapsed by default). The
+		// PB update hook seeds "Phase 1" + generates days and re-homes the phase-less
+		// idea into it.
 		await page.goto(`${BASE}/trips/${slug}`);
+		await page.getByTestId('set-dates-toggle').filter({ visible: true }).first().click();
 		const start = new Date(Date.now() + 30 * 86_400_000).toISOString().split('T')[0];
 		const end = new Date(Date.now() + 33 * 86_400_000).toISOString().split('T')[0];
 		await page.locator('#forming-start:visible').fill(start);
@@ -135,8 +140,8 @@ test.describe('Forming lifecycle (#270)', () => {
 		await page.goto(`${BASE}/trips/new`);
 		await page.waitForURL('**/trips/new');
 		await page.fill('input[name="title"]', title);
-		// #270: dates live behind the optional "I know the dates" expander.
-		await page.locator('summary', { hasText: 'I know the dates' }).click();
+		// #270 forming-polish (43ac497): the create form's date fields are now INLINE
+		// (the "I know the dates" expander was removed) — fill them directly.
 		const start = new Date(Date.now() + 10 * 86_400_000).toISOString().split('T')[0];
 		const end = new Date(Date.now() + 12 * 86_400_000).toISOString().split('T')[0];
 		await page.fill('input[name="start_date"]', start);

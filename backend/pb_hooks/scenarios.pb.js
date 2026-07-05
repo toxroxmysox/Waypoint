@@ -143,7 +143,14 @@ routerAdd('POST', '/api/scenarios/promote', (e) => {
 	const members = e.app.findRecordsByFilter('trip_members', 'trip = {:trip} && removed_at = ""', '', 0, 0, { trip: tripId });
 	const memberName = (id) => {
 		for (const m of members) {
-			if (m.id === id) return m.get('display_name') || m.get('placeholder_name') || 'Someone';
+			if (m.id === id) {
+				let nm = m.get('display_name') || m.get('placeholder_name') || '';
+				if (!nm) {
+					const uid = m.get('user');
+					if (uid) { try { const u = e.app.findRecordById('users', uid); nm = u.get('name') || ''; } catch (_) {} }
+				}
+				return nm || 'Someone';
+			}
 		}
 		return 'Someone';
 	};
