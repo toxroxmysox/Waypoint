@@ -88,53 +88,51 @@
 				</p>
 			</div>
 
-			<!-- #270 / ADR-0022 — name-first create: dates are OPTIONAL, tucked behind
-			     this expander. Skipping them creates a dateless trip you can shape
-			     first (ideas, people, goals) and date later. <details> so the fold
-			     works without JS (progressive enhancement house rule). -->
-			<details class="border-line rounded-md border">
-				<summary
-					class="text-ink-soft cursor-pointer select-none px-3 py-2.5 text-sm font-medium marker:text-ink-muted"
-				>
-					I know the dates
-					<span class="text-ink-muted block pl-4 text-xs font-normal">
-						No dates yet? Skip this — you can set them anytime.
-					</span>
-				</summary>
-				<div class="px-3 pt-1 pb-3">
-					<div class="flex items-end gap-3">
-						<div class="min-w-0 flex-1">
-							<label for="start_date" class="text-ink-soft block text-sm font-medium">Start date</label>
-							<input
-								type="date"
-								id="start_date"
-								name="start_date"
-								bind:value={startDate}
-								max={endDate || undefined}
-								class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
-							/>
-						</div>
-						<div class="text-ink-muted font-mono pb-2 text-xs">
-							{#if duration}
-								{duration} {duration === 1 ? 'day' : 'days'}
-							{:else}
-								→
-							{/if}
-						</div>
-						<div class="min-w-0 flex-1">
-							<label for="end_date" class="text-ink-soft block text-sm font-medium">End date</label>
-							<input
-								type="date"
-								id="end_date"
-								name="end_date"
-								bind:value={endDate}
-								min={startDate || undefined}
-								class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
-							/>
-						</div>
+			<!-- #270 / ADR-0022 — name-first create: dates are OPTIONAL and shown inline.
+			     Leaving them blank creates a dateless (forming) trip you can shape first
+			     (ideas, people, goals) and date later. No disclosure/dropdown — the fields
+			     are right here, and the subheading says they're skippable. -->
+			<div>
+				<div class="flex items-baseline justify-between">
+					<span class="text-ink-soft block text-sm font-medium">Dates</span>
+					<span class="text-ink-muted text-xs font-normal">Optional</span>
+				</div>
+				<p class="text-ink-muted mt-0.5 mb-2 text-xs">
+					No dates yet? Leave these blank — you can set them anytime, and doing so
+					starts the plan.
+				</p>
+				<div class="flex items-end gap-3">
+					<div class="min-w-0 flex-1">
+						<label for="start_date" class="text-ink-soft block text-sm font-medium">Start date</label>
+						<input
+							type="date"
+							id="start_date"
+							name="start_date"
+							bind:value={startDate}
+							max={endDate || undefined}
+							class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
+						/>
+					</div>
+					<div class="text-ink-muted font-mono pb-2 text-xs">
+						{#if duration}
+							{duration} {duration === 1 ? 'day' : 'days'}
+						{:else}
+							→
+						{/if}
+					</div>
+					<div class="min-w-0 flex-1">
+						<label for="end_date" class="text-ink-soft block text-sm font-medium">End date</label>
+						<input
+							type="date"
+							id="end_date"
+							name="end_date"
+							bind:value={endDate}
+							min={startDate || undefined}
+							class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
+						/>
 					</div>
 				</div>
-			</details>
+			</div>
 
 			<div>
 				<label for="timezone" class="text-ink-soft block text-sm font-medium">Timezone</label>
