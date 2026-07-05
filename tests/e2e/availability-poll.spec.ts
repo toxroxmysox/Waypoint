@@ -81,7 +81,7 @@ test.describe('#271 availability poll', () => {
 	test('cold-open poll → paint + name → placeholder + cells (no OTP); 2nd painter greens a day; promote dates the trip', async ({
 		browser
 	}) => {
-		const { slug, tripId, token, ownerToken } = await seedPollTrip();
+		const { slug, tripId, token, ownerToken, ownerMemberId } = await seedPollTrip();
 		const greenDay = forwardDay(9);
 
 		// --- 1. COLD-OPEN the public poll (anonymous context — no login). ---------
@@ -121,7 +121,7 @@ test.describe('#271 availability poll', () => {
 		// Paint the owner's cell directly (the in-app My-mode does the same write).
 		await pbPost(
 			'/api/collections/availability/records',
-			{ trip: tripId, member: (await ownerMemberId(tripId, ownerToken)), day: `${greenDay} 00:00:00.000Z`, value: 'available' },
+			{ trip: tripId, member: ownerMemberId, day: `${greenDay} 00:00:00.000Z`, value: 'available' },
 			ownerToken
 		);
 
@@ -153,13 +153,3 @@ test.describe('#271 availability poll', () => {
 		await ownerCtx.close();
 	});
 });
-
-// Resolve the owner's trip_members id (the after-create hook made it).
-async function ownerMemberId(tripId: string, ownerToken: string): Promise<string> {
-	const auth = await pbPost('/api/dev/auth-bypass', { email: EMAIL });
-	const members = await pbGet(
-		`${''}/api/collections/trip_members/records?filter=${encodeURIComponent(`trip="${tripId}" && user="${auth.record.id}"`)}`,
-		ownerToken
-	);
-	return members.items[0].id;
-}
