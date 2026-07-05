@@ -59,8 +59,21 @@ onBootstrap((e) => {
 			duration: 60,
 			maxRequests: 5,
 		},
+		// #271 / ADR-0023 — the anonymous poll-paint path (/api/poll/paint) is
+		// token-gated but still creates a name-only Placeholder Member on first paint,
+		// so an attacker with a leaked share link could script placeholder-spam. A
+		// per-IP cap blunts it: a real respondent paints a handful of gestures in a
+		// session (each a batched delta post), so 20/60s/IP is generous for a human but
+		// throttles a bomber. Path-based label (a custom route has no {collection}:
+		// {action} tag). audience '' = guests + auth (the tapper is usually anon).
+		{
+			label: '/api/poll/paint',
+			audience: '',
+			duration: 60,
+			maxRequests: 20,
+		},
 	];
 
 	e.app.save(settings);
-	console.log('ratelimit.pb.js: OTP rate limit enabled — 5 req/60s per IP on users:requestOTP');
+	console.log('ratelimit.pb.js: rate limits enabled — 5/60s users:requestOTP, 20/60s /api/poll/paint');
 });
