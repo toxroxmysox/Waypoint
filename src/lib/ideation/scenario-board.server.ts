@@ -4,6 +4,7 @@ import type { Item } from '$lib/itinerary/types';
 import { withAvatarUrls, type MemberWithAvatar } from '$lib/collaboration/member-avatar';
 import type { Scenario, ScenarioVote, ScenarioPoint, PhaseSketchSegment } from './types';
 import { boardLiveDimensions, scenarioDimensions, type ConvergeDimensions } from './scenario-planning';
+import { windowStatus, type AvailabilityCell, type DayStatus } from './availability';
 
 /** A scenario decorated with everything a board card renders — its own votes,
  *  pro/con counts, keystone labels, champion display, fork lineage, and the
@@ -28,6 +29,10 @@ export interface BoardScenario {
 	dimensions: ConvergeDimensions;
 	emptySlots: ConvergeDimensions;
 	canManage: boolean; // caller is champion (edit/delete)
+	// #271 — availability overlap across THIS scenario's date window (green =
+	// everyone free the whole window; yellow = some free; null = no responses / no
+	// window). Availability colours the window but never sets the date (ADR-0023 D8).
+	availabilityStatus: DayStatus;
 }
 
 export interface ScenarioBoardData {
@@ -70,15 +75,27 @@ export async function loadScenarioBoard(
 
 	const scenarioIds = scenarios.map((s) => s.id);
 	const orFilter = scenarioIds.map((id) => `scenario = "${id}"`).join(' || ');
-	const [votes, points, membersRaw] = await Promise.all([
+	const [votes, points, membersRaw, availRows] = await Promise.all([
 		pb.collection('scenario_votes').getFullList<ScenarioVote>({ filter: orFilter }),
 		pb.collection('scenario_points').getFullList<ScenarioPoint>({ filter: orFilter }),
 		pb.collection('trip_members').getFullList<TripMember>({
 			filter: `trip = "${tripId}" && removed_at = ""`,
 			expand: 'user'
-		})
+		}),
+		// #271 — availability cells to colour each scenario's window.
+		pb
+			.collection('availability')
+			.getFullList<{ member: string; day: string; value: 'available' | 'maybe' }>({
+				filter: `trip = "${tripId}"`
+			})
 	]);
 	const members = withAvatarUrls(pb, membersRaw as never);
+	const activeMemberIds = members.map((m) => m.id);
+	const availCells: AvailabilityCell[] = availRows.map((r) => ({
+		member: r.member,
+		day: r.day.slice(0, 10),
+		value: r.value
+	}));
 
 	const votesByScenario: Record<string, ScenarioVote[]> = {};
 	for (const v of votes) (votesByScenario[v.scenario] ??= []).push(v);
@@ -126,7 +143,14 @@ export async function loadScenarioBoard(
 				sketch: liveDimensions.sketch && !dims.sketch,
 				keystones: liveDimensions.keystones && !dims.keystones
 			},
-			canManage: s.champion === callerMemberId
+			canManage: s.champion === callerMemberId,
+			// Colour this card's group-row by availability over its own window.
+			availabilityStatus: windowStatus(
+				availCells,
+				activeMemberIds,
+				s.date_start ? s.date_start.slice(0, 10) : '',
+				s.date_end ? s.date_end.slice(0, 10) : ''
+			)
 		};
 	});
 
