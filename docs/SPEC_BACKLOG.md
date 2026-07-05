@@ -63,16 +63,23 @@ Genuine unbuilt **frontier**, indexed by capability. One section per L1 capabili
 
 *Get the planned trip ready for trip day: booked, packed, confirmed.*
 
-### Tasks model — generalize checklists / packing / grocery / booking-to-do
-- **What:** The Checklist/Task primitive is shipped (`checklists`/`tasks`, ADR-0003). Frontier is the **views** that compose it:
-  - **Packing list** — manual entries, per-person assignable; optionally weather-aware (→ Integrations · Weather).
-  - **Booking to-do** — auto-filled from planned-but-unbooked items + manual add; checking one off can flip the item's booking status (Tri-State Booking Pill).
-  - **Grocery list** — a community (shared, not per-person) list with a location/time trigger; generalizes to "location/time-triggered checklist."
-- **Note:** the primitive is one model; do **not** ship the three lists as three separate features. Some of this entangles with the readiness rollup (Map §2a).
+### Tasks model — generalize checklists / packing / grocery / booking-to-do — ✅ EFFECTIVELY SHIPPED (grill 2026-07-05)
+- **What:** The Checklist/Task primitive is shipped (`checklists`/`tasks`, ADR-0003). Grill 2026-07-05 found the **views are mostly built too**:
+  - **Packing** — ✅ works via general checklists + per-task `assignee` (`/lists`, `/lists/[listId]`). A named "Packing" preset would be cosmetic.
+  - **Booking to-do** — ✅ SHIPPED as the Booking smart list (`/lists/booking`, #50): auto-projects `planned && requires_booking && !booked` items; checking a row writes `booked=true` to the source Item.
+  - **Flights** — ✅ SHIPPED (`/lists/flights`, #225).
+  - **Grocery / location-time-triggered list** — ⛔ PARKED. The trigger needs **push notifications, which are off-the-table** (SPEC §off-table); without push a geofenced reminder can't fire. Revisit only if push ever lands.
+  - **Weather-aware packing** — ⛔ PARKED, blocked on the unbuilt Weather (Open-Meteo) integration.
+- **Disposition:** primitive + Packing + Booking + Flights done; the two remaining slivers are dependency/charter-blocked. Treat Tasks as **closed** until Weather or push changes the constraint.
 
 ### Pre-departure "unbooked sweep" *(low conviction)*
 - **What:** A T-minus-N "you leave Saturday and the riad isn't booked" surface — the one concrete sliver of the dropped proactive next-step engine.
 - **Note:** the full engine was dropped (brushes the no-hub charter line); fold into Booking Smart List work (#198-adjacent). dogfood-driven. `pathways.md` P-4.
+
+### Plan Health — deterministic structural checks — ⛔ PARKED (thesis grill 2026-07-05)
+- **What (proposed):** deterministic checks over the item graph — anchor-time conflicts, day density, empty days, checkout-vs-departure, travel-time between coords. "It surfaces; the owner decides."
+- **PARKED — not worth it at Waypoint's scale (Scott).** Three challenges killed the why: (1) the day timeline **already** surfaces same-day overlaps (v3 subtle indicator), so the tracer check duplicates it; (2) structural-check value scales with itinerary complexity — modest friends/family trips (days, not weeks) don't hide the issues a human can't eyeball; (3) the "items outside a member's availability" check **doesn't fit** — availability is forming-only + frozen once dated. Only differentiated value would be the cross-day lens (checkout-with-no-onward-transport, empty phase, lopsided density) — real, but not enough pain at current scale.
+- **Revisit trigger:** trips get genuinely long + dense (multi-week, multi-city) such that cross-day structural issues actually hide. Deterministic-only if resurrected (never a planner — charter).
 
 ---
 
