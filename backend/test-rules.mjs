@@ -28,7 +28,7 @@ const EMAILS = {
 };
 
 const ROLES = ['owner', 'co_owner', 'traveler', 'viewer', 'non_member'];
-const COLLECTIONS = ['users', 'trips', 'trip_members', 'phases', 'days', 'items', 'checklist_items', 'pending_invites', 'votes', 'trip_goals', 'goal_votes', 'suggestion_votes', 'documents', 'memories'];
+const COLLECTIONS = ['users', 'trips', 'trip_members', 'phases', 'days', 'items', 'checklist_items', 'pending_invites', 'votes', 'trip_goals', 'goal_votes', 'suggestion_votes', 'documents', 'memories', 'scenarios', 'scenario_votes', 'scenario_points', 'decisions'];
 
 // Collections whose create requires a multipart body (a file field). `documents`
 // (#70) takes a single file; the harness uploads a valid 1x1 PNG so PB's
@@ -140,6 +140,14 @@ function fixtureRecordId(fixture, collection) {
 			return fixture.documentId;
 		case 'memories':
 			return fixture.memoryId;
+		case 'scenarios':
+			return fixture.scenarioId;
+		case 'scenario_votes':
+			return fixture.scenarioVoteId;
+		case 'scenario_points':
+			return fixture.scenarioPointId;
+		case 'decisions':
+			return fixture.decisionId;
 		default:
 			throw new Error('unknown collection ' + collection);
 	}
@@ -453,6 +461,66 @@ const EXPECT = {
 		create: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' },
 		update: SELF_ONLY,
 		delete: SELF_ONLY
+	},
+	// scenarios (#337 — Candidate Scenarios):
+	//   list/view: ALL trip members incl. viewers — everyone reads the board.
+	//   create: owner·co_owner·traveler authoring as THEMSELVES; viewers read-only
+	//           (createRule: champion.user = auth && champion.role != "viewer",
+	//           mirroring trip_goals / memories). createBody champions the acting
+	//           member, so viewer + non_member deny.
+	//   update/delete: CHAMPION only. The rule stays at membership; scenarios.pb.js
+	//           enforces champion == caller. The fixture scenario is owner-championed,
+	//           so only owner passes — SELF_ONLY. (The novel champion-gate cases prove
+	//           a non-champion member denies.)
+	scenarios: {
+		list: ALLOW_MEMBERS_DENY_NONMEMBER,
+		view: ALLOW_MEMBERS_DENY_NONMEMBER,
+		create: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' },
+		update: SELF_ONLY,
+		delete: SELF_ONLY
+	},
+	// scenario_votes (#337 — mirrors votes/goal_votes/suggestion_votes):
+	//   list/view: any member sees the board's votes.
+	//   create: owner·co_owner·traveler voting AS THEMSELVES; viewers denied
+	//           (member.user = auth && member.role != "viewer"). createBody votes on
+	//           scenarioNeutral so members don't collide with the seeded vote under the
+	//           unique (scenario, member) index. non_member falls back to the owner
+	//           member, whose user != non_member auth → deny.
+	//   update/delete: own vote only (member.user = auth). The fixture vote belongs to
+	//           the owner → SELF_ONLY.
+	scenario_votes: {
+		list: ALLOW_MEMBERS_DENY_NONMEMBER,
+		view: ALLOW_MEMBERS_DENY_NONMEMBER,
+		create: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' },
+		update: SELF_ONLY,
+		delete: SELF_ONLY
+	},
+	// scenario_points (#337 — pros/cons as comment-like entries):
+	//   list/view: any member sees the board's pros/cons.
+	//   create: owner·co_owner·traveler as THEMSELVES; viewers denied.
+	//   update: NONE — updateRule is null (a point is immutable; delete + re-add).
+	//           DENY_ALL for every role.
+	//   delete: author only (member.user = auth). The fixture point is owner-authored
+	//           → SELF_ONLY.
+	scenario_points: {
+		list: ALLOW_MEMBERS_DENY_NONMEMBER,
+		view: ALLOW_MEMBERS_DENY_NONMEMBER,
+		create: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' },
+		update: DENY_ALL,
+		delete: SELF_ONLY
+	},
+	// decisions (#337 — append-only, hook-written at promotion):
+	//   list/view: ALL trip members incl. viewers — the "How we decided" record is
+	//           readable forever.
+	//   create/update/delete: DENY_ALL for every client role (all rules null). The
+	//           promotion cascade writes via admin-context e.app.save, which bypasses
+	//           collection rules — so even the owner can't client-create one.
+	decisions: {
+		list: ALLOW_MEMBERS_DENY_NONMEMBER,
+		view: ALLOW_MEMBERS_DENY_NONMEMBER,
+		create: DENY_ALL,
+		update: DENY_ALL,
+		delete: DENY_ALL
 	}
 };
 
@@ -567,6 +635,41 @@ function createBody(collection, role, fixture) {
 				author: fixture.memberIds[role] || fixture.memberIds.owner,
 				thought: `Harness memory ${role} ${stamp}`
 			};
+		case 'scenarios':
+			// Champion as the acting member's own membership. createRule gates on
+			// champion.role (single relation) + champion.user = auth, so viewer denies
+			// and owner/co_owner/traveler pass. non_member has no membership → falls
+			// back to owner, whose user != the non_member auth, so the rule denies.
+			return {
+				trip: fixture.tripId,
+				title: `Harness scenario ${role} ${stamp}`,
+				champion: fixture.memberIds[role] || fixture.memberIds.owner,
+				status: 'candidate'
+			};
+		case 'scenario_votes':
+			// Vote as the acting member on scenarioNeutral (viewer-championed), which
+			// carries no seeded vote — so members don't trip the unique (scenario,
+			// member) index. member.user = auth holds for owner/co_owner/traveler;
+			// viewer denies on role; non_member falls back to owner → member.user !=
+			// auth → deny.
+			return {
+				scenario: fixture.scenarioNeutralId,
+				member: fixture.memberIds[role] || fixture.memberIds.owner,
+				value: 'like'
+			};
+		case 'scenario_points':
+			// Author a pro as the acting member on scenarioNeutral. Same role gating as
+			// scenario_votes (member.user = auth && member.role != "viewer").
+			return {
+				scenario: fixture.scenarioNeutralId,
+				member: fixture.memberIds[role] || fixture.memberIds.owner,
+				kind: 'pro',
+				text: `Harness point ${role} ${stamp}`
+			};
+		case 'decisions':
+			// createRule is null → DENY_ALL; a valid-shaped body ensures the rule (not
+			// a payload error) is what rejects for every role.
+			return { trip: fixture.tripId, payload: { note: 'harness' } };
 		default:
 			throw new Error('no body for ' + collection);
 	}
@@ -607,6 +710,18 @@ function updateBody(collection) {
 			// A non-empty thought keeps the at-least-one-of hook satisfied, so the
 			// matrix result reflects the author-only rule, not the backstop.
 			return { thought: 'Harness updated' };
+		case 'scenarios':
+			// A plain non-status edit — the champion-only gate (scenarios.pb.js) is what
+			// decides, so only the owner (fixture champion) passes.
+			return { pitch: 'Harness updated' };
+		case 'scenario_votes':
+			return { value: 'love' };
+		case 'scenario_points':
+			// updateRule is null → PB rejects before validating the payload.
+			return { text: 'Harness updated' };
+		case 'decisions':
+			// updateRule is null → PB rejects before validating the payload.
+			return { payload: { note: 'harness updated' } };
 		default:
 			throw new Error('no body for ' + collection);
 	}
@@ -1331,10 +1446,14 @@ const CANONICAL_MEMBER_RELATIONS = new Set([
 	// drift test flagged it MISSING from the purge reference list.
 	'money_units.members',
 	'money_units.created_by',
-	// drop (votes — always dropped before the reference scan)
+	// scenarios (#337, migration 0063) — champion is authored content (block).
+	'scenarios.champion',
+	// drop (votes + scenario weigh-ins — always dropped before the reference scan)
 	'votes.member',
 	'goal_votes.member',
 	'suggestion_votes.member',
+	'scenario_votes.member',
+	'scenario_points.member',
 	// cascade (PB cascadeDelete + no identity to preserve)
 	'pending_invites.invited_by',
 	'join_tokens.created_by'
@@ -2142,6 +2261,84 @@ function printMemoriesReport() {
 	}
 }
 
+// #337 — the champion-only edit/delete gate (scenarios.pb.js). The fixed matrix's
+// SELF_ONLY on the OWNER-championed fixture proves "only the champion edits", but
+// it conflates champion with owner — a co_owner/traveler denial there could be a
+// role denial, not a non-champion denial. These cases disambiguate on a
+// TRAVELER-championed scenario:
+//   - the traveler-champion CAN edit + delete their own pitch (a non-owner
+//     champion has full authority over it);
+//   - the OWNER (a non-champion, despite outranking the traveler) CANNOT edit or
+//     delete it — "fork instead of edit-war" holds even for owners.
+const SCENARIO_CHAMPION_OPS = [
+	'champion_edit_own',
+	'nonchampion_owner_edit_denied',
+	'nonchampion_owner_delete_denied',
+	'champion_delete_own'
+];
+
+async function runScenarioChampionNovelCases(tokens) {
+	// The traveler champions a fresh scenario (create is rule-legal: champion.user =
+	// auth && role != "viewer").
+	let fixture = await setupFixture();
+	let made = await pbRequest('POST', '/api/collections/scenarios/records', {
+		token: tokens.traveler,
+		body: {
+			trip: fixture.tripId,
+			title: 'Traveler-championed pitch (#337)',
+			champion: fixture.memberIds.traveler,
+			status: 'candidate'
+		}
+	});
+	let scenId = made.data?.id;
+
+	// 1. Champion edits their own pitch → allow.
+	const editOwn = await pbRequest('PATCH', `/api/collections/scenarios/records/${scenId}`, {
+		token: tokens.traveler,
+		body: { pitch: 'Champion refines their own pitch' }
+	});
+	recordResult('scenarios', 'champion_edit_own', 'traveler', 'allow', classifyWrite(editOwn.status), editOwn.status);
+
+	// 2. The OWNER (non-champion) edits the traveler's pitch → deny (fork, don't edit-war).
+	const ownerEdit = await pbRequest('PATCH', `/api/collections/scenarios/records/${scenId}`, {
+		token: tokens.owner,
+		body: { pitch: 'Owner tries to overwrite someone else’s pitch' }
+	});
+	recordResult('scenarios', 'nonchampion_owner_edit_denied', 'owner', 'deny', classifyWrite(ownerEdit.status), ownerEdit.status);
+
+	// 3. The OWNER (non-champion) deletes the traveler's pitch → deny.
+	const ownerDel = await pbRequest('DELETE', `/api/collections/scenarios/records/${scenId}`, {
+		token: tokens.owner
+	});
+	recordResult('scenarios', 'nonchampion_owner_delete_denied', 'owner', 'deny', classifyWrite(ownerDel.status), ownerDel.status);
+
+	// 4. The champion deletes their own pitch → allow. Fresh fixture so the delete
+	//    is independent of the edits above.
+	fixture = await setupFixture();
+	made = await pbRequest('POST', '/api/collections/scenarios/records', {
+		token: tokens.traveler,
+		body: {
+			trip: fixture.tripId,
+			title: 'Traveler pitch to delete (#337)',
+			champion: fixture.memberIds.traveler,
+			status: 'candidate'
+		}
+	});
+	scenId = made.data?.id;
+	const champDel = await pbRequest('DELETE', `/api/collections/scenarios/records/${scenId}`, {
+		token: tokens.traveler
+	});
+	recordResult('scenarios', 'champion_delete_own', 'traveler', 'allow', classifyWrite(champDel.status), champDel.status);
+}
+
+function printScenarioChampionReport() {
+	console.log('\n[#337 scenarios — champion-only edit/delete (non-champion owner denied; fork, don’t edit-war)]');
+	for (const r of results.filter((x) => SCENARIO_CHAMPION_OPS.includes(x.op))) {
+		const mark = r.passed ? 'PASS' : 'FAIL';
+		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+	}
+}
+
 function printReport() {
 	const ops = ['list', 'view', 'create', 'update', 'delete'];
 	const allRoles = [...ROLES, 'anon'];
@@ -2258,6 +2455,9 @@ async function main() {
 	console.log('#269 cases: memories (unique (day,author) cap, at-least-one-of, photo multipart)');
 	await runMemoriesNovelCases(tokens);
 
+	console.log('#337 cases: scenarios champion-only edit/delete (non-champion owner denied)');
+	await runScenarioChampionNovelCases(tokens);
+
 	printReport();
 	printNovelReport();
 	printSuggestionVotesReport();
@@ -2274,6 +2474,7 @@ async function main() {
 	printCreatorEditReport();
 	printLastPhaseDeleteReport();
 	printMemoriesReport();
+	printScenarioChampionReport();
 
 	const failed = results.some((r) => !r.passed);
 	exit(failed ? 1 : 0);
