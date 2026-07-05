@@ -172,6 +172,34 @@
 			/>
 		{/if}
 
+			<!-- #271 / ADR-0023 — availability poll: a SIBLING surface to the board (not a
+			     competing date-setter). Paint the days you're free; the group heatmap
+			     surfaces consensus, and an owner can promote a green window. -->
+			<a
+				href="/trips/{data.trip.slug}/availability"
+				class="border-line bg-surface hover:bg-surface-2 flex items-center gap-3 rounded-lg border px-4 py-3"
+				data-testid="availability-entry"
+			>
+				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-moss)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<rect x="3" y="4" width="18" height="18" rx="2" />
+					<path d="M16 2v4M8 2v4M3 10h18" />
+				</svg>
+				<div class="min-w-0 flex-1">
+					<p class="text-ink text-sm font-semibold">When can everyone go?</p>
+					<p class="text-ink-muted mt-0.5 text-xs">
+						{#if data.availabilitySummary && data.availabilitySummary.greenDayCount > 0}
+							{data.availabilitySummary.greenDayCount}
+							{data.availabilitySummary.greenDayCount === 1 ? 'day works' : 'days work'} for everyone so far
+						{:else if data.availabilitySummary && !data.availabilitySummary.iHavePainted}
+							Paint the days you're free
+						{:else}
+							Mark your availability
+						{/if}
+					</p>
+				</div>
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-ink-muted" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+			</a>
+
 		<!-- The direct set-dates escape hatch — collapsed by default (the board is the
 		     primary promotion path). Owner-tier: skip scenarios and date now. -->
 		{#if data.canSetDates}

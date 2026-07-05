@@ -11,6 +11,56 @@ import { publishStatus, resolvePublishDay } from '$lib/portability/archive-visib
 import { tripToday, tripTz } from '$lib/shell/trip-time';
 import { needsOnboarding } from '$lib/collaboration/onboarding';
 import { loadScenarioBoard, type ScenarioBoardData } from '$lib/ideation/scenario-board.server';
+import { aggregateDayStatuses, type AvailabilityCell } from '$lib/ideation/availability';
+import type PocketBase from 'pocketbase';
+
+/** Availability poll summary for the forming-home entry card (#271). Cheap: one
+ *  cells fetch + one active-members fetch, reduced to a green-day count + whether
+ *  the caller has painted anything + whether anyone has. */
+export interface AvailabilitySummary {
+	greenDayCount: number;
+	iHavePainted: boolean;
+	anyoneHasPainted: boolean;
+	activeMemberCount: number;
+}
+async function summarizeAvailability(
+	pb: PocketBase,
+	tripId: string,
+	callerMemberId: string
+): Promise<AvailabilitySummary> {
+	const [rows, members] = await Promise.all([
+		pb
+			.collection('availability')
+			.getFullList<{ member: string; day: string; value: 'available' | 'maybe' }>({
+				// requestKey: null — this runs concurrently with loadScenarioBoard (also
+				// reading availability/trip_members for the same trip); without it the JS
+				// SDK auto-cancels one of the duplicate reads (ClientResponseError 0).
+				filter: `trip = "${tripId}"`,
+				requestKey: null
+			}),
+		// ADR-0023 build invariant 4 — active roster only.
+		pb.collection('trip_members').getFullList<{ id: string }>({
+			filter: `trip = "${tripId}" && removed_at = ""`,
+			fields: 'id',
+			requestKey: null
+		})
+	]);
+	const activeIds = members.map((m) => m.id);
+	const cells: AvailabilityCell[] = rows.map((r) => ({
+		member: r.member,
+		day: r.day.slice(0, 10),
+		value: r.value
+	}));
+	const statuses = aggregateDayStatuses(cells, activeIds);
+	let greenDayCount = 0;
+	for (const s of statuses.values()) if (s === 'green') greenDayCount++;
+	return {
+		greenDayCount,
+		iHavePainted: cells.some((c) => c.member === callerMemberId),
+		anyoneHasPainted: cells.length > 0,
+		activeMemberCount: activeIds.length
+	};
+}
 
 // Overview checklist previews (#51): roll up each manual, non-item-scoped
 // Checklist's done/total so the Overview can show compact mini-cards under the
@@ -53,7 +103,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 	// skips seeding), so none of the planning Overview's day/phase content can
 	// render; ideas are phase-less unplanned items collected until promotion.
 	if (lifecycle === 'forming') {
-		const [ideas, board] = await Promise.all([
+		const [ideas, board, availabilitySummary] = await Promise.all([
 			locals.pb.collection('items').getFullList<Item>({
 				filter: `trip = "${trip.id}"`,
 				fields: 'id,type,title,status',
@@ -61,7 +111,10 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 			}),
 			// #337 — the scenario board IS the forming home. Load candidate scenarios +
 			// their votes/points/members for the rich cards.
-			loadScenarioBoard(locals.pb, trip.id, membership.id)
+			loadScenarioBoard(locals.pb, trip.id, membership.id),
+			// #271 — availability poll summary for the forming-home entry card (green-day
+			// count + whether the caller has painted). A sibling surface to the board.
+			summarizeAvailability(locals.pb, trip.id, membership.id)
 		]);
 		const canSetDates = membership.role === 'owner' || membership.role === 'co_owner';
 		// The composer/vote/point create paths are open to non-viewers (viewers read).
@@ -74,6 +127,8 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 			formingIdeas: ideas.map((i) => ({ id: i.id, type: i.type, title: i.title })),
 			// #337 scenario board.
 			board,
+			// #271 availability poll summary (forming-home entry card).
+			availabilitySummary,
 			canPitch,
 			canSetDates,
 			// Shape-consistent defaults (see the closed branch below).
@@ -128,6 +183,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 			// Forming-only keys, absent here (shape consistency — see forming branch).
 			formingIdeas: [] as { id: string; type: ItemType; title: string }[],
 			board: undefined as ScenarioBoardData | undefined,
+			availabilitySummary: undefined as AvailabilitySummary | undefined,
 			canPitch: false,
 			canSetDates: false,
 			share: {
@@ -232,6 +288,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		// Forming-only keys, absent here (shape consistency — see forming branch).
 		formingIdeas: [] as { id: string; type: ItemType; title: string }[],
 		board: undefined as ScenarioBoardData | undefined,
+		availabilitySummary: undefined as AvailabilitySummary | undefined,
 		canPitch: false,
 		canSetDates: false
 	};

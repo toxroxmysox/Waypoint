@@ -62,6 +62,22 @@
 		if (typeof window === 'undefined') return `/join/${token}`;
 		return `${window.location.origin}/join/${token}`;
 	}
+	// #271 — the availability poll reuses the SAME join token but lands on the
+	// public poll surface (paint-first, no OTP). Only meaningful while forming.
+	function pollUrl(token: string): string {
+		if (typeof window === 'undefined') return `/poll/${token}`;
+		return `${window.location.origin}/poll/${token}`;
+	}
+	let copiedPoll = $state<string | null>(null);
+	async function copyPollLink(role: string, token: string) {
+		try {
+			await navigator.clipboard.writeText(pollUrl(token));
+			copiedPoll = role;
+			setTimeout(() => (copiedPoll = null), 1500);
+		} catch {
+			toast.show('Could not copy — long-press to copy the link');
+		}
+	}
 
 	async function copyJoinLink(role: string, token: string) {
 		try {
@@ -529,6 +545,23 @@
 										{copiedRole === role ? 'Copied' : 'Copy'}
 									</button>
 								</div>
+								{#if role === 'traveler' && !data.trip.start_date}
+									<!-- #271 — the availability poll share link (paint-first, no OTP).
+									     Same token, public poll surface. Forming trips only. -->
+									<div class="flex items-center justify-between gap-2 rounded-md bg-surface-2 px-2 py-1.5">
+										<span class="text-xs text-ink-muted">
+											Or share the <span class="font-semibold text-ink-soft">availability poll</span> — no account needed to weigh in
+										</span>
+										<button
+											type="button"
+											onclick={() => copyPollLink(role, link.token)}
+											class="shrink-0 text-xs font-semibold text-moss hover:text-moss/80"
+											data-testid="copy-poll-link"
+										>
+											{copiedPoll === role ? 'Copied' : 'Copy poll link'}
+										</button>
+									</div>
+								{/if}
 								<div class="flex items-center gap-4">
 									<form
 										method="POST"

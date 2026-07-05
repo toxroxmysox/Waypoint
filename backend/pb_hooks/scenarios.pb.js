@@ -155,6 +155,46 @@ routerAdd('POST', '/api/scenarios/promote', (e) => {
 		return 'Someone';
 	};
 
+	// #271 — availability overlap for the decision record ("why these dates"). Load
+	// every cell once + the active member ids (removed_at = "" already resolved in
+	// `members` above). Inlined windowStatus (goja: no src/lib import): a scenario's
+	// window is GREEN iff every day is green (all active members marked available),
+	// YELLOW if any responded day isn't all-green, null if no responses in the window.
+	const activeMemberIds = members.map((m) => m.id);
+	const availRows = e.app.findRecordsByFilter('availability', 'trip = {:trip}', '', 0, 0, { trip: tripId });
+	// day -> Map<memberId, value> (active only).
+	const availByDay = {};
+	for (const r of availRows) {
+		const mid = r.get('member');
+		if (activeMemberIds.indexOf(mid) === -1) continue;
+		const d = r.getString('day').substring(0, 10);
+		if (!availByDay[d]) availByDay[d] = {};
+		availByDay[d][mid] = r.get('value');
+	}
+	const dayGreen = (d) => {
+		const marks = availByDay[d];
+		if (!marks) return null; // no response
+		if (activeMemberIds.length === 0) return 'yellow';
+		for (const mid of activeMemberIds) {
+			if (marks[mid] !== 'available') return 'yellow';
+		}
+		return 'green';
+	};
+	const windowStatus = (ds, de) => {
+		if (!ds || !de || de < ds) return null;
+		let cursor = ds, anyResponded = false, allGreen = true;
+		let guard = 0;
+		while (cursor <= de && guard < 4000) {
+			const st = dayGreen(cursor);
+			if (st !== null) anyResponded = true;
+			if (st !== 'green') allGreen = false;
+			cursor = addDays(cursor, 1);
+			guard++;
+		}
+		if (!anyResponded) return null;
+		return allGreen ? 'green' : 'yellow';
+	};
+
 	// All scenarios on the trip + their votes/points — the decision snapshot (built
 	// BEFORE any mutation, capturing the pre-promotion board).
 	const allScenarios = e.app.findRecordsByFilter('scenarios', 'trip = {:trip}', '', 0, 0, { trip: tripId });
@@ -188,19 +228,24 @@ routerAdd('POST', '/api/scenarios/promote', (e) => {
 			try { const it = e.app.findRecordById('items', kid); keystoneLabels.push(it.get('title')); } catch (_) {}
 		}
 		const sketch = readJsonArray(s.get('phase_sketch'));
+		const sDs = s.getString('date_start').substring(0, 10);
+		const sDe = s.getString('date_end').substring(0, 10);
 		snapshots.push({
 			id: s.id,
 			title: s.get('title'),
 			pitch: s.get('pitch') || '',
 			champion_name: champName,
-			date_start: s.getString('date_start').substring(0, 10),
-			date_end: s.getString('date_end').substring(0, 10),
+			date_start: sDs,
+			date_end: sDe,
 			budget_per_person: s.get('budget_per_person') > 0 ? s.get('budget_per_person') : 0,
 			phase_sketch: sketch,
 			keystone_labels: keystoneLabels,
 			votes: votes,
 			pros: pros,
 			cons: cons,
+			// #271 — availability overlap across this scenario's window (green =
+			// everyone free; yellow = some; null = no responses). "Why these dates".
+			availability_status: windowStatus(sDs, sDe),
 			won: s.id === winner.id
 		});
 	}

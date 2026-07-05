@@ -93,8 +93,9 @@
 			{/if}
 		{/if}
 
-		<!-- 5. The group — vote stacks + pro/con counts (never a numeric score) -->
-		{#if scenario.votes.length > 0 || scenario.proCount > 0 || scenario.conCount > 0}
+		<!-- 5. The group — vote stacks + pro/con counts (never a numeric score) +
+		     #271 availability overlap across this scenario's window. -->
+		{#if scenario.votes.length > 0 || scenario.proCount > 0 || scenario.conCount > 0 || scenario.availabilityStatus}
 			<p class="text-ink-muted mt-3 border-t border-[var(--color-line)] pt-2 text-[9.5px] font-bold tracking-[0.09em] uppercase">
 				The group
 			</p>
@@ -104,6 +105,22 @@
 					<span class="text-ink-muted text-[11px]">
 						{#if scenario.proCount > 0}<span class="text-moss">👍 {scenario.proCount}</span>{/if}
 						{#if scenario.conCount > 0}<span class="text-clay ml-2">👎 {scenario.conCount}</span>{/if}
+					</span>
+				{/if}
+				{#if scenario.availabilityStatus}
+					<!-- Availability overlap across the window: green = everyone free the
+					     whole window, gold = some free. Surfaces the poll; never ranks. -->
+					<span
+						class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+						data-testid="scenario-availability"
+						data-availability={scenario.availabilityStatus}
+						style={scenario.availabilityStatus === 'green'
+							? 'background:var(--color-moss-tint);color:var(--color-moss)'
+							: 'background:var(--color-gold-tint);color:var(--color-gold-deep)'}
+						title="Availability across these dates"
+					>
+						<span class="h-1.5 w-1.5 rounded-full" style="background:{scenario.availabilityStatus === 'green' ? 'var(--color-moss)' : 'var(--color-gold)'}"></span>
+						{scenario.availabilityStatus === 'green' ? 'Everyone free' : 'Some free'}
 					</span>
 				{/if}
 			</div>
