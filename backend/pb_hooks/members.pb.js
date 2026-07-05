@@ -407,7 +407,8 @@ routerAdd('GET', '/api/members/can-purge', (e) => {
 		['tasks', 'assignee'],
 		['checklist_items', 'checked_by'],
 		['notifications', 'recipient'],
-		['money_units', 'created_by']
+		['money_units', 'created_by'],
+		['scenarios', 'champion']
 	];
 	for (const rel of BLOCK_FIELDS) {
 		try {
@@ -581,10 +582,19 @@ routerAdd('POST', '/api/members/remove', (e) => {
 		// blocks the purge. The #238 drift test (test-rules) caught this at integration.
 		['money_units', 'members', 'block_multi'],
 		['money_units', 'created_by', 'block'],
+		// scenarios (#337, migration 0063) — a champion's pitch is authored content;
+		// preserve the attribution when they leave (block), like items.created_by /
+		// trip_goals.created_by / suggestions.author. champion is required + non-cascade.
+		['scenarios', 'champion', 'block'],
 		// Votes — dropped above the disposition switch (drop).
 		['votes', 'member', 'drop'],
 		['goal_votes', 'member', 'drop'],
 		['suggestion_votes', 'member', 'drop'],
+		// scenario votes + pros/cons — a departed member's weigh-in is discarded like
+		// any other vote (drop). Both cascadeDelete on member, but the retained-row
+		// tombstone means the cascade won't fire on its own → drop explicitly below.
+		['scenario_votes', 'member', 'drop'],
+		['scenario_points', 'member', 'drop'],
 		// cascadeDelete + no identity — PB cleans these on delete (cascade).
 		['pending_invites', 'invited_by', 'cascade'],
 		['join_tokens', 'created_by', 'cascade']
@@ -677,7 +687,7 @@ routerAdd('POST', '/api/members/remove', (e) => {
 	// explicitly. This also makes a vote-only member zero-ref (→ purged, ADR-0013):
 	// suggestion_votes was missing from this loop pre-#238, so a member whose only
 	// reference was a suggestion vote would have wrongly blocked the purge.
-	for (const col of ['votes', 'goal_votes', 'suggestion_votes']) {
+	for (const col of ['votes', 'goal_votes', 'suggestion_votes', 'scenario_votes', 'scenario_points']) {
 		let rows = [];
 		try {
 			rows = e.app.findRecordsByFilter(col, 'member = {:mid}', '', 0, 0, { mid: target.id });

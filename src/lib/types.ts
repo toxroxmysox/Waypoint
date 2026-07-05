@@ -5,3 +5,4 @@ export * from './money/types';
 export * from './documents/types';
 export * from './portability/types';
 export * from './trip-mode/types';
+export * from './ideation/types';

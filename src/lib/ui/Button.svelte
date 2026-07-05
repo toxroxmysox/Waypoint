@@ -14,6 +14,7 @@
 		onclick,
 		icon,
 		class: klass = '',
+		testid,
 		children
 	}: {
 		variant?: Variant;
@@ -25,6 +26,8 @@
 		onclick?: (e: MouseEvent) => void;
 		icon?: Snippet;
 		class?: string;
+		/** Optional data-testid passthrough for E2E selectors. */
+		testid?: string;
 		children: Snippet;
 	} = $props();
 
@@ -66,7 +69,7 @@
 {/snippet}
 
 {#if href && !isDisabled}
-	<a {href} class="{base} {variantClass[variant]} {sizeClass[size]} {klass}">
+	<a {href} data-testid={testid} class="{base} {variantClass[variant]} {sizeClass[size]} {klass}">
 		{#if icon}{@render icon()}{/if}
 		{@render children()}
 	</a>
@@ -74,6 +77,7 @@
 	<button
 		{type}
 		{onclick}
+		data-testid={testid}
 		disabled={isDisabled}
 		aria-busy={loading || undefined}
 		class="{base} {variantClass[variant]} {sizeClass[size]} {klass}"

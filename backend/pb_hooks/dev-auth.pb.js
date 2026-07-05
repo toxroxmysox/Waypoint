@@ -555,6 +555,82 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 	memory.set('thought', 'Fixture memory — day one felt like the start of something.');
 	e.app.save(memory);
 
+	// #337 Candidate Scenarios fixtures. Scenarios live on forming trips, but the
+	// rules harness only exercises PERMISSIONS (not the forming lifecycle), so a
+	// scenario on the dated fixture trip is fine — the rules key on membership +
+	// champion, never on the trip's dates. Three scenarios + a vote + a point + a
+	// decision cover every fixed-matrix cell and the champion-gate novel cases:
+	//   - scenarioOwner   : championed by the OWNER — the update/delete fixture
+	//                       record (champion-only → SELF_ONLY: only owner passes;
+	//                       scenarios.pb.js gates the rest). Hosts the owner's point.
+	//   - scenarioCoOwner : championed by the CO_OWNER — hosts the OWNER-owned
+	//                       scenario_vote fixture record (list/view/update/delete
+	//                       SELF_ONLY → only owner passes). Also the champion-gate
+	//                       novel target (owner/traveler must NOT be able to edit it).
+	//   - scenarioNeutral : championed by the VIEWER — the vote-CREATE matrix target
+	//                       (no seeded vote on it, so members don't hit the unique
+	//                       (scenario, member) index; scenario votes allow voting your
+	//                       own pitch, but a neutral pitch keeps the create clean).
+	const scenariosCol = e.app.findCollectionByNameOrId('scenarios');
+
+	const scenarioOwner = new Record(scenariosCol);
+	scenarioOwner.set('trip', trip.id);
+	scenarioOwner.set('title', 'Owner pitch');
+	scenarioOwner.set('pitch', 'Championed by the owner.');
+	scenarioOwner.set('champion', memberIds.owner);
+	scenarioOwner.set('status', 'candidate');
+	e.app.save(scenarioOwner);
+
+	const scenarioCoOwner = new Record(scenariosCol);
+	scenarioCoOwner.set('trip', trip.id);
+	scenarioCoOwner.set('title', 'Co-owner pitch');
+	scenarioCoOwner.set('pitch', 'Championed by the co-owner.');
+	scenarioCoOwner.set('champion', memberIds.co_owner);
+	scenarioCoOwner.set('status', 'candidate');
+	e.app.save(scenarioCoOwner);
+
+	const scenarioNeutral = new Record(scenariosCol);
+	scenarioNeutral.set('trip', trip.id);
+	scenarioNeutral.set('title', 'Neutral pitch');
+	scenarioNeutral.set('pitch', 'Championed by the viewer.');
+	scenarioNeutral.set('champion', memberIds.viewer);
+	scenarioNeutral.set('status', 'candidate');
+	e.app.save(scenarioNeutral);
+
+	// The OWNER-owned scenario_vote on the co_owner's scenario — the scenario_votes
+	// fixture record (list/view/update/delete SELF_ONLY → only owner passes). Direct
+	// save bypasses the create rule.
+	const scenarioVotesCol = e.app.findCollectionByNameOrId('scenario_votes');
+	const scenarioVoteOwner = new Record(scenarioVotesCol);
+	scenarioVoteOwner.set('scenario', scenarioCoOwner.id);
+	scenarioVoteOwner.set('member', memberIds.owner);
+	scenarioVoteOwner.set('value', 'love');
+	e.app.save(scenarioVoteOwner);
+
+	// The OWNER-owned pro on the owner's scenario — the scenario_points fixture
+	// record (delete SELF_ONLY → only owner passes; updateRule is null → DENY_ALL).
+	const scenarioPointsCol = e.app.findCollectionByNameOrId('scenario_points');
+	const scenarioPointOwner = new Record(scenarioPointsCol);
+	scenarioPointOwner.set('scenario', scenarioOwner.id);
+	scenarioPointOwner.set('member', memberIds.owner);
+	scenarioPointOwner.set('kind', 'pro');
+	scenarioPointOwner.set('text', 'The dates line up with everyone.');
+	e.app.save(scenarioPointOwner);
+
+	// A decision record (normally minted by the promotion cascade in an admin
+	// context; direct save here so the harness has a fixture for list/view — client
+	// create/update/delete are all null → DENY_ALL for every role incl. owner).
+	const decisionsCol = e.app.findCollectionByNameOrId('decisions');
+	const decision = new Record(decisionsCol);
+	decision.set('trip', trip.id);
+	decision.set('payload', {
+		chosen: scenarioOwner.id,
+		chooser: memberIds.owner,
+		decided_at: new Date().toISOString(),
+		scenarios: [{ id: scenarioOwner.id, title: 'Owner pitch' }]
+	});
+	e.app.save(decision);
+
 	return e.json(200, {
 		tripId: trip.id,
 		phaseId: phase.id,
@@ -578,6 +654,12 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 		pendingInviteCode: inviteCode,
 		documentId: document.id,
 		memoryId: memory.id,
+		scenarioId: scenarioOwner.id,
+		scenarioCoOwnerId: scenarioCoOwner.id,
+		scenarioNeutralId: scenarioNeutral.id,
+		scenarioVoteId: scenarioVoteOwner.id,
+		scenarioPointId: scenarioPointOwner.id,
+		decisionId: decision.id,
 		memberIds: memberIds,
 		userIds: userIds
 	});

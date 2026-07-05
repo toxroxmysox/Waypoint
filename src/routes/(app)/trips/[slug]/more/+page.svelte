@@ -103,6 +103,26 @@
 		</Card>
 	{/if}
 
+	{#if data.hasDecision}
+		<!-- #337 — the immutable "How we decided" record (readable forever). Shown once
+		     the trip was promoted out of forming via a scenario vote. -->
+		<Card href="/trips/{data.trip.slug}/decision">
+			<div class="flex items-center gap-3 p-4" data-testid="how-we-decided">
+				<svg class="text-ink-soft shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M9 11l3 3L22 4" />
+					<path d="M22 12v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+				</svg>
+				<div class="min-w-0 flex-1">
+					<p class="text-ink text-sm font-semibold">How we decided</p>
+					<p class="text-ink-muted text-[12px]">The scenarios we weighed and what won</p>
+				</div>
+				<svg class="text-ink-muted shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="m9 18 6-6-6-6" />
+				</svg>
+			</div>
+		</Card>
+	{/if}
+
 	<!-- #276 Re-trigger. "Replay intro" re-shows the member-keyed welcome card on the
 	     trip overview on demand via `?welcome=1` — a manual override that IGNORES
 	     `users.onboarded_at` (does not depend on / does not clear it; the auto-show
