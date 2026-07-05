@@ -10,6 +10,7 @@ import { buildArchiveView } from '$lib/portability/archive-view';
 import { publishStatus, resolvePublishDay } from '$lib/portability/archive-visibility';
 import { tripToday, tripTz } from '$lib/shell/trip-time';
 import { needsOnboarding } from '$lib/collaboration/onboarding';
+import { loadScenarioBoard, type ScenarioBoardData } from '$lib/ideation/scenario-board.server';
 
 // Overview checklist previews (#51): roll up each manual, non-item-scoped
 // Checklist's done/total so the Overview can show compact mini-cards under the
@@ -52,18 +53,28 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 	// skips seeding), so none of the planning Overview's day/phase content can
 	// render; ideas are phase-less unplanned items collected until promotion.
 	if (lifecycle === 'forming') {
-		const ideas = await locals.pb.collection('items').getFullList<Item>({
-			filter: `trip = "${trip.id}"`,
-			fields: 'id,type,title,status',
-			sort: '-created'
-		});
+		const [ideas, board] = await Promise.all([
+			locals.pb.collection('items').getFullList<Item>({
+				filter: `trip = "${trip.id}"`,
+				fields: 'id,type,title,status',
+				sort: '-created'
+			}),
+			// #337 — the scenario board IS the forming home. Load candidate scenarios +
+			// their votes/points/members for the rich cards.
+			loadScenarioBoard(locals.pb, trip.id, membership.id)
+		]);
 		const canSetDates = membership.role === 'owner' || membership.role === 'co_owner';
+		// The composer/vote/point create paths are open to non-viewers (viewers read).
+		const canPitch = membership.role !== 'viewer';
 		return {
 			lifecycle,
 			// The onboarding welcome card is a planning-Overview surface; the forming
 			// home carries its own guidance copy instead.
 			showWelcome: false,
 			formingIdeas: ideas.map((i) => ({ id: i.id, type: i.type, title: i.title })),
+			// #337 scenario board.
+			board,
+			canPitch,
 			canSetDates,
 			// Shape-consistent defaults (see the closed branch below).
 			votable: { hasVotable: false, unratedTotal: 0, swipeHref: null as string | null },
@@ -116,6 +127,8 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 			canManage,
 			// Forming-only keys, absent here (shape consistency — see forming branch).
 			formingIdeas: [] as { id: string; type: ItemType; title: string }[],
+			board: undefined as ScenarioBoardData | undefined,
+			canPitch: false,
 			canSetDates: false,
 			share: {
 				// Absolute URL so it pastes into a group text as a working link (no
@@ -218,6 +231,8 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		canManage: false,
 		// Forming-only keys, absent here (shape consistency — see forming branch).
 		formingIdeas: [] as { id: string; type: ItemType; title: string }[],
+		board: undefined as ScenarioBoardData | undefined,
+		canPitch: false,
 		canSetDates: false
 	};
 };

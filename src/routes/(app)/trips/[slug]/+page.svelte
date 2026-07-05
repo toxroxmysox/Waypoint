@@ -16,6 +16,8 @@
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import WrapUpBanner from '$lib/trip-mode/components/WrapUpBanner.svelte';
 	import RecordView from '$lib/portability/components/RecordView.svelte';
+	import ScenarioBoard from '$lib/ideation/components/ScenarioBoard.svelte';
+	import { goto } from '$app/navigation';
 	import { titleCase } from '$lib/shell/format';
 	import { isTripActive } from '$lib/trip-mode/activation';
 	import { untrack } from 'svelte';
@@ -40,7 +42,14 @@
 	// "Forming" stays internal vocabulary — the UI says "No dates yet".
 	const isForming = $derived(data.lifecycle === 'forming');
 	let settingDates = $state(false);
+	// The set-dates escape hatch is collapsed by default on the scenario board (the
+	// board is the primary promotion path); an owner opens it to date without a
+	// scenario. If a submit failed, keep it open so the error is visible.
+	let setDatesOpen = $state(false);
 	const dateError = $derived(form?.dateError ?? '');
+	$effect(() => {
+		if (dateError) setDatesOpen = true;
+	});
 
 	let notifications = $state<Notification[]>(untrack(() => data.notifications ?? []));
 	let unreadCount = $state(untrack(() => data.unreadCount ?? 0));
@@ -149,88 +158,92 @@
 
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-6">
 	{#if isForming}
-		<!-- #270 / ADR-0022 — the forming home. The trip exists; the dates don't
-		     yet. Collect ideas, gather the group, set goals — and promote by
-		     setting dates (one-way; the hook seeds Phase 1 + days). -->
-		<Card>
-			<div class="p-4">
-				<p class="text-ink-soft font-mono text-[12px]">No dates yet</p>
-				<p class="font-display text-ink mt-2 text-base italic">
-					This trip is still taking shape.
-				</p>
-				<p class="text-ink-muted mt-1 text-sm">
-					Collect ideas, gather the group, set some goals. The itinerary starts
-					the moment the dates land.
-				</p>
-			</div>
-		</Card>
+		<!-- #337 / ADR-0022 — the forming home IS the scenario board. Weigh candidate
+		     scenarios (where/when/how much); the winner promotes the trip out of
+		     forming. Ideas / People / Goals stay reachable below (and in the bottom
+		     nav); a direct "set dates" escape hatch lets an owner date without a
+		     scenario. -->
+		{#if data.board}
+			<ScenarioBoard
+				board={data.board}
+				slug={data.trip.slug}
+				canPitch={data.canPitch}
+				onpitch={() => goto(`/trips/${data.trip.slug}/scenarios/new`)}
+			/>
+		{/if}
 
-		<!-- The promotion door — prominent, owner-tier only. -->
+		<!-- The direct set-dates escape hatch — collapsed by default (the board is the
+		     primary promotion path). Owner-tier: skip scenarios and date now. -->
 		{#if data.canSetDates}
-			<Card strong accent="var(--color-moss)">
-				<form
-					method="POST"
-					action="?/setDates"
-					data-testid="set-dates-form"
-					use:enhance={() => {
-						settingDates = true;
-						return async ({ update }) => {
-							settingDates = false;
-							await update();
-						};
-					}}
-					class="p-4"
-				>
-					<p class="text-ink text-sm font-semibold">Know when you're going?</p>
-					<p class="text-ink-muted mt-0.5 text-xs">
-						Setting the dates builds the day-by-day itinerary. Your ideas come along.
-					</p>
-					{#if dateError}
-						<p role="alert" class="text-error-deep mt-2 text-sm">{dateError}</p>
-					{/if}
-					<div class="mt-3 flex items-end gap-3">
-						<div class="min-w-0 flex-1">
-							<label for="forming-start" class="text-ink-soft block text-xs font-medium">Start</label>
-							<input
-								type="date"
-								id="forming-start"
-								name="start_date"
-								required
-								class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
-							/>
-						</div>
-						<div class="min-w-0 flex-1">
-							<label for="forming-end" class="text-ink-soft block text-xs font-medium">End</label>
-							<input
-								type="date"
-								id="forming-end"
-								name="end_date"
-								required
-								class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
-							/>
-						</div>
-					</div>
-					<Button
-						type="submit"
-						variant="moss"
-						size="md"
-						class="mt-3 w-full"
-						disabled={settingDates}
-						loading={settingDates}
+			<div class="px-0.5">
+				{#if !setDatesOpen}
+					<button
+						type="button"
+						onclick={() => (setDatesOpen = true)}
+						class="text-ink-muted hover:text-ink text-xs font-medium underline decoration-dotted underline-offset-2"
+						data-testid="set-dates-toggle"
 					>
-						{settingDates ? 'Setting up the days…' : 'Set the dates'}
-					</Button>
-				</form>
-			</Card>
-		{:else}
-			<Card>
-				<div class="p-4">
-					<p class="text-ink-soft text-sm">
-						The dates aren't set yet — the organizer can add them anytime. Everything
-						collected here carries over when they do.
-					</p>
-				</div>
-			</Card>
+						Already know the dates? Set them directly
+					</button>
+				{:else}
+					<Card>
+						<form
+							method="POST"
+							action="?/setDates"
+							data-testid="set-dates-form"
+							use:enhance={() => {
+								settingDates = true;
+								return async ({ update }) => {
+									settingDates = false;
+									await update();
+								};
+							}}
+							class="p-4"
+						>
+							<p class="text-ink text-sm font-semibold">Set the dates</p>
+							<p class="text-ink-muted mt-0.5 text-xs">
+								Skips the scenario vote and builds the day-by-day itinerary now. Your ideas
+								come along. One-way.
+							</p>
+							{#if dateError}
+								<p role="alert" class="text-error-deep mt-2 text-sm">{dateError}</p>
+							{/if}
+							<div class="mt-3 flex items-end gap-3">
+								<div class="min-w-0 flex-1">
+									<label for="forming-start" class="text-ink-soft block text-xs font-medium">Start</label>
+									<input
+										type="date"
+										id="forming-start"
+										name="start_date"
+										required
+										class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
+									/>
+								</div>
+								<div class="min-w-0 flex-1">
+									<label for="forming-end" class="text-ink-soft block text-xs font-medium">End</label>
+									<input
+										type="date"
+										id="forming-end"
+										name="end_date"
+										required
+										class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
+									/>
+								</div>
+							</div>
+							<Button
+								type="submit"
+								variant="moss"
+								size="md"
+								class="mt-3 w-full"
+								disabled={settingDates}
+								loading={settingDates}
+							>
+								{settingDates ? 'Setting up the days…' : 'Set the dates'}
+							</Button>
+						</form>
+					</Card>
+				{/if}
+			</div>
 		{/if}
 
 		<!-- Ideas — the forming trip's working surface. Phase-less until promotion. -->
