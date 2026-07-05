@@ -36,7 +36,7 @@
 
 <section
 	class="min-h-[3rem] space-y-2"
-	use:dndzone={{ items, dragDisabled, type: 'itinerary-item', flipDurationMs: FLIP_MS, dropTargetStyle: {} }}
+	use:dndzone={{ items, dragDisabled, type: 'itinerary-item', flipDurationMs: FLIP_MS, dropTargetStyle: {}, useCursorForDetection: true }}
 	onconsider={onConsider}
 	onfinalize={onFinalize}
 >

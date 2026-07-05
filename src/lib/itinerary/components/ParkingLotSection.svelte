@@ -78,7 +78,15 @@
 			type: 'itinerary-item',
 			flipDurationMs: FLIP_MS,
 			dropTargetStyle: {},
-			dropTargetClasses: ['parking-dropzone--over']
+			dropTargetClasses: ['parking-dropzone--over'],
+			// #324: resolve the target zone by the FINGER/cursor position, not the
+			// dragged card's centre. A thin collapsed empty strip (min-h-[2.75rem])
+			// loses the default centre-of-card overlap contest to its taller
+			// neighbours (timeline above, sibling zone below) → drops never land. With
+			// cursor detection the strip wins whenever the finger is over it, however
+			// tall the card. svelte-dnd-action reads this from the DRAG-ORIGIN zone's
+			// config, so the timeline zone (DayTimeline) sets it too — keep in sync.
+			useCursorForDetection: true
 		}}
 		onconsider={onConsider}
 		onfinalize={onFinalize}
