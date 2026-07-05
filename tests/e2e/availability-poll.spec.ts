@@ -58,20 +58,15 @@ async function seedPollTrip() {
 		ownerToken
 	);
 	const ownerMember = members.items.find((m: { user: string }) => m.user === ownerId);
-	// Mint a traveler join token (used as the poll share token).
-	const token = `e2epoll${Math.random().toString(36).slice(2, 16)}`;
-	await pbPost(
-		'/api/collections/join_tokens/records',
-		{
-			trip: trip.id,
-			role: 'traveler',
-			token,
-			expires_at: '2030-01-01 00:00:00.000Z',
-			revoked: false,
-			created_by: ownerMember.id
-		},
+	// Mint a traveler join token via the proper endpoint (join_tokens create is
+	// superuser-only by rule; /api/join/create authorizes the owner + returns the
+	// token). The poll share link reuses this same token (ADR-0023 Decision 7).
+	const created = await pbPost(
+		'/api/join/create',
+		{ trip_id: trip.id, role: 'traveler' },
 		ownerToken
 	);
+	const token = created.token as string;
 	return { slug, tripId: trip.id, token, ownerToken, ownerMemberId: ownerMember.id };
 }
 
