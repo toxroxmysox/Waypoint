@@ -26,8 +26,6 @@ async function createPastTrip(page: import('@playwright/test').Page): Promise<st
 	// Both dates ~a month in the past → past end_date → wrap-up (archived defaults false).
 	const start = new Date(Date.now() - 35 * 86_400_000).toISOString().split('T')[0];
 	const end = new Date(Date.now() - 30 * 86_400_000).toISOString().split('T')[0];
-	// #270: dates live behind the optional "I know the dates" expander on /trips/new.
-	await page.locator('summary', { hasText: 'I know the dates' }).click();
 	await page.fill('input[name="start_date"]', start);
 	await page.fill('input[name="end_date"]', end);
 	await page.fill('input[name="location_summary"]', 'Wrapup Location');
