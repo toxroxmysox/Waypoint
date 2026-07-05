@@ -48,13 +48,21 @@ test.describe('Forming lifecycle (#270)', () => {
 		).toBeVisible();
 
 		// Nav is gated to the forming scope: Ideas + Members + Goals + More; the
-		// date-scoped planning tabs are hidden until promotion.
-		const nav = page.locator('nav.fixed.bottom-0');
-		await expect(nav.getByText('Ideas')).toBeVisible();
-		await expect(nav.getByText('Members')).toBeVisible();
-		await expect(nav.getByText('Goals')).toBeVisible();
-		await expect(nav.getByText('Itinerary')).toHaveCount(0);
-		await expect(nav.getByText('Docs')).toHaveCount(0);
+		// date-scoped planning tabs are hidden until promotion. Viewport-agnostic:
+		// the default project runs desktop (SideRail), the mobile project the
+		// BottomNav — both render the same NavConfig, so assert on nav LINKS in
+		// the visible tree rather than pinning one nav element.
+		await expect(
+			page.getByRole('link', { name: 'Ideas' }).filter({ visible: true }).first()
+		).toBeVisible();
+		await expect(
+			page.getByRole('link', { name: 'Members' }).filter({ visible: true }).first()
+		).toBeVisible();
+		await expect(
+			page.getByRole('link', { name: 'Goals' }).filter({ visible: true }).first()
+		).toBeVisible();
+		await expect(page.getByRole('link', { name: 'Itinerary' })).toHaveCount(0);
+		await expect(page.getByRole('link', { name: 'Docs', exact: true })).toHaveCount(0);
 
 		// --- 3. Capture a phase-less idea (the sheet skips fork + phase picker).
 		await page
@@ -101,7 +109,9 @@ test.describe('Forming lifecycle (#270)', () => {
 		await expect(
 			page.getByText('Phase 1').filter({ visible: true }).first()
 		).toBeVisible();
-		await expect(nav.getByText('Itinerary')).toBeVisible();
+		await expect(
+			page.getByRole('link', { name: 'Itinerary' }).filter({ visible: true }).first()
+		).toBeVisible();
 		await expect(
 			page.getByText('No dates yet').filter({ visible: true })
 		).toHaveCount(0);
