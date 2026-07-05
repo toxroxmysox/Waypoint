@@ -32,12 +32,18 @@ async function summarizeAvailability(
 		pb
 			.collection('availability')
 			.getFullList<{ member: string; day: string; value: 'available' | 'maybe' }>({
-				filter: `trip = "${tripId}"`
+				// requestKey: null — this runs concurrently with loadScenarioBoard (also
+				// reading availability/trip_members for the same trip); without it the JS
+				// SDK auto-cancels one of the duplicate reads (ClientResponseError 0).
+				filter: `trip = "${tripId}"`,
+				requestKey: null
 			}),
 		// ADR-0023 build invariant 4 — active roster only.
-		pb
-			.collection('trip_members')
-			.getFullList<{ id: string }>({ filter: `trip = "${tripId}" && removed_at = ""`, fields: 'id' })
+		pb.collection('trip_members').getFullList<{ id: string }>({
+			filter: `trip = "${tripId}" && removed_at = ""`,
+			fields: 'id',
+			requestKey: null
+		})
 	]);
 	const activeIds = members.map((m) => m.id);
 	const cells: AvailabilityCell[] = rows.map((r) => ({

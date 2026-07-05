@@ -76,12 +76,14 @@ export async function loadAvailabilityPoll(
 ): Promise<AvailabilityPollData> {
 	const [rows, membersRaw] = await Promise.all([
 		pb.collection('availability').getFullList<AvailabilityRow>({
-			filter: `trip = "${tripId}"`
+			filter: `trip = "${tripId}"`,
+			requestKey: null
 		}),
 		// ADR-0023 build invariant 4: every read filters removed_at = "".
 		pb.collection('trip_members').getFullList<TripMember>({
 			filter: `trip = "${tripId}" && removed_at = ""`,
-			expand: 'user'
+			expand: 'user',
+			requestKey: null
 		})
 	]);
 	const members = withAvatarUrls(pb, membersRaw as never);

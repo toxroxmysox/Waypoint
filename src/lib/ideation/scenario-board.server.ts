@@ -80,13 +80,20 @@ export async function loadScenarioBoard(
 		pb.collection('scenario_points').getFullList<ScenarioPoint>({ filter: orFilter }),
 		pb.collection('trip_members').getFullList<TripMember>({
 			filter: `trip = "${tripId}" && removed_at = ""`,
-			expand: 'user'
+			expand: 'user',
+			// requestKey: null — the forming home runs this loader concurrently with
+			// summarizeAvailability, which also reads trip_members for the same trip; the
+			// JS SDK would auto-cancel one (ClientResponseError 0) without this.
+			requestKey: null
 		}),
-		// #271 — availability cells to colour each scenario's window.
+		// #271 — availability cells to colour each scenario's window. requestKey: null
+		// for the same concurrent-duplicate reason (summarizeAvailability reads
+		// `availability` for this trip at the same time).
 		pb
 			.collection('availability')
 			.getFullList<{ member: string; day: string; value: 'available' | 'maybe' }>({
-				filter: `trip = "${tripId}"`
+				filter: `trip = "${tripId}"`,
+				requestKey: null
 			})
 	]);
 	const members = withAvatarUrls(pb, membersRaw as never);
