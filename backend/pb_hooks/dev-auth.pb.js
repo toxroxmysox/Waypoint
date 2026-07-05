@@ -631,6 +631,18 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 	});
 	e.app.save(decision);
 
+	// An OWNER-owned availability cell (#271) — the availability fixture record
+	// (list/view/update/delete SELF_ONLY → only owner passes). Painted on 2027-03-01
+	// so the create matrix (which paints 2027-03-02) never collides under the unique
+	// (trip, member, day) index. Direct save bypasses the create rule.
+	const availabilityCol = e.app.findCollectionByNameOrId('availability');
+	const availability = new Record(availabilityCol);
+	availability.set('trip', trip.id);
+	availability.set('member', memberIds.owner);
+	availability.set('day', '2027-03-01 00:00:00.000Z');
+	availability.set('value', 'available');
+	e.app.save(availability);
+
 	return e.json(200, {
 		tripId: trip.id,
 		phaseId: phase.id,
@@ -660,6 +672,7 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 		scenarioVoteId: scenarioVoteOwner.id,
 		scenarioPointId: scenarioPointOwner.id,
 		decisionId: decision.id,
+		availabilityId: availability.id,
 		memberIds: memberIds,
 		userIds: userIds
 	});

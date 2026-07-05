@@ -597,7 +597,14 @@ routerAdd('POST', '/api/members/remove', (e) => {
 		['scenario_points', 'member', 'drop'],
 		// cascadeDelete + no identity — PB cleans these on delete (cascade).
 		['pending_invites', 'invited_by', 'cascade'],
-		['join_tokens', 'created_by', 'cascade']
+		['join_tokens', 'created_by', 'cascade'],
+		// availability cells (#271, migration 0067) — cascadeDelete on member + no
+		// identity to preserve (a painted day is not authored content). PB drops the
+		// cells when the member row is purged; they never block the purge. ADR-0023
+		// build invariant 2/3: cells reference trip_members.id and are added to this
+		// member-relation reference scan (the test:rules drift test goes RED until they
+		// are — a forcing function).
+		['availability', 'member', 'cascade']
 	];
 
 	// Frozen on a closed trip (Resolution 14) — symmetric with the join window.

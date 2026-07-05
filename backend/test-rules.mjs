@@ -28,7 +28,7 @@ const EMAILS = {
 };
 
 const ROLES = ['owner', 'co_owner', 'traveler', 'viewer', 'non_member'];
-const COLLECTIONS = ['users', 'trips', 'trip_members', 'phases', 'days', 'items', 'checklist_items', 'pending_invites', 'votes', 'trip_goals', 'goal_votes', 'suggestion_votes', 'documents', 'memories', 'scenarios', 'scenario_votes', 'scenario_points', 'decisions'];
+const COLLECTIONS = ['users', 'trips', 'trip_members', 'phases', 'days', 'items', 'checklist_items', 'pending_invites', 'votes', 'trip_goals', 'goal_votes', 'suggestion_votes', 'documents', 'memories', 'scenarios', 'scenario_votes', 'scenario_points', 'decisions', 'availability'];
 
 // Collections whose create requires a multipart body (a file field). `documents`
 // (#70) takes a single file; the harness uploads a valid 1x1 PNG so PB's
@@ -148,6 +148,8 @@ function fixtureRecordId(fixture, collection) {
 			return fixture.scenarioPointId;
 		case 'decisions':
 			return fixture.decisionId;
+		case 'availability':
+			return fixture.availabilityId;
 		default:
 			throw new Error('unknown collection ' + collection);
 	}
@@ -521,6 +523,24 @@ const EXPECT = {
 		create: DENY_ALL,
 		update: DENY_ALL,
 		delete: DENY_ALL
+	},
+	// availability (#271 — ADR-0023, the 4th group-input mechanism):
+	//   list/view: ALL trip members incl. viewers — everyone reads the group heatmap.
+	//   create: EVERY member paints AS THEMSELVES (member.user = auth) — INCLUDING
+	//           viewers (a viewer can be free on a day too; painting is not an
+	//           authoring/proposal act, so NO `role != "viewer"` clamp, unlike
+	//           scenarios/votes). createBody paints a distinct day (dayId2) so it never
+	//           collides with the seeded (owner, dayId) cell under the unique
+	//           (trip, member, day) index. non_member falls back to the owner member,
+	//           whose user != the non_member auth → member.user = auth fails → deny.
+	//   update/delete: own cells only (member.user = auth). The fixture cell belongs to
+	//           the owner → SELF_ONLY.
+	availability: {
+		list: ALLOW_MEMBERS_DENY_NONMEMBER,
+		view: ALLOW_MEMBERS_DENY_NONMEMBER,
+		create: ALLOW_MEMBERS_DENY_NONMEMBER,
+		update: SELF_ONLY,
+		delete: SELF_ONLY
 	}
 };
 
@@ -670,6 +690,18 @@ function createBody(collection, role, fixture) {
 			// createRule is null → DENY_ALL; a valid-shaped body ensures the rule (not
 			// a payload error) is what rejects for every role.
 			return { trip: fixture.tripId, payload: { note: 'harness' } };
+		case 'availability':
+			// Paint as the acting member's OWN membership (member.user = auth), on a
+			// day (2027-03-02) distinct from the seeded (owner, 2027-03-01) cell so the
+			// unique (trip, member, day) index never collides. owner/co_owner/traveler/
+			// viewer all pass (no viewer clamp — a viewer can be free too); non_member
+			// falls back to owner, whose user != the non_member auth → deny.
+			return {
+				trip: fixture.tripId,
+				member: fixture.memberIds[role] || fixture.memberIds.owner,
+				day: '2027-03-02 00:00:00.000Z',
+				value: 'available'
+			};
 		default:
 			throw new Error('no body for ' + collection);
 	}
@@ -722,6 +754,10 @@ function updateBody(collection) {
 		case 'decisions':
 			// updateRule is null → PB rejects before validating the payload.
 			return { payload: { note: 'harness updated' } };
+		case 'availability':
+			// Re-paint the seeded cell's value — the SELF_ONLY rule (member.user = auth)
+			// decides, so only the owner (fixture cell owner) passes.
+			return { value: 'maybe' };
 		default:
 			throw new Error('no body for ' + collection);
 	}
@@ -1456,7 +1492,10 @@ const CANONICAL_MEMBER_RELATIONS = new Set([
 	'scenario_points.member',
 	// cascade (PB cascadeDelete + no identity to preserve)
 	'pending_invites.invited_by',
-	'join_tokens.created_by'
+	'join_tokens.created_by',
+	// availability (#271, migration 0067) — cascadeDelete on member + no identity
+	// (a painted day is not authored content); dropped by PB on member purge.
+	'availability.member'
 ]);
 
 async function runMemberRelationDriftCase() {
