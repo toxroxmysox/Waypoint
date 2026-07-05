@@ -109,7 +109,7 @@
 				href={data.trip.photo_album_url}
 				target="_blank"
 				rel="noopener noreferrer"
-				class="bg-ink text-on-ink mt-4 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium"
+				class="bg-ink text-paper mt-4 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium"
 			>
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
@@ -209,7 +209,7 @@
 			<a
 				href="{page.url.pathname}/export"
 				download
-				class="bg-ink text-on-ink inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium"
+				class="bg-ink text-paper inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium"
 			>
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 					<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />

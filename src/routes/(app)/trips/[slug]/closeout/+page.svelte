@@ -211,7 +211,7 @@
 			<button
 				type="button"
 				onclick={() => (currentDayIndex++)}
-				class="bg-ink text-on-ink rounded-lg px-4 py-2 text-sm font-medium"
+				class="bg-ink text-paper rounded-lg px-4 py-2 text-sm font-medium"
 			>
 				{isLastDay ? (hasIdeasStep ? 'Review ideas' : 'Review Summary') : 'Next Day'}
 			</button>
@@ -267,7 +267,7 @@
 				type="button"
 				onclick={() => (ideasReviewed = true)}
 				data-testid="ideas-continue"
-				class="bg-ink text-on-ink rounded-lg px-4 py-2 text-sm font-medium"
+				class="bg-ink text-paper rounded-lg px-4 py-2 text-sm font-medium"
 			>
 				Continue
 			</button>
@@ -338,7 +338,7 @@
 					<button
 						type="submit"
 						disabled={finishing}
-						class="bg-ink text-on-ink w-full rounded-lg px-4 py-3 text-sm font-medium disabled:opacity-40"
+						class="bg-ink text-paper w-full rounded-lg px-4 py-3 text-sm font-medium disabled:opacity-40"
 					>
 						{#if finishing}
 							{canCurate ? 'Finishing…' : 'Submitting…'}
