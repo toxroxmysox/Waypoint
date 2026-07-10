@@ -44,7 +44,7 @@
 <svelte:window onfocusin={handleFocusIn} onfocusout={handleFocusOut} />
 
 <div
-	class="save-bar fixed inset-x-0 bottom-0 z-sticky mx-auto w-full max-w-lg md-desktop:max-w-2xl bg-paper px-4"
+	class="save-bar fixed inset-x-0 bottom-0 z-sticky mx-auto w-full max-w-lg md-desktop:max-w-2xl md-desktop:left-[72px] lg-desktop:left-[240px] lg-desktop:right-[320px] bg-paper px-4"
 	class:save-bar--keyboard={inputFocused}
 >
 	<Button type="submit" disabled={loading} {loading} variant="moss" size="lg" class="w-full">
@@ -57,6 +57,13 @@
 	   stays reachable while scrolling and never rests mid-page (no "stranded too high"
 	   dead space). Opaque bg-paper covers content behind it; padding-bottom clears the
 	   BottomNav (present only <900px — the desktop layout uses a SideRail instead).
+
+	   #345: the bar is centered to the FORM COLUMN, not the viewport. AppShell offsets
+	   the content column by the nav/context rails (md-desktop ml-72; lg-desktop
+	   ml-240 / mr-320). Because the bar is `fixed` it escapes that column, so it carries
+	   the SAME insets (left-72 at md-desktop; left-240 / right-320 at lg-desktop) and
+	   mx-auto then centers it within the column — matching <main>. Mobile base stays
+	   inset-x-0 (no rails).
 
 	   #344: hide the bar for a soft keyboard ONLY on coarse-pointer (touch) devices.
 	   Viewport width was a proxy for "touch" and wrongly hid the bar in a narrow
