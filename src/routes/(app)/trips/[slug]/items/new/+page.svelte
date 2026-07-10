@@ -3,7 +3,7 @@
 	import { validateForm } from '$lib/shell/actions/validate-form';
 	import { beforeNavigate } from '$app/navigation';
 	import NavBar from '$lib/ui/NavBar.svelte';
-	import Button from '$lib/ui/Button.svelte';
+	import SaveBar from '$lib/ui/SaveBar.svelte';
 	import ItemForm from '$lib/itinerary/components/ItemForm.svelte';
 	import type { ItemFormData } from '$lib/itinerary/components/ItemFormFields';
 	import { buildEmptyFormData } from '$lib/itinerary/item-fields';
@@ -32,18 +32,6 @@
 	let submitting = $state(false);
 	let loading = $state(false);
 	let error = $derived(form?.error ?? '');
-
-	// #236: same anchored Save bar as edit — collapse the BottomNav-clearance when
-	// the soft keyboard is open (BottomNav unmounts on input focus), so the sticky
-	// bar pins to the true bottom and stops floating/jittering on scroll.
-	let inputFocused = $state(false);
-	function handleFocusIn(e: FocusEvent) {
-		const tag = (e.target as HTMLElement)?.tagName;
-		if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') inputFocused = true;
-	}
-	function handleFocusOut() {
-		inputFocused = false;
-	}
 
 	let submitAsSuggestion = $derived(data.submitAsSuggestion ?? false);
 	let prefill = $derived(data.prefill ?? null);
@@ -105,8 +93,6 @@
 	});
 </script>
 
-<svelte:window onfocusin={handleFocusIn} onfocusout={handleFocusOut} />
-
 <NavBar title="New item" subtitle={data.trip.title} back {backHref} />
 
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-4">
@@ -164,43 +150,19 @@
 			typeEditable={true}
 		/>
 
-		<div
-			class="save-bar fixed inset-x-0 bottom-0 z-sticky mx-auto w-full max-w-lg md-desktop:max-w-2xl bg-paper px-4"
-			class:save-bar--keyboard={inputFocused}
-		>
-			<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="w-full">
-				{buttonLabel}
-			</Button>
-		</div>
+		<SaveBar {loading} label={buttonLabel} />
 	</form>
 	<div class="save-bar-spacer" aria-hidden="true"></div>
 </main>
 
 <style>
-	/* #236: anchored Save bar — see edit/+page.svelte for the full rationale.
-	   position:fixed at the viewport bottom so the Save button stays reachable while
-	   scrolling and never rests mid-page (no "stranded too high" dead space). Opaque
-	   bg-paper covers content behind it; padding-bottom clears the BottomNav; the bar
-	   is width-capped/centered to the form column. .save-bar-spacer at the end of <main>
-	   reserves room so the last fields clear the bar. Keyboard open (mobile): bar
-	   hidden, returns on dismiss. Desktop (>=900px): display restored, small pad. */
-	.save-bar {
-		padding-top: 0.75rem;
-		padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5rem);
-	}
-	.save-bar.save-bar--keyboard {
-		display: none;
-	}
+	/* Reserve scroll room so the last fields clear the fixed SaveBar (see SaveBar.svelte).
+	   Heights track SaveBar's padding: mobile clears the BottomNav (+5rem); >=900px there
+	   is no BottomNav so a small clearance suffices. */
 	.save-bar-spacer {
 		height: calc(env(safe-area-inset-bottom, 0px) + 8.5rem);
 	}
 	@media (min-width: 900px) {
-		.save-bar {
-			padding-bottom: 0.75rem;
-		}
-		.save-bar.save-bar--keyboard {
-			display: block;
-		}
 		.save-bar-spacer {
 			height: 4rem;
 		}
