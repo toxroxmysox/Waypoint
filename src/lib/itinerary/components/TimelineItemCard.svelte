@@ -52,6 +52,11 @@
 		<div class="text-ink-muted absolute -left-16 top-3 hidden text-xs font-mono md-desktop:block">
 			{formatTime(item.start_time)}
 		</div>
+	{:else if anchored && item.end_time}
+		<!-- #346: end-only deadline shows "by <end>" in the desktop time gutter. -->
+		<div class="text-ink-muted absolute -left-16 top-3 hidden text-xs font-mono md-desktop:block">
+			by {formatTime(item.end_time)}
+		</div>
 	{/if}
 
 	{#if draggable}
@@ -106,6 +111,9 @@
 					<p class="text-ink-muted mt-0.5 text-[12px]">
 						{#if anchored && item.start_time}
 							<span class="font-mono">{formatTime(item.start_time)}{item.end_time ? ` – ${formatTime(item.end_time)}` : ''}</span>
+						{:else if anchored && item.end_time}
+							<!-- #346: end-only item is a deadline, anchored at its end. -->
+							<span class="font-mono">Ends by {formatTime(item.end_time)}</span>
 						{:else}
 							<span>No Time Set</span>
 						{/if}

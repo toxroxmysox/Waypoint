@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildTimeline, buildTimelineFlat } from './timeline';
+import { buildTimeline, buildTimelineFlat, itemAnchorTime, isAnchored } from './timeline';
 import type { TimelineEntry, TimelineItemEntry } from './timeline';
 import type { Item } from '$lib/types';
 import type { RecordModel } from 'pocketbase';
@@ -112,6 +112,36 @@ describe('buildTimeline', () => {
 		const dividers = timeline.filter((e) => e.kind === 'divider');
 		expect(dividers).toHaveLength(0);
 	});
+
+	// #346 — an end-only item (a deadline, e.g. "back by 6") anchors at its END time.
+	it('treats an end-only item (no start_time) as anchored', () => {
+		const items = [makeItem({ id: 'deadline', start_time: '', end_time: '2026-06-15 18:00:00.000Z', sort_order: 100 })];
+		const entry = buildTimeline(items).find((e): e is TimelineItemEntry => e.kind === 'item');
+		expect(entry?.anchored).toBe(true);
+	});
+
+	it('sorts an end-only item at its end time among start-anchored siblings', () => {
+		// sort_order intentionally does NOT match time order — proves the effective anchor time drives it.
+		const items = [
+			makeItem({ id: 'dinner', start_time: '2026-06-15 20:00:00.000Z', end_time: '', sort_order: 100 }),
+			makeItem({ id: 'deadline', start_time: '', end_time: '2026-06-15 18:00:00.000Z', sort_order: 200 }),
+			makeItem({ id: 'lunch', start_time: '2026-06-15 12:00:00.000Z', end_time: '', sort_order: 300 }),
+		];
+		const ids = buildTimeline(items)
+			.filter((e): e is TimelineItemEntry => e.kind === 'item')
+			.map((e) => e.item.id);
+		expect(ids).toEqual(['lunch', 'deadline', 'dinner']);
+	});
+
+	it('places an end-only item in the time slot of its end time (evening divider)', () => {
+		const items = [
+			makeItem({ id: 'morning', start_time: '2026-06-15 09:00:00.000Z', end_time: '', sort_order: 100 }),
+			makeItem({ id: 'deadline', start_time: '', end_time: '2026-06-15 19:00:00.000Z', sort_order: 200 }),
+		];
+		const timeline = buildTimeline(items);
+		const dividers = timeline.filter((e) => e.kind === 'divider');
+		expect(dividers.some((d) => (d as any).label === 'Evening')).toBe(true);
+	});
 });
 
 describe('detectOverlaps', () => {
@@ -193,5 +223,40 @@ describe('buildTimelineFlat', () => {
 
 	it('returns an empty list for no items', () => {
 		expect(buildTimelineFlat([])).toEqual([]);
+	});
+
+	// #346 — end-only item flows through the flat (dnd) list as anchored + slot-labeled.
+	it('marks an end-only item anchored and labels its slot in the flat list', () => {
+		const flat = buildTimelineFlat([
+			makeItem({ id: 'deadline', start_time: '', end_time: '2026-06-15 18:00:00.000Z', sort_order: 100 }),
+		]);
+		expect(flat[0].anchored).toBe(true);
+		expect(flat[0].slotLabel).toBe('Evening');
+	});
+});
+
+describe('itemAnchorTime / isAnchored (#346)', () => {
+	it('itemAnchorTime prefers start_time when present', () => {
+		expect(
+			itemAnchorTime({ start_time: '2026-06-15 08:00:00.000Z', end_time: '2026-06-15 09:00:00.000Z' })
+		).toBe('2026-06-15 08:00:00.000Z');
+	});
+
+	it('itemAnchorTime falls back to end_time for an end-only item', () => {
+		expect(itemAnchorTime({ start_time: '', end_time: '2026-06-15 18:00:00.000Z' })).toBe(
+			'2026-06-15 18:00:00.000Z'
+		);
+	});
+
+	it('itemAnchorTime is empty when neither time is set', () => {
+		expect(itemAnchorTime({ start_time: '', end_time: '' })).toBe('');
+	});
+
+	it('isAnchored is true for an end-only item', () => {
+		expect(isAnchored({ start_time: '', end_time: '2026-06-15 18:00:00.000Z' })).toBe(true);
+	});
+
+	it('isAnchored is false for a fully untimed item', () => {
+		expect(isAnchored({ start_time: '', end_time: '' })).toBe(false);
 	});
 });
