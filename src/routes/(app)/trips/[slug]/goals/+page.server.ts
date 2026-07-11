@@ -1,33 +1,10 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { TripGoal, TripMember, GoalVote, Item, Phase, Vote } from '$lib/types';
+import type { TripGoal, TripMember, GoalVote } from '$lib/types';
 import { withAvatarUrls } from '$lib/collaboration/member-avatar';
-import { firstVotablePhase } from '$lib/collaboration/swipe-deck';
 
 export const load: PageServerLoad = async ({ parent, locals }) => {
-	const { trip, membership, phases } = await parent();
-
-	// Swipe-deck launch-card data (#207). Mirrors the Phases-tab card: how many
-	// items the member hasn't rated, and the first phase (in order) with unrated
-	// cards to kick the deck off from. Goals is a contribution surface a
-	// contributor actually visits, so the deck gets an additional door here.
-	const deckItems = await locals.pb.collection('items').getFullList<Item>({
-		filter: `trip = "${trip.id}" && (status = "planned" || status = "unplanned")`,
-		fields: 'id,phase,status'
-	});
-	const myVotes = await locals.pb.collection('votes').getFullList<Vote>({
-		filter: `trip = "${trip.id}" && member = "${membership.id}"`,
-		fields: 'item'
-	});
-
-	// First phase with unrated cards + the count — shared with the overview's
-	// adaptive CTA (#275). The PB filter above already scopes to planned|unplanned;
-	// the helper re-checks status so it stays correct for any caller.
-	const { phaseId: launchPhaseId, unratedTotal } = firstVotablePhase(
-		deckItems,
-		myVotes,
-		(phases as Phase[]).map((p) => p.id)
-	);
+	const { trip } = await parent();
 
 	// Phase-less, trip-scoped. created_by is expanded for author avatar/name.
 	const goals = await locals.pb.collection('trip_goals').getFullList<TripGoal>({
@@ -63,9 +40,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 	return {
 		goals: sortedGoals,
 		votesByGoal,
-		members: withAvatarUrls(locals.pb, members),
-		unratedTotal,
-		launchPhaseId
+		members: withAvatarUrls(locals.pb, members)
 	};
 };
 
