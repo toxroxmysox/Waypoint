@@ -13,7 +13,7 @@
 	import type { MemberWithAvatar } from '$lib/collaboration/member-avatar';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import VoteStacks from '$lib/collaboration/components/VoteStacks.svelte';
-	import VoteCountPill from '$lib/collaboration/components/VoteCountPill.svelte';
+	import VoteSentimentPill from '$lib/collaboration/components/VoteSentimentPill.svelte';
 
 	let {
 		ideas = [],
@@ -69,7 +69,7 @@
 
 						<div class="flex shrink-0 flex-col items-end gap-2">
 							{#if votes.length}
-								<VoteCountPill {votes} />
+								<VoteSentimentPill {votes} />
 							{/if}
 							{#if canPromote}
 								<form

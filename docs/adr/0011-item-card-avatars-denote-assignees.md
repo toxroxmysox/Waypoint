@@ -28,3 +28,7 @@ Item-card avatars denote **assignees** (`assigned_to`) on every item-card surfac
 - **`assigned_to` graduates from detail-only to card-rendered.** Card loaders that lack the roster must expand assignees and attach avatars (the existing `member-avatar` helper). Assignee avatars appear only when the trip has **>1 member**, mirroring the existing capture rule.
 - **Purely a rendering reassignment** — `votes`/`goal_votes` and `voting.ts` are untouched; **ADR-0004 stands**. No schema change.
 - Doesn't preclude a future richer treatment (e.g. a combined affordance) — it only fixes the card avatar's *meaning* to assignment now.
+
+## Amendment (2026-07-10, #350)
+
+The card vote pill's **single-glyph count** (`VoteCountPill`, a thumbs-up + total) miscommunicated a mixed tally as unanimous approval — a lone "3" read as "3 approvals" regardless of whether those were loves or passes. **The pill now shows per-sentiment glyph+count groups** (`VoteSentimentPill`), non-zero only, using the same vocabulary as `VoteStacks` — ♥ love / + like / ~ flexible / – pass. A card with one love reads `♥ 1`, not a thumbs-up. This **amends, not reverses, the decision above**: votes stay *off* the card avatars (avatars still mean assignees), and no numeric weighted score is ever shown. Component renamed `VoteCountPill.svelte` → `VoteSentimentPill.svelte`.

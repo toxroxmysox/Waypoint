@@ -3,7 +3,7 @@
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
 	import Card from '$lib/ui/Card.svelte';
-	import VoteCountPill from '$lib/collaboration/components/VoteCountPill.svelte';
+	import VoteSentimentPill from '$lib/collaboration/components/VoteSentimentPill.svelte';
 	import AssigneeStacks from '$lib/itinerary/components/AssigneeStacks.svelte';
 	import { needsBooking } from '$lib/itinerary/booking-projection';
 	import { titleCase, formatTime } from '$lib/shell/format';
@@ -125,10 +125,10 @@
 						<p class="text-ink-muted mt-1 text-[11px] uppercase tracking-wide">{titleCase(item.subtype)}</p>
 					{/if}
 
-					<!-- Slot: vote count pill (ADR-0011 — avatars now mean assignees, votes are a count) -->
+					<!-- Slot: vote sentiment pill (ADR-0011 — avatars mean assignees; #350 — votes read as per-sentiment glyph+count) -->
 					{#if votes.length}
 						<div class="relative z-10 mt-1.5 w-fit">
-							<VoteCountPill {votes} />
+							<VoteSentimentPill {votes} />
 						</div>
 					{/if}
 				</div>
