@@ -74,22 +74,7 @@
 <BottomSheet bind:open title={mode === 'idea' ? 'Add an idea' : 'Add to this trip'}>
 	{#if mode === 'fork'}
 		<div class="space-y-2">
-			<button
-				type="button"
-				class="border-line hover:bg-surface-2 flex w-full items-center gap-3 rounded-lg border px-3 py-3 text-left transition-colors"
-				onclick={() => (mode = 'idea')}
-			>
-				<div class="bg-moss-tint text-moss flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z" />
-					</svg>
-				</div>
-				<div class="min-w-0">
-					<p class="text-ink text-sm font-semibold">Add an idea</p>
-					<p class="text-ink-muted text-xs">Drop it in a phase's parking lot — no day needed</p>
-				</div>
-			</button>
-
+			<!-- Primary: scheduling is the lead action (#347). -->
 			<a
 				href={planHref}
 				class="border-line hover:bg-surface-2 flex w-full items-center gap-3 rounded-lg border px-3 py-3 text-left transition-colors"
@@ -105,6 +90,24 @@
 					<p class="text-ink-muted text-xs">Schedule it with times, booking, the works</p>
 				</div>
 			</a>
+
+			<!-- Secondary: the parking-lot idea, de-emphasized (#347) — tighter row,
+			     smaller icon + text — but still a real, tappable control. -->
+			<button
+				type="button"
+				class="border-line hover:bg-surface-2 flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors"
+				onclick={() => (mode = 'idea')}
+			>
+				<div class="bg-moss-tint text-moss flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z" />
+					</svg>
+				</div>
+				<div class="min-w-0">
+					<p class="text-ink text-[13px] font-semibold">Add an idea</p>
+					<p class="text-ink-muted text-[11px]">Drop it in a phase's parking lot — no day needed</p>
+				</div>
+			</button>
 		</div>
 	{:else}
 		<!-- Idea mini-form. Posts to the shared /ideas action so all three entry
