@@ -165,10 +165,15 @@
 					})
 				: ''
 	);
+	// #346: an end-only item is a deadline — read view shows "Ends by <end>", parallel to the card.
 	let scheduleTimes = $derived(
-		fields.times && initialData.start_time
-			? `${formatTime(initialData.start_time)}${initialData.end_time ? ` – ${formatTime(initialData.end_time)}` : ''}`
-			: ''
+		!fields.times
+			? ''
+			: initialData.start_time
+				? `${formatTime(initialData.start_time)}${initialData.end_time ? ` – ${formatTime(initialData.end_time)}` : ''}`
+				: initialData.end_time
+					? `Ends by ${formatTime(initialData.end_time)}`
+					: ''
 	);
 	let whenRow = $derived([scheduleDate, scheduleTimes].filter(Boolean).join(' · '));
 
@@ -194,7 +199,7 @@
 </script>
 
 {#if mode === 'view'}
-	{#if itemDay || itemPhase || (fields.times && initialData.start_time)}
+	{#if itemDay || itemPhase || (fields.times && (initialData.start_time || initialData.end_time))}
 		<Card>
 			<div class="p-4 space-y-2">
 				<SectionH>Schedule</SectionH>

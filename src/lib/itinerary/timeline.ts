@@ -18,6 +18,20 @@ function parseTime(dt: string): Date {
 	return new Date(dt.replace(' ', 'T'));
 }
 
+/**
+ * An item's effective anchor time (#346): its start_time if timed, else its
+ * end_time — an end-only item is a deadline ("back by 6"), anchored AT its end.
+ * '' when neither is set (a flowing, sort_order-woven item).
+ */
+export function itemAnchorTime(item: { start_time?: string; end_time?: string }): string {
+	return item.start_time || item.end_time || '';
+}
+
+/** Whether an item joins the timed spine — true when it has a start OR an end (#346). */
+export function isAnchored(item: { start_time?: string; end_time?: string }): boolean {
+	return !!(item.start_time || item.end_time);
+}
+
 function getTimeSlot(dt: string): 'morning' | 'afternoon' | 'evening' {
 	const hour = parseTime(dt).getUTCHours();
 	if (hour < 12) return 'morning';
@@ -34,6 +48,8 @@ const SLOT_LABELS: Record<string, 'Morning' | 'Afternoon' | 'Evening'> = {
 /** The minimum an item needs for single-day itinerary ordering. */
 export interface DayOrderable {
 	start_time: string;
+	/** Optional end anchor (#346) — end-only items order by this. */
+	end_time?: string;
 	sort_order: number;
 }
 
@@ -46,11 +62,11 @@ export interface DayOrderable {
  */
 export function orderDayItems<T extends DayOrderable>(items: T[]): T[] {
 	const anchored = items
-		.filter((i) => i.start_time)
-		.sort((a, b) => parseTime(a.start_time).getTime() - parseTime(b.start_time).getTime());
+		.filter((i) => isAnchored(i))
+		.sort((a, b) => parseTime(itemAnchorTime(a)).getTime() - parseTime(itemAnchorTime(b)).getTime());
 
 	const untimed = items
-		.filter((i) => !i.start_time)
+		.filter((i) => !isAnchored(i))
 		.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
 	const result: T[] = [];
@@ -78,7 +94,7 @@ export function buildTimeline(items: Item[]): TimelineEntry[] {
 	const entries: TimelineEntry[] = ordered.map((item) => ({
 		kind: 'item' as const,
 		item,
-		anchored: !!item.start_time
+		anchored: isAnchored(item)
 	}));
 
 	return insertDividers(entries);
@@ -91,8 +107,8 @@ function insertDividers(entries: TimelineEntry[]): TimelineEntry[] {
 	let lastSlot: string | null = null;
 
 	for (const entry of entries) {
-		if (entry.kind === 'item' && entry.anchored && entry.item.start_time) {
-			const slot = getTimeSlot(entry.item.start_time);
+		if (entry.kind === 'item' && entry.anchored && itemAnchorTime(entry.item)) {
+			const slot = getTimeSlot(itemAnchorTime(entry.item));
 			if (lastSlot !== null && slot !== lastSlot) {
 				result.push({ kind: 'divider', label: SLOT_LABELS[slot] });
 			}
@@ -129,12 +145,12 @@ export function buildTimelineFlat(items: Item[]): FlatTimelineEntry[] {
 			continue;
 		}
 		let slotLabel: FlatTimelineEntry['slotLabel'] = null;
-		if (entry.anchored && entry.item.start_time) {
+		if (entry.anchored && itemAnchorTime(entry.item)) {
 			if (pendingLabel) {
 				slotLabel = pendingLabel;
 				pendingLabel = null;
 			} else if (!labeledFirstSlot) {
-				slotLabel = SLOT_LABELS[getTimeSlot(entry.item.start_time)];
+				slotLabel = SLOT_LABELS[getTimeSlot(itemAnchorTime(entry.item))];
 			}
 			labeledFirstSlot = true;
 		}

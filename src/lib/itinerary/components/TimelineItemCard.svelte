@@ -3,7 +3,7 @@
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
 	import Card from '$lib/ui/Card.svelte';
-	import VoteCountPill from '$lib/collaboration/components/VoteCountPill.svelte';
+	import VoteSentimentPill from '$lib/collaboration/components/VoteSentimentPill.svelte';
 	import AssigneeStacks from '$lib/itinerary/components/AssigneeStacks.svelte';
 	import { needsBooking } from '$lib/itinerary/booking-projection';
 	import { titleCase, formatTime } from '$lib/shell/format';
@@ -51,6 +51,11 @@
 	{#if anchored && item.start_time}
 		<div class="text-ink-muted absolute -left-16 top-3 hidden text-xs font-mono md-desktop:block">
 			{formatTime(item.start_time)}
+		</div>
+	{:else if anchored && item.end_time}
+		<!-- #346: end-only deadline shows "by <end>" in the desktop time gutter. -->
+		<div class="text-ink-muted absolute -left-16 top-3 hidden text-xs font-mono md-desktop:block">
+			by {formatTime(item.end_time)}
 		</div>
 	{/if}
 
@@ -106,6 +111,9 @@
 					<p class="text-ink-muted mt-0.5 text-[12px]">
 						{#if anchored && item.start_time}
 							<span class="font-mono">{formatTime(item.start_time)}{item.end_time ? ` – ${formatTime(item.end_time)}` : ''}</span>
+						{:else if anchored && item.end_time}
+							<!-- #346: end-only item is a deadline, anchored at its end. -->
+							<span class="font-mono">Ends by {formatTime(item.end_time)}</span>
 						{:else}
 							<span>No Time Set</span>
 						{/if}
@@ -117,10 +125,10 @@
 						<p class="text-ink-muted mt-1 text-[11px] uppercase tracking-wide">{titleCase(item.subtype)}</p>
 					{/if}
 
-					<!-- Slot: vote count pill (ADR-0011 — avatars now mean assignees, votes are a count) -->
+					<!-- Slot: vote sentiment pill (ADR-0011 — avatars mean assignees; #350 — votes read as per-sentiment glyph+count) -->
 					{#if votes.length}
 						<div class="relative z-10 mt-1.5 w-fit">
-							<VoteCountPill {votes} />
+							<VoteSentimentPill {votes} />
 						</div>
 					{/if}
 				</div>

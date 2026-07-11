@@ -7,7 +7,7 @@
 	// parking-lot home) in Slice 1; reuse this verbatim for the day-view zones.
 	//
 	// Visible to ALL members; voting reuses the target-agnostic voting.ts
-	// scoring/avatar-stack logic (VoteStacks + VoteCountPill, identical to item
+	// scoring/avatar-stack logic (VoteStacks + VoteSentimentPill, identical to item
 	// cards). Cast buttons appear only for a non-viewer who is NOT the author —
 	// authorship is the implicit endorsement, and viewers are read-only-but-can-see
 	// (the card + its vote stack still render for them).
@@ -17,7 +17,7 @@
 	import { VOTE_OPTIONS, type VoteValue } from '$lib/collaboration/voting';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import VoteStacks from '$lib/collaboration/components/VoteStacks.svelte';
-	import VoteCountPill from '$lib/collaboration/components/VoteCountPill.svelte';
+	import VoteSentimentPill from '$lib/collaboration/components/VoteSentimentPill.svelte';
 	import type { ItemType } from '$lib/itinerary/types';
 
 	let {
@@ -96,7 +96,7 @@
 		</div>
 		{#if card.votes.length}
 			<div class="shrink-0 pt-0.5">
-				<VoteCountPill votes={card.votes} />
+				<VoteSentimentPill votes={card.votes} />
 			</div>
 		{/if}
 	</div>

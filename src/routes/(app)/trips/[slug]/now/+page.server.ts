@@ -66,7 +66,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 			: [];
 
 	// Roster + votes for the merged Now cards (#244, mirroring Today): card avatars
-	// denote assignees, votes show as a count pill. Roster also carries email for the
+	// denote assignees, votes show as a per-sentiment pill (#350). Roster also carries email for the
 	// member-contact strip (#244: members left the nav — surface tap-to-contact here).
 	const itemIds = [...todayItems, ...multiDayItems].map((i) => i.id);
 	const [votes, members] = await Promise.all([

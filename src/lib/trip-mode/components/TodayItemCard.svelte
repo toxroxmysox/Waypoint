@@ -3,7 +3,7 @@
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
 	import Card from '$lib/ui/Card.svelte';
-	import VoteCountPill from '$lib/collaboration/components/VoteCountPill.svelte';
+	import VoteSentimentPill from '$lib/collaboration/components/VoteSentimentPill.svelte';
 	import AssigneeStacks from '$lib/itinerary/components/AssigneeStacks.svelte';
 	import { formatTime, titleCase } from '$lib/shell/format';
 
@@ -73,7 +73,7 @@
 				{/if}
 				{#if votes.length}
 					<div class="relative z-10 mt-1.5 w-fit">
-						<VoteCountPill {votes} />
+						<VoteSentimentPill {votes} />
 					</div>
 				{/if}
 			</div>

@@ -4,7 +4,7 @@
 	import type { Item, Phase, Vote, TripMember } from '$lib/types';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import Card from '$lib/ui/Card.svelte';
-	import VoteCountPill from '$lib/collaboration/components/VoteCountPill.svelte';
+	import VoteSentimentPill from '$lib/collaboration/components/VoteSentimentPill.svelte';
 	import AssigneeStacks from '$lib/itinerary/components/AssigneeStacks.svelte';
 	import { titleCase } from '$lib/shell/format';
 
@@ -139,7 +139,7 @@
 								{/if}
 								{#if votesByItem[item.id]?.length}
 									<div class="relative z-10 mt-1.5 w-fit">
-										<VoteCountPill votes={votesByItem[item.id]} />
+										<VoteSentimentPill votes={votesByItem[item.id]} />
 									</div>
 								{/if}
 							</div>
@@ -203,7 +203,7 @@
 						{/if}
 						{#if votesByItem[item.id]?.length}
 							<div class="relative z-10 mt-1.5 w-fit">
-								<VoteCountPill votes={votesByItem[item.id]} />
+								<VoteSentimentPill votes={votesByItem[item.id]} />
 							</div>
 						{/if}
 					</div>
