@@ -108,7 +108,19 @@ After Svelte changes: `pnpm check`. After DOM changes that add links/buttons: `p
 
 ## Visual verification
 
-Use preview tools after any UI/layout change. Always verify at mobile (375px).
+Ship no UI/layout change without a 375px screenshot. `pnpm verify:visual` makes that cheap (~15s, no manual setup):
+
+```
+pnpm verify:visual                                # trip overview @ 375 + 768
+pnpm verify:visual '/trips/{slug}/days/{day1}'    # any route
+pnpm verify:visual '/trips/{slug}' --widths 375 --viewport
+```
+
+It boots a disposable PB on :8097, seeds a POPULATED trip (`/api/dev/seed-visual-trip` — the day-fullness matrix: 3 items+notes / 1 item+notes / 2 items / 1 item / 0 items+notes / 0 items), runs `vite dev` on :5199 against it, dev-logs-in, screenshots into `.visual/` (gitignored, stable filenames), and tears everything down. Never touches the :8090 dogfood PB.
+
+Route tokens: `{slug}`, `{tripId}`, `{day1}`..`{day6}`. Flags: `--widths`, `--viewport` (full-page is the default; fixed chrome overlays mid-page content there), `--out`, `--keep`, `--timeout`. `VISUAL_DEBUG=1` surfaces PB/vite stderr. First run needs `pnpm exec playwright install chromium`.
+
+Seed via API/PB, never by driving the UI — AppShell renders `+page.svelte` twice (mobile + desktop, one CSS-hidden) and both Playwright locators and Browser-MCP refs can silently drive the hidden copy. Use `preview` tools for interactive poking; use this for proof.
 Critical: `vite.config.ts` must honor `PORT` env var or preview binds to wrong port.
 
 ---
