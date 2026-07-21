@@ -33,7 +33,7 @@
 // so both Playwright locators and Browser-MCP refs can land on the hidden copy
 // and silently no-op. See .wolf/cerebrum.md Do-Not-Repeat 2026-07-21.
 import { spawn, execFileSync } from 'node:child_process';
-import { mkdirSync, rmSync } from 'node:fs';
+import { mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { config as loadEnv } from 'dotenv';
@@ -48,45 +48,13 @@ const APP_PORT = Number(process.env.VISUAL_APP_PORT ?? 5199);
 const PB_URL = `http://127.0.0.1:${PB_PORT}`;
 const APP_URL = `http://127.0.0.1:${APP_PORT}`;
 
-// --- args -------------------------------------------------------------------
-const argv = process.argv.slice(2);
-const routes = [];
-let widths = [375, 768];
-let outDir = path.join(ROOT, '.visual');
-let budgetMs = 240_000;
-let keep = false;
-let fullPage = true;
-
-for (let i = 0; i < argv.length; i++) {
-	const a = argv[i];
-	if (a === '--widths') widths = argv[++i].split(',').map((w) => Number(w.trim()));
-	else if (a === '--out') outDir = path.resolve(ROOT, argv[++i]);
-	else if (a === '--timeout') budgetMs = Number(argv[++i]) * 1000;
-	else if (a === '--keep') keep = true;
-	else if (a === '--viewport') fullPage = false;
-	else if (a.startsWith('-')) fail(`unknown flag: ${a}`);
-	else routes.push(a);
-}
-if (routes.length === 0) routes.push('/trips/{slug}');
-
-const EMAIL = process.env.E2E_TEST_EMAIL;
-if (process.env.WAYPOINT_DEV_MODE !== 'true' || !EMAIL) {
-	fail('WAYPOINT_DEV_MODE=true and E2E_TEST_EMAIL must be set (.env.local)');
-}
-
 // --- lifecycle --------------------------------------------------------------
+// Declared BEFORE arg parsing: fail() calls cleanup(), and an arg error must not
+// hit the temporal dead zone of these bindings (ReferenceError instead of the
+// message you were trying to print).
 const children = [];
 let browser;
 let cleanedUp = false;
-
-// Standing rule (cerebrum): never let a harness hang unbounded. A wedged PB has
-// eaten 46 minutes of a session before.
-const watchdog = setTimeout(() => {
-	console.error(`\n✗ verify:visual exceeded ${budgetMs / 1000}s — killing everything.`);
-	cleanup();
-	process.exit(1);
-}, budgetMs);
-watchdog.unref();
 
 function cleanup() {
 	if (cleanedUp) return;
@@ -140,6 +108,48 @@ function reclaim(port) {
 		// lsof exits 1 when nothing holds the port — that's the happy path.
 	}
 }
+
+// --- args -------------------------------------------------------------------
+const argv = process.argv.slice(2);
+const routes = [];
+let widths = [375, 768];
+let outDir = path.join(ROOT, '.visual');
+let budgetMs = 240_000;
+let keep = false;
+let fullPage = true;
+
+// Flags taking a value read argv[++i]; `value()` turns a missing one into the
+// usage error rather than an undefined that blows up three lines later.
+const value = (i, flag) => argv[i] ?? fail(`${flag} needs a value`);
+
+for (let i = 0; i < argv.length; i++) {
+	const a = argv[i];
+	if (a === '--widths')
+		widths = value(++i, a)
+			.split(',')
+			.map((w) => Number(w.trim()));
+	else if (a === '--out') outDir = path.resolve(ROOT, value(++i, a));
+	else if (a === '--timeout') budgetMs = Number(value(++i, a)) * 1000;
+	else if (a === '--keep') keep = true;
+	else if (a === '--viewport') fullPage = false;
+	else if (a.startsWith('-')) fail(`unknown flag: ${a}`);
+	else routes.push(a);
+}
+if (routes.length === 0) routes.push('/trips/{slug}');
+
+const EMAIL = process.env.E2E_TEST_EMAIL;
+if (process.env.WAYPOINT_DEV_MODE !== 'true' || !EMAIL) {
+	fail('WAYPOINT_DEV_MODE=true and E2E_TEST_EMAIL must be set (.env.local)');
+}
+
+// Standing rule (cerebrum): never let a harness hang unbounded. A wedged PB has
+// eaten 46 minutes of a session before.
+const watchdog = setTimeout(() => {
+	console.error(`\n✗ verify:visual exceeded ${budgetMs / 1000}s — killing everything.`);
+	cleanup();
+	process.exit(1);
+}, budgetMs);
+watchdog.unref();
 
 async function waitFor(url, label, timeoutMs, ok = (r) => r.ok) {
 	const deadline = Date.now() + timeoutMs;
@@ -227,8 +237,14 @@ const resolve = (route) =>
 		.replaceAll('{tripId}', seed.tripId)
 		.replace(/\{day(\d+)\}/g, (m, n) => seed.days[Number(n) - 1]?.id ?? m);
 
-if (!keep) rmSync(outDir, { recursive: true, force: true });
+// Clear only OUR artifacts. `rmSync(outDir, {recursive:true})` would let a
+// slipped `--out src` delete the source tree.
 mkdirSync(outDir, { recursive: true });
+if (!keep) {
+	for (const f of readdirSync(outDir)) {
+		if (f.endsWith('.png')) rmSync(path.join(outDir, f), { force: true });
+	}
+}
 
 try {
 	browser = await chromium.launch();
@@ -275,7 +291,9 @@ await browser.close();
 browser = undefined;
 
 const rel = path.relative(ROOT, outDir);
-console.log(`\n✓ ${shots.length} screenshot(s) in ${rel}/  (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
+console.log(
+	`\n✓ ${shots.length} screenshot(s) in ${rel}/  (${((Date.now() - t0) / 1000).toFixed(1)}s)`
+);
 let bad = 0;
 for (const s of shots) {
 	const flag = s.status >= 400 ? ` ← HTTP ${s.status}` : '';
