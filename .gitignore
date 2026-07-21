@@ -26,6 +26,9 @@ vite.config.ts.timestamp-*
 # Playwright
 test-results
 
+# pnpm verify:visual screenshots
+.visual/
+
 # PocketBase
 backend/pb_data
 backend/pocketbase

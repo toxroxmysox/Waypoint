@@ -746,3 +746,189 @@ routerAdd('POST', '/api/dev/resend-smoke', (e) => {
 		sent_at: stamp
 	});
 });
+
+// POST /api/dev/seed-visual-trip — a POPULATED trip for visual verification
+// (`pnpm verify:visual`). seed-baseline-trip gives an EMPTY trip, so every card
+// on it renders its empty state; two waves (2026-07-10) shipped day-card DOM
+// fixes with no pixel proof because building populated fixture data by hand was
+// too expensive. This seeds the day-fullness matrix the card surfaces branch on:
+//
+//   day 1  3 items  + notes      day 4  1 item   no notes
+//   day 2  1 item   + notes      day 5  0 items  + notes
+//   day 3  2 items  no notes     day 6  0 items  no notes
+//
+// The window is yesterday → +5d, so today ∈ dates → the app loads it in trip
+// mode. Destructive + idempotent: tears down any prior trip on the same slug
+// first, so re-running gives byte-identical fixtures. Default slug is
+// 'visual-check' — DISTINCT from e2e-active-trip and e2e-rules-test so this
+// never stomps a suite fixture.
+//
+// Body (all optional): { slug }.  Returns { tripId, slug, days: [...] }.
+routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
+	if ($os.getenv('WAYPOINT_DEV_MODE') !== 'true') {
+		throw new BadRequestError('Dev fixtures are not enabled');
+	}
+	const email = $os.getenv('E2E_TEST_EMAIL') || '';
+	if (!email) throw new BadRequestError('E2E_TEST_EMAIL is not set');
+
+	const info = e.requestInfo();
+	const slug = (info.body && info.body['slug']) || 'visual-check';
+
+	// Teardown. Same required-non-cascade FK blockers the rules-fixture clears
+	// (see its comment): these pin a trip_members row or the trip itself, so a
+	// bare trip delete 400s and the recreate then collides on the unique slug.
+	try {
+		const existing = e.app.findFirstRecordByFilter('trips', 'slug = {:slug}', { slug: slug });
+		if (existing) {
+			for (const col of ['notifications', 'documents', 'memories', 'suggestions', 'trip_goals']) {
+				try {
+					const rows = e.app.findRecordsByFilter(col, 'trip = {:tripId}', '', 0, 0, {
+						tripId: existing.id
+					});
+					for (const row of rows) {
+						try {
+							e.app.delete(row);
+						} catch (_) {}
+					}
+				} catch (_) {}
+			}
+			e.app.delete(existing);
+		}
+	} catch (_) {
+		// Nothing seeded yet.
+	}
+
+	// Find-or-create the owner, tolerating a concurrent create (see auth-bypass).
+	let user;
+	try {
+		user = e.app.findAuthRecordByEmail('users', email);
+	} catch (_) {
+		try {
+			const usersCol = e.app.findCollectionByNameOrId('users');
+			user = new Record(usersCol);
+			user.setEmail(email);
+			user.setPassword($security.randomString(40));
+			user.set('name', 'E2E Test User');
+			user.set('verified', true);
+			e.app.save(user);
+		} catch (saveErr) {
+			user = e.app.findAuthRecordByEmail('users', email);
+		}
+	}
+
+	// Dates are trip-LOCAL wall clock and the trip is UTC, so derive every date
+	// from a UTC midnight cursor — never from a local-tz Date.
+	const dayMs = 24 * 60 * 60 * 1000;
+	const todayIso = new Date().toISOString().substring(0, 10);
+	const start = new Date(todayIso + 'T00:00:00.000Z');
+	start.setUTCDate(start.getUTCDate() - 1);
+	const end = new Date(start.getTime() + 5 * dayMs);
+	const pbDay = (d) => d.toISOString().substring(0, 10) + ' 00:00:00.000Z';
+
+	// The trips after-create hook adds the owner member, auto-seeds a whole-trip
+	// phase, and generates one `days` record per date in the range.
+	const tripsCol = e.app.findCollectionByNameOrId('trips');
+	const trip = new Record(tripsCol);
+	trip.set('slug', slug);
+	trip.set('title', 'Visual Check Trip');
+	trip.set('start_date', pbDay(start));
+	trip.set('end_date', pbDay(end));
+	trip.set('timezone', 'UTC');
+	trip.set('created_by', user.id);
+	e.app.save(trip);
+
+	const ownerMember = e.app.findFirstRecordByFilter(
+		'trip_members',
+		'trip = {:tripId} && user = {:userId}',
+		{ tripId: trip.id, userId: user.id }
+	);
+
+	let phaseId = '';
+	try {
+		const phases = e.app.findRecordsByFilter('phases', 'trip = {:tripId}', '+order', 1, 0, {
+			tripId: trip.id
+		});
+		if (phases.length > 0) phaseId = phases[0].id;
+	} catch (_) {
+		phaseId = '';
+	}
+
+	const days = e.app.findRecordsByFilter('days', 'trip = {:tripId}', '+date', 0, 0, {
+		tripId: trip.id
+	});
+	if (days.length < 6) {
+		throw new Error('Fixture: trip after-create hook generated only ' + days.length + ' days');
+	}
+
+	// The matrix. `times` pins some items to a clock so the day timeline renders
+	// its timed/untimed weave (and DayCard's leadTitle comes from itinerary
+	// order, not insert order — #355). `notes` empty string = no notes.
+	const plan = [
+		{
+			notes: 'Long drive up, then dinner with the Kohler crew.',
+			items: [
+				{ title: 'Blackwolf Run tee time', type: 'activity', time: '09:00', cost: 180, booked: true },
+				{ title: 'Lunch at The Horse & Plow', type: 'meal', time: '12:30', cost: 45, booked: false },
+				{ title: 'Pack the clubs', type: 'note', time: '', cost: 0, booked: false }
+			]
+		},
+		{
+			notes: 'Slow morning — nothing booked on purpose.',
+			items: [{ title: 'Whistling Straits walk', type: 'activity', time: '10:00', cost: 0, booked: false }]
+		},
+		{
+			notes: '',
+			items: [
+				{ title: 'American Club check-in', type: 'lodging', time: '15:00', cost: 320, booked: true },
+				{ title: 'Kayak the Sheboygan', type: 'activity', time: '', cost: 60, booked: false }
+			]
+		},
+		{
+			notes: '',
+			items: [{ title: 'Drive home', type: 'transportation', time: '11:00', cost: 0, booked: false }]
+		},
+		{ notes: 'Buffer day — notes but nothing planned.', items: [] },
+		{ notes: '', items: [] }
+	];
+
+	const itemsCol = e.app.findCollectionByNameOrId('items');
+	const summary = [];
+	for (let i = 0; i < plan.length && i < days.length; i++) {
+		const day = days[i];
+		const spec = plan[i];
+		const isoDay = day.getString('date').substring(0, 10);
+
+		if (spec.notes) {
+			day.set('notes', spec.notes);
+			e.app.save(day);
+		}
+
+		for (let j = 0; j < spec.items.length; j++) {
+			const it = spec.items[j];
+			const rec = new Record(itemsCol);
+			rec.set('trip', trip.id);
+			if (phaseId) rec.set('phase', phaseId);
+			rec.set('day', day.id);
+			rec.set('type', it.type);
+			rec.set('title', it.title);
+			// Explicit 'planned' — a select field left unset saves "" and the item
+			// falls out of every planned-status query (and the swipe deck).
+			rec.set('status', 'planned');
+			rec.set('sort_order', j);
+			if (it.time) rec.set('start_time', isoDay + ' ' + it.time + ':00.000Z');
+			if (it.cost) rec.set('cost_estimate_usd', it.cost);
+			if (it.booked) rec.set('booked', true);
+			rec.set('created_by', ownerMember.id);
+			e.app.save(rec);
+		}
+
+		summary.push({
+			id: day.id,
+			date: isoDay,
+			itemCount: spec.items.length,
+			hasNotes: spec.notes ? true : false
+		});
+	}
+
+	return e.json(200, { tripId: trip.id, slug: slug, days: summary });
+});
