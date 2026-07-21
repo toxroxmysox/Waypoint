@@ -1,6 +1,7 @@
 import type { Item, Day } from '$lib/types';
 import { needsBooking } from './booking-projection';
 import { toDateOnly, spanningItemsForDate } from './multi-day';
+import { orderDayItems } from './timeline';
 
 // Day-card content per CARD_CONTENT_SPEC §1. One flat item list in, per-day
 // summaries out — the trip overview rides a single fetch (no N+1), and Phase
@@ -25,6 +26,13 @@ export interface DayCardSummary {
 	budgetTotal: number;
 	/** State-change chips for this date: check-in and check-out only (never 'staying'). Empty when no state changes. */
 	stays: StayChip[];
+	/**
+	 * Title of the day's first item in itinerary order (#355) — what the card
+	 * leads with when the day has no notes. '' when the day has no items, or
+	 * (unreachable via PB, where items.title is required min:1) when every item
+	 * is blank-titled.
+	 */
+	leadTitle: string;
 }
 
 /** Day-scoped, non-banner items for a day: `day === id && end_date === ''`. */
@@ -55,7 +63,11 @@ export function summarizeDay(items: Item[], days: Day[], day: Day): DayCardSumma
 		}
 	}
 
-	return { itemCount: own.length, bookedCount, bookableCount, budgetTotal, stays };
+	// First *titled* item in itinerary order — an untitled item shouldn't make a
+	// non-empty day read as empty.
+	const leadTitle = orderDayItems(own).find((i) => i.title?.trim())?.title.trim() ?? '';
+
+	return { itemCount: own.length, bookedCount, bookableCount, budgetTotal, stays, leadTitle };
 }
 
 /** Per-day summaries keyed by day id, for a whole trip's (or phase's) items. */
