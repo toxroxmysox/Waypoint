@@ -28,7 +28,9 @@ export interface DayCardSummary {
 	stays: StayChip[];
 	/**
 	 * Title of the day's first item in itinerary order (#355) — what the card
-	 * leads with when the day has no notes. '' when the day has no items.
+	 * leads with when the day has no notes. '' when the day has no items, or
+	 * (unreachable via PB, where items.title is required min:1) when every item
+	 * is blank-titled.
 	 */
 	leadTitle: string;
 }
