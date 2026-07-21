@@ -29,8 +29,22 @@
 	const dayNum = $derived(d.toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' }));
 	const mon = $derived(d.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }));
 
-	const headline = $derived(day.notes?.trim() ? day.notes.trim() : 'Nothing planned yet');
-	const isEmpty = $derived(!day.notes?.trim());
+	// Headline priority (#355): the day's notes, else what the day actually
+	// holds — its first item, "+ N more" for the rest. The count itself stays in
+	// the meta row below (itemCount is the sole fullness signal), so the lead
+	// tells you something that row can't. "Nothing planned yet" is reserved for
+	// days that really are empty.
+	const restCount = $derived(summary.itemCount - 1);
+	const headline = $derived(
+		day.notes?.trim()
+			? day.notes.trim()
+			: summary.leadTitle
+				? restCount > 0
+					? `${summary.leadTitle} + ${restCount} more`
+					: summary.leadTitle
+				: 'Nothing planned yet'
+	);
+	const isEmpty = $derived(!day.notes?.trim() && !summary.leadTitle);
 
 	const budgetLabel = $derived(
 		new Intl.NumberFormat('en-US', {

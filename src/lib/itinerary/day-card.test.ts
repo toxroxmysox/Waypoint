@@ -148,6 +148,60 @@ describe('summarizeDay — stay chips: state-change only (check-in / check-out)'
 	});
 });
 
+// #355: the card headline read day.notes only, so a day with items still said
+// "Nothing planned yet" while the row below it said "2 items". leadTitle is the
+// content the headline falls back to.
+describe('summarizeDay — leadTitle (#355)', () => {
+	it('is the first item in itinerary order, not input order', () => {
+		const items = [
+			item({ id: 'late', title: 'Dinner', start_time: '2026-06-18 19:00:00.000Z' }),
+			item({ id: 'early', title: 'Blackwolf Run', start_time: '2026-06-18 09:00:00.000Z' })
+		];
+		expect(summarizeDay(items, days, days[0]).leadTitle).toBe('Blackwolf Run');
+	});
+
+	it('weaves untimed items by sort_order the same way the timeline does', () => {
+		const items = [
+			item({ id: 'timed', title: 'Tee time', start_time: '2026-06-18 09:00:00.000Z', sort_order: 2 }),
+			item({ id: 'untimed', title: 'Pack clubs', start_time: '', sort_order: 1 })
+		];
+		expect(summarizeDay(items, days, days[0]).leadTitle).toBe('Pack clubs');
+	});
+
+	it('is empty for a day with no items', () => {
+		expect(summarizeDay([], days, days[0]).leadTitle).toBe('');
+	});
+
+	it('ignores multi-day banners — a lodging-only day still leads with nothing', () => {
+		const hotel = item({
+			id: 'h',
+			type: 'lodging',
+			title: 'Seymour St. Retreat',
+			end_date: '2026-06-20 00:00:00.000Z'
+		});
+		const summary = summarizeDay([hotel], days, days[0]);
+		expect(summary.itemCount).toBe(0);
+		expect(summary.leadTitle).toBe('');
+		expect(summary.stays).toHaveLength(1);
+	});
+
+	it('skips untitled items so a non-empty day never reads as empty', () => {
+		const items = [
+			item({ id: 'blank', title: '   ', sort_order: 1 }),
+			item({ id: 'named', title: 'Kohler', sort_order: 2 })
+		];
+		const summary = summarizeDay(items, days, days[0]);
+		expect(summary.itemCount).toBe(2);
+		expect(summary.leadTitle).toBe('Kohler');
+	});
+
+	it('trims whitespace', () => {
+		expect(summarizeDay([item({ title: '  Whistling Straits  ' })], days, days[0]).leadTitle).toBe(
+			'Whistling Straits'
+		);
+	});
+});
+
 describe('summarizeDays — keyed by day id', () => {
 	it('returns a summary for every day', () => {
 		const items = [item({ id: 'a', day: 'd1' }), item({ id: 'b', day: 'd2' })];
