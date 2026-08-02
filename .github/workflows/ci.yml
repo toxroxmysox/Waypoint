@@ -1,0 +1,108 @@
+name: CI
+
+# Merges auto-deploy to basecamp, so this is the last gate before a change is
+# live. Only jobs that are GREEN ON MAIN today are allowed to block (#341);
+# everything else reports without failing the run. See the lint job for why.
+#
+# Shared setup (pnpm, Node, deps, CI .env.local, optional PocketBase binary)
+# lives in .github/actions/setup.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A new push to the same ref supersedes the old run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── HARD GATE ────────────────────────────────────────────────────────────
+  verify:
+    name: check + unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+
+      # svelte-check. This is the real gate — it catches the DTO-wiring class of
+      # bug that unit tests structurally cannot (see #354).
+      - name: pnpm check
+        run: pnpm check
+
+      # `test:unit` is bare `vitest`, which watches. --run is required in CI.
+      - name: pnpm test:unit
+        run: pnpm test:unit --run
+
+  # ── REPORTING ONLY ───────────────────────────────────────────────────────
+  lint:
+    name: lint (non-blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # NOT a gate yet, and not because linting is optional: `pnpm lint` is red on
+    # main today — 439 files fail `prettier --check` and eslint reports 753
+    # errors, ~500 of them in backend/pb_hooks where the goja idioms
+    # (triple-slash refs, `catch (_) {}`, inlined-helper duplication) trip rules
+    # that were never scoped to that directory. Making it blocking now would
+    # red-light every PR; running `pnpm format` here would bury real diffs under
+    # a 439-file reformat. Tracked in #359 — flip this to a gate once clean.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: pnpm lint
+        run: pnpm lint
+
+  backend:
+    name: PocketBase harnesses (non-blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Non-blocking for its first outings. Promote to a gate once it has proven
+    # stable — it passed on the very first CI run, so that should be soon.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          pocketbase: 'true'
+
+      # Each harness gets its own freshly-migrated PB — they are NOT
+      # order-independent (test-members makes non_member a real co-traveler,
+      # which then flips a users.crossread cell in test-rules).
+      - name: Backend harnesses
+        run: bash scripts/backend-harnesses.sh
+
+  e2e:
+    name: Playwright e2e (non-blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # The fiddly one: builds the app and drives an isolated PB on :8097.
+    # Reporting-only until it has a track record.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          pocketbase: 'true'
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      # scripts/e2e-isolated.sh stands up a disposable PB on :8097, exports
+      # PUBLIC_PB_URL before the build (it is inlined at build time), and runs
+      # the suite against it.
+      - name: pnpm test:e2e:clean
+        run: pnpm test:e2e:clean
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore

@@ -9,7 +9,10 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PB="${PB_BIN:-/Users/Scott/Waypoint/backend/pocketbase}"
+# Relative to the repo, not an absolute machine path — this defaulted to
+# /Users/Scott/... and so could only ever work on one laptop (#341: it was the
+# first thing to break in CI).
+PB="${PB_BIN:-$ROOT/backend/pocketbase}"
 DIR="${PB_DIR:-/tmp/pb67}"
 PORT="${PB_PORT:-8097}"
 

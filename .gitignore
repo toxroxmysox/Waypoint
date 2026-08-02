@@ -40,6 +40,7 @@ backend/pocketbase
 .obsidian/
 .claude/scratch/
 .claude/worktrees/
+.clone/
 .claude/settings.local.json
 .wolf/
 *_STATUS.md
