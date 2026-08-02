@@ -19,6 +19,36 @@
 
 'use strict';
 
+// --- trip-local hour (goja twin of src/lib/shell/trip-time.ts) --------------
+//
+// #339. The app computes trip-local "now" with Intl.DateTimeFormat('sv-SE')
+// (tripNow/tripHour/tripToday). goja has NO Intl, so the digest send-window
+// must re-derive it from PB's Go-backed DateTime/Timezone. The two copies
+// CANNOT share code — different engines, different tz tables — so they are
+// pinned in explicit parity by src/lib/digest/digest-core-parity.test.ts.
+// Change one, change the other.
+//
+// Go's time.LoadLocation and Intl accept different id sets; two gaps that
+// would silently desync the digest window from the active-window truth are
+// closed here so the FALLBACKS agree with tripTz():
+//   - LoadLocation("Local") resolves to the SERVER's zone, while Intl rejects
+//     "Local" so tripTz() falls back to UTC. Rejected explicitly.
+//   - LoadLocation("") is UTC, and tripTz() maps blank -> UTC. Already agrees.
+// Anything else Go accepts but Intl rejects would diverge unnoticed, so the
+// accepted shape is constrained to IANA "Area/Location" (or bare "UTC") —
+// which is all the trip timezone picker can produce.
+function tripLocalHour(nowDt, tzRaw) {
+	const tz = (tzRaw || '').trim();
+	const usable = tz === 'UTC' || (tz.indexOf('/') > 0 && tz.toLowerCase() !== 'local');
+	// UTC fallback — mirrors tripTz() returning 'UTC' for blank/invalid.
+	if (!usable) return nowDt.time().hour();
+	try {
+		return nowDt.time().in(new Timezone(tz)).hour();
+	} catch (_) {
+		return nowDt.time().hour();
+	}
+}
+
 // --- pure diff (port of src/lib/digest/digest-diff.ts) ----------------------
 
 function buildSignature(fields) {
@@ -310,14 +340,7 @@ function runDigest(app, opts) {
 		summary.trips_checked++;
 		const tripId = trip.id;
 
-		// Trip-local hour via Go tz database (goja has no Intl; an invalid or
-		// empty tz silently resolves to UTC — same fallback as tripTz()).
-		let localHour = -1;
-		try {
-			localHour = nowDt.time().in(new Timezone(trip.getString('timezone').trim())).hour();
-		} catch (_) {
-			localHour = nowDt.time().hour();
-		}
+		const localHour = tripLocalHour(nowDt, trip.getString('timezone'));
 
 		const prev = parseDigestState(trip.get('digest_state'));
 
@@ -512,6 +535,7 @@ function runDigest(app, opts) {
 }
 
 module.exports = {
+	tripLocalHour: tripLocalHour,
 	buildSignature: buildSignature,
 	snapshotItems: snapshotItems,
 	composeTripDiff: composeTripDiff,
