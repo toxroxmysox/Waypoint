@@ -28,7 +28,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	if (cached !== undefined) return json(cached);
 
 	const res = await fetch(
-		`https://aerodatabox.p.rapidapi.com/flights/number/${encodeURIComponent(flightNumber)}/${date}`,
+		`https://aerodatabox.p.rapidapi.com/flights/number/${encodeURIComponent(flightNumber)}/${encodeURIComponent(date)}`,
 		{
 			headers: {
 				'X-RapidAPI-Key': env.AERODATABOX_API_KEY,

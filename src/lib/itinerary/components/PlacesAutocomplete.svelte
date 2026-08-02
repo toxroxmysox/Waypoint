@@ -17,6 +17,7 @@
 	let sessionToken = $state(crypto.randomUUID());
 	let showDropdown = $state(false);
 	let loading = $state(false);
+	let lookupFailed = $state(false);
 	let debounceTimer: ReturnType<typeof setTimeout>;
 
 	function handleInput() {
@@ -31,8 +32,9 @@
 			const res = await fetch(
 				`/api/places/autocomplete?input=${encodeURIComponent(query)}&session_token=${sessionToken}`
 			);
-			const data = await res.json();
-			predictions = data.suggestions ?? [];
+			// #340: the proxy now returns a real status on upstream failure —
+			// don't parse an error body as if it were results.
+			predictions = res.ok ? ((await res.json()).suggestions ?? []) : [];
 			showDropdown = predictions.length > 0;
 			loading = false;
 		}, 300);
@@ -43,10 +45,17 @@
 		query = displayText;
 		loading = true;
 		const res = await fetch(
-			`/api/places/details?place_id=${placeId}&session_token=${sessionToken}`
+			`/api/places/details?place_id=${encodeURIComponent(placeId)}&session_token=${sessionToken}`
 		);
-		const place = await res.json();
 		loading = false;
+		// #340: a failed lookup must not write an empty name/address and 0,0
+		// coords into the form — leave the typed text and bail.
+		if (!res.ok) {
+			lookupFailed = true;
+			return;
+		}
+		lookupFailed = false;
+		const place = await res.json();
 		onSelect({
 			name: place.displayName?.text ?? '',
 			address: place.formattedAddress ?? '',
@@ -111,6 +120,12 @@
 				</li>
 			{/each}
 		</ul>
+	{/if}
+
+	{#if lookupFailed}
+		<p class="text-error mt-1 text-xs">
+			Couldn't load that place. Try again, or type the address manually.
+		</p>
 	{/if}
 
 	<p class="text-ink-muted mt-1 text-[10px]">Powered by Google</p>

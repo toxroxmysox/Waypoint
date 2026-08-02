@@ -350,6 +350,142 @@ console.log('\n[remove]');
 	r.status === 400 ? pass('cannot remove sole owner → 400') : fail('cannot remove sole owner → 400', `got ${r.status}`);
 }
 
+// ─── #338: concurrent read-check-then-write ─────────────────────────────────
+// The claim + add-placeholder handlers used to validate and write as separate
+// statements, so two simultaneous calls could both pass the "no duplicate"
+// check. Both are now wrapped in e.app.runInTransaction. These fire N requests
+// in parallel and assert exactly ONE winner and exactly ONE resulting row.
+//
+// Measured against the pre-fix handler: the CLAIM race reproduces reliably
+// (3 of 5 parallel claims returned 200). The add-placeholder race did NOT
+// reproduce at 5x concurrency — SQLite's single writer happens to serialize
+// those inserts far enough apart — so treat that case as an invariant guard
+// rather than proof of the transaction. The claim case is the teeth.
+
+console.log('\n[#338 concurrency]');
+
+// A FRESH fixture trip: the suite above consumed non_member (they claimed a
+// placeholder), and these cases need a trip where they are not yet a member.
+const raceFxRes = await api('POST', '/api/dev/rules-fixture', { emails: EMAILS }, tokens.owner);
+if (raceFxRes.status !== 200) {
+	console.error('FATAL: race fixture creation failed', raceFxRes.status, raceFxRes.json);
+	process.exit(1);
+}
+const raceTripId = raceFxRes.json.tripId;
+
+async function countActive(filter) {
+	const res = await fetch(
+		`${BASE}/api/collections/trip_members/records?perPage=200&filter=${encodeURIComponent(filter)}`,
+		{ headers: { Authorization: 'Bearer ' + tokens.owner } }
+	);
+	const json = await res.json();
+	return Array.isArray(json?.items) ? json.items.length : -1;
+}
+
+// Concurrent add-placeholder with the SAME email → one row, not N.
+{
+	const email = `dupe-race-${Date.now()}@e2e.test`;
+	const attempts = 5;
+	const results = await Promise.all(
+		Array.from({ length: attempts }, (_, i) =>
+			api('POST', '/api/members/add-placeholder', {
+				trip_id: raceTripId,
+				display_name: `Race Placeholder ${i}`,
+				placeholder_email: email,
+				role: 'traveler'
+			}, tokens.owner)
+		)
+	);
+
+	const created = results.filter((r) => r.status === 200);
+	const rejected = results.filter((r) => r.status === 400);
+
+	created.length === 1
+		? pass('concurrent add-placeholder (same email) → exactly 1 accepted')
+		: fail('concurrent add-placeholder (same email) → exactly 1 accepted',
+			`got ${created.length} of ${attempts}: [${results.map((r) => r.status).join(',')}]`);
+
+	rejected.length === attempts - 1
+		? pass('concurrent add-placeholder → the rest rejected as duplicates')
+		: fail('concurrent add-placeholder → the rest rejected as duplicates',
+			`got ${rejected.length}, statuses [${results.map((r) => r.status).join(',')}]`);
+
+	// The durable check: the database holds exactly one active row.
+	const rows = await countActive(
+		`trip="${raceTripId}" && placeholder_email="${email}" && removed_at=""`
+	);
+	rows === 1
+		? pass('concurrent add-placeholder → exactly 1 active row in trip_members')
+		: fail('concurrent add-placeholder → exactly 1 active row in trip_members', `got ${rows}`);
+}
+
+// #338 regression: adding a placeholder for an email that already belongs to an
+// ACTIVE member must 400. This guard existed but was dead — it threw inside a
+// try whose catch tested `err.code`, which is always null on PB's JSVM, so the
+// error was swallowed and a duplicate membership was created instead.
+{
+	const r = await api('POST', '/api/members/add-placeholder', {
+		trip_id: raceTripId,
+		display_name: 'Owner Duplicate',
+		placeholder_email: EMAILS.owner,
+		role: 'traveler'
+	}, tokens.owner);
+	r.status === 400
+		? pass('add-placeholder for an existing active member’s email → 400')
+		: fail('add-placeholder for an existing active member’s email → 400', `got ${r.status}`);
+
+	// The stray row the dead guard used to create was a PLACEHOLDER (user empty),
+	// so counting the owner's user id would miss it — count by email instead.
+	const strays = await countActive(
+		`trip="${raceTripId}" && placeholder_email="${EMAILS.owner}" && removed_at=""`
+	);
+	strays === 0
+		? pass('rejected duplicate created no stray placeholder row')
+		: fail('rejected duplicate created no stray placeholder row', `got ${strays}`);
+}
+
+// Concurrent claim of the SAME placeholder → one winner, one membership.
+{
+	// Seed a placeholder addressed to the non-member so it is claimable by them.
+	const seed = await api('POST', '/api/members/add-placeholder', {
+		trip_id: raceTripId,
+		display_name: 'Claim Race Target',
+		placeholder_email: EMAILS.non_member,
+		role: 'traveler'
+	}, tokens.owner);
+
+	if (seed.status !== 200) {
+		fail('seed claimable placeholder for claim race', `got ${seed.status}`);
+	} else {
+		const targetId = seed.json.member_id;
+		const attempts = 5;
+		const results = await Promise.all(
+			Array.from({ length: attempts }, () =>
+				api('POST', '/api/members/claim', { member_id: targetId }, tokens.non_member)
+			)
+		);
+
+		const won = results.filter((r) => r.status === 200);
+		won.length === 1
+			? pass('concurrent claim of one placeholder → exactly 1 accepted')
+			: fail('concurrent claim of one placeholder → exactly 1 accepted',
+				`got ${won.length} of ${attempts}: [${results.map((r) => r.status).join(',')}]`);
+
+		// And the claimer ends up with exactly one active membership on the trip.
+		// The user id comes from the PB JWT payload — `users.emailVisibility` is
+		// off, so a `user.email=` filter would not resolve here.
+		const claimerUserId = JSON.parse(
+			Buffer.from(tokens.non_member.split('.')[1], 'base64').toString('utf8')
+		).id;
+		const claimerRows = await countActive(
+			`trip="${raceTripId}" && user="${claimerUserId}" && removed_at=""`
+		);
+		claimerRows === 1
+			? pass('claim race → claimer holds exactly 1 active membership')
+			: fail('claim race → claimer holds exactly 1 active membership', `got ${claimerRows}`);
+	}
+}
+
 // ─── summary ────────────────────────────────────────────────────────────────
 
 console.log('');

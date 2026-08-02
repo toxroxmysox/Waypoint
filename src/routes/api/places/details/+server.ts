@@ -27,7 +27,8 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	const fields =
 		'displayName,formattedAddress,location,id,websiteUri,internationalPhoneNumber';
 	const res = await fetch(
-		`https://places.googleapis.com/v1/places/${placeId}`,
+		// Encoded: place_id is user-supplied and interpolated into the path.
+		`https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`,
 		{
 			headers: {
 				'Content-Type': 'application/json',
@@ -38,8 +39,28 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		}
 	);
 
-	const data = await res.json();
-	// Only cache successful upstream responses; don't memoize errors/4xx.
-	if (res.ok) placeDetailsCache.set(placeId, data);
+	// #340: mirror autocomplete — propagate a real status, keep the raw upstream
+	// body server-side, and never cache a failure.
+	if (!res.ok) {
+		console.error(
+			'[places/details] upstream failed:',
+			res.status,
+			(await res.text()).slice(0, 200)
+		);
+		error(res.status === 429 ? 429 : 502, 'Place lookup unavailable');
+	}
+
+	const raw = await res.json();
+	// Shape to exactly what PlacesAutocomplete.svelte consumes.
+	const data = {
+		id: typeof raw?.id === 'string' ? raw.id : '',
+		displayName: { text: raw?.displayName?.text ?? '' },
+		formattedAddress: raw?.formattedAddress ?? '',
+		location:
+			typeof raw?.location?.latitude === 'number' && typeof raw?.location?.longitude === 'number'
+				? { latitude: raw.location.latitude, longitude: raw.location.longitude }
+				: null
+	};
+	placeDetailsCache.set(placeId, data);
 	return json(data);
 };

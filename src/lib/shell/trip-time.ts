@@ -47,6 +47,15 @@ export function tripToday(tz: string, now: Date = new Date()): string {
 }
 
 /**
+ * Current hour-of-day (0-23) in `tz`. This is the canonical definition of the
+ * digest send window; `tripLocalHour()` in backend/pb_hooks/digest-core.js is
+ * its goja twin (no Intl there), pinned by digest-core-parity.test.ts. #339
+ */
+export function tripHour(tz: string, now: Date = new Date()): number {
+	return tripNow(tz, now).getUTCHours();
+}
+
+/**
  * Combine a day's date with a time-of-day into the stored naive-local format
  * `YYYY-MM-DD HH:MM:00.000Z`. Returns '' if either part is missing.
  */

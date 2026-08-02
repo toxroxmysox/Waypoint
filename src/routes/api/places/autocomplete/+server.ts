@@ -32,6 +32,28 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		})
 	});
 
+	// #340: never launder an upstream failure into a 200. Google's error body
+	// echoes the request and hints at API-key/quota state, so it stays
+	// server-side — the client gets a status and a generic message.
+	if (!res.ok) {
+		console.error(
+			'[places/autocomplete] upstream failed:',
+			res.status,
+			(await res.text()).slice(0, 200)
+		);
+		error(res.status === 429 ? 429 : 502, 'Place search unavailable');
+	}
+
 	const data = await res.json();
-	return json(data);
+	// Shape to exactly what PlacesAutocomplete.svelte consumes — no raw
+	// upstream passthrough.
+	const suggestions = (Array.isArray(data?.suggestions) ? data.suggestions : [])
+		.filter((s: unknown) => (s as { placePrediction?: unknown })?.placePrediction)
+		.map((s: { placePrediction: { placeId?: string; text?: { text?: string } } }) => ({
+			placePrediction: {
+				placeId: s.placePrediction.placeId ?? '',
+				text: { text: s.placePrediction.text?.text ?? '' }
+			}
+		}));
+	return json({ suggestions });
 };
