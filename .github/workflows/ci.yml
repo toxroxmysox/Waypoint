@@ -3,6 +3,9 @@ name: CI
 # Merges auto-deploy to basecamp, so this is the last gate before a change is
 # live. Only jobs that are GREEN ON MAIN today are allowed to block (#341);
 # everything else reports without failing the run. See the lint job for why.
+#
+# Shared setup (pnpm, Node, deps, CI .env.local, optional PocketBase binary)
+# lives in .github/actions/setup.
 
 on:
   pull_request:
@@ -14,12 +17,6 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  # Must match the binary used locally and on basecamp — the hooks target this
-  # JSVM. `backend/pocketbase` is gitignored (31MB), so CI fetches it.
-  PB_VERSION: 0.27.2
-  NODE_VERSION: 22
-
 jobs:
   # ── HARD GATE ────────────────────────────────────────────────────────────
   verify:
@@ -28,12 +25,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
 
       # svelte-check. This is the real gate — it catches the DTO-wiring class of
       # bug that unit tests structurally cannot (see #354).
@@ -55,16 +47,11 @@ jobs:
     # (triple-slash refs, `catch (_) {}`, inlined-helper duplication) trip rules
     # that were never scoped to that directory. Making it blocking now would
     # red-light every PR; running `pnpm format` here would bury real diffs under
-    # a 439-file reformat. Tracked separately — flip this to a gate once clean.
+    # a 439-file reformat. Tracked in #359 — flip this to a gate once clean.
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
       - name: pnpm lint
         run: pnpm lint
 
@@ -72,48 +59,14 @@ jobs:
     name: PocketBase harnesses (non-blocking)
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Non-blocking for its first outings — these drive a real PB and have never
-    # run on this hardware. Promote to a gate once it has proven stable.
+    # Non-blocking for its first outings. Promote to a gate once it has proven
+    # stable — it passed on the very first CI run, so that should be soon.
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: ./.github/actions/setup
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-
-      - name: Cache PocketBase binary
-        id: pb-cache
-        uses: actions/cache@v4
-        with:
-          path: backend/pocketbase
-          key: pocketbase-${{ env.PB_VERSION }}-linux-amd64
-
-      - name: Download PocketBase
-        if: steps.pb-cache.outputs.cache-hit != 'true'
-        run: |
-          curl -sSL -o /tmp/pb.zip \
-            "https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/pocketbase_${PB_VERSION}_linux_amd64.zip"
-          unzip -o -q /tmp/pb.zip -d /tmp/pb
-          install -m 0755 /tmp/pb/pocketbase backend/pocketbase
-          backend/pocketbase --version
-
-      # The dev-fixture routes (/api/dev/auth-bypass, /api/dev/rules-fixture)
-      # are gated on WAYPOINT_DEV_MODE plus the E2E_TEST_EMAILS whitelist, and
-      # the harness scripts read both from .env.local — which is gitignored.
-      # No real secrets are needed: dev mode disables SMTP and rate limits, and
-      # no harness touches the Maps or AeroDataBox keys.
-      - name: Write CI .env.local
-        run: |
-          cat > .env.local <<'EOF'
-          PUBLIC_PB_URL=http://127.0.0.1:8090
-          PUBLIC_APP_URL=http://127.0.0.1:5173
-          WAYPOINT_DEV_MODE=true
-          E2E_TEST_EMAIL=e2e@waypoint.local
-          E2E_TEST_EMAILS=rules-owner@e2e.test,rules-coowner@e2e.test,rules-traveler@e2e.test,rules-viewer@e2e.test,rules-nonmember@e2e.test,e2e@waypoint.local
-          EOF
+          pocketbase: 'true'
 
       # Each harness gets its own freshly-migrated PB — they are NOT
       # order-independent (test-members makes non_member a real co-traveler,
@@ -130,37 +83,9 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: ./.github/actions/setup
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-
-      - name: Cache PocketBase binary
-        id: pb-cache
-        uses: actions/cache@v4
-        with:
-          path: backend/pocketbase
-          key: pocketbase-${{ env.PB_VERSION }}-linux-amd64
-
-      - name: Download PocketBase
-        if: steps.pb-cache.outputs.cache-hit != 'true'
-        run: |
-          curl -sSL -o /tmp/pb.zip \
-            "https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/pocketbase_${PB_VERSION}_linux_amd64.zip"
-          unzip -o -q /tmp/pb.zip -d /tmp/pb
-          install -m 0755 /tmp/pb/pocketbase backend/pocketbase
-
-      - name: Write CI .env.local
-        run: |
-          cat > .env.local <<'EOF'
-          PUBLIC_PB_URL=http://127.0.0.1:8090
-          PUBLIC_APP_URL=http://127.0.0.1:5173
-          WAYPOINT_DEV_MODE=true
-          E2E_TEST_EMAIL=e2e@waypoint.local
-          E2E_TEST_EMAILS=rules-owner@e2e.test,rules-coowner@e2e.test,rules-traveler@e2e.test,rules-viewer@e2e.test,rules-nonmember@e2e.test,e2e@waypoint.local
-          EOF
+          pocketbase: 'true'
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
