@@ -13,7 +13,9 @@ inputs:
   pocketbase-version:
     description: PocketBase version to fetch when `pocketbase` is true.
     required: false
-    default: 0.27.2
+    # Quoted deliberately: an unquoted single-dot version (1.30) is parsed as
+    # the float 1.3 and silently corrupts the download URL.
+    default: '0.27.2'
 
 runs:
   using: composite
