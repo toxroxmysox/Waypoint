@@ -104,50 +104,78 @@ routerAdd('POST', '/api/members/claim', (e) => {
 		throw new BadRequestError('member_id is required');
 	}
 
-	let member;
-	try {
-		member = e.app.findRecordById('trip_members', memberId);
-	} catch (_) {
-		throw new NotFoundError('Member record not found');
-	}
-
-	// #133 guard: a tombstone (user="" && claimable_by="") would otherwise slip
-	// past the claimable_by check below — a Departed Member is never claimable.
-	// NB getString, not get: PB's JSVM returns a (truthy) DateTime object for an
-	// empty date field, so get('removed_at') is never falsy.
-	if (member.getString('removed_at')) {
-		throw new BadRequestError('This membership has been removed and cannot be claimed');
-	}
-
-	if (member.get('user')) {
-		if (member.get('user') === authRecord.id) {
-			throw new BadRequestError('This membership has already been claimed');
+	// #338: read → validate → write must be ONE transaction. Previously the
+	// member was fetched, checked, and saved as three independent statements,
+	// so two concurrent claims could both observe user="" and both save, and a
+	// claim racing /api/members/remove could resurrect a #133 tombstone that
+	// was stamped after this handler's read. PB runs write transactions on a
+	// single non-concurrent connection, so re-reading INSIDE the tx makes the
+	// guards below authoritative for the lifetime of the write.
+	let claimed = null;
+	e.app.runInTransaction((txApp) => {
+		let member;
+		try {
+			member = txApp.findRecordById('trip_members', memberId);
+		} catch (_) {
+			throw new NotFoundError('Member record not found');
 		}
-		throw new ForbiddenError('This membership is not claimable by you');
-	}
-	if (member.get('claimable_by') !== authRecord.id) {
-		throw new ForbiddenError('This membership is not claimable by you');
-	}
 
-	const now = new Date().toISOString().replace('T', ' ').replace('Z', '') + 'Z';
-	member.set('user', authRecord.id);
-	member.set('joined_at', now);
-	member.set('claimable_by', '');
-	member.set('placeholder_email', '');
-	// Keep placeholder_name but use displayName if provided; else fall back to placeholder_name
-	const finalName = displayName.trim() || member.get('placeholder_name') || '';
-	if (finalName) {
-		member.set('display_name', finalName);
-	}
-	member.set('placeholder_name', '');
+		// #133 guard: a tombstone (user="" && claimable_by="") would otherwise slip
+		// past the claimable_by check below — a Departed Member is never claimable.
+		// NB getString, not get: PB's JSVM returns a (truthy) DateTime object for an
+		// empty date field, so get('removed_at') is never falsy.
+		if (member.getString('removed_at')) {
+			throw new BadRequestError('This membership has been removed and cannot be claimed');
+		}
 
-	try {
-		e.app.save(member);
-	} catch (err) {
-		throw new BadRequestError('Failed to claim membership: ' + err);
-	}
+		if (member.get('user')) {
+			if (member.get('user') === authRecord.id) {
+				throw new BadRequestError('This membership has already been claimed');
+			}
+			throw new ForbiddenError('This membership is not claimable by you');
+		}
+		if (member.get('claimable_by') !== authRecord.id) {
+			throw new ForbiddenError('This membership is not claimable by you');
+		}
 
-	return e.json(200, { ok: true, member_id: member.id, trip_id: member.get('trip') });
+		// A user may hold only one active membership per trip — a claim that
+		// would create a second one loses to whichever claim landed first.
+		let alreadyMember = null;
+		try {
+			alreadyMember = txApp.findFirstRecordByFilter(
+				'trip_members',
+				'trip = {:tripId} && user = {:uid} && removed_at = ""',
+				{ tripId: member.get('trip'), uid: authRecord.id }
+			);
+		} catch (_) {
+			// No existing membership — the normal path.
+		}
+		if (alreadyMember) {
+			throw new BadRequestError('You are already a member of this trip');
+		}
+
+		const now = new Date().toISOString().replace('T', ' ').replace('Z', '') + 'Z';
+		member.set('user', authRecord.id);
+		member.set('joined_at', now);
+		member.set('claimable_by', '');
+		member.set('placeholder_email', '');
+		// Keep placeholder_name but use displayName if provided; else fall back to placeholder_name
+		const finalName = displayName.trim() || member.get('placeholder_name') || '';
+		if (finalName) {
+			member.set('display_name', finalName);
+		}
+		member.set('placeholder_name', '');
+
+		try {
+			txApp.save(member);
+		} catch (err) {
+			throw new BadRequestError('Failed to claim membership: ' + err);
+		}
+
+		claimed = { id: member.id, tripId: member.get('trip') };
+	});
+
+	return e.json(200, { ok: true, member_id: claimed.id, trip_id: claimed.tripId });
 });
 
 // ---------------------------------------------------------------------------
@@ -180,40 +208,64 @@ routerAdd('POST', '/api/members/add-placeholder', (e) => {
 		throw new BadRequestError('role must be one of: co_owner, traveler, viewer');
 	}
 
-	// Resolve caller's membership.
-	let callerMember;
-	try {
-		callerMember = e.app.findFirstRecordByFilter(
-			'trip_members',
-			'trip = {:tripId} && user = {:uid} && removed_at = ""',
-			{ tripId: tripId, uid: authRecord.id }
-		);
-	} catch (_) {
-		throw new ForbiddenError('You are not a member of this trip');
-	}
-
-	const callerRole = callerMember.get('role');
-
-	// Viewer cannot add members.
-	if (callerRole === 'viewer') {
-		throw new ForbiddenError('Viewers cannot add members');
-	}
-	// Traveler can only add traveler/viewer.
-	if (callerRole === 'traveler' && role === 'co_owner') {
-		throw new ForbiddenError('Travelers cannot add co-owners');
-	}
-
-	// If placeholder_email provided, check for existing user or member.
-	let claimableBy = '';
-	if (placeholderEmail) {
-		// Check not already a member.
-		let existingMember;
+	// #338: the duplicate checks and the create must be ONE transaction.
+	// Previously the "is there already a member/placeholder with this email"
+	// lookups and the subsequent create were separate statements, so two
+	// concurrent calls with the same email both saw "none" and both created a
+	// row — leaving two active memberships for one person, which downstream
+	// merge/settlement assumes cannot happen. Role gating is resolved inside
+	// the same tx so a concurrent demotion can't be read stale either.
+	let createdId = '';
+	e.app.runInTransaction((txApp) => {
+		// Resolve caller's membership.
+		let callerMember;
 		try {
-			// Find by email via user relation — need to look up user first.
-			const existingUser = e.app.findAuthRecordByEmail('users', placeholderEmail);
+			callerMember = txApp.findFirstRecordByFilter(
+				'trip_members',
+				'trip = {:tripId} && user = {:uid} && removed_at = ""',
+				{ tripId: tripId, uid: authRecord.id }
+			);
+		} catch (_) {
+			throw new ForbiddenError('You are not a member of this trip');
+		}
+
+		const callerRole = callerMember.get('role');
+
+		// Viewer cannot add members.
+		if (callerRole === 'viewer') {
+			throw new ForbiddenError('Viewers cannot add members');
+		}
+		// Traveler can only add traveler/viewer.
+		if (callerRole === 'traveler' && role === 'co_owner') {
+			throw new ForbiddenError('Travelers cannot add co-owners');
+		}
+
+		// If placeholder_email provided, check for existing user or member.
+		let claimableBy = '';
+		if (placeholderEmail) {
+			// #338: this lookup used to sit inside a broad try/catch that ended
+			// with `if (err && err.code && err.code !== 404) throw err`. PB's JSVM
+			// ApiError has NO `code` property (it is `status`; `code` is always
+			// null — probe-verified on this build), and a missing user surfaces as
+			// a bare GoError "sql: no rows in result set" with neither. So that
+			// guard could never rethrow and the duplicate-member BadRequestError
+			// below was SWALLOWED — adding a placeholder for an email that already
+			// belongs to an active member silently created a second membership and
+			// left claimable_by empty (making it unclaimable). The try is now
+			// scoped to just the lookup, so our own errors propagate.
+			let existingUser = null;
+			try {
+				// Find by email via user relation — need to look up user first.
+				existingUser = txApp.findAuthRecordByEmail('users', placeholderEmail);
+			} catch (_) {
+				// No such user — the placeholder stays unclaimable until they sign up.
+				existingUser = null;
+			}
+
 			if (existingUser) {
+				let existingMember = null;
 				try {
-					existingMember = e.app.findFirstRecordByFilter(
+					existingMember = txApp.findFirstRecordByFilter(
 						'trip_members',
 						// #133: a departed member (user="") is not an active duplicate —
 						// they may be re-added as a fresh placeholder.
@@ -229,50 +281,48 @@ routerAdd('POST', '/api/members/add-placeholder', (e) => {
 				// User exists but is not yet a member — mark claimable immediately.
 				claimableBy = existingUser.id;
 			}
-		} catch (err) {
-			// Re-throw our own errors.
-			if (err && err.code && err.code !== 404) throw err;
-			// 404 = user not found; claimableBy stays empty.
+
+			// Also check pending placeholder with same email in this trip.
+			let existingPlaceholder;
+			try {
+				existingPlaceholder = txApp.findFirstRecordByFilter(
+					'trip_members',
+					// #133: a tombstone's placeholder_email is cleared, but guard anyway —
+					// only an active placeholder counts as a duplicate.
+					'trip = {:tripId} && placeholder_email = {:email} && removed_at = ""',
+					{ tripId: tripId, email: placeholderEmail }
+				);
+			} catch (_) {
+				// No existing placeholder.
+			}
+			if (existingPlaceholder) {
+				throw new BadRequestError('A placeholder with that email already exists');
+			}
 		}
 
-		// Also check pending placeholder with same email in this trip.
-		let existingPlaceholder;
+		const tripMembersCol = txApp.findCollectionByNameOrId('trip_members');
+		const member = new Record(tripMembersCol);
+		member.set('trip', tripId);
+		member.set('display_name', displayName);
+		member.set('role', role);
+		if (placeholderEmail) {
+			member.set('placeholder_name', displayName);
+			member.set('placeholder_email', placeholderEmail);
+		}
+		if (claimableBy) {
+			member.set('claimable_by', claimableBy);
+		}
+
 		try {
-			existingPlaceholder = e.app.findFirstRecordByFilter(
-				'trip_members',
-				// #133: a tombstone's placeholder_email is cleared, but guard anyway —
-				// only an active placeholder counts as a duplicate.
-				'trip = {:tripId} && placeholder_email = {:email} && removed_at = ""',
-				{ tripId: tripId, email: placeholderEmail }
-			);
-		} catch (_) {
-			// No existing placeholder.
+			txApp.save(member);
+		} catch (err) {
+			throw new BadRequestError('Failed to create placeholder: ' + err);
 		}
-		if (existingPlaceholder) {
-			throw new BadRequestError('A placeholder with that email already exists');
-		}
-	}
 
-	const tripMembersCol = e.app.findCollectionByNameOrId('trip_members');
-	const member = new Record(tripMembersCol);
-	member.set('trip', tripId);
-	member.set('display_name', displayName);
-	member.set('role', role);
-	if (placeholderEmail) {
-		member.set('placeholder_name', displayName);
-		member.set('placeholder_email', placeholderEmail);
-	}
-	if (claimableBy) {
-		member.set('claimable_by', claimableBy);
-	}
+		createdId = member.id;
+	});
 
-	try {
-		e.app.save(member);
-	} catch (err) {
-		throw new BadRequestError('Failed to create placeholder: ' + err);
-	}
-
-	return e.json(200, { ok: true, member_id: member.id });
+	return e.json(200, { ok: true, member_id: createdId });
 });
 
 // ---------------------------------------------------------------------------
