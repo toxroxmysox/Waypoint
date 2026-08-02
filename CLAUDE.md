@@ -4,6 +4,8 @@
 
 This project uses OpenWolf for context management. Read and follow .wolf/OPENWOLF.md every session. Check .wolf/cerebrum.md before generating code. Check .wolf/anatomy.md before reading files.
 
+**`.wolf/` is gitignored — it is local working memory, not part of the repo.** A fresh clone has none of it, so the import above and the references below resolve to nothing until `openwolf init` has run. That is expected: skip them if the directory is absent rather than hunting for the files. Nothing in the build, tests, or deploy depends on `.wolf/`.
+
 # Waypoint — Project Instructions
 
 Be as concise as possible. Sacrifice grammar for concision.
