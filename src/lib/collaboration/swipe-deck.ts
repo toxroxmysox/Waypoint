@@ -50,8 +50,21 @@ export interface DeckCandidate {
 	voteCount: number;
 	/** Owning day's date (PB sortable string; "" when unscheduled). Drives planned itinerary order. */
 	dayDate: string;
-	/** Anchor time ("" when untimed). */
+	/** Start anchor ("" when untimed). */
 	start_time: string;
+	/**
+	 * End anchor ("" when unset). An end-only item is a deadline ("back by 6")
+	 * and anchors AT its end — `orderDayItems` reads this via `itemAnchorTime`.
+	 * Without it (#354) such an item fell to the untimed tail here while the day
+	 * timeline placed it on the spine, so the two disagreed about the same day.
+	 *
+	 * REQUIRED, not optional, and deliberately so: `DayOrderable.end_time` is
+	 * optional, so an optional field here let the loader silently stop passing
+	 * it with both the tests and `pnpm check` still green — exactly how #354
+	 * went unnoticed. Required makes the wiring compiler-enforced. Mirrors
+	 * `Item.end_time`, which is a required string (PB stores "", never null).
+	 */
+	end_time: string;
 	/** Manual order within a day. */
 	sort_order: number;
 }

@@ -55,6 +55,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		voteCount: voteCountByItem[i.id] ?? 0,
 		dayDate: dateByDay[i.day] ?? '',
 		start_time: i.start_time,
+		end_time: i.end_time,
 		sort_order: i.sort_order
 	}));
 
