@@ -103,7 +103,7 @@
 		<button
 			type="button"
 			onclick={pick}
-			class="border-line text-ink-soft hover:border-ink-muted hover:text-ink flex w-full items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-3 text-sm font-medium transition-colors"
+			class="border-line text-ink-soft hover:border-ink-muted active:border-ink-muted hover:text-ink active:text-ink flex w-full items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-3 text-sm font-medium transition-colors"
 		>
 			<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />

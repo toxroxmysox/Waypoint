@@ -90,7 +90,7 @@
 		type="button"
 		onclick={toggle}
 		aria-label="Notifications{unreadCount > 0 ? ` (${unreadCount} unread)` : ''}"
-		class="text-ink-soft hover:text-ink relative flex h-11 w-11 items-center justify-center rounded-full"
+		class="text-ink-soft hover:text-ink active:text-ink relative flex h-11 w-11 items-center justify-center rounded-full"
 	>
 		<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 			<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -126,7 +126,7 @@
 					<button
 						type="button"
 						onclick={markAllRead}
-						class="text-ink-muted hover:text-ink-soft text-xs"
+						class="text-ink-muted hover:text-ink-soft active:text-ink-soft text-xs"
 					>
 						Mark all read
 					</button>
@@ -144,7 +144,7 @@
 								<a
 									href={n.link}
 									onclick={() => { if (isUnread) markRead(n.id); close(); }}
-									class="flex gap-3 px-4 py-3 transition-colors {isUnread ? 'bg-surface hover:bg-surface-2' : 'hover:bg-surface'}"
+									class="flex gap-3 px-4 py-3 transition-colors {isUnread ? 'bg-surface hover:bg-surface-2 active:bg-surface-2' : 'hover:bg-surface active:bg-surface'}"
 								>
 									<div class="flex min-w-0 flex-1 flex-col gap-0.5">
 										<span class="text-ink text-sm leading-snug {isUnread ? 'font-medium' : ''}">{n.body}</span>
@@ -158,7 +158,7 @@
 								<button
 									type="button"
 									onclick={() => { if (isUnread) markRead(n.id); }}
-									class="flex w-full gap-3 px-4 py-3 text-left transition-colors {isUnread ? 'bg-surface hover:bg-surface-2' : 'hover:bg-surface'}"
+									class="flex w-full gap-3 px-4 py-3 text-left transition-colors {isUnread ? 'bg-surface hover:bg-surface-2 active:bg-surface-2' : 'hover:bg-surface active:bg-surface'}"
 								>
 									<div class="flex min-w-0 flex-1 flex-col gap-0.5">
 										<span class="text-ink text-sm leading-snug {isUnread ? 'font-medium' : ''}">{n.body}</span>

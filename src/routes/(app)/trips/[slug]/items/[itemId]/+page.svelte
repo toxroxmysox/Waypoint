@@ -90,14 +90,14 @@
 			<button
 				type="button"
 				onclick={() => (moveSheetOpen = true)}
-				class="border-line text-ink-muted hover:text-ink-soft rounded-md border px-3 py-1.5 text-xs font-semibold"
+				class="border-line text-ink-muted hover:text-ink-soft active:text-ink-soft rounded-md border px-3 py-1.5 text-xs font-semibold"
 			>
 				Move
 			</button>
 			{#if data.canEdit}
 				<a
 					href="/trips/{data.trip.slug}/items/{data.item.id}/edit"
-					class="text-ink-soft hover:text-ink text-[12px] font-semibold"
+					class="text-ink-soft hover:text-ink active:text-ink text-[12px] font-semibold"
 				>
 					Edit
 				</a>
@@ -203,7 +203,7 @@
 	{:else if data.canLogPayment}
 		<a
 			href={payHref}
-			class="border-line bg-surface hover:bg-surface-2 flex items-center justify-between rounded-lg border px-4 py-3"
+			class="border-line bg-surface hover:bg-surface-2 active:bg-surface-2 flex items-center justify-between rounded-lg border px-4 py-3"
 		>
 			<span class="flex items-center gap-2">
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-ink-muted">
@@ -227,7 +227,7 @@
 					{#each data.linkedGoals as goal (goal.id)}
 						<a
 							href="/trips/{data.trip.slug}/goals/{goal.id}"
-							class="hover:bg-surface-2 flex items-center gap-2 rounded-md px-1 py-2"
+							class="hover:bg-surface-2 active:bg-surface-2 flex items-center gap-2 rounded-md px-1 py-2"
 						>
 							<span class="text-moss shrink-0" aria-hidden="true">✦</span>
 							<span class="text-ink min-w-0 flex-1 truncate text-sm font-medium">{goal.title}</span>
@@ -283,7 +283,7 @@
 
 			<form method="POST" action="?/deleteChecklist" use:enhance class="mt-2 px-1">
 				<input type="hidden" name="checklist_id" value={data.checklist.id} />
-				<button type="submit" class="text-ink-muted hover:text-clay text-xs"> Remove checklist </button>
+				<button type="submit" class="text-ink-muted hover:text-clay active:text-clay text-xs"> Remove checklist </button>
 			</form>
 		</div>
 	{:else}
@@ -412,7 +412,7 @@
 				<button
 					type="submit"
 					disabled={skipping}
-					class="border-ink-muted/40 text-ink-soft hover:bg-surface-2 rounded-md border px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
+					class="border-ink-muted/40 text-ink-soft hover:bg-surface-2 active:bg-surface-2 rounded-md border px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
 				>
 					{skipping ? 'Skipping…' : 'Skip — not happening'}
 				</button>
@@ -427,7 +427,7 @@
 			<button
 				type="button"
 				onclick={() => (confirmDelete = true)}
-				class="border-clay/40 text-clay hover:bg-clay/10 mt-2 rounded-md border px-3 py-1.5 text-sm font-semibold"
+				class="border-clay/40 text-clay hover:bg-clay/10 active:bg-clay/10 mt-2 rounded-md border px-3 py-1.5 text-sm font-semibold"
 			>
 				Delete
 			</button>
@@ -454,14 +454,14 @@
 				<button
 					type="submit"
 					disabled={deleting}
-					class="bg-clay text-paper hover:bg-clay/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-40"
+					class="bg-clay text-paper hover:bg-clay/90 active:bg-clay/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-40"
 				>
 					{deleting ? 'Deleting…' : 'Confirm'}
 				</button>
 				<button
 					type="button"
 					onclick={() => (confirmDelete = false)}
-					class="text-ink-muted hover:text-ink-soft text-sm"
+					class="text-ink-muted hover:text-ink-soft active:text-ink-soft text-sm"
 				>
 					Cancel
 				</button>

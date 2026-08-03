@@ -77,7 +77,7 @@
 			<!-- Primary: scheduling is the lead action (#347). -->
 			<a
 				href={planHref}
-				class="border-line hover:bg-surface-2 flex w-full items-center gap-3 rounded-lg border px-3 py-3 text-left transition-colors"
+				class="border-line hover:bg-surface-2 active:bg-surface-2 flex w-full items-center gap-3 rounded-lg border px-3 py-3 text-left transition-colors"
 				onclick={() => (open = false)}
 			>
 				<div class="bg-clay-tint text-clay flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
@@ -95,7 +95,7 @@
 			     smaller icon + text — but still a real, tappable control. -->
 			<button
 				type="button"
-				class="border-line hover:bg-surface-2 flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors"
+				class="border-line hover:bg-surface-2 active:bg-surface-2 flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors"
 				onclick={() => (mode = 'idea')}
 			>
 				<div class="bg-moss-tint text-moss flex h-8 w-8 shrink-0 items-center justify-center rounded-full">

@@ -200,7 +200,7 @@
 				{/if}
 				<div class="min-w-0 flex-1">
 					<p class="text-ink-soft truncate text-sm">{stagedFile.name}</p>
-					<button type="button" onclick={discardStaged} class="text-ink-muted mt-1 text-xs underline-offset-2 hover:underline">Remove</button>
+					<button type="button" onclick={discardStaged} class="text-ink-muted mt-1 text-xs underline-offset-2 hover:underline active:underline">Remove</button>
 				</div>
 			</div>
 		{:else if hasExistingPhoto && !removePhoto}
@@ -211,8 +211,8 @@
 					<div class="bg-paper text-ink-muted flex h-20 w-20 shrink-0 items-center justify-center rounded-lg text-[10px]">HEIC</div>
 				{/if}
 				<div class="flex min-w-0 flex-1 flex-col items-start gap-1">
-					<button type="button" onclick={() => fileInput?.click()} class="text-ink-soft text-xs font-medium underline-offset-2 hover:underline">Replace photo</button>
-					<button type="button" onclick={() => (removePhoto = true)} class="text-ink-muted text-xs underline-offset-2 hover:underline">Remove photo</button>
+					<button type="button" onclick={() => fileInput?.click()} class="text-ink-soft text-xs font-medium underline-offset-2 hover:underline active:underline">Replace photo</button>
+					<button type="button" onclick={() => (removePhoto = true)} class="text-ink-muted text-xs underline-offset-2 hover:underline active:underline">Remove photo</button>
 				</div>
 			</div>
 		{:else}
@@ -220,7 +220,7 @@
 				<button
 					type="button"
 					onclick={() => fileInput?.click()}
-					class="border-line text-ink-soft hover:border-ink-muted hover:text-ink flex flex-1 items-center justify-center gap-2 rounded-xl border border-dashed px-3 py-4 text-sm font-medium transition-colors"
+					class="border-line text-ink-soft hover:border-ink-muted active:border-ink-muted hover:text-ink active:text-ink flex flex-1 items-center justify-center gap-2 rounded-xl border border-dashed px-3 py-4 text-sm font-medium transition-colors"
 				>
 					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 						<rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
@@ -232,7 +232,7 @@
 				<button
 					type="button"
 					onclick={pasteFromClipboard}
-					class="border-line text-ink-soft hover:border-ink-muted hover:text-ink flex items-center justify-center gap-2 rounded-xl border border-dashed px-3 py-4 text-sm font-medium transition-colors"
+					class="border-line text-ink-soft hover:border-ink-muted active:border-ink-muted hover:text-ink active:text-ink flex items-center justify-center gap-2 rounded-xl border border-dashed px-3 py-4 text-sm font-medium transition-colors"
 					aria-label="Paste image from clipboard"
 				>
 					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">

@@ -143,7 +143,7 @@
 					<button
 						type="submit"
 						disabled={resending}
-						class="text-ink-muted hover:text-ink-soft disabled:text-ink-muted/60 mt-3 w-full text-sm"
+						class="text-ink-muted hover:text-ink-soft active:text-ink-soft disabled:text-ink-muted/60 mt-3 w-full text-sm"
 					>
 						{#if resending}
 							Resending…
@@ -156,7 +156,7 @@
 				</form>
 				<button
 					type="button"
-					class="text-ink-muted hover:text-ink-soft mt-1 w-full text-sm"
+					class="text-ink-muted hover:text-ink-soft active:text-ink-soft mt-1 w-full text-sm"
 					onclick={() => {
 						otpId = '';
 						resent = false;

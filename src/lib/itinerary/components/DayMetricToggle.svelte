@@ -23,7 +23,7 @@
 			class="rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors {$dayCardMetric ===
 			opt.value
 				? 'bg-ink text-paper'
-				: 'text-ink-muted hover:text-ink-soft'}"
+				: 'text-ink-muted hover:text-ink-soft active:text-ink-soft'}"
 		>
 			{opt.label}
 		</button>

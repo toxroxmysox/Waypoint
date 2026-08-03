@@ -67,7 +67,7 @@
 {#if items.length === 0}
 	<a
 		href="/trips/{tripSlug}/items/new?day={dayId}"
-		class="border-line text-ink-muted hover:border-ink-muted hover:text-ink-soft mt-2 block rounded-lg border border-dashed px-3 py-2 text-xs"
+		class="border-line text-ink-muted hover:border-ink-muted active:border-ink-muted hover:text-ink-soft active:text-ink-soft mt-2 block rounded-lg border border-dashed px-3 py-2 text-xs"
 	>
 		Empty. Tap to add one — or drag an idea here.
 	</a>

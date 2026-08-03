@@ -108,7 +108,7 @@
 				<li>
 					<button
 						type="button"
-						class="text-ink hover:bg-surface-hover w-full px-3 py-2 text-left text-sm"
+						class="text-ink hover:bg-surface-hover active:bg-surface-hover w-full px-3 py-2 text-left text-sm"
 						onclick={() =>
 							selectPlace(
 								suggestion.placePrediction.placeId,

@@ -54,7 +54,7 @@
 		<label
 			class="flex cursor-pointer flex-col gap-0.5 rounded-lg border p-3 {!publish
 				? 'border-ink bg-surface-2'
-				: 'border-line bg-surface hover:bg-surface-2'}"
+				: 'border-line bg-surface hover:bg-surface-2 active:bg-surface-2'}"
 		>
 			<span class="flex items-center gap-2">
 				<input type="radio" name="publish" value="off" checked={!publish} onchange={() => (publish = false)} class="sr-only" />
@@ -65,7 +65,7 @@
 		<label
 			class="flex cursor-pointer flex-col gap-0.5 rounded-lg border p-3 {publish
 				? 'border-moss bg-moss-tint'
-				: 'border-line bg-surface hover:bg-surface-2'}"
+				: 'border-line bg-surface hover:bg-surface-2 active:bg-surface-2'}"
 		>
 			<span class="flex items-center gap-2">
 				<input type="radio" name="publish" value="on" checked={publish} onchange={selectPublish} class="sr-only" />

@@ -96,7 +96,7 @@
 				<button
 					type="button"
 					onclick={() => (editingNotes = !editingNotes)}
-					class="text-ink-muted hover:text-ink-soft text-xs"
+					class="text-ink-muted hover:text-ink-soft active:text-ink-soft text-xs"
 				>
 					{editingNotes ? 'Cancel' : 'Edit'}
 				</button>
@@ -166,7 +166,7 @@
 					{#snippet right()}
 						<a
 							href="/trips/{data.trip.slug}/items/new?day={data.day.id}"
-							class="text-ink-muted hover:text-ink-soft"
+							class="text-ink-muted hover:text-ink-soft active:text-ink-soft"
 							aria-label="Add item"
 						>
 							+ Add

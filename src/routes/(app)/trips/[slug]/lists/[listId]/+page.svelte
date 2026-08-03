@@ -92,11 +92,11 @@
 				<button type="button" onclick={() => (renaming = false)} class="text-ink-muted text-xs">Cancel</button>
 			</form>
 		{:else}
-			<button type="button" onclick={() => (renaming = true)} class="text-ink-muted hover:text-ink-soft text-xs font-medium">
+			<button type="button" onclick={() => (renaming = true)} class="text-ink-muted hover:text-ink-soft active:text-ink-soft text-xs font-medium">
 				Rename list
 			</button>
 			{#if !confirmDeleteList}
-				<button type="button" onclick={() => (confirmDeleteList = true)} class="text-ink-muted hover:text-error text-xs font-medium">
+				<button type="button" onclick={() => (confirmDeleteList = true)} class="text-ink-muted hover:text-error active:text-error text-xs font-medium">
 					Delete list
 				</button>
 			{:else}

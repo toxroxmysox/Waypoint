@@ -47,7 +47,7 @@
 				class="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors disabled:opacity-50
 					{selected
 					? OPTION_META[option].active
-					: 'border-line text-ink-muted hover:border-moss/40 hover:text-moss'}"
+					: 'border-line text-ink-muted hover:border-moss/40 active:border-moss/40 hover:text-moss active:text-moss'}"
 			>
 				<span aria-hidden="true">{OPTION_META[option].glyph}</span>
 				<span>{OPTION_META[option].label}</span>

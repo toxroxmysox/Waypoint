@@ -33,7 +33,7 @@
 					person who invited you to send a fresh one.
 				</p>
 			</div>
-			<a href="/trips" class="text-ink-muted hover:text-ink-soft mt-4 block text-center text-sm"
+			<a href="/trips" class="text-ink-muted hover:text-ink-soft active:text-ink-soft mt-4 block text-center text-sm"
 				>Back to your trips</a
 			>
 		{:else if data.status === 'expired'}
@@ -44,7 +44,7 @@
 					invited you to send a new one.
 				</p>
 			</div>
-			<a href="/trips" class="text-ink-muted hover:text-ink-soft mt-4 block text-center text-sm"
+			<a href="/trips" class="text-ink-muted hover:text-ink-soft active:text-ink-soft mt-4 block text-center text-sm"
 				>Back to your trips</a
 			>
 		{:else if data.status === 'mismatch'}
@@ -100,7 +100,7 @@
 							class="border-line w-full rounded-lg border p-3 text-left transition-colors
 								{selectedPlaceholder === ph.member_id
 									? 'border-moss bg-moss-tint'
-									: 'bg-surface hover:bg-surface-2'}"
+									: 'bg-surface hover:bg-surface-2 active:bg-surface-2'}"
 							onclick={() => {
 								selectedPlaceholder = selectedPlaceholder === ph.member_id ? null : ph.member_id;
 							}}
@@ -233,7 +233,7 @@
 					</Button>
 					<button
 						type="button"
-						class="text-ink-muted hover:text-ink-soft mt-2 w-full text-sm"
+						class="text-ink-muted hover:text-ink-soft active:text-ink-soft mt-2 w-full text-sm"
 						onclick={() => (otpId = '')}
 					>
 						Resend code

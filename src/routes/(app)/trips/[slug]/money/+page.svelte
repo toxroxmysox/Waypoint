@@ -196,7 +196,7 @@
 					{#each data.remainingPlannedItems as item (item.id)}
 						<a
 							href="/trips/{slug}/items/{item.id}?from=trip"
-							class="hover:bg-surface-2 flex items-center gap-3 px-4 py-2.5 transition-colors"
+							class="hover:bg-surface-2 active:bg-surface-2 flex items-center gap-3 px-4 py-2.5 transition-colors"
 						>
 							<TypeIcon type={item.type} sub={item.subtype} size={28} />
 							<span class="text-ink-soft min-w-0 flex-1 truncate text-sm">{item.title}</span>

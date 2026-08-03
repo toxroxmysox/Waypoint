@@ -125,16 +125,16 @@
 						type="button"
 						onclick={share}
 						disabled={sharing}
-						class="rounded-md px-2.5 py-1.5 text-xs font-semibold text-paper/90 hover:bg-paper/10 disabled:opacity-40"
+						class="rounded-md px-2.5 py-1.5 text-xs font-semibold text-paper/90 hover:bg-paper/10 active:bg-paper/10 disabled:opacity-40"
 					>
 						Share
 					</button>
 				{/if}
-				<a href={doc.file_href} target="_blank" rel="noopener" class="rounded-md px-2.5 py-1.5 text-xs font-semibold text-paper/90 hover:bg-paper/10">Open</a>
-				<a href="{doc.file_href}?download=1" download class="rounded-md px-2.5 py-1.5 text-xs font-semibold text-paper/90 hover:bg-paper/10">Save</a>
+				<a href={doc.file_href} target="_blank" rel="noopener" class="rounded-md px-2.5 py-1.5 text-xs font-semibold text-paper/90 hover:bg-paper/10 active:bg-paper/10">Open</a>
+				<a href="{doc.file_href}?download=1" download class="rounded-md px-2.5 py-1.5 text-xs font-semibold text-paper/90 hover:bg-paper/10 active:bg-paper/10">Save</a>
 				{#if deletable}
 					{#if !confirming}
-						<button type="button" onclick={() => (confirming = true)} class="rounded-md px-2.5 py-1.5 text-xs font-semibold text-paper/90 hover:bg-paper/10">Delete</button>
+						<button type="button" onclick={() => (confirming = true)} class="rounded-md px-2.5 py-1.5 text-xs font-semibold text-paper/90 hover:bg-paper/10 active:bg-paper/10">Delete</button>
 					{:else}
 						<form
 							method="POST"
@@ -162,7 +162,7 @@
 						</form>
 					{/if}
 				{/if}
-				<button type="button" onclick={close} class="flex h-8 w-8 items-center justify-center rounded-md text-paper/90 hover:bg-paper/10" aria-label="Close">
+				<button type="button" onclick={close} class="flex h-8 w-8 items-center justify-center rounded-md text-paper/90 hover:bg-paper/10 active:bg-paper/10" aria-label="Close">
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
 				</button>
 			</div>
@@ -180,12 +180,12 @@
 			<img src={doc.file_href} alt={label} class="relative max-h-full max-w-full object-contain" />
 
 			{#if hasPrev}
-				<button type="button" onclick={prev} aria-label="Previous" class="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-ink/40 text-paper hover:bg-ink/60">
+				<button type="button" onclick={prev} aria-label="Previous" class="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-ink/40 text-paper hover:bg-ink/60 active:bg-ink/60">
 					<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6" /></svg>
 				</button>
 			{/if}
 			{#if hasNext}
-				<button type="button" onclick={next} aria-label="Next" class="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-ink/40 text-paper hover:bg-ink/60">
+				<button type="button" onclick={next} aria-label="Next" class="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-ink/40 text-paper hover:bg-ink/60 active:bg-ink/60">
 					<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
 				</button>
 			{/if}

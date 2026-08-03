@@ -27,7 +27,7 @@
 	onclick={copy}
 	data-testid="code-chip"
 	title="Tap to copy"
-	class="bg-gold-tint border-gold/25 hover:border-gold/45 focus-visible:ring-gold/40 inline-flex max-w-full items-center gap-2 rounded-full border py-1.5 pr-2.5 pl-3 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
+	class="bg-gold-tint border-gold/25 hover:border-gold/45 active:border-gold/45 focus-visible:ring-gold/40 inline-flex max-w-full items-center gap-2 rounded-full border py-1.5 pr-2.5 pl-3 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
 >
 	{#if code.label}
 		<span class="text-gold shrink-0 text-[11px] font-semibold tracking-wide uppercase opacity-80">{code.label}</span>

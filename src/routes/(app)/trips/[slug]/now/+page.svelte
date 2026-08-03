@@ -158,7 +158,7 @@
 			{#each pastItems as item (item.id)}
 				<a
 					href="/trips/{data.trip.slug}/items/{item.id}?from=trip"
-					class="hover:bg-surface-2 flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors"
+					class="hover:bg-surface-2 active:bg-surface-2 flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors"
 				>
 					<span class="font-mono text-ink-muted w-16 shrink-0 text-xs">{formatTime(item.start_time)}</span>
 					<span class="text-ink-soft truncate text-sm">{item.title}</span>
@@ -302,7 +302,7 @@
 					<button
 						type="button"
 						onclick={() => (memorySheetOpen = true)}
-						class="text-ink-muted hover:text-ink-soft w-full py-1 text-center text-xs font-medium"
+						class="text-ink-muted hover:text-ink-soft active:text-ink-soft w-full py-1 text-center text-xs font-medium"
 					>
 						Add yours
 					</button>
@@ -314,7 +314,7 @@
 						<button
 							type="button"
 							onclick={() => (memorySheetOpen = true)}
-							class="text-ink-soft hover:text-ink mt-1 text-xs font-medium underline-offset-2 hover:underline"
+							class="text-ink-soft hover:text-ink active:text-ink mt-1 text-xs font-medium underline-offset-2 hover:underline active:underline"
 						>
 							Capture today's
 						</button>
@@ -329,14 +329,14 @@
 		<div class="border-line border-t pt-4">
 			<SectionH>
 				{#snippet right()}
-					<a href="/trips/{data.trip.slug}/today/upcoming" class="text-ink-muted hover:text-ink-soft text-xs">Next 3 days</a>
+					<a href="/trips/{data.trip.slug}/today/upcoming" class="text-ink-muted hover:text-ink-soft active:text-ink-soft text-xs">Next 3 days</a>
 				{/snippet}
 				{dayLabel(data.tomorrowDate)}
 			</SectionH>
 			{#if data.tomorrowItems.length > 0}
 				<div class="mt-2 space-y-1">
 					{#each data.tomorrowItems.slice(0, 3) as item (item.id)}
-						<a href="/trips/{data.trip.slug}/items/{item.id}?from=trip" class="border-line hover:border-ink-muted flex items-center gap-2 rounded-lg border px-3 py-2">
+						<a href="/trips/{data.trip.slug}/items/{item.id}?from=trip" class="border-line hover:border-ink-muted active:border-ink-muted flex items-center gap-2 rounded-lg border px-3 py-2">
 							<span class="font-mono text-ink-muted text-xs">{item.start_time ? formatTime(item.start_time) : '—'}</span>
 							<span class="text-ink text-sm truncate">{item.title}</span>
 						</a>

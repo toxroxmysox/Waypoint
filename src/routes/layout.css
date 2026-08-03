@@ -104,6 +104,15 @@
 /* Page baseline. Paper background, ink text, Inter UI. */
 html {
 	touch-action: manipulation;
+	/*
+	 * #369 — kill the UA's grey tap flash. Only safe now that the primary
+	 * controls author their own `active:` press state: Tailwind v4 compiles
+	 * `hover:` inside `@media (hover: hover)`, so on the iPhone this
+	 * highlight was previously the ONLY feedback a tap produced. Suppressing
+	 * it without the `active:` sweep would leave the app dead to the touch —
+	 * never remove one without the other.
+	 */
+	-webkit-tap-highlight-color: transparent;
 }
 
 html,

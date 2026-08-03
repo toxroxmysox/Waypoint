@@ -91,7 +91,7 @@
 			{#each goals as goal, i (goal.id)}
 				{@const author = authorOf(goal)}
 				<div
-					class="relative hover:bg-surface-2 flex items-center gap-3 px-[15px] py-[13px] {i < goals.length - 1
+					class="relative hover:bg-surface-2 active:bg-surface-2 flex items-center gap-3 px-[15px] py-[13px] {i < goals.length - 1
 						? 'border-line border-b'
 						: ''}"
 				>

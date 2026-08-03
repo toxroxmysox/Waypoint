@@ -199,7 +199,7 @@
 									<button
 										type="submit"
 										disabled={promoting === m.id}
-										class="text-xs font-medium text-ink-soft hover:text-ink disabled:text-ink-muted"
+										class="text-xs font-medium text-ink-soft hover:text-ink active:text-ink disabled:text-ink-muted"
 									>
 										{promoting === m.id ? '…' : 'Promote'}
 									</button>
@@ -208,7 +208,7 @@
 							{#if isSelf}
 								<!-- #180: /account was unreachable from inside a trip — the
 								     self-row (you're looking at your own avatar) is the natural door. -->
-								<a href="/account" class="text-xs font-medium text-ink-soft hover:text-ink"
+								<a href="/account" class="text-xs font-medium text-ink-soft hover:text-ink active:text-ink"
 									>Account</a
 								>
 								<!-- #206: self-serve leave for ANY role. Reuses the remove
@@ -237,7 +237,7 @@
 										title={isSoleOwner
 											? 'Transfer ownership or remove others before leaving'
 											: undefined}
-										class="text-xs font-semibold text-clay hover:text-clay/80 disabled:text-ink-muted"
+										class="text-xs font-semibold text-clay hover:text-clay/80 active:text-clay/80 disabled:text-ink-muted"
 									>
 										{leaving ? '…' : 'Leave trip'}
 									</button>
@@ -247,7 +247,7 @@
 									type="button"
 									onclick={() => openRemove(m.id, m.displayLabel, m.zeroRef)}
 									disabled={removing === m.id}
-									class="text-xs font-semibold text-clay hover:text-clay/80 disabled:text-ink-muted"
+									class="text-xs font-semibold text-clay hover:text-clay/80 active:text-clay/80 disabled:text-ink-muted"
 								>
 									{removing === m.id ? '…' : 'Remove'}
 								</button>
@@ -267,7 +267,7 @@
 		<section>
 			<details class="group space-y-3">
 				<summary
-					class="flex cursor-pointer list-none items-center gap-1.5 text-xs font-semibold tracking-wider text-ink-soft uppercase select-none hover:text-ink [&::-webkit-details-marker]:hidden"
+					class="flex cursor-pointer list-none items-center gap-1.5 text-xs font-semibold tracking-wider text-ink-soft uppercase select-none hover:text-ink active:text-ink [&::-webkit-details-marker]:hidden"
 				>
 					<!-- Chevron: ink-muted (NOT text-line — it's ~1.2:1, invisible). Rotates open. -->
 					<svg
@@ -322,7 +322,7 @@
 				<button
 					type="button"
 					onclick={() => (showPlaceholderForm = !showPlaceholderForm)}
-					class="text-xs font-medium text-ink-soft hover:text-ink"
+					class="text-xs font-medium text-ink-soft hover:text-ink active:text-ink"
 				>
 					{showPlaceholderForm ? 'Cancel' : '+ Add'}
 				</button>
@@ -540,7 +540,7 @@
 									<button
 										type="button"
 										onclick={() => copyJoinLink(role, link.token)}
-										class="shrink-0 text-xs font-semibold text-moss hover:text-moss/80"
+										class="shrink-0 text-xs font-semibold text-moss hover:text-moss/80 active:text-moss/80"
 									>
 										{copiedRole === role ? 'Copied' : 'Copy'}
 									</button>
@@ -555,7 +555,7 @@
 										<button
 											type="button"
 											onclick={() => copyPollLink(role, link.token)}
-											class="shrink-0 text-xs font-semibold text-moss hover:text-moss/80"
+											class="shrink-0 text-xs font-semibold text-moss hover:text-moss/80 active:text-moss/80"
 											data-testid="copy-poll-link"
 										>
 											{copiedPoll === role ? 'Copied' : 'Copy poll link'}
@@ -580,7 +580,7 @@
 										<button
 											type="submit"
 											disabled={joinLinkBusy === role + ':rotate'}
-											class="text-xs font-medium text-ink-soft hover:text-ink disabled:text-ink-muted"
+											class="text-xs font-medium text-ink-soft hover:text-ink active:text-ink disabled:text-ink-muted"
 										>
 											{joinLinkBusy === role + ':rotate' ? '…' : 'Rotate'}
 										</button>
@@ -601,7 +601,7 @@
 										<button
 											type="submit"
 											disabled={joinLinkBusy === role + ':revoke'}
-											class="text-xs font-semibold text-clay hover:text-clay/80 disabled:text-ink-muted"
+											class="text-xs font-semibold text-clay hover:text-clay/80 active:text-clay/80 disabled:text-ink-muted"
 										>
 											{joinLinkBusy === role + ':revoke' ? '…' : 'Revoke'}
 										</button>
@@ -700,7 +700,7 @@
 								<button
 									type="submit"
 									disabled={revoking === p.id}
-									class="text-xs font-semibold text-clay hover:text-clay/80 disabled:text-ink-muted"
+									class="text-xs font-semibold text-clay hover:text-clay/80 active:text-clay/80 disabled:text-ink-muted"
 								>
 									{revoking === p.id ? 'Revoking…' : 'Revoke'}
 								</button>
@@ -744,7 +744,7 @@
 				<button
 					type="button"
 					onclick={() => (removeOpen = false)}
-					class="text-sm font-medium text-ink-soft hover:text-ink"
+					class="text-sm font-medium text-ink-soft hover:text-ink active:text-ink"
 				>
 					Cancel
 				</button>
@@ -771,8 +771,8 @@
 						type="submit"
 						disabled={removing === t.id}
 						class="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-semibold transition-colors disabled:pointer-events-none disabled:opacity-40 {t.zeroRef
-							? 'border-clay bg-clay text-paper hover:bg-clay/90'
-							: 'border-moss bg-moss text-paper hover:bg-moss-soft'}"
+							? 'border-clay bg-clay text-paper hover:bg-clay/90 active:bg-clay/90'
+							: 'border-moss bg-moss text-paper hover:bg-moss-soft active:bg-moss-soft'}"
 					>
 						{#if removing === t.id}
 							…

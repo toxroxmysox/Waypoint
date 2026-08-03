@@ -66,14 +66,14 @@
 			<form method="POST" action="/logout" onsubmit={() => clearOfflineCaches()}>
 				<button
 					type="submit"
-					class="text-ink-muted hover:text-ink-soft text-[12px] font-medium"
+					class="text-ink-muted hover:text-ink-soft active:text-ink-soft text-[12px] font-medium"
 				>
 					Sign out
 				</button>
 			</form>
 			<a
 				href="/account"
-				class="hover:opacity-80"
+				class="hover:opacity-80 active:opacity-80"
 				aria-label="Profile"
 				data-sveltekit-preload-data="hover"
 			>
@@ -160,7 +160,7 @@
 			</div>
 
 			<p class="mt-8">
-				<a href="/trips/import" class="text-ink-muted text-xs font-medium hover:text-ink-soft">
+				<a href="/trips/import" class="text-ink-muted text-xs font-medium hover:text-ink-soft active:text-ink-soft">
 					or import from JSON
 				</a>
 			</p>
@@ -274,7 +274,7 @@
 
 {#if !isEmpty}
 	<div class="fixed bottom-20 left-0 right-0 text-center">
-		<a href="/trips/import" class="text-ink-muted text-xs font-medium hover:text-ink-soft">
+		<a href="/trips/import" class="text-ink-muted text-xs font-medium hover:text-ink-soft active:text-ink-soft">
 			Import from JSON
 		</a>
 	</div>

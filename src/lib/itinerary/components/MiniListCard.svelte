@@ -19,7 +19,7 @@
 
 <a
 	{href}
-	class="border-line bg-surface-2 hover:bg-surface flex items-center gap-2.5 rounded-[10px] border px-3 py-2"
+	class="border-line bg-surface-2 hover:bg-surface active:bg-surface flex items-center gap-2.5 rounded-[10px] border px-3 py-2"
 >
 	<ProgressDonut {done} {total} size={20} stroke={3} />
 	<span class="text-ink min-w-0 flex-1 truncate text-[12.5px] font-semibold">{title}</span>

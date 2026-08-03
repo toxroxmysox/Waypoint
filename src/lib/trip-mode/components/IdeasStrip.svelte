@@ -89,7 +89,7 @@
 									<button
 										type="submit"
 										disabled={promoting === item.id}
-										class="bg-clay text-paper hover:bg-clay/90 rounded-md px-3 py-1.5 text-xs font-semibold whitespace-nowrap disabled:opacity-50"
+										class="bg-clay text-paper hover:bg-clay/90 active:bg-clay/90 rounded-md px-3 py-1.5 text-xs font-semibold whitespace-nowrap disabled:opacity-50"
 									>
 										{promoting === item.id ? 'Adding…' : 'Do this'}
 									</button>

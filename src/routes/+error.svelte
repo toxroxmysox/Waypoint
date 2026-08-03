@@ -106,7 +106,7 @@
 			{:else}
 				<Button href="/login" variant="moss" size="lg" class="w-full">Sign in</Button>
 			{/if}
-			<a href="/" class="text-ink-muted hover:text-ink-soft text-sm">Go to the homepage</a>
+			<a href="/" class="text-ink-muted hover:text-ink-soft active:text-ink-soft text-sm">Go to the homepage</a>
 		</div>
 	</div>
 </main>

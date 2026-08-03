@@ -64,7 +64,7 @@
 				type="button"
 				onclick={() => remove(i)}
 				aria-label="Remove {seg.name || 'leg'}"
-				class="text-ink-muted hover:text-clay px-1 text-lg leading-none"
+				class="text-ink-muted hover:text-clay active:text-clay px-1 text-lg leading-none"
 			>
 				×
 			</button>
@@ -75,7 +75,7 @@
 		<button
 			type="button"
 			onclick={add}
-			class="text-moss hover:text-ink inline-flex items-center gap-1 text-xs font-semibold"
+			class="text-moss hover:text-ink active:text-ink inline-flex items-center gap-1 text-xs font-semibold"
 		>
 			<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
 			Add a leg

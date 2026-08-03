@@ -186,7 +186,7 @@
 					<button
 						type="button"
 						onclick={() => (memorySheetOpen = true)}
-						class="border-line text-ink-soft hover:border-ink-muted hover:text-ink flex w-full items-center justify-center gap-2 rounded-xl border border-dashed px-3 py-2.5 text-sm font-medium transition-colors"
+						class="border-line text-ink-soft hover:border-ink-muted active:border-ink-muted hover:text-ink active:text-ink flex w-full items-center justify-center gap-2 rounded-xl border border-dashed px-3 py-2.5 text-sm font-medium transition-colors"
 					>
 						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 							<rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
@@ -204,7 +204,7 @@
 				type="button"
 				disabled={currentDayIndex === 0}
 				onclick={() => (currentDayIndex--)}
-				class="text-ink-muted rounded-lg px-4 py-2 text-sm font-medium hover:bg-surface-2 disabled:opacity-40"
+				class="text-ink-muted rounded-lg px-4 py-2 text-sm font-medium hover:bg-surface-2 active:bg-surface-2 disabled:opacity-40"
 			>
 				Previous
 			</button>
@@ -248,7 +248,7 @@
 					<button
 						type="button"
 						onclick={() => (droppedIds = [...droppedIds, idea.id])}
-						class="text-ink-muted hover:text-ink px-2 py-1.5 text-xs font-medium"
+						class="text-ink-muted hover:text-ink active:text-ink px-2 py-1.5 text-xs font-medium"
 					>
 						Drop
 					</button>

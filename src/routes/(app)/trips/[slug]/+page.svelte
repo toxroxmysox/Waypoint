@@ -177,7 +177,7 @@
 			     surfaces consensus, and an owner can promote a green window. -->
 			<a
 				href="/trips/{data.trip.slug}/availability"
-				class="border-line bg-surface hover:bg-surface-2 flex items-center gap-3 rounded-lg border px-4 py-3"
+				class="border-line bg-surface hover:bg-surface-2 active:bg-surface-2 flex items-center gap-3 rounded-lg border px-4 py-3"
 				data-testid="availability-entry"
 			>
 				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-moss)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -208,7 +208,7 @@
 					<button
 						type="button"
 						onclick={() => (setDatesOpen = true)}
-						class="text-ink-muted hover:text-ink text-xs font-medium underline decoration-dotted underline-offset-2"
+						class="text-ink-muted hover:text-ink active:text-ink text-xs font-medium underline decoration-dotted underline-offset-2"
 						data-testid="set-dates-toggle"
 					>
 						Already know the dates? Set them directly
@@ -281,7 +281,7 @@
 				<button
 					type="button"
 					onclick={() => (ideaSheetOpen = true)}
-					class="text-moss hover:text-ink inline-flex items-center gap-1 text-xs font-semibold"
+					class="text-moss hover:text-ink active:text-ink inline-flex items-center gap-1 text-xs font-semibold"
 				>
 					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 						<path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z" />
@@ -294,7 +294,7 @@
 					{#each data.formingIdeas as idea (idea.id)}
 						<a
 							href="/trips/{data.trip.slug}/items/{idea.id}"
-							class="border-line bg-surface hover:bg-surface-2 flex items-center gap-2.5 rounded-lg border px-3 py-2"
+							class="border-line bg-surface hover:bg-surface-2 active:bg-surface-2 flex items-center gap-2.5 rounded-lg border px-3 py-2"
 						>
 							<TypeIcon type={idea.type} size={20} />
 							<span class="text-ink truncate text-sm">{idea.title}</span>
@@ -318,7 +318,7 @@
 		<div class="grid grid-cols-2 gap-1.5">
 			<a
 				href="/trips/{data.trip.slug}/members"
-				class="border-line bg-surface hover:bg-surface-2 flex flex-col rounded-lg border px-3 py-3"
+				class="border-line bg-surface hover:bg-surface-2 active:bg-surface-2 flex flex-col rounded-lg border px-3 py-3"
 			>
 				<p class="text-ink text-sm font-semibold">People</p>
 				<p class="text-ink-muted mt-0.5 text-xs">Invite the group early</p>
@@ -329,7 +329,7 @@
 			</a>
 			<a
 				href="/trips/{data.trip.slug}/goals"
-				class="border-line bg-surface hover:bg-surface-2 flex flex-col rounded-lg border px-3 py-3"
+				class="border-line bg-surface hover:bg-surface-2 active:bg-surface-2 flex flex-col rounded-lg border px-3 py-3"
 			>
 				<p class="text-ink text-sm font-semibold">Goals</p>
 				<p class="text-ink-muted mt-0.5 text-xs">What do you want out of it?</p>
@@ -376,7 +376,7 @@
 				<button
 					type="button"
 					onclick={() => (ideaSheetOpen = true)}
-					class="text-moss hover:text-ink mt-2 inline-flex items-center gap-1 text-xs font-semibold"
+					class="text-moss hover:text-ink active:text-ink mt-2 inline-flex items-center gap-1 text-xs font-semibold"
 				>
 					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 						<path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z" />
@@ -415,7 +415,7 @@
 				{#each data.keyItems as it (it.id)}
 					<a
 						href="/trips/{data.trip.slug}/items/{it.id}"
-						class="border-line bg-surface hover:bg-surface-2 flex items-center gap-2.5 rounded-lg border px-3 py-2"
+						class="border-line bg-surface hover:bg-surface-2 active:bg-surface-2 flex items-center gap-2.5 rounded-lg border px-3 py-2"
 					>
 						<TypeIcon type={it.type} size={20} />
 						<span class="text-ink truncate text-sm">{it.title}</span>
@@ -563,7 +563,7 @@
 				<div class="flex items-center justify-between">
 					<div class="flex items-center gap-2">
 						<PhaseChip name={phase.name} size={20} />
-						<a href="/trips/{data.trip.slug}/phases/{phase.id}" class="text-ink font-semibold hover:underline">{phase.name}</a>
+						<a href="/trips/{data.trip.slug}/phases/{phase.id}" class="text-ink font-semibold hover:underline active:underline">{phase.name}</a>
 					</div>
 					<span class="text-ink-muted font-mono text-xs">
 						{formatDateRange(phase.start_date, phase.end_date)}
