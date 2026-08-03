@@ -10,6 +10,10 @@
 	let resending = $state(false);
 	let resent = $state(false);
 	let error = $state('');
+	// #374 — the 6th digit (typed or dropped in by iOS one-time-code autofill)
+	// submits the form itself. Latched so a second input event while the verify
+	// is in flight can't fire a second POST — a double-submit burns the code.
+	let autoSubmitted = $state(false);
 	// Deep-link destination preserved by the (app) guard — threaded through the
 	// OTP round-trip so verify lands the user back where they were headed. The
 	// server re-validates it (safeRedirect) on every action; this is just carry.
@@ -93,6 +97,8 @@
 						return async ({ update }) => {
 							loading = false;
 							await update();
+							// Release the latch so a corrected code auto-submits again.
+							autoSubmitted = false;
 						};
 					}}
 				>
@@ -110,6 +116,10 @@
 						maxlength="6"
 						oninput={(e) => {
 							e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '');
+							if (e.currentTarget.value.length === 6 && !loading && !autoSubmitted) {
+								autoSubmitted = true;
+								e.currentTarget.form?.requestSubmit();
+							}
 						}}
 						class="border-line bg-surface text-ink font-mono mt-1 block w-full rounded-md border px-3 py-2 text-center text-2xl tracking-[0.5em]"
 						placeholder="000000"
@@ -129,6 +139,7 @@
 						resending = true;
 						resent = false;
 						error = '';
+						autoSubmitted = false;
 						return async ({ result, update }) => {
 							resending = false;
 							if (result.type === 'success' && result.data?.otpId) {
@@ -162,6 +173,7 @@
 					onclick={() => {
 						otpId = '';
 						resent = false;
+						autoSubmitted = false;
 					}}
 				>
 					Use a different email
