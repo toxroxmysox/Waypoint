@@ -1,6 +1,6 @@
 # v5 — "Feels Native" · Roadmap & Priority Sequence
 
-> **Written 2026-08-03.** Milestone: [`v5 — Feels Native`](https://github.com/toxroxmysox/Waypoint/milestone/3) · 21 issues.
+> **Written 2026-08-03** (decisions locked same day). Milestone: [`v5 — Feels Native`](https://github.com/toxroxmysox/Waypoint/milestone/3) · 21 issues.
 > Source: the #360 UX audit vs iOS conventions (code sweep + round 2 + adversarial review + live pass), plus #353.
 > Sequencing = **shared-file batching × dependency × cheapness**. Waves are a queue, not a calendar.
 
@@ -50,7 +50,7 @@ Four issues touch one file. Do not parallelize this — dispatch it as a single 
 
 1. **Portal refactor** (#379 option 2) — single body-level overlay outlet owned by the root layout. Kills the dual-render hang class for *all* overlays, and gives the drag work a sane mount.
 2. **#373** — `overscroll-contain` on sheet content, body scroll-lock while any sheet/lightbox is open.
-3. **#365** — grabber handle + drag-to-dismiss. **Decision needed** (see below): does an open sheet swallow popstate?
+3. **#365** — grabber handle + drag-to-dismiss. An open sheet swallows back/edge-swipe (decision 3 below).
 4. **#370** — dirty guard. A half-typed expense currently dies on one mis-tap above the sheet, while page-hosted forms got full `beforeNavigate` protection. The most daily-driven form in the app has the least.
 5. **#367** — replace `confirm()` in the item-form unsaved-changes guards with the in-app dialog built in step 4. Ordered last because it *consumes* #370's pattern.
 
@@ -68,9 +68,9 @@ Sheets are the modal on mobile per house rule, so one component fix lifts every 
 
 ## Wave 4 — Perceived performance (decision-gated)
 
-- **#363** — *the single biggest "feels unpolished" gap in the sweep.* Blocking server `load` everywhere, `navigating` referenced nowhere, `Skeleton` on exactly one route despite it being the declared house pattern, and the VT wrapper freezes the screen for the whole round-trip. **Needs a remedy decision** (below).
+- **#363** — *the single biggest "feels unpolished" gap in the sweep.* Blocking server `load` everywhere, `navigating` referenced nowhere, and the VT wrapper freezes the screen for the whole round-trip. **Scoped to the global bar only** (decision 2 below); skeletons deferred to a future issue.
 - **#364** — optimistic checklist toggle. Highest-frequency interaction in the app; every tap is dead for the full tunnel latency. Sweep the other round-tripping toggles (votes, item status) in the same pass.
-- **#372** — resume revalidation on `visibilitychange`. **Needs an in/out decision** (below).
+- **#372** — resume revalidation on `visibilitychange` after >60s hidden. Decided in (decision 1 below).
 
 ---
 
@@ -79,7 +79,7 @@ Sheets are the modal on mobile per house rule, so one component fix lifts every 
 - **#371** — pinch-zoom + pan + double-tap in `DocumentLightbox`. P2 by impact (boarding pass at the gate, first touch, possibly offline) but the largest single build in the milestone — a real gesture engine, not a prop. Hence last.
 - **#376** — SwipeDeck commits on distance only; a fast 60px flick snaps back and reads as "the app ignored me." Add velocity-or-distance.
 - **#377** — PlacesAutocomplete stale-response race (no abort / latest-wins) + the literal `"..."` loading string.
-- **#353** — whole-card drag + full-width cards. **hitl, decision-gated** (below).
+- **#353** — whole-card drag + full-width cards, **long-press (~200ms)** (decision 4 below).
 
 ---
 
@@ -96,21 +96,19 @@ Sheets are the modal on mobile per house rule, so one component fix lifts every 
 
 ---
 
-## Decisions needed from Scott (4)
+## Decisions — ALL FOUR LOCKED (Scott, 2026-08-03)
 
-Each blocks only its own wave; nothing before Wave 4 waits on these.
+Full contracts are on each issue as a comment; these are the one-liners.
 
-1. **#372 — is resume-freshness in or out?** "No realtime" (vision) ≠ "stale on resume." An installed PWA has no reload chrome and no pull-to-refresh; reopening after hours shows stale data until you happen to navigate.
-   **Recommend: in.** `visibilitychange` → `invalidateAll()` when hidden longer than ~60s. Silent, keeps scroll, no gesture to teach. *Not* pull-to-refresh — custom gesture machinery that fights scroll and feels un-iOS in standalone.
+1. **#372 — resume-freshness is IN.** `visibilitychange` → `invalidateAll()` when the document was hidden longer than **60s**. Silent, keeps scroll, no gesture. Under 60s (app-switch blink) do nothing. Pull-to-refresh explicitly rejected.
 
-2. **#363 — which remedy?** (a) streamed loads + skeletons on hot drill-downs, (b) global thin progress bar off `navigating` after a ~150ms delay, (c) both.
-   **Recommend: (c), in that order — bar first.** The bar is one file and covers every route immediately; skeletons are per-route work best aimed at day/item/money once real tunnel latency is measured.
+2. **#363 — the global bar ONLY; skeletons deferred.** 2px top bar off `navigating`, ~150ms delay, above the view-transition snapshot. Moss (`--color-accent`), with the Waypoint compass star riding the bar's leading edge — branded, but not a spinner in the middle of the screen; dropping the star must stay a one-line revert. Streamed loads + per-route skeletons are a *future* issue, not this one.
 
-3. **#365 — with a sheet open, should iOS edge-swipe close the sheet instead of navigating the page away underneath it?** (Implementation: push a history entry on open, close on popstate.) Matches Android's back-button convention; on iOS it's genuinely debatable.
-   **Recommend: yes.** Navigating the page away *underneath* an open sheet is the worse of the two surprises.
+3. **#365 — yes, an open sheet swallows back/edge-swipe.** Push a history entry on open, close on popstate, pop it on any other dismissal. Must not trigger a page view transition (see #362).
 
-4. **#353 — interaction model for whole-card drag** (the card body is an `<a>`, so press-to-drag must be discriminated from tap-to-open): long-press (~200ms, iOS-home-screen familiar, adds latency to every drag) vs. movement-threshold (>6px arms drag, cancels navigation). Keyboard reorder must survive either.
-   **No recommendation — this is a feel call.** Worth 10 minutes of grilling before anyone writes code.
+4. **#353 — long-press (~200ms) to drag.** Grip retires, cards go full-width, **keyboard reorder must survive**. Accepted cost: ~200ms on every intentional drag; fallback if it reads sluggish is the movement-threshold variant — do not build both. Verify by real touch-drag at 375px (#201/#234 scar).
+
+**Zero decisions outstanding in the milestone.** Every one of the 21 issues is `afk` and dispatchable.
 
 ---
 
@@ -120,5 +118,5 @@ Each blocks only its own wave; nothing before Wave 4 waits on these.
 2. **Batch by file, not by theme.** Four issues touch `BottomSheet`; five touch the control layer. Fighting merge seams costs more than the fixes.
 3. **Cheap-and-decisionless first.** Wave 1 is the whole "the app responds to me" feeling for a fraction of the effort of Wave 5.
 4. **Serialize the one-file waves, parallelize the rest.** Wave 1a‖1b, then 2‖3, then 4, then 5.
-5. **Decisions are flagged, not blocking.** Waves 0–3 (15 of 21 issues) need nothing from Scott.
+5. **Decisions are locked up front.** All four were resolved 2026-08-03; nothing in the milestone waits on Scott.
 6. **No migration in v5.** That is the scope-creep tripwire.
