@@ -194,3 +194,11 @@ The "removed a user-facing affordance, didn't sweep tests/" scar fired **twice t
 - Agent surfaced a real scope boundary (swipe-deck DeckCandidate lacks end_time) instead of silently over-reaching → PM filed #354. Good agent behavior; the "NOTE don't rabbit-hole" instruction in the brief produced exactly that.
 - Skipped live 375px visual on both again (auth+seed disproportionate for card DOM changes; unit is the repo gate). Same call as pair 1 — this is now a 2-wave pattern of shipping card-DOM fixes without pixel proof. If Scott ever wants the pixel proof, the unblock is a cheap seeded-:8097 + dev-login screenshot path; flag it as a candidate tooling task IF a card fix ever regresses visually despite green unit.
 - Metrics: `2026-07-10 | pair2 | 3 PRs(#346,#350,#347) | 0 seam-bugs | 0 verify-failures | 0 escaped | 0 escalations`
+
+## 2026-08-03 — PM session: v5 milestone cut (no code, no PRs)
+
+- **Caught:** `docs/BUILD_PLAN.md` described its own shipped waves as unbuilt ("no `memories` collection exists", "`money_units` not shipped") — six weeks stale. Verified against `backend/pb_migrations/` instead and found every 🔴 gap shipped. **Planning docs are snapshots; migrations are ground truth.** Promoted to cerebrum Key Learnings.
+- **Caught:** #349 (Scott's back-button complaint) had been fully adjudicated in the #360 grill and re-filed as #361, but never linked or closed — it sat in the "grill queue" of the handoff for 3 weeks as phantom work. **When a grill's output gets filed as a new issue, close the originating issue in the same breath.**
+- **Boundary:** sequenced the milestone by shared file (BottomSheet ×4, control layer ×5) rather than by the P1/P2/P3 labels the audit assigned. Priority labels answer "what hurts most"; they don't answer "what order avoids merge seams." Both are needed; only one was in the issues.
+- **Deploy drift found:** prod is 20 commits / 3 weeks behind main, including 4 backend bug fixes merged 2026-08-02. Nothing in the loop catches "merged but never deployed" — the handoff records the last deploy but nothing compares it to `main`. **Candidate ritual: `git log <deployed>..main --oneline | wc -l` at every PM session orient.**
+- Metrics: `2026-08-03 | v5-cut | 0 PRs | 0 seam-bugs | 0 verify-failures | 0 escaped | 4 escalations (product decisions)`
