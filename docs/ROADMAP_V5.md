@@ -16,12 +16,14 @@ v2–v4 built the app. Every capability the Map calls 🔴-gap has now shipped �
 
 | # | What | Mode |
 |---|---|---|
-| **#379** | **P1 — page goes tap-dead after closing any BottomSheet.** Ghost `fixed inset-0` overlay never unmounts (AppShell dual-render + WAAPI never firing `finished` in a `display:none` subtree). Every sheet flow in production is a trap. | afk |
-| **#380** | FAB occludes the last scroll row (trip overview, day view). Trivial `pb-24`; rides along. | afk |
+| **#379** | ~~P1 — page goes tap-dead after closing any BottomSheet.~~ **NOT A DEFECT — closed 2026-08-03.** The ghost overlay only appears in a hidden tab: Svelte 5 completes transitions from a `requestAnimationFrame` loop, and the browser pane runs at `visibilityState: hidden` with **0 rAF ticks/s**, so the outro never completes while the WAAPI animations still reach their end state off the document timeline. Foreground users were never affected. Shipped a regression guard instead. | done |
+| **#380** | ✅ **SHIPPED 2026-08-03.** FAB occluded the last scroll row. Measured at 375px: 40×56px overlap with the last day card. `FAB.svelte` now emits its own 4.5rem inset in normal flow — one component fix covering all six consumers. Re-measured: 32px clear gap. | done |
 
-**Fix direction for #379 — decided:** ship **option 1** (hidden copy gets `duration: 0` via AppShell context) as the hotfix. It is targeted and low-risk for a same-day deploy. **Option 2 (portal overlays to a single body-level outlet) is not dropped** — it becomes the opening move of Wave 2, where the sheet is being rebuilt anyway and the refactor pays for itself across four issues instead of one.
+**#379 outcome:** no app change. Every load-bearing claim in the issue was disproved — only ONE sheet instance mounts (each dual-render copy has its own `$state`, so the hidden copy never opens), the ghost wrapper is in the *visible* tree, and all animations reported `playState: 'finished'`. A guard spec written at `reducedMotion: 'no-preference'` against a production build **passed on unfixed code**. The real variable is tab visibility. Full evidence on the issue.
 
-**Regression guard is mandatory:** one Playwright spec at `reducedMotion: 'no-preference'` that closes a sheet and asserts a tap behind it lands. The entire E2E suite currently runs in the one configuration that cannot reproduce this class of bug.
+**Consequence for Wave 2:** the portal refactor is no longer a bug fix, so judge it on its own merits when the sheet work starts — it is still the better mount for drag-to-dismiss (#365) and the dirty guard (#370), just not urgent.
+
+**Method scar (recorded in `.wolf/cerebrum.md`):** the browser pane reports `visibilityState: hidden`. Any finding about animation, transition, timer, or lifecycle behaviour observed there must be re-confirmed somewhere with a live rAF loop before being filed as a defect.
 
 **Also in this wave (not audit work): production is 20 commits / 3 weeks stale — VERIFIED 2026-08-03.** The box has no `README.md`, no `scripts/verify-visual.mjs`, no `#340` places fix, and no `src` file newer than 07-12; container uptime 3 weeks. So prod is still `70d223a` and the backend bug batch (**#338** members TOCTOU, **#339** DST parity, **#340** places error laundering — `security`, **#354**) plus CI has never shipped. Deploy those together with Wave 0 rather than in a separate push.
 
@@ -102,7 +104,7 @@ Full contracts are on each issue as a comment; these are the one-liners.
 
 1. **#372 — resume-freshness is IN.** `visibilitychange` → `invalidateAll()` when the document was hidden longer than **60s**. Silent, keeps scroll, no gesture. Under 60s (app-switch blink) do nothing. Pull-to-refresh explicitly rejected.
 
-2. **#363 — the global bar ONLY; skeletons deferred.** 2px top bar off `navigating`, ~150ms delay, above the view-transition snapshot. Moss (`--color-accent`), with the Waypoint compass star riding the bar's leading edge — branded, but not a spinner in the middle of the screen; dropping the star must stay a one-line revert. Streamed loads + per-route skeletons are a *future* issue, not this one.
+2. **#363 — the global bar ONLY; skeletons deferred.** 2px top bar off `navigating`, ~150ms delay, above the view-transition snapshot. A plain 2px moss (`--color-accent`) bar — **no logo, no brand mark** (considered and rejected: nav feedback fires on every tap and should stay near-subliminal). Streamed loads + per-route skeletons are a *future* issue, not this one.
 
 3. **#365 — yes, an open sheet swallows back/edge-swipe.** Push a history entry on open, close on popstate, pop it on any other dismissal. Must not trigger a page view transition (see #362).
 
