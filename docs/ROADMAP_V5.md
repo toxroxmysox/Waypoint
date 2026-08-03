@@ -23,7 +23,7 @@ v2–v4 built the app. Every capability the Map calls 🔴-gap has now shipped �
 
 **Regression guard is mandatory:** one Playwright spec at `reducedMotion: 'no-preference'` that closes a sheet and asserts a tap behind it lands. The entire E2E suite currently runs in the one configuration that cannot reproduce this class of bug.
 
-**Also in this wave (not audit work):** confirm what is actually deployed. Last *recorded* deploy is `70d223a`; `main` is now `d081444` — the backend bug batch (#338/#339/#340/#354) and CI (#341/#342) may be unshipped. Verify, then deploy Wave 0 on top.
+**Also in this wave (not audit work): production is 20 commits / 3 weeks stale — VERIFIED 2026-08-03.** The box has no `README.md`, no `scripts/verify-visual.mjs`, no `#340` places fix, and no `src` file newer than 07-12; container uptime 3 weeks. So prod is still `70d223a` and the backend bug batch (**#338** members TOCTOU, **#339** DST parity, **#340** places error laundering — `security`, **#354**) plus CI has never shipped. Deploy those together with Wave 0 rather than in a separate push.
 
 ---
 
@@ -66,7 +66,7 @@ Sheets are the modal on mobile per house rule, so one component fix lifts every 
 
 ---
 
-## Wave 4 — Perceived performance (decision-gated)
+## Wave 4 — Perceived performance
 
 - **#363** — *the single biggest "feels unpolished" gap in the sweep.* Blocking server `load` everywhere, `navigating` referenced nowhere, and the VT wrapper freezes the screen for the whole round-trip. **Scoped to the global bar only** (decision 2 below); skeletons deferred to a future issue.
 - **#364** — optimistic checklist toggle. Highest-frequency interaction in the app; every tap is dead for the full tunnel latency. Sweep the other round-tripping toggles (votes, item status) in the same pass.
@@ -92,7 +92,7 @@ Sheets are the modal on mobile per house rule, so one component fix lifts every 
 | **#352** — invite a past co-traveler without their email | `feature` + a real **privacy** dimension (discoverability of past co-travelers). Needs a grill before any schema. Post-v5. |
 | **SPEC_BACKLOG frontier** | Goal→"Plan this", tri-state booking pill, self-leave UI, receipt-on-expense, Weather, Calendar webcal, Maps deep-link, IA merges. Post-v5 — v5 explicitly ships no new capability. |
 
-**Board hygiene:** three merged remote branches to prune — `chore/ci-and-docs-341-342`, `fix/backend-bug-batch-338-339-340`, `fix/355-day-card-headline`.
+**Board hygiene:** ✅ done 2026-08-03 — three merged branches pruned local + remote; `main` is the only branch.
 
 ---
 
