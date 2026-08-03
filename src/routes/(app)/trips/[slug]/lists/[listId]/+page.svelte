@@ -86,6 +86,7 @@
 					name="title"
 					value={data.checklist.title}
 					required
+					enterkeyhint="done"
 					class="border-line bg-surface text-ink flex-1 rounded-md border px-2 py-1 text-sm"
 				/>
 				<button type="submit" class="text-moss text-xs font-semibold">Save</button>

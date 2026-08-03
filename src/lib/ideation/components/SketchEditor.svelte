@@ -53,6 +53,7 @@
 			<div class="flex items-center gap-1">
 				<input
 					type="number"
+					inputmode="numeric"
 					min="1"
 					bind:value={seg.days}
 					aria-label="Nights for {seg.name || 'this leg'}"

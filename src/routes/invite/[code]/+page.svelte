@@ -221,6 +221,7 @@
 						required
 						autocomplete="one-time-code"
 						inputmode="numeric"
+						enterkeyhint="go"
 						maxlength="6"
 						oninput={(e) => {
 							e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '');

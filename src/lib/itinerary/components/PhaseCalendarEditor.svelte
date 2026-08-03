@@ -252,6 +252,7 @@
 					style="border-color:{bg(row.palette)};"
 					bind:value={draft}
 					autofocus
+					enterkeyhint="done"
 					onblur={commitRename}
 					onkeydown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') cancelRename(); }}
 				/>
@@ -356,7 +357,7 @@
 						<!-- svelte-ignore a11y_autofocus -->
 						<input class="text-ink font-display w-full rounded-lg border-[1.5px] bg-white px-2 py-1 text-[15px] outline-none"
 							style="border-color:{bg(row.palette)};"
-							bind:value={draft} autofocus onblur={commitRename}
+							bind:value={draft} autofocus enterkeyhint="done" onblur={commitRename}
 							onkeydown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') cancelRename(); }} />
 					{:else}
 						<button type="button" class="font-display text-ink block truncate text-left text-[15px] font-semibold" onclick={() => beginRename(row.id, row.name, 'list')}>{row.name}</button>

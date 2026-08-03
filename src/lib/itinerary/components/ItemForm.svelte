@@ -641,6 +641,7 @@
 					<label for="cost_estimate_usd" class="text-ink-soft block text-sm font-medium">Cost (USD)</label>
 					<input
 						type="number"
+						inputmode="decimal"
 						id="cost_estimate_usd"
 						name="cost_estimate_usd"
 						step="0.01"

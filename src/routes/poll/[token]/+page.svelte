@@ -210,6 +210,7 @@
 					bind:value={name}
 					placeholder="e.g. Dana"
 					autocomplete="name"
+					enterkeyhint="done"
 					class="border-line bg-surface text-ink mt-1 mb-3 block w-full rounded-md border px-3 py-2 text-sm"
 				/>
 			{/if}

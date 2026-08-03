@@ -628,6 +628,7 @@
 										>
 										<input
 											type="number"
+											inputmode="numeric"
 											id="exp-{role}"
 											name="expires_days"
 											min="1"

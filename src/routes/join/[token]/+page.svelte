@@ -170,6 +170,7 @@
 							name="email"
 							required
 							autocomplete="email"
+							enterkeyhint="send"
 							bind:value={email}
 							class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2"
 							placeholder="you@example.com"
@@ -204,6 +205,7 @@
 							required
 							autocomplete="one-time-code"
 							inputmode="numeric"
+							enterkeyhint="go"
 							maxlength="6"
 							oninput={(e) => {
 								e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '');

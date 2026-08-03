@@ -169,6 +169,7 @@
 					</label>
 					<input
 						type="number"
+						inputmode="numeric"
 						id="archive_publish_after_days"
 						name="archive_publish_after_days"
 						min="0"
