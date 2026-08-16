@@ -59,11 +59,39 @@ async function setupFixture(): Promise<void> {
 	});
 }
 
+/**
+ * Wait until the sheet has stopped moving.
+ *
+ * These contexts run at `reducedMotion: 'no-preference'` (deliberately — see the
+ * header), so the fly intro is a real 250ms animation. The panel exists in the
+ * DOM from the first frame, so a mount assertion is NOT a settle assertion:
+ * measuring a "rest" position straight after mount samples the sheet mid-flight
+ * and every delta computed from it is wrong.
+ */
+async function waitForSheetAtRest(page: Page): Promise<number> {
+	await expect(page.locator('[data-sheet-panel]')).toHaveCount(1, { timeout: 5000 });
+
+	const top = async () => {
+		const box = await page.locator('[data-sheet-panel]').boundingBox();
+		return box ? Math.round(box.y) : -1;
+	};
+
+	// Settled = two consecutive identical reads.
+	let last = -1;
+	for (let i = 0; i < 40; i++) {
+		const y = await top();
+		if (y !== -1 && y === last) return y;
+		last = y;
+		await page.waitForTimeout(50);
+	}
+	throw new Error(`sheet never settled (last top=${last})`);
+}
+
 /** Open the Add Expense sheet. Scoped `:visible` — AppShell dual-renders. */
-async function openAddExpense(page: Page) {
+async function openAddExpense(page: Page): Promise<number> {
 	await page.goto(`${BASE}/trips/${FIXTURE_SLUG}/expenses`);
 	await page.locator('[aria-label="Add expense"]:visible').first().click();
-	await expect(page.locator('[data-sheet-panel]')).toHaveCount(1, { timeout: 5000 });
+	return waitForSheetAtRest(page);
 }
 
 /**
@@ -119,15 +147,15 @@ test.describe('BottomSheet gestures (#365)', () => {
 	test('grabber is rendered and the sheet tracks a downward drag', async ({ browser }) => {
 		const { page, ctx } = await devLogin(browser);
 		try {
-			await openAddExpense(page);
+			// openAddExpense returns the SETTLED top — measuring it any earlier
+			// samples the fly intro mid-flight and the delta below is meaningless.
+			const restTop = await openAddExpense(page);
 
 			const grabber = page.locator('[data-sheet-grabber]');
 			await expect(grabber).toHaveCount(1);
 			const gbox = await grabber.boundingBox();
 			expect(gbox, 'grabber must have a real box').not.toBeNull();
 			expect(gbox!.width).toBeGreaterThan(20);
-
-			const restTop = (await page.locator('[data-sheet-panel]').boundingBox())!.y;
 
 			// Measure DURING the gesture: the panel must follow the finger, not
 			// merely end up dismissed. A dead transform still passes a
@@ -162,13 +190,14 @@ test.describe('BottomSheet gestures (#365)', () => {
 	test('a short drag springs back, a long drag dismisses', async ({ browser }) => {
 		const { page, ctx } = await devLogin(browser);
 		try {
-			await openAddExpense(page);
+			const restTop = await openAddExpense(page);
 
 			// Slow and short — under both the distance and the velocity threshold.
 			await dragSheet(page, 30, 12, 24);
-			await page.waitForTimeout(500);
 			await expect(page.locator('[data-sheet-panel]')).toHaveCount(1);
-			const top = (await page.locator('[data-sheet-panel]').boundingBox())!.y;
+			// It must come back to exactly where it started, not merely stay mounted.
+			const settledTop = await waitForSheetAtRest(page);
+			expect(Math.abs(settledTop - restTop), 'short drag springs back to rest').toBeLessThan(3);
 
 			// Past the distance threshold — must dismiss and leave nothing behind.
 			await dragSheet(page, 220);
@@ -183,7 +212,6 @@ test.describe('BottomSheet gestures (#365)', () => {
 				return el ? `${el.tagName}.${el.className}` : 'none';
 			});
 			expect(under).not.toMatch(/z-modal/);
-			expect(top).toBeGreaterThan(0);
 		} finally {
 			await ctx.close();
 		}
@@ -291,7 +319,7 @@ test.describe('BottomSheet gestures (#365)', () => {
 				await d.dismiss();
 			});
 
-			await page.goto(`${BASE}/trips/${FIXTURE_SLUG}/items/new`);
+			await page.goto(`${BASE}/trips/${FIXTURE_SLUG}/items/new`, { waitUntil: 'networkidle' });
 			const title = page.locator('input[name="title"]:visible').first();
 			await title.fill('Half-typed item');
 
@@ -325,10 +353,13 @@ test.describe('BottomSheet gestures (#365)', () => {
 	test('a CLEAN item form leaves without prompting', async ({ browser }) => {
 		const { page, ctx } = await devLogin(browser);
 		try {
-			await page.goto(`${BASE}/trips/${FIXTURE_SLUG}/items/new`);
+			// networkidle, not just "the input exists": the back button's handler is
+			// client-side, so clicking a not-yet-hydrated page silently does nothing
+			// and the poll below then burns its whole timeout for no reason.
+			await page.goto(`${BASE}/trips/${FIXTURE_SLUG}/items/new`, { waitUntil: 'networkidle' });
 			await page.locator('input[name="title"]:visible').first().waitFor();
 			await page.locator('button[aria-label="Back"]:visible').first().click();
-			await expect.poll(() => page.url(), { timeout: 10000 }).not.toContain('/items/new');
+			await expect.poll(() => page.url(), { timeout: 15000 }).not.toContain('/items/new');
 			await expect(page.getByText(/leave without saving/i)).toHaveCount(0);
 		} finally {
 			await ctx.close();
