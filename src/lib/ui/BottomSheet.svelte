@@ -12,6 +12,7 @@
 		title = '',
 		dirty = false,
 		discardLabel = 'Discard changes?',
+		swallowBack = true,
 		children
 	}: {
 		open: boolean;
@@ -25,6 +26,14 @@
 		dirty?: boolean;
 		/** The question shown in the discard confirm. Name the thing being lost. */
 		discardLabel?: string;
+		/**
+		 * #365 — whether this sheet takes over the back gesture (push an entry on
+		 * open, close on popstate). True everywhere by default. The one case that
+		 * opts OUT is a sheet that exists BECAUSE a navigation was intercepted
+		 * (#367's unsaved-changes guard): it must not push an entry it would then
+		 * have to unwind while re-running the very navigation it interrupted.
+		 */
+		swallowBack?: boolean;
 		children: Snippet;
 	} = $props();
 
@@ -88,10 +97,9 @@
 	// ---------------------------------------------------------------------------
 	let historyToken = 0;
 	let closingFromPopstate = false;
-	let openedAt = '';
 
 	$effect(() => {
-		if (!open) return;
+		if (!open || !swallowBack) return;
 
 		// untrack: this effect must depend on `open` ALONE. Reading page.state
 		// reactively here would re-fire the effect on our own pushState — an
@@ -99,7 +107,6 @@
 		const token = untrack(() => (page.state.sheet ?? 0) + 1);
 		const url = untrack(() => page.url.pathname + page.url.search);
 		historyToken = token;
-		openedAt = url;
 		try {
 			untrack(() => pushState('', { ...page.state, sheet: token }));
 		} catch {

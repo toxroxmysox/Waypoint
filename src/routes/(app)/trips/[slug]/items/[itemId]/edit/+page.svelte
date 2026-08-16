@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { validateForm, revealServerError, errorField } from '$lib/shell/actions/validate-form';
-	import { beforeNavigate, goto } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import SaveBar from '$lib/ui/SaveBar.svelte';
+	import UnsavedChangesGuard from '$lib/ui/UnsavedChangesGuard.svelte';
 	import ItemForm from '$lib/itinerary/components/ItemForm.svelte';
 	import type { ItemFormData } from '$lib/itinerary/components/ItemFormFields';
 	import { markReplaceNavigation } from '$lib/shell/stores/nav-depth';
@@ -25,16 +26,12 @@
 		if (form?.error) revealServerError(alertEl, errorField(form));
 	});
 
-	beforeNavigate(({ cancel }) => {
-		if (dirty && !submitting && !confirm('You have unsaved changes. Leave anyway?')) cancel();
-	});
-
-	$effect(() => {
-		if (!dirty) return;
-		const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
-		window.addEventListener('beforeunload', handler);
-		return () => window.removeEventListener('beforeunload', handler);
-	});
+	// #367 — the navigation guard and its beforeunload twin now live in
+	// UnsavedChangesGuard (rendered at the bottom of this page), which replaces
+	// the browser's own confirm dialog. In the installed PWA that rendered as
+	// "app.vandenwarsen.com says…" in the middle of a form.
+	// `deleting` counts as a save, not an abandonment — it must not prompt.
+	const guardDirty = $derived(dirty && !submitting && !deleting);
 
 	let initialData: ItemFormData = untrack(() => ({
 		type: data.item.type,
@@ -165,6 +162,11 @@
 	</div>
 	<div class="save-bar-spacer" aria-hidden="true"></div>
 </main>
+
+<UnsavedChangesGuard
+	dirty={guardDirty}
+	body="Your edits to this item have not been saved yet."
+/>
 
 <style>
 	/* Reserve scroll room so the last fields + Delete clear the fixed SaveBar

@@ -279,6 +279,62 @@ test.describe('BottomSheet gestures (#365)', () => {
 		}
 	});
 
+	test('unsaved item edits are guarded IN-APP, not by confirm() (#367)', async ({ browser }) => {
+		const { page, ctx } = await devLogin(browser);
+		try {
+			// A native confirm() surfaces as a Playwright `dialog` event. Counting
+			// them is the direct proof the browser dialog is gone — reading the
+			// source only proves the file changed.
+			let nativeDialogs = 0;
+			page.on('dialog', async (d) => {
+				nativeDialogs++;
+				await d.dismiss();
+			});
+
+			await page.goto(`${BASE}/trips/${FIXTURE_SLUG}/items/new`);
+			const title = page.locator('input[name="title"]:visible').first();
+			await title.fill('Half-typed item');
+
+			// The NavBar back button is the primary exit from this form.
+			const backBtn = page.locator('button[aria-label="Back"]:visible').first();
+			const formUrl = page.url();
+			await backBtn.click();
+
+			const prompt = page.getByText(/leave without saving/i);
+			await expect(prompt).toBeVisible({ timeout: 5000 });
+			expect(page.url(), 'the navigation must be cancelled').toBe(formUrl);
+			expect(nativeDialogs, 'no browser chrome dialog').toBe(0);
+
+			// Keep editing → stay, draft intact.
+			await page.getByRole('button', { name: /keep editing/i }).click();
+			await expect(prompt).toHaveCount(0);
+			await expect(title).toHaveValue('Half-typed item');
+			expect(page.url()).toBe(formUrl);
+
+			// Leave → the cancelled navigation actually re-runs.
+			await backBtn.click();
+			await expect(prompt).toBeVisible({ timeout: 5000 });
+			await page.getByRole('button', { name: /^leave$/i }).click();
+			await expect.poll(() => page.url(), { timeout: 10000 }).not.toContain('/items/new');
+			expect(nativeDialogs).toBe(0);
+		} finally {
+			await ctx.close();
+		}
+	});
+
+	test('a CLEAN item form leaves without prompting', async ({ browser }) => {
+		const { page, ctx } = await devLogin(browser);
+		try {
+			await page.goto(`${BASE}/trips/${FIXTURE_SLUG}/items/new`);
+			await page.locator('input[name="title"]:visible').first().waitFor();
+			await page.locator('button[aria-label="Back"]:visible').first().click();
+			await expect.poll(() => page.url(), { timeout: 10000 }).not.toContain('/items/new');
+			await expect(page.getByText(/leave without saving/i)).toHaveCount(0);
+		} finally {
+			await ctx.close();
+		}
+	});
+
 	test('the page behind is locked while a sheet is open and released after', async ({ browser }) => {
 		const { page, ctx } = await devLogin(browser);
 		try {
