@@ -125,7 +125,7 @@
 		<!-- No one assigned yet, but the caller can join: a faint "+ Me" target. -->
 		<button
 			type="button"
-			class="border-line text-ink-muted hover:border-ink-muted hover:text-ink-soft inline-flex items-center gap-1 rounded-full border border-dashed px-2 py-0.5 text-[11px] font-medium"
+			class="border-line text-ink-muted hover:border-ink-muted active:border-ink-muted hover:text-ink-soft active:text-ink-soft inline-flex items-center gap-1 rounded-full border border-dashed px-2 py-0.5 text-[11px] font-medium"
 			aria-label="Assign yourself to this item"
 			onclick={(e) => {
 				e.preventDefault();
@@ -146,7 +146,7 @@
 					onclick={toggleSelf}
 					disabled={pending}
 					class="flex w-full items-center justify-center gap-2 rounded-[10px] px-3 py-2.5 text-sm font-semibold disabled:opacity-60 {meAssigned
-						? 'border-line text-ink-soft hover:text-ink border'
+						? 'border-line text-ink-soft hover:text-ink active:text-ink border'
 						: 'bg-moss text-paper'}"
 				>
 					{#if meAssigned}

@@ -17,9 +17,9 @@
 		{@const active = activeId === tab.id}
 		<a
 			href={tab.href}
-			class="-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-[13px] font-semibold {active
+			class="-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-[13px] font-semibold transition duration-75 active:opacity-60 {active
 				? 'border-ink text-ink'
-				: 'text-ink-muted hover:text-ink-soft border-transparent'}"
+				: 'text-ink-muted hover:text-ink-soft active:text-ink-soft border-transparent'}"
 		>
 			{tab.label}
 		</a>

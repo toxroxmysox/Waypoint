@@ -111,7 +111,7 @@
 		<button
 			type="button"
 			onclick={() => (menuOpen = !menuOpen)}
-			class="text-ink-muted hover:text-ink-soft flex h-8 w-8 items-center justify-center rounded-md"
+			class="text-ink-muted hover:text-ink-soft active:text-ink-soft flex h-8 w-8 items-center justify-center rounded-md"
 			aria-label="Document actions"
 			aria-haspopup="menu"
 			aria-expanded={menuOpen}
@@ -126,7 +126,7 @@
 				<button
 					type="button"
 					role="menuitem"
-					class="text-ink-soft hover:bg-paper flex w-full items-center gap-2 px-3 py-2 text-left"
+					class="text-ink-soft hover:bg-paper active:bg-paper flex w-full items-center gap-2 px-3 py-2 text-left"
 					onclick={() => { menuOpen = false; view(); }}
 				>
 					{renderable ? 'View' : 'Open'}
@@ -135,7 +135,7 @@
 					role="menuitem"
 					href="{doc.file_href}?download=1"
 					download
-					class="text-ink-soft hover:bg-paper flex w-full items-center gap-2 px-3 py-2 text-left"
+					class="text-ink-soft hover:bg-paper active:bg-paper flex w-full items-center gap-2 px-3 py-2 text-left"
 					onclick={() => (menuOpen = false)}
 				>
 					Download
@@ -145,7 +145,7 @@
 						<button
 							type="button"
 							role="menuitem"
-							class="text-error hover:bg-error/5 flex w-full items-center gap-2 px-3 py-2 text-left"
+							class="text-error hover:bg-error/5 active:bg-error/5 flex w-full items-center gap-2 px-3 py-2 text-left"
 							onclick={() => (confirming = true)}
 						>
 							Delete

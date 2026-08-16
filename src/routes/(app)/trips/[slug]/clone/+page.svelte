@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { validateForm } from '$lib/shell/actions/validate-form';
+	import { validateForm, revealServerError, errorField } from '$lib/shell/actions/validate-form';
 	import { goto } from '$app/navigation';
 	import { markReplaceNavigation } from '$lib/shell/stores/nav-depth';
 	import NavBar from '$lib/ui/NavBar.svelte';
@@ -13,6 +13,14 @@
 
 	let loading = $state(false);
 	let error = $derived(form?.error ?? '');
+
+	// #375 — a server fail() renders its explanation at the top of the page,
+	// out of sight from the submit control. Scroll it (or the named field) back
+	// into view and give it focus.
+	let alertEl = $state<HTMLElement | null>(null);
+	$effect(() => {
+		if (form?.error) revealServerError(alertEl, errorField(form));
+	});
 
 	// Single source of truth for cloneable types — includes `flight` (#173;
 	// flights were silently dropped because this list omitted the type).
@@ -36,7 +44,7 @@
 
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8">
 	{#if error}
-		<div role="alert" class="border-error/30 bg-error/10 text-error-deep mb-4 rounded-md border p-3 text-sm">
+		<div bind:this={alertEl} role="alert" class="border-error/30 bg-error/10 text-error-deep mb-4 rounded-md border p-3 text-sm">
 			{error}
 		</div>
 	{/if}

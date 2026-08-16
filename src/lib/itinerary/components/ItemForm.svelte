@@ -231,7 +231,7 @@
 						href={mapsUrl}
 						target="_blank"
 						rel="noopener"
-						class="text-sky inline-flex items-center gap-1.5 pt-1 text-sm font-medium hover:underline"
+						class="text-sky inline-flex items-center gap-1.5 pt-1 text-sm font-medium hover:underline active:underline"
 					>
 						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 							<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
@@ -253,7 +253,7 @@
 						href={initialData.reservation_url}
 						target="_blank"
 						rel="noopener"
-						class="text-sky block truncate text-sm hover:underline"
+						class="text-sky block truncate text-sm hover:underline active:underline"
 					>
 						{initialData.reservation_url}
 					</a>
@@ -333,7 +333,7 @@
 								class="rounded-full px-3 py-1 text-sm font-semibold border transition-colors
 									{active
 									? 'bg-ink text-paper border-ink'
-									: 'bg-surface text-ink-soft border-line hover:bg-surface-2'}"
+									: 'bg-surface text-ink-soft border-line hover:bg-surface-2 active:bg-surface-2'}"
 							>
 								{typeLabel}
 							</button>
@@ -595,7 +595,7 @@
 			<div class="p-4 space-y-2">
 				<SectionH>
 					{#snippet right()}
-						<button type="button" onclick={addCode} class="text-ink-muted hover:text-ink-soft">
+						<button type="button" onclick={addCode} class="text-ink-muted hover:text-ink-soft active:text-ink-soft">
 							+ Add code
 						</button>
 					{/snippet}
@@ -621,7 +621,7 @@
 							type="button"
 							aria-label="Remove confirmation code"
 							onclick={() => removeCode(i)}
-							class="text-ink-muted hover:text-error"
+							class="text-ink-muted hover:text-error active:text-error"
 						>
 							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 								<path d="M6 18L18 6M6 6l12 12" />
@@ -641,6 +641,7 @@
 					<label for="cost_estimate_usd" class="text-ink-soft block text-sm font-medium">Cost (USD)</label>
 					<input
 						type="number"
+						inputmode="decimal"
 						id="cost_estimate_usd"
 						name="cost_estimate_usd"
 						step="0.01"

@@ -113,7 +113,7 @@
 							<div class="border-line bg-surface rounded-lg border p-3">
 								<a
 									href="/trips/{data.trip.slug}/items/{entry.item_id}"
-									class="text-ink hover:text-moss mb-2 flex items-center gap-2 text-sm font-medium"
+									class="text-ink hover:text-moss active:text-moss mb-2 flex items-center gap-2 text-sm font-medium"
 								>
 									<TypeIcon type={entry.item_type} size={22} />
 									<span class="truncate">{entry.item_title}</span>

@@ -190,6 +190,7 @@
 			id="expense-amount"
 			name="amount_usd"
 			type="number"
+			inputmode="decimal"
 			step="0.01"
 			min="0.01"
 			bind:value={amount}
@@ -244,7 +245,7 @@
 				{#each categories as cat}
 					<button
 						type="button"
-						class="rounded-full px-3 py-1 text-xs font-medium transition-colors {category === cat.value ? 'bg-ink text-paper' : 'bg-surface-2 text-ink-soft hover:bg-line'}"
+						class="rounded-full px-3 py-1 text-xs font-medium transition-colors {category === cat.value ? 'bg-ink text-paper' : 'bg-surface-2 text-ink-soft hover:bg-line active:bg-line'}"
 						onclick={() => (category = cat.value)}
 					>{cat.label}</button>
 				{/each}
@@ -287,13 +288,13 @@
 					<button
 						type="button"
 						aria-pressed={selectedPreset === 'whole_group'}
-						class="flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors {selectedPreset === 'whole_group' ? 'bg-ink text-paper' : 'bg-surface-2 text-ink-soft hover:bg-line'}"
+						class="flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors {selectedPreset === 'whole_group' ? 'bg-ink text-paper' : 'bg-surface-2 text-ink-soft hover:bg-line active:bg-line'}"
 						onclick={() => applyPreset('whole_group')}
 					>Whole group</button>
 					<button
 						type="button"
 						aria-pressed={selectedPreset === 'just_me'}
-						class="flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors {selectedPreset === 'just_me' ? 'bg-ink text-paper' : 'bg-surface-2 text-ink-soft hover:bg-line'}"
+						class="flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors {selectedPreset === 'just_me' ? 'bg-ink text-paper' : 'bg-surface-2 text-ink-soft hover:bg-line active:bg-line'}"
 						onclick={() => applyPreset('just_me')}
 					>Just me</button>
 				</div>
@@ -338,6 +339,7 @@
 							<span class="min-w-[80px] text-sm text-ink truncate">{memberName(member.id)}</span>
 							<input
 								type="number"
+								inputmode="decimal"
 								step="0.01"
 								min="0"
 								placeholder="0.00"
@@ -369,7 +371,7 @@
 					{#each categories as cat}
 						<button
 							type="button"
-							class="rounded-full px-3 py-1 text-xs font-medium transition-colors {category === cat.value ? 'bg-ink text-paper' : 'bg-surface-2 text-ink-soft hover:bg-line'}"
+							class="rounded-full px-3 py-1 text-xs font-medium transition-colors {category === cat.value ? 'bg-ink text-paper' : 'bg-surface-2 text-ink-soft hover:bg-line active:bg-line'}"
 							onclick={() => (category = cat.value)}
 						>{cat.label}</button>
 					{/each}

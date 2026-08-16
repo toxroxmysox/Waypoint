@@ -38,7 +38,7 @@
 		{#if tab.oversized && tab.action}
 			<button
 				type="button"
-				class="flex flex-1 flex-col items-center justify-center py-2"
+				class="flex flex-1 flex-col items-center justify-center py-2 transition-opacity duration-75 active:opacity-60"
 				aria-label={tab.label}
 				onclick={() => onAction?.(tab.action!)}
 			>
@@ -49,7 +49,7 @@
 		{:else if tab.oversized}
 			<a
 				href={tab.href}
-				class="flex flex-1 flex-col items-center justify-center py-2"
+				class="flex flex-1 flex-col items-center justify-center py-2 transition-opacity duration-75 active:opacity-60"
 				aria-label={tab.label}
 			>
 				<span class="bg-clay flex h-12 w-12 items-center justify-center rounded-full text-white shadow-md">
@@ -59,7 +59,7 @@
 		{:else}
 			<a
 				href={tab.href}
-				class="flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium transition-colors
+				class="flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium transition duration-75 active:opacity-60
 					{isActive ? activeColor : 'text-ink-muted'}"
 				aria-current={isActive ? 'page' : undefined}
 			>

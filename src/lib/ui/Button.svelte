@@ -31,16 +31,22 @@
 		children: Snippet;
 	} = $props();
 
+	// #369: Tailwind v4 compiles `hover:` inside `@media (hover: hover)`, so every
+	// hover tint here is INERT on a touch device. The `active:` twin is the press
+	// feedback the phone actually gets — keep the pair in sync when retinting.
 	const variantClass: Record<Variant, string> = {
-		primary: 'bg-ink text-paper border-ink hover:bg-ink-soft',
-		moss: 'bg-moss text-paper border-moss hover:bg-moss-soft',
-		ghost: 'bg-transparent text-ink border-line hover:bg-surface-2',
-		outline: 'bg-surface-2 text-ink border-line hover:bg-surface'
+		primary: 'bg-ink text-paper border-ink hover:bg-ink-soft active:bg-ink-soft',
+		moss: 'bg-moss text-paper border-moss hover:bg-moss-soft active:bg-moss-soft',
+		ghost: 'bg-transparent text-ink border-line hover:bg-surface-2 active:bg-surface-2',
+		outline: 'bg-surface-2 text-ink border-line hover:bg-surface active:bg-surface'
 	};
 
+	// #366: `sm` lands ~30px tall and `md` ~36px — both under the 44pt HIG floor.
+	// `hit-44` grows only the hit AREA (a centred ::after overlay), so the painted
+	// button keeps its authored size; `lg` is already ≥44px and needs nothing.
 	const sizeClass: Record<Size, string> = {
-		sm: 'px-3 py-1.5 text-[13px] rounded-md gap-1.5',
-		md: 'px-4 py-2 text-sm rounded-md gap-2',
+		sm: 'hit-44 px-3 py-1.5 text-[13px] rounded-md gap-1.5',
+		md: 'hit-44 px-4 py-2 text-sm rounded-md gap-2',
 		lg: 'px-5 py-2.5 text-base rounded-lg gap-2'
 	};
 
@@ -52,8 +58,10 @@
 
 	const isDisabled = $derived(disabled || loading);
 
+	// `transition` (not `transition-colors`) so the active: scale is animated too;
+	// 75ms keeps the press inside one frame of touch-down. Mirrors Card/FAB.
 	const base =
-		'inline-flex items-center justify-center font-semibold border transition-colors disabled:opacity-40 disabled:pointer-events-none';
+		'inline-flex items-center justify-center font-semibold border transition duration-75 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none';
 </script>
 
 {#snippet spinner()}

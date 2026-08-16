@@ -1,4 +1,12 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
+	import Skeleton from '$lib/ui/Skeleton.svelte';
+	import {
+		createPlacesSearch,
+		PLACES_MIN_QUERY,
+		type PlaceSuggestion
+	} from '$lib/itinerary/places-search';
+
 	let {
 		onSelect
 	}: {
@@ -11,43 +19,52 @@
 	} = $props();
 
 	let query = $state('');
-	let predictions = $state<
-		Array<{ placePrediction: { placeId: string; text: { text: string } } }>
-	>([]);
+	let predictions = $state<PlaceSuggestion[]>([]);
 	let sessionToken = $state(crypto.randomUUID());
 	let showDropdown = $state(false);
-	let loading = $state(false);
+	/** An autocomplete request is in flight (past the debounce). */
+	let searching = $state(false);
+	/** A place-details lookup is in flight (after picking a suggestion). */
+	let resolving = $state(false);
 	let lookupFailed = $state(false);
 	let debounceTimer: ReturnType<typeof setTimeout>;
 
+	// #377: latest-wins + AbortController. Without it a slow earlier response
+	// could resolve after a newer one and repaint stale suggestions mid-typing.
+	const places = createPlacesSearch();
+
 	function handleInput() {
 		clearTimeout(debounceTimer);
-		if (query.length < 3) {
+		if (query.length < PLACES_MIN_QUERY) {
+			places.cancel();
 			predictions = [];
 			showDropdown = false;
+			searching = false;
 			return;
 		}
 		debounceTimer = setTimeout(async () => {
-			loading = true;
-			const res = await fetch(
-				`/api/places/autocomplete?input=${encodeURIComponent(query)}&session_token=${sessionToken}`
-			);
-			// #340: the proxy now returns a real status on upstream failure —
-			// don't parse an error body as if it were results.
-			predictions = res.ok ? ((await res.json()).suggestions ?? []) : [];
+			searching = true;
+			const result = await places.search(query, sessionToken);
+			// null = superseded by a newer keystroke: leave the UI to that request,
+			// and leave `searching` on — the newer one is still running.
+			if (result === null) return;
+			predictions = result;
 			showDropdown = predictions.length > 0;
-			loading = false;
+			searching = false;
 		}, 300);
 	}
 
 	async function selectPlace(placeId: string, displayText: string) {
 		showDropdown = false;
 		query = displayText;
-		loading = true;
+		clearTimeout(debounceTimer);
+		places.cancel();
+		searching = false;
+		resolving = true;
 		const res = await fetch(
 			`/api/places/details?place_id=${encodeURIComponent(placeId)}&session_token=${sessionToken}`
 		);
-		loading = false;
+		resolving = false;
 		// #340: a failed lookup must not write an empty name/address and 0,0
 		// coords into the form — leave the typed text and bail.
 		if (!res.ok) {
@@ -75,6 +92,11 @@
 			showDropdown = false;
 		}
 	}
+
+	onDestroy(() => {
+		clearTimeout(debounceTimer);
+		places.cancel();
+	});
 </script>
 
 <svelte:document onclick={handleClickOutside} />
@@ -91,16 +113,25 @@
 			placeholder="Search for a place..."
 			class="border-line bg-surface text-ink w-full rounded-md border px-3 py-2 pr-8 text-sm"
 		/>
-		{#if loading}
-			<div
-				class="text-ink-muted absolute top-1/2 right-3 -translate-y-1/2 text-xs"
-			>
-				...
+		{#if resolving}
+			<!-- #377: was a literal "..." text node. A shimmer dot matches the
+				 design system's skeleton loading language. -->
+			<div class="absolute top-1/2 right-3 -translate-y-1/2">
+				<Skeleton width="0.9rem" height="0.9rem" rounded="rounded-full" />
 			</div>
 		{/if}
 	</div>
 
-	{#if showDropdown}
+	{#if searching}
+		<!-- #377: skeleton rows sized like real predictions, so the dropdown
+			 doesn't jump when suggestions land. Replaces the stale list while a
+			 newer query is in flight. -->
+		<div class="border-line bg-surface absolute z-modal mt-1 w-full rounded-md border shadow-lg">
+			<div class="px-3 py-2"><Skeleton height="1.25rem" width="80%" /></div>
+			<div class="px-3 py-2"><Skeleton height="1.25rem" width="55%" /></div>
+		</div>
+		<span role="status" class="sr-only">Searching places…</span>
+	{:else if showDropdown}
 		<ul
 			class="border-line bg-surface absolute z-modal mt-1 max-h-60 w-full overflow-y-auto rounded-md border shadow-lg"
 		>
@@ -108,7 +139,7 @@
 				<li>
 					<button
 						type="button"
-						class="text-ink hover:bg-surface-hover w-full px-3 py-2 text-left text-sm"
+						class="text-ink hover:bg-surface-hover active:bg-surface-hover w-full px-3 py-2 text-left text-sm"
 						onclick={() =>
 							selectPlace(
 								suggestion.placePrediction.placeId,

@@ -14,12 +14,21 @@
 	import ParkingDivider from '$lib/itinerary/components/ParkingDivider.svelte';
 	import DragDropTimeline from '$lib/itinerary/components/DragDropTimeline.svelte';
 	import MultiDayBanner from '$lib/itinerary/components/MultiDayBanner.svelte';
+	import { revealServerError, errorField } from '$lib/shell/actions/validate-form';
 
 	let { data, form } = $props();
 
 	let editingNotes = $state(false);
 	let notesLoading = $state(false);
 	let error = $derived(form?.error ?? '');
+
+	// #375 — a server fail() renders its explanation at the top of the page,
+	// out of sight from the submit control. Scroll it (or the named field) back
+	// into view and give it focus.
+	let alertEl = $state<HTMLElement | null>(null);
+	$effect(() => {
+		if (form?.error) revealServerError(alertEl, errorField(form));
+	});
 
 	// #252 — consistent capture affordance, defaulting to this day + its phase.
 	let ideaSheetOpen = $state(false);
@@ -84,7 +93,7 @@
 	</div>
 
 	{#if error}
-		<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{error}</div>
+		<div bind:this={alertEl} role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{error}</div>
 	{/if}
 
 	<!-- Day notes — keyed by day id so unsaved draft is discarded on day navigation -->
@@ -96,7 +105,7 @@
 				<button
 					type="button"
 					onclick={() => (editingNotes = !editingNotes)}
-					class="text-ink-muted hover:text-ink-soft text-xs"
+					class="text-ink-muted hover:text-ink-soft active:text-ink-soft text-xs"
 				>
 					{editingNotes ? 'Cancel' : 'Edit'}
 				</button>
@@ -166,7 +175,7 @@
 					{#snippet right()}
 						<a
 							href="/trips/{data.trip.slug}/items/new?day={data.day.id}"
-							class="text-ink-muted hover:text-ink-soft"
+							class="text-ink-muted hover:text-ink-soft active:text-ink-soft"
 							aria-label="Add item"
 						>
 							+ Add

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { enhance } from '$app/forms';
-	import { validateForm } from '$lib/shell/actions/validate-form';
+	import { validateForm, revealServerError, errorField } from '$lib/shell/actions/validate-form';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
 	import Button from '$lib/ui/Button.svelte';
@@ -18,6 +18,14 @@
 	let digestOn = $state(untrack(() => !data.membership.digest_opt_out));
 	let confirmDelete = $state(false);
 	let error = $derived(form?.error ?? '');
+
+	// #375 — a server fail() renders its explanation at the top of a long
+	// settings page, out of sight from the Save button. Scroll it (or the named
+	// field) back into view and put focus on it.
+	let alertEl = $state<HTMLElement | null>(null);
+	$effect(() => {
+		if (form?.error) revealServerError(alertEl, errorField(form));
+	});
 	let success = $derived(form?.success ?? false);
 	// #176 — Settings is an owner console: non-owner/co-owner sees read-only trip
 	// details, no forms, no archive controls, no danger zone. (Actions still 403
@@ -28,7 +36,7 @@
 <NavBar title="Settings" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}" />
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-6">
 	{#if error}
-		<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{error}</div>
+		<div bind:this={alertEl} role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{error}</div>
 	{/if}
 
 	{#if success}
@@ -169,6 +177,7 @@
 					</label>
 					<input
 						type="number"
+						inputmode="numeric"
 						id="archive_publish_after_days"
 						name="archive_publish_after_days"
 						min="0"
@@ -264,7 +273,7 @@
 			<button
 				type="button"
 				onclick={() => (confirmDelete = true)}
-				class="border-error/40 text-error hover:bg-error/10 mt-3 rounded-md border px-3 py-1.5 text-sm font-semibold"
+				class="hit-44 border-error/40 text-error hover:bg-error/10 active:bg-error/10 mt-3 rounded-md border px-3 py-1.5 text-sm font-semibold"
 			>
 				Delete trip
 			</button>
@@ -284,14 +293,14 @@
 				<button
 					type="submit"
 					disabled={deleting}
-					class="bg-error text-paper hover:bg-error/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-40"
+					class="hit-44 bg-error text-paper hover:bg-error/90 active:bg-error/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-40"
 				>
 					{deleting ? 'Deleting…' : 'Confirm delete'}
 				</button>
 				<button
 					type="button"
 					onclick={() => (confirmDelete = false)}
-					class="text-ink-muted hover:text-ink-soft text-sm"
+					class="hit-44 text-ink-muted hover:text-ink-soft active:text-ink-soft text-sm"
 				>
 					Cancel
 				</button>

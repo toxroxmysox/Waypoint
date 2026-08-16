@@ -32,7 +32,7 @@
 		{#if data.unratedTotal > 0 && data.launchPhaseId}
 			<a
 				href="/trips/{data.trip.slug}/swipe/{data.launchPhaseId}"
-				class="bg-moss text-paper hover:bg-moss-soft flex items-center gap-3 rounded-lg px-4 py-3 shadow-card transition-colors"
+				class="bg-moss text-paper hover:bg-moss-soft active:bg-moss-soft flex items-center gap-3 rounded-lg px-4 py-3 shadow-card transition-colors"
 			>
 				<span aria-hidden="true" class="text-xl">♥</span>
 				<span class="min-w-0 flex-1">
@@ -61,7 +61,7 @@
 					<li>
 						<a
 							href="/trips/{data.trip.slug}/items/{orphan.id}/edit"
-							class="bg-surface hover:bg-surface-2 border-line text-ink flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm transition-colors"
+							class="bg-surface hover:bg-surface-2 active:bg-surface-2 border-line text-ink flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm transition-colors"
 						>
 							<span class="min-w-0 truncate">{orphan.title || 'Untitled idea'}</span>
 							<span class="text-ink-muted shrink-0 text-xs capitalize">{orphan.type}</span>

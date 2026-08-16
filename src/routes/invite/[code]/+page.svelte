@@ -8,6 +8,10 @@
 	let otpId = $state('');
 	let loading = $state(false);
 	let error = $derived(form?.error ?? '');
+	// #374 — the 6th digit (typed or dropped in by iOS one-time-code autofill)
+	// submits the form itself. Latched so a second input event while the verify
+	// is in flight can't fire a second POST — a double-submit burns the code.
+	let autoSubmitted = $state(false);
 	let selectedPlaceholder = $state<string | null>(null);
 	const placeholders = $derived(data.unclaimedPlaceholders ?? []);
 
@@ -33,7 +37,7 @@
 					person who invited you to send a fresh one.
 				</p>
 			</div>
-			<a href="/trips" class="text-ink-muted hover:text-ink-soft mt-4 block text-center text-sm"
+			<a href="/trips" class="text-ink-muted hover:text-ink-soft active:text-ink-soft mt-4 block text-center text-sm"
 				>Back to your trips</a
 			>
 		{:else if data.status === 'expired'}
@@ -44,7 +48,7 @@
 					invited you to send a new one.
 				</p>
 			</div>
-			<a href="/trips" class="text-ink-muted hover:text-ink-soft mt-4 block text-center text-sm"
+			<a href="/trips" class="text-ink-muted hover:text-ink-soft active:text-ink-soft mt-4 block text-center text-sm"
 				>Back to your trips</a
 			>
 		{:else if data.status === 'mismatch'}
@@ -100,7 +104,7 @@
 							class="border-line w-full rounded-lg border p-3 text-left transition-colors
 								{selectedPlaceholder === ph.member_id
 									? 'border-moss bg-moss-tint'
-									: 'bg-surface hover:bg-surface-2'}"
+									: 'bg-surface hover:bg-surface-2 active:bg-surface-2'}"
 							onclick={() => {
 								selectedPlaceholder = selectedPlaceholder === ph.member_id ? null : ph.member_id;
 							}}
@@ -207,6 +211,8 @@
 								await invalidateAll();
 							} else {
 								await update();
+								// Release the latch so a corrected code auto-submits again.
+								autoSubmitted = false;
 							}
 						};
 					}}
@@ -221,9 +227,14 @@
 						required
 						autocomplete="one-time-code"
 						inputmode="numeric"
+						enterkeyhint="go"
 						maxlength="6"
 						oninput={(e) => {
 							e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '');
+							if (e.currentTarget.value.length === 6 && !loading && !autoSubmitted) {
+								autoSubmitted = true;
+								e.currentTarget.form?.requestSubmit();
+							}
 						}}
 						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-center font-mono text-2xl tracking-[0.5em]"
 						placeholder="000000"
@@ -233,8 +244,11 @@
 					</Button>
 					<button
 						type="button"
-						class="text-ink-muted hover:text-ink-soft mt-2 w-full text-sm"
-						onclick={() => (otpId = '')}
+						class="text-ink-muted hover:text-ink-soft active:text-ink-soft mt-2 w-full text-sm"
+						onclick={() => {
+							otpId = '';
+							autoSubmitted = false;
+						}}
 					>
 						Resend code
 					</button>

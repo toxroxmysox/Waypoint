@@ -43,7 +43,7 @@
 			{#each contacts as c (c.id)}
 				<a
 					href="mailto:{c.email}"
-					class="hover:bg-surface-2 flex items-center gap-3 rounded-lg px-2 py-2 transition-colors"
+					class="hover:bg-surface-2 active:bg-surface-2 flex items-center gap-3 rounded-lg px-2 py-2 transition-colors"
 				>
 					<Avatar img={c.avatarUrl} initial={c.name} alt={c.name} size={28} />
 					<span class="text-ink-soft min-w-0 flex-1 truncate text-sm">{c.name}</span>

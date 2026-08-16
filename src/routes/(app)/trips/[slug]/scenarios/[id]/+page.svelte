@@ -91,7 +91,7 @@
 							aria-pressed={selected}
 							data-testid="vote-{option}"
 							class="inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50
-								{selected ? OPTION_META[option].active : 'border-line text-ink-muted hover:border-moss/40 hover:text-moss'}"
+								{selected ? OPTION_META[option].active : 'border-line text-ink-muted hover:border-moss/40 active:border-moss/40 hover:text-moss active:text-moss'}"
 						>
 							<span aria-hidden="true">{OPTION_META[option].glyph}</span>
 							<span>{OPTION_META[option].label}</span>
@@ -128,7 +128,7 @@
 								{#if pt.mine}
 									<form method="POST" action="?/deletePoint" use:enhance={voteEnhance}>
 										<input type="hidden" name="point_id" value={pt.id} />
-										<button type="submit" aria-label="Delete" class="text-ink-muted hover:text-clay text-xs">×</button>
+										<button type="submit" aria-label="Delete" class="text-ink-muted hover:text-clay active:text-clay text-xs">×</button>
 									</form>
 								{/if}
 							</li>

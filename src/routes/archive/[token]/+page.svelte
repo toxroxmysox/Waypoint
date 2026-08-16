@@ -220,7 +220,7 @@
 			</a>
 			<a
 				href="/trips/import"
-				class="text-ink-soft hover:text-ink inline-flex items-center justify-center gap-1.5 text-sm font-medium underline-offset-2 hover:underline"
+				class="text-ink-soft hover:text-ink active:text-ink inline-flex items-center justify-center gap-1.5 text-sm font-medium underline-offset-2 hover:underline active:underline"
 			>
 				Import into Waypoint
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

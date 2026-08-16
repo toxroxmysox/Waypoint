@@ -112,7 +112,7 @@
 									{#if iAmIn(unit)}
 										<button
 											type="button"
-											class="text-ink-muted hover:text-ink-soft"
+											class="text-ink-muted hover:text-ink-soft active:text-ink-soft"
 											onclick={() => (confirming = { id: unit.id, action: 'leave' })}
 										>
 											Leave
@@ -120,7 +120,7 @@
 									{/if}
 									<button
 										type="button"
-										class="text-ink-muted hover:text-clay"
+										class="text-ink-muted hover:text-clay active:text-clay"
 										onclick={() => (confirming = { id: unit.id, action: 'delete' })}
 									>
 										Delete

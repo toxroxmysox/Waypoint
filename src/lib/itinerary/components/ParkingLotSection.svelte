@@ -153,7 +153,7 @@
 				<!-- Slot: pull-up affordance (tap to plan — sibling of the link) -->
 				<button
 					type="button"
-					class="text-ink-muted hover:text-ink-soft flex shrink-0 items-center px-1"
+					class="text-ink-muted hover:text-ink-soft active:text-ink-soft flex shrink-0 items-center px-1"
 					aria-label="Pull up to plan"
 					onclick={() => pullUp(item.id)}
 				>

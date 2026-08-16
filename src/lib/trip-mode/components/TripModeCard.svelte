@@ -44,7 +44,7 @@
      stretched link via z-index. -->
 <div
 	class="relative rounded-xl border p-4 transition-colors
-		{isNext ? 'border-clay bg-clay/5 shadow-sm' : 'border-line bg-paper hover:border-ink-muted'}"
+		{isNext ? 'border-clay bg-clay/5 shadow-sm' : 'border-line bg-paper hover:border-ink-muted active:border-ink-muted'}"
 >
 	<a
 		href="/trips/{slug}/items/{item.id}?from=trip"
@@ -87,7 +87,7 @@
 					aria-haspopup="menu"
 					aria-expanded={menuOpen}
 					aria-label="Item actions"
-					class="text-ink-muted hover:text-ink hover:bg-surface-2 -mr-1 -mt-1 rounded-md px-2 py-1 text-lg leading-none"
+					class="text-ink-muted hover:text-ink active:text-ink hover:bg-surface-2 active:bg-surface-2 -mr-1 -mt-1 rounded-md px-2 py-1 text-lg leading-none"
 				>
 					⋯
 				</button>
@@ -116,7 +116,7 @@
 								type="submit"
 								role="menuitem"
 								disabled={skipping}
-								class="text-ink hover:bg-surface-2 w-full rounded-md px-3 py-2 text-left text-sm font-medium disabled:opacity-50"
+								class="text-ink hover:bg-surface-2 active:bg-surface-2 w-full rounded-md px-3 py-2 text-left text-sm font-medium disabled:opacity-50"
 							>
 								{skipping ? 'Skipping…' : 'Skip — not happening'}
 							</button>

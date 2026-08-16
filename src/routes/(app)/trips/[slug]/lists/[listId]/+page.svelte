@@ -86,24 +86,25 @@
 					name="title"
 					value={data.checklist.title}
 					required
+					enterkeyhint="done"
 					class="border-line bg-surface text-ink flex-1 rounded-md border px-2 py-1 text-sm"
 				/>
-				<button type="submit" class="text-moss text-xs font-semibold">Save</button>
-				<button type="button" onclick={() => (renaming = false)} class="text-ink-muted text-xs">Cancel</button>
+				<button type="submit" class="hit-44 text-moss text-xs font-semibold">Save</button>
+				<button type="button" onclick={() => (renaming = false)} class="hit-44 text-ink-muted text-xs">Cancel</button>
 			</form>
 		{:else}
-			<button type="button" onclick={() => (renaming = true)} class="text-ink-muted hover:text-ink-soft text-xs font-medium">
+			<button type="button" onclick={() => (renaming = true)} class="hit-44 text-ink-muted hover:text-ink-soft active:text-ink-soft text-xs font-medium">
 				Rename list
 			</button>
 			{#if !confirmDeleteList}
-				<button type="button" onclick={() => (confirmDeleteList = true)} class="text-ink-muted hover:text-error text-xs font-medium">
+				<button type="button" onclick={() => (confirmDeleteList = true)} class="hit-44 text-ink-muted hover:text-error active:text-error text-xs font-medium">
 					Delete list
 				</button>
 			{:else}
 				<form method="POST" action="?/deleteList" use:enhance class="flex items-center gap-2">
 					<span class="text-ink-muted text-xs">Delete this list?</span>
-					<button type="submit" class="text-error text-xs font-semibold">Confirm</button>
-					<button type="button" onclick={() => (confirmDeleteList = false)} class="text-ink-muted text-xs">Cancel</button>
+					<button type="submit" class="hit-44 text-error text-xs font-semibold">Confirm</button>
+					<button type="button" onclick={() => (confirmDeleteList = false)} class="hit-44 text-ink-muted text-xs">Cancel</button>
 				</form>
 			{/if}
 		{/if}

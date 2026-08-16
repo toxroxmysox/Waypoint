@@ -13,10 +13,10 @@
 <div class="flex justify-center">
 	<button
 		onclick={onToggle}
-		class="rounded-full px-4 py-1.5 text-xs font-medium shadow-sm transition-colors
+		class="hit-44 rounded-full px-4 py-1.5 text-xs font-medium shadow-sm transition-colors
 			{mode === 'trip'
-				? 'bg-moss-tint text-moss hover:bg-moss-tint/80'
-				: 'bg-clay-tint text-clay hover:bg-clay-tint/80'}"
+				? 'bg-moss-tint text-moss hover:bg-moss-tint/80 active:bg-moss-tint/80'
+				: 'bg-clay-tint text-clay hover:bg-clay-tint/80 active:bg-clay-tint/80'}"
 	>
 		{mode === 'trip' ? 'Planning Mode' : 'Trip Mode'}
 	</button>

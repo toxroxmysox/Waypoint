@@ -136,7 +136,7 @@
 						class="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors disabled:opacity-50
 							{selected
 							? OPTION_META[option].active
-							: 'border-line text-ink-muted hover:border-moss/40 hover:text-moss'}"
+							: 'border-line text-ink-muted hover:border-moss/40 active:border-moss/40 hover:text-moss active:text-moss'}"
 					>
 						<span aria-hidden="true">{OPTION_META[option].glyph}</span>
 						<span>{OPTION_META[option].label}</span>
@@ -178,7 +178,7 @@
 						type="button"
 						onclick={() => (rejectOpen = true)}
 						disabled={reviewing}
-						class="border-line text-ink-muted hover:border-clay/40 hover:text-clay inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50"
+						class="border-line text-ink-muted hover:border-clay/40 active:border-clay/40 hover:text-clay active:text-clay inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50"
 					>
 						Reject
 					</button>
@@ -225,7 +225,7 @@
 							type="button"
 							onclick={() => { rejectOpen = false; rejectNote = ''; }}
 							disabled={rejectSubmitting}
-							class="text-ink-muted hover:text-ink-soft inline-flex items-center px-2 py-1 text-xs font-semibold disabled:opacity-50"
+							class="text-ink-muted hover:text-ink-soft active:text-ink-soft inline-flex items-center px-2 py-1 text-xs font-semibold disabled:opacity-50"
 						>
 							Cancel
 						</button>

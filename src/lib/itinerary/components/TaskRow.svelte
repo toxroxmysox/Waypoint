@@ -42,7 +42,7 @@
 		<input type="hidden" name="task_id" value={taskId} />
 		<button
 			type="submit"
-			class="flex min-w-0 flex-1 items-center gap-3 text-left select-none"
+			class="active:bg-surface-2 flex min-w-0 flex-1 items-center gap-3 rounded-md text-left transition-colors duration-75 select-none"
 			aria-label={checked ? 'Uncheck task' : 'Check task'}
 		>
 			<span
@@ -69,7 +69,7 @@
 		<button
 			type="button"
 			onclick={onAssign}
-			class="text-ink-muted hover:text-ink-soft shrink-0 px-1 py-0.5"
+			class="text-ink-muted hover:text-ink-soft active:text-ink-soft hit-44 shrink-0 px-1 py-0.5"
 			aria-label="Assign or remove task"
 		>
 			<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">

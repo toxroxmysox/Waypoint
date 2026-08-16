@@ -26,18 +26,20 @@ export const actions: Actions = {
 			Intl.DateTimeFormat().resolvedOptions().timeZone;
 		const locationSummary = data.get('location_summary')?.toString().trim() || '';
 
-		if (!title) return fail(400, { error: 'Title is required.' });
+		// #375 — `field` names the control the client should focus; it never
+		// changes what is validated, only where the failure is reported.
+		if (!title) return fail(400, { error: 'Title is required.', field: 'title' });
 		// #270 / ADR-0022 — name-first create: dates are optional. Skipping both
 		// creates a dateless (forming) trip; the PB hook skips phase/day seeding
 		// and the promotion (first date-set) seeds them later. Both or neither.
 		if ((startDate && !endDate) || (!startDate && endDate)) {
-			return fail(400, { error: 'Set both dates, or leave both empty.' });
+			return fail(400, { error: 'Set both dates, or leave both empty.', field: startDate ? 'end_date' : 'start_date' });
 		}
 		if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
-			return fail(400, { error: 'Start date must be before end date.' });
+			return fail(400, { error: 'Start date must be before end date.', field: 'start_date' });
 		}
 		if (!isValidTimeZone(timezone)) {
-			return fail(400, { error: `"${timezone}" is not a valid timezone.` });
+			return fail(400, { error: `"${timezone}" is not a valid timezone.`, field: 'timezone' });
 		}
 
 		// Generate slug from title, append suffix on collision

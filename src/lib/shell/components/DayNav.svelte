@@ -39,8 +39,13 @@
 	}
 </script>
 
+<!-- #366: the arrows are sized to 44px rather than given a `hit-44` overlay.
+     This row sits directly under the sticky header, and a centred overlay grows
+     UPWARD into it — the header paints over that half, leaving ~30px of real
+     hit area (measured at 375px). Row padding moves onto the links so the row
+     height is driven by the 44px targets instead of stacking on top of them. -->
 <nav
-	class="border-line flex items-center justify-between border-b px-4 py-2"
+	class="border-line flex items-center justify-between border-b px-4"
 	style="touch-action: pan-y"
 	ontouchstart={onTouchStart}
 	ontouchend={onTouchEnd}
@@ -48,7 +53,7 @@
 	{#if prevDay}
 		<a
 			href="/trips/{tripSlug}/days/{prevDay.id}"
-			class="text-ink-muted hover:text-ink flex items-center gap-1 text-sm"
+			class="text-ink-muted hover:text-ink active:text-ink flex min-h-11 min-w-11 items-center justify-start gap-1 text-sm"
 			aria-label="Previous day: {dayLabel(prevDay)}"
 		>
 			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -65,7 +70,7 @@
 	{#if nextDay}
 		<a
 			href="/trips/{tripSlug}/days/{nextDay.id}"
-			class="text-ink-muted hover:text-ink flex items-center gap-1 text-sm"
+			class="text-ink-muted hover:text-ink active:text-ink flex min-h-11 min-w-11 items-center justify-end gap-1 text-sm"
 			aria-label="Next day: {dayLabel(nextDay)}"
 		>
 			<span class="hidden xs:inline">{dayLabel(nextDay)}</span>

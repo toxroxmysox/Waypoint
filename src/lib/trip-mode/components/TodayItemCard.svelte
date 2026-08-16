@@ -79,7 +79,7 @@
 			</div>
 			<a
 				href="/trips/{tripSlug}/items/{item.id}/edit"
-				class="text-ink-muted hover:text-ink relative z-10 shrink-0 p-1"
+				class="text-ink-muted hover:text-ink active:text-ink relative z-10 shrink-0 p-1"
 				aria-label="Edit {item.title}"
 			>
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

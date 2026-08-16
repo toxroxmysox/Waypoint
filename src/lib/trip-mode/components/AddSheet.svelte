@@ -41,7 +41,7 @@
 	<div class="space-y-2">
 		<button
 			type="button"
-			class="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left hover:bg-surface-2 transition-colors"
+			class="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left hover:bg-surface-2 active:bg-surface-2 transition-colors"
 			onclick={addItem}
 		>
 			<div class="bg-clay-tint text-clay flex h-10 w-10 items-center justify-center rounded-full">
@@ -57,7 +57,7 @@
 
 		<button
 			type="button"
-			class="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left hover:bg-surface-2 transition-colors"
+			class="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left hover:bg-surface-2 active:bg-surface-2 transition-colors"
 			onclick={addExpense}
 		>
 			<div class="bg-clay-tint text-clay flex h-10 w-10 items-center justify-center rounded-full">
@@ -73,7 +73,7 @@
 
 		<button
 			type="button"
-			class="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left hover:bg-surface-2 transition-colors"
+			class="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left hover:bg-surface-2 active:bg-surface-2 transition-colors"
 			onclick={addDocument}
 		>
 			<div class="bg-clay-tint text-clay flex h-10 w-10 items-center justify-center rounded-full">
@@ -91,7 +91,7 @@
 		{#if todayDayId}
 			<button
 				type="button"
-				class="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left hover:bg-surface-2 transition-colors"
+				class="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left hover:bg-surface-2 active:bg-surface-2 transition-colors"
 				onclick={addMemory}
 			>
 				<div class="bg-clay-tint text-clay flex h-10 w-10 items-center justify-center rounded-full">

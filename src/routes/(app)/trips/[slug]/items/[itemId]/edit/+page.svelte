@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { validateForm } from '$lib/shell/actions/validate-form';
+	import { validateForm, revealServerError, errorField } from '$lib/shell/actions/validate-form';
 	import { beforeNavigate, goto } from '$app/navigation';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import SaveBar from '$lib/ui/SaveBar.svelte';
@@ -17,6 +17,13 @@
 	let deleting = $state(false);
 	let confirmDelete = $state(false);
 	let error = $derived(form?.error ?? '');
+
+	// #375 — the SaveBar is pinned to the bottom of a long form, so a server
+	// fail() would otherwise post its explanation off-screen at the top.
+	let alertEl = $state<HTMLElement | null>(null);
+	$effect(() => {
+		if (form?.error) revealServerError(alertEl, errorField(form));
+	});
 
 	beforeNavigate(({ cancel }) => {
 		if (dirty && !submitting && !confirm('You have unsaved changes. Leave anyway?')) cancel();
@@ -67,7 +74,7 @@
 
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-4">
 	{#if error}
-		<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{error}</div>
+		<div bind:this={alertEl} role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{error}</div>
 	{/if}
 
 	<form
@@ -122,7 +129,7 @@
 			<button
 				type="button"
 				onclick={() => (confirmDelete = true)}
-				class="border-error/40 text-error hover:bg-error/10 mt-2 rounded-md border px-3 py-1.5 text-sm font-semibold"
+				class="hit-44 border-error/40 text-error hover:bg-error/10 active:bg-error/10 mt-2 rounded-md border px-3 py-1.5 text-sm font-semibold"
 			>
 				Delete
 			</button>
@@ -142,14 +149,14 @@
 				<button
 					type="submit"
 					disabled={deleting}
-					class="bg-error text-paper hover:bg-error/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-40"
+					class="hit-44 bg-error text-paper hover:bg-error/90 active:bg-error/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-40"
 				>
 					{deleting ? 'Deleting…' : 'Confirm delete'}
 				</button>
 				<button
 					type="button"
 					onclick={() => (confirmDelete = false)}
-					class="text-ink-muted hover:text-ink-soft text-sm"
+					class="hit-44 text-ink-muted hover:text-ink-soft active:text-ink-soft text-sm"
 				>
 					Cancel
 				</button>

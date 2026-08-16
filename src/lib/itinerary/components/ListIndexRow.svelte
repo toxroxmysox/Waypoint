@@ -31,7 +31,7 @@
 
 <a
 	{href}
-	class="hover:bg-surface-2 flex items-center gap-3 px-[15px] py-[13px] {divider ? 'border-line border-b' : ''}"
+	class="hover:bg-surface-2 active:bg-surface-2 flex items-center gap-3 px-[15px] py-[13px] {divider ? 'border-line border-b' : ''}"
 >
 	{#if phaseName}
 		<PhaseChip name={phaseName} size={20} />

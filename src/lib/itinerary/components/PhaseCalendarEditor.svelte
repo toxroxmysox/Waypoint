@@ -252,6 +252,7 @@
 					style="border-color:{bg(row.palette)};"
 					bind:value={draft}
 					autofocus
+					enterkeyhint="done"
 					onblur={commitRename}
 					onkeydown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') cancelRename(); }}
 				/>
@@ -356,7 +357,7 @@
 						<!-- svelte-ignore a11y_autofocus -->
 						<input class="text-ink font-display w-full rounded-lg border-[1.5px] bg-white px-2 py-1 text-[15px] outline-none"
 							style="border-color:{bg(row.palette)};"
-							bind:value={draft} autofocus onblur={commitRename}
+							bind:value={draft} autofocus enterkeyhint="done" onblur={commitRename}
 							onkeydown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') cancelRename(); }} />
 					{:else}
 						<button type="button" class="font-display text-ink block truncate text-left text-[15px] font-semibold" onclick={() => beginRename(row.id, row.name, 'list')}>{row.name}</button>
@@ -365,13 +366,13 @@
 				</div>
 				<span class="font-mono text-[13px] font-semibold" style="color:{textColor(row.palette)};">{row.days}d</span>
 				{#if rows.length > 1}
-					<button type="button" class="text-ink-muted hover:text-clay shrink-0 p-1" aria-label="Remove {row.name}" onclick={() => deletePhase(row.id)}>
+					<button type="button" class="text-ink-muted hover:text-clay active:text-clay shrink-0 p-1" aria-label="Remove {row.name}" onclick={() => deletePhase(row.id)}>
 						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /></svg>
 					</button>
 				{/if}
 				<!-- Open Phase Detail (days + this phase's parking lot / add idea). The name is
 				     the rename target, so navigation lives on this explicit chevron. -->
-				<a href="/trips/{trip.slug}/phases/{row.id}" class="text-ink-muted hover:text-ink-soft shrink-0 p-1" aria-label="Open {row.name}">
+				<a href="/trips/{trip.slug}/phases/{row.id}" class="text-ink-muted hover:text-ink-soft active:text-ink-soft shrink-0 p-1" aria-label="Open {row.name}">
 					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
 				</a>
 			</div>

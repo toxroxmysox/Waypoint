@@ -142,7 +142,7 @@
 						<form method="POST" action="?/paint" use:enhance={() => { saving = true; return async ({ update }) => { await update({ reset: false }); saving = false; }; }}>
 							<input type="hidden" name="member_id" value={r.member_id} />
 							<input type="hidden" name="deltas" value="[]" />
-							<button type="submit" class="border-line bg-surface-2 hover:bg-surface text-ink rounded-full border px-3 py-1 text-xs font-medium">
+							<button type="submit" class="border-line bg-surface-2 hover:bg-surface active:bg-surface text-ink rounded-full border px-3 py-1 text-xs font-medium">
 								That's me — {r.name}
 							</button>
 						</form>
@@ -210,6 +210,7 @@
 					bind:value={name}
 					placeholder="e.g. Dana"
 					autocomplete="name"
+					enterkeyhint="done"
 					class="border-line bg-surface text-ink mt-1 mb-3 block w-full rounded-md border px-3 py-2 text-sm"
 				/>
 			{/if}

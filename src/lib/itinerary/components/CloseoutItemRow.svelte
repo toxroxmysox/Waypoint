@@ -53,7 +53,7 @@
 				<button
 					type="button"
 					onclick={() => (editingEnd = !editingEnd)}
-					class="text-ink-muted text-xs hover:underline"
+					class="text-ink-muted text-xs hover:underline active:underline"
 				>
 					{formatDateRange(range.start, range.end)} · adjust
 				</button>
@@ -101,7 +101,7 @@
 					<button
 						type="submit"
 						disabled={submitting}
-						class="rounded-md bg-green-50 px-2.5 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100"
+						class="rounded-md bg-green-50 px-2.5 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 active:bg-green-100"
 						title="Done as planned"
 					>
 						Done
@@ -111,7 +111,7 @@
 				<button
 					type="button"
 					onclick={() => (localState = 'replacing')}
-					class="rounded-md bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100"
+					class="rounded-md bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 active:bg-amber-100"
 					title="Did something else"
 				>
 					Swap
@@ -120,7 +120,7 @@
 				<button
 					type="button"
 					onclick={() => (localState = 'skipped')}
-					class="text-ink-muted rounded-md px-2.5 py-1.5 text-xs hover:bg-gray-100"
+					class="text-ink-muted rounded-md px-2.5 py-1.5 text-xs hover:bg-gray-100 active:bg-gray-100"
 					title="Skip — leave as planned"
 				>
 					Skip

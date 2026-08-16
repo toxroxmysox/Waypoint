@@ -76,7 +76,7 @@
 				aria-selected={activeTab === t.id}
 				onclick={() => (activeTab = t.id)}
 				class="-mb-px border-b-2 px-3 py-2 text-sm font-semibold transition-colors
-					{activeTab === t.id ? 'border-moss text-ink' : 'border-transparent text-ink-muted hover:text-ink-soft'}"
+					{activeTab === t.id ? 'border-moss text-ink' : 'border-transparent text-ink-muted hover:text-ink-soft active:text-ink-soft'}"
 			>
 				{t.label}
 				<span class="text-ink-muted font-mono text-xs">({count})</span>
@@ -186,7 +186,7 @@
 
 								<a
 									href="/trips/{data.trip.slug}/items/new?suggestion={s.id}"
-									class="border-line text-ink-soft hover:bg-surface-2 inline-flex items-center rounded-md border px-3 py-1.5 text-sm font-semibold"
+									class="border-line text-ink-soft hover:bg-surface-2 active:bg-surface-2 inline-flex items-center rounded-md border px-3 py-1.5 text-sm font-semibold"
 								>
 									Edit &amp; Approve
 								</a>

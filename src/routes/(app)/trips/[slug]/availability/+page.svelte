@@ -99,7 +99,7 @@
 						<button
 							type="button"
 							onclick={() => (promoteOpen = true)}
-							class="text-moss hover:text-ink mt-3 inline-flex items-center gap-1 text-xs font-semibold"
+							class="text-moss hover:text-ink active:text-ink mt-3 inline-flex items-center gap-1 text-xs font-semibold"
 							data-testid="promote-toggle"
 						>
 							Go with a window — set the dates

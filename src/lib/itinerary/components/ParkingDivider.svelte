@@ -44,7 +44,7 @@
 	<!-- Divider header: a count chip flanked by rules; tap toggles the ideas list. -->
 	<button
 		type="button"
-		class="text-ink-muted hover:text-ink-soft flex w-full items-center gap-3"
+		class="text-ink-muted hover:text-ink-soft active:text-ink-soft flex w-full items-center gap-3"
 		aria-expanded={expanded}
 		onclick={() => (expanded = !expanded)}
 	>

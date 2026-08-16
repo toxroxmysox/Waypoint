@@ -7,6 +7,7 @@
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import SketchEditor from '$lib/ideation/components/SketchEditor.svelte';
 	import { untrack } from 'svelte';
+	import { revealServerError, errorField } from '$lib/shell/actions/validate-form';
 
 	let { data, form } = $props();
 
@@ -28,6 +29,14 @@
 	let sketch = $state<PhaseSketchSegment[]>(f?.sketch ? [...f.sketch] : []);
 	let selectedKeystones = $state<Set<string>>(new Set(f?.keystones ?? []));
 	let newKeystones = $state('');
+
+	// #375 — a server fail() renders its explanation at the top of the page,
+	// out of sight from the submit control. Scroll it (or the named field) back
+	// into view and give it focus.
+	let alertEl = $state<HTMLElement | null>(null);
+	$effect(() => {
+		if (form?.error) revealServerError(alertEl, errorField(form));
+	});
 	let submitting = $state(false);
 
 	function toggleKeystone(id: string) {
@@ -59,7 +68,7 @@
 		{/if}
 
 		{#if form?.error}
-			<p role="alert" class="text-error-deep mb-3 text-sm">{form.error}</p>
+			<p bind:this={alertEl} role="alert" class="text-error-deep mb-3 text-sm">{form.error}</p>
 		{/if}
 
 		<!-- Title first — the only required field. -->
@@ -140,7 +149,7 @@
 								onclick={() => toggleKeystone(idea.id)}
 								aria-pressed={on}
 								class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] transition-colors
-									{on ? 'bg-moss text-paper border-moss' : 'border-line text-ink-soft hover:border-moss/40'}"
+									{on ? 'bg-moss text-paper border-moss' : 'border-line text-ink-soft hover:border-moss/40 active:border-moss/40'}"
 							>
 								<TypeIcon type={idea.type} size={13} />
 								{idea.title}

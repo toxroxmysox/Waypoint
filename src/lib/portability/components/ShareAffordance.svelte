@@ -109,14 +109,14 @@
 						type="button"
 						onclick={() => (editing = true)}
 						data-testid="share-manage"
-						class="border-line text-ink hover:bg-surface-2 rounded-md border px-3 py-1.5 text-xs font-semibold"
+						class="border-line text-ink hover:bg-surface-2 active:bg-surface-2 rounded-md border px-3 py-1.5 text-xs font-semibold"
 					>
 						{isPublic ? 'Change sharing' : 'Publish record'}
 					</button>
 					{#if isPublic}
 						<form method="POST" action="?/publishRecord" use:enhance={() => async ({ update }) => update({ reset: false })}>
 							<input type="hidden" name="disable" value="on" />
-							<button type="submit" class="text-ink-muted hover:text-ink px-2 py-1.5 text-xs font-medium">
+							<button type="submit" class="text-ink-muted hover:text-ink active:text-ink px-2 py-1.5 text-xs font-medium">
 								Disable sharing
 							</button>
 						</form>
@@ -144,7 +144,7 @@
 					type="button"
 					onclick={() => (confirmReopen = true)}
 					data-testid="reopen-trip"
-					class="text-ink-muted hover:text-ink text-xs font-medium"
+					class="text-ink-muted hover:text-ink active:text-ink text-xs font-medium"
 				>
 					Reopen this trip
 				</button>

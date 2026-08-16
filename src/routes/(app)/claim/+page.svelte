@@ -95,7 +95,7 @@
 					<input type="hidden" name="redirect" value={data.redirectTo ?? ''} />
 					<button
 						type="submit"
-						class="text-ink-muted hover:text-ink w-full py-1 text-center text-sm"
+						class="text-ink-muted hover:text-ink active:text-ink w-full py-1 text-center text-sm"
 					>
 						Skip for now
 					</button>

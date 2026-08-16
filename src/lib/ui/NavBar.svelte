@@ -49,7 +49,7 @@
 			<button
 				type="button"
 				onclick={handleBack}
-				class="text-ink-soft hover:text-ink -ml-2 flex h-11 w-11 items-center justify-center rounded-full"
+				class="text-ink-soft hover:text-ink active:text-ink active:bg-surface-2 -ml-2 flex h-11 w-11 items-center justify-center rounded-full transition duration-75"
 				aria-label="Back"
 			>
 				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
@@ -67,7 +67,7 @@
 		     title would self-link). -->
 		<h1 class="font-display text-ink truncate text-lg font-semibold leading-tight tracking-[-0.2px]" title={title}>
 			{#if homeLink}
-				<a href="/trips" class="hover:text-moss transition-colors" aria-label="{title} — all trips">{title}</a>
+				<a href="/trips" class="hover:text-moss active:text-moss transition-colors" aria-label="{title} — all trips">{title}</a>
 			{:else}
 				{title}
 			{/if}

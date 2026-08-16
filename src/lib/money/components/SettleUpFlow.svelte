@@ -132,6 +132,7 @@
 				id="settle-amount"
 				name="amount_usd"
 				type="number"
+				inputmode="decimal"
 				step="0.01"
 				min="0.01"
 				bind:value={settleAmount}
