@@ -4,10 +4,19 @@
 	import { markReplaceNavigation } from '$lib/shell/stores/nav-depth';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Button from '$lib/ui/Button.svelte';
+	import { revealServerError, errorField } from '$lib/shell/actions/validate-form';
 
 	let { form } = $props();
 
 	let submitting = $state(false);
+
+	// #375 — a server fail() renders its explanation at the top of the page,
+	// out of sight from the submit control. Scroll it (or the named field) back
+	// into view and give it focus.
+	let alertEl = $state<HTMLElement | null>(null);
+	$effect(() => {
+		if (form?.error) revealServerError(alertEl, errorField(form));
+	});
 	let fileInput: HTMLInputElement | undefined = $state();
 	let preview = $state<{ title: string; dates: string; phases: number; items: number } | null>(
 		null
@@ -50,7 +59,7 @@
 
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8">
 	{#if form?.error}
-		<div role="alert" class="border-error/30 bg-error/10 text-error-deep mb-4 rounded-md border p-3 text-sm">
+		<div bind:this={alertEl} role="alert" class="border-error/30 bg-error/10 text-error-deep mb-4 rounded-md border p-3 text-sm">
 			{form.error}
 		</div>
 	{/if}

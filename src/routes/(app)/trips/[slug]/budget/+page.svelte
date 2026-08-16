@@ -224,6 +224,7 @@
 								{#if cat.mode === 'per_day'}
 									<input
 										type="number"
+										inputmode="decimal"
 										step="0.01"
 										min="0"
 										value={cat.daily_amount ?? 0}
@@ -234,6 +235,7 @@
 								{:else}
 									<input
 										type="number"
+										inputmode="decimal"
 										step="0.01"
 										min="0"
 										value={cat.total}

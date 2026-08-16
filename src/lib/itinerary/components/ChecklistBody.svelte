@@ -107,6 +107,7 @@
 				type="text"
 				name="title"
 				required
+				enterkeyhint="done"
 				placeholder={addLabel}
 				class="text-ink placeholder:text-moss flex-1 bg-transparent text-sm font-medium focus:outline-none"
 			/>

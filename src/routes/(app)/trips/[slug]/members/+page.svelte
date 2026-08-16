@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
-	import { validateForm } from '$lib/shell/actions/validate-form';
+	import { validateForm, revealServerError } from '$lib/shell/actions/validate-form';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Avatar from '$lib/ui/Avatar.svelte';
 	import Card from '$lib/ui/Card.svelte';
@@ -139,12 +139,23 @@
 	}
 
 	const isSoleOwner = $derived(data.membership.role === 'owner' && data.ownerCount <= 1);
+
+	// #375 — promote/remove/leave live far down the roster but report at the top
+	// of the page. Scroll the alert back into view and focus it so the outcome of
+	// the tap is never off-screen.
+	let alertEl = $state<HTMLElement | null>(null);
+	$effect(() => {
+		// Reading `form` (a fresh object per submit) keys the effect on the submit
+		// itself, so the same error twice still re-reveals.
+		if (form && (actionError || leaveError)) revealServerError(alertEl);
+	});
 </script>
 
 <NavBar title="Members" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}" />
 <main class="mx-auto w-full max-w-lg flex-1 space-y-6 px-4 pt-4 pb-8 md-desktop:max-w-2xl">
 	{#if actionError || leaveError}
 		<div
+			bind:this={alertEl}
 			role="alert"
 			class="rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error-deep"
 		>
@@ -628,6 +639,7 @@
 										>
 										<input
 											type="number"
+											inputmode="numeric"
 											id="exp-{role}"
 											name="expires_days"
 											min="1"

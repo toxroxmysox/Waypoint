@@ -167,7 +167,9 @@ export const actions: Actions = {
 			try {
 				locationCoords = JSON.parse(locationCoordsRaw);
 			} catch {
-				return fail(400, { error: 'Invalid location data.' });
+				// #375 — `field` names the control the client should focus; it never
+				// changes what is validated, only where the failure is reported.
+				return fail(400, { error: 'Invalid location data.', field: 'location_name' });
 			}
 		}
 		const googlePlaceId = data.get('google_place_id')?.toString() || '';
@@ -202,7 +204,7 @@ export const actions: Actions = {
 		// #78 — goals this item addresses (written goal-side, after the item exists).
 		const goalIds = data.getAll('goals').map((v) => v.toString());
 
-		if (!title) return fail(400, { error: 'Title is required.' });
+		if (!title) return fail(400, { error: 'Title is required.', field: 'title' });
 
 		// #196 — enforce the phase-required invariant at the source: an unscheduled
 		// (no-day) item becomes status=unplanned, and every parking surface is
@@ -216,13 +218,16 @@ export const actions: Actions = {
 				fields: 'id'
 			});
 			if (phaseCount.totalItems > 0) {
-				return fail(400, { error: 'Pick a phase for an unscheduled item, or assign it to a day.' });
+				return fail(400, {
+					error: 'Pick a phase for an unscheduled item, or assign it to a day.',
+					field: 'phase'
+				});
 			}
 		}
 
 		// Validate: meals and notes can't be booked
 		if (booked && (type === 'meal' || type === 'note')) {
-			return fail(400, { error: `${type} items cannot be marked as booked.` });
+			return fail(400, { error: `${type} items cannot be marked as booked.`, field: 'booked' });
 		}
 
 		// Resolve the owning day's date so item times carry the real calendar
@@ -243,7 +248,7 @@ export const actions: Actions = {
 		let endDate = '';
 		if (day && dayDate && endDateRaw && endDateRaw > dayDate) {
 			if (tripEnd && endDateRaw > tripEnd) {
-				return fail(400, { error: 'End date is after the trip ends.' });
+				return fail(400, { error: 'End date is after the trip ends.', field: 'end_date' });
 			}
 			endDate = endDateRaw;
 		}

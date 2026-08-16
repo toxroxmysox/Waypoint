@@ -14,6 +14,7 @@
 	import { titleCase } from '$lib/shell/format';
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
+	import { revealServerError, errorField } from '$lib/shell/actions/validate-form';
 
 	let { data, form } = $props();
 
@@ -49,6 +50,14 @@
 	let editing = $state(false);
 	let loading = $state(false);
 	let error = $derived(form?.error ?? form?.reviewError ?? '');
+
+	// #375 — a server fail() renders its explanation at the top of the page,
+	// out of sight from the submit control. Scroll it (or the named field) back
+	// into view and give it focus.
+	let alertEl = $state<HTMLElement | null>(null);
+	$effect(() => {
+		if (form?.error || form?.reviewError) revealServerError(alertEl, errorField(form));
+	});
 	const parkingLotItems = $derived(data.phaseItems.filter((it) => it.status === 'unplanned'));
 	// #248 — pending suggestions for this phase, as Ghost Cards (dotted "pending"),
 	// sourced from the pure parking-lot-cards merge so they tag + sort consistently.
@@ -95,7 +104,7 @@
      Card content, drag wiring (#87/#88), and DayCard internals (#65) untouched. -->
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-4xl flex-1 px-4 pt-5 pb-10">
 	{#if error}
-		<div role="alert" class="border-error/30 bg-error/10 text-error-deep mb-4 rounded-md border p-3 text-sm">{error}</div>
+		<div bind:this={alertEl} role="alert" class="border-error/30 bg-error/10 text-error-deep mb-4 rounded-md border p-3 text-sm">{error}</div>
 	{/if}
 
 	<header class="border-line border-b pb-4">

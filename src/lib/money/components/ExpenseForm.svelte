@@ -190,6 +190,7 @@
 			id="expense-amount"
 			name="amount_usd"
 			type="number"
+			inputmode="decimal"
 			step="0.01"
 			min="0.01"
 			bind:value={amount}
@@ -338,6 +339,7 @@
 							<span class="min-w-[80px] text-sm text-ink truncate">{memberName(member.id)}</span>
 							<input
 								type="number"
+								inputmode="decimal"
 								step="0.01"
 								min="0"
 								placeholder="0.00"
