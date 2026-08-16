@@ -142,17 +142,26 @@ body {
  * IS the button.
  *
  * Two rules for applying it:
- *  - The host must not already be positioned — this sets `position: relative`
- *    from outside Tailwind's utility layer, so it would beat an `absolute`.
  *  - Adjacent overlays may overlap; that is acceptable while the visual gap is
- *    ≥8px, and later DOM siblings win the overlap. Do not use it inside a
- *    horizontal scroll row (the overlay adds scroll width) — grow the padding
- *    there instead, as SubTabs does.
+ *    ≥8px, and later DOM siblings win the overlap. Below that the overhang
+ *    reaches the neighbour's PAINTED edge and steals real taps. Do not use it
+ *    inside a horizontal scroll row (the overlay adds scroll width) — grow the
+ *    padding there instead, as SubTabs does.
+ *  - It does NOT work under sticky/fixed chrome: the overlay is centred, so it
+ *    grows upward into that chrome, which paints over it. Size such controls
+ *    directly instead (DayNav's arrows, `min-h-11 min-w-11`).
+ *
+ * The `:not()` guard makes the "host must not already be positioned" rule
+ * self-enforcing. These rules sit outside Tailwind's utility layer and so
+ * outrank it — without the guard, a caller passing `absolute`/`fixed`/`sticky`
+ * (e.g. through Button's `class` prop, where the component cannot see its own
+ * context) would be silently overridden into `relative` and mislaid, with
+ * nothing in check/unit/e2e/screenshots able to see it.
  *
  * Reference for the "just size the control properly" case: NavBar's back
  * button (h-11 w-11 with -ml-2), which needs none of this.
  */
-.hit-44 {
+.hit-44:not(.absolute):not(.fixed):not(.sticky):not(.relative) {
 	position: relative;
 }
 

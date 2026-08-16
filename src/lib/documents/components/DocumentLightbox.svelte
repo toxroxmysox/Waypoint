@@ -119,7 +119,12 @@
 					<span class="bg-moss/20 text-moss-tint shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold">Saved offline</span>
 				{/if}
 			</div>
-			<div class="flex shrink-0 items-center gap-1">
+			<!-- gap-2, not gap-1: these controls carry `hit-44`, whose overlay
+			     overhangs a 32px control by 6px per side. At a 4px gap that
+			     overhang reaches the neighbour's PAINTED edge and the last DOM
+			     sibling (Close) wins it. At >=8px the overlays only ever contest
+			     empty gap. See the rule in layout.css. -->
+			<div class="flex shrink-0 items-center gap-2">
 				{#if shareSupported}
 					<button
 						type="button"
