@@ -2,7 +2,12 @@
 	import type { Snippet } from 'svelte';
 	import type { Vote, TripMember } from '$lib/types';
 	import { type VoteValue } from '$lib/collaboration/voting';
-	import { voteFromIntent, COMMIT_PX } from '$lib/collaboration/swipe-deck';
+	import {
+		voteFromIntent,
+		commitFromRelease,
+		COMMIT_PX,
+		type PointerSample
+	} from '$lib/collaboration/swipe-deck';
 	import { haptic } from '$lib/utils/haptics';
 	import { VOTE_META } from './vote-meta';
 	import RadialProgress from './RadialProgress.svelte';
@@ -215,23 +220,40 @@
 
 	// ── drag (vote cards only) ────────────────────────────────────────────
 	let start: { x: number; y: number } | null = null;
+	// #376: trailing pointer samples feeding the flick check. Plain array, not
+	// $state — nothing renders from it, and per-move reactivity would be waste.
+	// Capped at SAMPLE_CAP: at 120Hz that still spans > VELOCITY_WINDOW_MS.
+	const SAMPLE_CAP = 12;
+	let samples: PointerSample[] = [];
+	function pushSample(e: PointerEvent) {
+		samples.push({ x: e.clientX, y: e.clientY, t: performance.now() });
+		if (samples.length > SAMPLE_CAP) samples.shift();
+	}
 	function onDown(e: PointerEvent) {
 		if (buttonsOnly || isPrompt || !card || animatingRef.current) return;
 		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
 		start = { x: e.clientX, y: e.clientY };
+		samples = [];
+		pushSample(e);
 		drag = { dx: 0, dy: 0, active: true };
 	}
 	function onMove(e: PointerEvent) {
 		if (!start) return;
+		pushSample(e);
 		drag = { dx: e.clientX - start.x, dy: e.clientY - start.y, active: true };
 	}
-	function onUp() {
+	function onUp(e: PointerEvent) {
 		if (!start) return;
+		// The release sample is required, not optional: it ages out a fast burst
+		// that decayed into a hold, which produces no further pointermove events.
+		pushSample(e);
 		const { dx, dy } = drag;
 		start = null;
-		const intent = voteFromIntent(dx, dy);
-		const far = Math.hypot(dx, dy) > COMMIT_PX;
-		if (intent && far) commit(intent);
+		// Past COMMIT_PX → commit as before; under it, a fast enough flick commits
+		// along the flick's direction instead of springing back (#376).
+		const intent = commitFromRelease(dx, dy, samples);
+		samples = [];
+		if (intent) commit(intent);
 		else drag = { dx: 0, dy: 0, active: false };
 	}
 

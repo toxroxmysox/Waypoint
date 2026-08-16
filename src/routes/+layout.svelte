@@ -6,6 +6,7 @@
 	import A2HSBanner from '$lib/shell/components/A2HSBanner.svelte';
 	import Toast from '$lib/ui/Toast.svelte';
 	import { installOfflineWriteGuard } from '$lib/shell/offline-write-guard';
+	import { installResumeRefresh } from '$lib/shell/resume-refresh';
 
 	let { children } = $props();
 	let routeAnnouncement = $state('');
@@ -23,9 +24,14 @@
 		// with a toast; read navigation is unaffected. One capture-phase listener.
 		const teardownGuard = installOfflineWriteGuard();
 
+		// Resume revalidation (#372): back after >60s hidden → silent invalidateAll.
+		// No spinner, no gesture; under 60s nothing happens.
+		const teardownResume = installResumeRefresh();
+
 		return () => {
 			document.removeEventListener('wheel', handler);
 			teardownGuard();
+			teardownResume();
 		};
 	});
 
