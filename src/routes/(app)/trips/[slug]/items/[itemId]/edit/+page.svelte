@@ -122,7 +122,7 @@
 			<button
 				type="button"
 				onclick={() => (confirmDelete = true)}
-				class="border-error/40 text-error hover:bg-error/10 active:bg-error/10 mt-2 rounded-md border px-3 py-1.5 text-sm font-semibold"
+				class="hit-44 border-error/40 text-error hover:bg-error/10 active:bg-error/10 mt-2 rounded-md border px-3 py-1.5 text-sm font-semibold"
 			>
 				Delete
 			</button>
@@ -142,14 +142,14 @@
 				<button
 					type="submit"
 					disabled={deleting}
-					class="bg-error text-paper hover:bg-error/90 active:bg-error/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-40"
+					class="hit-44 bg-error text-paper hover:bg-error/90 active:bg-error/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-40"
 				>
 					{deleting ? 'Deleting…' : 'Confirm delete'}
 				</button>
 				<button
 					type="button"
 					onclick={() => (confirmDelete = false)}
-					class="text-ink-muted hover:text-ink-soft active:text-ink-soft text-sm"
+					class="hit-44 text-ink-muted hover:text-ink-soft active:text-ink-soft text-sm"
 				>
 					Cancel
 				</button>

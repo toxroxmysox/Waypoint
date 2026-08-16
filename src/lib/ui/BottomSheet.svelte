@@ -55,7 +55,7 @@
 				<h2 class="font-display text-base font-semibold text-ink">{title}</h2>
 				<button
 					type="button"
-					class="text-ink-muted hover:text-ink active:text-ink p-1"
+					class="text-ink-muted hover:text-ink active:text-ink hit-44 p-1"
 					onclick={() => (open = false)}
 					aria-label="Close"
 				>

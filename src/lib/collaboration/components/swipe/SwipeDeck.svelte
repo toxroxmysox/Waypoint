@@ -285,7 +285,7 @@
 				onclick={undo}
 				disabled={history.length === 0}
 				aria-label="Rewind last vote"
-				class="border-line bg-surface text-ink-soft active:bg-surface-2 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors duration-75 disabled:opacity-45"
+				class="hit-44 border-line bg-surface text-ink-soft active:bg-surface-2 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors duration-75 disabled:opacity-45"
 			>
 				<span aria-hidden="true">↺</span> Rewind
 			</button>
@@ -294,7 +294,7 @@
 				type="button"
 				onclick={() => (peek = !peek)}
 				aria-pressed={peek}
-				class="border-line bg-surface text-ink-soft active:bg-surface-2 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors duration-75"
+				class="hit-44 border-line bg-surface text-ink-soft active:bg-surface-2 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors duration-75"
 			>
 				<span aria-hidden="true">{peek ? '◑' : '○'}</span>
 				{peek ? 'Peeking' : 'Peek'}
@@ -307,7 +307,7 @@
 					type="button"
 					onclick={onclose}
 					aria-label="Close"
-					class="text-ink-soft active:opacity-60 inline-flex p-1 transition-opacity duration-75"
+					class="hit-44 text-ink-soft active:opacity-60 inline-flex p-1 transition-opacity duration-75"
 				>
 					<span aria-hidden="true" class="text-xl leading-none">×</span>
 				</button>
@@ -447,7 +447,7 @@
 											e.stopPropagation();
 											openDetail(card);
 										}}
-										class="border-line bg-surface-2 text-ink-soft active:bg-surface ml-auto inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors duration-75"
+										class="hit-44 border-line bg-surface-2 text-ink-soft active:bg-surface ml-auto inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors duration-75"
 									>
 										Details <span aria-hidden="true">›</span>
 									</button>

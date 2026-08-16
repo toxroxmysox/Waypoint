@@ -41,9 +41,12 @@
 		outline: 'bg-surface-2 text-ink border-line hover:bg-surface active:bg-surface'
 	};
 
+	// #366: `sm` lands ~30px tall and `md` ~36px — both under the 44pt HIG floor.
+	// `hit-44` grows only the hit AREA (a centred ::after overlay), so the painted
+	// button keeps its authored size; `lg` is already ≥44px and needs nothing.
 	const sizeClass: Record<Size, string> = {
-		sm: 'px-3 py-1.5 text-[13px] rounded-md gap-1.5',
-		md: 'px-4 py-2 text-sm rounded-md gap-2',
+		sm: 'hit-44 px-3 py-1.5 text-[13px] rounded-md gap-1.5',
+		md: 'hit-44 px-4 py-2 text-sm rounded-md gap-2',
 		lg: 'px-5 py-2.5 text-base rounded-lg gap-2'
 	};
 

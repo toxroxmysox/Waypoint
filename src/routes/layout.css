@@ -133,6 +133,39 @@ body {
 	outline-offset: 2px;
 }
 
+/*
+ * #366 — iOS HIG 44×44pt minimum hit target, without touching the visual.
+ * A centred, invisible ::after overlay grows the tappable area around a small
+ * control (icon buttons, text-link actions) while the painted control keeps
+ * its authored size. `max(100%, 44px)` means it is a no-op on anything already
+ * ≥44px. Pseudo-elements hit-test as their originating element, so the overlay
+ * IS the button.
+ *
+ * Two rules for applying it:
+ *  - The host must not already be positioned — this sets `position: relative`
+ *    from outside Tailwind's utility layer, so it would beat an `absolute`.
+ *  - Adjacent overlays may overlap; that is acceptable while the visual gap is
+ *    ≥8px, and later DOM siblings win the overlap. Do not use it inside a
+ *    horizontal scroll row (the overlay adds scroll width) — grow the padding
+ *    there instead, as SubTabs does.
+ *
+ * Reference for the "just size the control properly" case: NavBar's back
+ * button (h-11 w-11 with -ml-2), which needs none of this.
+ */
+.hit-44 {
+	position: relative;
+}
+
+.hit-44::after {
+	content: '';
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	width: max(100%, 44px);
+	height: max(100%, 44px);
+}
+
 /* Suppress the iOS long-press callout ("Open in New Tab") on internal app cards
    that double as drag sources, and stop the press from selecting text. #60. */
 .no-callout {

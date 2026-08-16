@@ -129,7 +129,7 @@
 								<button
 									type="submit"
 									aria-label="Unlink {item.title}"
-									class="text-ink-muted hover:text-error active:text-error p-1"
+									class="hit-44 text-ink-muted hover:text-error active:text-error p-1"
 								>
 									<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 										<path d="M6 18L18 6M6 6l12 12" />
@@ -200,7 +200,7 @@
 				<button
 					type="button"
 					onclick={() => (confirmDelete = true)}
-					class="border-error/40 text-error hover:bg-error/10 active:bg-error/10 mt-2 rounded-md border px-3 py-1.5 text-sm font-semibold"
+					class="hit-44 border-error/40 text-error hover:bg-error/10 active:bg-error/10 mt-2 rounded-md border px-3 py-1.5 text-sm font-semibold"
 				>
 					Delete
 				</button>
@@ -208,14 +208,14 @@
 				<form method="POST" action="?/delete" use:enhance class="mt-2 flex items-center gap-2">
 					<button
 						type="submit"
-						class="bg-error text-paper hover:bg-error/90 active:bg-error/90 rounded-md px-3 py-1.5 text-sm font-semibold"
+						class="hit-44 bg-error text-paper hover:bg-error/90 active:bg-error/90 rounded-md px-3 py-1.5 text-sm font-semibold"
 					>
 						Confirm delete
 					</button>
 					<button
 						type="button"
 						onclick={() => (confirmDelete = false)}
-						class="text-ink-muted hover:text-ink-soft active:text-ink-soft text-sm"
+						class="hit-44 text-ink-muted hover:text-ink-soft active:text-ink-soft text-sm"
 					>
 						Cancel
 					</button>

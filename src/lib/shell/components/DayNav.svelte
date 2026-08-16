@@ -48,7 +48,7 @@
 	{#if prevDay}
 		<a
 			href="/trips/{tripSlug}/days/{prevDay.id}"
-			class="text-ink-muted hover:text-ink active:text-ink flex items-center gap-1 text-sm"
+			class="text-ink-muted hover:text-ink active:text-ink hit-44 flex items-center gap-1 text-sm"
 			aria-label="Previous day: {dayLabel(prevDay)}"
 		>
 			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -65,7 +65,7 @@
 	{#if nextDay}
 		<a
 			href="/trips/{tripSlug}/days/{nextDay.id}"
-			class="text-ink-muted hover:text-ink active:text-ink flex items-center gap-1 text-sm"
+			class="text-ink-muted hover:text-ink active:text-ink hit-44 flex items-center gap-1 text-sm"
 			aria-label="Next day: {dayLabel(nextDay)}"
 		>
 			<span class="hidden xs:inline">{dayLabel(nextDay)}</span>

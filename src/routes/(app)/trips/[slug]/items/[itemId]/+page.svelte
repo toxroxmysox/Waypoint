@@ -412,7 +412,7 @@
 				<button
 					type="submit"
 					disabled={skipping}
-					class="border-ink-muted/40 text-ink-soft hover:bg-surface-2 active:bg-surface-2 rounded-md border px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
+					class="hit-44 border-ink-muted/40 text-ink-soft hover:bg-surface-2 active:bg-surface-2 rounded-md border px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
 				>
 					{skipping ? 'Skipping…' : 'Skip — not happening'}
 				</button>
@@ -427,7 +427,7 @@
 			<button
 				type="button"
 				onclick={() => (confirmDelete = true)}
-				class="border-clay/40 text-clay hover:bg-clay/10 active:bg-clay/10 mt-2 rounded-md border px-3 py-1.5 text-sm font-semibold"
+				class="hit-44 border-clay/40 text-clay hover:bg-clay/10 active:bg-clay/10 mt-2 rounded-md border px-3 py-1.5 text-sm font-semibold"
 			>
 				Delete
 			</button>
@@ -454,14 +454,14 @@
 				<button
 					type="submit"
 					disabled={deleting}
-					class="bg-clay text-paper hover:bg-clay/90 active:bg-clay/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-40"
+					class="hit-44 bg-clay text-paper hover:bg-clay/90 active:bg-clay/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-40"
 				>
 					{deleting ? 'Deleting…' : 'Confirm'}
 				</button>
 				<button
 					type="button"
 					onclick={() => (confirmDelete = false)}
-					class="text-ink-muted hover:text-ink-soft active:text-ink-soft text-sm"
+					class="hit-44 text-ink-muted hover:text-ink-soft active:text-ink-soft text-sm"
 				>
 					Cancel
 				</button>

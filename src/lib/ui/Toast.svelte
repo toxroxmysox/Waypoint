@@ -35,7 +35,7 @@
 			<button
 				type="button"
 				onclick={() => toast.dismiss()}
-				class="ml-1 rounded-full p-0.5 opacity-40 hover:opacity-100 active:opacity-100"
+				class="hit-44 ml-1 rounded-full p-0.5 opacity-40 hover:opacity-100 active:opacity-100"
 				aria-label="Dismiss"
 			>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>

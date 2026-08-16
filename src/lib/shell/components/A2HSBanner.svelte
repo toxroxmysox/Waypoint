@@ -73,7 +73,7 @@
 					<Button onclick={installAndroid} variant="moss" size="sm" class="mt-2">Install</Button>
 				{/if}
 			</div>
-			<button onclick={dismiss} class="text-ink-muted hover:text-ink-soft active:text-ink-soft shrink-0 p-1" aria-label="Dismiss">
+			<button onclick={dismiss} class="text-ink-muted hover:text-ink-soft active:text-ink-soft hit-44 shrink-0 p-1" aria-label="Dismiss">
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M18 6 6 18M6 6l12 12" />
 				</svg>
