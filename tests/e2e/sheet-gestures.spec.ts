@@ -397,4 +397,43 @@ test.describe('BottomSheet gestures (#365)', () => {
 			await ctx.close();
 		}
 	});
+
+	test('opening and closing a sheet does not lose the scroll position', async ({ browser }) => {
+		const { page, ctx } = await devLogin(browser);
+		try {
+			// A page long enough to scroll. The expenses page in this fixture is not.
+			await page.goto(`${BASE}/trips/${FIXTURE_SLUG}`, { waitUntil: 'networkidle' });
+
+			// Prove the precondition before leaning on it. `networkidle` can still be
+			// mid-render, and scrolling a document that is not yet tall enough leaves
+			// scrollY at 0 — which resurfaces at the assertion below as "expected 200,
+			// received 0" and reads EXACTLY like the product bug this guard exists to
+			// catch. Poll until the document can genuinely hold a 200px offset, so a
+			// short or slow fixture fails here, naming its own cause.
+			await expect
+				.poll(
+					async () =>
+						page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight),
+					{ timeout: 5000 }
+				)
+				.toBeGreaterThanOrEqual(200);
+
+			await page.evaluate(() => window.scrollTo(0, 200));
+			await expect.poll(async () => page.evaluate(() => window.scrollY)).toBe(200);
+
+			await page.locator('[aria-label="Add idea or plan"]:visible').first().click();
+			await waitForSheetAtRest(page);
+			await page.locator('.z-modal button[aria-label="Close"]').first().click();
+			await expect.poll(async () => page.locator('.z-modal').count(), { timeout: 5000 }).toBe(0);
+
+			// Regression guard: the fixed-body lock (#373) and the history entry
+			// (#365) BOTH touch scroll. SvelteKit snapshots the scroll offset into
+			// the entry pushState creates, so if the body is pinned before that push
+			// the snapshot records 0 and closing the sheet throws the reader back to
+			// the top of the page. Both effects must agree on 200.
+			await expect.poll(async () => page.evaluate(() => window.scrollY), { timeout: 5000 }).toBe(200);
+		} finally {
+			await ctx.close();
+		}
+	});
 });

@@ -67,16 +67,6 @@
 		closeByUser();
 	}
 
-	// #373 — pin the page behind the sheet. Reference-counted in the store, so
-	// nesting (sheet → lightbox) releases the body only once the last one closes.
-	// The cleanup arm covers every exit: close, unmount, and navigating away with
-	// the sheet still open.
-	$effect(() => {
-		if (!open) return;
-		lockBodyScroll();
-		return () => unlockBodyScroll();
-	});
-
 	// ---------------------------------------------------------------------------
 	// #365 — back / edge-swipe is swallowed by an open sheet.
 	//
@@ -207,6 +197,24 @@
 		closingFromPopstate = true;
 		cancelDrag();
 		open = false;
+	});
+
+	// #373 — pin the page behind the sheet. Reference-counted in the store, so
+	// nesting (sheet → lightbox) releases the body only once the last one closes.
+	// The cleanup arm covers every exit: close, unmount, and navigating away with
+	// the sheet still open.
+	//
+	// DECLARED AFTER THE HISTORY EFFECT, AND THE ORDER MATTERS. Svelte runs
+	// effects in creation order, and SvelteKit snapshots the current scroll offset
+	// into the entry that `pushState` creates. Pin the body first and that
+	// snapshot records 0, so the popstate from closing the sheet restores the page
+	// to the top — measured as "scrolled to 200, opened and closed a sheet, landed
+	// at 0". Pushing first captures the real offset, and SvelteKit's restore then
+	// agrees with ours instead of fighting it.
+	$effect(() => {
+		if (!open) return;
+		lockBodyScroll();
+		return () => unlockBodyScroll();
 	});
 
 	// ---------------------------------------------------------------------------
