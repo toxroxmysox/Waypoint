@@ -18,18 +18,20 @@ export const actions: Actions = {
 		const locationSummary = data.get('location_summary')?.toString().trim() || '';
 		const autoApproveSuggestions = data.get('auto_approve_suggestions') === 'on';
 
-		if (!title) return fail(400, { error: 'Title is required.' });
+		// #375 — `field` names the control the client should focus; it never
+		// changes what is validated, only where the failure is reported.
+		if (!title) return fail(400, { error: 'Title is required.', field: 'title' });
 		// #270 / ADR-0022 — both dates or neither. A forming trip may stay
 		// dateless; setting both promotes it (the PB update hook seeds Phase 1 +
 		// days). Clearing dates on a dated trip is rejected below (one-way).
 		if ((startDate && !endDate) || (!startDate && endDate)) {
-			return fail(400, { error: 'Set both dates, or leave both empty.' });
+			return fail(400, { error: 'Set both dates, or leave both empty.', field: startDate ? 'end_date' : 'start_date' });
 		}
 		if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
-			return fail(400, { error: 'Start date must be before end date.' });
+			return fail(400, { error: 'Start date must be before end date.', field: 'start_date' });
 		}
 		if (timezone && !isValidTimeZone(timezone)) {
-			return fail(400, { error: `"${timezone}" is not a valid timezone.` });
+			return fail(400, { error: `"${timezone}" is not a valid timezone.`, field: 'timezone' });
 		}
 
 		try {

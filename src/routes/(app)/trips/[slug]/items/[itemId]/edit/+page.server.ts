@@ -93,7 +93,9 @@ export const actions: Actions = {
 			try {
 				locationCoords = JSON.parse(locationCoordsRaw);
 			} catch {
-				return fail(400, { error: 'Invalid location data.' });
+				// #375 — `field` names the control the client should focus; it never
+				// changes what is validated, only where the failure is reported.
+				return fail(400, { error: 'Invalid location data.', field: 'location_name' });
 			}
 		}
 		const googlePlaceId = data.get('google_place_id')?.toString() || '';
@@ -124,7 +126,7 @@ export const actions: Actions = {
 		// #78 — goals this item addresses (reconciled goal-side after the update).
 		const goalIds = data.getAll('goals').map((v) => v.toString());
 
-		if (!title) return fail(400, { error: 'Title is required.' });
+		if (!title) return fail(400, { error: 'Title is required.', field: 'title' });
 
 		try {
 			const item = await locals.pb.collection('items').getOne(params.itemId);
@@ -133,7 +135,7 @@ export const actions: Actions = {
 			const resolvedType = type || (item['type'] as string);
 
 			if (booked && (resolvedType === 'meal' || resolvedType === 'note')) {
-				return fail(400, { error: `${resolvedType} items cannot be marked as booked.` });
+				return fail(400, { error: `${resolvedType} items cannot be marked as booked.`, field: 'booked' });
 			}
 
 			// Status logic: only override to planned/unplanned based on day presence;
@@ -155,7 +157,10 @@ export const actions: Actions = {
 					fields: 'id'
 				});
 				if (phaseCount.totalItems > 0) {
-					return fail(400, { error: 'Pick a phase for an unscheduled item, or assign it to a day.' });
+					return fail(400, {
+						error: 'Pick a phase for an unscheduled item, or assign it to a day.',
+						field: 'phase'
+					});
 				}
 			}
 
@@ -180,7 +185,7 @@ export const actions: Actions = {
 			let endDate = '';
 			if (resolvedStatus !== 'unplanned' && day && dayDate && endDateRaw && endDateRaw > dayDate) {
 				if (tripEnd && endDateRaw > tripEnd) {
-					return fail(400, { error: 'End date is after the trip ends.' });
+					return fail(400, { error: 'End date is after the trip ends.', field: 'end_date' });
 				}
 				endDate = endDateRaw;
 			}
