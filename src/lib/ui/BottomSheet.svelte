@@ -2,10 +2,18 @@
 	import type { Snippet } from 'svelte';
 	import { untrack } from 'svelte';
 	import { fly, fade } from 'svelte/transition';
-	import { pushState, beforeNavigate } from '$app/navigation';
+	import { pushState } from '$app/navigation';
 	import { page } from '$app/state';
 	import { reducedMotion } from '$lib/shell/stores/reduced-motion';
 	import { lockBodyScroll, unlockBodyScroll } from '$lib/shell/scroll-lock';
+	import {
+		markOrphanEntry,
+		isOrphan,
+		consumeOrphan,
+		nextSheetId,
+		sheetOpened,
+		sheetClosed
+	} from '$lib/shell/sheet-history';
 
 	let {
 		open = $bindable(false),
@@ -104,14 +112,31 @@
 	// Discard — where by construction nothing is in flight, and it runs
 	// SYNCHRONOUSLY with the close rather than a tick later.
 	//
-	// A programmatic close therefore leaves its entry behind. That entry is
-	// remembered as `vestigialToken` and consumed by the next back press, so back
-	// is never a dead tap (the #235 scar). A real navigation buries the entry and
-	// clears the token with it.
+	// A programmatic close therefore leaves its entry behind — and this component
+	// is often unmounted by the very navigation that followed, so it cannot come
+	// back later to clean up. The orphan is handed to `sheet-history.ts`, which
+	// the ROOT LAYOUT owns and which outlives every route; the layout walks the
+	// dead entry when the user lands on it, so back is never a dead tap (#235).
+	//
+	// An earlier revision kept that memory here and cleared it in `beforeNavigate`.
+	// That is precisely what broke: the `goto` FOLLOWING the close cleared the
+	// record of the entry the close had just orphaned.
+	//
+	// `vestigialToken` remains for the case where we are NOT unmounted — an
+	// `enhance` success re-runs `load` in place. There the layout cannot help
+	// (with no navigation `page.state` never changes, so its effect never
+	// re-runs), and we are still here to do it ourselves. Both paths funnel
+	// through `consumeOrphan` so an entry is never walked twice.
+	let entryId = 0;
 	let vestigialToken = 0;
-	beforeNavigate((nav) => {
-		if (nav.type !== 'leave') vestigialToken = 0;
-	});
+	let vestigialId = 0;
+	// The pathname when the entry was orphaned. The in-place walk below is only
+	// legitimate while we are STILL ON THAT PAGE: if a navigation followed the
+	// close, `depth` drops to 0 because the new entry has no sheet state, and
+	// walking on that would `history.back()` straight over the navigation the
+	// close was performing — undoing it. (Measured: the AddSheet choice never
+	// reached /items/new.) Same guard shape as scroll-lock's restore.
+	let vestigialPath = '';
 
 	/** Pop our own entry, synchronously, if it is still the current one. */
 	function popOurEntry() {
@@ -119,8 +144,10 @@
 		if (untrack(() => page.state.sheet) !== historyToken) return;
 		// Cleared BEFORE history.back() so the popstate it triggers finds nothing
 		// to react to — otherwise the popstate effect reads it as a user back.
+		const eid = entryId;
 		historyToken = 0;
-		vestigialToken = 0;
+		entryId = 0;
+		consumeOrphan(eid);
 		history.back();
 	}
 
@@ -138,25 +165,43 @@
 		// endless push loop.
 		const token = untrack(() => (page.state.sheet ?? 0) + 1);
 		historyToken = token;
+		// `sheet` is a nesting DEPTH and repeats across time; `sheetId` is unique
+		// per pushed entry, and is what orphan bookkeeping keys on.
+		const id = nextSheetId();
+		entryId = id;
+		sheetOpened();
 		try {
-			untrack(() => pushState('', { ...page.state, sheet: token }));
+			untrack(() => pushState('', { ...page.state, sheet: token, sheetId: id }));
 		} catch {
 			// Router not initialised yet (or shallow routing unavailable): the sheet
 			// still works, it just does not swallow back. Never let this throw take
 			// the sheet down with it.
 			historyToken = 0;
+			entryId = 0;
 		}
 
 		return () => {
 			const wasPopstate = closingFromPopstate;
 			const t = historyToken;
+			const eid = entryId;
 			closingFromPopstate = false;
 			historyToken = 0;
+			entryId = 0;
+			sheetClosed();
 
 			// Already consumed: by the back press itself, or by popOurEntry().
 			if (wasPopstate || t === 0) return;
-			// Closed programmatically. Leave the entry; the next back walks it.
-			if (untrack(() => page.state.sheet) === t) vestigialToken = t;
+			// Closed programmatically — the entry outlives us. We cannot pop it here
+			// (that races the in-flight navigation and loses the just-saved record),
+			// and we cannot walk it later either, because this component is about to
+			// unmount with the navigation. Hand it to the module the root layout
+			// owns, which outlives both.
+			if (untrack(() => page.state.sheet) === t && eid > 0) {
+				vestigialToken = t; // if we survive ON THIS PAGE, we walk it ourselves
+				vestigialId = eid;
+				vestigialPath = typeof location === 'undefined' ? '' : location.pathname;
+				markOrphanEntry(eid); // if a navigation unmounts us, the layout walks it
+			}
 		};
 	});
 
@@ -165,13 +210,24 @@
 	$effect(() => {
 		const depth = page.state.sheet ?? 0;
 
-		// Sheet already closed, but the entry it pushed is still in the stack (a
-		// programmatic close). The user's back press just landed on a dead entry
-		// with the same URL, so nothing appeared to happen — walk it for them and
-		// let the press mean what they intended. Safe here specifically because a
-		// back press is not a moment when the app has data in flight.
-		if (!untrack(() => open) && vestigialToken > 0 && depth < vestigialToken) {
+		// We closed programmatically but were NOT unmounted (an `enhance` success
+		// that re-runs `load` without navigating). The entry is still ahead of the
+		// user; their next back press consumes it and shows nothing, so walk one
+		// more for them. This case belongs here rather than in the layout's walk
+		// precisely BECAUSE we are still mounted — and the layout cannot see it,
+		// since with no navigation `page.state` never changes and its effect never
+		// re-runs. The unmounted twin of this case is the layout's job.
+		if (
+			!untrack(() => open) &&
+			vestigialToken > 0 &&
+			isOrphan(vestigialId) &&
+			depth < vestigialToken &&
+			location.pathname === vestigialPath
+		) {
+			const id = vestigialId;
 			vestigialToken = 0;
+			vestigialId = 0;
+			consumeOrphan(id);
 			history.back();
 			return;
 		}
@@ -372,6 +428,9 @@
 	}
 
 	function onKeydown(e: KeyboardEvent) {
+		// Window-bound, so it fires for every mounted sheet — guard on our own
+		// open state or a closed sheet would react to another sheet's Escape.
+		if (!open) return;
 		if (e.key !== 'Escape') return;
 		// Escape backs out of the confirm first, rather than skipping past the
 		// question it just asked.
@@ -383,9 +442,18 @@
 	}
 </script>
 
+<!--
+	Escape is bound at the WINDOW, not on the overlay div. Keydown only reaches an
+	element that focus is inside, and opening a sheet from a FAB leaves focus on
+	`body` — so the div-bound handler this replaces never fired at all, and Escape
+	silently did nothing. (Pre-existing: `main` has the same shape. Measured, not
+	assumed: a probe pressed Escape and the sheet stayed open.)
+-->
+<svelte:window onkeydown={onKeydown} />
+
 {#if open}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="fixed inset-0 z-modal flex items-end justify-center" onkeydown={onKeydown}>
+	<div class="fixed inset-0 z-modal flex items-end justify-center">
 		<!--
 			#373 — `touch-action: none` is what stops a touch-drag ON THE BACKDROP
 			from scrolling the page behind it. The body lock handles the rest; this

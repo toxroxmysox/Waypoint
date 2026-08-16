@@ -217,6 +217,77 @@ test.describe('BottomSheet gestures (#365)', () => {
 		}
 	});
 
+	// Regression guard for the #235 dead tap, measured on this branch before the
+	// history ownership moved to `sheet-history.ts` + the root layout.
+	//
+	// A sheet that closes as PART OF AN ACTION (`open = false; goto(...)`) cannot
+	// pop its own entry — that races the navigation and loses the just-saved
+	// record — and cannot clean up afterwards either, because that navigation
+	// unmounts it. The entry was therefore orphaned, and the SECOND back press
+	// after any AddSheet flow did nothing at all.
+	//
+	// Asserted as: every back press must change something. That is the property
+	// the user actually feels, and it catches both failure modes — a press that
+	// does nothing, and a press that skips a page (an earlier fix walked twice
+	// and jumped straight over /now).
+	test('every back press does something after an AddSheet flow (#235)', async ({ browser }) => {
+		const { page, ctx } = await devLogin(browser);
+		try {
+			await page.goto(`${BASE}/trips/${FIXTURE_SLUG}`, { waitUntil: 'networkidle' });
+			await page.goto(`${BASE}/trips/${FIXTURE_SLUG}/now`, { waitUntil: 'networkidle' });
+
+			const add = page.locator('[aria-label="Add"]:visible').first();
+			await add.click();
+			await waitForSheetAtRest(page);
+
+			// Pick any choice — each does `open = false; goto(...)`.
+			await page
+				.locator('[data-sheet-panel] a, [data-sheet-panel] button')
+				.filter({ hasText: /expense|item|idea|note/i })
+				.first()
+				.click();
+			await page.waitForURL((u) => !u.pathname.endsWith('/now'), { timeout: 10000 });
+
+			// Walk back out. No press may leave the URL unchanged.
+			let prev = new URL(page.url()).pathname;
+			const seen = [prev];
+			for (let i = 0; i < 2; i++) {
+				await page.goBack();
+				await page.waitForTimeout(900);
+				const now = new URL(page.url()).pathname;
+				expect(now, `back press ${i + 1} was a dead tap (still ${prev})`).not.toBe(prev);
+				prev = now;
+				seen.push(now);
+			}
+
+			// And it must retrace the real pages, not skip one.
+			expect(seen[1]).toContain('/now');
+			expect(seen[2]).toBe('/trips');
+		} finally {
+			await ctx.close();
+		}
+	});
+
+	// Escape was bound to the overlay DIV, which focus is never inside when a
+	// sheet is opened from a FAB — so it silently did nothing. Pre-existing on
+	// main; caught by probing the dismissal paths one at a time.
+	test('Escape closes the sheet and leaves no entry behind', async ({ browser }) => {
+		const { page, ctx } = await devLogin(browser);
+		try {
+			await page.goto(`${BASE}/trips/${FIXTURE_SLUG}`, { waitUntil: 'networkidle' });
+			const before = page.url();
+			await openAddExpense(page);
+			await page.keyboard.press('Escape');
+			await expect.poll(async () => page.locator('[data-sheet-panel]').count(), { timeout: 5000 }).toBe(0);
+			// The entry must be popped too, or back would be spent on a dead entry.
+			await page.goBack();
+			await page.waitForTimeout(900);
+			expect(page.url()).not.toBe(before);
+		} finally {
+			await ctx.close();
+		}
+	});
+
 	test('an open sheet swallows back; a normal dismissal pops its entry', async ({ browser }) => {
 		const { page, ctx } = await devLogin(browser);
 		try {
@@ -399,27 +470,43 @@ test.describe('BottomSheet gestures (#365)', () => {
 	});
 
 	test('opening and closing a sheet does not lose the scroll position', async ({ browser }) => {
-		const { page, ctx } = await devLogin(browser);
+		// A SHORT viewport, not the shared 375x812 one. This test needs a document
+		// taller than its viewport, and the fixture trip has no content of its own —
+		// on the earlier 812px context it only scrolled because sibling tests in this
+		// file had already added rows, so under parallel scheduling it could run
+		// against an empty page and fail. Shrinking the viewport makes scrollability
+		// a property of THIS test rather than of who ran before it. The mechanism
+		// under test (SvelteKit's scroll snapshot vs the #373 body lock) is
+		// height-agnostic, so a short viewport exercises it identically.
+		const ctx = await browser.newContext({
+			viewport: { width: 375, height: 400 },
+			hasTouch: true,
+			isMobile: true,
+			reducedMotion: 'no-preference'
+		});
+		const page = await ctx.newPage();
+		await page.goto(`${BASE}/api/dev/login?email=${encodeURIComponent(OWNER)}`);
+		await page.waitForURL(`${BASE}/trips`, { timeout: 15000 });
 		try {
-			// A page long enough to scroll. The expenses page in this fixture is not.
 			await page.goto(`${BASE}/trips/${FIXTURE_SLUG}`, { waitUntil: 'networkidle' });
 
 			// Prove the precondition before leaning on it. `networkidle` can still be
 			// mid-render, and scrolling a document that is not yet tall enough leaves
-			// scrollY at 0 — which resurfaces at the assertion below as "expected 200,
-			// received 0" and reads EXACTLY like the product bug this guard exists to
-			// catch. Poll until the document can genuinely hold a 200px offset, so a
-			// short or slow fixture fails here, naming its own cause.
-			await expect
-				.poll(
-					async () =>
-						page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight),
-					{ timeout: 5000 }
-				)
-				.toBeGreaterThanOrEqual(200);
+			// scrollY at 0 — which would resurface at the real assertion below as
+			// "expected N, received 0" and read EXACTLY like the product bug this
+			// guard exists to catch. Failing here instead names the true cause.
+			const maxScroll = await page.evaluate(async () => {
+				const room = () => document.documentElement.scrollHeight - window.innerHeight;
+				for (let i = 0; i < 50 && room() < 120; i++) {
+					await new Promise((r) => setTimeout(r, 100));
+				}
+				return room();
+			});
+			expect(maxScroll, 'fixture page must be scrollable or this guard proves nothing').toBeGreaterThanOrEqual(120);
 
-			await page.evaluate(() => window.scrollTo(0, 200));
-			await expect.poll(async () => page.evaluate(() => window.scrollY)).toBe(200);
+			const target = Math.min(200, maxScroll);
+			await page.evaluate((y) => window.scrollTo(0, y), target);
+			await expect.poll(async () => page.evaluate(() => window.scrollY)).toBe(target);
 
 			await page.locator('[aria-label="Add idea or plan"]:visible').first().click();
 			await waitForSheetAtRest(page);
@@ -430,8 +517,8 @@ test.describe('BottomSheet gestures (#365)', () => {
 			// (#365) BOTH touch scroll. SvelteKit snapshots the scroll offset into
 			// the entry pushState creates, so if the body is pinned before that push
 			// the snapshot records 0 and closing the sheet throws the reader back to
-			// the top of the page. Both effects must agree on 200.
-			await expect.poll(async () => page.evaluate(() => window.scrollY), { timeout: 5000 }).toBe(200);
+			// the top of the page. Both effects must agree on where we were.
+			await expect.poll(async () => page.evaluate(() => window.scrollY), { timeout: 5000 }).toBe(target);
 		} finally {
 			await ctx.close();
 		}

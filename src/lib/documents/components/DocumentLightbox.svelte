@@ -38,8 +38,14 @@
 
 	// #373 — the lightbox is a full-screen overlay; the page behind it must not
 	// scroll or rubber-band under the swipe-between-images gesture.
+	//
+	// Keyed on OPEN-NESS (`index`), not on `doc`. `doc` is $derived FROM `index`,
+	// so keying on it re-ran the whole effect on every swipe between images:
+	// unlock → refcount hits 0 → body styles stripped → scroll restored → relock,
+	// once per photo. The spec asks for the body to be locked while the lightbox
+	// is open — one lock for the session, not one per image.
 	$effect(() => {
-		if (!doc) return;
+		if (index === null) return;
 		lockBodyScroll();
 		return () => unlockBodyScroll();
 	});
