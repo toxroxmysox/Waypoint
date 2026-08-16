@@ -2,6 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import { fly, fade } from 'svelte/transition';
 	import { reducedMotion } from '$lib/shell/stores/reduced-motion';
+	import { lockBodyScroll, unlockBodyScroll } from '$lib/shell/scroll-lock';
 
 	let {
 		open = $bindable(false),
@@ -14,6 +15,16 @@
 	} = $props();
 
 	let noMotion = $derived($reducedMotion);
+
+	// #373 — pin the page behind the sheet. Reference-counted in the store, so
+	// nesting (sheet → lightbox) releases the body only once the last one closes.
+	// The cleanup arm covers every exit: close, unmount, and navigating away with
+	// the sheet still open.
+	$effect(() => {
+		if (!open) return;
+		lockBodyScroll();
+		return () => unlockBodyScroll();
+	});
 
 	const flyParams = $derived(
 		noMotion
@@ -38,15 +49,20 @@
 		class="fixed inset-0 z-modal flex items-end justify-center"
 		onkeydown={onKeydown}
 	>
+		<!--
+			#373 — `touch-action: none` is what stops a touch-drag ON THE BACKDROP
+			from scrolling the page behind it. The body lock handles the rest; this
+			handles the gesture that never reaches a scroll container at all.
+		-->
 		<div
-			class="fixed inset-0 bg-black/40"
+			class="fixed inset-0 touch-none bg-black/40"
 			onclick={onBackdropClick}
 			role="presentation"
 			transition:fade={fadeParams}
 		></div>
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
-			class="relative w-full max-w-lg rounded-t-xl bg-surface shadow-card-strong max-h-[85vh] overflow-y-auto z-overlay"
+			class="relative w-full max-w-lg rounded-t-xl bg-surface shadow-card-strong max-h-[85vh] overflow-y-auto overscroll-contain z-overlay"
 			onclick={(e) => e.stopPropagation()}
 			onkeydown={(e) => e.stopPropagation()}
 			transition:fly={flyParams}

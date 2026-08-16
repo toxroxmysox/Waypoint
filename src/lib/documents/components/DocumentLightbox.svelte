@@ -3,6 +3,7 @@
 	import type { DocumentView } from '$lib/documents/types';
 	import { documentLabel } from '$lib/documents/files';
 	import { isCached } from '$lib/documents/offline-cache';
+	import { lockBodyScroll, unlockBodyScroll } from '$lib/shell/scroll-lock';
 
 	let {
 		// The renderable images to page through. The lightbox shows gallery[index].
@@ -34,6 +35,14 @@
 	let deleting = $state(false);
 	let sharing = $state(false);
 	let savedOffline = $state(false);
+
+	// #373 — the lightbox is a full-screen overlay; the page behind it must not
+	// scroll or rubber-band under the swipe-between-images gesture.
+	$effect(() => {
+		if (!doc) return;
+		lockBodyScroll();
+		return () => unlockBodyScroll();
+	});
 
 	function close() {
 		index = null;
