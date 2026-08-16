@@ -77,6 +77,11 @@
 	let showSettleUp = $state(false);
 	let showAddExpense = $state(false);
 	let showExpenseDetail = $state(false);
+
+	// #370 — bound out of each form so its sheet can guard the discard paths.
+	let addDirty = $state(false);
+	let editDirty = $state(false);
+	let settleDirty = $state(false);
 	let selectedExpense = $state<Expense | null>(null);
 
 	// #228 — prefill values captured from the ?action=add value params (amount /
@@ -273,7 +278,12 @@
 
 <FAB onclick={() => (showAddExpense = true)} label="Add expense" />
 
-<BottomSheet bind:open={showAddExpense} title="Add Expense">
+<!--
+	#370 — these three hold typed money entry, the app's most daily-driven form.
+	Before this, one mis-tap above the sheet threw a half-entered expense away
+	silently, while the page-hosted item forms had full navigation guards.
+-->
+<BottomSheet bind:open={showAddExpense} title="Add Expense" dirty={addDirty} discardLabel="Discard this expense?">
 	<ExpenseForm
 		members={data.members}
 		membershipId={data.membership.id}
@@ -284,11 +294,12 @@
 		initialLinkedItem={prefill.linkedItem}
 		tripStartDate={data.trip.start_date}
 		tripEndDate={data.trip.end_date}
+		bind:dirty={addDirty}
 		onclose={() => (showAddExpense = false)}
 	/>
 </BottomSheet>
 
-<BottomSheet bind:open={showExpenseDetail} title="Edit Expense">
+<BottomSheet bind:open={showExpenseDetail} title="Edit Expense" dirty={editDirty} discardLabel="Discard these changes?">
 	{#if selectedExpense}
 		<ExpenseForm
 			members={data.members}
@@ -299,18 +310,20 @@
 			tripStartDate={data.trip.start_date}
 			tripEndDate={data.trip.end_date}
 			{form}
+			bind:dirty={editDirty}
 			onclose={() => { showExpenseDetail = false; selectedExpense = null; }}
 		/>
 	{/if}
 </BottomSheet>
 
-<BottomSheet bind:open={showSettleUp} title="Settle Up">
+<BottomSheet bind:open={showSettleUp} title="Settle Up" dirty={settleDirty} discardLabel="Discard this settlement?">
 	<SettleUpFlow
 		{debts}
 		members={data.members}
 		membershipId={data.membership.id}
 		labelFor={hasUnits ? unitLabelFor : undefined}
 		{form}
+		bind:dirty={settleDirty}
 	/>
 </BottomSheet>
 

@@ -220,6 +220,65 @@ test.describe('BottomSheet gestures (#365)', () => {
 		}
 	});
 
+	test('a dirty sheet survives every dismissal path (#370)', async ({ browser }) => {
+		const { page, ctx } = await devLogin(browser);
+		try {
+			await openAddExpense(page);
+
+			const desc = page.locator('.z-modal input[name="description"]:visible').first();
+			await desc.fill('Half-typed dinner');
+
+			const sheet = page.locator('.z-modal');
+			const prompt = sheet.getByText(/discard this expense/i);
+
+			// 1. Backdrop tap — the original one-mis-tap data loss.
+			await sheet.locator('.touch-none').first().click({ position: { x: 180, y: 40 } });
+			await expect(prompt).toBeVisible({ timeout: 5000 });
+			await expect(page.locator('[data-sheet-panel]')).toHaveCount(1);
+			await expect(desc).toHaveValue('Half-typed dinner');
+
+			// "Keep editing" puts the draft back, untouched.
+			await sheet.getByRole('button', { name: /keep editing/i }).click();
+			await expect(prompt).toHaveCount(0);
+			await expect(desc).toHaveValue('Half-typed dinner');
+
+			// 2. Drag-to-dismiss must hit the SAME guard — #370 requires this
+			// explicitly, and it is the path most likely to be forgotten.
+			await dragSheet(page, 220);
+			await expect(prompt).toBeVisible({ timeout: 5000 });
+			await expect(page.locator('[data-sheet-panel]')).toHaveCount(1);
+			// ...and the sheet is back at rest, not stranded mid-drag.
+			expect(
+				await page.evaluate(
+					() => getComputedStyle(document.querySelector('[data-sheet-panel]')!).transform
+				)
+			).toMatch(/^(none|matrix\(1, 0, 0, 1, 0, 0\))$/);
+
+			// 3. Back / edge-swipe.
+			await page.goBack();
+			await expect(page.locator('[data-sheet-panel]')).toHaveCount(1);
+			await expect(prompt).toBeVisible();
+
+			// Discard really does discard.
+			await sheet.getByRole('button', { name: /^discard$/i }).click();
+			await expect.poll(async () => page.locator('.z-modal').count(), { timeout: 5000 }).toBe(0);
+		} finally {
+			await ctx.close();
+		}
+	});
+
+	test('a CLEAN sheet still closes on one backdrop tap', async ({ browser }) => {
+		const { page, ctx } = await devLogin(browser);
+		try {
+			// The guard is opt-in; it must not have made every sheet sticky.
+			await openAddExpense(page);
+			await page.locator('.z-modal .touch-none').first().click({ position: { x: 180, y: 40 } });
+			await expect.poll(async () => page.locator('.z-modal').count(), { timeout: 5000 }).toBe(0);
+		} finally {
+			await ctx.close();
+		}
+	});
+
 	test('the page behind is locked while a sheet is open and released after', async ({ browser }) => {
 		const { page, ctx } = await devLogin(browser);
 		try {

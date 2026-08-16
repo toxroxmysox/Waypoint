@@ -15,9 +15,18 @@
 		// ("You & Abby") for display, while the recorded settlement still uses the member.
 		// Omitted → plain per-person names (unchanged behaviour).
 		labelFor?: (memberId: string) => string;
+		/** #370 — bound out to the hosting BottomSheet's discard guard. */
+		dirty?: boolean;
 	}
 
-	let { debts, members, membershipId, form: formProp, labelFor }: Props = $props();
+	let {
+		debts,
+		members,
+		membershipId,
+		form: formProp,
+		labelFor,
+		dirty = $bindable(false)
+	}: Props = $props();
 
 	// Display name for a settle-up party: the unit label when unit-collapsed, else the
 	// member name. "You" still wins when the party is the current member's own node.
@@ -33,9 +42,25 @@
 	let settleNote = $state('');
 	let submitting = $state(false);
 
+	// #370 — the amount is PREFILLED from the debt, so simply being on the record
+	// step is not a draft. Only a changed amount or a typed note is work worth
+	// guarding; anything less would nag on every dismissal.
+	let prefilledAmount = $state('');
+
+	const dirtyDraft = $derived(
+		step === 'record' &&
+			!submitting &&
+			(settleAmount !== prefilledAmount || settleNote.trim() !== '')
+	);
+
+	$effect(() => {
+		dirty = dirtyDraft;
+	});
+
 	function startRecordPayment(debt: DebtEdge) {
 		selectedDebt = debt;
 		settleAmount = debt.amount.toFixed(2);
+		prefilledAmount = settleAmount;
 		settleNote = '';
 		step = 'record';
 	}

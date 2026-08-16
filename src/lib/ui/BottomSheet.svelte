@@ -10,14 +10,53 @@
 	let {
 		open = $bindable(false),
 		title = '',
+		dirty = false,
+		discardLabel = 'Discard changes?',
 		children
 	}: {
 		open: boolean;
 		title?: string;
+		/**
+		 * #370 — the sheet holds unsaved typed content. Opt-in: when true, EVERY
+		 * dismissal path asks before throwing the draft away. Sheets that hold no
+		 * typed content (menus, pickers, detail views) leave it false and behave
+		 * exactly as before.
+		 */
+		dirty?: boolean;
+		/** The question shown in the discard confirm. Name the thing being lost. */
+		discardLabel?: string;
 		children: Snippet;
 	} = $props();
 
 	let noMotion = $derived($reducedMotion);
+
+	// #370 — the two-step inline confirm, matching the app's delete pattern
+	// (a destructive action revealed in place, alongside a way back).
+	let confirmingDiscard = $state(false);
+
+	$effect(() => {
+		if (!open) confirmingDiscard = false;
+	});
+
+	/**
+	 * The ONE funnel every dismissal path goes through. Backdrop, Escape, the X,
+	 * drag-to-dismiss and back all call this, so the guard cannot be bypassed by
+	 * whichever path someone reaches for — including the X, which #370 does not
+	 * list but which discards exactly as much work as the others.
+	 */
+	function requestClose(): boolean {
+		if (dirty) {
+			confirmingDiscard = true;
+			return false;
+		}
+		open = false;
+		return true;
+	}
+
+	function discardAndClose() {
+		confirmingDiscard = false;
+		open = false;
+	}
 
 	// #373 — pin the page behind the sheet. Reference-counted in the store, so
 	// nesting (sheet → lightbox) releases the body only once the last one closes.
@@ -88,11 +127,27 @@
 	// history, so close the sheet. Tracks page.state.sheet ONLY.
 	$effect(() => {
 		const depth = page.state.sheet ?? 0;
-		if (untrack(() => open) && historyToken > 0 && depth < historyToken) {
-			closingFromPopstate = true;
-			cancelDrag();
-			open = false;
+		if (!untrack(() => open) || historyToken === 0 || depth >= historyToken) return;
+
+		// #370 — back is a dismissal like any other, so a dirty sheet asks first.
+		// The browser has already dropped our entry, so re-push it: the sheet is
+		// still on screen and must still own the back gesture.
+		if (untrack(() => dirty)) {
+			untrack(() => {
+				cancelDrag();
+				confirmingDiscard = true;
+				try {
+					pushState('', { ...page.state, sheet: historyToken });
+				} catch {
+					historyToken = 0;
+				}
+			});
+			return;
 		}
+
+		closingFromPopstate = true;
+		cancelDrag();
+		open = false;
 	});
 
 	// ---------------------------------------------------------------------------
@@ -221,8 +276,19 @@
 		const past = dragY > DISMISS_PX;
 		const flicked = dragY > FLICK_PX && velocity > FLICK_VELOCITY;
 
-		if (past || flicked) dismissByDrag();
-		else settleTo(0);
+		if (!(past || flicked)) {
+			settleTo(0);
+			return;
+		}
+
+		// #370 — a dirty sheet does not slide away on a drag either. Spring it back
+		// to rest and ask, so the draft is still on screen behind the question.
+		if (dirty) {
+			settleTo(0, () => (confirmingDiscard = true));
+			return;
+		}
+
+		dismissByDrag();
 	}
 
 	function dismissByDrag() {
@@ -235,11 +301,18 @@
 	}
 
 	function onBackdropClick() {
-		open = false;
+		requestClose();
 	}
 
 	function onKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape') open = false;
+		if (e.key !== 'Escape') return;
+		// Escape backs out of the confirm first, rather than skipping past the
+		// question it just asked.
+		if (confirmingDiscard) {
+			confirmingDiscard = false;
+			return;
+		}
+		requestClose();
 	}
 </script>
 
@@ -295,7 +368,7 @@
 					<button
 						type="button"
 						class="text-ink-muted hover:text-ink active:text-ink hit-44 p-1"
-						onclick={() => (open = false)}
+						onclick={() => requestClose()}
 						aria-label="Close"
 					>
 						<svg
@@ -313,6 +386,36 @@
 					</button>
 				</div>
 			</div>
+			<!--
+				#370 — two-step inline discard confirm, in the app's delete idiom: the
+				destructive action revealed in place next to a way back, never a native
+				dialog. Sits directly under the header so the draft it is asking about
+				stays visible behind it.
+			-->
+			{#if confirmingDiscard}
+				<div
+					class="border-line bg-error-tint/70 flex items-center justify-between gap-3 border-b px-4 py-3"
+					role="alert"
+				>
+					<p class="text-ink text-sm font-medium">{discardLabel}</p>
+					<div class="flex shrink-0 items-center gap-3">
+						<button
+							type="button"
+							class="hit-44 text-error active:text-error-deep text-xs font-semibold"
+							onclick={discardAndClose}
+						>
+							Discard
+						</button>
+						<button
+							type="button"
+							class="hit-44 text-ink-muted active:text-ink text-xs"
+							onclick={() => (confirmingDiscard = false)}
+						>
+							Keep editing
+						</button>
+					</div>
+				</div>
+			{/if}
 			<div class="p-4">
 				{@render children()}
 			</div>
