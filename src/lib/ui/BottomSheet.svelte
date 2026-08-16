@@ -2,7 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import { untrack } from 'svelte';
 	import { fly, fade } from 'svelte/transition';
-	import { pushState } from '$app/navigation';
+	import { pushState, beforeNavigate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { reducedMotion } from '$lib/shell/stores/reduced-motion';
 	import { lockBodyScroll, unlockBodyScroll } from '$lib/shell/scroll-lock';
@@ -58,13 +58,13 @@
 			confirmingDiscard = true;
 			return false;
 		}
-		open = false;
+		closeByUser();
 		return true;
 	}
 
 	function discardAndClose() {
 		confirmingDiscard = false;
-		open = false;
+		closeByUser();
 	}
 
 	// #373 — pin the page behind the sheet. Reference-counted in the store, so
@@ -98,6 +98,48 @@
 	let historyToken = 0;
 	let closingFromPopstate = false;
 
+	// WHO POPS THE ENTRY — AND WHY IT IS NOT THE EFFECT CLEANUP.
+	//
+	// The obvious design (pop in the `open` effect's cleanup, so every close
+	// unwinds its own entry) is wrong, and it cost a full e2e cycle to learn. A
+	// sheet very often closes itself as PART OF AN ACTION: every AddSheet item
+	// does `open = false; goto(...)`, and every sheet form closes inside
+	// `use:enhance` on success and then `await update()`. A pop in that window
+	// races the navigation or the in-flight `load`, and the popstate wins — submit
+	// an expense and the list comes back EMPTY. That broke 11 specs. Delaying the
+	// pop only moved the race (still flaky at 500ms), which is exactly the shape
+	// of fix not to ship.
+	//
+	// So the pop is bound to USER DISMISSAL instead — X, backdrop, Escape, drag,
+	// Discard — where by construction nothing is in flight, and it runs
+	// SYNCHRONOUSLY with the close rather than a tick later.
+	//
+	// A programmatic close therefore leaves its entry behind. That entry is
+	// remembered as `vestigialToken` and consumed by the next back press, so back
+	// is never a dead tap (the #235 scar). A real navigation buries the entry and
+	// clears the token with it.
+	let vestigialToken = 0;
+	beforeNavigate((nav) => {
+		if (nav.type !== 'leave') vestigialToken = 0;
+	});
+
+	/** Pop our own entry, synchronously, if it is still the current one. */
+	function popOurEntry() {
+		if (historyToken === 0) return;
+		if (untrack(() => page.state.sheet) !== historyToken) return;
+		// Cleared BEFORE history.back() so the popstate it triggers finds nothing
+		// to react to — otherwise the popstate effect reads it as a user back.
+		historyToken = 0;
+		vestigialToken = 0;
+		history.back();
+	}
+
+	/** Every user-initiated dismissal goes through here. */
+	function closeByUser() {
+		popOurEntry();
+		open = false;
+	}
+
 	$effect(() => {
 		if (!open || !swallowBack) return;
 
@@ -105,7 +147,6 @@
 		// reactively here would re-fire the effect on our own pushState — an
 		// endless push loop.
 		const token = untrack(() => (page.state.sheet ?? 0) + 1);
-		const url = untrack(() => page.url.pathname + page.url.search);
 		historyToken = token;
 		try {
 			untrack(() => pushState('', { ...page.state, sheet: token }));
@@ -117,16 +158,15 @@
 		}
 
 		return () => {
-			const stillHere = untrack(() => page.url.pathname + page.url.search) === url;
-			const ours = untrack(() => page.state.sheet) === token;
-			// Pop our entry only when it is still the CURRENT one and we are still on
-			// the page that pushed it. After a redirect (a sheet form that navigates
-			// on success) neither holds, and a back() there would undo the redirect.
-			if (!closingFromPopstate && historyToken === token && stillHere && ours) {
-				history.back();
-			}
+			const wasPopstate = closingFromPopstate;
+			const t = historyToken;
 			closingFromPopstate = false;
 			historyToken = 0;
+
+			// Already consumed: by the back press itself, or by popOurEntry().
+			if (wasPopstate || t === 0) return;
+			// Closed programmatically. Leave the entry; the next back walks it.
+			if (untrack(() => page.state.sheet) === t) vestigialToken = t;
 		};
 	});
 
@@ -134,6 +174,18 @@
 	// history, so close the sheet. Tracks page.state.sheet ONLY.
 	$effect(() => {
 		const depth = page.state.sheet ?? 0;
+
+		// Sheet already closed, but the entry it pushed is still in the stack (a
+		// programmatic close). The user's back press just landed on a dead entry
+		// with the same URL, so nothing appeared to happen — walk it for them and
+		// let the press mean what they intended. Safe here specifically because a
+		// back press is not a moment when the app has data in flight.
+		if (!untrack(() => open) && vestigialToken > 0 && depth < vestigialToken) {
+			vestigialToken = 0;
+			history.back();
+			return;
+		}
+
 		if (!untrack(() => open) || historyToken === 0 || depth >= historyToken) return;
 
 		// #370 — back is a dismissal like any other, so a dirty sheet asks first.
@@ -301,7 +353,7 @@
 	function dismissByDrag() {
 		dismissing = true;
 		settleTo(panelH || window.innerHeight, () => {
-			open = false;
+			closeByUser();
 			dismissing = false;
 			dragY = 0;
 		});
