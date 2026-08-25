@@ -3,6 +3,7 @@
 	import type { DocumentView } from '$lib/documents/types';
 	import { documentLabel } from '$lib/documents/files';
 	import { isCached } from '$lib/documents/offline-cache';
+	import { lockBodyScroll, unlockBodyScroll } from '$lib/shell/scroll-lock';
 
 	let {
 		// The renderable images to page through. The lightbox shows gallery[index].
@@ -34,6 +35,20 @@
 	let deleting = $state(false);
 	let sharing = $state(false);
 	let savedOffline = $state(false);
+
+	// #373 — the lightbox is a full-screen overlay; the page behind it must not
+	// scroll or rubber-band under the swipe-between-images gesture.
+	//
+	// Keyed on OPEN-NESS (`index`), not on `doc`. `doc` is $derived FROM `index`,
+	// so keying on it re-ran the whole effect on every swipe between images:
+	// unlock → refcount hits 0 → body styles stripped → scroll restored → relock,
+	// once per photo. The spec asks for the body to be locked while the lightbox
+	// is open — one lock for the session, not one per image.
+	$effect(() => {
+		if (index === null) return;
+		lockBodyScroll();
+		return () => unlockBodyScroll();
+	});
 
 	function close() {
 		index = null;

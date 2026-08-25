@@ -61,6 +61,10 @@
 		}
 	});
 
+	// #370 — a typed idea is a draft. The fork step holds nothing typed, so it
+	// never guards; only the mini-form with something in the title box does.
+	const dirty = $derived(mode === 'idea' && !submitting && title.trim() !== '');
+
 	// "Plan it for a day" → the existing items/new flow, carrying day/phase context.
 	const planHref = $derived.by(() => {
 		const params = new URLSearchParams();
@@ -71,7 +75,12 @@
 	});
 </script>
 
-<BottomSheet bind:open title={mode === 'idea' ? 'Add an idea' : 'Add to this trip'}>
+<BottomSheet
+	bind:open
+	title={mode === 'idea' ? 'Add an idea' : 'Add to this trip'}
+	{dirty}
+	discardLabel="Discard this idea?"
+>
 	{#if mode === 'fork'}
 		<div class="space-y-2">
 			<!-- Primary: scheduling is the lead action (#347). -->

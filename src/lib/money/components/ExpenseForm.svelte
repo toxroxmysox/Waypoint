@@ -37,6 +37,8 @@
 		// Shared big-ticket items default to a whole-group even split; both stay editable.
 		initialSplitMode?: 'equal' | 'by_amount';
 		initialSplitMembers?: string[];
+		/** #370 — bound out to the hosting BottomSheet's discard guard. */
+		dirty?: boolean;
 	}
 
 	let {
@@ -55,7 +57,8 @@
 		initialSplitMode,
 		initialSplitMembers,
 		tripStartDate = '',
-		tripEndDate = ''
+		tripEndDate = '',
+		dirty = $bindable(false)
 	}: Props = $props();
 
 	// #273 — normalize to YYYY-MM-DD (strip any stored time portion).
@@ -143,6 +146,33 @@
 		splitMode = 'equal';
 		splitMembers = presetMembers(preset, memberIds, membershipId);
 	}
+
+	// #370 — surface "there is unsaved work here" so the hosting BottomSheet can
+	// guard its dismissal paths. Compared against a snapshot taken at mount rather
+	// than a per-field touched flag: a value typed and then typed back to what it
+	// was is NOT a draft worth interrupting someone over. `showMoreOptions` /
+	// `showSplitConfig` are deliberately excluded — expanding a section discards
+	// nothing. Cleared while submitting/deleting so the success path, which closes
+	// the sheet from the parent, never trips the guard.
+	function snapshot() {
+		return JSON.stringify({
+			amount,
+			description,
+			expenseDate,
+			category,
+			paidBy,
+			splitMode,
+			splitMembers: [...splitMembers].sort(),
+			splitAmounts
+		});
+	}
+
+	const initialSnapshot = untrack(snapshot);
+	const changed = $derived(snapshot() !== initialSnapshot);
+
+	$effect(() => {
+		dirty = changed && !submitting && !deleting;
+	});
 </script>
 
 <form

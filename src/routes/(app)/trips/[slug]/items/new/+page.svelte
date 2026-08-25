@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { validateForm, revealServerError, errorField } from '$lib/shell/actions/validate-form';
-	import { beforeNavigate } from '$app/navigation';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import SaveBar from '$lib/ui/SaveBar.svelte';
+	import UnsavedChangesGuard from '$lib/ui/UnsavedChangesGuard.svelte';
 	import ItemForm from '$lib/itinerary/components/ItemForm.svelte';
 	import type { ItemFormData } from '$lib/itinerary/components/ItemFormFields';
 	import { buildEmptyFormData } from '$lib/itinerary/item-fields';
@@ -53,16 +53,11 @@
 			: (submitAsSuggestion ? 'Submit suggestion' : suggestionId ? 'Approve with edits' : 'Create item')
 	);
 
-	beforeNavigate(({ cancel }) => {
-		if (dirty && !submitting && !confirm('You have unsaved changes. Leave anyway?')) cancel();
-	});
-
-	$effect(() => {
-		if (!dirty) return;
-		const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
-		window.addEventListener('beforeunload', handler);
-		return () => window.removeEventListener('beforeunload', handler);
-	});
+	// #367 — the navigation guard and its beforeunload twin now live in
+	// UnsavedChangesGuard (rendered at the bottom of this page), which replaces
+	// the browser's own confirm dialog. In the installed PWA that rendered as
+	// "app.vandenwarsen.com says…" in the middle of a form.
+	const guardDirty = $derived(dirty && !submitting);
 
 	// #177 — prefill ALL payload fields the traveler proposed, not just half.
 	// Previously day/phase/cost/subtype/end_date/assignee were dropped, so an
@@ -162,6 +157,11 @@
 	</form>
 	<div class="save-bar-spacer" aria-hidden="true"></div>
 </main>
+
+<UnsavedChangesGuard
+	dirty={guardDirty}
+	body="This item has not been created yet. Leaving now discards what you have typed."
+/>
 
 <style>
 	/* Reserve scroll room so the last fields clear the fixed SaveBar (see SaveBar.svelte).

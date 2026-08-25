@@ -122,6 +122,22 @@ body {
 	-webkit-font-smoothing: antialiased;
 }
 
+/*
+ * #373 — kill the whole-shell rubber-band in the INSTALLED PWA only.
+ *
+ * Standalone has no pull-to-refresh and no browser chrome to reveal, so the
+ * elastic overscroll is pure noise: it peels the app away from the top of the
+ * screen and is one of the loudest "this is a web page" tells on iOS. In a
+ * normal browser tab the same declaration would disable pull-to-refresh, which
+ * people do use — hence the display-mode gate rather than a blanket rule.
+ */
+@media (display-mode: standalone) {
+	html,
+	body {
+		overscroll-behavior-y: none;
+	}
+}
+
 /* Tabular figures for numeric alignment in expense tables and budgets. */
 .font-mono {
 	font-variant-numeric: tabular-nums;
