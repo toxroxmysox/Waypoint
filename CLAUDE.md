@@ -91,8 +91,8 @@ Live on home server `basecamp` (migrated off Fly.io 2026-06-27; Fly + its CI rem
 
 This app on basecamp:
 - Stack: `/volume1/docker/stacks/waypoint/`
-- Container @ port: `waypoint` @ host `127.0.0.1:8091` → internal `:8080`
-- Public: `app.vandenwarsen.com` (Cloudflare Tunnel); `/pb/_/` admin tailnet-only (`127.0.0.1:8091/pb/_/`)
+- Container @ port: `waypoint` @ host `100.82.71.103:8091` (the TAILNET ip, NOT `127.0.0.1` — curl to localhost gets connection-refused) → internal `:8080`
+- Public: `app.vandenwarsen.com` (Cloudflare Tunnel); `/pb/_/` admin tailnet-only (`100.82.71.103:8091/pb/_/`)
 - Secrets: ~11 runtime (SMTP/Resend, `PB_ADMIN_*`, Maps, AeroDataBox) — LastPass; on-box `waypoint.env` chmod 600
 - **Redeploy (steady-state, every ship): `docs/DEPLOY_RUNBOOK.md`** — backup → `git archive | ssh | tar` into `repo/` → `docker compose up -d --build` → verify. One-time Fly→NAS migration: `docs/NAS_MIGRATION_RUNBOOK.md` (historical).
 
