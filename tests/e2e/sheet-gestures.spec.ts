@@ -16,6 +16,17 @@ import { test, expect, type Browser, type Page } from '@playwright/test';
 // touch-only by design, and a previous wave shipped a no-op "fix" by reasoning
 // from code instead of driving the real gesture at 375px.
 
+// #365's back-swallowing ships DISABLED: `swallowBack` defaults to false in
+// BottomSheet.svelte until #383 is fixed (a superseded navigation's view
+// transition never settles, leaving the ::view-transition overlay up and the
+// page unclickable). Everything else in #365 — grabber, drag-to-dismiss — ships.
+//
+// The specs below ARE the acceptance criteria for the remaining half. Flip this
+// to `true` in the SAME commit that flips `swallowBack`, and all of them must
+// pass. Do not delete them and do not rewrite them to assert the disabled
+// behaviour — that would throw away the contract.
+const BACK_SWALLOWING_ENABLED: boolean = false;
+
 const BASE = 'http://localhost:4173';
 const PB_BASE = process.env.PUBLIC_PB_URL ?? 'http://127.0.0.1:8090';
 
@@ -231,6 +242,7 @@ test.describe('BottomSheet gestures (#365)', () => {
 	// does nothing, and a press that skips a page (an earlier fix walked twice
 	// and jumped straight over /now).
 	test('every back press does something after an AddSheet flow (#235)', async ({ browser }) => {
+		test.skip(!BACK_SWALLOWING_ENABLED, 'back-swallowing ships disabled until #383');
 		const { page, ctx } = await devLogin(browser);
 		try {
 			await page.goto(`${BASE}/trips/${FIXTURE_SLUG}`, { waitUntil: 'networkidle' });
@@ -280,15 +292,19 @@ test.describe('BottomSheet gestures (#365)', () => {
 			await page.keyboard.press('Escape');
 			await expect.poll(async () => page.locator('[data-sheet-panel]').count(), { timeout: 5000 }).toBe(0);
 			// The entry must be popped too, or back would be spent on a dead entry.
-			await page.goBack();
-			await page.waitForTimeout(900);
-			expect(page.url()).not.toBe(before);
+			// Only meaningful while a sheet owns an entry at all — see #383.
+			if (BACK_SWALLOWING_ENABLED) {
+				await page.goBack();
+				await page.waitForTimeout(900);
+				expect(page.url()).not.toBe(before);
+			}
 		} finally {
 			await ctx.close();
 		}
 	});
 
 	test('an open sheet swallows back; a normal dismissal pops its entry', async ({ browser }) => {
+		test.skip(!BACK_SWALLOWING_ENABLED, 'back-swallowing ships disabled until #383');
 		const { page, ctx } = await devLogin(browser);
 		try {
 			// Land on the overview first so there is somewhere to go back TO.
@@ -353,10 +369,15 @@ test.describe('BottomSheet gestures (#365)', () => {
 				)
 			).toMatch(/^(none|matrix\(1, 0, 0, 1, 0, 0\))$/);
 
-			// 3. Back / edge-swipe.
-			await page.goBack();
-			await expect(page.locator('[data-sheet-panel]')).toHaveCount(1);
-			await expect(prompt).toBeVisible();
+			// 3. Back / edge-swipe — only a dismissal path while the sheet owns a
+			// history entry. Ships disabled with the rest of back-swallowing (#383);
+			// paths 1 and 2 above are the ones that ship, and they are the ones the
+			// one-mis-tap data loss actually came through.
+			if (BACK_SWALLOWING_ENABLED) {
+				await page.goBack();
+				await expect(page.locator('[data-sheet-panel]')).toHaveCount(1);
+				await expect(prompt).toBeVisible();
+			}
 
 			// Discard really does discard.
 			await sheet.getByRole('button', { name: /^discard$/i }).click();

@@ -1,6 +1,13 @@
 // Diagnostic for #365's back-swallowing: does every sheet dismissal path leave
 // the history stack clean?
 //
+// STATUS 2026-08-24: back-swallowing SHIPS DISABLED. `swallowBack` defaults to
+// false in BottomSheet.svelte until #383 is fixed, so no sheet pushes an entry
+// and this probe's assertions are trivially satisfied — it proves nothing while
+// the flag is off. It is kept because it is the instrument that found the dead
+// tap in the first place. Re-run it, and believe it again, in the same change
+// that flips `swallowBack` back to true.
+//
 // WHY THIS EXISTS. The bug class here is invisible to `pnpm check`, unit tests,
 // e2e and screenshots alike: the sheet closes correctly and the page looks
 // right, but a history entry is left behind and the user's NEXT back press does

@@ -20,7 +20,7 @@
 		title = '',
 		dirty = false,
 		discardLabel = 'Discard changes?',
-		swallowBack = true,
+		swallowBack = false,
 		children
 	}: {
 		open: boolean;
@@ -36,10 +36,24 @@
 		discardLabel?: string;
 		/**
 		 * #365 — whether this sheet takes over the back gesture (push an entry on
-		 * open, close on popstate). True everywhere by default. The one case that
-		 * opts OUT is a sheet that exists BECAUSE a navigation was intercepted
-		 * (#367's unsaved-changes guard): it must not push an entry it would then
-		 * have to unwind while re-running the very navigation it interrupted.
+		 * open, close on popstate).
+		 *
+		 * DEFAULTED OFF (Scott, 2026-08-24), which is how production already
+		 * behaves — this defers a gain, it does not regress anything. The
+		 * mechanism below is complete and all six dismissal paths verify clean
+		 * (`node scripts/probe-sheet-history.mjs`), but the root layout's orphan
+		 * walk issues a `history.back()` that supersedes an in-flight navigation,
+		 * and #383 means such a navigation's view transition NEVER SETTLES —
+		 * leaving the `::view-transition` overlay up and the page unclickable.
+		 * That is the one thing locked decision 3 forbids.
+		 *
+		 * FLIP THIS BACK TO `true` ONCE #383 LANDS. #362's popstate guard alone is
+		 * NOT enough — that was measured, see #383. Nothing else is needed here.
+		 *
+		 * The one case that opts OUT permanently is a sheet that exists BECAUSE a
+		 * navigation was intercepted (#367's unsaved-changes guard): it must not
+		 * push an entry it would then have to unwind while re-running the very
+		 * navigation it interrupted.
 		 */
 		swallowBack?: boolean;
 		children: Snippet;
