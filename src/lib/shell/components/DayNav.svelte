@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import type { Day } from '$lib/types';
 
 	let {
@@ -25,18 +24,6 @@
 		});
 	}
 
-	let touchStartX = $state(0);
-
-	function onTouchStart(e: TouchEvent) {
-		touchStartX = e.touches[0].clientX;
-	}
-
-	function onTouchEnd(e: TouchEvent) {
-		const dx = e.changedTouches[0].clientX - touchStartX;
-		if (Math.abs(dx) < 60) return;
-		const target = dx > 0 ? prevDay : nextDay;
-		if (target) goto(`/trips/${tripSlug}/days/${target.id}`);
-	}
 </script>
 
 <!-- #366: the arrows are sized to 44px rather than given a `hit-44` overlay.
@@ -46,9 +33,6 @@
      height is driven by the 44px targets instead of stacking on top of them. -->
 <nav
 	class="border-line flex items-center justify-between border-b px-4"
-	style="touch-action: pan-y"
-	ontouchstart={onTouchStart}
-	ontouchend={onTouchEnd}
 >
 	{#if prevDay}
 		<a
