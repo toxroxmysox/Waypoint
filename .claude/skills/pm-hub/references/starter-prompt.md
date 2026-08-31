@@ -18,6 +18,7 @@ SCOPE
 ENV (a fresh worktree has nothing)
 - pnpm install
 - Copy .env.local from the main checkout (gitignored — never commit it)
+- Copy `backend/pocketbase` in from the main checkout — **the binary is gitignored, so NO worktree ever has it**, and without it every PB-backed check (e2e, `verify:visual`, the probe) dies with `pocketbase exited (1)` after a 45s timeout that looks like a port problem. Bit wave 3.
 - Copy `.wolf/` in for cerebrum context: `cp -r <main-checkout>/.wolf .wolf` — without it you're blind to the Do-Not-Repeat scars (gitignored, absent from worktrees). Your `.wolf` edits are throwaway; the PM writes canonical `.wolf` at integration.
 - Backend via ./backend/start.sh ONLY — never the bare pocketbase binary
 
