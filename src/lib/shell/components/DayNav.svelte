@@ -31,13 +31,21 @@
      UPWARD into it — the header paints over that half, leaving ~30px of real
      hit area (measured at 375px). Row padding moves onto the links so the row
      height is driven by the 44px targets instead of stacking on top of them. -->
+<!-- #386: equal-width outer tracks, so the counter is centred on the ROW rather
+     than merely distributed between whatever the two links happen to contain.
+     `justify-between` centred nothing: the placeholder for a missing arrow was
+     zero-width while the link it stood in for is min-w-11 (44px), so day 1 and
+     the last day pulled the counter sideways — and the two date labels differ
+     in length on EVERY day, so it was never truly centred anywhere.
+     minmax(0,…) not 1fr: a bare 1fr floors at min-content, so a long date label
+     would widen its own track and push the counter off-centre again. -->
 <nav
-	class="border-line flex items-center justify-between border-b px-4"
+	class="border-line grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center border-b px-4"
 >
 	{#if prevDay}
 		<a
 			href="/trips/{tripSlug}/days/{prevDay.id}"
-			class="text-ink-muted hover:text-ink active:text-ink flex min-h-11 min-w-11 items-center justify-start gap-1 text-sm"
+			class="text-ink-muted hover:text-ink active:text-ink flex min-h-11 min-w-11 items-center justify-start justify-self-start gap-1 text-sm"
 			aria-label="Previous day: {dayLabel(prevDay)}"
 		>
 			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -46,7 +54,7 @@
 			<span class="hidden xs:inline">{dayLabel(prevDay)}</span>
 		</a>
 	{:else}
-		<span></span>
+		<span class="min-h-11"></span>
 	{/if}
 
 	<span class="text-ink-muted font-mono text-xs">{currentIndex + 1} / {days.length}</span>
@@ -54,7 +62,7 @@
 	{#if nextDay}
 		<a
 			href="/trips/{tripSlug}/days/{nextDay.id}"
-			class="text-ink-muted hover:text-ink active:text-ink flex min-h-11 min-w-11 items-center justify-end gap-1 text-sm"
+			class="text-ink-muted hover:text-ink active:text-ink flex min-h-11 min-w-11 items-center justify-end justify-self-end gap-1 text-sm"
 			aria-label="Next day: {dayLabel(nextDay)}"
 		>
 			<span class="hidden xs:inline">{dayLabel(nextDay)}</span>
@@ -63,6 +71,6 @@
 			</svg>
 		</a>
 	{:else}
-		<span></span>
+		<span class="min-h-11"></span>
 	{/if}
 </nav>
