@@ -90,6 +90,13 @@
 
 		if (!document.startViewTransition) return;
 
+		// #362 — popstate keeps the browser's own treatment. On iOS the edge-swipe
+		// already plays Safari's snapshot animation and ours went on top of it: the
+		// classic double-animation jank. It also keeps this wrapper off #365's
+		// orphan walk, which is a popstate by definition and which locked decision
+		// 3 forbids from animating a page. Chevron taps are `goto` and keep theirs.
+		if (navigation.type === 'popstate') return;
+
 		const from = navigation.from?.route?.id;
 		const to = navigation.to?.route?.id;
 		const type = classifyNavigation(from, to);
