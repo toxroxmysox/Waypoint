@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { withOrigin } from '$lib/shell/back-nav';
+	import { page } from '$app/state';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import SubTabs from '$lib/ui/SubTabs.svelte';
 	import SectionH from '$lib/ui/SectionH.svelte';
@@ -60,7 +62,7 @@
 				{#each data.orphans as orphan}
 					<li>
 						<a
-							href="/trips/{data.trip.slug}/items/{orphan.id}/edit"
+							href={withOrigin(`/trips/${data.trip.slug}/items/${orphan.id}/edit`, page.url.pathname)}
 							class="bg-surface hover:bg-surface-2 active:bg-surface-2 border-line text-ink flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm transition-colors"
 						>
 							<span class="min-w-0 truncate">{orphan.title || 'Untitled idea'}</span>

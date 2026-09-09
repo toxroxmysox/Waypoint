@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { page } from '$app/state';
+	import { withOrigin } from '$lib/shell/back-nav';
 	import type { Item, Vote, TripMember } from '$lib/types';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
@@ -41,7 +43,7 @@
 		<div class="relative flex items-start gap-3 p-3">
 			<!-- Stretched link: card body navigates to the item detail. -->
 			<a
-				href="/trips/{tripSlug}/items/{item.id}?from=trip"
+				href={withOrigin(`/trips/${tripSlug}/items/${item.id}`, page.url.pathname)}
 				class="absolute inset-0 rounded-lg after:absolute after:inset-0"
 				aria-label={item.title}
 			></a>
@@ -78,7 +80,7 @@
 				{/if}
 			</div>
 			<a
-				href="/trips/{tripSlug}/items/{item.id}/edit"
+				href={withOrigin(`/trips/${tripSlug}/items/${item.id}/edit`, page.url.pathname)}
 				class="text-ink-muted hover:text-ink active:text-ink relative z-10 shrink-0 p-1"
 				aria-label="Edit {item.title}"
 			>

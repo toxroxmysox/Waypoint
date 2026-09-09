@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { onNavigate, afterNavigate } from '$app/navigation';
-	import { updateNavDepth } from '$lib/shell/stores/nav-depth';
+	import { onNavigate } from '$app/navigation';
 
 	let { children } = $props();
 
@@ -37,10 +36,6 @@
 
 		return 'peer';
 	}
-
-	afterNavigate((nav) => {
-		updateNavDepth(nav.type, nav.delta);
-	});
 
 	// #383 — THE ONE INVARIANT: the update callback must ALWAYS return.
 	//

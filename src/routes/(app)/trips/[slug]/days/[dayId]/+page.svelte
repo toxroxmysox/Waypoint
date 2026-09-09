@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { withOrigin } from '$lib/shell/back-nav';
+	import { page } from '$app/state';
 	import { enhance } from '$app/forms';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
@@ -174,7 +176,7 @@
 				<SectionH>
 					{#snippet right()}
 						<a
-							href="/trips/{data.trip.slug}/items/new?day={data.day.id}"
+							href={withOrigin(`/trips/${data.trip.slug}/items/new?day=${data.day.id}`, page.url.pathname)}
 							class="text-ink-muted hover:text-ink-soft active:text-ink-soft"
 							aria-label="Add item"
 						>

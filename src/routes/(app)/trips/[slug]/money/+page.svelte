@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { page } from '$app/state';
+	import { withOrigin } from '$lib/shell/back-nav';
 	// Trip-Mode Money summary (#227) — read-only, per-person. Answers "how much do I
 	// have left to spend?" with TWO labeled figures, each a per-day rate (the hero) + a
 	// total: N1 (left to spend = my budget − my reconciliation-aware share) and N2 (left
@@ -195,7 +197,7 @@
 				<div class="divide-line divide-y">
 					{#each data.remainingPlannedItems as item (item.id)}
 						<a
-							href="/trips/{slug}/items/{item.id}?from=trip"
+							href={withOrigin(`/trips/${slug}/items/${item.id}`, page.url.pathname)}
 							class="hover:bg-surface-2 active:bg-surface-2 flex items-center gap-3 px-4 py-2.5 transition-colors"
 						>
 							<TypeIcon type={item.type} sub={item.subtype} size={28} />

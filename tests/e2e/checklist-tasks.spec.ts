@@ -49,7 +49,7 @@ test.describe('Inline item checklist (#48 primitive · #55 ledger)', () => {
 		// #231: card is a stretched-link <a aria-label="<title>">; click the link, not the
 		// obscured text (getByText click is intercepted by the absolute-inset anchor).
 		await page.getByRole('link', { name: 'Grocery run' }).filter({ visible: true }).first().click();
-		await page.waitForURL(/\/items\/[a-z0-9]+$/);
+		await page.waitForURL(/\/items\/[a-z0-9]+(?:\?|$)/); // #361: item links carry ?from=
 
 		// The trip layout is a dual tree (mobile + desktop, one CSS-hidden), so scope
 		// every control to the visible subtree to avoid strict-mode violations.

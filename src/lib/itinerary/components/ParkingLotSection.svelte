@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { withOrigin } from '$lib/shell/back-nav';
+	import { page } from '$app/state';
 	import { dndzone, type DndEvent } from 'svelte-dnd-action';
 	import { flip } from 'svelte/animate';
 	import type { Item, Phase, Vote, TripMember } from '$lib/types';
@@ -127,7 +129,7 @@
 					<Card class="no-callout group-hover:shadow-card-strong group-active:bg-surface-2">
 						<div class="relative flex items-center gap-3 px-3 py-2">
 							<a
-								href="/trips/{tripSlug}/items/{item.id}"
+								href={withOrigin(`/trips/${tripSlug}/items/${item.id}`, page.url.pathname)}
 								class="absolute inset-0 rounded-lg after:absolute after:inset-0"
 								aria-label={item.title}
 							></a>
@@ -182,7 +184,7 @@
 			<Card class="group-hover:shadow-card-strong group-active:bg-surface-2">
 				<div class="relative flex items-center gap-3 px-3 py-2">
 					<a
-						href="/trips/{tripSlug}/items/{item.id}"
+						href={withOrigin(`/trips/${tripSlug}/items/${item.id}`, page.url.pathname)}
 						class="absolute inset-0 rounded-lg after:absolute after:inset-0"
 						aria-label={item.title}
 					></a>

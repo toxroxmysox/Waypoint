@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { withOrigin } from '$lib/shell/back-nav';
+	import { page } from '$app/state';
 	import { enhance } from '$app/forms';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
@@ -114,7 +116,7 @@
 							: ''}"
 					>
 						<TypeIcon type={item.type} size={28} />
-						<a href="/trips/{data.trip.slug}/items/{item.id}" class="min-w-0 flex-1">
+						<a href={withOrigin(`/trips/${data.trip.slug}/items/${item.id}`, page.url.pathname)} class="min-w-0 flex-1">
 							<div class="text-ink truncate text-[14.5px] font-semibold">{item.title}</div>
 							<div class="text-ink-muted mt-0.5 text-[11px]">{itemContext(item)}</div>
 						</a>
@@ -154,7 +156,7 @@
 		<div class="space-y-3">
 			<!-- #263 — "Plan this": one-tap from a captured goal into the composer,
 			     pre-seeded from this goal (title/notes) and pre-linked back to it. -->
-			<Button href="/trips/{data.trip.slug}/items/new?goal={goal.id}" variant="moss" size="md" class="w-full">
+			<Button href={withOrigin(`/trips/${data.trip.slug}/items/new?goal=${goal.id}`, page.url.pathname)} variant="moss" size="md" class="w-full">
 				Plan this
 			</Button>
 

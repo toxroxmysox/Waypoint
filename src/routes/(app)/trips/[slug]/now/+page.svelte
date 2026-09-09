@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withOrigin } from '$lib/shell/back-nav';
 	// Merged Now view (#244). Now absorbed Today: one weighted whole-day glance with
 	// exactly THREE visual weights, top → bottom — faded past (peek, revealed by
 	// scrolling up; the page auto-scrolls to the Focus on open so the past sits
@@ -157,7 +158,7 @@
 			<p class="text-ink-muted text-[11px] font-medium uppercase tracking-wide">Earlier today</p>
 			{#each pastItems as item (item.id)}
 				<a
-					href="/trips/{data.trip.slug}/items/{item.id}?from=trip"
+					href={withOrigin(`/trips/${data.trip.slug}/items/${item.id}`, page.url.pathname)}
 					class="hover:bg-surface-2 active:bg-surface-2 flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors"
 				>
 					<span class="font-mono text-ink-muted w-16 shrink-0 text-xs">{formatTime(item.start_time)}</span>
@@ -336,7 +337,7 @@
 			{#if data.tomorrowItems.length > 0}
 				<div class="mt-2 space-y-1">
 					{#each data.tomorrowItems.slice(0, 3) as item (item.id)}
-						<a href="/trips/{data.trip.slug}/items/{item.id}?from=trip" class="border-line hover:border-ink-muted active:border-ink-muted flex items-center gap-2 rounded-lg border px-3 py-2">
+						<a href={withOrigin(`/trips/${data.trip.slug}/items/${item.id}`, page.url.pathname)} class="border-line hover:border-ink-muted active:border-ink-muted flex items-center gap-2 rounded-lg border px-3 py-2">
 							<span class="font-mono text-ink-muted text-xs">{item.start_time ? formatTime(item.start_time) : '—'}</span>
 							<span class="text-ink text-sm truncate">{item.title}</span>
 						</a>

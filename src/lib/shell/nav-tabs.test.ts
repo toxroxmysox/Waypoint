@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getNavConfig, getActiveTab, resolveChromeMode, fromTrip } from './nav-tabs';
+import { getNavConfig, getActiveTab, resolveChromeMode } from './nav-tabs';
 
 const P = '/trips/spain-2025';
 
@@ -87,10 +87,3 @@ describe('resolveChromeMode (#197 B-011)', () => {
 	});
 });
 
-describe('fromTrip', () => {
-	it('detects the ?from=trip marker', () => {
-		expect(fromTrip(new URL(`http://x${P}/items/abc?from=trip`))).toBe(true);
-		expect(fromTrip(new URL(`http://x${P}/items/abc`))).toBe(false);
-		expect(fromTrip(new URL(`http://x${P}/items/abc?from=planning`))).toBe(false);
-	});
-});

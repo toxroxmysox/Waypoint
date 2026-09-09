@@ -126,7 +126,3 @@ export function resolveChromeMode(
 	return 'planning';
 }
 
-/** True when a page was reached from Trip Mode (explicit `?from=trip`). */
-export function fromTrip(url: { searchParams: URLSearchParams }): boolean {
-	return url.searchParams.get('from') === 'trip';
-}

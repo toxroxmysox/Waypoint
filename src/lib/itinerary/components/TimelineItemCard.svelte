@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { withOrigin } from '$lib/shell/back-nav';
+	import { page } from '$app/state';
 	import type { Item, Vote, TripMember } from '$lib/types';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
@@ -88,7 +90,7 @@
 			<div class="relative flex items-start gap-3 p-3">
 				<!-- Stretched link: whole content row navigates to the item. -->
 				<a
-					href="/trips/{tripSlug}/items/{item.id}"
+					href={withOrigin(`/trips/${tripSlug}/items/${item.id}`, page.url.pathname)}
 					class="absolute inset-0 rounded-lg after:absolute after:inset-0"
 					aria-label={item.title}
 				></a>

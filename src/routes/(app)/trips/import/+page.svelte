@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
-	import { markReplaceNavigation } from '$lib/shell/stores/nav-depth';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Button from '$lib/ui/Button.svelte';
 	import { revealServerError, errorField } from '$lib/shell/actions/validate-form';
@@ -75,8 +74,6 @@
 				if (result.type === 'redirect') {
 					// replaceState so back from the imported trip skips the import
 					// form and returns to the trips list (#214 / ADR-0012).
-					// #235: don't let the depth counter count this replace.
-					markReplaceNavigation();
 					await goto(result.location, { replaceState: true });
 				} else {
 					await update();
