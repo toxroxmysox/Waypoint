@@ -16,6 +16,7 @@
 	import type { MemberWithAvatar } from '$lib/collaboration/member-avatar';
 	import { VOTE_OPTIONS, type VoteValue } from '$lib/collaboration/voting';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
+	import { optimisticSubmit, nextVote } from '$lib/ui/optimistic-submit';
 	import VoteStacks from '$lib/collaboration/components/VoteStacks.svelte';
 	import VoteSentimentPill from '$lib/collaboration/components/VoteSentimentPill.svelte';
 	import type { ItemType } from '$lib/itinerary/types';
@@ -60,7 +61,27 @@
 		dislike: { label: 'Pass', glyph: '–', active: 'bg-clay/15 text-clay border-clay/40' }
 	};
 
-	let submitting = $state(false);
+	// #364 — optimistic vote (same shape as VoteButtons). `override` (undefined =
+	// trust server) holds the tapped value only while the submit is in flight.
+	let override = $state<VoteValue | null | undefined>(undefined);
+	let voteInflight = false;
+	const serverVote = $derived((myVote?.value as VoteValue | undefined) ?? null);
+	const shownVote = $derived(override === undefined ? serverVote : override);
+
+	function voteEnhance(option: VoteValue) {
+		return optimisticSubmit({
+			busy: () => voteInflight,
+			apply: () => {
+				voteInflight = true;
+				override = nextVote(shownVote, option);
+			},
+			settle: () => {
+				voteInflight = false;
+				override = undefined;
+			},
+			errorMessage: 'Vote did not save — check your connection.'
+		});
+	}
 
 	// #249/#250 — owner review affordance state (in-place approve / reject-with-note).
 	let reviewing = $state(false); // approve in flight
@@ -111,17 +132,13 @@
 			aria-label="Vote on this pending idea"
 		>
 			{#each VOTE_OPTIONS as option (option)}
-				{@const selected = myVote?.value === option}
+				<!-- Form posts against SERVER state; rendering follows the optimistic value. -->
+				{@const selected = serverVote === option}
+				{@const shown = shownVote === option}
 				<form
 					method="POST"
 					action="?/{selected ? 'unvoteGhost' : 'voteGhost'}"
-					use:enhance={() => {
-						submitting = true;
-						return async ({ update }) => {
-							submitting = false;
-							await update();
-						};
-					}}
+					use:enhance={voteEnhance(option)}
 				>
 					<input type="hidden" name="suggestion_id" value={card.suggestion.id} />
 					{#if selected}
@@ -131,10 +148,9 @@
 					{/if}
 					<button
 						type="submit"
-						disabled={submitting}
-						aria-pressed={selected}
-						class="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors disabled:opacity-50
-							{selected
+						aria-pressed={shown}
+						class="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors
+							{shown
 							? OPTION_META[option].active
 							: 'border-line text-ink-muted hover:border-moss/40 active:border-moss/40 hover:text-moss active:text-moss'}"
 					>

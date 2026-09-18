@@ -9,6 +9,7 @@
 	// interactive — which the parent wires to AssignMemberSheet.
 	import { enhance } from '$app/forms';
 	import Avatar from '$lib/ui/Avatar.svelte';
+	import { optimisticSubmit } from '$lib/ui/optimistic-submit';
 
 	let {
 		taskId,
@@ -33,30 +34,50 @@
 		divider?: boolean;
 		onAssign?: () => void;
 	} = $props();
+
+	// #364 — optimistic toggle. `override` is non-null only while a submit is in
+	// flight; it's dropped once fresh server data lands (or on failure = revert),
+	// so the row always resyncs to the server's `checked`.
+	let override = $state<boolean | null>(null);
+	let inflight = false;
+	const shown = $derived(override ?? checked);
+
+	const toggle = optimisticSubmit({
+		busy: () => inflight,
+		apply: () => {
+			inflight = true;
+			override = !shown;
+		},
+		settle: () => {
+			inflight = false;
+			override = null;
+		},
+		errorMessage: "Couldn't update that task — check your connection."
+	});
 </script>
 
 <div
 	class="flex items-center gap-3 py-3 {divider ? 'border-line border-b' : ''}"
 >
-	<form method="POST" action={toggleAction} use:enhance class="flex min-w-0 flex-1">
+	<form method="POST" action={toggleAction} use:enhance={toggle} class="flex min-w-0 flex-1">
 		<input type="hidden" name="task_id" value={taskId} />
 		<button
 			type="submit"
 			class="active:bg-surface-2 flex min-w-0 flex-1 items-center gap-3 rounded-md text-left transition-colors duration-75 select-none"
-			aria-label={checked ? 'Uncheck task' : 'Check task'}
+			aria-label={shown ? 'Uncheck task' : 'Check task'}
 		>
 			<span
 				class="flex h-[21px] w-[21px] shrink-0 items-center justify-center rounded-[5px] border-[1.5px] transition-colors
-					{checked ? 'border-moss bg-moss text-paper' : 'border-line bg-surface'}"
+					{shown ? 'border-moss bg-moss text-paper' : 'border-line bg-surface'}"
 			>
-				{#if checked}
+				{#if shown}
 					<svg width="12" height="12" viewBox="0 0 12 12" fill="none">
 						<path d="M2.5 6.2l2.3 2.3L9.5 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
 					</svg>
 				{/if}
 			</span>
 			<span
-				class="min-w-0 flex-1 text-[14.5px] leading-snug font-medium {checked
+				class="min-w-0 flex-1 text-[14.5px] leading-snug font-medium {shown
 					? 'text-ink-muted line-through decoration-ink-muted/50'
 					: 'text-ink'}"
 			>
@@ -77,7 +98,7 @@
 			</svg>
 		</button>
 		{#if assigneeInitial}
-			<span class="shrink-0 transition-opacity" style="opacity:{checked ? 0.4 : 1};">
+			<span class="shrink-0 transition-opacity" style="opacity:{shown ? 0.4 : 1};">
 				<Avatar img={assigneeImg} initial={assigneeInitial} alt={assigneeAlt} size={24} />
 			</span>
 		{:else}

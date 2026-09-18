@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import type { Vote } from '$lib/types';
 	import { VOTE_OPTIONS, type VoteValue } from '$lib/collaboration/voting';
+	import { optimisticSubmit, nextVote } from '$lib/ui/optimistic-submit';
 
 	let {
 		myVote = null,
@@ -11,7 +12,28 @@
 		itemUrl?: string;
 	} = $props();
 
-	let submitting = $state(false);
+	// #364 — optimistic vote. `override` (undefined = trust server) holds the
+	// tapped value only while the submit is in flight; it's dropped once fresh
+	// data lands, or on failure (= revert + toast).
+	let override = $state<VoteValue | null | undefined>(undefined);
+	let inflight = false;
+	const serverValue = $derived((myVote?.value as VoteValue | undefined) ?? null);
+	const shownValue = $derived(override === undefined ? serverValue : override);
+
+	function voteEnhance(option: VoteValue) {
+		return optimisticSubmit({
+			busy: () => inflight,
+			apply: () => {
+				inflight = true;
+				override = nextVote(shownValue, option);
+			},
+			settle: () => {
+				inflight = false;
+				override = undefined;
+			},
+			errorMessage: 'Vote did not save — check your connection.'
+		});
+	}
 
 	const OPTION_META: Record<VoteValue, { label: string; glyph: string; active: string }> = {
 		love: { label: 'Love', glyph: '♥', active: 'bg-moss text-paper border-moss' },
@@ -23,17 +45,15 @@
 
 <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Vote on this item">
 	{#each VOTE_OPTIONS as option (option)}
-		{@const selected = myVote?.value === option}
+		<!-- The form posts against SERVER state (vote vs unvote + vote_id); only the
+		     rendering follows the optimistic value. They differ only mid-flight,
+		     when further submits are cancelled anyway. -->
+		{@const selected = serverValue === option}
+		{@const shown = shownValue === option}
 		<form
 			method="POST"
 			action="{itemUrl}?/{selected ? 'unvote' : 'vote'}"
-			use:enhance={() => {
-				submitting = true;
-				return async ({ update }) => {
-					submitting = false;
-					await update();
-				};
-			}}
+			use:enhance={voteEnhance(option)}
 		>
 			{#if selected}
 				<input type="hidden" name="vote_id" value={myVote?.id} />
@@ -42,10 +62,9 @@
 			{/if}
 			<button
 				type="submit"
-				disabled={submitting}
-				aria-pressed={selected}
-				class="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors disabled:opacity-50
-					{selected
+				aria-pressed={shown}
+				class="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors
+					{shown
 					? OPTION_META[option].active
 					: 'border-line text-ink-muted hover:border-moss/40 active:border-moss/40 hover:text-moss active:text-moss'}"
 			>

@@ -6,6 +6,7 @@
 	import VoteStacks from '$lib/collaboration/components/VoteStacks.svelte';
 	import ScenarioSketchStrip from '$lib/ideation/components/ScenarioSketchStrip.svelte';
 	import { VOTE_OPTIONS, type VoteValue } from '$lib/collaboration/voting';
+	import { optimisticSubmit, nextVote } from '$lib/ui/optimistic-submit';
 
 	let { data, form } = $props();
 	const s = $derived(data.scenario);
@@ -25,6 +26,29 @@
 		dislike: { label: 'Pass', glyph: '–', active: 'bg-clay/15 text-clay border-clay/40' }
 	};
 
+	// #364 — optimistic vote (same shape as VoteButtons). `override` (undefined =
+	// trust server) holds the tapped value only while the submit is in flight.
+	let override = $state<VoteValue | null | undefined>(undefined);
+	let voteInflight = false;
+	const serverVote = $derived((data.myVote?.value as VoteValue | undefined) ?? null);
+	const shownVote = $derived(override === undefined ? serverVote : override);
+
+	function castVote(option: VoteValue) {
+		return optimisticSubmit({
+			busy: () => voteInflight,
+			apply: () => {
+				voteInflight = true;
+				override = nextVote(shownVote, option);
+			},
+			settle: () => {
+				voteInflight = false;
+				override = undefined;
+			},
+			errorMessage: 'Vote did not save — check your connection.'
+		});
+	}
+
+	// Shared busy-flag enhance for the page's other forms (points, delete, promote).
 	function voteEnhance() {
 		submitting = true;
 		return async ({ update }: { update: () => Promise<void> }) => {
@@ -82,16 +106,18 @@
 			<p class="text-ink-muted mb-1.5 px-0.5 text-[9.5px] font-bold tracking-[0.12em] uppercase">Your take</p>
 			<div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Vote on this scenario">
 				{#each VOTE_OPTIONS as option (option)}
-					{@const selected = data.myVote?.value === option}
-					<form method="POST" action="?/{selected ? 'unvote' : 'vote'}" use:enhance={voteEnhance}>
+					<!-- Form posts against SERVER state; rendering follows the optimistic value. -->
+					{@const selected = serverVote === option}
+					{@const shown = shownVote === option}
+					<form method="POST" action="?/{selected ? 'unvote' : 'vote'}" use:enhance={castVote(option)}>
 						{#if !selected}<input type="hidden" name="value" value={option} />{/if}
 						<button
 							type="submit"
 							disabled={submitting}
-							aria-pressed={selected}
+							aria-pressed={shown}
 							data-testid="vote-{option}"
 							class="inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50
-								{selected ? OPTION_META[option].active : 'border-line text-ink-muted hover:border-moss/40 active:border-moss/40 hover:text-moss active:text-moss'}"
+								{shown ? OPTION_META[option].active : 'border-line text-ink-muted hover:border-moss/40 active:border-moss/40 hover:text-moss active:text-moss'}"
 						>
 							<span aria-hidden="true">{OPTION_META[option].glyph}</span>
 							<span>{OPTION_META[option].label}</span>
