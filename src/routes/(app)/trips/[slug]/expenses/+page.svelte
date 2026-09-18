@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { page } from '$app/state';
-	import { replaceState } from '$app/navigation';
+	import { afterNavigate, replaceState } from '$app/navigation';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import SubTabs from '$lib/ui/SubTabs.svelte';
 	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
@@ -87,12 +87,13 @@
 	// #228 — prefill values captured from the ?action=add value params (amount /
 	// description / date / linked_item). Read once in the effect below and fed to the ADD
 	// ExpenseForm so a caller (e.g. #229's paid-moment capture) can open it pre-filled.
+	const NO_PREFILL = { amount: '', description: '', date: '', linkedItem: '' };
 	let prefill = $state<{
 		amount: string;
 		description: string;
 		date: string;
 		linkedItem: string;
-	}>({ amount: '', description: '', date: '', linkedItem: '' });
+	}>({ ...NO_PREFILL });
 
 	// #128 — when deep-linked from an item (?item=<id>), show only that item's
 	// expenses. Multiplicity-safe: a filtered list, never an assumed single record.
@@ -138,26 +139,36 @@
 		showExpenseDetail = true;
 	}
 
-	// The Trip Mode central Add navigates here with ?action=add — open the sheet
-	// and strip the params so a refresh doesn't reopen it. #228 — also read the optional
-	// value params (amount/description/date/linked_item) into `prefill` so the ADD form
-	// can open pre-filled (the booked/paid-moment capture passes them, ADR-0014).
-	$effect(() => {
-		if (page.url.searchParams.get('action') === 'add') {
-			const sp = page.url.searchParams;
-			prefill = {
-				amount: sp.get('amount') ?? '',
-				description: sp.get('description') ?? '',
-				date: sp.get('date') ?? '',
-				linkedItem: sp.get('linked_item') ?? ''
-			};
-			showAddExpense = true;
-			const url = new URL(page.url);
-			for (const key of ['action', 'amount', 'description', 'date', 'linked_item']) {
-				url.searchParams.delete(key);
-			}
-			replaceState(url, page.state);
+	// The Trip Mode central Add navigates here with ?action=add — open the sheet.
+	// #228 — also read the optional value params (amount/description/date/
+	// linked_item) into `prefill` so the ADD form can open pre-filled (the
+	// booked/paid-moment capture passes them, ADR-0014).
+	//
+	// #387 — this MUST be `afterNavigate`, not an `$effect`. It used to be an
+	// effect reading `page.url`, followed by a shallow `replaceState` to strip the
+	// params. But shallow `replaceState` never updates `page.url` — it rewrites the
+	// address bar and `page.state` only — so as far as the app could see, the
+	// `?action=add` was never gone. The effect re-fired on the next re-render,
+	// which is the post-save `update()`: save an expense and the sheet came straight
+	// back, prefilled, and #370's dirty guard then wanted two taps to dismiss it.
+	// `afterNavigate` fires once per NAVIGATION, and a form save is not one.
+	afterNavigate(() => {
+		if (page.url.searchParams.get('action') !== 'add') return;
+		const sp = page.url.searchParams;
+		prefill = {
+			amount: sp.get('amount') ?? '',
+			description: sp.get('description') ?? '',
+			date: sp.get('date') ?? '',
+			linkedItem: sp.get('linked_item') ?? ''
+		};
+		showAddExpense = true;
+		// Cosmetic only now: tidies the address bar so a manual refresh or a
+		// copied URL doesn't carry the intent. It is NOT what stops the reopen.
+		const url = new URL(page.url);
+		for (const key of ['action', 'amount', 'description', 'date', 'linked_item']) {
+			url.searchParams.delete(key);
 		}
+		replaceState(url, page.state);
 	});
 </script>
 
@@ -276,7 +287,15 @@
 	{/if}
 </main>
 
-<FAB onclick={() => (showAddExpense = true)} label="Add expense" />
+<FAB
+	onclick={() => {
+		// A blank add. Without this, the prefill from an earlier ?action=add
+		// deep-link (e.g. a planned item's Log payment) would still be loaded.
+		prefill = { ...NO_PREFILL };
+		showAddExpense = true;
+	}}
+	label="Add expense"
+/>
 
 <!--
 	#370 — these three hold typed money entry, the app's most daily-driven form.

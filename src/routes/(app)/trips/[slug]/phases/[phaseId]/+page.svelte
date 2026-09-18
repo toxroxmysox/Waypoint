@@ -13,7 +13,7 @@
 	import { toast } from '$lib/shell/stores/toast';
 	import { titleCase } from '$lib/shell/format';
 	import { page } from '$app/state';
-	import { replaceState } from '$app/navigation';
+	import { afterNavigate, replaceState } from '$app/navigation';
 	import { revealServerError, errorField } from '$lib/shell/actions/validate-form';
 
 	let { data, form } = $props();
@@ -35,14 +35,18 @@
 	// strip it from the URL so a refresh doesn't re-toast. Matches the expenses/
 	// documents ?action= cleanup: shallow `replaceState` (no navigation, so it never
 	// touches the contextual-back depth counter — ADR-0012 scar).
-	$effect(() => {
+	// #387 — `afterNavigate`, not `$effect`. Shallow `replaceState` never updates
+	// `page.url`, so the effect this used to be re-fired on every later re-render
+	// and re-showed the toast (same defect as the expenses/documents ?action=
+	// sheets). `afterNavigate` shows it once per arrival. The nav-depth counter the
+	// comment above guards against no longer exists (deleted in #361).
+	afterNavigate(() => {
 		const msg = page.url.searchParams.get('ideaToast');
-		if (msg) {
-			toast.show(msg);
-			const url = new URL(page.url);
-			url.searchParams.delete('ideaToast');
-			replaceState(url, page.state);
-		}
+		if (!msg) return;
+		toast.show(msg);
+		const url = new URL(page.url);
+		url.searchParams.delete('ideaToast');
+		replaceState(url, page.state);
 	});
 
 	let today = new Date().toISOString().split('T')[0];
