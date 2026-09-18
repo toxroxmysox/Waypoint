@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { withOrigin } from '$lib/shell/back-nav';
+	import { page } from '$app/state';
 	import type { Item, Day } from '$lib/types';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
@@ -45,7 +47,7 @@
 
 {#if range}
 	<a
-		href="/trips/{tripSlug}/items/{item.id}"
+		href={withOrigin(`/trips/${tripSlug}/items/${item.id}`, page.url.pathname)}
 		class="bg-accent text-paper flex items-center gap-3 rounded-xl px-4 py-3 shadow-sm transition-opacity hover:opacity-95 active:opacity-95"
 	>
 		<span class="bg-paper/20 flex h-8 w-8 shrink-0 items-center justify-center rounded-full">

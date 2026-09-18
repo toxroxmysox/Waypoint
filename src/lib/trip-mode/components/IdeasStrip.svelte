@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { page } from '$app/state';
+	import { withOrigin } from '$lib/shell/back-nav';
 	// #245 Door 1 — the inline "ideas for now" strip. Surfaces the CURRENT PHASE's
 	// parked ideas (the per-phase parking zone, #87) at a free-time / nothing-else
 	// Focus, vote-score ordered, so a fallen-through evening finds a replacement
@@ -50,7 +52,7 @@
 				<li class="border-line bg-paper rounded-lg border">
 					<div class="flex items-start gap-3 px-3 py-2.5">
 						<a
-							href="/trips/{slug}/items/{item.id}?from=trip"
+							href={withOrigin(`/trips/${slug}/items/${item.id}`, page.url.pathname)}
 							class="flex min-w-0 flex-1 items-start gap-3"
 						>
 							<TypeIcon type={item.type} sub={item.subtype} size={20} />

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { withOrigin } from '$lib/shell/back-nav';
+	import { page } from '$app/state';
 	import { dndzone, type DndEvent } from 'svelte-dnd-action';
 	import { flip } from 'svelte/animate';
 	import type { Item, Vote, TripMember } from '$lib/types';
@@ -66,7 +68,7 @@
 
 {#if items.length === 0}
 	<a
-		href="/trips/{tripSlug}/items/new?day={dayId}"
+		href={withOrigin(`/trips/${tripSlug}/items/new?day=${dayId}`, page.url.pathname)}
 		class="border-line text-ink-muted hover:border-ink-muted active:border-ink-muted hover:text-ink-soft active:text-ink-soft mt-2 block rounded-lg border border-dashed px-3 py-2 text-xs"
 	>
 		Empty. Tap to add one — or drag an idea here.

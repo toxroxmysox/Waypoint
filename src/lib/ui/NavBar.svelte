@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { canGoBack } from '$lib/shell/stores/nav-depth';
+	import { page } from '$app/state';
+	import { resolveBack } from '$lib/shell/back-nav';
 
 	let {
 		title,
@@ -28,16 +29,22 @@
 		homeLink?: boolean;
 	} = $props();
 
+	// #361 — the chevron is hierarchical, never chronological.
+	//
+	// It used to call `history.back()` whenever the in-app depth was > 0, which
+	// made it mean "undo my last navigation" — so browsing days 1→5 took five
+	// taps to get out, and on a cold load (invite link, digest email) it did
+	// nothing useful at all. It now goes UP: to the screen you drilled in from
+	// (`?from=`), or to this screen's declared parent when there is no origin.
+	//
+	// The OS back gesture is untouched and stays chronological. That divergence
+	// is deliberate — see back-nav.ts.
 	function handleBack() {
 		if (onBack) {
 			onBack();
 			return;
 		}
-		if ($canGoBack) {
-			history.back();
-		} else if (backHref) {
-			goto(backHref);
-		}
+		goto(resolveBack(page.url, backHref ?? '/trips'));
 	}
 </script>
 

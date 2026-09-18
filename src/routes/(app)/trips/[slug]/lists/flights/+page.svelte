@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { withOrigin } from '$lib/shell/back-nav';
+	import { page } from '$app/state';
 	// Flights Smart List (#225) — a read-only chronological lens over the trip's
 	// flight items. Route (from → to) · departure/arrival date-times · per-flight
 	// passenger avatars. NO check-off, NO write actions: it is a view, not a
@@ -105,7 +107,7 @@
 						{/if}
 
 						<a
-							href="/trips/{data.trip.slug}/items/{row.id}"
+							href={withOrigin(`/trips/${data.trip.slug}/items/${row.id}`, page.url.pathname)}
 							class="text-sky inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold"
 						>
 							Open

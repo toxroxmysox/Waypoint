@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withOrigin } from '$lib/shell/back-nav';
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
 	import { getFieldConfig } from '$lib/itinerary/item-fields';
@@ -9,7 +10,6 @@
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import { titleCase } from '$lib/shell/format';
-	import { fromTrip } from '$lib/shell/nav-tabs';
 	import { page } from '$app/state';
 	import ItemForm from '$lib/itinerary/components/ItemForm.svelte';
 
@@ -59,19 +59,12 @@
 	// Newest first: pending optimistic comments on top of the (-created) server list.
 	let allComments = $derived([...optimisticComments, ...data.comments]);
 
-	// Back is mode-aware (#197): a Trip-Mode drill-down (?from=trip) returns to
-	// the merged Now view (#244 — Now absorbed Today); a planning visit returns to
-	// the item's day, else its phase (#197 B-023 — parking ideas have no day), else
-	// the Overview.
-	let backHref = $derived(
-		fromTrip(page.url)
-			? `/trips/${data.trip.slug}/now`
-			: data.itemDay
-				? `/trips/${data.trip.slug}/days/${data.itemDay.id}`
-				: data.itemPhase
-					? `/trips/${data.trip.slug}/phases/${data.itemPhase.id}`
-					: `/trips/${data.trip.slug}`
-	);
+	// #361 — the chevron's origin now rides in `?from=` (see back-nav.ts), so this
+	// is only the COLD-LOAD fallback: an invite link or digest email that lands
+	// straight here has no origin to go back to. Scott's call was that such a visit
+	// returns to the trip's overview rather than guessing at the item's data parent
+	// — which is exactly what the old mode-aware chain did, and why it is gone.
+	let backHref = $derived(`/trips/${data.trip.slug}`);
 
 	// Inline checklist (ledger, issue #55)
 	const doneCount = $derived(data.tasks.filter((t) => t.checked).length);
@@ -96,7 +89,7 @@
 			</button>
 			{#if data.canEdit}
 				<a
-					href="/trips/{data.trip.slug}/items/{data.item.id}/edit"
+					href={withOrigin(`/trips/${data.trip.slug}/items/${data.item.id}/edit`, page.url.pathname)}
 					class="text-ink-soft hover:text-ink active:text-ink text-[12px] font-semibold"
 				>
 					Edit

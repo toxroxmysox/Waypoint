@@ -142,9 +142,13 @@ export const load: PageServerLoad = async ({ url, locals, parent }) => {
 
 export const actions: Actions = {
 	default: async ({ request, url, locals, params }) => {
-		// Trip-Mode quick-add (AddSheet sends ?from=trip): keep the user in Trip
-		// Mode on save instead of ejecting to the Planning day view (#169).
-		const cameFromTrip = url.searchParams.get('from') === 'trip';
+		// Trip-Mode quick-add: keep the user in Trip Mode on save instead of
+		// ejecting to the Planning day view (#169).
+		//
+		// #361 changed `from` from a `trip` TOKEN to the origin PATH, so this is a
+		// path comparison now. Getting it wrong is silent — the save just lands on
+		// the wrong screen — so it is asserted in the e2e trip-mode specs.
+		const cameFromTrip = url.searchParams.get('from') === `/trips/${params.slug}/now`;
 		const trip = await locals.pb
 			.collection('trips')
 			.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));

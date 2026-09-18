@@ -151,7 +151,11 @@ test.describe('#249 approve ghost → real item', () => {
 				.first();
 			await expect(realCard).toBeVisible({ timeout: 10000 });
 			const href = await realCard.getAttribute('href');
-			realItemId = (href ?? '').split('/items/')[1] ?? '';
+			// #361: item links now carry `?from=<origin>`. Strip it — this id goes
+			// into a PB filter string, where a trailing query silently matches
+			// nothing (the item fetch still worked, so only the vote count went to
+			// zero, which read like a broken approval rather than a broken id).
+			realItemId = ((href ?? '').split('/items/')[1] ?? '').split('?')[0];
 			expect(realItemId).not.toBe('');
 		} finally {
 			await owner.ctx.close();

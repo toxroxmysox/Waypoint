@@ -52,7 +52,7 @@
 	subtitle={data.trip.location_summary || undefined}
 	subtitleStyle="tagline"
 	back
-	backHref="/trips"
+	backHref="/trips/{data.trip.slug}"
 />
 <SubTabs
 	tabs={[

@@ -14,7 +14,9 @@
 
 	function addItem() {
 		open = false;
-		const params = new URLSearchParams({ from: 'trip' });
+		// #361: `from` carries the origin PATH now, not a `trip` token. The server
+		// action reads it to decide where a save returns to.
+		const params = new URLSearchParams({ from: `/trips/${slug}/now` });
 		if (todayDayId) params.set('day', todayDayId);
 		goto(`/trips/${slug}/items/new?${params.toString()}`);
 	}

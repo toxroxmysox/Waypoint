@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withOrigin } from '$lib/shell/back-nav';
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import NavBar from '$lib/ui/NavBar.svelte';
@@ -112,7 +113,7 @@
 						{#each itemCodes as entry (entry.item_id)}
 							<div class="border-line bg-surface rounded-lg border p-3">
 								<a
-									href="/trips/{data.trip.slug}/items/{entry.item_id}"
+									href={withOrigin(`/trips/${data.trip.slug}/items/${entry.item_id}`, page.url.pathname)}
 									class="text-ink hover:text-moss active:text-moss mb-2 flex items-center gap-2 text-sm font-medium"
 								>
 									<TypeIcon type={entry.item_type} size={22} />

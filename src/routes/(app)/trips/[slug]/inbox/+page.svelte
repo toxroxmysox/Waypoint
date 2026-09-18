@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { withOrigin } from '$lib/shell/back-nav';
+	import { page } from '$app/state';
 	import { enhance } from '$app/forms';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
@@ -185,7 +187,7 @@
 								</form>
 
 								<a
-									href="/trips/{data.trip.slug}/items/new?suggestion={s.id}"
+									href={withOrigin(`/trips/${data.trip.slug}/items/new?suggestion=${s.id}`, page.url.pathname)}
 									class="border-line text-ink-soft hover:bg-surface-2 active:bg-surface-2 inline-flex items-center rounded-md border px-3 py-1.5 text-sm font-semibold"
 								>
 									Edit &amp; Approve

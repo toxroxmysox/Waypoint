@@ -7,7 +7,6 @@
 	import ItemForm from '$lib/itinerary/components/ItemForm.svelte';
 	import type { ItemFormData } from '$lib/itinerary/components/ItemFormFields';
 	import { buildEmptyFormData } from '$lib/itinerary/item-fields';
-	import { fromTrip } from '$lib/shell/nav-tabs';
 	import { page } from '$app/state';
 	import type { ItemType } from '$lib/types';
 
@@ -15,17 +14,16 @@
 
 	// Back/cancel target mirrors where a successful submit returns (#178):
 	//   - Edit & Approve (?suggestion=) → Inbox (where approve also lands)
-	//   - Trip-Mode quick-add (?from=trip) → the merged Now view (#244 / #197 / #169)
+	//   (Trip-Mode quick-add used to be a branch here; #361's `?from=` carries that
+	//    origin now, and resolveBack prefers it over this fallback.)
 	//   - entered from a day (?day=) → that day view (was teleporting to Overview)
 	//   - otherwise → the trip Overview
 	let backHref = $derived(
 		page.url.searchParams.get('suggestion')
 			? `/trips/${data.trip.slug}/inbox`
-			: fromTrip(page.url)
-				? `/trips/${data.trip.slug}/now`
-				: data.preselectedDay
-					? `/trips/${data.trip.slug}/days/${data.preselectedDay}`
-					: `/trips/${data.trip.slug}`
+			: data.preselectedDay
+				? `/trips/${data.trip.slug}/days/${data.preselectedDay}`
+				: `/trips/${data.trip.slug}`
 	);
 
 	let dirty = $state(false);

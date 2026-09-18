@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { withOrigin } from '$lib/shell/back-nav';
+	import { page } from '$app/state';
 	import { enhance } from '$app/forms';
 	import { dndzone, SOURCES, TRIGGERS, type DndEvent } from 'svelte-dnd-action';
 	import { flip } from 'svelte/animate';
@@ -135,7 +137,7 @@
 			</button>
 
 			<div class="min-w-0 flex-1">
-				<Card href="/trips/{tripSlug}/items/{item.id}" class="no-callout">
+				<Card href={withOrigin(`/trips/${tripSlug}/items/${item.id}`, page.url.pathname)} class="no-callout">
 					<div class="flex items-center gap-3 px-3 py-2">
 						<TypeIcon type={item.type} sub={item.subtype} size={18} />
 						<div class="min-w-0 flex-1">

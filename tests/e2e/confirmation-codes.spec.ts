@@ -82,7 +82,7 @@ test.describe('Confirmation codes → Documents (#268)', () => {
 
 		// --- Edit: keep Conf# (ABC123 → ABC999), remove PIN, add a third code ---
 		await page.getByRole('link', { name: /^Edit$/i }).first().click();
-		await page.waitForURL(/\/edit$/);
+		await page.waitForURL(/\/edit(?:\?|$)/); // #361: edit links carry ?from=
 
 		// The edit loader reshapes code Documents back into the form (2 rows).
 		const editLabels = page.locator('input[name="confirmation_code_label"]:visible');

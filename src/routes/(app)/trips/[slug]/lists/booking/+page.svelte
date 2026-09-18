@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { withOrigin } from '$lib/shell/back-nav';
+	import { page } from '$app/state';
 	import { fade } from 'svelte/transition';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
@@ -44,7 +46,7 @@
 							subtype={row.subtype}
 							title={row.title}
 							meta={row.meta}
-							href="/trips/{data.trip.slug}/items/{row.id}"
+							href={withOrigin(`/trips/${data.trip.slug}/items/${row.id}`, page.url.pathname)}
 							bookAction="?/book"
 							pending={booking.has(row.id)}
 							onBook={() => markBooking(row.id)}

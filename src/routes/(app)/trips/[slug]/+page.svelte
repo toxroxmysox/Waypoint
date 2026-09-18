@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { withOrigin } from '$lib/shell/back-nav';
+	import { page } from '$app/state';
 	import type { Phase, Day } from '$lib/types';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
@@ -293,7 +295,7 @@
 				<div class="grid gap-1.5">
 					{#each data.formingIdeas as idea (idea.id)}
 						<a
-							href="/trips/{data.trip.slug}/items/{idea.id}"
+							href={withOrigin(`/trips/${data.trip.slug}/items/${idea.id}`, page.url.pathname)}
 							class="border-line bg-surface hover:bg-surface-2 active:bg-surface-2 flex items-center gap-2.5 rounded-lg border px-3 py-2"
 						>
 							<TypeIcon type={idea.type} size={20} />
@@ -414,7 +416,7 @@
 			<div class="grid gap-1.5">
 				{#each data.keyItems as it (it.id)}
 					<a
-						href="/trips/{data.trip.slug}/items/{it.id}"
+						href={withOrigin(`/trips/${data.trip.slug}/items/${it.id}`, page.url.pathname)}
 						class="border-line bg-surface hover:bg-surface-2 active:bg-surface-2 flex items-center gap-2.5 rounded-lg border px-3 py-2"
 					>
 						<TypeIcon type={it.type} size={20} />
