@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { withOrigin } from '$lib/shell/back-nav';
 	import { page } from '$app/state';
-	import { replaceState } from '$app/navigation';
+	import { afterNavigate, replaceState } from '$app/navigation';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import FAB from '$lib/shell/components/FAB.svelte';
@@ -56,15 +56,18 @@
 		precacheDocuments(fresh);
 	});
 
-	// The Trip Mode central Add navigates here with ?action=add — open the sheet
-	// and strip the param so a refresh doesn't reopen it.
-	$effect(() => {
-		if (page.url.searchParams.get('action') === 'add') {
-			addOpen = true;
-			const url = new URL(page.url);
-			url.searchParams.delete('action');
-			replaceState(url, page.state);
-		}
+	// The Trip Mode central Add navigates here with ?action=add — open the sheet.
+	//
+	// #387 — `afterNavigate`, not `$effect`: shallow `replaceState` never updates
+	// `page.url`, so an effect reading it re-fires on the post-upload `update()`
+	// and reopens the sheet. Same defect as the expenses page; see the comment
+	// there for the full mechanism. The strip below is cosmetic only.
+	afterNavigate(() => {
+		if (page.url.searchParams.get('action') !== 'add') return;
+		addOpen = true;
+		const url = new URL(page.url);
+		url.searchParams.delete('action');
+		replaceState(url, page.state);
 	});
 </script>
 
