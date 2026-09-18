@@ -56,8 +56,12 @@ test.describe('Trip Mode checklist check-off (#52)', () => {
 		await expect(page.getByPlaceholder('Add task')).toHaveCount(0);
 		await expect(page.getByRole('button', { name: 'Assign or remove task' })).toHaveCount(0);
 
+		// #364: the checkbox flips optimistically, so "Uncheck task" appears before
+		// the save lands. Wait for the action POST — a full-page goto would abort it.
+		const saved = page.waitForResponse((r) => r.request().method() === 'POST' && r.url().includes('/now'));
 		await page.getByRole('button', { name: 'Check task' }).filter({ visible: true }).first().click();
 		await expect(page.getByRole('button', { name: 'Uncheck task' }).filter({ visible: true }).first()).toBeVisible();
+		expect((await saved).ok()).toBe(true);
 
 		// --- Persists to Planning ---
 		await page.goto(listUrl);
