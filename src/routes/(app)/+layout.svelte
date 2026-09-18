@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { onNavigate } from '$app/navigation';
+	import NavProgress from '$lib/shell/components/NavProgress.svelte';
 
 	let { children } = $props();
 
@@ -123,6 +124,8 @@
 		});
 	});
 </script>
+
+<NavProgress />
 
 <div class="bg-paper text-ink flex min-h-dvh flex-col">
 	{@render children()}
