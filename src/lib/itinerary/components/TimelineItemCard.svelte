@@ -45,15 +45,16 @@
      time column, so there is ONE rail at every breakpoint, not two time
      displays. The grip is retired: the whole card is the drag affordance now
      (svelte-dnd-action's `delayTouchStart` on the host zone, see DayTimeline). -->
-<div class="group relative no-callout pl-11" class:opacity-90={overlapping}>
+<div class="group relative no-callout pl-[3.25rem]" class:opacity-90={overlapping}>
 	{#if anchored}
-		<div class="text-ink-muted absolute top-3 left-0 w-8 text-right leading-none">
+		<div data-rail="time" class="text-ink-muted absolute top-3 left-0 w-10 text-right leading-none">
 			<span class="block font-mono text-[11px]">{railClock[0]}</span>
 			<span class="mt-0.5 block text-[9px] tracking-wide">{railClock[1]}</span>
 		</div>
 	{:else}
 		<div
-			class="border-ink-muted bg-surface absolute top-[1.1rem] left-[2.375rem] h-[7px] w-[7px] -translate-x-1/2 rounded-full border"
+			data-rail="dot"
+			class="border-ink-muted bg-surface absolute top-4 left-[2.875rem] h-[9px] w-[9px] -translate-x-1/2 rounded-full border"
 			aria-hidden="true"
 		></div>
 	{/if}

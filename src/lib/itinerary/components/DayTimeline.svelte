@@ -45,12 +45,13 @@
 	     dot) are drawn into the same gutter by TimelineItemCard. -->
 	{#if items.length > 0}
 		<div
-			class="bg-line pointer-events-none absolute top-2 bottom-2 left-[2.375rem] w-px"
+			class="bg-line pointer-events-none absolute top-2 bottom-2 left-[2.875rem] w-px"
 			aria-hidden="true"
 		></div>
 	{/if}
 
 	<section
+		data-day-timeline
 		class="min-h-[3rem] space-y-2"
 		use:dndzone={{ items, dragDisabled: false, type: 'itinerary-item', flipDurationMs: FLIP_MS, dropTargetStyle: {}, useCursorForDetection: true, delayTouchStart: LONG_PRESS_MS }}
 		onconsider={onConsider}
@@ -65,7 +66,7 @@
 			<div animate:flip={{ duration: FLIP_MS }} class="rounded-lg" aria-label={item.title}>
 				{#if meta?.slotLabel}
 					<!-- Daypart divider, indented past the gutter so the rail runs behind it. -->
-					<div class="flex items-center gap-3 py-1 pl-11">
+					<div class="flex items-center gap-3 py-1 pl-[3.25rem]">
 						<span class="text-ink-muted text-[11px] font-medium tracking-wider uppercase">{meta.slotLabel}</span>
 						<div class="border-line flex-1 border-t"></div>
 					</div>
