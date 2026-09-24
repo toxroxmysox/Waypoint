@@ -12,7 +12,8 @@
 		shouldWalkOrphan,
 		consumeOrphan,
 		notePopstate,
-		consumePopstate
+		consumePopstate,
+		noteNavigation
 	} from '$lib/shell/sheet-history';
 
 	let { children } = $props();
@@ -75,6 +76,13 @@
 	});
 
 	afterNavigate(() => {
+		// #365 — close the navigation epoch. A sheet's "I survived the close on
+		// THIS page, so I'll walk my own entry" state is only valid within the
+		// navigation that created it; AppShell-owned sheets (AddSheet) are not
+		// unmounted by a route change, so without this their state re-matched on a
+		// later return to the same path and back()ed into a live navigation.
+		noteNavigation();
+
 		const mainEl = document.querySelector('main');
 		if (mainEl) {
 			mainEl.id = 'main-content';
