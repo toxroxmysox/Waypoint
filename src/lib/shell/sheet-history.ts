@@ -16,10 +16,16 @@
  *      navigation or `load` lets the popstate win, and the just-saved record
  *      disappears from the page — silent data loss. (Attempt 1.)
  *   2. The sheet ALSO cannot remember the entry it left behind, because that
- *      navigation UNMOUNTS it. By the time the user backs onto the orphaned
- *      entry no component exists to clean it up, so the press lands on a dead
- *      entry and nothing happens — the #235 dead tap. (Attempt 2, measured:
- *      AddSheet -> pick item -> back -> back, second press did nothing.)
+ *      navigation usually UNMOUNTS it. By the time the user backs onto the
+ *      orphaned entry no component exists to clean it up, so the press lands on
+ *      a dead entry and nothing happens — the #235 dead tap. (Attempt 2,
+ *      measured: AddSheet -> pick item -> back -> back, second press did
+ *      nothing.)
+ *
+ *      "USUALLY" IS LOAD-BEARING, and assuming "always" was the third failure.
+ *      A sheet rendered by `AppShell` (`AddSheet`) is NOT unmounted by a route
+ *      change — it outlives the navigation and keeps its state. See the
+ *      navigation-epoch section at the bottom of this file.
  *
  * So the bookkeeping outlives both the sheet and the navigation. It lives here,
  * and the ROOT LAYOUT — which outlives every route — walks the orphans.
@@ -46,6 +52,7 @@ export function __resetSheetHistory(): void {
 	orphanIds = [];
 	openSheets = 0;
 	nextId = 1;
+	navEpoch = 0;
 }
 
 /** A fresh, never-reused identity for one pushed history entry. */
@@ -132,4 +139,33 @@ export function consumePopstate(): boolean {
 /** Diagnostics for tests. */
 export function orphanCount(): number {
 	return orphanIds.length;
+}
+
+/**
+ * Navigation epoch — which navigation the app is currently on.
+ *
+ * WHY: a sheet that closes programmatically keeps "vestigial" state so it can
+ * walk its own entry IF it survived the close without navigating (the `enhance`
+ * success that re-runs `load`). That was keyed on `location.pathname`, on the
+ * assumption that a navigation always UNMOUNTS the sheet and takes the state
+ * with it. **False for any sheet owned by `AppShell`** — `AddSheet` lives in the
+ * layout, so it survives every route change inside a trip, and its vestigial
+ * state survives with it. Returning to the same path later (Now → Add sheet →
+ * item form → submit → redirect back to Now) then re-satisfied the pathname
+ * guard and fired a stale `history.back()` 12ms into the redirect, cancelling
+ * it: the user submitted the form and landed back on the form.
+ * Measured by `scripts/probe-365-skipdoor.mjs`.
+ *
+ * So vestigial state is scoped to the navigation it was created in. After any
+ * navigation the entry is genuinely behind the user, which is the ROOT LAYOUT's
+ * walk (on a real back press), not the sheet's.
+ */
+let navEpoch = 0;
+
+export function noteNavigation(): void {
+	navEpoch += 1;
+}
+
+export function currentNavEpoch(): number {
+	return navEpoch;
 }
