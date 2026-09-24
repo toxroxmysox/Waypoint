@@ -608,3 +608,318 @@ routerAdd('GET', '/api/invites/my-pending', (e) => {
 
 	return e.json(200, { invites: invites });
 });
+
+// ---------------------------------------------------------------------------
+// #352 — past co-traveler picker.
+//
+// Two endpoints that let you invite someone you've travelled with WITHOUT
+// knowing (or ever seeing) their email address:
+//   GET  /api/invites/co-travelers?trip_id=ID — the pool: name + avatar only.
+//   POST /api/invites/create-for-user          — invite by USER ID; the server
+//        derives the email and re-validates the co-traveler relationship.
+//
+// Why hooks and not a client/SSR PB query: `users.listRule` is self-only and
+// `emailVisibility` is off (migration 0043 opened `viewRule` to co-travelers for
+// name+avatar only), so neither the browser nor the SvelteKit load can resolve
+// the pool or the address. Hook context reads with app privileges, which is also
+// what keeps the address off the wire — nothing below ever returns an email.
+//
+// PB 0.27 isolates each callback: every helper is inlined verbatim, on purpose.
+// ---------------------------------------------------------------------------
+
+// GET /api/invites/co-travelers?trip_id=ID
+// Auth + trip membership + non-viewer required (same authority as inviting).
+// Returns:
+//   { co_travelers: [{ user_id, name, avatar }], pending_names: { <inviteId>: name } }
+// `pending_names` exists so the members page can label a pending invite for a
+// co-traveler by NAME instead of rendering their address — a picker-created
+// invite must not leak the email back through the Pending list. It only ever
+// names people the requester can already see (shared-trip co-travellers), so it
+// discloses nothing new.
+routerAdd('GET', '/api/invites/co-travelers', (e) => {
+	const auth = e.auth;
+	if (!auth) throw new UnauthorizedError('Authentication required');
+
+	const query = e.requestInfo().query || {};
+	const tripId = Array.isArray(query['trip_id'])
+		? query['trip_id'][0]
+		: query['trip_id'] || '';
+	if (!tripId) throw new BadRequestError('trip_id is required');
+
+	// Requester must be an ACTIVE member of the target trip (#133 guard) and
+	// allowed to invite at all.
+	let requesterMember;
+	try {
+		requesterMember = e.app.findFirstRecordByFilter(
+			'trip_members',
+			'trip = {:tripId} && user = {:userId} && removed_at = ""',
+			{ tripId: tripId, userId: auth.id }
+		);
+	} catch (_) {
+		throw new ForbiddenError('You are not a member of this trip');
+	}
+	if (requesterMember.getString('role') === 'viewer') {
+		throw new ForbiddenError('Viewers cannot invite');
+	}
+
+	// 1. Every trip the requester is CURRENTLY on (their own tombstones are
+	//    excluded by removed_at — a trip you were removed from is not "shared").
+	let myMemberships = [];
+	try {
+		myMemberships = e.app.findRecordsByFilter(
+			'trip_members',
+			'user = {:userId} && removed_at = ""',
+			'',
+			0,
+			0,
+			{ userId: auth.id }
+		);
+	} catch (_) {
+		myMemberships = [];
+	}
+
+	// 2. Active, real-user members of those trips = the raw pool. `user != ""`
+	//    drops placeholders (no account to invite); removed_at = "" drops
+	//    tombstones on the OTHER side (#133 — this is exactly the query where
+	//    forgetting it resurrects ex-members).
+	const seen = {};
+	const pool = [];
+	for (const mine of myMemberships) {
+		const sharedTripId = mine.getString('trip');
+		if (!sharedTripId) continue;
+		let others = [];
+		try {
+			others = e.app.findRecordsByFilter(
+				'trip_members',
+				'trip = {:tripId} && user != "" && user != {:userId} && removed_at = ""',
+				'',
+				0,
+				0,
+				{ tripId: sharedTripId, userId: auth.id }
+			);
+		} catch (_) {
+			others = [];
+		}
+		for (const other of others) {
+			const otherUserId = other.getString('user');
+			if (!otherUserId || seen[otherUserId]) continue;
+			let otherUser;
+			try {
+				otherUser = e.app.findRecordById('users', otherUserId);
+			} catch (_) {
+				continue; // stale ref — skip rather than surface a nameless row
+			}
+			// Name only, never the address: the account name, else the per-trip
+			// nickname from the shared trip, else a neutral label.
+			const name =
+				otherUser.getString('name') || other.getString('display_name') || 'Traveler';
+			seen[otherUserId] = {
+				user_id: otherUserId,
+				name: name,
+				avatar: otherUser.getString('avatar') || '',
+				email: String(otherUser.email() || '').trim().toLowerCase()
+			};
+			pool.push(seen[otherUserId]);
+		}
+	}
+
+	// 3. Exclude anyone already ACTIVE on this trip.
+	let currentMembers = [];
+	try {
+		currentMembers = e.app.findRecordsByFilter(
+			'trip_members',
+			'trip = {:tripId} && user != "" && removed_at = ""',
+			'',
+			0,
+			0,
+			{ tripId: tripId }
+		);
+	} catch (_) {
+		currentMembers = [];
+	}
+	const alreadyMember = {};
+	for (const m of currentMembers) alreadyMember[m.getString('user')] = true;
+
+	// 4. Exclude anyone with an open invite on this trip, and build the
+	//    id → name map the members page uses to mask those invites' addresses.
+	let invites = [];
+	try {
+		invites = e.app.findRecordsByFilter(
+			'pending_invites',
+			'trip = {:tripId}',
+			'',
+			0,
+			0,
+			{ tripId: tripId }
+		);
+	} catch (_) {
+		invites = [];
+	}
+	const invitedEmails = {};
+	const pendingNames = {};
+	for (const inv of invites) {
+		const invEmail = inv.getString('email').trim().toLowerCase();
+		if (!invEmail) continue;
+		invitedEmails[invEmail] = true;
+		for (const c of pool) {
+			if (c.email && c.email === invEmail) {
+				pendingNames[inv.id] = c.name;
+				break;
+			}
+		}
+	}
+
+	const out = [];
+	for (const c of pool) {
+		if (alreadyMember[c.user_id]) continue;
+		if (c.email && invitedEmails[c.email]) continue;
+		// Deliberately drops `email` — the response never carries an address.
+		out.push({ user_id: c.user_id, name: c.name, avatar: c.avatar });
+	}
+	out.sort((a, b) => (a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1));
+
+	return e.json(200, { co_travelers: out.slice(0, 60), pending_names: pendingNames });
+});
+
+// POST /api/invites/create-for-user
+// Body: { trip_id, user_id, role }. Same gating as /api/invites/create, plus a
+// server-side re-check that the picked user really is a co-traveler — the id
+// comes from the client and is never trusted. On success the address is read
+// here, written to pending_invites, and the existing after-create hook mails
+// the invite. The response carries the NAME only.
+routerAdd('POST', '/api/invites/create-for-user', (e) => {
+	const auth = e.auth;
+	if (!auth) throw new UnauthorizedError('Authentication required');
+
+	const info = e.requestInfo();
+	const tripId = (info.body && info.body['trip_id']) || '';
+	const userId = (info.body && info.body['user_id']) || '';
+	const role = (info.body && info.body['role']) || '';
+
+	if (!tripId) throw new BadRequestError('Missing trip_id');
+	if (!userId) throw new BadRequestError('Missing user_id');
+	if (!role) throw new BadRequestError('Missing role');
+
+	const allowedRoles = ['co_owner', 'traveler', 'viewer'];
+	if (allowedRoles.indexOf(role) === -1) {
+		throw new BadRequestError('Invalid role: must be co_owner | traveler | viewer');
+	}
+
+	if (userId === auth.id) throw new BadRequestError('You are already on this trip');
+
+	let requesterMember;
+	try {
+		requesterMember = e.app.findFirstRecordByFilter(
+			'trip_members',
+			'trip = {:tripId} && user = {:userId} && removed_at = ""', // #133 guard
+			{ tripId: tripId, userId: auth.id }
+		);
+	} catch (_) {
+		throw new ForbiddenError('You are not a member of this trip');
+	}
+
+	// SPEC §3 inviter gating — identical to /api/invites/create.
+	const requesterRole = requesterMember.getString('role');
+	if (requesterRole === 'viewer') throw new ForbiddenError('Viewers cannot invite');
+	if (requesterRole === 'traveler' && role === 'co_owner') {
+		throw new ForbiddenError('Travelers cannot invite co-owners');
+	}
+
+	let target;
+	try {
+		target = e.app.findRecordById('users', userId);
+	} catch (_) {
+		throw new NotFoundError('That traveller could not be found');
+	}
+
+	// Re-validate the co-traveler relationship server-side: some trip on which
+	// BOTH of us hold an active (non-tombstoned) membership. Without this, a
+	// crafted user id would invite a stranger — and reveal, by success/failure,
+	// that their account exists.
+	let shared = false;
+	let myMemberships = [];
+	try {
+		myMemberships = e.app.findRecordsByFilter(
+			'trip_members',
+			'user = {:userId} && removed_at = ""',
+			'',
+			0,
+			0,
+			{ userId: auth.id }
+		);
+	} catch (_) {
+		myMemberships = [];
+	}
+	for (const mine of myMemberships) {
+		const sharedTripId = mine.getString('trip');
+		if (!sharedTripId) continue;
+		try {
+			e.app.findFirstRecordByFilter(
+				'trip_members',
+				'trip = {:tripId} && user = {:userId} && removed_at = ""',
+				{ tripId: sharedTripId, userId: userId }
+			);
+			shared = true;
+			break;
+		} catch (_) {
+			// not on that trip; keep looking
+		}
+	}
+	if (!shared) {
+		throw new ForbiddenError("You haven't travelled with that person");
+	}
+
+	// Already on this trip?
+	let existingMember = null;
+	try {
+		existingMember = e.app.findFirstRecordByFilter(
+			'trip_members',
+			'trip = {:tripId} && user = {:userId} && removed_at = ""', // #133 guard
+			{ tripId: tripId, userId: userId }
+		);
+	} catch (_) {
+		// not a member; fine
+	}
+	if (existingMember) throw new BadRequestError('They are already a member of this trip');
+
+	const email = String(target.email() || '').trim().toLowerCase();
+	if (!email) throw new BadRequestError('That traveller has no email on file');
+
+	// Mirror the by-email path's placeholder collision check.
+	let placeholder = null;
+	try {
+		placeholder = e.app.findFirstRecordByFilter(
+			'trip_members',
+			'trip = {:tripId} && placeholder_email = {:email} && removed_at = ""', // #133 guard
+			{ tripId: tripId, email: email }
+		);
+	} catch (_) {
+		// no placeholder; fine
+	}
+	if (placeholder) {
+		throw new BadRequestError('They are already a placeholder member of this trip');
+	}
+
+	const code = $security.randomString(40);
+	const expiresMs = Date.now() + 7 * 24 * 60 * 60 * 1000;
+	const expiresAt = new Date(expiresMs).toISOString().replace('T', ' ').replace('Z', '') + 'Z';
+
+	const collection = e.app.findCollectionByNameOrId('pending_invites');
+	const invite = new Record(collection);
+	invite.set('trip', tripId);
+	invite.set('email', email);
+	invite.set('role', role);
+	invite.set('invited_by', requesterMember.id);
+	invite.set('code', code);
+	invite.set('expires_at', expiresAt);
+
+	try {
+		e.app.save(invite);
+	} catch (err) {
+		throw new BadRequestError('They already have an open invite to this trip');
+	}
+
+	const name = target.getString('name') || 'Traveler';
+	// No email, no code: the inviter never learns the address they just used.
+	return e.json(200, { id: invite.id, role: role, name: name });
+});

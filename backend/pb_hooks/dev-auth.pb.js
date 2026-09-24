@@ -932,3 +932,200 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 
 	return e.json(200, { tripId: trip.id, slug: slug, days: summary });
 });
+
+// ---------------------------------------------------------------------------
+// POST /api/dev/cotraveler-fixture — #352 past co-traveler picker scenario.
+//
+// The rules-fixture seeds ONE trip, so it can't express "someone I travelled
+// with before, who isn't on this trip". This seeds two:
+//
+//   PAST trip   (slug <prefix>-past)   owner + co_owner + traveler
+//                                      + viewer     (TOMBSTONED, real shape:
+//                                        removed_at stamped, `user` cleared,
+//                                        display_name snapshotted — what
+//                                        /api/members/remove produces)
+//                                      + non_member (TOMBSTONED, defensive
+//                                        shape: removed_at stamped but `user`
+//                                        RETAINED. Today's removal hook always
+//                                        clears `user`, so only this row can
+//                                        actually catch a pool query that
+//                                        forgets `&& removed_at = ""` — the
+//                                        #133 invariant this issue is most
+//                                        likely to break.)
+//   TARGET trip (slug <prefix>-target) owner + traveler (already a member)
+//
+// So the owner's picker pool on the TARGET trip must be exactly [co_owner]:
+//   traveler   → excluded, already an active member here
+//   viewer     → excluded, tombstoned on the only shared trip
+//   non_member → excluded, tombstoned (user-retained variant)
+//
+// Body: { emails: { owner, co_owner, traveler, viewer, non_member }, prefix? }.
+// Every email must be whitelisted (E2E_TEST_EMAIL / E2E_TEST_EMAILS).
+// Returns { pastTripId, targetTripId, targetSlug, userIds, names }.
+// Destructive + idempotent: tears both trips down first.
+// ---------------------------------------------------------------------------
+routerAdd('POST', '/api/dev/cotraveler-fixture', (e) => {
+	if ($os.getenv('WAYPOINT_DEV_MODE') !== 'true') {
+		throw new BadRequestError('Dev fixtures are not enabled');
+	}
+
+	const single = $os.getenv('E2E_TEST_EMAIL') || '';
+	const multi = $os.getenv('E2E_TEST_EMAILS') || '';
+	const whitelist = new Set();
+	if (single) whitelist.add(single);
+	for (const raw of multi.split(',')) {
+		const trimmed = raw.trim();
+		if (trimmed) whitelist.add(trimmed);
+	}
+
+	const info = e.requestInfo();
+	const emails = (info.body && info.body['emails']) || {};
+	const prefix = (info.body && info.body['prefix']) || 'e2e-cotraveler';
+
+	const required = ['owner', 'co_owner', 'traveler', 'viewer', 'non_member'];
+	for (const role of required) {
+		const email = emails[role];
+		if (!email) throw new BadRequestError('Missing email for role: ' + role);
+		if (!whitelist.has(email)) throw new ForbiddenError('Email not whitelisted: ' + email);
+	}
+
+	// Find-or-create each user, tolerating a concurrent create (see auth-bypass).
+	// Names are pinned to the rules-fixture convention so the picker's labels are
+	// deterministic — the picker renders NAMES, never addresses.
+	const usersCol = e.app.findCollectionByNameOrId('users');
+	const userIds = {};
+	const names = {};
+	for (const role of required) {
+		const email = emails[role];
+		let user;
+		try {
+			user = e.app.findAuthRecordByEmail('users', email);
+		} catch (_) {
+			try {
+				user = new Record(usersCol);
+				user.setEmail(email);
+				user.setPassword($security.randomString(40));
+				user.set('verified', true);
+				e.app.save(user);
+			} catch (saveErr) {
+				user = e.app.findAuthRecordByEmail('users', email);
+			}
+		}
+		// Pin the INVITEES' names so the picker's labels are deterministic. The
+		// caller's own account is left alone — it's E2E_TEST_EMAIL, shared with
+		// every other spec file, and renaming it out from under them would be a
+		// cross-file surprise.
+		let wantName = user.getString('name');
+		if (role !== 'owner') {
+			wantName = 'E2E ' + role;
+			if (user.getString('name') !== wantName) {
+				user.set('name', wantName);
+				e.app.save(user);
+			}
+		}
+		userIds[role] = user.id;
+		names[role] = wantName;
+	}
+
+	const pastSlug = prefix + '-past';
+	const targetSlug = prefix + '-target';
+
+	// Teardown. Same required-non-cascade FK blockers the rules-fixture clears.
+	for (const slug of [pastSlug, targetSlug]) {
+		try {
+			const existing = e.app.findFirstRecordByFilter('trips', 'slug = {:slug}', { slug: slug });
+			if (existing) {
+				for (const col of ['notifications', 'documents', 'memories', 'suggestions', 'trip_goals']) {
+					try {
+						const rows = e.app.findRecordsByFilter(col, 'trip = {:tripId}', '', 0, 0, {
+							tripId: existing.id
+						});
+						for (const row of rows) {
+							try {
+								e.app.delete(row);
+							} catch (_) {}
+						}
+					} catch (_) {}
+				}
+				try {
+					const invites = e.app.findRecordsByFilter('pending_invites', 'trip = {:tripId}', '', 0, 0, {
+						tripId: existing.id
+					});
+					for (const inv of invites) {
+						try {
+							e.app.delete(inv);
+						} catch (_) {}
+					}
+				} catch (_) {}
+				e.app.delete(existing);
+			}
+		} catch (_) {
+			// Nothing seeded yet.
+		}
+	}
+
+	const tripsCol = e.app.findCollectionByNameOrId('trips');
+	const tripMembersCol = e.app.findCollectionByNameOrId('trip_members');
+	const now = new Date().toISOString().replace('T', ' ').replace('Z', '') + 'Z';
+
+	// --- PAST trip -----------------------------------------------------------
+	const past = new Record(tripsCol);
+	past.set('slug', pastSlug);
+	past.set('title', 'E2E Past Trip');
+	past.set('start_date', '2025-06-01 00:00:00.000Z');
+	past.set('end_date', '2025-06-03 00:00:00.000Z');
+	past.set('timezone', 'UTC');
+	past.set('created_by', userIds.owner);
+	e.app.save(past);
+
+	// The trips after-create hook already added the owner's member row.
+	const pastMemberIds = {};
+	for (const role of ['co_owner', 'traveler', 'viewer', 'non_member']) {
+		const m = new Record(tripMembersCol);
+		m.set('trip', past.id);
+		m.set('user', userIds[role]);
+		m.set('role', 'traveler');
+		m.set('joined_at', now);
+		e.app.save(m);
+		pastMemberIds[role] = m.id;
+	}
+
+	// viewer → real tombstone (what the removal hook writes: ADR-0008 snapshot,
+	// `user` severed, removed_at stamped).
+	const viewerMember = e.app.findRecordById('trip_members', pastMemberIds.viewer);
+	viewerMember.set('display_name', names.viewer);
+	viewerMember.set('user', '');
+	viewerMember.set('removed_at', now);
+	e.app.save(viewerMember);
+
+	// non_member → defensive tombstone: removed_at stamped, `user` RETAINED.
+	const strangerMember = e.app.findRecordById('trip_members', pastMemberIds.non_member);
+	strangerMember.set('removed_at', now);
+	e.app.save(strangerMember);
+
+	// --- TARGET trip ---------------------------------------------------------
+	const target = new Record(tripsCol);
+	target.set('slug', targetSlug);
+	target.set('title', 'E2E Target Trip');
+	target.set('start_date', '2026-06-01 00:00:00.000Z');
+	target.set('end_date', '2026-06-03 00:00:00.000Z');
+	target.set('timezone', 'UTC');
+	target.set('created_by', userIds.owner);
+	e.app.save(target);
+
+	const targetTraveler = new Record(tripMembersCol);
+	targetTraveler.set('trip', target.id);
+	targetTraveler.set('user', userIds.traveler);
+	targetTraveler.set('role', 'traveler');
+	targetTraveler.set('joined_at', now);
+	e.app.save(targetTraveler);
+
+	return e.json(200, {
+		pastTripId: past.id,
+		targetTripId: target.id,
+		targetSlug: targetSlug,
+		pastSlug: pastSlug,
+		userIds: userIds,
+		names: names
+	});
+});

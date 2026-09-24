@@ -107,6 +107,14 @@
 	const revokeForm = $derived(
 		(form?.revoke ?? null) as { success?: boolean; error?: string } | null
 	);
+	// #352 — past co-traveler picker. The action returns the invitee's NAME (the
+	// server resolved their address and kept it); there is no email to echo here.
+	const coTravelerForm = $derived(
+		(form?.coTraveler ?? null) as { success?: boolean; name?: string; error?: string } | null
+	);
+	const coTravelerError = $derived(coTravelerForm?.error ?? '');
+	let invitingUserId = $state<string | null>(null);
+	let coTravelerRole = $state<InviteRole>('traveler');
 	const placeholderForm = $derived(
 		(form?.placeholder ?? null) as {
 			success?: boolean;
@@ -219,7 +227,9 @@
 							{#if isSelf}
 								<!-- #180: /account was unreachable from inside a trip — the
 								     self-row (you're looking at your own avatar) is the natural door. -->
-								<a href="/account" class="text-xs font-medium text-ink-soft hover:text-ink active:text-ink"
+								<a
+									href="/account"
+									class="text-xs font-medium text-ink-soft hover:text-ink active:text-ink"
 									>Account</a
 								>
 								<!-- #206: self-serve leave for ANY role. Reuses the remove
@@ -423,6 +433,94 @@
 		</section>
 	{/if}
 
+	<!-- #352 — past co-traveler picker. Everyone you've shared a trip with who
+	     isn't already here: name + avatar, never an address. Picking someone
+	     sends them the ordinary pending invite, which they accept themselves. -->
+	{#if data.canInvite}
+		<section class="space-y-3" data-testid="co-traveler-picker">
+			<h2 class="text-xs font-semibold tracking-wider text-ink-soft uppercase">
+				Invite someone you've travelled with
+			</h2>
+			{#if coTravelerError}
+				<div
+					role="alert"
+					class="rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error-deep"
+				>
+					{coTravelerError}
+				</div>
+			{/if}
+			{#if coTravelerForm?.success}
+				<div class="rounded-md border border-moss/30 bg-moss-tint p-3 text-sm text-moss">
+					Invite sent to {coTravelerForm?.name}.
+				</div>
+			{/if}
+			<Card>
+				{#if data.coTravelers.length === 0}
+					<p class="px-4 py-6 text-center text-sm text-ink-muted" data-testid="co-traveler-empty">
+						Nobody yet. People you plan a trip with show up here, so you can invite them again
+						without hunting for their email.
+					</p>
+				{:else}
+					<div class="space-y-3 py-4">
+						<div class="px-4">
+							<label for="co-traveler-role" class="block text-sm font-medium text-ink-soft">
+								Invite as
+							</label>
+							<select
+								id="co-traveler-role"
+								bind:value={coTravelerRole}
+								class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
+							>
+								{#each allowedRoles as role}
+									<option value={role}>{roleLabel[role]}</option>
+								{/each}
+							</select>
+						</div>
+						<ul class="max-h-80 divide-y divide-line overflow-y-auto">
+							{#each data.coTravelers as person (person.userId)}
+								<li class="flex items-center gap-3 px-4 py-2.5" data-testid="co-traveler-row">
+									<Avatar
+										img={person.avatarUrl}
+										initial={person.name}
+										alt={person.name}
+										size={36}
+									/>
+									<span class="min-w-0 flex-1 truncate text-sm font-semibold text-ink">
+										{person.name}
+									</span>
+									<form
+										method="POST"
+										action="?/inviteCoTraveler"
+										use:enhance={() => {
+											invitingUserId = person.userId;
+											return async ({ update, result }) => {
+												invitingUserId = null;
+												if (result.type === 'success') toast.show('Invite sent');
+												await update();
+											};
+										}}
+									>
+										<input type="hidden" name="user_id" value={person.userId} />
+										<input type="hidden" name="role" value={coTravelerRole} />
+										<Button
+											type="submit"
+											variant="ghost"
+											size="sm"
+											disabled={invitingUserId === person.userId}
+											loading={invitingUserId === person.userId}
+										>
+											{invitingUserId === person.userId ? 'Sending…' : 'Invite'}
+										</Button>
+									</form>
+								</li>
+							{/each}
+						</ul>
+					</div>
+				{/if}
+			</Card>
+		</section>
+	{/if}
+
 	<!-- Invite form -->
 	{#if data.canInvite}
 		<section class="space-y-3">
@@ -559,9 +657,12 @@
 								{#if role === 'traveler' && !data.trip.start_date}
 									<!-- #271 — the availability poll share link (paint-first, no OTP).
 									     Same token, public poll surface. Forming trips only. -->
-									<div class="flex items-center justify-between gap-2 rounded-md bg-surface-2 px-2 py-1.5">
+									<div
+										class="flex items-center justify-between gap-2 rounded-md bg-surface-2 px-2 py-1.5"
+									>
 										<span class="text-xs text-ink-muted">
-											Or share the <span class="font-semibold text-ink-soft">availability poll</span> — no account needed to weigh in
+											Or share the <span class="font-semibold text-ink-soft">availability poll</span
+											> — no account needed to weigh in
 										</span>
 										<button
 											type="button"
@@ -685,7 +786,9 @@
 					{#each data.pending as p (p.id)}
 						<li class="flex items-start justify-between gap-3 px-4 py-3">
 							<div class="min-w-0 flex-1">
-								<div class="truncate text-sm font-semibold text-ink">{p.email}</div>
+								<!-- #352: a NAME for a picked co-traveler, the address only for an
+								     invite this member typed in themselves. -->
+								<div class="truncate text-sm font-semibold text-ink">{p.displayLabel}</div>
 								<div class="mt-0.5 flex items-center gap-2 text-xs text-ink-muted">
 									<Pill variant={rolePillVariant(p.role)} size="sm"
 										>{roleLabel[p.role] ?? p.role}</Pill
