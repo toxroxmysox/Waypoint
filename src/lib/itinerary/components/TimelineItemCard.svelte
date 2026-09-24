@@ -8,6 +8,7 @@
 	import VoteSentimentPill from '$lib/collaboration/components/VoteSentimentPill.svelte';
 	import AssigneeStacks from '$lib/itinerary/components/AssigneeStacks.svelte';
 	import { needsBooking } from '$lib/itinerary/booking-projection';
+	import { itemAnchorTime } from '$lib/itinerary/timeline';
 	import { titleCase, formatTime } from '$lib/shell/format';
 
 	let {
@@ -15,20 +16,15 @@
 		tripSlug,
 		anchored = false,
 		overlapping = false,
-		draggable = false,
 		votes = [],
-		members = [],
-		startDrag = () => {}
+		members = []
 	}: {
 		item: Item;
 		tripSlug: string;
 		anchored?: boolean;
 		overlapping?: boolean;
-		draggable?: boolean;
 		votes?: Vote[];
 		members?: TripMember[];
-		/** Enables drag on the host dndzone (handle-only pattern). #60 */
-		startDrag?: () => void;
 	} = $props();
 
 	// CARD_CONTENT_SPEC §2: eyebrow pills are Booked XOR Needs-booking, mutually
@@ -37,50 +33,32 @@
 	const showNeedsBooking = $derived(!item.booked && needsBooking(item));
 	const cost = $derived(item.cost_estimate_usd);
 
-	// Handle-only drag (#60): the grip lives OUTSIDE the card <a> so the press
-	// starts a drag (or, on keyboard, an arrow-key drag) without navigating.
-	function onHandlePointer(e: Event) {
-		e.stopPropagation();
-		e.preventDefault();
-		startDrag();
-	}
-	function onHandleKeydown(e: KeyboardEvent) {
-		if (e.key === 'Enter' || e.key === ' ') startDrag();
-	}
+	// #353 rail marker. A timed item prints its ANCHOR time (start, or end for an
+	// end-only deadline — `itemAnchorTime` is the shared definition, #346) split
+	// over two lines so "12:30 PM" fits the 44px gutter. An untimed item gets a
+	// hollow dot instead, so pinned vs flexible reads at a glance.
+	const railClock = $derived(anchored ? formatTime(itemAnchorTime(item)).split(' ') : []);
 </script>
 
-<div class="group relative flex items-stretch gap-1 no-callout" class:opacity-90={overlapping}>
-	{#if anchored && item.start_time}
-		<div class="text-ink-muted absolute -left-16 top-3 hidden text-xs font-mono md-desktop:block">
-			{formatTime(item.start_time)}
+<!-- #353: the left gutter is the timeline rail. The card indents past it (44px)
+     and drops its own marker into it — replacing the desktop-only `-left-16`
+     time column, so there is ONE rail at every breakpoint, not two time
+     displays. The grip is retired: the whole card is the drag affordance now
+     (svelte-dnd-action's `delayTouchStart` on the host zone, see DayTimeline). -->
+<div class="group relative no-callout pl-11" class:opacity-90={overlapping}>
+	{#if anchored}
+		<div class="text-ink-muted absolute top-3 left-0 w-8 text-right leading-none">
+			<span class="block font-mono text-[11px]">{railClock[0]}</span>
+			<span class="mt-0.5 block text-[9px] tracking-wide">{railClock[1]}</span>
 		</div>
-	{:else if anchored && item.end_time}
-		<!-- #346: end-only deadline shows "by <end>" in the desktop time gutter. -->
-		<div class="text-ink-muted absolute -left-16 top-3 hidden text-xs font-mono md-desktop:block">
-			by {formatTime(item.end_time)}
-		</div>
+	{:else}
+		<div
+			class="border-ink-muted bg-surface absolute top-[1.1rem] left-[2.375rem] h-[7px] w-[7px] -translate-x-1/2 rounded-full border"
+			aria-hidden="true"
+		></div>
 	{/if}
 
-	{#if draggable}
-		<!-- Slot: drag handle — sibling of the link so taps/keys don't navigate. -->
-		<button
-			type="button"
-			class="text-ink-muted flex shrink-0 touch-none cursor-grab items-center px-1"
-			aria-label="Drag to reorder"
-			onpointerdown={onHandlePointer}
-			onmousedown={onHandlePointer}
-			ontouchstart={onHandlePointer}
-			onkeydown={onHandleKeydown}
-		>
-			<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-				<circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" />
-				<circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
-				<circle cx="9" cy="18" r="1.5" /><circle cx="15" cy="18" r="1.5" />
-			</svg>
-		</button>
-	{/if}
-
-	<div class="min-w-0 flex-1">
+	<div class="min-w-0">
 		<!-- #231: the assignee footer must sit INSIDE the card border. A button
 		     can't nest in an anchor, so the card is a bordered <div> (not <Card href>)
 		     and navigation is a stretched <a> (after:absolute after:inset-0) covering

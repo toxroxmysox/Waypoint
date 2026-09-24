@@ -170,7 +170,7 @@
 		tripSlug={data.trip.slug}
 		dayId={data.day.id}
 	>
-		{#snippet children({ timelineItems, timelineDragDisabled, startDrag, pullUp, onTimelineConsider, onTimelineFinalize, parkingZones })}
+		{#snippet children({ timelineItems, startDrag, pullUp, onTimelineConsider, onTimelineFinalize, parkingZones })}
 			<!-- Items -->
 			<section class="space-y-1.5">
 				<SectionH>
@@ -192,8 +192,6 @@
 					dayId={data.day.id}
 					votesByItem={data.votesByItem}
 					members={data.members}
-					dragDisabled={timelineDragDisabled}
-					{startDrag}
 					onConsider={onTimelineConsider}
 					onFinalize={onTimelineFinalize}
 				/>
