@@ -37,7 +37,6 @@
 			[
 				{
 					timelineItems: Item[];
-					timelineDragDisabled: boolean;
 					startDrag: () => void;
 					pullUp: (itemId: string) => void;
 					onTimelineConsider: (e: CustomEvent<DndEvent<Item>>) => void;
@@ -78,7 +77,9 @@
 		});
 	}
 
-	let timelineDragDisabled = $state(true);
+	// Only the parking zones still arm on a handle press. The timeline arms
+	// itself now (#353: whole-card long-press via `delayTouchStart`), so it has
+	// no disabled state to track.
 	let parkingDragDisabled = $state(true);
 
 	let reorderForm = $state<HTMLFormElement | undefined>();
@@ -94,10 +95,9 @@
 	let formOrder = $state('');
 	let formParkingPhaseId = $state('');
 
-	// A handle press enables every zone — svelte-dnd-action grabs whatever item is
-	// under the pointer (which lives in exactly one zone).
+	// A parking-lot handle press enables every parking zone — svelte-dnd-action
+	// grabs whatever item is under the pointer (which lives in exactly one zone).
 	function startDrag() {
-		timelineDragDisabled = false;
 		parkingDragDisabled = false;
 	}
 
@@ -107,11 +107,10 @@
 		submit(pullForm, itemId, null, null);
 	}
 
-	// Re-lock after a POINTER drag so a stray tap never starts a drag. Keyboard
-	// drags re-lock on DRAG_STOPPED (handled in the consider handlers).
+	// Re-lock the parking zones after a POINTER drag so a stray tap never starts
+	// a drag. Keyboard drags re-lock on DRAG_STOPPED (in the consider handlers).
 	function reDisable(source: DndEvent<Item>['info']['source']) {
 		if (source === SOURCES.POINTER) {
-			timelineDragDisabled = true;
 			parkingDragDisabled = true;
 		}
 	}
@@ -132,13 +131,17 @@
 
 	function reDisableOnKeyboardStop(info: DndEvent<Item>['info']) {
 		if (info.source === SOURCES.KEYBOARD && info.trigger === TRIGGERS.DRAG_STOPPED) {
-			timelineDragDisabled = true;
 			parkingDragDisabled = true;
 		}
 	}
 
 	function onTimelineConsider(e: CustomEvent<DndEvent<Item>>) {
 		timelineItems = e.detail.items;
+		// #353: a timeline drag now starts on its own (long-press, no handle), so
+		// the drag itself has to unlock the parking zones — the shared handle press
+		// used to do it for both. Without this, a card dragged OUT of the day has
+		// nowhere to land.
+		if (e.detail.info.trigger === TRIGGERS.DRAG_STARTED) parkingDragDisabled = false;
 		reDisableOnKeyboardStop(e.detail.info);
 	}
 
@@ -285,7 +288,6 @@
 
 {@render children({
 	timelineItems,
-	timelineDragDisabled,
 	startDrag,
 	pullUp,
 	onTimelineConsider,
