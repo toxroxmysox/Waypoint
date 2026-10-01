@@ -241,6 +241,114 @@ try {
 		console.log(`  ${String(t).padStart(6)}ms  ${kind.padEnd(22)} ${JSON.stringify(rest)}`);
 	}
 
+	// ── PHASE 2: the #235 walk-back-out sequence ────────────────────────────
+	// sheet-gestures.spec.ts:244 hangs for 30s here and the snapshot doesn't say
+	// where. Replay the same shape, logging what each back press actually does,
+	// and use an in-page history.back() (NOT page.goBack(), which waits for a
+	// navigation that a SHALLOW pop never performs).
+	console.log('\n-> PHASE 2: AddSheet flow, then walk back out');
+	await page.goto(`${APP_URL}/trips/${seed.slug}/now`, { waitUntil: 'networkidle' });
+	await page.waitForTimeout(400);
+	await page.evaluate(() => {
+		window.__log.length = 0;
+		window.__vt.length = 0;
+	});
+	await page.locator('.md-desktop\\:hidden button[aria-label="Add"]').click();
+	await page.waitForTimeout(500);
+	console.log(`   sheet open at ${new URL(page.url()).pathname}`);
+	await page.getByText('Add item to today').click();
+	await page.waitForURL(/\/items\/new/, { timeout: 15_000 });
+	await page.waitForTimeout(600);
+
+	const seen = [new URL(page.url()).pathname];
+	for (let i = 0; i < 3; i++) {
+		const before = new URL(page.url()).pathname;
+		const t = Date.now();
+		// In-page back: resolves whether or not a navigation follows.
+		await page.evaluate(() => history.back());
+		await page.waitForTimeout(900);
+		const after = new URL(page.url()).pathname;
+		const st = await page.evaluate(() => JSON.stringify(history.state && history.state.sheet ? { sheet: history.state.sheet } : {}));
+		console.log(`   back ${i + 1}: ${before} -> ${after} ${after === before ? '  *** DEAD TAP ***' : ''} (${Date.now() - t}ms, state=${st})`);
+		seen.push(after);
+	}
+	const p2 = await page.evaluate(DUMP);
+	console.log('   history events during phase 2:');
+	for (const e of p2.log.filter((x) => x.kind.startsWith('history') || x.kind.startsWith('popstate') || x.kind === 'pushState'))
+		console.log(`     ${String(e.t).padStart(6)}ms  ${e.kind.padEnd(20)} ${JSON.stringify({ ...e, t: undefined, kind: undefined })}`);
+
+	// ── PHASE 3: page.goBack() vs in-page history.back(), FRESH context ──────
+	// Phase 2 reused phase 1's history, so its back presses walked entries from
+	// the earlier flow — inconclusive. This runs the flow in a clean context and
+	// asks the one question that matters: does the spec's own `page.goBack()`
+	// hang where an in-page `history.back()` does not? A SHALLOW pop performs no
+	// navigation, and page.goBack() waits for one.
+	console.log('\n-> PHASE 3: fresh context — page.goBack() vs history.back()');
+	for (const mode of ['page.goBack', 'history.back']) {
+		const c2 = await browser.newContext({
+			viewport: { width: 375, height: 812 },
+			hasTouch: true,
+			isMobile: true,
+			reducedMotion: 'no-preference'
+		});
+		const p2 = await c2.newPage();
+		await p2.addInitScript(INSTRUMENT);
+		await p2.goto(`${APP_URL}/api/dev/login?email=${encodeURIComponent(EMAIL)}`, { waitUntil: 'networkidle' });
+		await p2.goto(`${APP_URL}/trips/${seed.slug}`, { waitUntil: 'networkidle' });
+		await p2.goto(`${APP_URL}/trips/${seed.slug}/now`, { waitUntil: 'networkidle' });
+		await p2.waitForTimeout(400);
+		await p2.locator('.md-desktop\\:hidden button[aria-label="Add"]').click();
+		await p2.waitForTimeout(500);
+		await p2.getByText('Add item to today').click();
+		await p2.waitForURL(/\/items\/new/, { timeout: 15_000 });
+		await p2.waitForTimeout(600);
+
+		console.log(`  [${mode}] start at ${new URL(p2.url()).pathname}`);
+		for (let i = 0; i < 2; i++) {
+			const before = new URL(p2.url()).pathname;
+			const t = Date.now();
+			let note = '';
+			try {
+				if (mode === 'page.goBack') await p2.goBack({ timeout: 8000 });
+				else await p2.evaluate(() => history.back());
+			} catch (err) {
+				note = `  <<< ${String(err.message).split('\n')[0].slice(0, 60)}`;
+			}
+			await p2.waitForTimeout(900);
+			const after = new URL(p2.url()).pathname;
+			console.log(`  [${mode}] back ${i + 1}: ${before} -> ${after} (${Date.now() - t}ms)${after === before ? '  *** URL UNCHANGED ***' : ''}${note}`);
+		}
+		await c2.close();
+	}
+
+	// ── PHASE 4: what does the spec's own locator actually resolve to? ───────
+	// sheet-gestures.spec.ts:256 uses `[data-sheet-panel] a, [data-sheet-panel]
+	// button` WITHOUT a visible filter, then `.first()`. AppShell renders every
+	// page twice (one CSS-hidden), so `.first()` can be the hidden copy — and a
+	// click on it waits for visibility until the 30s test timeout.
+	console.log('\n-> PHASE 4: the spec locator, counted');
+	{
+		const c3 = await browser.newContext({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
+		const p3 = await c3.newPage();
+		await p3.goto(`${APP_URL}/api/dev/login?email=${encodeURIComponent(EMAIL)}`, { waitUntil: 'networkidle' });
+		await p3.goto(`${APP_URL}/trips/${seed.slug}/now`, { waitUntil: 'networkidle' });
+		await p3.waitForTimeout(400);
+		await p3.locator('[aria-label="Add"]:visible').first().click();
+		await p3.waitForTimeout(600);
+
+		const panels = await p3.locator('[data-sheet-panel]').count();
+		const panelsVisible = await p3.locator('[data-sheet-panel]').filter({ visible: true }).count();
+		const choices = p3.locator('[data-sheet-panel] a, [data-sheet-panel] button').filter({ hasText: /expense|item|idea|note/i });
+		const n = await choices.count();
+		console.log(`   [data-sheet-panel]: ${panels} total, ${panelsVisible} visible`);
+		console.log(`   spec's choice locator matches: ${n}`);
+		for (let i = 0; i < n; i++) {
+			const el = choices.nth(i);
+			console.log(`     #${i} visible=${await el.isVisible()} text=${JSON.stringify((await el.innerText()).replace(/\s+/g, ' ').trim().slice(0, 40))}`);
+		}
+		await c3.close();
+	}
+
 	console.log('\n-> STEP 4: can the user actually click the card overflow now?');
 	try {
 		await page
