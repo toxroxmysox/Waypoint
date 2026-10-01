@@ -25,7 +25,7 @@ import { test, expect, type Browser, type Page } from '@playwright/test';
 // to `true` in the SAME commit that flips `swallowBack`, and all of them must
 // pass. Do not delete them and do not rewrite them to assert the disabled
 // behaviour — that would throw away the contract.
-const BACK_SWALLOWING_ENABLED: boolean = false;
+const BACK_SWALLOWING_ENABLED: boolean = true;
 
 const BASE = 'http://localhost:4173';
 const PB_BASE = process.env.PUBLIC_PB_URL ?? 'http://127.0.0.1:8090';
@@ -33,7 +33,7 @@ const PB_BASE = process.env.PUBLIC_PB_URL ?? 'http://127.0.0.1:8090';
 const OWNER = 'rules-owner@e2e.test';
 const FIXTURE_SLUG = 'e2e-rules-test-gestures';
 
-async function devLogin(browser: Browser) {
+async function devLogin(browser: Browser, email: string = OWNER) {
 	const ctx = await browser.newContext({
 		viewport: { width: 375, height: 812 },
 		hasTouch: true,
@@ -41,7 +41,7 @@ async function devLogin(browser: Browser) {
 		reducedMotion: 'no-preference'
 	});
 	const page = await ctx.newPage();
-	await page.goto(`${BASE}/api/dev/login?email=${encodeURIComponent(OWNER)}`);
+	await page.goto(`${BASE}/api/dev/login?email=${encodeURIComponent(email)}`);
 	await page.waitForURL(`${BASE}/trips`, { timeout: 15000 });
 	return { ctx, page };
 }
@@ -243,10 +243,24 @@ test.describe('BottomSheet gestures (#365)', () => {
 	// and jumped straight over /now).
 	test('every back press does something after an AddSheet flow (#235)', async ({ browser }) => {
 		test.skip(!BACK_SWALLOWING_ENABLED, 'back-swallowing ships disabled until #383');
-		const { page, ctx } = await devLogin(browser);
+		// seed-visual-trip owns its trip as E2E_TEST_EMAIL, not the rules-fixture
+		// owner — logging in as the latter 404s on it.
+		const { page, ctx } = await devLogin(browser, process.env.E2E_TEST_EMAIL!);
 		try {
-			await page.goto(`${BASE}/trips/${FIXTURE_SLUG}`, { waitUntil: 'networkidle' });
-			await page.goto(`${BASE}/trips/${FIXTURE_SLUG}/now`, { waitUntil: 'networkidle' });
+			// The rules fixture trip is NOT date-active, so /now redirects to the
+			// overview and the Add FAB (trip mode only) never exists — this test
+			// spent 30s waiting on a button that cannot be there. seed-visual-trip
+			// spans today, which is what the flow under test requires.
+			const seedRes = await fetch(`${PB_BASE}/api/dev/seed-visual-trip`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: '{}'
+			});
+			const { slug: activeSlug } = (await seedRes.json()) as { slug: string };
+
+			await page.goto(`${BASE}/trips/${activeSlug}`, { waitUntil: 'networkidle' });
+			await page.goto(`${BASE}/trips/${activeSlug}/now`, { waitUntil: 'networkidle' });
+			expect(new URL(page.url()).pathname, 'trip must be in trip mode for the Add FAB to exist').toContain('/now');
 
 			const add = page.locator('[aria-label="Add"]:visible').first();
 			await add.click();
@@ -255,6 +269,7 @@ test.describe('BottomSheet gestures (#365)', () => {
 			// Pick any choice — each does `open = false; goto(...)`.
 			await page
 				.locator('[data-sheet-panel] a, [data-sheet-panel] button')
+				.filter({ visible: true })
 				.filter({ hasText: /expense|item|idea|note/i })
 				.first()
 				.click();
@@ -272,9 +287,12 @@ test.describe('BottomSheet gestures (#365)', () => {
 				seen.push(now);
 			}
 
-			// And it must retrace the real pages, not skip one.
+			// And it must retrace the real pages, not skip one. The flow above pushes
+			// trip page -> /now -> (sheet entry) -> item form, so walking out lands
+			// on /now and then the TRIP page. (The old `/trips` here assumed an
+			// entry path this test does not take; it never ran to find out.)
 			expect(seen[1]).toContain('/now');
-			expect(seen[2]).toBe('/trips');
+			expect(seen[2]).toBe(`/trips/${activeSlug}`);
 		} finally {
 			await ctx.close();
 		}
@@ -293,10 +311,18 @@ test.describe('BottomSheet gestures (#365)', () => {
 			await expect.poll(async () => page.locator('[data-sheet-panel]').count(), { timeout: 5000 }).toBe(0);
 			// The entry must be popped too, or back would be spent on a dead entry.
 			// Only meaningful while a sheet owns an entry at all — see #383.
+			//
+			// `before` is the TRIP page; openAddExpense() then navigates to
+			// /expenses and opens the sheet there. So if Escape popped the sheet's
+			// entry correctly, one back press goes /expenses -> the trip page, i.e.
+			// lands exactly ON `before`. If the entry had been left behind, that
+			// press would be spent on the dead entry and the URL would stay at
+			// /expenses. This assertion was written as `not.toBe(before)` while the
+			// feature was flag-disabled and never ran — it passed only when broken.
 			if (BACK_SWALLOWING_ENABLED) {
 				await page.goBack();
 				await page.waitForTimeout(900);
-				expect(page.url()).not.toBe(before);
+				expect(page.url(), 'back after Escape must retrace a real page, not a dead entry').toBe(before);
 			}
 		} finally {
 			await ctx.close();

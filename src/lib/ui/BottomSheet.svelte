@@ -12,7 +12,8 @@
 		consumeOrphan,
 		nextSheetId,
 		sheetOpened,
-		sheetClosed
+		sheetClosed,
+		currentNavEpoch
 	} from '$lib/shell/sheet-history';
 
 	let {
@@ -20,7 +21,7 @@
 		title = '',
 		dirty = false,
 		discardLabel = 'Discard changes?',
-		swallowBack = false,
+		swallowBack = true,
 		children
 	}: {
 		open: boolean;
@@ -151,6 +152,8 @@
 	// close was performing — undoing it. (Measured: the AddSheet choice never
 	// reached /items/new.) Same guard shape as scroll-lock's restore.
 	let vestigialPath = '';
+	/** Which navigation this vestigial state belongs to; stale in any later one. */
+	let vestigialEpoch = -1;
 
 	/** Pop our own entry, synchronously, if it is still the current one. */
 	function popOurEntry() {
@@ -214,6 +217,7 @@
 				vestigialToken = t; // if we survive ON THIS PAGE, we walk it ourselves
 				vestigialId = eid;
 				vestigialPath = typeof location === 'undefined' ? '' : location.pathname;
+				vestigialEpoch = currentNavEpoch();
 				markOrphanEntry(eid); // if a navigation unmounts us, the layout walks it
 			}
 		};
@@ -236,11 +240,19 @@
 			vestigialToken > 0 &&
 			isOrphan(vestigialId) &&
 			depth < vestigialToken &&
-			location.pathname === vestigialPath
+			location.pathname === vestigialPath &&
+			// AppShell-owned sheets (AddSheet) are NOT unmounted by a route change,
+			// so this state can outlive its navigation and the pathname guard alone
+			// re-matches when the user returns to the same path later. It then fired
+			// a stale back() INTO an in-flight navigation and cancelled it (#365,
+			// measured by scripts/probe-365-skipdoor.mjs). Once any navigation has
+			// happened, the entry is behind the user and the ROOT LAYOUT owns it.
+			currentNavEpoch() === vestigialEpoch
 		) {
 			const id = vestigialId;
 			vestigialToken = 0;
 			vestigialId = 0;
+			vestigialEpoch = -1;
 			consumeOrphan(id);
 			history.back();
 			return;
