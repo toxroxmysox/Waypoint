@@ -101,8 +101,8 @@ The Focus slot also holds four **state cards** that are not item cards: Free tim
 4. **ADR-0011 says card avatars always mean assignees.** That holds on the timeline and the day page parking lot. On E4, E5 and E6 the avatars mean voters.
 5. **Time renders differently on every surface.** The timeline prints it twice (rail and card). The trip-mode card shows the start only, with **no end and no deadline**. Earlier-today rows, tomorrow rows and closeout rows show the start only. The archive shows start–end. The flights list shows departure → arrival.
 6. **Deadlines (end-only items, #346) are handled on exactly one surface (A).** Everywhere else they render with no time.
-7. **Likely Now-feed gaps** *(inference from reading `now-state.ts`, to be confirmed):*
-   - A deadline item has no `start_time`, so it always counts as "untimed rest". Once its end passes it *also* counts as "past", so it can render in both lists.
+7. **Two Now-feed bugs** *(verified 2026-10-01 by a unit probe of the real `getNowFeed`; filed as #392):*
+   - A deadline item has no `start_time`, so it always counts as "untimed rest". Once its end passes it *also* counts as "past", so it renders in both lists.
    - A start-only item whose start has passed is not current (that needs an end), not past (that needs an end) and not forward (its start has passed), so it disappears from Now.
 8. **Each accent color means several different things:**
    - moss: planning accent, `Booked`, done, the checklist type, love, stay chips
