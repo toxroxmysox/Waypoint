@@ -9,7 +9,9 @@ import {
 	sheetOpened,
 	sheetClosed,
 	anySheetOpen,
-	orphanCount
+	orphanCount,
+	noteNavigation,
+	currentNavEpoch
 } from './sheet-history';
 
 // The bookkeeping behind #365's back-swallowing. Each case here is a bug that
@@ -123,6 +125,43 @@ describe('sheet-history', () => {
 			consumeOrphan(b);
 			expect(isOrphan(a)).toBe(true);
 			expect(isOrphan(b)).toBe(false);
+		});
+	});
+
+	// #365 third failure. A sheet that closes programmatically keeps vestigial
+	// state so it can walk its OWN entry when it survived the close without
+	// navigating. That was guarded on `location.pathname` alone, which assumed a
+	// navigation always unmounts the sheet. AppShell's AddSheet is never
+	// unmounted by a route change, so the state survived, the pathname re-matched
+	// when the user came BACK to that path, and the stale walk fired
+	// `history.back()` into a live navigation and cancelled it — submit an item
+	// and land back on the form. Measured: scripts/probe-365-skipdoor.mjs.
+	describe('navigation epoch', () => {
+		it('starts at zero and advances once per navigation', () => {
+			expect(currentNavEpoch()).toBe(0);
+			noteNavigation();
+			noteNavigation();
+			expect(currentNavEpoch()).toBe(2);
+		});
+
+		it('an epoch captured before a navigation no longer matches after one', () => {
+			const captured = currentNavEpoch();
+			expect(currentNavEpoch()).toBe(captured); // same navigation: sheet may walk
+			noteNavigation();
+			expect(currentNavEpoch()).not.toBe(captured); // stale: the layout owns it
+		});
+
+		it('does NOT advance when no navigation happens (the enhance-success case)', () => {
+			const captured = currentNavEpoch();
+			markOrphanEntry(1);
+			consumeOrphan(1);
+			expect(currentNavEpoch()).toBe(captured);
+		});
+
+		it('is reset by the test seam so cases cannot leak into each other', () => {
+			noteNavigation();
+			__resetSheetHistory();
+			expect(currentNavEpoch()).toBe(0);
 		});
 	});
 });

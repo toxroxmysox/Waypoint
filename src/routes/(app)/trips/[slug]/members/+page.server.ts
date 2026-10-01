@@ -2,6 +2,7 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { TripMember, PendingInvite, User, JoinToken } from '$lib/types';
 import { memberAvatarUrl } from '$lib/collaboration/member-avatar';
+import { pbFileUrl } from '$lib/shell/pb-file-url';
 import { PUBLIC_PB_URL } from '$env/static/public';
 
 // Hydrated row for the members list. Display name resolution:
@@ -20,9 +21,24 @@ type MemberRow = TripMember & {
 	zeroRef: boolean;
 };
 
-type PendingRow = PendingInvite & {
+// #352: built FIELD BY FIELD, never spread from the record — `email` (and
+// `code`) must not ride along into the page payload. `displayLabel` is the
+// invitee's name when the hook could resolve one (a picked co-traveler), and
+// the address only for invites the inviter typed in themselves.
+type PendingRow = {
+	id: string;
+	role: PendingInvite['role'];
+	displayLabel: string;
 	inviterLabel: string;
 	expiresAtLabel: string;
+};
+
+// #352 — a past co-traveler offered in the picker. Name + avatar only: the
+// server never hands the browser their email (see /api/invites/co-travelers).
+type CoTravelerRow = {
+	userId: string;
+	name: string;
+	avatarUrl: string;
 };
 
 type JoinLinkRow = {
@@ -119,7 +135,12 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 	try {
 		pending = await locals.pb.collection('pending_invites').getFullList<PendingInvite>({
 			filter: `trip = "${trip.id}"`,
-			sort: '-created'
+			// NOT '-created': migration 0015 built pending_invites without autodate
+			// fields, so PB 400s on that sort and the catch below swallowed it —
+			// the Pending invites section had never rendered for anyone (found
+			// while building #352, which needs it to show the picked invite).
+			// expires_at is created + a fixed 7 days, so it orders identically.
+			sort: '-expires_at'
 		});
 	} catch {
 		// listRule denies non-members; surface empty.
@@ -142,7 +163,9 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 			}
 		}
 		return {
-			...p,
+			id: p.id,
+			role: p.role,
+			displayLabel: p.email,
 			inviterLabel,
 			expiresAtLabel: p.expires_at ? p.expires_at.split(' ')[0] : ''
 		};
@@ -178,6 +201,40 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 	// Active owners only — a tombstoned owner must not prop up the sole-owner count.
 	const ownerCount = members.filter((m) => m.role === 'owner' && !m.removed_at).length;
 
+	// #352 — past co-traveler picker. The pool and the name-masking map come from
+	// the hook because they can't be resolved from here: users.listRule is
+	// self-only and emailVisibility is off (0043 opened viewRule to co-travelers
+	// for name+avatar ONLY). That's also the point — the address is resolved in
+	// PB and never crosses back, so it can't reach this process, the payload, or
+	// the DOM. A failure degrades to "no companions to show", never to an error.
+	let coTravelers: CoTravelerRow[] = [];
+	if (canInvite) {
+		try {
+			const res = (await locals.pb.send(
+				`/api/invites/co-travelers?trip_id=${encodeURIComponent(trip.id)}`,
+				{ method: 'GET' }
+			)) as {
+				co_travelers?: Array<{ user_id: string; name: string; avatar: string }>;
+				pending_names?: Record<string, string>;
+			};
+			coTravelers = (res?.co_travelers ?? []).map((c) => ({
+				userId: c.user_id,
+				name: c.name,
+				avatarUrl: c.avatar ? pbFileUrl({ id: c.user_id, collectionName: 'users' }, c.avatar) : ''
+			}));
+			// Swap the address out for the name on any pending invite that belongs
+			// to a co-traveler — otherwise picking someone would round-trip their
+			// email straight back into the Pending list.
+			const pendingNames = res?.pending_names ?? {};
+			for (const row of pendingRows) {
+				const name = pendingNames[row.id];
+				if (name) row.displayLabel = name;
+			}
+		} catch {
+			coTravelers = [];
+		}
+	}
+
 	// #238 (ADR-0013): for each member an owner could remove, probe whether they're
 	// zero-ref (removal will hard-delete) vs referenced (will tombstone) so the
 	// Remove dialog shows the right copy. Owner-only (others don't see Remove),
@@ -208,6 +265,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 		members: activeMembers,
 		formerMembers,
 		pending: pendingRows,
+		coTravelers,
 		joinLinks,
 		isOwner,
 		canInvite,
@@ -239,6 +297,37 @@ export const actions: Actions = {
 		} catch (err: unknown) {
 			const message = extractErrorMessage(err) || 'Failed to send invite.';
 			return fail(400, { invite: { error: message, email, role } });
+		}
+	},
+
+	// #352 — invite a past co-traveler you don't have an address for. Takes a
+	// USER ID, never an email: /api/invites/create-for-user re-validates the
+	// co-traveler relationship server-side (the id is client-supplied, so it is
+	// treated as a claim, not a fact), resolves the address in PB, and reuses the
+	// pending_invites + invite-email flow. The response carries a NAME only —
+	// nothing on this path can put the address in the page or the action result.
+	inviteCoTraveler: async ({ request, locals, params }) => {
+		const data = await request.formData();
+		const userId = data.get('user_id')?.toString() || '';
+		const role = data.get('role')?.toString() || '';
+
+		if (!userId) return fail(400, { coTraveler: { error: 'Choose someone to invite.' } });
+		if (!role) return fail(400, { coTraveler: { error: 'Role is required.' } });
+
+		try {
+			const trip = await locals.pb
+				.collection('trips')
+				.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+
+			const res = (await locals.pb.send('/api/invites/create-for-user', {
+				method: 'POST',
+				body: { trip_id: trip.id, user_id: userId, role }
+			})) as { name?: string };
+
+			return { coTraveler: { success: true, name: res?.name || 'Your travel companion' } };
+		} catch (err: unknown) {
+			const message = extractErrorMessage(err) || 'Failed to send invite.';
+			return fail(400, { coTraveler: { error: message } });
 		}
 	},
 
