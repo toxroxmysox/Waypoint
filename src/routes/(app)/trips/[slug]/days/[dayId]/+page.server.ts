@@ -33,7 +33,21 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	});
 	const spanningItems = spanningItemsForDate(allMultiDay, days as Day[], dayDate);
 
-	const itemIds = items.map((i) => i.id);
+	const dayPhases = phasesForDay(day, phases);
+
+	const phaseIds = dayPhases.map((p) => p.id);
+	const parkingLotItems =
+		phaseIds.length > 0
+			? await locals.pb.collection('items').getFullList<Item>({
+					filter: `trip = "${trip.id}" && status = "unplanned" && (${phaseIds.map((id) => `phase = "${id}"`).join(' || ')})`,
+					sort: 'sort_order'
+				})
+			: [];
+
+	// #394 — votes for the day's items AND its parking-lot ideas: the parking
+	// divider and the desktop Ideas rail both render a sentiment pill from
+	// votesByItem, and ideas are what votes exist to rank.
+	const itemIds = [...items, ...parkingLotItems].map((i) => i.id);
 	const [votes, members] = await Promise.all([
 		itemIds.length > 0
 			? locals.pb.collection('votes').getFullList<Vote>({
@@ -48,17 +62,6 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 
 	const votesByItem: Record<string, Vote[]> = {};
 	for (const v of votes) (votesByItem[v.item] ??= []).push(v);
-
-	const dayPhases = phasesForDay(day, phases);
-
-	const phaseIds = dayPhases.map((p) => p.id);
-	const parkingLotItems =
-		phaseIds.length > 0
-			? await locals.pb.collection('items').getFullList<Item>({
-					filter: `trip = "${trip.id}" && status = "unplanned" && (${phaseIds.map((id) => `phase = "${id}"`).join(' || ')})`,
-					sort: 'sort_order'
-				})
-			: [];
 
 	return { day, dayItems: items, dayPhases, votesByItem, members: withAvatarUrls(locals.pb, members), parkingLotItems, spanningItems, allDays: days };
 };
