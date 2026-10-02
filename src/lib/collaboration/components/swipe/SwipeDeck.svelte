@@ -7,7 +7,7 @@
 		commitFromRelease,
 		COMMIT_PX,
 		type PointerSample
-	} from '$lib/collaboration/swipe-deck';
+	} from '$lib/collaboration/swipe-physics';
 	import { haptic } from '$lib/utils/haptics';
 	import { VOTE_META } from './vote-meta';
 	import RadialProgress from './RadialProgress.svelte';

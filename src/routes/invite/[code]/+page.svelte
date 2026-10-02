@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { otpAutoSubmit } from '$lib/shell/actions/otp-auto-submit';
 	import { invalidateAll } from '$app/navigation';
 	import Button from '$lib/ui/Button.svelte';
 
@@ -11,7 +12,7 @@
 	// #374 — the 6th digit (typed or dropped in by iOS one-time-code autofill)
 	// submits the form itself. Latched so a second input event while the verify
 	// is in flight can't fire a second POST — a double-submit burns the code.
-	let autoSubmitted = $state(false);
+	const otp = otpAutoSubmit();
 	let selectedPlaceholder = $state<string | null>(null);
 	const placeholders = $derived(data.unclaimedPlaceholders ?? []);
 
@@ -212,7 +213,7 @@
 							} else {
 								await update();
 								// Release the latch so a corrected code auto-submits again.
-								autoSubmitted = false;
+								otp.release();
 							}
 						};
 					}}
@@ -229,13 +230,7 @@
 						inputmode="numeric"
 						enterkeyhint="go"
 						maxlength="6"
-						oninput={(e) => {
-							e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '');
-							if (e.currentTarget.value.length === 6 && !loading && !autoSubmitted) {
-								autoSubmitted = true;
-								e.currentTarget.form?.requestSubmit();
-							}
-						}}
+						use:otp.action={loading}
 						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-center font-mono text-2xl tracking-[0.5em]"
 						placeholder="000000"
 					/>
@@ -247,7 +242,7 @@
 						class="text-ink-muted hover:text-ink-soft active:text-ink-soft mt-2 w-full text-sm"
 						onclick={() => {
 							otpId = '';
-							autoSubmitted = false;
+							otp.release();
 						}}
 					>
 						Resend code
