@@ -1,11 +1,12 @@
 import { test, expect } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // Issue #48 — inline Checklist + Task primitive on the Item detail view.
 // Builds its own trip → day → item via the UI (like m1-happy-path), then covers
 // the grocery case: attach a manual checklist, add a task, check it off.
 // playwright.config.ts boots the SvelteKit preview on :4173; PocketBase (with the
 // 0030 migration) runs separately.
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 
 test.describe('Inline item checklist (#48 primitive · #55 ledger)', () => {
 	test.skip(!process.env.E2E_TEST_EMAIL, 'Set E2E_TEST_EMAIL to run E2E tests');

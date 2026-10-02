@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // #246 Door 2 — skip → parking lot + inline ideas strip. A planned today item can
 // be skipped from the Today card's overflow; skip returns it to the parking lot
@@ -10,7 +11,7 @@ import { test, expect } from '@playwright/test';
 // E2E_TEST_EMAIL), SvelteKit preview :4173. AppShell renders +page.svelte twice
 // → scope assertions (incl. negatives) to the visible tree.
 
-const BASE_URL = 'http://localhost:4173';
+const BASE_URL = E2E_BASE;
 const PLANNED_TITLE = 'Tonight: closed restaurant';
 const IDEA_TITLE = 'Backup: street food market';
 

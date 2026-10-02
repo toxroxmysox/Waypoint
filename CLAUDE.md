@@ -71,6 +71,7 @@ Vitest for algorithmic logic, Playwright for critical-path E2E. Don't test trivi
 E2E PB targets:
 - `pnpm test:e2e` — runs against the shared dev PB on :8090. Leaves throwaway trips behind; they accumulate.
 - `pnpm test:e2e:clean` — preferred. Spins up an isolated, disposable PB on :8097 (`scripts/e2e-isolated.sh` → #67's `e2e-clean-pb.sh`), runs the suite, throws it away. Keeps :8090 clean.
+- `E2E_SLOT=N` — one per worktree. Offsets every verifier's ports + data dirs by N (e2e PB :8097+N, preview :4173+N, harnesses, `verify:visual` :5199+N), so worktrees on different slots run concurrently (#384). Default 0. Specs read `BASE` from `tests/e2e/e2e-env.ts` — never hardcode a port.
 - `pnpm clean:dev-trips` — purge test trips (slug `e2e-`/`harness-`/`expand-test-*` or test-owner emails) already piled up on :8090. `--dry-run` to preview. Needs `PB_ADMIN_EMAIL`/`PB_ADMIN_PASSWORD` (a :8090 superuser). Localhost-guarded.
 
 ---

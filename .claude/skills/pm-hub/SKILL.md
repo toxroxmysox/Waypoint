@@ -42,7 +42,7 @@ Ceremony per issue type: `docs/agents/triage-labels.md`. Grill-vs-slice, HITL-vs
 - **AFK, small/medium slice** → spawn a background agent in an isolated worktree yourself. No ferrying, no handoff file, **no PR** — the agent **commits each issue separately** to its worktree branch and you integrate from those commits (`git log <base>..<branch>` → cherry-pick). Per-issue commits are the recovery unit: host-sleep or agent-death mid-run loses only *uncommitted* stragglers (2026-06-14 overnight stall ate 3 agents; all committed issues survived). Copy `.wolf/` into each worktree (`cp -r <main>/.wolf .wolf`) — agents are otherwise blind to the Do-Not-Repeat scars (gitignored, absent from worktrees); the PM does the canonical `.wolf` writes at integration.
 - **HITL, feature-sized, or migration-heavy** → write a starter prompt for a Desktop session Scott fires.
 
-Both briefs come from one template: [references/starter-prompt.md](references/starter-prompt.md). Pre-split migration-number ranges across concurrent backend work.
+Both briefs come from one template: [references/starter-prompt.md](references/starter-prompt.md). Pre-split migration-number ranges across concurrent backend work, and give every concurrent worktree its own `E2E_SLOT` (1, 2, … — 0 is the main checkout) so they can all verify (#384).
 
 ## Integration wave
 

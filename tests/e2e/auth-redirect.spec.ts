@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // #179a — deep links must survive the login wall. A logged-out hit on a
 // protected deep link is preserved as `/login?redirect=<path>` and the login
@@ -9,7 +10,7 @@ import { test, expect } from '@playwright/test';
 // /api/dev/login here). The OTP itself can't be driven headlessly (no real
 // inbox), so coverage stops at the redirect-param round-trip + the resend
 // affordance's presence — the deterministic, harness-reachable surface.
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 
 test.describe('Auth deep-link redirect (#179)', () => {
 	test('logged-out deep link redirects to /login with the destination preserved', async ({

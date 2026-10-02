@@ -1,10 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // Prerequisites (same harness as m1-happy-path.spec.ts):
 // - PocketBase on :8090 with WAYPOINT_DEV_MODE=true and E2E_TEST_EMAIL set
 // - SvelteKit preview auto-booted by playwright.config.ts on :4173
 
-const BASE_URL = 'http://localhost:4173';
+const BASE_URL = E2E_BASE;
 
 test.describe('Multi-day items', () => {
 	test.skip(!process.env.E2E_TEST_EMAIL, 'Set E2E_TEST_EMAIL to run E2E tests');

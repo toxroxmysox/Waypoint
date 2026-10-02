@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // #374 / #381 — the OTP code field (login, invite, join share one action,
 // `otpAutoSubmit`). The 6th digit submits the form exactly once, non-digits
@@ -9,7 +10,7 @@ import { test, expect, type Page } from '@playwright/test';
 // Emails are never-registered addresses, so PB issues an otpId without sending
 // mail. (`join/[token]` runs the identical action; it has no stable fixture.)
 
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 const PB_BASE = process.env.PUBLIC_PB_URL ?? 'http://127.0.0.1:8090';
 
 function countVerifies(page: Page) {

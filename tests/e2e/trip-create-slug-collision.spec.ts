@@ -1,4 +1,5 @@
 import { test, expect, type Browser } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // #395 — two people creating a trip with the same name.
 //
@@ -18,7 +19,7 @@ import { test, expect, type Browser } from '@playwright/test';
 // (Not `rules-nonmember`: first-run-trip-less + onboarding-organic need that
 // user to own zero trips.)
 
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 const PB_BASE = process.env.PUBLIC_PB_URL ?? 'http://127.0.0.1:8090';
 
 const EMAILS = {

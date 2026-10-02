@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // Offline read-only active trip (#255, PRD #203). The "plane" proof: after one
 // online open of the active trip, go offline (Playwright's real offline
@@ -7,7 +8,7 @@ import { test, expect, type Page } from '@playwright/test';
 // mutation attempt is blocked with the offline toast. Read navigation is
 // unaffected. playwright.config.ts boots build+preview on :4173; globalSetup
 // seeds one active baseline trip (slug e2e-active-trip, with day records).
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 
 async function openActiveTrip(page: Page): Promise<string> {
 	await page.goto(`${BASE}/trips`);

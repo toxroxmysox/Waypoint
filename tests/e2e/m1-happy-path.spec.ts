@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // Prerequisites:
 // - PocketBase running on :8090 with WAYPOINT_DEV_MODE=true and E2E_TEST_EMAIL set
@@ -9,7 +10,7 @@ import { test, expect } from '@playwright/test';
 // /api/dev/login issues a real auth cookie via a PB bypass endpoint. Both
 // endpoints 404/400 unless WAYPOINT_DEV_MODE=true, so production stays safe.
 
-const BASE_URL = 'http://localhost:4173';
+const BASE_URL = E2E_BASE;
 
 test.describe('M1 Happy Path', () => {
 	test.skip(!process.env.E2E_TEST_EMAIL, 'Set E2E_TEST_EMAIL to run E2E tests');

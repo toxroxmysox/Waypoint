@@ -1,4 +1,5 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // #387 — "expense tray sticks": after saving an expense, the add sheet came back.
 //
@@ -15,7 +16,7 @@ import { test, expect, type Browser, type Page } from '@playwright/test';
 // flow and was green the whole time. It asserts the expense APPEARS after save.
 // It never asserted the sheet GOES AWAY — which is the only thing the user felt.
 
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 const PB_BASE = process.env.PUBLIC_PB_URL ?? 'http://127.0.0.1:8090';
 const SLUG = 'e2e-expense-sheet-387';
 const OWNER = 'rules-owner@e2e.test';

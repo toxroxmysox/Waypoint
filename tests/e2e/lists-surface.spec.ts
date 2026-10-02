@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // Issue #49 — Itinerary › Lists sub-tab: trip/phase checklists index + detail.
 // Builds its own trip via the UI, then creates a trip-level packing list and
 // checks items off. PB (0030 migration) runs separately; preview on :4173.
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 
 test.describe('Itinerary › Lists (#49)', () => {
 	test.skip(!process.env.E2E_TEST_EMAIL, 'Set E2E_TEST_EMAIL to run E2E tests');

@@ -25,7 +25,8 @@ ENV (a fresh worktree has nothing)
 GUARDRAILS
 - Check .wolf/cerebrum.md Do-Not-Repeat before writing PB hooks/rules/migrations.
 - Migration numbers: use <assigned range, e.g. 0047–0049>. Explicit-field collections need created/updated autodate fields.
-- Migration-dependent behavior: verify on a FRESH PB — scripts/e2e-clean-pb.sh (:8097), NEVER :8090 (stale schema). :8097 is shared and stompable — make sure no other session is mid-E2E.
+- Your E2E slot: `export E2E_SLOT=<assigned, e.g. 1>` before ANY verification. It shifts your e2e PB (:8097+N), preview (:4173+N), harness PB and `verify:visual` stack (:5199+N) and their data dirs, so sessions on different slots verify concurrently (#384). Slot 0 is the main checkout's.
+- Migration-dependent behavior: verify on a FRESH PB — `pnpm test:e2e:clean` / scripts/backend-harnesses.sh (your slot), NEVER :8090 (stale schema).
 - After Svelte changes: pnpm check. New links/buttons: pnpm test:e2e:clean.
 - Removing/RENAMING a user-facing label/affordance OR changing/redirecting a ROUTE? `grep -rn '<old text or route>' tests/` across **ALL** specs (not just the one you wrote) and fix every assertion — renames/removals/route-changes pass on your branch but go RED at merge (bit #209, #198, #244 `/today`→`/now` broke a sibling spec the agent didn't author).
 - UI changes: verify mobile-first at 375px.

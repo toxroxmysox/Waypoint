@@ -1,4 +1,5 @@
 import { test, expect, type Browser } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // #249 / PRD #202 — Contribution Slice 2: approve a ghost → real item.
 //
@@ -16,7 +17,7 @@ import { test, expect, type Browser } from '@playwright/test';
 // Dual-tree scar: AppShell renders +page.svelte twice (mobile + desktop). Scope
 // every assertion to the visible subtree (.filter({ visible: true }).first()).
 
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 const PB_BASE = process.env.PUBLIC_PB_URL ?? 'http://127.0.0.1:8090';
 
 const EMAILS = {

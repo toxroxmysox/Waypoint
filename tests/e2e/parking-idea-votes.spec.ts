@@ -1,11 +1,12 @@
 import { test, expect, type Browser } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // #394 — a parked idea's votes show on the day page. The parking divider
 // (mobile) and the desktop ContextRail "Ideas" list both render a sentiment
 // pill from votesByItem, but the day loader only fetched votes for the day's
 // own items, so an idea's pill never rendered on either surface.
 
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 const PB_BASE = process.env.PUBLIC_PB_URL ?? 'http://127.0.0.1:8090';
 const SLUG = 'e2e-parking-votes';
 const IDEA = 'Kohler Design Center';

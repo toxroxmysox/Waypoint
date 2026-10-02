@@ -1,4 +1,5 @@
 import { test, expect, type Browser } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // #330 — phase calendar editor lifecycle. Uses the global-setup e2e-active-trip
 // (a clean single phase over a 9-day trip). Split → rename → delete in ONE flow so
@@ -7,7 +8,7 @@ import { test, expect, type Browser } from '@playwright/test';
 // — the #201/#234/#324 scar); its logic is covered by validateMovePhaseStart unit
 // tests, and the gesture is dogfood-verified.
 
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 
 async function devLogin(browser: Browser) {
 	const ctx = await browser.newContext();

@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // playwright.config.ts boots `npm run build && npm run preview` on :4173.
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 
 // Documents (#70/#71). The first E2E trip is active → it loads in trip mode, so
 // the bottom nav surfaces Now/Money/Add/Docs (#244). Secondary pages live at known

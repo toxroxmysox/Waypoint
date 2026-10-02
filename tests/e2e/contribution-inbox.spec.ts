@@ -1,4 +1,5 @@
 import { test, expect, type Browser } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // #251 / PRD #202 — Contribution Slice 4: Inbox tabbed Pending/Approved/Rejected.
 //
@@ -11,7 +12,7 @@ import { test, expect, type Browser } from '@playwright/test';
 // (suggestionAuthored, voted 'like' by the traveler) — enough to assert a tally on
 // the Pending tab. Dual-tree scar: scope to the visible subtree.
 
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 const PB_BASE = process.env.PUBLIC_PB_URL ?? 'http://127.0.0.1:8090';
 
 const EMAILS = {

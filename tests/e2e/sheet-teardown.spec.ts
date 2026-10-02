@@ -1,4 +1,5 @@
 import { test, expect, type Browser } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // BottomSheet teardown guard — filed as #379 ("P1: page goes tap-dead after
 // closing any BottomSheet").
@@ -27,7 +28,7 @@ import { test, expect, type Browser } from '@playwright/test';
 // builds its own contexts with `reducedMotion: 'no-preference'` so the sheet
 // actually animates and the teardown path under test is the real one.
 
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 const PB_BASE = process.env.PUBLIC_PB_URL ?? 'http://127.0.0.1:8090';
 
 const OWNER = 'rules-owner@e2e.test';
