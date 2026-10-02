@@ -69,7 +69,10 @@ async function main() {
 	).token;
 
 	console.log('\n— every collection has created + updated');
-	const cols = must('collections', await pb('GET', '/api/collections?perPage=500', { token: admin })).items;
+	const cols = must(
+		'collections',
+		await pb('GET', '/api/collections?perPage=500', { token: admin })
+	).items;
 	const missing = [];
 	for (const c of cols) {
 		if (c.system || c.type === 'view') continue;
@@ -79,11 +82,21 @@ async function main() {
 			if (!names.includes(f) || field.type !== 'autodate') missing.push(`${c.name}.${f}`);
 		}
 	}
-	assert(`all ${cols.filter((c) => !c.system).length} app collections have autodate created/updated`, missing.length === 0, missing);
+	assert(
+		`all ${cols.filter((c) => !c.system).length} app collections have autodate created/updated`,
+		missing.length === 0,
+		missing
+	);
 
 	console.log('\n— notification bell: newest first, with timestamps');
-	const fx = must('rules fixture', await pb('POST', '/api/dev/rules-fixture', { body: { emails: EMAILS, slug: 'e2e-timestamps' } }));
-	const ownerTok = must('auth-bypass', await pb('POST', '/api/dev/auth-bypass', { body: { email: EMAILS.owner } })).token;
+	const fx = must(
+		'rules fixture',
+		await pb('POST', '/api/dev/rules-fixture', { body: { emails: EMAILS, slug: 'e2e-timestamps' } })
+	);
+	const ownerTok = must(
+		'auth-bypass',
+		await pb('POST', '/api/dev/auth-bypass', { body: { email: EMAILS.owner } })
+	).token;
 	// Eight, so a random order (the old `-id` sort) can't pass by luck (1/8!).
 	const bodies = Array.from({ length: 8 }, (_, i) => `ts-${i}`);
 	for (const body of bodies) {
@@ -91,12 +104,21 @@ async function main() {
 			'notification ' + body,
 			await pb('POST', '/api/collections/notifications/records', {
 				token: admin,
-				body: { trip: fx.tripId, recipient: fx.memberIds.owner, type: 'member_joined', body, link: '' }
+				body: {
+					trip: fx.tripId,
+					recipient: fx.memberIds.owner,
+					type: 'member_joined',
+					body,
+					link: ''
+				}
 			})
 		);
 		await new Promise((r) => setTimeout(r, 25));
 	}
-	const listed = must('list', await pb('GET', '/api/notifications/list?limit=50', { token: ownerTok }));
+	const listed = must(
+		'list',
+		await pb('GET', '/api/notifications/list?limit=50', { token: ownerTok })
+	);
 	const list = listed.items;
 	const ours = list.filter((n) => bodies.includes(n.body));
 	assert('all eight come back', ours.length === 8, list);
@@ -107,15 +129,23 @@ async function main() {
 	);
 	assert(
 		'every item carries a parseable created timestamp',
-		ours.every((n) => typeof n.created === 'string' && !Number.isNaN(Date.parse(n.created.replace(' ', 'T')))),
+		ours.every(
+			(n) => typeof n.created === 'string' && !Number.isNaN(Date.parse(n.created.replace(' ', 'T')))
+		),
 		ours.map((n) => n.created)
 	);
 
 	// get('read_at') was a truthy DateTime even when empty → unread was always 0.
 	assert('unread counts the unread ones', listed.unread >= 8, listed.unread);
-	assert('an unread item has read_at null', ours.every((n) => n.read_at === null), ours.map((n) => n.read_at));
+	assert(
+		'an unread item has read_at null',
+		ours.every((n) => n.read_at === null),
+		ours.map((n) => n.read_at)
+	);
 
-	const pend = await pb('GET', '/api/collections/pending_invites/records?sort=-created', { token: admin });
+	const pend = await pb('GET', '/api/collections/pending_invites/records?sort=-created', {
+		token: admin
+	});
 	assert('pending_invites accepts sort=-created (was a 400)', pend.status === 200, pend.status);
 
 	console.log(`\n${pass} passed, ${fail} failed`);

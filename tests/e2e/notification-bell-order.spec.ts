@@ -44,7 +44,13 @@ test.describe('Notification bell order (#390)', () => {
 		for (const body of BODIES) {
 			const r = await json(
 				'/api/collections/notifications/records',
-				{ trip: fx.data.tripId, recipient: fx.data.memberIds.owner, type: 'member_joined', body, link: '' },
+				{
+					trip: fx.data.tripId,
+					recipient: fx.data.memberIds.owner,
+					type: 'member_joined',
+					body,
+					link: ''
+				},
 				admin.data.token
 			);
 			expect(r.ok).toBe(true);

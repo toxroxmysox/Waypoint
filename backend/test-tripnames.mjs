@@ -90,30 +90,53 @@ async function main() {
 	const tok = {};
 	const id = {};
 	for (const [k, email] of Object.entries(EMAILS)) {
-		const d = must('auth-bypass ' + email, await pb('POST', '/api/dev/auth-bypass', { body: { email } }));
+		const d = must(
+			'auth-bypass ' + email,
+			await pb('POST', '/api/dev/auth-bypass', { body: { email } })
+		);
 		tok[k] = d.token;
 		id[k] = d.record.id;
-		must('name ' + k, await pb('PATCH', `/api/collections/users/records/${id[k]}`, { token: admin, body: { name: 'User ' + k } }));
+		must(
+			'name ' + k,
+			await pb('PATCH', `/api/collections/users/records/${id[k]}`, {
+				token: admin,
+				body: { name: 'User ' + k }
+			})
+		);
 	}
 
 	// Shared trip: A owns, B is an active traveler → A and B are co-travelers.
 	const shared = must('shared trip', await createTrip(tok.A, id.A, 'Shared base', 'shared-base'));
-	must('B joins shared', await pb('POST', '/api/collections/trip_members/records', {
-		token: admin,
-		body: { trip: shared.id, user: id.B, role: 'traveler' }
-	}));
+	must(
+		'B joins shared',
+		await pb('POST', '/api/collections/trip_members/records', {
+			token: admin,
+			body: { trip: shared.id, user: id.B, role: 'traveler' }
+		})
+	);
 	// Former trip: A owns, C was a member but is tombstoned → NOT co-travelers.
 	const former = must('former trip', await createTrip(tok.A, id.A, 'Former base', 'former-base'));
-	must('C tombstoned', await pb('POST', '/api/collections/trip_members/records', {
-		token: admin,
-		body: { trip: former.id, user: id.C, role: 'traveler', removed_at: iso(plusDays(-1)) }
-	}));
+	must(
+		'C tombstoned',
+		await pb('POST', '/api/collections/trip_members/records', {
+			token: admin,
+			body: { trip: former.id, user: id.C, role: 'traveler', removed_at: iso(plusDays(-1)) }
+		})
+	);
 
 	console.log('\n— slug dedupe across users');
 	const a1 = await createTrip(tok.A, id.A, 'Thailand', 'thailand');
-	assert('A creates "Thailand" → slug thailand', a1.status === 200 && a1.data?.slug === 'thailand', a1);
+	assert(
+		'A creates "Thailand" → slug thailand',
+		a1.status === 200 && a1.data?.slug === 'thailand',
+		a1
+	);
 	const d1 = await createTrip(tok.D, id.D, 'Thailand!', 'thailand');
-	assert('D (cannot see A’s trip) creates same slug → 200 thailand-1', d1.status === 200 && d1.data?.slug === 'thailand-1', d1);
+	assert(
+		'D (cannot see A’s trip) creates same slug → 200 thailand-1',
+		d1.status === 200 && d1.data?.slug === 'thailand-1',
+		d1
+	);
 	const d2 = await createTrip(tok.D, id.D, 'Thailand', 'thailand');
 	assert('third create → thailand-2', d2.status === 200 && d2.data?.slug === 'thailand-2', d2);
 	const unique = await createTrip(tok.D, id.D, 'Unique place', 'unique-place');
@@ -133,10 +156,18 @@ async function main() {
 	assert('response never carries an email', !JSON.stringify(r.data).includes('@'), r.data);
 
 	r = await sameName(tok.A, '  THAILAND ');
-	assert('A sees own trip as "mine" (case/space-insensitive)', r.data?.mine?.[0]?.slug === 'thailand' && r.data.co_travelers.length === 0, r);
+	assert(
+		'A sees own trip as "mine" (case/space-insensitive)',
+		r.data?.mine?.[0]?.slug === 'thailand' && r.data.co_travelers.length === 0,
+		r
+	);
 
 	r = await sameName(tok.C, 'Thailand');
-	assert('C (tombstoned on A’s trip) sees nothing of A’s', r.data?.mine?.length === 0 && r.data.co_travelers.length === 0, r);
+	assert(
+		'C (tombstoned on A’s trip) sees nothing of A’s',
+		r.data?.mine?.length === 0 && r.data.co_travelers.length === 0,
+		r
+	);
 
 	// D owns thailand-1/-2 themself, so D's own trips show; A's never does.
 	r = await sameName(tok.D, 'Thailand');
@@ -147,23 +178,49 @@ async function main() {
 	);
 
 	r = await sameName(tok.B, 'Thailand 2027');
-	assert('a different name matches nothing', r.data?.mine?.length === 0 && r.data.co_travelers.length === 0, r);
+	assert(
+		'a different name matches nothing',
+		r.data?.mine?.length === 0 && r.data.co_travelers.length === 0,
+		r
+	);
 
-	must('ended trip', await createTrip(tok.A, id.A, 'Peru', 'peru', { start_date: iso(plusDays(-30)), end_date: iso(plusDays(-20)) }));
+	must(
+		'ended trip',
+		await createTrip(tok.A, id.A, 'Peru', 'peru', {
+			start_date: iso(plusDays(-30)),
+			end_date: iso(plusDays(-20))
+		})
+	);
 	r = await sameName(tok.B, 'Peru');
 	assert('an ENDED co-traveler trip is ignored', r.data?.co_travelers?.length === 0, r);
 
-	must('current dated trip', await createTrip(tok.A, id.A, 'Chile', 'chile', { start_date: iso(plusDays(-1)), end_date: iso(plusDays(5)) }));
+	must(
+		'current dated trip',
+		await createTrip(tok.A, id.A, 'Chile', 'chile', {
+			start_date: iso(plusDays(-1)),
+			end_date: iso(plusDays(5))
+		})
+	);
 	r = await sameName(tok.B, 'chile');
 	assert('a CURRENT dated co-traveler trip is reported', r.data?.co_travelers?.length === 1, r);
 
 	const arch = must('archived trip', await createTrip(tok.A, id.A, 'Iceland', 'iceland'));
-	must('archive it', await pb('PATCH', `/api/collections/trips/records/${arch.id}`, { token: tok.A, body: { archived: true } }));
+	must(
+		'archive it',
+		await pb('PATCH', `/api/collections/trips/records/${arch.id}`, {
+			token: tok.A,
+			body: { archived: true }
+		})
+	);
 	r = await sameName(tok.B, 'Iceland');
 	assert('an ARCHIVED co-traveler trip is ignored', r.data?.co_travelers?.length === 0, r);
 
 	r = await sameName(tok.B, '!!!');
-	assert('an all-punctuation title matches nothing', r.status === 200 && r.data.mine.length === 0 && r.data.co_travelers.length === 0, r);
+	assert(
+		'an all-punctuation title matches nothing',
+		r.status === 200 && r.data.mine.length === 0 && r.data.co_travelers.length === 0,
+		r
+	);
 
 	r = await sameName(null, 'Thailand');
 	assert('unauthenticated → 401', r.status === 401, r.status);
@@ -171,33 +228,66 @@ async function main() {
 	console.log('\n— request an invite (never self-serve: notifies owner + co-owners only)');
 	const thai = a1.data.id;
 	r = await sameName(tok.B, 'Thailand');
-	assert('same-name hands the co-traveler an opaque trip_id', r.data?.co_travelers?.[0]?.trip_id === thai, r.data);
+	assert(
+		'same-name hands the co-traveler an opaque trip_id',
+		r.data?.co_travelers?.[0]?.trip_id === thai,
+		r.data
+	);
 
-	const request = (token, tripId) => pb('POST', '/api/trips/request-invite', { token, body: { trip_id: tripId } });
+	const request = (token, tripId) =>
+		pb('POST', '/api/trips/request-invite', { token, body: { trip_id: tripId } });
 	const ownerNotes = async () => {
 		const ownerMember = (
-			await pb('GET', `/api/collections/trip_members/records?filter=${encodeURIComponent(`trip = "${thai}" && role = "owner"`)}`, { token: admin })
+			await pb(
+				'GET',
+				`/api/collections/trip_members/records?filter=${encodeURIComponent(`trip = "${thai}" && role = "owner"`)}`,
+				{ token: admin }
+			)
 		).data.items[0];
 		return (
-			await pb('GET', `/api/collections/notifications/records?filter=${encodeURIComponent(`recipient = "${ownerMember.id}" && type = "invite_requested"`)}`, { token: admin })
+			await pb(
+				'GET',
+				`/api/collections/notifications/records?filter=${encodeURIComponent(`recipient = "${ownerMember.id}" && type = "invite_requested"`)}`,
+				{ token: admin }
+			)
 		).data.items;
 	};
 
 	r = await request(tok.B, thai);
-	assert('co-traveler B requests → 200, one notification sent', r.status === 200 && r.data?.sent === 1, r);
-	assert('response names the owner B knows + the trip title', r.data?.name === 'User A' && r.data?.title === 'Thailand', r.data);
+	assert(
+		'co-traveler B requests → 200, one notification sent',
+		r.status === 200 && r.data?.sent === 1,
+		r
+	);
+	assert(
+		'response names the owner B knows + the trip title',
+		r.data?.name === 'User A' && r.data?.title === 'Thailand',
+		r.data
+	);
 	let notes = await ownerNotes();
 	assert(
 		'owner gets “User B asked to join “Thailand”” linking to Members',
-		notes.length === 1 && notes[0].body.startsWith('User B asked to join “Thailand”') && notes[0].link.startsWith('/trips/thailand/members'),
+		notes.length === 1 &&
+			notes[0].body.startsWith('User B asked to join “Thailand”') &&
+			notes[0].link.startsWith('/trips/thailand/members'),
 		notes
 	);
 	r = await request(tok.B, thai);
 	notes = await ownerNotes();
-	assert('a repeat while unread is not re-sent', r.status === 200 && r.data?.sent === 0 && notes.length === 1, { r, n: notes.length });
+	assert(
+		'a repeat while unread is not re-sent',
+		r.status === 200 && r.data?.sent === 0 && notes.length === 1,
+		{ r, n: notes.length }
+	);
 
 	const memberCount = async () =>
-		(await pb('GET', `/api/collections/trip_members/records?filter=${encodeURIComponent(`trip = "${thai}" && user = "${id.B}"`)}`, { token: admin })).data.items.length;
+		(
+			await pb(
+				'GET',
+				`/api/collections/trip_members/records?filter=${encodeURIComponent(`trip = "${thai}" && user = "${id.B}"`)}`,
+				{ token: admin }
+			)
+		).data.items.length;
 	assert('requesting does NOT add B to the trip', (await memberCount()) === 0);
 
 	r = await request(tok.D, thai);
@@ -213,33 +303,63 @@ async function main() {
 
 	console.log('\n— only actionable links; never after a removal; lenient last day');
 	const yesterday = iso(plusDays(-1));
-	must('Laos (ended yesterday UTC)', await createTrip(tok.A, id.A, 'Laos', 'laos', { start_date: iso(plusDays(-5)), end_date: yesterday }));
+	must(
+		'Laos (ended yesterday UTC)',
+		await createTrip(tok.A, id.A, 'Laos', 'laos', {
+			start_date: iso(plusDays(-5)),
+			end_date: yesterday
+		})
+	);
 	r = await sameName(tok.B, 'Laos');
-	assert('a trip whose last day was yesterday (UTC) still counts — west-of-UTC grace', r.data?.co_travelers?.length === 1, r);
-	must('Cuba (ended 2 days ago)', await createTrip(tok.A, id.A, 'Cuba', 'cuba', { start_date: iso(plusDays(-6)), end_date: iso(plusDays(-2)) }));
+	assert(
+		'a trip whose last day was yesterday (UTC) still counts — west-of-UTC grace',
+		r.data?.co_travelers?.length === 1,
+		r
+	);
+	must(
+		'Cuba (ended 2 days ago)',
+		await createTrip(tok.A, id.A, 'Cuba', 'cuba', {
+			start_date: iso(plusDays(-6)),
+			end_date: iso(plusDays(-2))
+		})
+	);
 	r = await sameName(tok.B, 'Cuba');
 	assert('…but two days ago is over', r.data?.co_travelers?.length === 0, r);
 
 	// Bali: A owns it; B was a member and got REMOVED. B still shares "Shared base" with A.
 	const bali = must('Bali', await createTrip(tok.A, id.A, 'Bali', 'bali'));
-	must('B on Bali, removed', await pb('POST', '/api/collections/trip_members/records', {
-		token: admin,
-		body: { trip: bali.id, user: id.B, role: 'traveler', removed_at: iso(plusDays(-1)) }
-	}));
+	must(
+		'B on Bali, removed',
+		await pb('POST', '/api/collections/trip_members/records', {
+			token: admin,
+			body: { trip: bali.id, user: id.B, role: 'traveler', removed_at: iso(plusDays(-1)) }
+		})
+	);
 	r = await sameName(tok.B, 'Bali');
-	assert('a trip B was removed from is never offered back', r.data?.co_travelers?.length === 0 && r.data?.mine?.length === 0, r);
+	assert(
+		'a trip B was removed from is never offered back',
+		r.data?.co_travelers?.length === 0 && r.data?.mine?.length === 0,
+		r
+	);
 	r = await request(tok.B, bali.id);
 	assert('…and B can’t request to rejoin it → 403', r.status === 403, r);
 
 	// Kenya: D owns it, A is only a TRAVELER there. B's only link is via A, who
 	// can't invite — a request would be a dead end, so it isn't offered.
 	const kenya = must('Kenya', await createTrip(tok.D, id.D, 'Kenya', 'kenya'));
-	must('A travels on Kenya', await pb('POST', '/api/collections/trip_members/records', {
-		token: admin,
-		body: { trip: kenya.id, user: id.A, role: 'traveler' }
-	}));
+	must(
+		'A travels on Kenya',
+		await pb('POST', '/api/collections/trip_members/records', {
+			token: admin,
+			body: { trip: kenya.id, user: id.A, role: 'traveler' }
+		})
+	);
 	r = await sameName(tok.B, 'Kenya');
-	assert('a trip reached only via a plain traveler is not offered', r.data?.co_travelers?.length === 0, r);
+	assert(
+		'a trip reached only via a plain traveler is not offered',
+		r.data?.co_travelers?.length === 0,
+		r
+	);
 	r = await request(tok.B, kenya.id);
 	assert('…and requesting it (forged id) → 403', r.status === 403, r);
 

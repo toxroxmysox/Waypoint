@@ -32,7 +32,12 @@ async function exerciseCodeField(page: Page, posts: string[]) {
 
 	// The 6th digit submits, once.
 	await code.pressSequentially('6');
-	await expect(page.getByText(/invalid or expired code/i).filter({ visible: true }).first()).toBeVisible();
+	await expect(
+		page
+			.getByText(/invalid or expired code/i)
+			.filter({ visible: true })
+			.first()
+	).toBeVisible();
 	expect(posts).toHaveLength(1);
 
 	// A corrected code (same length, different last digit) submits again.

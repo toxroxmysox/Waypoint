@@ -34,13 +34,25 @@ async function seed() {
 	const { token, record } = await pb('/api/dev/auth-bypass', { method: 'POST', body: { email } });
 	const q = (f: string) => encodeURIComponent(f);
 	const member = (
-		await pb(`/api/collections/trip_members/records?filter=${q(`trip = "${seeded.tripId}" && user = "${record.id}"`)}`, { token })
+		await pb(
+			`/api/collections/trip_members/records?filter=${q(`trip = "${seeded.tripId}" && user = "${record.id}"`)}`,
+			{ token }
+		)
 	).items[0];
-	const phase = (await pb(`/api/collections/phases/records?filter=${q(`trip = "${seeded.tripId}"`)}`, { token })).items[0];
+	const phase = (
+		await pb(`/api/collections/phases/records?filter=${q(`trip = "${seeded.tripId}"`)}`, { token })
+	).items[0];
 	const idea = await pb('/api/collections/items/records', {
 		method: 'POST',
 		token,
-		body: { trip: seeded.tripId, phase: phase.id, title: IDEA, type: 'activity', status: 'unplanned', created_by: member.id }
+		body: {
+			trip: seeded.tripId,
+			phase: phase.id,
+			title: IDEA,
+			type: 'activity',
+			status: 'unplanned',
+			created_by: member.id
+		}
 	});
 	await pb('/api/collections/votes/records', {
 		method: 'POST',
@@ -79,7 +91,9 @@ test.describe('Parking-lot idea votes on the day page (#394)', () => {
 		const { ctx, page } = await openDay(browser, 1280);
 		const rail = page.locator('h3:visible', { hasText: 'Ideas' }).locator('xpath=..');
 		await expect(rail.locator(`p[title="${IDEA}"]`)).toBeVisible();
-		await expect(rail.locator(`p[title="${IDEA}"]`).locator('xpath=..').getByLabel('Votes')).toBeVisible();
+		await expect(
+			rail.locator(`p[title="${IDEA}"]`).locator('xpath=..').getByLabel('Votes')
+		).toBeVisible();
 		await ctx.close();
 	});
 });

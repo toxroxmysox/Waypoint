@@ -27,7 +27,11 @@
 </script>
 
 {#if message}
-	<div bind:this={el} role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm {klass}">
+	<div
+		bind:this={el}
+		role="alert"
+		class="rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error-deep {klass}"
+	>
 		{message}
 	</div>
 {/if}
