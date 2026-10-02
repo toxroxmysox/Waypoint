@@ -260,14 +260,22 @@ routerAdd('GET', '/api/notifications/list', (e) => {
 					'recipient = {:mid}',
 					// (sort, limit, offset) — was (…, 0, limit): limit=0 + offset=limit
 					// returned NO records. Correct order: limit=request, offset 0.
-					'-id', limit, 0,
+					// #390: `-created` (0069 added it); PB ids are random, so `-id`
+					// alone never meant newest-first. id breaks ties between rows that
+					// predate 0069.
+					'-created,-id', limit, 0,
 					{ mid: memberId }
 				);
 				records = records.concat(recs);
 			} catch (_) {}
 		}
-		// Sort by id desc (newest first) and apply limit.
-		records.sort((a, b) => (a.id < b.id ? 1 : -1));
+		// Newest first across memberships, then apply limit.
+		records.sort((a, b) => {
+			const ca = a.getString('created');
+			const cb = b.getString('created');
+			if (ca !== cb) return ca < cb ? 1 : -1;
+			return a.id < b.id ? 1 : -1;
+		});
 		records = records.slice(0, limit);
 	} catch (_) {
 		records = [];
@@ -282,7 +290,7 @@ routerAdd('GET', '/api/notifications/list', (e) => {
 		body: r.get('body'),
 		link: r.get('link'),
 		read_at: r.get('read_at') || null,
-		created: r.get('created')
+		created: r.getString('created')
 	}));
 
 	return e.json(200, { items: items, unread: unread });
