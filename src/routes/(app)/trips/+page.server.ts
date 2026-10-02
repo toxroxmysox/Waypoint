@@ -68,33 +68,32 @@ export const load: PageServerLoad = async ({ locals, fetch }) => {
 	// trips list (one throwing query 500s the whole page; see cerebrum).
 	let pendingClaims = 0;
 	let firstClaimTitle = '';
-	try {
-		const token = locals.pb.authStore.token;
-		const res = await fetch(`${PUBLIC_PB_URL}/api/members/my-claims`, {
-			headers: { Authorization: `Bearer ${token}` }
-		});
-		if (res.ok) {
-			const { claims } = (await res.json()) as {
-				claims: { trip_title?: string }[];
-			};
-			pendingClaims = claims?.length ?? 0;
-			firstClaimTitle = claims?.[0]?.trip_title ?? '';
-		}
-	} catch {
-		// Swallow — the claims card just won't render.
-	}
-
+	let invitations: PendingInvitation[] = [];
 	// #397 — invites waiting for this user's email, accepted right here instead
 	// of via each email link (every link opened in a fresh browser context costs
-	// a new one-time code). Best-effort, like the claims count above.
-	let invitations: PendingInvitation[] = [];
-	try {
-		invitations = (
-			await locals.pb.send<{ invites: PendingInvitation[] }>('/api/invites/my-pending', {})
-		).invites;
-	} catch {
-		// Swallow — the section just won't render.
-	}
+	// a new one-time code). Both lookups are best-effort and run in parallel.
+	await Promise.all([
+		(async () => {
+			try {
+				const token = locals.pb.authStore.token;
+				const res = await fetch(`${PUBLIC_PB_URL}/api/members/my-claims`, {
+					headers: { Authorization: `Bearer ${token}` }
+				});
+				if (res.ok) {
+					const { claims } = (await res.json()) as {
+						claims: { trip_title?: string }[];
+					};
+					pendingClaims = claims?.length ?? 0;
+					firstClaimTitle = claims?.[0]?.trip_title ?? '';
+				}
+			} catch {
+				// Swallow — the claims card just won't render.
+			}
+		})(),
+		(async () => {
+			invitations = await myInvitations(locals.pb);
+		})()
+	]);
 
 	return {
 		active,
@@ -114,10 +113,17 @@ export interface PendingInvitation {
 	trip_title: string;
 	inviter_name: string;
 	role: string;
-	expires_at: string;
 	/** The trip has unclaimed placeholders → accept on /invite/<code>, where the
 	 *  invitee can claim one instead of joining as a duplicate. */
 	needs_choice: boolean;
+}
+
+async function myInvitations(pb: App.Locals['pb']): Promise<PendingInvitation[]> {
+	try {
+		return (await pb.send<{ invites: PendingInvitation[] }>('/api/invites/my-pending', {})).invites;
+	} catch {
+		return []; // the section just won't render
+	}
 }
 
 function errorMessage(err: unknown, fallback: string): string {
@@ -130,13 +136,19 @@ export const actions: Actions = {
 	acceptInvite: async ({ request, locals }) => {
 		const code = (await request.formData()).get('code')?.toString() ?? '';
 		if (!code) return fail(400, { error: 'Missing invite.', code });
+		// Re-check at accept time, not just when the list loaded: if the trip has
+		// gained an unclaimed placeholder (or the POST was hand-made), accepting
+		// in place would make a duplicate member — send them to the invite page,
+		// where they can claim it (they're signed in, so still no code).
+		const current = (await myInvitations(locals.pb)).find((i) => i.code === code);
+		if (!current) return fail(400, { error: 'That invite is no longer available.', code });
+		if (current.needs_choice) redirect(303, `/invite/${code}`);
 		try {
-			const res = await locals.pb.send<{ trip_id: string }>('/api/invites/accept', {
+			const res = await locals.pb.send<{ trip_id: string; trip_slug?: string }>('/api/invites/accept', {
 				method: 'POST',
 				body: { code }
 			});
-			const trip = await locals.pb.collection('trips').getOne<{ slug: string }>(res.trip_id);
-			redirect(303, `/trips/${trip.slug}`);
+			redirect(303, res.trip_slug ? `/trips/${res.trip_slug}` : '/trips');
 		} catch (err) {
 			if (isRedirect(err)) throw err;
 			return fail(400, { error: errorMessage(err, 'Couldn’t accept that invite.'), code });

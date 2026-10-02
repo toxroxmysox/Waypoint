@@ -68,6 +68,18 @@ test.describe('#278 first-run — trip-less user', () => {
 		expect(page.url()).toBe(`${BASE}/join/${token}`);
 	});
 
+	test('paste an EMAIL invite URL → lands on /invite (#397)', async ({ page }) => {
+		// Invite emails link to /invite/<code>, not /join/<token>; the box used to
+		// reject them as "not an invite link".
+		const onramp = page.getByTestId('trips-empty-onramp');
+		const code = 'AAAbbb111222ccc333444ddd555666eee777888F';
+		await onramp
+			.getByPlaceholder(/paste link or code/i)
+			.fill(`https://app.vandenwarsen.com/invite/${code}`);
+		await onramp.getByRole('button', { name: /^go$/i }).click();
+		await page.waitForURL(`${BASE}/invite/${code}`, { timeout: 10000 });
+	});
+
 	test('paste garbage → stays put with an inline error', async ({ page }) => {
 		const onramp = page.getByTestId('trips-empty-onramp');
 		await onramp.getByPlaceholder(/paste link or code/i).fill('not a token!!!');

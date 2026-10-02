@@ -158,9 +158,57 @@ async function main() {
 	r = await pb('POST', '/api/invites/decline', { token: null, body: { code: mine.Lisbon.code } });
 	assert('unauthenticated decline → 401', r.status === 401, r.status);
 
+	console.log('\n— stale + case');
+	// Already on the trip another way → the invite is stale and not listed.
+	const nara = must(
+		'Nara',
+		await pb('POST', '/api/collections/trips/records', {
+			token: tok.A,
+			body: { title: 'Nara', slug: 'nara', created_by: id.A, timezone: 'UTC' }
+		})
+	);
+	const naraInv = must(
+		'invite Nara',
+		await pb('POST', '/api/invites/create', {
+			token: tok.A,
+			body: { trip_id: nara.id, email: EMAILS.D, role: 'traveler' }
+		})
+	);
+	must(
+		'D added directly',
+		await pb('POST', '/api/collections/trip_members/records', {
+			token: admin,
+			body: { trip: nara.id, user: id.D, role: 'traveler' }
+		})
+	);
+	r = await pending(tok.D);
+	assert('an invite to a trip D is already on is hidden', !byTitle(r.data?.invites).Nara, r.data);
+	// Mixed-case stored address still belongs to D.
+	const naraRow = must(
+		'Nara row',
+		await pb(
+			'GET',
+			`/api/collections/pending_invites/records?filter=${encodeURIComponent(`code = "${naraInv.code}"`)}`,
+			{ token: admin }
+		)
+	).items[0];
+	must(
+		'uppercase it',
+		await pb('PATCH', `/api/collections/pending_invites/records/${naraRow.id}`, {
+			token: admin,
+			body: { email: EMAILS.D.toUpperCase() }
+		})
+	);
+	r = await pb('POST', '/api/invites/decline', { token: tok.D, body: { code: naraInv.code } });
+	assert('decline matches the address case-insensitively', r.status === 200, r);
+
 	console.log('\n— accept, expiry');
 	r = await pb('POST', '/api/invites/accept', { token: tok.D, body: { code: mine.Lisbon.code } });
-	assert('D accepts Lisbon', r.status === 200, r);
+	assert(
+		'D accepts Lisbon; accept returns the slug',
+		r.status === 200 && r.data?.trip_slug === 'lisbon',
+		r
+	);
 	const oaxacaInvite = must(
 		'oaxaca invite row',
 		await pb(

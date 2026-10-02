@@ -1,10 +1,12 @@
 /// <reference path="../pb_data/types.d.ts" />
-// M2b — invite endpoints + email send. Three router endpoints + one
-// after-create hook:
+// M2b — invite endpoints + email send. Router endpoints + one after-create hook:
 //   POST /api/invites/create  — auth, creates pending_invites (server fills
 //                                code/expires_at/invited_by)
 //   POST /api/invites/lookup  — anon, returns minimal invite metadata by code
 //   POST /api/invites/accept  — auth, creates trip_member + deletes invite
+//   GET  /api/invites/my-pending, POST /api/invites/decline — the invitee's
+//                                side, listed on /trips (#397)
+//   GET  /api/invites/co-travelers, POST /api/invites/create-for-user — #352
 //   onRecordAfterCreateSuccess('pending_invites') — sends Resend email
 //
 // PB 0.27 runs each callback in an isolated sandbox — outer-file helpers are
@@ -278,6 +280,11 @@ routerAdd('POST', '/api/invites/accept', (e) => {
 	}
 
 	const tripId = invite.getString('trip');
+	// Returned with every outcome so callers can redirect without a second read.
+	let tripSlug = '';
+	try {
+		tripSlug = e.app.findRecordById('trips', tripId).getString('slug');
+	} catch (_) {}
 
 	// Already-member short-circuit: delete the stale invite, return existing
 	// member id. Keeps the accept link idempotent.
@@ -299,6 +306,7 @@ routerAdd('POST', '/api/invites/accept', (e) => {
 		}
 		return e.json(200, {
 			trip_id: tripId,
+			trip_slug: tripSlug,
 			member_id: existingMember.id,
 			already_member: true
 		});
@@ -343,6 +351,7 @@ routerAdd('POST', '/api/invites/accept', (e) => {
 		e.app.delete(invite);
 		return e.json(200, {
 			trip_id: tripId,
+			trip_slug: tripSlug,
 			member_id: target.id,
 			already_member: false
 		});
@@ -391,6 +400,7 @@ routerAdd('POST', '/api/invites/accept', (e) => {
 
 	return e.json(200, {
 		trip_id: tripId,
+		trip_slug: tripSlug,
 		member_id: member.id,
 		already_member: false
 	});
@@ -519,17 +529,28 @@ onRecordAfterCreateSuccess((e) => {
 		'This link expires in 7 days. If you did not expect this email, you can ignore it.\n\n' +
 		'— Waypoint';
 
+	// Trip titles and member names are user-controlled: escape them for the
+	// HTML part, or any member could inject markup/links into a Waypoint-sent
+	// email to an address of their choosing (#397 review).
+	const esc = (v) =>
+		String(v)
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#39;');
+
 	// Plaintext-first per M2_STATUS.md; one-line HTML wrap so clients that
 	// strip text/plain still render something readable.
 	const html =
 		'<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.5; color: #1a1a1a;">' +
 		'<p>Hi,</p>' +
 		'<p><strong>' +
-		inviterName +
+		esc(inviterName) +
 		'</strong> invited you to join &ldquo;' +
-		tripTitle +
+		esc(tripTitle) +
 		'&rdquo; on Waypoint as a <strong>' +
-		role.replace('_', '-') +
+		esc(role.replace('_', '-')) +
 		'</strong>.</p>' +
 		'<p><a href="' +
 		acceptUrl +
@@ -576,10 +597,10 @@ onRecordAfterCreateSuccess((e) => {
 // ---------------------------------------------------------------------------
 // GET /api/invites/my-pending
 // Pending, unexpired invites for the authenticated user's email. Feeds the
-// Invitations section on /trips and the avatar badge (#397), and /claim.
+// Invitations section on /trips and its avatar badge (#397).
 // Admin context so it can read pending_invites regardless of trip membership.
-// Returns { invites: [{ code, trip_title, inviter_name, role, expires_at,
-// needs_choice }] } — needs_choice: the trip has unclaimed name-only
+// Returns { invites: [{ code, trip_title, inviter_name, role, needs_choice }] }
+// — needs_choice: the trip has unclaimed name-only
 // placeholders, so accepting goes through /invite/<code> where the invitee
 // can say "I'm Abby" instead of becoming a duplicate member. Names only,
 // never an address (#352 rule).
@@ -593,18 +614,20 @@ routerAdd('GET', '/api/invites/my-pending', (e) => {
 
 	let rows;
 	try {
-		rows = e.app.findRecordsByFilter('pending_invites', 'email = {:email}', '-expires_at', 0, 0, {
-			email: email
-		});
+		rows = e.app.findRecordsByFilter(
+			'pending_invites',
+			'email = {:email} && expires_at > @now',
+			'-expires_at',
+			0,
+			0,
+			{ email: email }
+		);
 	} catch (_) {
 		return e.json(200, { invites: [] });
 	}
 
-	const now = new Date();
 	const invites = [];
 	for (const row of rows) {
-		const expiresAt = row.getString('expires_at');
-		if (expiresAt && new Date(expiresAt.replace(' ', 'T')) < now) continue;
 		const tripId = row.getString('trip');
 
 		// Already on the trip (e.g. added another way): the invite is stale.
@@ -651,7 +674,6 @@ routerAdd('GET', '/api/invites/my-pending', (e) => {
 			trip_title: tripTitle,
 			inviter_name: inviterName || 'Someone',
 			role: row.getString('role'),
-			expires_at: expiresAt,
 			needs_choice: needsChoice
 		});
 	}

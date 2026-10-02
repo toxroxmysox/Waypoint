@@ -6,7 +6,7 @@
 	import Avatar from '$lib/ui/Avatar.svelte';
 	import FAB from '$lib/shell/components/FAB.svelte';
 	import { clearOfflineCaches } from '$lib/documents/offline-cache';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { enhance } from '$app/forms';
 
 	let { data, form } = $props();
@@ -19,10 +19,26 @@
 		traveler: 'a traveler',
 		viewer: 'a viewer'
 	};
-	let accepting = $state('');
+	// The code whose Accept/Decline is in flight — locks every invite button.
+	let busy = $state('');
 	// Decline deletes the invite, so the first tap only arms it (JS); without
 	// JS the form submits straight away.
 	let confirmDecline = $state('');
+
+	// Shared enhance for Accept/Decline: lock the buttons while in flight, and
+	// on a failure (e.g. revoked or expired meanwhile) re-load the list so a dead
+	// card doesn't linger — update() alone only invalidates on success.
+	function invitationSubmit(code: string) {
+		return () => {
+			busy = code;
+			return async ({ result, update }: { result: { type: string }; update: () => Promise<void> }) => {
+				await update();
+				if (result.type === 'failure') await invalidateAll();
+				busy = '';
+				confirmDecline = '';
+			};
+		};
+	}
 
 	// #278 — paste-invite escape hatch for the signed-up-but-trip-less user who
 	// has an invite. Accept either a full invite URL (…/join/<token>) OR a bare
@@ -48,6 +64,13 @@
 
 	function submitInvite(e: SubmitEvent) {
 		e.preventDefault();
+		// An email invite link (…/invite/<code>) goes to its own flow (#397).
+		const emailInvite = inviteInput.trim().match(/\/invite\/([A-Za-z0-9]{16,64})/);
+		if (emailInvite) {
+			inviteError = '';
+			goto(`/invite/${emailInvite[1]}`);
+			return;
+		}
 		const token = extractToken(inviteInput);
 		if (!token) {
 			inviteError = "That doesn't look like an invite link. Paste the whole link, or just the code.";
@@ -88,14 +111,14 @@
 			<a
 				href="/account"
 				class="relative hover:opacity-80 active:opacity-80"
-				aria-label={data.invitations.length
-					? `Profile — ${data.invitations.length} invitation${data.invitations.length === 1 ? '' : 's'} waiting`
-					: 'Profile'}
+				aria-label="Profile"
 				data-sveltekit-preload-data="hover"
 			>
 				<Avatar img={data.avatarUrl} initial={(data.profileName || '?').slice(0, 1)} alt={data.profileName} size={32} />
 				{#if data.invitations.length > 0}
-					<!-- #397 — pending-invitations count (the list is on this page). -->
+					<!-- #397 — pending-invitations count. Visual only: the list itself is
+					     on this page (its heading carries the count for screen readers),
+					     and the avatar link goes to Profile. -->
 					<span
 						data-testid="invitations-badge"
 						aria-hidden="true"
@@ -133,37 +156,20 @@
 									     signed in). -->
 									<Button href="/invite/{inv.code}" variant="moss" size="sm">Accept…</Button>
 								{:else}
-									<form
-										method="POST"
-										action="?/acceptInvite"
-										use:enhance={() => {
-											accepting = inv.code;
-											return async ({ update }) => {
-												await update();
-												accepting = '';
-											};
-										}}
-									>
+									<form method="POST" action="?/acceptInvite" use:enhance={invitationSubmit(inv.code)}>
 										<input type="hidden" name="code" value={inv.code} />
-										<Button type="submit" variant="moss" size="sm" loading={accepting === inv.code} disabled={!!accepting}>
+										<Button type="submit" variant="moss" size="sm" loading={busy === inv.code} disabled={!!busy}>
 											Accept
 										</Button>
 									</form>
 								{/if}
-								<form
-									method="POST"
-									action="?/declineInvite"
-									use:enhance={() => async ({ update }) => {
-										confirmDecline = '';
-										await update();
-									}}
-								>
+								<form method="POST" action="?/declineInvite" use:enhance={invitationSubmit(inv.code)}>
 									<input type="hidden" name="code" value={inv.code} />
 									<Button
 										type="submit"
 										variant="ghost"
 										size="sm"
-										disabled={!!accepting}
+										disabled={!!busy}
 										onclick={(e) => {
 											if (confirmDecline !== inv.code) {
 												e.preventDefault();
