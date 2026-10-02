@@ -1,4 +1,5 @@
 import { test, expect, type Browser } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // Paid-Moment affordance + prefilled add-expense (#265 / ADR-0014) E2E.
 // Requires: WAYPOINT_DEV_MODE=true + E2E_TEST_EMAILS (whitelisted bypass emails).
@@ -14,7 +15,7 @@ import { test, expect, type Browser } from '@playwright/test';
 //
 // A cost-bearing `activity` item (estimate $240) is seeded so amount-prefill is provable.
 
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 const PB_BASE = process.env.PUBLIC_PB_URL ?? 'http://127.0.0.1:8090';
 const SLUG = 'e2e-paid-moment-265';
 

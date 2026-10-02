@@ -49,7 +49,9 @@ export const load: LayoutServerLoad = async ({ params, locals, depends }) => {
 		}),
 		locals.pb.collection('notifications').getFullList<Notification>({
 			filter: `recipient = "${membership.id}"`,
-			sort: '-id',
+			// #390: newest first. PB ids are random, so `-id` never was; `created`
+			// exists since 0069 (pre-0069 rows are blank and sort last).
+			sort: '-created,-id',
 			perPage: 30
 		}).catch(() => [] as Notification[])
 	]);

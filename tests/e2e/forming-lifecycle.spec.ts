@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // #270 / ADR-0022 — the forming (dateless) trip lifecycle, end-to-end:
 // name-first dateless create → forming home (gated nav + set-dates door +
@@ -8,7 +9,7 @@ import { test, expect } from '@playwright/test';
 // playwright.config.ts boots `npm run build && npm run preview` on :4173.
 // /api/dev/login issues a real auth cookie via a PB bypass endpoint (404s unless
 // WAYPOINT_DEV_MODE=true, so production stays safe).
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 
 // The trip layout is dual-tree (mobile + desktop, one CSS-hidden). Scope every
 // content locator to the visible subtree (#239 guardrail: AppShell renders

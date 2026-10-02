@@ -16,21 +16,12 @@
 	import ParkingDivider from '$lib/itinerary/components/ParkingDivider.svelte';
 	import DragDropTimeline from '$lib/itinerary/components/DragDropTimeline.svelte';
 	import MultiDayBanner from '$lib/itinerary/components/MultiDayBanner.svelte';
-	import { revealServerError, errorField } from '$lib/shell/actions/validate-form';
+	import ServerErrorAlert from '$lib/ui/ServerErrorAlert.svelte';
 
 	let { data, form } = $props();
 
 	let editingNotes = $state(false);
 	let notesLoading = $state(false);
-	let error = $derived(form?.error ?? '');
-
-	// #375 — a server fail() renders its explanation at the top of the page,
-	// out of sight from the submit control. Scroll it (or the named field) back
-	// into view and give it focus.
-	let alertEl = $state<HTMLElement | null>(null);
-	$effect(() => {
-		if (form?.error) revealServerError(alertEl, errorField(form));
-	});
 
 	// #252 — consistent capture affordance, defaulting to this day + its phase.
 	let ideaSheetOpen = $state(false);
@@ -94,9 +85,7 @@
 		{/if}
 	</div>
 
-	{#if error}
-		<div bind:this={alertEl} role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{error}</div>
-	{/if}
+	<ServerErrorAlert {form} />
 
 	<!-- Day notes — keyed by day id so unsaved draft is discarded on day navigation -->
 	{#key data.day.id}

@@ -1,4 +1,5 @@
 import { test, expect, type Browser } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // #271 / ADR-0023 — the availability wedge end to end:
 //   1. Cold-open the PUBLIC poll link → paint → give a NAME (no OTP) → a name-only
@@ -11,7 +12,7 @@ import { test, expect, type Browser } from '@playwright/test';
 // user (E2E_TEST_EMAIL) owns a fresh forming trip minted per-run via the PB dev
 // routes. The poll surface is anonymous — no login needed for the paint half.
 
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 const PB = process.env.PUBLIC_PB_URL ?? 'http://127.0.0.1:8090';
 const EMAIL = process.env.E2E_TEST_EMAIL ?? '';
 

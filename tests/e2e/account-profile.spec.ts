@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // /account ("Profile") — #104. The dev-login user (E2E_TEST_EMAIL) owns the
 // avatar + name being edited here; all self-edits, no rule change.
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 
 // A small but real PNG so the cropper's <img> decodes with a natural size.
 const PNG = Buffer.from(

@@ -1,4 +1,5 @@
 import { test, expect, type Browser } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // #277 Organic-path onboarding E2E (ONBOARDING_PRD §Slices #4, Design §7).
 //
@@ -23,7 +24,7 @@ import { test, expect, type Browser } from '@playwright/test';
 // Runs against a FRESH PB (pnpm test:e2e:clean, :8097) so migration 0054
 // (`users.onboarded_at`) is applied — never the stale-schema :8090.
 
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 const PB_BASE = process.env.PUBLIC_PB_URL ?? 'http://127.0.0.1:8090';
 
 // Reuse the WHITELISTED rules-harness emails (E2E_TEST_EMAILS) — bypass rejects

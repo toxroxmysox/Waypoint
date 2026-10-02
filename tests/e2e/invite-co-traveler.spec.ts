@@ -1,4 +1,5 @@
 import { test, expect, type Browser } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // #352 — invite a past co-traveler without knowing their email.
 //
@@ -22,7 +23,7 @@ import { test, expect, type Browser } from '@playwright/test';
 // and make the exclusion assertions order-dependent. The owner here is
 // E2E_TEST_EMAIL, whose only multi-member trips are the two this file seeds.
 
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 const PB_BASE = process.env.PUBLIC_PB_URL ?? 'http://127.0.0.1:8090';
 
 const OWNER_EMAIL = process.env.E2E_TEST_EMAIL ?? 'e2e@waypoint.local';

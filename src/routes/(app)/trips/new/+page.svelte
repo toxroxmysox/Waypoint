@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { enhance } from '$app/forms';
-	import { validateForm, revealServerError, errorField } from '$lib/shell/actions/validate-form';
+	import { validateForm, revealServerError } from '$lib/shell/actions/validate-form';
+	import ServerErrorAlert from '$lib/ui/ServerErrorAlert.svelte';
 	import { goto } from '$app/navigation';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
@@ -9,22 +10,46 @@
 
 	let { form } = $props();
 
-	let title = $state('');
-	let startDate = $state('');
-	let endDate = $state('');
-	let timezone = $state('');
+	// Seeded from a returned `values` so a no-JS round trip (the #395 heads-up)
+	// keeps what was typed; with JS the component never remounts anyway.
+	const initial = untrack(() => form?.values);
+	let title = $state(initial?.title ?? '');
+	let startDate = $state(initial?.start_date ?? '');
+	let endDate = $state(initial?.end_date ?? '');
+	let timezone = $state(initial?.timezone ?? '');
 	let loading = $state(false);
-	let error = $derived(form?.error ?? '');
 
-	// #375 — a server fail() renders its explanation at the top of the page,
-	// out of sight from the submit button. Scroll it (or the named field) back in.
-	let alertEl = $state<HTMLElement | null>(null);
+	// #395 — same-name heads-up (the caller's own trip, or a co-traveler's).
+	// Rendered beside the submit button and scrolled into view like an error.
+	// Editing the name away from the clash dismisses it.
+	const key = (t: string) => t.toLowerCase().replace(/[^a-z0-9]/g, '');
+	let duplicate = $derived(
+		form?.duplicate && key(title) === key(form.duplicate.title) ? form.duplicate : null
+	);
+	let duplicateEl = $state<HTMLElement | null>(null);
+	// Once per submit result: editing the title can unmount + remount the
+	// heads-up, and re-revealing then would steal focus mid-typing.
+	let revealedFor: unknown = null;
 	$effect(() => {
-		if (form?.error) revealServerError(alertEl, errorField(form));
+		if (form?.duplicate && duplicateEl && form !== revealedFor) {
+			revealedFor = form;
+			revealServerError(duplicateEl);
+		}
 	});
 
+	// While the heads-up is up, its buttons are the decision. Enter in a field
+	// would "click" the form's first submit button — Request an invite / Create
+	// anyway — which the user never chose (#395 review).
+	function guardEnter(formEl: HTMLFormElement) {
+		const onKey = (e: KeyboardEvent) => {
+			if (duplicate && e.key === 'Enter' && e.target instanceof HTMLInputElement) e.preventDefault();
+		};
+		formEl.addEventListener('keydown', onKey);
+		return { destroy: () => formEl.removeEventListener('keydown', onKey) };
+	}
+
 	onMount(() => {
-		timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+		if (!timezone) timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 	});
 
 	let duration = $derived(
@@ -40,14 +65,14 @@
 <NavBar title="New trip" back backHref="/trips" />
 
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8">
-	{#if error}
-		<div bind:this={alertEl} role="alert" class="border-error/30 bg-error/10 text-error-deep mb-4 rounded-md border p-3 text-sm">{error}</div>
-	{/if}
+	<ServerErrorAlert {form} class="mb-4" />
 
 	<Card>
 		<form
 			method="POST"
+			action="?/create"
 			use:validateForm
+			use:guardEnter
 			use:enhance={() => {
 				loading = true;
 				return async ({ update, result }) => {
@@ -57,7 +82,8 @@
 						// form and returns to the trips list (#214 / ADR-0012).
 						await goto(result.location, { replaceState: true });
 					} else {
-						await update();
+						// reset: false — a successful requestInvite must keep what was typed.
+						await update({ reset: false });
 					}
 				};
 			}}
@@ -70,6 +96,7 @@
 					id="title"
 					name="title"
 					required
+					maxlength="200"
 					bind:value={title}
 					class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 					placeholder="Spain 2026"
@@ -84,6 +111,7 @@
 					type="text"
 					id="location_summary"
 					name="location_summary"
+					value={initial?.location_summary ?? ''}
 					class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 					placeholder="Spain & Portugal"
 				/>
@@ -179,9 +207,61 @@
 				<p class="text-ink-muted mt-1 text-xs">Leave blank to use your local timezone.</p>
 			</div>
 
-			<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="w-full">
-				{loading ? 'Creating…' : 'Create trip'}
-			</Button>
+			{#if duplicate}
+				<div
+					bind:this={duplicateEl}
+					data-testid="duplicate-trip"
+					class="border-line bg-surface-2 text-ink rounded-md border p-3 text-sm"
+				>
+					{#if duplicate.kind === 'mine'}
+						<p class="font-medium">You already have a trip called “{duplicate.title}”.</p>
+						<div class="mt-3 flex flex-wrap gap-2">
+							<Button href="/trips/{duplicate.slug}" variant="moss" size="sm">Open it</Button>
+							<Button type="submit" name="confirm_duplicate" value="1" variant="ghost" size="sm" disabled={loading}>
+								Create anyway
+							</Button>
+						</div>
+					{:else}
+						<!-- Someone else's trip: no way in from here. Joining is never
+						     self-serve — the request only notifies its owner + co-owners. -->
+						<p class="font-medium">{duplicate.name} already has a trip called “{duplicate.title}”.</p>
+						{#if duplicate.requested}
+							<p class="text-moss mt-1" data-testid="invite-requested">
+								{duplicate.alreadyRequested ? 'You’ve already asked.' : 'Request sent.'}
+								{duplicate.name} will see it in their notifications and can add you.
+							</p>
+						{:else}
+							<p class="text-ink-soft mt-1">If it’s the same trip, ask to be invited.</p>
+						{/if}
+						<div class="mt-3 flex flex-wrap gap-2">
+							{#if !duplicate.requested}
+								<Button
+									type="submit"
+									formaction="?/requestInvite"
+									name="trip_id"
+									value={duplicate.trip_id}
+									variant="moss"
+									size="sm"
+									disabled={loading}
+								>
+									Request an invite
+								</Button>
+							{/if}
+							<Button type="submit" name="confirm_duplicate" value="1" variant="ghost" size="sm" disabled={loading}>
+								Create anyway
+							</Button>
+						</div>
+					{/if}
+				</div>
+			{/if}
+
+			<!-- While the heads-up is up, its two choices are the decision; a plain
+			     Create here would only re-run the check and show it again. -->
+			{#if !duplicate}
+				<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="w-full">
+					{loading ? 'Creating…' : 'Create trip'}
+				</Button>
+			{/if}
 		</form>
 	</Card>
 </main>

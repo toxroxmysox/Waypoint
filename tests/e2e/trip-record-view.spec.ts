@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // #242 critical path: trip ended → wrap-up banner → launch closeout → walk to the
 // publish step → "Publish now" → finish → the closed Overview is the read-only Record
@@ -10,7 +11,7 @@ import { test, expect } from '@playwright/test';
 // locator to the visible subtree (#239 guardrail). Forms below the fold behind the
 // fixed FAB/BottomNav are occlusion-stolen on a synthetic click (#168) — but the
 // closeout finish button sits in flow, so a normal click is fine here.
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 
 // Create a trip whose dates are entirely in the PAST → derives to `wrap-up` (today >
 // end_date, not archived). Unique stamp so repeated CI runs don't collide on the

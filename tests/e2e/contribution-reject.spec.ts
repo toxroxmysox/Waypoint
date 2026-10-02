@@ -1,4 +1,5 @@
 import { test, expect, type Browser } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // #250 / PRD #202 — Contribution Slice 3: reject a ghost → required note + archive.
 //
@@ -11,7 +12,7 @@ import { test, expect, type Browser } from '@playwright/test';
 // Drives the reject through the in-place Ghost Card affordance on the phase
 // parking lot (#249/#250 canReview). Dual-tree scar: scope to the visible subtree.
 
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 const PB_BASE = process.env.PUBLIC_PB_URL ?? 'http://127.0.0.1:8090';
 
 const EMAILS = {

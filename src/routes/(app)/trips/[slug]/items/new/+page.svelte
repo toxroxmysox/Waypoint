@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { validateForm, revealServerError, errorField } from '$lib/shell/actions/validate-form';
+	import { validateForm } from '$lib/shell/actions/validate-form';
+	import ServerErrorAlert from '$lib/ui/ServerErrorAlert.svelte';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import SaveBar from '$lib/ui/SaveBar.svelte';
 	import UnsavedChangesGuard from '$lib/ui/UnsavedChangesGuard.svelte';
@@ -29,15 +30,6 @@
 	let dirty = $state(false);
 	let submitting = $state(false);
 	let loading = $state(false);
-	let error = $derived(form?.error ?? '');
-
-	// #375 — the SaveBar is pinned to the bottom of a long form, so a server
-	// fail() would otherwise post its explanation off-screen at the top. Keyed on
-	// `form` (a fresh object per submit) so the same error twice still re-reveals.
-	let alertEl = $state<HTMLElement | null>(null);
-	$effect(() => {
-		if (form?.error) revealServerError(alertEl, errorField(form));
-	});
 
 	let submitAsSuggestion = $derived(data.submitAsSuggestion ?? false);
 	let prefill = $derived(data.prefill ?? null);
@@ -97,9 +89,7 @@
 <NavBar title="New item" subtitle={data.trip.title} back {backHref} />
 
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-4">
-	{#if error}
-		<div bind:this={alertEl} role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{error}</div>
-	{/if}
+	<ServerErrorAlert {form} />
 
 	{#if submitAsSuggestion}
 		<div class="border-sky/30 bg-sky/10 text-sky-700 rounded-md border p-3 text-sm">

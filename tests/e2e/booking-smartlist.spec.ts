@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // Issue #50 — Booking Smart List. A lodging item (requires_booking default true)
 // on a day is planned + unbooked, so it projects into the smart list. Checking
 // the row writes booked=true to the Item and it leaves the projection.
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 
 test.describe('Booking Smart List (#50)', () => {
 	test.skip(!process.env.E2E_TEST_EMAIL, 'Set E2E_TEST_EMAIL to run E2E tests');

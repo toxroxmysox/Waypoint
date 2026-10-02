@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // playwright.config.ts boots `npm run build && npm run preview` on :4173.
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 
 // E2E_TEST_EMAIL's first trip is active → loads in trip mode (no "More" tab).
 // Navigate by URL (mode- and viewport-independent) instead of clicking nav chrome.

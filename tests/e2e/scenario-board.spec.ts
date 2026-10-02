@@ -1,4 +1,5 @@
 import { test, expect, type Browser } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // #337 — Candidate Scenarios end to end: pitch → fork → vote + pros/cons → promote,
 // then assert the trip is dated, its phases match the winning sketch, the decision
@@ -6,7 +7,7 @@ import { test, expect, type Browser } from '@playwright/test';
 // e2e harness stands up (PUBLIC_PB_URL); the dev user (E2E_TEST_EMAIL) owns a fresh
 // forming trip minted per-run via the PB dev routes.
 
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 const PB = process.env.PUBLIC_PB_URL ?? 'http://127.0.0.1:8090';
 const EMAIL = process.env.E2E_TEST_EMAIL ?? '';
 

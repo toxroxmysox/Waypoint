@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // #268 / ADR-0016 — confirmation codes are now `kind:'code'` Documents, not the
 // legacy `items.confirmation_codes` json blob. The inline editor UI is unchanged;
@@ -9,7 +10,7 @@ import { test, expect } from '@playwright/test';
 //
 // Same harness as multi-day.spec.ts: dev-login, preview on :4173, isolated PB.
 
-const BASE_URL = 'http://localhost:4173';
+const BASE_URL = E2E_BASE;
 
 test.describe('Confirmation codes → Documents (#268)', () => {
 	test.skip(!process.env.E2E_TEST_EMAIL, 'Set E2E_TEST_EMAIL to run E2E tests');

@@ -33,22 +33,6 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	});
 	const spanningItems = spanningItemsForDate(allMultiDay, days as Day[], dayDate);
 
-	const itemIds = items.map((i) => i.id);
-	const [votes, members] = await Promise.all([
-		itemIds.length > 0
-			? locals.pb.collection('votes').getFullList<Vote>({
-					filter: itemIds.map((id) => `item = "${id}"`).join(' || ')
-				})
-			: Promise.resolve([] as Vote[]),
-		locals.pb.collection('trip_members').getFullList<TripMember>({
-			filter: `trip = "${trip.id}" && removed_at = ""`,
-			expand: 'user'
-		})
-	]);
-
-	const votesByItem: Record<string, Vote[]> = {};
-	for (const v of votes) (votesByItem[v.item] ??= []).push(v);
-
 	const dayPhases = phasesForDay(day, phases);
 
 	const phaseIds = dayPhases.map((p) => p.id);
@@ -59,6 +43,28 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 					sort: 'sort_order'
 				})
 			: [];
+
+	// #394 — votes for the day's items AND its parking-lot ideas: the parking
+	// divider and the desktop Ideas rail both render a sentiment pill from
+	// votesByItem, and ideas are what votes exist to rank. One trip-scoped query
+	// (votes carry `trip`), kept to the shown ids below: an id-per-clause OR chain
+	// grows with the parking lot and would hit PB's filter-length limit.
+	const shownIds = new Set([...items, ...parkingLotItems].map((i) => i.id));
+	const [votes, members] = await Promise.all([
+		shownIds.size > 0
+			? locals.pb
+					.collection('votes')
+					.getFullList<Vote>({ filter: `trip = "${trip.id}"` })
+					.then((all) => all.filter((v) => shownIds.has(v.item)))
+			: Promise.resolve([] as Vote[]),
+		locals.pb.collection('trip_members').getFullList<TripMember>({
+			filter: `trip = "${trip.id}" && removed_at = ""`,
+			expand: 'user'
+		})
+	]);
+
+	const votesByItem: Record<string, Vote[]> = {};
+	for (const v of votes) (votesByItem[v.item] ??= []).push(v);
 
 	return { day, dayItems: items, dayPhases, votesByItem, members: withAvatarUrls(locals.pb, members), parkingLotItems, spanningItems, allDays: days };
 };

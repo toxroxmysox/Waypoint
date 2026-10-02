@@ -19,7 +19,8 @@
 #
 # ENV
 #   PB_BIN    path to the pocketbase binary (default backend/pocketbase)
-#   PB_PORT   port to serve on (default 8097)
+#   PB_PORT   port to serve on (default 8097 + E2E_SLOT)
+#   E2E_SLOT  per-worktree offset for the port + data dir (default 0)
 #
 # EXIT  0 = every harness passed, 1 = at least one failed.
 
@@ -27,11 +28,13 @@ set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PB="${PB_BIN:-$ROOT/backend/pocketbase}"
-PORT="${PB_PORT:-8097}"
-DIR="${PB_DIR:-/tmp/pb-harness}"
+# #384: E2E_SLOT offsets the port and data dir, like scripts/e2e-isolated.sh.
+SLOT="${E2E_SLOT:-0}"
+PORT="${PB_PORT:-$((8097 + SLOT))}"
+DIR="${PB_DIR:-/tmp/pb-harness-slot${SLOT}}"
 PB_URL="http://127.0.0.1:${PORT}"
 
-ALL=(rules members invites suggestions money)
+ALL=(rules members invites suggestions money tripnames timestamps)
 SELECTED=("$@")
 [ ${#SELECTED[@]} -eq 0 ] && SELECTED=("${ALL[@]}")
 

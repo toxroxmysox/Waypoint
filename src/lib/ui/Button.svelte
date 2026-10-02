@@ -15,6 +15,9 @@
 		icon,
 		class: klass = '',
 		testid,
+		name,
+		value,
+		formaction,
 		children
 	}: {
 		variant?: Variant;
@@ -28,6 +31,11 @@
 		class?: string;
 		/** Optional data-testid passthrough for E2E selectors. */
 		testid?: string;
+		/** Submitter name/value — sent with the form when this button submits it. */
+		name?: string;
+		value?: string;
+		/** Submit to a different (named) form action than the form's own. */
+		formaction?: string;
 		children: Snippet;
 	} = $props();
 
@@ -84,6 +92,9 @@
 {:else}
 	<button
 		{type}
+		{name}
+		{value}
+		{formaction}
 		{onclick}
 		data-testid={testid}
 		disabled={isDisabled}

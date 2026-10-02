@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // #361 — the in-app back chevron is ORIGIN-AWARE, not chronological.
 //
@@ -17,7 +18,7 @@ import { test, expect, type Page } from '@playwright/test';
 // as the chevron quietly going to the wrong place. That is the failure mode
 // this file exists to catch.
 
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 
 async function openFirstTrip(page: Page): Promise<string> {
 	await page.locator('a[href*="/trips/"]').first().click();

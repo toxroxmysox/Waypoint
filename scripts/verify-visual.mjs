@@ -43,8 +43,11 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 loadEnv({ path: path.join(ROOT, '.env.local') });
 loadEnv({ path: path.join(ROOT, '.env') });
 
-const PB_PORT = Number(process.env.VISUAL_PB_PORT ?? 8097);
-const APP_PORT = Number(process.env.VISUAL_APP_PORT ?? 5199);
+// #384: E2E_SLOT offsets both ports (and the PB data dir, below) so worktrees
+// on different slots can run this at the same time. Slot 0 = :8097 / :5199.
+const SLOT = Number(process.env.E2E_SLOT ?? 0);
+const PB_PORT = Number(process.env.VISUAL_PB_PORT ?? 8097 + SLOT);
+const APP_PORT = Number(process.env.VISUAL_APP_PORT ?? 5199 + SLOT);
 const PB_URL = `http://127.0.0.1:${PB_PORT}`;
 const APP_URL = `http://127.0.0.1:${APP_PORT}`;
 
@@ -192,7 +195,8 @@ reclaim(APP_PORT);
 
 console.log(`→ isolated PocketBase on :${PB_PORT}`);
 launch('pocketbase', 'bash', [path.join(ROOT, 'scripts', 'e2e-clean-pb.sh')], {
-	PB_PORT: String(PB_PORT)
+	PB_PORT: String(PB_PORT),
+	PB_DIR: process.env.PB_DIR ?? `/tmp/pb-visual-slot${SLOT}`
 });
 await waitFor(`${PB_URL}/api/health`, 'PocketBase', 45_000);
 

@@ -1,4 +1,5 @@
 import { test, expect, type Browser } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // Trip-Mode Money summary (#227) E2E + visual verification.
 // Requires: WAYPOINT_DEV_MODE=true + E2E_TEST_EMAILS (whitelisted bypass emails).
@@ -12,7 +13,7 @@ import { test, expect, type Browser } from '@playwright/test';
 // couple of unbooked items. Verifies the per-person glance shows BOTH N1 (left to
 // spend) and N2 (left for unplanned) and screenshots it at 375px (clay) + desktop.
 
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 const PB_BASE = process.env.PUBLIC_PB_URL ?? 'http://127.0.0.1:8090';
 const SLUG = 'e2e-money-227';
 

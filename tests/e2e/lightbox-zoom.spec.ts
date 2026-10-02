@@ -1,5 +1,6 @@
 import { test, expect, type Browser, type CDPSession, type Page } from '@playwright/test';
 import { deflateSync, crc32 } from 'node:zlib';
+import { E2E_BASE } from './e2e-env';
 
 // DocumentLightbox gesture contract — #371.
 //
@@ -19,7 +20,7 @@ import { deflateSync, crc32 } from 'node:zlib';
 // sheet-gestures.spec.ts: the global config pins 'reduce', which would hide the
 // slide/settle transitions this file needs to survive.
 
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 const PB_BASE = process.env.PUBLIC_PB_URL ?? 'http://127.0.0.1:8090';
 
 const OWNER = 'rules-owner@e2e.test';

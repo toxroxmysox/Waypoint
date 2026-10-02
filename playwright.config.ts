@@ -1,4 +1,5 @@
 import { defineConfig } from '@playwright/test';
+import { e2ePort, e2eBase } from './tests/e2e/e2e-env';
 import { config } from 'dotenv';
 
 // Match Vite/SvelteKit behavior: auto-load .env.local so tests see
@@ -6,10 +7,22 @@ import { config } from 'dotenv';
 config({ path: '.env.local' });
 config({ path: '.env' });
 
+// #384: resolved after dotenv, then pinned into the env so every worker (and
+// tests/e2e/e2e-env.ts's E2E_BASE there) agrees with the webServer port.
+const E2E_PORT = e2ePort();
+process.env.E2E_PORT = String(E2E_PORT);
+const E2E_BASE = e2eBase();
+
 export default defineConfig({
 	// reuseExistingServer: reuse a preview already on :4173 (fast local iteration);
 	// CI / e2e-isolated.sh have none pre-started, so Playwright builds+serves fresh.
-	webServer: { command: 'npm run build && npm run preview', port: 4173, reuseExistingServer: !process.env.CI },
+	// #384: the port comes from E2E_PORT (scripts/e2e-isolated.sh derives it from
+	// E2E_SLOT), so worktrees on different slots never adopt each other's preview.
+	webServer: {
+		command: `npm run build && npm run preview -- --port ${E2E_PORT} --strictPort`,
+		port: E2E_PORT,
+		reuseExistingServer: !process.env.CI
+	},
 	testMatch: '**/*.spec.{ts,js}',
 	testDir: 'tests/e2e',
 	// Seed a deterministic active baseline trip for E2E_TEST_EMAIL before any
@@ -22,5 +35,5 @@ export default defineConfig({
 	// fly) are gated on `prefers-reduced-motion`; forcing it 'reduce' makes sheets
 	// open instantly so tests don't race the ~250ms animation and click a control
 	// that is still mid-flight (and momentarily off-screen).
-	use: { reducedMotion: 'reduce', screenshot: 'only-on-failure', trace: 'retain-on-failure' }
+	use: { baseURL: E2E_BASE, reducedMotion: 'reduce', screenshot: 'only-on-failure', trace: 'retain-on-failure' }
 });

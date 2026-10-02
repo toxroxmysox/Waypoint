@@ -1,4 +1,5 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // BottomSheet gesture + guard contract — #365 (grabber, drag-to-dismiss, back
 // swallowing) and #370 (dirty guard).
@@ -27,7 +28,7 @@ import { test, expect, type Browser, type Page } from '@playwright/test';
 // behaviour — that would throw away the contract.
 const BACK_SWALLOWING_ENABLED: boolean = true;
 
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 const PB_BASE = process.env.PUBLIC_PB_URL ?? 'http://127.0.0.1:8090';
 
 const OWNER = 'rules-owner@e2e.test';

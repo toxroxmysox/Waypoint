@@ -140,6 +140,8 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 			// the Pending invites section had never rendered for anyone (found
 			// while building #352, which needs it to show the picked invite).
 			// expires_at is created + a fixed 7 days, so it orders identically.
+			// 0069 (#390) has since added `created`, but invites that predate it
+			// keep it blank, so expires_at stays the reliable key.
 			sort: '-expires_at'
 		});
 	} catch {

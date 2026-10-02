@@ -1,4 +1,5 @@
 import { test, expect, type Browser, type CDPSession, type Page } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // Whole-card drag on the day timeline — #353.
 //
@@ -17,7 +18,7 @@ import { test, expect, type Browser, type CDPSession, type Page } from '@playwri
 // no-op gesture "fix" by reasoning from code; this drives the gesture at 375px.
 // Same reasoning (and setup) as tests/e2e/lightbox-zoom.spec.ts.
 
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 const PB_BASE = process.env.PUBLIC_PB_URL ?? 'http://127.0.0.1:8090';
 const SLUG = 'e2e-drag-353';
 

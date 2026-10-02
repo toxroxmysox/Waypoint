@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { enhance } from '$app/forms';
-	import { validateForm, revealServerError, errorField } from '$lib/shell/actions/validate-form';
+	import { validateForm } from '$lib/shell/actions/validate-form';
+	import ServerErrorAlert from '$lib/ui/ServerErrorAlert.svelte';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
 	import Button from '$lib/ui/Button.svelte';
@@ -17,15 +18,7 @@
 	// class as the money-units checkbox race — cerebrum 2026-07-02).
 	let digestOn = $state(untrack(() => !data.membership.digest_opt_out));
 	let confirmDelete = $state(false);
-	let error = $derived(form?.error ?? '');
 
-	// #375 — a server fail() renders its explanation at the top of a long
-	// settings page, out of sight from the Save button. Scroll it (or the named
-	// field) back into view and put focus on it.
-	let alertEl = $state<HTMLElement | null>(null);
-	$effect(() => {
-		if (form?.error) revealServerError(alertEl, errorField(form));
-	});
 	let success = $derived(form?.success ?? false);
 	// #176 — Settings is an owner console: non-owner/co-owner sees read-only trip
 	// details, no forms, no archive controls, no danger zone. (Actions still 403
@@ -35,9 +28,7 @@
 
 <NavBar title="Settings" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}" />
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-6">
-	{#if error}
-		<div bind:this={alertEl} role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{error}</div>
-	{/if}
+	<ServerErrorAlert {form} />
 
 	{#if success}
 		<div class="border-moss/30 bg-moss-tint text-moss rounded-md border p-3 text-sm">Trip updated.</div>

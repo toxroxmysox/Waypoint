@@ -12,10 +12,17 @@
 #
 # Usage:  pnpm test:e2e:clean            # whole suite, isolated
 #         pnpm test:e2e:clean some.spec  # extra args pass through to playwright
+#         E2E_SLOT=1 pnpm test:e2e:clean # second worktree: PB :8098, preview :4174
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PORT="${PB_PORT:-8097}"
+# #384 — E2E_SLOT=N gives this run its own PB port, PB data dir and preview port
+# (all offset by N), so worktrees on different slots can run the suite at once.
+# Slot 0 is the historical :8097 / :4173. Explicit PB_PORT / E2E_PORT / PB_DIR win.
+SLOT="${E2E_SLOT:-0}"
+PORT="${PB_PORT:-$((8097 + SLOT))}"
+export PB_DIR="${PB_DIR:-/tmp/pb67-slot${SLOT}}"
+export E2E_PORT="${E2E_PORT:-$((4173 + SLOT))}"
 PB_URL="http://127.0.0.1:${PORT}"
 
 # Stand up a fresh, migrated PB on :8097 in the background. e2e-clean-pb.sh

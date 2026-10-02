@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // #269 Trip Memory — capture + review critical path (ADR-0007).
 //
@@ -14,7 +15,7 @@ import { test, expect } from '@playwright/test';
 // AppShell renders +page.svelte TWICE (mobile + desktop) → scope every
 // assertion (incl. negatives) to the visible tree.
 
-const BASE_URL = 'http://localhost:4173';
+const BASE_URL = E2E_BASE;
 const THOUGHT = 'E2E memory: the harbour at blue hour.';
 
 // Pin the trip to a fixed-offset timezone where trip-local "now" lands at ~9pm,

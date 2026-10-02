@@ -1,4 +1,5 @@
 import { test, expect, type Browser } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // M3 Money E2E.
 // Requires: PB on :8090 with WAYPOINT_DEV_MODE=true + E2E_TEST_EMAILS set.
@@ -12,7 +13,7 @@ import { test, expect, type Browser } from '@playwright/test';
 //   - Settle up flow accessible
 //   - Mobile responsive at 375px for expenses + budget
 
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 // Direct-PB calls (auth-bypass + rules-fixture) target the same instance the
 // app talks to. Configurable so the suite can run against an isolated PB
 // (e.g. a clean per-run instance in CI) without editing the spec.

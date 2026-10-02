@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // Issue #52 — Trip Mode checklist check-off. A checklist created in Planning is
 // checkable from Trip Mode's merged Now surface (#244; read + check only); the
 // check persists back to Planning. No create/rename/assign/delete in Trip Mode.
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 
 test.describe('Trip Mode checklist check-off (#52)', () => {
 	test.skip(!process.env.E2E_TEST_EMAIL, 'Set E2E_TEST_EMAIL to run E2E tests');

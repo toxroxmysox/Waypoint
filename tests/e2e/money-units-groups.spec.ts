@@ -1,4 +1,5 @@
 import { test, expect, type Browser } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // #332 — Money Units "Groups" sub-tab lifecycle.
 // Requires: PB on :8090 (or an isolated instance via PUBLIC_PB_URL) with
@@ -13,7 +14,7 @@ import { test, expect, type Browser } from '@playwright/test';
 //   - Create + Delete → empty state
 // Dual-tree layout → scope every content/form locator to the visible subtree.
 
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 const PB_BASE = process.env.PUBLIC_PB_URL ?? 'http://127.0.0.1:8090';
 
 const EMAILS = {

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // #245 Door 1 — proactive "ideas for now". When today's Focus is free-time /
 // nothing-else-planned, the merged Now surfaces the CURRENT PHASE's parked ideas
@@ -13,7 +14,7 @@ import { test, expect } from '@playwright/test';
 // AppShell renders +page.svelte TWICE (mobile + desktop) → scope every assertion
 // (incl. negatives) to the visible tree.
 
-const BASE_URL = 'http://localhost:4173';
+const BASE_URL = E2E_BASE;
 const IDEA_TITLE = 'Sunset rooftop drinks';
 
 // Pin the trip to a fixed-offset timezone where trip-local "now" lands at ~noon,

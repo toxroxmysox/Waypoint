@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // #278 First-run for the signed-up-but-trip-less user (grill 2026-07-05, BINDING).
 // The bare "/trips" empty state is a WARM ORIENTATION, not marketing:
@@ -12,7 +13,7 @@ import { test, expect } from '@playwright/test';
 // genuinely owns zero trips. `rules-nonmember@e2e.test` is the harness identity that
 // is deliberately never made a member of any trip — the natural trip-less user.
 
-const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:4173';
+const BASE = E2E_BASE;
 const TRIP_LESS_EMAIL = 'rules-nonmember@e2e.test';
 
 test.describe('#278 first-run — trip-less user', () => {

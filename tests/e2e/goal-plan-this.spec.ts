@@ -1,4 +1,5 @@
 import { test, expect, type Browser } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // #263 — Goal → "Plan this" pathway (items/new?goal={id}).
 //
@@ -15,7 +16,7 @@ import { test, expect, type Browser } from '@playwright/test';
 // Dual-tree scar (cerebrum): the item-form title input has a duplicate id across
 // the responsive trees, so target the visible subtree via input[name=...]:visible.
 
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 const PB_BASE = process.env.PUBLIC_PB_URL ?? 'http://127.0.0.1:8090';
 
 const EMAILS = {

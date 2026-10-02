@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { validateForm, revealServerError, errorField } from '$lib/shell/actions/validate-form';
+	import { validateForm } from '$lib/shell/actions/validate-form';
+	import ServerErrorAlert from '$lib/ui/ServerErrorAlert.svelte';
 	import { goto } from '$app/navigation';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import SaveBar from '$lib/ui/SaveBar.svelte';
@@ -16,14 +17,6 @@
 	let loading = $state(false);
 	let deleting = $state(false);
 	let confirmDelete = $state(false);
-	let error = $derived(form?.error ?? '');
-
-	// #375 — the SaveBar is pinned to the bottom of a long form, so a server
-	// fail() would otherwise post its explanation off-screen at the top.
-	let alertEl = $state<HTMLElement | null>(null);
-	$effect(() => {
-		if (form?.error) revealServerError(alertEl, errorField(form));
-	});
 
 	// #367 — the navigation guard and its beforeunload twin now live in
 	// UnsavedChangesGuard (rendered at the bottom of this page), which replaces
@@ -69,9 +62,7 @@
 />
 
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-4">
-	{#if error}
-		<div bind:this={alertEl} role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{error}</div>
-	{/if}
+	<ServerErrorAlert {form} />
 
 	<form
 		method="POST"

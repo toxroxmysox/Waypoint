@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { E2E_BASE } from './e2e-env';
 
 // Issue #53 (AC3) — Closeout reviews the parent Item (status → done) but leaves
 // its Checklist untouched. An item with an inline checklist is marked done via
 // Closeout; the checklist + its task survive unchanged.
-const BASE = 'http://localhost:4173';
+const BASE = E2E_BASE;
 
 test.describe('Closeout leaves checklists untouched (#53)', () => {
 	test.skip(!process.env.E2E_TEST_EMAIL, 'Set E2E_TEST_EMAIL to run E2E tests');
