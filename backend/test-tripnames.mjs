@@ -185,6 +185,7 @@ async function main() {
 
 	r = await request(tok.B, thai);
 	assert('co-traveler B requests → 200, one notification sent', r.status === 200 && r.data?.sent === 1, r);
+	assert('response names the owner B knows + the trip title', r.data?.name === 'User A' && r.data?.title === 'Thailand', r.data);
 	let notes = await ownerNotes();
 	assert(
 		'owner gets “User B asked to join “Thailand”” linking to Members',
@@ -209,6 +210,38 @@ async function main() {
 	assert('archived trip → 400', r.status === 400, r);
 	r = await request(null, thai);
 	assert('unauthenticated → 401', r.status === 401, r.status);
+
+	console.log('\n— only actionable links; never after a removal; lenient last day');
+	const yesterday = iso(plusDays(-1));
+	must('Laos (ended yesterday UTC)', await createTrip(tok.A, id.A, 'Laos', 'laos', { start_date: iso(plusDays(-5)), end_date: yesterday }));
+	r = await sameName(tok.B, 'Laos');
+	assert('a trip whose last day was yesterday (UTC) still counts — west-of-UTC grace', r.data?.co_travelers?.length === 1, r);
+	must('Cuba (ended 2 days ago)', await createTrip(tok.A, id.A, 'Cuba', 'cuba', { start_date: iso(plusDays(-6)), end_date: iso(plusDays(-2)) }));
+	r = await sameName(tok.B, 'Cuba');
+	assert('…but two days ago is over', r.data?.co_travelers?.length === 0, r);
+
+	// Bali: A owns it; B was a member and got REMOVED. B still shares "Shared base" with A.
+	const bali = must('Bali', await createTrip(tok.A, id.A, 'Bali', 'bali'));
+	must('B on Bali, removed', await pb('POST', '/api/collections/trip_members/records', {
+		token: admin,
+		body: { trip: bali.id, user: id.B, role: 'traveler', removed_at: iso(plusDays(-1)) }
+	}));
+	r = await sameName(tok.B, 'Bali');
+	assert('a trip B was removed from is never offered back', r.data?.co_travelers?.length === 0 && r.data?.mine?.length === 0, r);
+	r = await request(tok.B, bali.id);
+	assert('…and B can’t request to rejoin it → 403', r.status === 403, r);
+
+	// Kenya: D owns it, A is only a TRAVELER there. B's only link is via A, who
+	// can't invite — a request would be a dead end, so it isn't offered.
+	const kenya = must('Kenya', await createTrip(tok.D, id.D, 'Kenya', 'kenya'));
+	must('A travels on Kenya', await pb('POST', '/api/collections/trip_members/records', {
+		token: admin,
+		body: { trip: kenya.id, user: id.A, role: 'traveler' }
+	}));
+	r = await sameName(tok.B, 'Kenya');
+	assert('a trip reached only via a plain traveler is not offered', r.data?.co_travelers?.length === 0, r);
+	r = await request(tok.B, kenya.id);
+	assert('…and requesting it (forged id) → 403', r.status === 403, r);
 
 	console.log(`\n${pass} passed, ${fail} failed`);
 	exit(fail === 0 ? 0 : 1);

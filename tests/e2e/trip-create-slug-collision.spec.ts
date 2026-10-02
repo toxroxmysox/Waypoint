@@ -82,6 +82,12 @@ test.describe('Trip create: same name across users (#395)', () => {
 		await expect(traveler.page.getByText('Something went wrong')).toHaveCount(0);
 		// No way into someone else's trip from here — only a request to its owner.
 		await expect(warn.getByRole('link', { name: 'Open it' })).toHaveCount(0);
+		// Enter in a field must not "click" the first submit button (Request an
+		// invite) — the user hasn't chosen yet.
+		await traveler.page.locator('input[name="location_summary"]').press('Enter');
+		await traveler.page.waitForTimeout(800);
+		await expect(traveler.page.getByTestId('invite-requested')).toHaveCount(0);
+		await expect(traveler.page).toHaveURL(`${BASE}/trips/new`);
 		await warn.getByRole('button', { name: 'Request an invite' }).click();
 		await expect(traveler.page.getByTestId('invite-requested')).toContainText('Request sent');
 		await expect(warn.getByRole('button', { name: 'Request an invite' })).toHaveCount(0);

@@ -281,7 +281,8 @@ routerAdd('GET', '/api/notifications/list', (e) => {
 		records = [];
 	}
 
-	const unread = records.filter((r) => !r.get('read_at')).length;
+	// getString: goja's get() returns a TRUTHY DateTime for an empty date.
+	const unread = records.filter((r) => !r.getString('read_at')).length;
 
 	const items = records.map((r) => ({
 		id: r.id,
@@ -289,7 +290,7 @@ routerAdd('GET', '/api/notifications/list', (e) => {
 		type: r.get('type'),
 		body: r.get('body'),
 		link: r.get('link'),
-		read_at: r.get('read_at') || null,
+		read_at: r.getString('read_at') || null,
 		created: r.getString('created')
 	}));
 

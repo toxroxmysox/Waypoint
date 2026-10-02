@@ -46,13 +46,16 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 
 	// #394 — votes for the day's items AND its parking-lot ideas: the parking
 	// divider and the desktop Ideas rail both render a sentiment pill from
-	// votesByItem, and ideas are what votes exist to rank.
-	const itemIds = [...items, ...parkingLotItems].map((i) => i.id);
+	// votesByItem, and ideas are what votes exist to rank. One trip-scoped query
+	// (votes carry `trip`), kept to the shown ids below: an id-per-clause OR chain
+	// grows with the parking lot and would hit PB's filter-length limit.
+	const shownIds = new Set([...items, ...parkingLotItems].map((i) => i.id));
 	const [votes, members] = await Promise.all([
-		itemIds.length > 0
-			? locals.pb.collection('votes').getFullList<Vote>({
-					filter: itemIds.map((id) => `item = "${id}"`).join(' || ')
-				})
+		shownIds.size > 0
+			? locals.pb
+					.collection('votes')
+					.getFullList<Vote>({ filter: `trip = "${trip.id}"` })
+					.then((all) => all.filter((v) => shownIds.has(v.item)))
 			: Promise.resolve([] as Vote[]),
 		locals.pb.collection('trip_members').getFullList<TripMember>({
 			filter: `trip = "${trip.id}" && removed_at = ""`,

@@ -34,7 +34,7 @@ GUARDRAILS
 VERIFY (all green before reporting done)
 - pnpm check → 0 errors
 - pnpm test:unit
-- Backend touched: PUBLIC_PB_URL=http://127.0.0.1:8097 pnpm test:rules — a red cell on a fresh PB is a real regression
+- Backend touched: `bash scripts/backend-harnesses.sh` (fresh PB per harness, on your slot) — a red cell on a fresh PB is a real regression
 - UI touched: screenshots at 375px + desktop, attached to the PR
 
 REPORT BACK

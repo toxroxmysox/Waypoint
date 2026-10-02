@@ -27,9 +27,26 @@
 		form?.duplicate && key(title) === key(form.duplicate.title) ? form.duplicate : null
 	);
 	let duplicateEl = $state<HTMLElement | null>(null);
+	// Once per submit result: editing the title can unmount + remount the
+	// heads-up, and re-revealing then would steal focus mid-typing.
+	let revealedFor: unknown = null;
 	$effect(() => {
-		if (form?.duplicate) revealServerError(duplicateEl);
+		if (form?.duplicate && duplicateEl && form !== revealedFor) {
+			revealedFor = form;
+			revealServerError(duplicateEl);
+		}
 	});
+
+	// While the heads-up is up, its buttons are the decision. Enter in a field
+	// would "click" the form's first submit button — Request an invite / Create
+	// anyway — which the user never chose (#395 review).
+	function guardEnter(formEl: HTMLFormElement) {
+		const onKey = (e: KeyboardEvent) => {
+			if (duplicate && e.key === 'Enter' && e.target instanceof HTMLInputElement) e.preventDefault();
+		};
+		formEl.addEventListener('keydown', onKey);
+		return { destroy: () => formEl.removeEventListener('keydown', onKey) };
+	}
 
 	onMount(() => {
 		if (!timezone) timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -55,6 +72,7 @@
 			method="POST"
 			action="?/create"
 			use:validateForm
+			use:guardEnter
 			use:enhance={() => {
 				loading = true;
 				return async ({ update, result }) => {
@@ -78,6 +96,7 @@
 					id="title"
 					name="title"
 					required
+					maxlength="200"
 					bind:value={title}
 					class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 					placeholder="Spain 2026"
@@ -208,7 +227,8 @@
 						<p class="font-medium">{duplicate.name} already has a trip called “{duplicate.title}”.</p>
 						{#if duplicate.requested}
 							<p class="text-moss mt-1" data-testid="invite-requested">
-								Request sent. {duplicate.name} will see it in their notifications and can add you.
+								{duplicate.alreadyRequested ? 'You’ve already asked.' : 'Request sent.'}
+								{duplicate.name} will see it in their notifications and can add you.
 							</p>
 						{:else}
 							<p class="text-ink-soft mt-1">If it’s the same trip, ask to be invited.</p>

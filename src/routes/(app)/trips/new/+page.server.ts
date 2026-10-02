@@ -81,7 +81,7 @@ export const actions: Actions = {
 				return fail(409, {
 					duplicate: mine
 						? { kind: 'mine' as const, ...mine }
-						: { kind: 'co_traveler' as const, ...coTraveler!, requested: false },
+						: { kind: 'co_traveler' as const, ...coTraveler!, requested: false, alreadyRequested: false },
 					values: formValues(data)
 				});
 			}
@@ -113,33 +113,44 @@ export const actions: Actions = {
 			// `status`, and rethrowing it turned a failed create into a 500 page.
 			if (isRedirect(err)) throw err;
 			console.error('[trips/new] create failed:', err);
+			// A PB field rejection is deterministic — name the field, don't say "try again".
+			const fields = (err as { response?: { data?: Record<string, { message?: string }> } }).response?.data;
+			const field = fields && Object.keys(fields)[0];
+			if (field && fields[field]?.message) {
+				return fail(400, { error: `${field.replace(/_/g, ' ')}: ${fields[field].message}`, field });
+			}
 			return fail(500, { error: 'Couldn’t create the trip. Please try again.' });
 		}
 	},
 
 	// #395 — "Request an invite" from the co-traveler heads-up. Joining someone
 	// else's trip is never self-serve: the PB route only notifies its owner and
-	// co-owners (and re-validates the co-traveler link itself). The heads-up is
-	// re-derived from the title so it stays up, now showing the request as sent.
+	// co-owners, and re-validates the co-traveler link itself (trip_id comes from
+	// the client). The heads-up stays up, now showing the request as sent.
 	requestInvite: async ({ request, locals }) => {
 		const data = await request.formData();
 		const values = formValues(data);
 		const tripId = data.get('trip_id')?.toString() ?? '';
-		const same = await findSameName(locals.pb, values.title);
-		const match = same?.co_travelers.find((c) => c.trip_id === tripId);
-		if (!match) {
-			return fail(400, { error: 'That trip can’t take a request right now.', values });
-		}
 		try {
-			await locals.pb.send('/api/trips/request-invite', { method: 'POST', body: { trip_id: tripId } });
+			const res = await locals.pb.send<{ sent: number; title: string; name: string }>(
+				'/api/trips/request-invite',
+				{ method: 'POST', body: { trip_id: tripId } }
+			);
+			return {
+				duplicate: {
+					kind: 'co_traveler' as const,
+					trip_id: tripId,
+					title: res.title,
+					name: res.name,
+					requested: true,
+					// An unread request from you is already waiting — not re-sent.
+					alreadyRequested: res.sent === 0
+				},
+				values
+			};
 		} catch (err) {
 			console.error('[trips/new requestInvite] failed:', err);
-			return fail(500, {
-				duplicate: { kind: 'co_traveler' as const, ...match, requested: false },
-				error: 'Couldn’t send the request. Please try again.',
-				values
-			});
+			return fail(400, { error: 'Couldn’t send that request. Please try again.', values });
 		}
-		return { duplicate: { kind: 'co_traveler' as const, ...match, requested: true }, values };
 	}
 };

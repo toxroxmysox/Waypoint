@@ -1,11 +1,17 @@
 import { defineConfig } from '@playwright/test';
-import { E2E_PORT, E2E_BASE } from './tests/e2e/e2e-env';
+import { e2ePort, e2eBase } from './tests/e2e/e2e-env';
 import { config } from 'dotenv';
 
 // Match Vite/SvelteKit behavior: auto-load .env.local so tests see
 // WAYPOINT_DEV_MODE and E2E_TEST_EMAIL without requiring an inline export.
 config({ path: '.env.local' });
 config({ path: '.env' });
+
+// #384: resolved after dotenv, then pinned into the env so every worker (and
+// tests/e2e/e2e-env.ts's E2E_BASE there) agrees with the webServer port.
+const E2E_PORT = e2ePort();
+process.env.E2E_PORT = String(E2E_PORT);
+const E2E_BASE = e2eBase();
 
 export default defineConfig({
 	// reuseExistingServer: reuse a preview already on :4173 (fast local iteration);

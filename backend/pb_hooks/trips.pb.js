@@ -119,14 +119,21 @@ onRecordCreateRequest((e) => {
 
 // #395 — same-name heads-up on create.
 // GET /api/trips/same-name?title=T
-// Returns { mine: [{ slug, title }], co_travelers: [{ title, name }] } — current
-// trips whose title normalises to the same slug as T that are either the
-// caller's own, or a co-traveler's (an active real-user member of a trip the
-// caller is actively on; the #352 definition). Most same-name creates are two
-// people starting the SAME trip, so the form warns instead of silently making a
-// second one. Strangers' trips are never reported. Ended and archived trips are
-// skipped — a past "Thailand" shouldn't nag a new one. Hook context reads with
-// app privileges because the co-traveler's trip is invisible to the caller.
+// Returns { mine: [{ slug, title }], co_travelers: [{ trip_id, title, name }] }:
+// current trips whose title normalises to the same slug as T that are either
+// the caller's own, or OWNED/CO-OWNED by a co-traveler (an active real-user
+// member of a trip the caller is actively on; #352). Most same-name creates are
+// two people starting the SAME trip, so the form warns instead of silently
+// making a second one.
+// - Only owner/co-owner links count: they are who a request notifies, and the
+//   #352 picker on their Members page lists the caller (a shared trip), so a
+//   request is actionable. A trip reached only via a plain traveler is skipped.
+// - Never: a stranger's trip, a trip the caller was REMOVED from (no nagging the
+//   owners who removed them), an archived trip, or one that has ended.
+// - "Ended" is lenient by a day: the cutoff is yesterday in UTC, so a trip's
+//   last day still counts while it is that day anywhere west of UTC.
+// Hook context reads with app privileges — the matched trip is invisible to
+// the caller under the trips view rule.
 routerAdd('GET', '/api/trips/same-name', (e) => {
 	const auth = e.auth;
 	if (!auth) throw new UnauthorizedError('Authentication required');
@@ -145,42 +152,50 @@ routerAdd('GET', '/api/trips/same-name', (e) => {
 	const target = norm(raw);
 	if (!target) return e.json(200, { mine: [], co_travelers: [] });
 
-	const today = new Date().toISOString().slice(0, 10);
+	const cutoff = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
 	const isCurrentMatch = (trip) => {
 		if (trip.getBool('archived')) return false;
 		const end = trip.getString('end_date').slice(0, 10);
-		if (end && end < today) return false;
+		if (end && end < cutoff) return false;
 		return norm(trip.getString('title')) === target;
 	};
-	const activeMemberships = (filter, params) => {
+	const memberships = (filter, params) => {
 		try {
 			return e.app.findRecordsByFilter('trip_members', filter, '', 0, 0, params);
 		} catch (_) {
 			return [];
 		}
 	};
+	const tripCache = {};
 	const loadTrip = (id) => {
-		try {
-			return e.app.findRecordById('trips', id);
-		} catch (_) {
-			return null;
+		if (!(id in tripCache)) {
+			try {
+				tripCache[id] = e.app.findRecordById('trips', id);
+			} catch (_) {
+				tripCache[id] = null;
+			}
 		}
+		return tripCache[id];
 	};
 
 	const mine = [];
 	const myTrips = {};
-	for (const m of activeMemberships('user = {:u} && removed_at = ""', { u: auth.id })) {
+	for (const m of memberships('user = {:u} && removed_at = ""', { u: auth.id })) {
 		const tripId = m.getString('trip');
 		if (!tripId || myTrips[tripId]) continue;
 		myTrips[tripId] = true;
 		const trip = loadTrip(tripId);
 		if (trip && isCurrentMatch(trip)) mine.push({ slug: trip.getString('slug'), title: trip.getString('title') });
 	}
+	const removedFrom = {};
+	for (const m of memberships('user = {:u} && removed_at != ""', { u: auth.id })) {
+		removedFrom[m.getString('trip')] = true;
+	}
 
 	// Co-travelers: active, real-user members of my trips, minus me.
 	const coTravelers = {};
 	for (const tripId of Object.keys(myTrips)) {
-		const others = activeMemberships('trip = {:t} && user != "" && user != {:u} && removed_at = ""', {
+		const others = memberships('trip = {:t} && user != "" && user != {:u} && removed_at = ""', {
 			t: tripId,
 			u: auth.id
 		});
@@ -190,9 +205,13 @@ routerAdd('GET', '/api/trips/same-name', (e) => {
 	const found = {};
 	const out = [];
 	for (const userId of Object.keys(coTravelers)) {
-		for (const m of activeMemberships('user = {:u} && removed_at = ""', { u: userId })) {
+		const led = memberships(
+			'user = {:u} && removed_at = "" && (role = "owner" || role = "co_owner")',
+			{ u: userId }
+		);
+		for (const m of led) {
 			const tripId = m.getString('trip');
-			if (!tripId || myTrips[tripId] || found[tripId]) continue;
+			if (!tripId || myTrips[tripId] || removedFrom[tripId] || found[tripId]) continue;
 			const trip = loadTrip(tripId);
 			if (!trip || !isCurrentMatch(trip)) continue;
 			found[tripId] = true;
@@ -212,12 +231,13 @@ routerAdd('GET', '/api/trips/same-name', (e) => {
 
 // #395 — "Request an invite" from the same-name heads-up. Joining is never
 // self-serve: this only notifies the trip's owner + co-owners, who invite from
-// Members (the #352 co-traveler picker needs no email).
+// Members (the #352 co-traveler picker lists the caller, no email needed).
 // POST /api/trips/request-invite  { trip_id }
 // Re-validates everything /api/trips/same-name implied — the id comes from the
-// client: the trip is current, the caller is NOT on it, and the caller shares
-// an active trip with one of its active members. An unread request from the
-// same person isn't repeated. Returns { sent: n }.
+// client: the trip is current, the caller is neither on it nor removed from it,
+// and the caller shares an active trip with one of its active owners/co-owners.
+// An unread request from the same person isn't repeated.
+// Returns { sent, title, name } — name = the owner/co-owner the caller knows.
 routerAdd('POST', '/api/trips/request-invite', (e) => {
 	const auth = e.auth;
 	if (!auth) throw new UnauthorizedError('Authentication required');
@@ -232,13 +252,14 @@ routerAdd('POST', '/api/trips/request-invite', (e) => {
 	} catch (_) {
 		throw new NotFoundError('Trip not found');
 	}
-	const today = new Date().toISOString().slice(0, 10);
+	// Same lenient cutoff as same-name: yesterday in UTC.
+	const cutoff = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
 	const end = trip.getString('end_date').slice(0, 10);
-	if (trip.getBool('archived') || (end && end < today)) {
+	if (trip.getBool('archived') || (end && end < cutoff)) {
 		throw new BadRequestError('That trip is no longer open to requests.');
 	}
 
-	const active = (filter, params) => {
+	const memberships = (filter, params) => {
 		try {
 			return e.app.findRecordsByFilter('trip_members', filter, '', 0, 0, params);
 		} catch (_) {
@@ -246,29 +267,41 @@ routerAdd('POST', '/api/trips/request-invite', (e) => {
 		}
 	};
 
-	const members = active('trip = {:t} && user != "" && removed_at = ""', { t: tripId });
-	const memberUsers = {};
-	for (const m of members) memberUsers[m.getString('user')] = true;
-	if (memberUsers[auth.id]) throw new BadRequestError('You are already on this trip.');
+	const mineHere = memberships('trip = {:t} && user = {:u}', { t: tripId, u: auth.id });
+	for (const m of mineHere) {
+		if (m.getString('removed_at')) throw new ForbiddenError('You were removed from this trip.');
+		throw new BadRequestError('You are already on this trip.');
+	}
 
-	// Co-traveler check: some trip the caller is actively on has, as an active
-	// member, someone who is also active on the target trip.
-	let linked = false;
-	for (const mine of active('user = {:u} && removed_at = ""', { u: auth.id })) {
-		for (const o of active('trip = {:t} && user != "" && removed_at = ""', { t: mine.getString('trip') })) {
-			if (memberUsers[o.getString('user')]) {
-				linked = true;
+	const leads = memberships(
+		'trip = {:t} && user != "" && removed_at = "" && (role = "owner" || role = "co_owner")',
+		{ t: tripId }
+	);
+	const leadUsers = {};
+	for (const m of leads) leadUsers[m.getString('user')] = true;
+
+	// Linked: some trip the caller is actively on has, as an active member, one
+	// of this trip's owners/co-owners.
+	let linkedUser = '';
+	for (const mine of memberships('user = {:u} && removed_at = ""', { u: auth.id })) {
+		for (const o of memberships('trip = {:t} && user != "" && removed_at = ""', { t: mine.getString('trip') })) {
+			if (leadUsers[o.getString('user')]) {
+				linkedUser = o.getString('user');
 				break;
 			}
 		}
-		if (linked) break;
+		if (linkedUser) break;
 	}
-	if (!linked) throw new ForbiddenError('You can only ask to join a co-traveler’s trip.');
+	if (!linkedUser) throw new ForbiddenError('You can only ask to join a co-traveler’s trip.');
 
-	let requester = 'A co-traveler';
-	try {
-		requester = e.app.findRecordById('users', auth.id).getString('name') || requester;
-	} catch (_) {}
+	const nameOf = (userId, fallback) => {
+		try {
+			return e.app.findRecordById('users', userId).getString('name') || fallback;
+		} catch (_) {
+			return fallback;
+		}
+	};
+	const requester = nameOf(auth.id, 'A co-traveler');
 
 	const slug = trip.getString('slug');
 	// The requester id rides in the link so a repeat request can be recognised.
@@ -277,9 +310,7 @@ routerAdd('POST', '/api/trips/request-invite', (e) => {
 	const text = (requester + ' asked to join “' + trip.getString('title') + '”').slice(0, 500);
 	const notifCol = e.app.findCollectionByNameOrId('notifications');
 	let sent = 0;
-	for (const m of members) {
-		const role = m.getString('role');
-		if (role !== 'owner' && role !== 'co_owner') continue;
+	for (const m of leads) {
 		let pending = false;
 		try {
 			e.app.findFirstRecordByFilter(
@@ -300,7 +331,7 @@ routerAdd('POST', '/api/trips/request-invite', (e) => {
 		sent++;
 	}
 
-	return e.json(200, { sent: sent });
+	return e.json(200, { sent: sent, title: trip.getString('title'), name: nameOf(linkedUser, 'The organiser') });
 });
 
 // After trip creation: add creator as owner + generate day records.

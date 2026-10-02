@@ -96,7 +96,8 @@ async function main() {
 		);
 		await new Promise((r) => setTimeout(r, 25));
 	}
-	const list = must('list', await pb('GET', '/api/notifications/list?limit=50', { token: ownerTok })).items;
+	const listed = must('list', await pb('GET', '/api/notifications/list?limit=50', { token: ownerTok }));
+	const list = listed.items;
 	const ours = list.filter((n) => bodies.includes(n.body));
 	assert('all eight come back', ours.length === 8, list);
 	assert(
@@ -109,6 +110,10 @@ async function main() {
 		ours.every((n) => typeof n.created === 'string' && !Number.isNaN(Date.parse(n.created.replace(' ', 'T')))),
 		ours.map((n) => n.created)
 	);
+
+	// get('read_at') was a truthy DateTime even when empty → unread was always 0.
+	assert('unread counts the unread ones', listed.unread >= 8, listed.unread);
+	assert('an unread item has read_at null', ours.every((n) => n.read_at === null), ours.map((n) => n.read_at));
 
 	const pend = await pb('GET', '/api/collections/pending_invites/records?sort=-created', { token: admin });
 	assert('pending_invites accepts sort=-created (was a 400)', pend.status === 200, pend.status);
