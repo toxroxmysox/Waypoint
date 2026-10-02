@@ -89,8 +89,124 @@ onRecordCreateRequest((e) => {
 	if ((start && !end) || (!start && end)) {
 		throw new BadRequestError('A trip needs both dates or neither.');
 	}
+
+	// #395 — slug dedupe. idx_trips_slug is GLOBAL, but a caller-side probe runs
+	// under the trips view rule and can't see other people's trips, so it picked
+	// a taken slug and the create 400'd (every retry recomputed the same slug).
+	// e.app bypasses rules, so this sees every trip. A concurrent winner can
+	// still race between the probe and the insert; the index rejects that and
+	// the form action reports it.
+	const base = e.record.getString('slug');
+	if (base) {
+		const taken = (s) => {
+			try {
+				e.app.findFirstRecordByFilter('trips', 'slug = {:s}', { s: s });
+				return true;
+			} catch (_) {
+				return false;
+			}
+		};
+		// Suffixed slugs trim the base so they stay inside the field's max: 100.
+		const stem = base.slice(0, 90);
+		let slug = base;
+		for (let i = 1; taken(slug); i++) {
+			slug = stem + '-' + (i <= 50 ? i : $security.randomStringWithAlphabet(6, 'abcdefghijklmnopqrstuvwxyz0123456789'));
+		}
+		e.record.set('slug', slug);
+	}
 	e.next();
 }, 'trips');
+
+// #395 — same-name heads-up on create.
+// GET /api/trips/same-name?title=T
+// Returns { mine: [{ slug, title }], co_travelers: [{ title, name }] } — current
+// trips whose title normalises to the same slug as T that are either the
+// caller's own, or a co-traveler's (an active real-user member of a trip the
+// caller is actively on; the #352 definition). Most same-name creates are two
+// people starting the SAME trip, so the form warns instead of silently making a
+// second one. Strangers' trips are never reported. Ended and archived trips are
+// skipped — a past "Thailand" shouldn't nag a new one. Hook context reads with
+// app privileges because the co-traveler's trip is invisible to the caller.
+routerAdd('GET', '/api/trips/same-name', (e) => {
+	const auth = e.auth;
+	if (!auth) throw new UnauthorizedError('Authentication required');
+
+	const query = e.requestInfo().query || {};
+	const raw = Array.isArray(query['title']) ? query['title'][0] : query['title'] || '';
+	// Inlined twin of trips/new toSlug(): punctuation and case don't distinguish
+	// trips ("Thailand!" === "thailand").
+	const norm = (t) =>
+		String(t || '')
+			.toLowerCase()
+			.replace(/[^a-z0-9\s-]/g, '')
+			.replace(/\s+/g, '-')
+			.replace(/-+/g, '-')
+			.replace(/^-|-$/g, '');
+	const target = norm(raw);
+	if (!target) return e.json(200, { mine: [], co_travelers: [] });
+
+	const today = new Date().toISOString().slice(0, 10);
+	const isCurrentMatch = (trip) => {
+		if (trip.getBool('archived')) return false;
+		const end = trip.getString('end_date').slice(0, 10);
+		if (end && end < today) return false;
+		return norm(trip.getString('title')) === target;
+	};
+	const activeMemberships = (filter, params) => {
+		try {
+			return e.app.findRecordsByFilter('trip_members', filter, '', 0, 0, params);
+		} catch (_) {
+			return [];
+		}
+	};
+	const loadTrip = (id) => {
+		try {
+			return e.app.findRecordById('trips', id);
+		} catch (_) {
+			return null;
+		}
+	};
+
+	const mine = [];
+	const myTrips = {};
+	for (const m of activeMemberships('user = {:u} && removed_at = ""', { u: auth.id })) {
+		const tripId = m.getString('trip');
+		if (!tripId || myTrips[tripId]) continue;
+		myTrips[tripId] = true;
+		const trip = loadTrip(tripId);
+		if (trip && isCurrentMatch(trip)) mine.push({ slug: trip.getString('slug'), title: trip.getString('title') });
+	}
+
+	// Co-travelers: active, real-user members of my trips, minus me.
+	const coTravelers = {};
+	for (const tripId of Object.keys(myTrips)) {
+		const others = activeMemberships('trip = {:t} && user != "" && user != {:u} && removed_at = ""', {
+			t: tripId,
+			u: auth.id
+		});
+		for (const o of others) coTravelers[o.getString('user')] = true;
+	}
+
+	const found = {};
+	const out = [];
+	for (const userId of Object.keys(coTravelers)) {
+		for (const m of activeMemberships('user = {:u} && removed_at = ""', { u: userId })) {
+			const tripId = m.getString('trip');
+			if (!tripId || myTrips[tripId] || found[tripId]) continue;
+			const trip = loadTrip(tripId);
+			if (!trip || !isCurrentMatch(trip)) continue;
+			found[tripId] = true;
+			// Name only, never the address — same rule as the #352 picker.
+			let name = m.getString('display_name') || 'A co-traveler';
+			try {
+				name = e.app.findRecordById('users', userId).getString('name') || name;
+			} catch (_) {}
+			out.push({ title: trip.getString('title'), name: name });
+		}
+	}
+
+	return e.json(200, { mine: mine, co_travelers: out });
+});
 
 // After trip creation: add creator as owner + generate day records.
 // Callback in PocketBase's JS hook runtime doesn't see outer-file helpers
