@@ -6,9 +6,39 @@
 	import Avatar from '$lib/ui/Avatar.svelte';
 	import FAB from '$lib/shell/components/FAB.svelte';
 	import { clearOfflineCaches } from '$lib/documents/offline-cache';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
+	import { enhance } from '$app/forms';
 
-	let { data } = $props();
+	let { data, form } = $props();
+
+	// #397 — invitations waiting for this account. Accepting here needs no code
+	// (you're signed in); each email link can open in a browser context without
+	// the session and cost a fresh one.
+	const ROLE_LABEL: Record<string, string> = {
+		co_owner: 'a co-owner',
+		traveler: 'a traveler',
+		viewer: 'a viewer'
+	};
+	// The code whose Accept/Decline is in flight — locks every invite button.
+	let busy = $state('');
+	// Decline deletes the invite, so the first tap only arms it (JS); without
+	// JS the form submits straight away.
+	let confirmDecline = $state('');
+
+	// Shared enhance for Accept/Decline: lock the buttons while in flight, and
+	// on a failure (e.g. revoked or expired meanwhile) re-load the list so a dead
+	// card doesn't linger — update() alone only invalidates on success.
+	function invitationSubmit(code: string) {
+		return () => {
+			busy = code;
+			return async ({ result, update }: { result: { type: string }; update: () => Promise<void> }) => {
+				await update();
+				if (result.type === 'failure') await invalidateAll();
+				busy = '';
+				confirmDecline = '';
+			};
+		};
+	}
 
 	// #278 — paste-invite escape hatch for the signed-up-but-trip-less user who
 	// has an invite. Accept either a full invite URL (…/join/<token>) OR a bare
@@ -34,6 +64,13 @@
 
 	function submitInvite(e: SubmitEvent) {
 		e.preventDefault();
+		// An email invite link (…/invite/<code>) goes to its own flow (#397).
+		const emailInvite = inviteInput.trim().match(/\/invite\/([A-Za-z0-9]{16,64})/);
+		if (emailInvite) {
+			inviteError = '';
+			goto(`/invite/${emailInvite[1]}`);
+			return;
+		}
 		const token = extractToken(inviteInput);
 		if (!token) {
 			inviteError = "That doesn't look like an invite link. Paste the whole link, or just the code.";
@@ -73,17 +110,84 @@
 			</form>
 			<a
 				href="/account"
-				class="hover:opacity-80 active:opacity-80"
+				class="relative hover:opacity-80 active:opacity-80"
 				aria-label="Profile"
 				data-sveltekit-preload-data="hover"
 			>
 				<Avatar img={data.avatarUrl} initial={(data.profileName || '?').slice(0, 1)} alt={data.profileName} size={32} />
+				{#if data.invitations.length > 0}
+					<!-- #397 — pending-invitations count. Visual only: the list itself is
+					     on this page (its heading carries the count for screen readers),
+					     and the avatar link goes to Profile. -->
+					<span
+						data-testid="invitations-badge"
+						aria-hidden="true"
+						class="bg-clay text-paper absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-none font-bold"
+					>
+						{data.invitations.length}
+					</span>
+				{/if}
 			</a>
 		</div>
 	{/snippet}
 </NavBar>
 
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-24">
+	{#if data.invitations.length > 0}
+		<section class="mb-5" aria-labelledby="invitations-heading" data-testid="invitations">
+			<h2 id="invitations-heading" class="text-moss mb-2 text-[11px] font-bold tracking-[0.2em] uppercase">
+				Invitations · {data.invitations.length}
+			</h2>
+			<div class="space-y-2">
+				{#each data.invitations as inv (inv.code)}
+					<Card strong accent="var(--color-moss)">
+						<div class="p-4" data-testid="invitation">
+							<p class="text-ink text-sm font-semibold">{inv.trip_title}</p>
+							<p class="text-ink-muted mt-0.5 text-xs">
+								{inv.inviter_name} invited you as {ROLE_LABEL[inv.role] ?? 'a member'}
+							</p>
+							{#if form?.code === inv.code && form?.error}
+								<p role="alert" class="text-error-deep mt-2 text-xs">{form.error}</p>
+							{/if}
+							<div class="mt-3 flex flex-wrap gap-2">
+								{#if inv.needs_choice}
+									<!-- The trip has unclaimed placeholders: accept on the invite
+									     page, where you can say which one is you (no code — you're
+									     signed in). -->
+									<Button href="/invite/{inv.code}" variant="moss" size="sm">Accept…</Button>
+								{:else}
+									<form method="POST" action="?/acceptInvite" use:enhance={invitationSubmit(inv.code)}>
+										<input type="hidden" name="code" value={inv.code} />
+										<Button type="submit" variant="moss" size="sm" loading={busy === inv.code} disabled={!!busy}>
+											Accept
+										</Button>
+									</form>
+								{/if}
+								<form method="POST" action="?/declineInvite" use:enhance={invitationSubmit(inv.code)}>
+									<input type="hidden" name="code" value={inv.code} />
+									<Button
+										type="submit"
+										variant="ghost"
+										size="sm"
+										disabled={!!busy}
+										onclick={(e) => {
+											if (confirmDecline !== inv.code) {
+												e.preventDefault();
+												confirmDecline = inv.code;
+											}
+										}}
+									>
+										{confirmDecline === inv.code ? 'Tap again to decline' : 'Decline'}
+									</Button>
+								</form>
+							</div>
+						</div>
+					</Card>
+				{/each}
+			</div>
+		</section>
+	{/if}
+
 	{#if data.pendingClaims > 0}
 		<!-- #179c: pending placeholder claims skipped at login are otherwise
 		     stranded until the next fresh login. This card re-enters the flow. -->
