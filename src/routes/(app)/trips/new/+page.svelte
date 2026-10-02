@@ -62,6 +62,7 @@
 	<Card>
 		<form
 			method="POST"
+			action="?/create"
 			use:validateForm
 			use:enhance={() => {
 				loading = true;
@@ -72,7 +73,8 @@
 						// form and returns to the trips list (#214 / ADR-0012).
 						await goto(result.location, { replaceState: true });
 					} else {
-						await update();
+						// reset: false — a successful requestInvite must keep what was typed.
+						await update({ reset: false });
 					}
 				};
 			}}
@@ -210,10 +212,30 @@
 							</Button>
 						</div>
 					{:else}
+						<!-- Someone else's trip: no way in from here. Joining is never
+						     self-serve — the request only notifies its owner + co-owners. -->
 						<p class="font-medium">{duplicate.name} already has a trip called “{duplicate.title}”.</p>
-						<p class="text-ink-soft mt-1">If it’s the same trip, ask {duplicate.name} to invite you instead.</p>
+						{#if duplicate.requested}
+							<p class="text-moss mt-1" data-testid="invite-requested">
+								Request sent. {duplicate.name} will see it in their notifications and can add you.
+							</p>
+						{:else}
+							<p class="text-ink-soft mt-1">If it’s the same trip, ask to be invited.</p>
+						{/if}
 						<div class="mt-3 flex flex-wrap gap-2">
-							<Button href="/trips" variant="ghost" size="sm">Back to trips</Button>
+							{#if !duplicate.requested}
+								<Button
+									type="submit"
+									formaction="?/requestInvite"
+									name="trip_id"
+									value={duplicate.trip_id}
+									variant="moss"
+									size="sm"
+									disabled={loading}
+								>
+									Request an invite
+								</Button>
+							{/if}
 							<Button type="submit" name="confirm_duplicate" value="1" variant="ghost" size="sm" disabled={loading}>
 								Create anyway
 							</Button>

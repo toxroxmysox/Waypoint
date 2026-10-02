@@ -17,6 +17,7 @@
 		testid,
 		name,
 		value,
+		formaction,
 		children
 	}: {
 		variant?: Variant;
@@ -33,6 +34,8 @@
 		/** Submitter name/value — sent with the form when this button submits it. */
 		name?: string;
 		value?: string;
+		/** Submit to a different (named) form action than the form's own. */
+		formaction?: string;
 		children: Snippet;
 	} = $props();
 
@@ -91,6 +94,7 @@
 		{type}
 		{name}
 		{value}
+		{formaction}
 		{onclick}
 		data-testid={testid}
 		disabled={isDisabled}

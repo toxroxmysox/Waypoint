@@ -1,4 +1,5 @@
 import { fail, redirect, isRedirect } from '@sveltejs/kit';
+import type PocketBase from 'pocketbase';
 import type { Actions, PageServerLoad } from './$types';
 import { isValidTimeZone } from '$lib/shell/trip-time';
 
@@ -18,8 +19,32 @@ function toSlug(title: string): string {
 		.replace(/-$/, '');
 }
 
+type SameName = {
+	mine: { slug: string; title: string }[];
+	co_travelers: { trip_id: string; title: string; name: string }[];
+};
+
+/** #395 — the caller's own current trip, or a co-traveler's, with this name
+ *  (never a stranger's). Null when the check itself fails: it never blocks. */
+function findSameName(pb: PocketBase, title: string) {
+	return pb.send<SameName>('/api/trips/same-name', { query: { title } }).catch((err) => {
+		console.error('[trips/new same-name] check failed:', err);
+		return null;
+	});
+}
+
+function formValues(data: FormData) {
+	return {
+		title: data.get('title')?.toString().trim() ?? '',
+		location_summary: data.get('location_summary')?.toString().trim() ?? '',
+		start_date: data.get('start_date')?.toString() ?? '',
+		end_date: data.get('end_date')?.toString() ?? '',
+		timezone: data.get('timezone')?.toString().trim() ?? ''
+	};
+}
+
 export const actions: Actions = {
-	default: async ({ request, locals }) => {
+	create: async ({ request, locals }) => {
 		const data = await request.formData();
 		const title = data.get('title')?.toString().trim();
 		const startDate = data.get('start_date')?.toString();
@@ -46,26 +71,18 @@ export const actions: Actions = {
 		}
 
 		// #395 — same-name heads-up. Two people creating "Thailand" are usually
-		// starting the SAME trip, so before making a second one, say so: the
-		// caller's own current trip, or a co-traveler's (never a stranger's). The
-		// "Create anyway" button resubmits with confirm_duplicate=1. A failed check
-		// never blocks the create.
+		// starting the SAME trip, so before making a second one, say so. "Create
+		// anyway" resubmits with confirm_duplicate=1.
 		if (data.get('confirm_duplicate') !== '1') {
-			const same = await locals.pb
-				.send<{ mine: { slug: string; title: string }[]; co_travelers: { title: string; name: string }[] }>(
-					'/api/trips/same-name',
-					{ query: { title } }
-				)
-				.catch((err) => {
-					console.error('[trips/new same-name] check failed:', err);
-					return null;
-				});
+			const same = await findSameName(locals.pb, title);
 			const mine = same?.mine[0];
 			const coTraveler = same?.co_travelers[0];
 			if (mine || coTraveler) {
 				return fail(409, {
-					duplicate: mine ? { kind: 'mine' as const, ...mine } : { kind: 'co_traveler' as const, ...coTraveler! },
-					values: { title, location_summary: locationSummary, start_date: startDate ?? '', end_date: endDate ?? '', timezone }
+					duplicate: mine
+						? { kind: 'mine' as const, ...mine }
+						: { kind: 'co_traveler' as const, ...coTraveler!, requested: false },
+					values: formValues(data)
 				});
 			}
 		}
@@ -98,5 +115,31 @@ export const actions: Actions = {
 			console.error('[trips/new] create failed:', err);
 			return fail(500, { error: 'Couldn’t create the trip. Please try again.' });
 		}
+	},
+
+	// #395 — "Request an invite" from the co-traveler heads-up. Joining someone
+	// else's trip is never self-serve: the PB route only notifies its owner and
+	// co-owners (and re-validates the co-traveler link itself). The heads-up is
+	// re-derived from the title so it stays up, now showing the request as sent.
+	requestInvite: async ({ request, locals }) => {
+		const data = await request.formData();
+		const values = formValues(data);
+		const tripId = data.get('trip_id')?.toString() ?? '';
+		const same = await findSameName(locals.pb, values.title);
+		const match = same?.co_travelers.find((c) => c.trip_id === tripId);
+		if (!match) {
+			return fail(400, { error: 'That trip can’t take a request right now.', values });
+		}
+		try {
+			await locals.pb.send('/api/trips/request-invite', { method: 'POST', body: { trip_id: tripId } });
+		} catch (err) {
+			console.error('[trips/new requestInvite] failed:', err);
+			return fail(500, {
+				duplicate: { kind: 'co_traveler' as const, ...match, requested: false },
+				error: 'Couldn’t send the request. Please try again.',
+				values
+			});
+		}
+		return { duplicate: { kind: 'co_traveler' as const, ...match, requested: true }, values };
 	}
 };

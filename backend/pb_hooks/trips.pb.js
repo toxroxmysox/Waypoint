@@ -201,11 +201,106 @@ routerAdd('GET', '/api/trips/same-name', (e) => {
 			try {
 				name = e.app.findRecordById('users', userId).getString('name') || name;
 			} catch (_) {}
-			out.push({ title: trip.getString('title'), name: name });
+			// trip_id is opaque to the caller (the view rule still hides the trip);
+			// it only addresses POST /api/trips/request-invite below.
+			out.push({ trip_id: tripId, title: trip.getString('title'), name: name });
 		}
 	}
 
 	return e.json(200, { mine: mine, co_travelers: out });
+});
+
+// #395 — "Request an invite" from the same-name heads-up. Joining is never
+// self-serve: this only notifies the trip's owner + co-owners, who invite from
+// Members (the #352 co-traveler picker needs no email).
+// POST /api/trips/request-invite  { trip_id }
+// Re-validates everything /api/trips/same-name implied — the id comes from the
+// client: the trip is current, the caller is NOT on it, and the caller shares
+// an active trip with one of its active members. An unread request from the
+// same person isn't repeated. Returns { sent: n }.
+routerAdd('POST', '/api/trips/request-invite', (e) => {
+	const auth = e.auth;
+	if (!auth) throw new UnauthorizedError('Authentication required');
+
+	const body = e.requestInfo().body || {};
+	const tripId = String(body['trip_id'] || '');
+	if (!tripId) throw new BadRequestError('trip_id is required');
+
+	let trip;
+	try {
+		trip = e.app.findRecordById('trips', tripId);
+	} catch (_) {
+		throw new NotFoundError('Trip not found');
+	}
+	const today = new Date().toISOString().slice(0, 10);
+	const end = trip.getString('end_date').slice(0, 10);
+	if (trip.getBool('archived') || (end && end < today)) {
+		throw new BadRequestError('That trip is no longer open to requests.');
+	}
+
+	const active = (filter, params) => {
+		try {
+			return e.app.findRecordsByFilter('trip_members', filter, '', 0, 0, params);
+		} catch (_) {
+			return [];
+		}
+	};
+
+	const members = active('trip = {:t} && user != "" && removed_at = ""', { t: tripId });
+	const memberUsers = {};
+	for (const m of members) memberUsers[m.getString('user')] = true;
+	if (memberUsers[auth.id]) throw new BadRequestError('You are already on this trip.');
+
+	// Co-traveler check: some trip the caller is actively on has, as an active
+	// member, someone who is also active on the target trip.
+	let linked = false;
+	for (const mine of active('user = {:u} && removed_at = ""', { u: auth.id })) {
+		for (const o of active('trip = {:t} && user != "" && removed_at = ""', { t: mine.getString('trip') })) {
+			if (memberUsers[o.getString('user')]) {
+				linked = true;
+				break;
+			}
+		}
+		if (linked) break;
+	}
+	if (!linked) throw new ForbiddenError('You can only ask to join a co-traveler’s trip.');
+
+	let requester = 'A co-traveler';
+	try {
+		requester = e.app.findRecordById('users', auth.id).getString('name') || requester;
+	} catch (_) {}
+
+	const slug = trip.getString('slug');
+	// The requester id rides in the link so a repeat request can be recognised.
+	const link = '/trips/' + slug + '/members?invite_request=' + auth.id;
+	// Short: the bell row is one line, and the link already lands on Members.
+	const text = (requester + ' asked to join “' + trip.getString('title') + '”').slice(0, 500);
+	const notifCol = e.app.findCollectionByNameOrId('notifications');
+	let sent = 0;
+	for (const m of members) {
+		const role = m.getString('role');
+		if (role !== 'owner' && role !== 'co_owner') continue;
+		let pending = false;
+		try {
+			e.app.findFirstRecordByFilter(
+				'notifications',
+				'recipient = {:r} && type = "invite_requested" && link = {:l} && read_at = ""',
+				{ r: m.id, l: link }
+			);
+			pending = true;
+		} catch (_) {}
+		if (pending) continue;
+		const notif = new Record(notifCol);
+		notif.set('trip', tripId);
+		notif.set('recipient', m.id);
+		notif.set('type', 'invite_requested');
+		notif.set('body', text);
+		notif.set('link', link);
+		e.app.save(notif);
+		sent++;
+	}
+
+	return e.json(200, { sent: sent });
 });
 
 // After trip creation: add creator as owner + generate day records.

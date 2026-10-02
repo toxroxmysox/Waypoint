@@ -77,9 +77,15 @@ test.describe('Trip create: same name across users (#395)', () => {
 		await expect(warn).toBeVisible();
 		// The owner's NAME (whatever an earlier fixture set it to), never an address.
 		await expect(warn).toContainText(new RegExp(`\\S already has a trip called “${title}”`));
-		await expect(warn).toContainText(/ask .+ to invite you/);
 		await expect(warn).not.toContainText('@');
 		await expect(traveler.page.getByText('Something went wrong')).toHaveCount(0);
+		// No way into someone else's trip from here — only a request to its owner.
+		await expect(warn.getByRole('link', { name: 'Open it' })).toHaveCount(0);
+		await warn.getByRole('button', { name: 'Request an invite' }).click();
+		await expect(traveler.page.getByTestId('invite-requested')).toContainText('Request sent');
+		await expect(warn.getByRole('button', { name: 'Request an invite' })).toHaveCount(0);
+		await expect(traveler.page.locator('input[name="title"]')).toHaveValue(`${title}!`);
+		// Not the same trip after all → create their own.
 		await warn.getByRole('button', { name: 'Create anyway' }).click();
 		await traveler.page.waitForURL(`${BASE}/trips/${slug}-1`, { timeout: 15000 });
 		await expect(heading(traveler.page)).toBeVisible();

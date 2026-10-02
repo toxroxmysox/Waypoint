@@ -168,6 +168,48 @@ async function main() {
 	r = await sameName(null, 'Thailand');
 	assert('unauthenticated → 401', r.status === 401, r.status);
 
+	console.log('\n— request an invite (never self-serve: notifies owner + co-owners only)');
+	const thai = a1.data.id;
+	r = await sameName(tok.B, 'Thailand');
+	assert('same-name hands the co-traveler an opaque trip_id', r.data?.co_travelers?.[0]?.trip_id === thai, r.data);
+
+	const request = (token, tripId) => pb('POST', '/api/trips/request-invite', { token, body: { trip_id: tripId } });
+	const ownerNotes = async () => {
+		const ownerMember = (
+			await pb('GET', `/api/collections/trip_members/records?filter=${encodeURIComponent(`trip = "${thai}" && role = "owner"`)}`, { token: admin })
+		).data.items[0];
+		return (
+			await pb('GET', `/api/collections/notifications/records?filter=${encodeURIComponent(`recipient = "${ownerMember.id}" && type = "invite_requested"`)}`, { token: admin })
+		).data.items;
+	};
+
+	r = await request(tok.B, thai);
+	assert('co-traveler B requests → 200, one notification sent', r.status === 200 && r.data?.sent === 1, r);
+	let notes = await ownerNotes();
+	assert(
+		'owner gets “User B asked to join “Thailand”” linking to Members',
+		notes.length === 1 && notes[0].body.startsWith('User B asked to join “Thailand”') && notes[0].link.startsWith('/trips/thailand/members'),
+		notes
+	);
+	r = await request(tok.B, thai);
+	notes = await ownerNotes();
+	assert('a repeat while unread is not re-sent', r.status === 200 && r.data?.sent === 0 && notes.length === 1, { r, n: notes.length });
+
+	const memberCount = async () =>
+		(await pb('GET', `/api/collections/trip_members/records?filter=${encodeURIComponent(`trip = "${thai}" && user = "${id.B}"`)}`, { token: admin })).data.items.length;
+	assert('requesting does NOT add B to the trip', (await memberCount()) === 0);
+
+	r = await request(tok.D, thai);
+	assert('stranger D (forged trip_id) → 403', r.status === 403, r);
+	r = await request(tok.C, thai);
+	assert('tombstoned C → 403', r.status === 403, r);
+	r = await request(tok.A, thai);
+	assert('a member asking to join their own trip → 400', r.status === 400, r);
+	r = await request(tok.B, arch.id);
+	assert('archived trip → 400', r.status === 400, r);
+	r = await request(null, thai);
+	assert('unauthenticated → 401', r.status === 401, r.status);
+
 	console.log(`\n${pass} passed, ${fail} failed`);
 	exit(fail === 0 ? 0 : 1);
 }
