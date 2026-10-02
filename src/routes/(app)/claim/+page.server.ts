@@ -28,17 +28,10 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	const { claims } = (await res.json()) as { claims: Claim[] };
 
 	if (!claims || claims.length === 0) {
-		// No placeholder claims — check for pending email invites.
-		const invRes = await fetch(`${PUBLIC_PB_URL}/api/invites/my-pending`, {
-			headers: { Authorization: `Bearer ${token}` }
-		});
-		if (invRes.ok) {
-			const { invites } = (await invRes.json()) as { invites: { code: string }[] };
-			if (invites && invites.length > 0) {
-				redirect(303, `/invite/${invites[0].code}`);
-			}
-		}
-		// Nothing pending — land on the preserved deep-link target (or /trips).
+		// No placeholder claims → the preserved deep-link target (or /trips).
+		// Pending email invites are NOT chained through here any more: this used
+		// to bounce to the FIRST invite only, stranding the rest behind their
+		// email links (#397). They're all listed on /trips, and badged on its avatar.
 		redirect(303, dest);
 	}
 

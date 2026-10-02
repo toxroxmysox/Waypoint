@@ -515,6 +515,7 @@ onRecordAfterCreateSuccess((e) => {
 		'Accept the invite:\n' +
 		acceptUrl +
 		'\n\n' +
+		'Already using Waypoint? Just open the app — the invite is waiting on your trips list.\n\n' +
 		'This link expires in 7 days. If you did not expect this email, you can ignore it.\n\n' +
 		'— Waypoint';
 
@@ -536,6 +537,7 @@ onRecordAfterCreateSuccess((e) => {
 		'<p style="color: #666; font-size: 14px;">Or paste this link into your browser:<br><code>' +
 		acceptUrl +
 		'</code></p>' +
+		'<p style="color: #666; font-size: 14px;">Already using Waypoint? Just open the app &mdash; the invite is waiting on your trips list.</p>' +
 		'<p style="color: #666; font-size: 14px;">This link expires in 7 days. If you did not expect this email, you can ignore it.</p>' +
 		'<p style="color: #666; font-size: 14px;">&mdash; Waypoint</p>' +
 		'</div>';
@@ -573,9 +575,14 @@ onRecordAfterCreateSuccess((e) => {
 
 // ---------------------------------------------------------------------------
 // GET /api/invites/my-pending
-// Returns pending invites for the authenticated user's email so the post-login
-// /claim interstitial can redirect them back to the invite page.
+// Pending, unexpired invites for the authenticated user's email. Feeds the
+// Invitations section on /trips and the avatar badge (#397), and /claim.
 // Admin context so it can read pending_invites regardless of trip membership.
+// Returns { invites: [{ code, trip_title, inviter_name, role, expires_at,
+// needs_choice }] } — needs_choice: the trip has unclaimed name-only
+// placeholders, so accepting goes through /invite/<code> where the invitee
+// can say "I'm Abby" instead of becoming a duplicate member. Names only,
+// never an address (#352 rule).
 // ---------------------------------------------------------------------------
 routerAdd('GET', '/api/invites/my-pending', (e) => {
 	const auth = e.auth;
@@ -586,14 +593,9 @@ routerAdd('GET', '/api/invites/my-pending', (e) => {
 
 	let rows;
 	try {
-		rows = e.app.findRecordsByFilter(
-			'pending_invites',
-			'email = {:email}',
-			'',
-			0,
-			0,
-			{ email: email }
-		);
+		rows = e.app.findRecordsByFilter('pending_invites', 'email = {:email}', '-expires_at', 0, 0, {
+			email: email
+		});
 	} catch (_) {
 		return e.json(200, { invites: [] });
 	}
@@ -601,12 +603,90 @@ routerAdd('GET', '/api/invites/my-pending', (e) => {
 	const now = new Date();
 	const invites = [];
 	for (const row of rows) {
-		const expiresAt = row.get('expires_at');
-		if (expiresAt && new Date(expiresAt) < now) continue;
-		invites.push({ code: row.get('code') });
+		const expiresAt = row.getString('expires_at');
+		if (expiresAt && new Date(expiresAt.replace(' ', 'T')) < now) continue;
+		const tripId = row.getString('trip');
+
+		// Already on the trip (e.g. added another way): the invite is stale.
+		try {
+			e.app.findFirstRecordByFilter(
+				'trip_members',
+				'trip = {:t} && user = {:u} && removed_at = ""',
+				{ t: tripId, u: auth.id }
+			);
+			continue;
+		} catch (_) {}
+
+		let tripTitle = '';
+		try {
+			tripTitle = e.app.findRecordById('trips', tripId).getString('title');
+		} catch (_) {
+			continue; // trip gone
+		}
+
+		let inviterName = '';
+		try {
+			const inviter = e.app.findRecordById('trip_members', row.getString('invited_by'));
+			inviterName = inviter.getString('display_name');
+			if (!inviterName && inviter.getString('user')) {
+				inviterName = e.app.findRecordById('users', inviter.getString('user')).getString('name');
+			}
+		} catch (_) {}
+
+		let needsChoice = false;
+		try {
+			needsChoice =
+				e.app.findRecordsByFilter(
+					'trip_members',
+					'trip = {:t} && user = "" && placeholder_email = "" && removed_at = ""',
+					'',
+					1,
+					0,
+					{ t: tripId }
+				).length > 0;
+		} catch (_) {}
+
+		invites.push({
+			code: row.getString('code'),
+			trip_title: tripTitle,
+			inviter_name: inviterName || 'Someone',
+			role: row.getString('role'),
+			expires_at: expiresAt,
+			needs_choice: needsChoice
+		});
 	}
 
 	return e.json(200, { invites: invites });
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/invites/decline  { code }
+// #397 — the invitee declines from the Invitations section on /trips. Decline
+// DELETES the invite (Scott, 2026-10-02): no declined state, no notification.
+// Only the invited address may decline it; the revoke gating hook
+// (onRecordDeleteRequest) is for trip members and doesn't apply to e.app.delete.
+// ---------------------------------------------------------------------------
+routerAdd('POST', '/api/invites/decline', (e) => {
+	const auth = e.auth;
+	if (!auth) throw new UnauthorizedError('Authentication required');
+
+	const body = e.requestInfo().body || {};
+	const code = String(body['code'] || '');
+	if (!code) throw new BadRequestError('Missing code');
+
+	let invite;
+	try {
+		invite = e.app.findFirstRecordByFilter('pending_invites', 'code = {:code}', { code: code });
+	} catch (_) {
+		throw new NotFoundError('Invite not found');
+	}
+
+	const inviteEmail = invite.getString('email').trim().toLowerCase();
+	const authEmail = String(auth.email() || '').trim().toLowerCase();
+	if (inviteEmail !== authEmail) throw new ForbiddenError('This invite is not yours to decline');
+
+	e.app.delete(invite);
+	return e.json(200, { declined: true });
 });
 
 // ---------------------------------------------------------------------------
