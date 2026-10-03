@@ -185,7 +185,7 @@ Per-job subsets (*same places, different subsets*):
 - **Meta for flights:** the route is `location_name` plus the description's `→` arrival label written by FlightLookup. Transport has no destination field, so it shows its location only. The arrival *time* is the rail's end label.
 
 - **Joining ("I'm going") happens by tapping into the card (Scott, 2026-10-03).** There's no per-card button. Expect the item view to make it more obvious later.
-- *Open:* where the type symbol lives (Scott doesn't want it pushing the text right). The four options mocked 2026-10-03 are: under the title, a node on the rail, a card tint, or inline in meta. Also open: a traveller's primary action on idea cards (owners pull up; travellers can't), deferred to #401.
+- *Open:* a traveller's primary action on idea cards (owners pull up; travellers can't), deferred to #401.
 
 ### D3 — Votes live in phase planning, not on the day page (Scott, 2026-10-03)
 
@@ -201,6 +201,15 @@ The `assigned_to` people are **who is going on or doing the item**. That's all. 
 
 - *Supersedes:* the glossary's earlier "doing / responsible for" wording. ADR-0011 is amended to match.
 - **Copy (decided, Scott 2026-10-03):** the surfaced label becomes **"Going"**, replacing "Assigned to" on item detail and in the form. Self-assign reads as "I'm going". The field stays `assigned_to`; only the words change.
+
+### D7 — The type symbol lives on the rail; off the rail, type becomes a group heading (Scott, 2026-10-03)
+
+- **On rail-hosted lists** (planning day, trip-mode Coming up), the type glyph is a **node on the spine, centred vertically on its card.** It takes the place of the old hollow dot. It is **filled** (type tint) for timed items and **dashed** for untimed ones, so "pinned vs flexible" survives. The card's text starts at its left edge; nothing pushes it right.
+- **Bigger glyph, same footprint:** the node grows only slightly (about 26px). The glyph fills most of it (about 17px) instead of floating in padding. "Use the space of the icon for the icon."
+- The nodes break up the spine line, which Scott found made the vertical line read better than the bare hairline did.
+- **Off the rail** (the parking lot / phase planning ideas), the card carries **no** glyph. The list is **grouped by type**, and each group has a divider with the icon and a plain-language label ("Places to eat", "Things to do", …).
+- *Supersedes:* the 32px in-card `TypeIcon` on the timeline card and the type tag on Phase Detail parking cards (E3).
+- *Open within D7:* the group labels per type, and the sort order within a group (votes lead in phase planning, D3, #401).
 
 ### D6 — "Going" has three states; dissent shows as "not going", not as votes (Scott, 2026-10-03)
 
@@ -235,7 +244,8 @@ On any list hosted by the [[Timeline Rail]], **time is printed only in the rail,
   - **The leaders extend left across the time column,** so a rule sits *on top of* the start label (level with the card's top edge) and *under* the end label (level with its bottom edge). It reads like a dimension line.
   - **The untimed dot is centred vertically on its card.**
 - **Trip mode is rail-hosted too (Scott, 2026-10-03).** The Coming up list uses the same rail and the same grammar. The Hero (Now Focus) keeps its own live line, for example "until 4:00 PM · 55m left".
-- *Open within D5:* (a) the compact time format, `6:30p` / `10:30a` (Scott's idea: drop the "m") or `630p` (no colon); (b) the time grammar for Row, Hero and Span.
+- **Time format (Scott, 2026-10-03): `6:30p` / `10:30a`.** The colon stays; the space and the "m" go. A deadline reads `by 4:30p`.
+- *Open within D5:* the time grammar for Row, Hero and Span.
 
 ---
 
