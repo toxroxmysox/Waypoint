@@ -101,7 +101,7 @@ The Focus slot also holds four **state cards** that are not item cards: Free tim
 2. **The type glyph comes in 11 sizes** (13, 18, 20, 22, 24, 26, 28, 32, 34, 40, 44px).
 3. **One idea renders 9 different ways (E1–E9), and no planning-mode surface shows its votes.**
    - Phase Detail (E3), the parking lot's canonical home, doesn't render votes.
-   - The day page (E1) and the desktop rail (E2) render a sentiment pill, but the day loader never fetches votes for parking-lot items, so the pill never appears (#394, verified with the fixture).
+   - The day page (E1) and the desktop rail (E2) render a sentiment pill, but the day loader never fetches votes for parking-lot items, so the pill never appears (#394, verified with the fixture. #394 was fixed on `main` 2026-10-02 in `98ef885`, and **D3** then moves votes off the day page entirely).
    - Votes only show on ideas in trip mode (E4, voter avatars plus a pill), on pending suggestions (E5/E9), and as a hidden-by-default peek in the swipe deck (E6).
 4. **ADR-0011 says card avatars always mean assignees.** That holds on the timeline and the day page parking lot. On E4, E5 and E6 the avatars mean voters.
 5. **Time renders differently on every surface.** The timeline prints it twice (rail and card). The trip-mode card shows the start only, with **no end and no deadline**. Earlier-today rows, tomorrow rows and closeout rows show the start only. The archive shows start–end. The flights list shows departure → arrival.
