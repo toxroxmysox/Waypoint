@@ -185,15 +185,32 @@ Votes belong where ideas are **weighed and moved**: a phase-focused planning con
 The `assigned_to` people are **who is going on or doing the item**. That's all. It does not mean who books it, pays, organizes, or "is responsible". It is shown as people bubbles **when planning a day and in trip mode**.
 
 - *Supersedes:* the glossary's earlier "doing / responsible for" wording. ADR-0011 is amended to match.
-- *Implication for copy (proposed, not yet decided):* the surfaced label "Assigned to" (item detail and form) reads as responsibility. "Going" would match the meaning.
+- **Copy (decided, Scott 2026-10-03):** the surfaced label becomes **"Going"**, replacing "Assigned to" on item detail and in the form. Self-assign reads as "I'm going". The field stays `assigned_to`; only the words change.
+
+### D5 — The rail owns time: start at the card's top edge, end at its bottom edge (Scott, 2026-10-03)
+
+On any list hosted by the [[Timeline Rail]], **time is printed only in the rail, never on the card.** Where each time sits says what it means:
+
+| Shape | Rail |
+|---|---|
+| Start only | Start label at the card's **top edge**, with a short leader line level with the top border |
+| Start and end | Start at the top edge, end at the **bottom edge**, both with leaders. The spine between them is drawn heavier, as a duration bar, so the card is bracketed like a dimension line. |
+| Deadline (end only, #346) | **Bottom edge only**, labelled `by 4:30 PM` |
+| Untimed | No time. A hollow dot (the 09-17 rule stands). |
+| Overlap | Falls out of the grammar: the earlier card's end label (`1:30 PM`) sits *above* the next card's start label (`1:00 PM`). The late start is also tinted, and the card carries an `Overlaps …` strip chip. |
+
+- **Labels sit inside the card's vertical extent:** start just below the top leader, end just above the bottom one, so adjacent cards' labels never collide. Times are single-line (`12:30 PM`), so the gutter grows from 44px to about 66px. A card with both a start and an end gets a minimum height that fits both labels (about 46px), which constrains §4.4.
+- **The type glyph stays in the card.** The 2026-10-01 "stop rail" option (B, glyph on the spine) is retired, because the gutter now holds top and bottom labels. The rail direction resolves to the clock rail (A) plus leader lines.
+- *Resolves #388:* the card no longer repeats the time. Start, end and deadline stay distinguishable by position and by the `by` prefix. This also answers the contrarian's main objection to D2 (end times and deadlines disappearing): the rail now carries them.
+- *Open within D5:* (a) trip mode's Coming up list becomes rail-hosted too (implied by "the rail is where time is shown"; to confirm); (b) the time grammar for shapes without a rail: Row, Hero (e.g. "until 4:00 PM · 55m left") and Span.
 
 ---
 
 ## 4. Open questions (queue)
 
 1. ~~**Do we need this many card types?**~~ Resolved by **D1**: four shapes.
-2. **Time grammar (#388).** One way to show start, range, deadline and untimed, used on every surface. Start and end must stay distinguishable (Scott, 2026-10-01).
-3. **Rail direction** for the timeline: the clock rail (A) or the stop rail (B), from the 2026-10-01 mockups.
+2. **Time grammar (#388).** *Rail-hosted cards resolved by D5; Row / Hero / Span still open.* One way to show start, range, deadline and untimed, used on every surface. Start and end must stay distinguishable (Scott, 2026-10-01).
+3. ~~**Rail direction**~~ Resolved by D5: the clock rail with leader lines; the glyph stays in the card.
 4. **Card height.** Fixed, proportional to duration, or driven by content with a consistent minimum.
 5. **What goes on the face versus the detail page**, per job.
 6. **Text versus symbol versus color.** One vocabulary for type, status and mode.
