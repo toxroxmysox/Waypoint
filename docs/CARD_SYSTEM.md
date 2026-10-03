@@ -3,6 +3,7 @@
 > **Status:** living design doc, started 2026-10-01. It began as #388 (the timeline card printing its time twice), and Scott widened it to **every surface that renders an [[Item]]**: the planning timeline, the trip-mode hero (Now Focus) and Now cards, multi-day banners, ideas, lens lists, closeout, and the record.
 > **How to read it:** §1 is the as-built catalog, verified against the code at `840cd7b`. §2 lists what the catalog exposes. §3 is the decision log, filled in as decisions are made with Scott. §4 is the open-question queue.
 > **Relationship to other docs:** `CARD_CONTENT_SPEC.md` stays the binding **field → slot** contract and is amended when a decision here ships. `CONTEXT.md` holds the terms.
+> **How decisions get made (Scott, 2026-10-03):** a three-agent review panel stress-tests each proposal before Scott locks it. A **contrarian** attacks the proposal with concrete failure cases. An **alternative proposer** designs a rival from first principles. A **user advocate** checks travellers' needs, accessibility and conflicts with existing ADRs and spec rules. Each decision entry in §3 records what the panel changed.
 
 ---
 
