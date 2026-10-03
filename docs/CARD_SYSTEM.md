@@ -146,6 +146,47 @@ Every [[Item]] rendering is one of **four shapes**. Surfaces configure a shape; 
 - *Why:* 23 renderings had drifted into 23 different answers to the same questions (see §2: time, votes, avatars, glyph sizes). Four shapes give each question one answer.
 - *Open within D1:* whether "informational" stretches beyond multi-day items, for example to the Now page's Free-time and Day-wrapped cards. That gets decided when the Span shape is designed.
 
+### D2 — Main Card anatomy: head · meta · strip (Scott, 2026-10-03)
+
+The main **Card** is built from these zones, top to bottom. Empty zones collapse.
+
+| Zone | Rule |
+|---|---|
+| **Marker** | The type glyph, at the left. A timeline host may lift it onto the rail (decided with the time grammar, §4.2–4.3). |
+| **Head** | The title (wraps to 2 lines max, then ellipsis) and **one** trailing value, chosen per job. |
+| **Meta** | One line: the best "where" for the type. Location. Flight or transport shows the route (`MKE → DEN`, from `location_name` + the description's arrival label). A note shows the first line of its description. The record shows place · time. |
+| **Strip** | **Left = info and pills, exception-first:** `Needs booking` (loud), overlap warning, then quiet `✓ Booked`, documents count, `✓ Done`. **Right = people:** the [[Assignment]] people bubbles (and votes only where D3 allows them). |
+| **Action** | Secondary verbs go in `⋯`. At most one primary action shows on the face. *(The exact position is still open.)* |
+
+- **Heights** are 1, 2 or 3 rows (head / +meta / +strip), plus one line when a title wraps. Never more. The as-built loaded timeline card is 7 rows.
+- **Off the face, detail only:** the subtype as text, the description (except notes and the record), free cancellation, the reservation link, payment state, goals, comments, checklist progress.
+- **Time** is not printed on the card when the host has a rail. Where there's no rail (the record) it goes in meta.
+
+Per-job subsets (*same places, different subsets*):
+
+| | Plan (day page) | Live (trip mode) | Idea (phase planning) | Record |
+|---|---|---|---|---|
+| Head trailing value | cost | — **(no cost in trip mode — Scott)** | cost | — |
+| Strip: info and pills | Needs booking / ✓ Booked · docs · overlap | Needs booking (loud) · docs · overlap *(open: show the code instead of ✓ Booked?)* | — | ✓ Done / Considered |
+| Strip: people | **who's going (bubbles)** | **who's going (bubbles)** | votes (D3) | — |
+
+*Still open after Scott's review (pending the panel synthesis):* the self-assign affordance (`+ Me` pill vs a quiet `+` bubble, and where it appears); whether trip mode shows a booked item's confirmation code in place of `✓ Booked`; and the action position.
+
+### D3 — Votes live in phase planning, not on the day page (Scott, 2026-10-03)
+
+Votes belong where ideas are **weighed and moved**: a phase-focused planning context built around the phase's [[Parking Lot]]. The day page (overview/day planning) shows **no votes**, neither on planned cards nor on its parking-lot cards; its people slot is the who's-going bubbles.
+
+- *Supersedes:* ADR-0011's "vote count pill on planned and parking-lot cards" (amended in ADR-0011, 2026-10-03). Note the collision: **#394 was fixed on `main` on 2026-10-02 (`98ef885`, PR #398) by *adding* votes to the day-page parking lot and desktop rail.** D3 reverses that. When the card system ships, day-page parking cards drop the vote pill and the phase's idea cards gain it (today's Phase Detail parking cards, E3, show no votes).
+- *Seeded a product direction:* a **phase planning mode**, a focused workspace for weighing a phase's ideas and moving them into days. That is bigger than cards and is captured as its own issue (#401). It connects to #391 (getting into a phase).
+- *Open:* trip mode's "Ideas for now" strip (E4), where votes help pick a backup on the day.
+
+### D4 — Assignment means "who's going" (Scott, 2026-10-03)
+
+The `assigned_to` people are **who is going on or doing the item**. That's all. It does not mean who books it, pays, organizes, or "is responsible". It is shown as people bubbles **when planning a day and in trip mode**.
+
+- *Supersedes:* the glossary's earlier "doing / responsible for" wording. ADR-0011 is amended to match.
+- *Implication for copy (proposed, not yet decided):* the surfaced label "Assigned to" (item detail and form) reads as responsibility. "Going" would match the meaning.
+
 ---
 
 ## 4. Open questions (queue)
