@@ -184,7 +184,8 @@ Per-job subsets (*same places, different subsets*):
   - the card's accessible name carries time + title + type + state (for example "6:30 to 8:30 PM, Dinner at The Immigrant, meal, needs booking")
 - **Meta for flights:** the route is `location_name` plus the description's `→` arrival label written by FlightLookup. Transport has no destination field, so it shows its location only. The arrival *time* is the rail's end label.
 
-*Still open:* the self-join affordance ("I'm going"). The panel split three ways, and Scott decides. Also open: a traveller's primary action on idea cards (owners pull up; travellers can't), deferred to #401.
+- **Joining ("I'm going") happens by tapping into the card (Scott, 2026-10-03).** There's no per-card button. Expect the item view to make it more obvious later.
+- *Open:* where the type symbol lives (Scott doesn't want it pushing the text right). The four options mocked 2026-10-03 are: under the title, a node on the rail, a card tint, or inline in meta. Also open: a traveller's primary action on idea cards (owners pull up; travellers can't), deferred to #401.
 
 ### D3 — Votes live in phase planning, not on the day page (Scott, 2026-10-03)
 
@@ -201,6 +202,19 @@ The `assigned_to` people are **who is going on or doing the item**. That's all. 
 - *Supersedes:* the glossary's earlier "doing / responsible for" wording. ADR-0011 is amended to match.
 - **Copy (decided, Scott 2026-10-03):** the surfaced label becomes **"Going"**, replacing "Assigned to" on item detail and in the form. Self-assign reads as "I'm going". The field stays `assigned_to`; only the words change.
 
+### D6 — "Going" has three states; dissent shows as "not going", not as votes (Scott, 2026-10-03)
+
+The panel wanted a vote-based "Pass" marker on planned cards. Scott reframed it: on a committed item, the question isn't whether someone likes it but **whether they're going**. Participation has **three states**:
+
+| State | Shown on the card? |
+|---|---|
+| **Going** | Yes: their bubble, in colour |
+| **Not going** (said so) | Yes: their bubble greyed and struck through, after the going bubbles |
+| **No answer** | No. "I don't want to know if someone hasn't responded" |
+
+- D3 stands: votes stay off the day page. Dissent on planned items is a participation fact, not a sentiment.
+- *Data implication:* `assigned_to` (a list of who's going) can't express "not going". This needs a new stored state, an append-only migration, and a way to say it (inside the item, per D2's tap-into-the-card rule). Captured as its own issue (#402).
+
 ### D5 — The rail owns time: start at the card's top edge, end at its bottom edge (Scott, 2026-10-03)
 
 On any list hosted by the [[Timeline Rail]], **time is printed only in the rail, never on the card.** Where each time sits says what it means:
@@ -216,7 +230,12 @@ On any list hosted by the [[Timeline Rail]], **time is printed only in the rail,
 - **Labels sit inside the card's vertical extent:** start just below the top leader, end just above the bottom one, so adjacent cards' labels never collide. Times are single-line (`12:30 PM`), so the gutter grows from 44px to about 66px. A card with both a start and an end gets a minimum height that fits both labels (about 46px), which constrains §4.4.
 - **The type glyph stays in the card.** The 2026-10-01 "stop rail" option (B, glyph on the spine) is retired, because the gutter now holds top and bottom labels. The rail direction resolves to the clock rail (A) plus leader lines.
 - *Resolves #388:* the card no longer repeats the time. Start, end and deadline stay distinguishable by position and by the `by` prefix. This also answers the contrarian's main objection to D2 (end times and deadlines disappearing): the rail now carries them.
-- *Open within D5:* (a) trip mode's Coming up list becomes rail-hosted too (implied by "the rail is where time is shown"; to confirm); (b) the time grammar for shapes without a rail: Row, Hero (e.g. "until 4:00 PM · 55m left") and Span.
+- **Revised after the first mockup (Scott, 2026-10-03):**
+  - **No duration bar.** The thick spine segment is gone and the spine stays a hairline.
+  - **The leaders extend left across the time column,** so a rule sits *on top of* the start label (level with the card's top edge) and *under* the end label (level with its bottom edge). It reads like a dimension line.
+  - **The untimed dot is centred vertically on its card.**
+- **Trip mode is rail-hosted too (Scott, 2026-10-03).** The Coming up list uses the same rail and the same grammar. The Hero (Now Focus) keeps its own live line, for example "until 4:00 PM · 55m left".
+- *Open within D5:* (a) the compact time format, `6:30p` / `10:30a` (Scott's idea: drop the "m") or `630p` (no colon); (b) the time grammar for Row, Hero and Span.
 
 ---
 
