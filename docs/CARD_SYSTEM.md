@@ -127,11 +127,29 @@ The Focus slot also holds four **state cards** that are not item cards: Free tim
 
 *(Filled in as decisions are made. Each entry gets the date, the decision, why, and what it supersedes.)*
 
+### D1 — Four card shapes (Scott, 2026-10-03)
+
+Every [[Item]] rendering is one of **four shapes**. Surfaces configure a shape; they don't invent one.
+
+| Shape | Scott's words | What it is | Replaces (§1) |
+|---|---|---|---|
+| **Card** | "a main" | The standard shape: the full anatomy, at a consistent rhythm. The unit of a working list. | A, B (Coming up), Next 3 Days, E1–E5, G2 |
+| **Hero** | "a larger hero" | The Card enlarged for the one item that *is* the moment: live status, codes and docs up front, larger type. | B (Now Focus), E6 (swipe face), H (detail header) |
+| **Row** | "a smaller row" | One line: glyph, title, one trailing value (time, cost, status or route), plus an optional trailing action. For lists where the item is a reference. | C1, C2, E7, E8, E9, F1–F6, G1, G3 |
+| **Span** | "an informational/span shape" | An item shown as **context rather than a step**: lower weight than a Card, never dragged. Today that means multi-day stays and rentals. | D (multi-day banner), D′ (stay chip) |
+
+- **An item's lifecycle state marks a shape but doesn't change its layout.** The states are idea, pending, planned, live (past, now or next) and done.
+- **One time grammar spans all four shapes** (§4.2), so #388's start-versus-end rule is solved once.
+- **Each surface's verbs** (drag, pull up, `Do this`, check booked, Done/Swap/Skip, vote, approve) sit in one consistent action position per shape. That position is decided with the anatomy.
+- **The only bespoke piece left is the swipe deck's gesture layer.** Its card face is a Hero.
+- *Why:* 23 renderings had drifted into 23 different answers to the same questions (see §2: time, votes, avatars, glyph sizes). Four shapes give each question one answer.
+- *Open within D1:* whether "informational" stretches beyond multi-day items, for example to the Now page's Free-time and Day-wrapped cards. That gets decided when the Span shape is designed.
+
 ---
 
 ## 4. Open questions (queue)
 
-1. **Do we need this many card types?** Can the ~22 renderings collapse into a few shared shapes (for example row, card, hero, span) that each surface configures, instead of each surface rolling its own?
+1. ~~**Do we need this many card types?**~~ Resolved by **D1**: four shapes.
 2. **Time grammar (#388).** One way to show start, range, deadline and untimed, used on every surface. Start and end must stay distinguishable (Scott, 2026-10-01).
 3. **Rail direction** for the timeline: the clock rail (A) or the stop rail (B), from the 2026-10-01 mockups.
 4. **Card height.** Fixed, proportional to duration, or driven by content with a consistent minimum.
