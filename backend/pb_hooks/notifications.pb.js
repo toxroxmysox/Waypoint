@@ -158,14 +158,15 @@ onRecordAfterCreateSuccess((e) => {
 	// display_name/placeholder_name are EMPTY (the name lives on the linked
 	// users record), so resolving them first always fell back to "Someone"
 	// (#295). Prefer any snapshotted display_name, then the linked user's
-	// name/email, then placeholder_name (for placeholder rows), then "Someone".
+	// name, then placeholder_name (for placeholder rows), then "Someone". Never
+	// the email (#409) — the body is readable by every recipient over REST.
 	let newMemberName = 'Someone';
 	try {
 		let resolved = (e.record.get('display_name') || '').trim();
 		if (!resolved && userId) {
 			try {
 				const u = e.app.findRecordById('users', userId);
-				resolved = (u.get('name') || u.email() || '').trim();
+				resolved = (u.get('name') || '').trim();
 			} catch (_) {}
 		}
 		if (!resolved) resolved = (e.record.get('placeholder_name') || '').trim();

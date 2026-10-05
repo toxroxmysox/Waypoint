@@ -176,7 +176,8 @@ routerAdd('POST', '/api/invites/lookup', (e) => {
 			const inviterUserId = inviter.getString('user');
 			if (inviterUserId) {
 				const inviterUser = e.app.findRecordById('users', inviterUserId);
-				inviterName = inviterUser.getString('name') || inviterUser.email() || '';
+				// Name only (#409): lookup is reachable by anyone holding the code.
+				inviterName = inviterUser.getString('name') || '';
 			}
 		}
 	} catch (_) {
@@ -494,7 +495,7 @@ onRecordAfterCreateSuccess((e) => {
 			const inviterUserId = inviter.getString('user');
 			if (inviterUserId) {
 				const inviterUser = e.app.findRecordById('users', inviterUserId);
-				inviterName = inviterUser.getString('name') || inviterUser.email() || inviterName;
+				inviterName = inviterUser.getString('name') || inviterName; // never the email (#409)
 			}
 		}
 	} catch (_) {
@@ -779,6 +780,124 @@ routerAdd('GET', '/api/invites/co-travelers', (e) => {
 	out.sort((a, b) => (a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1));
 
 	return e.json(200, { co_travelers: out.slice(0, 60), pending_names: pendingNames });
+});
+
+// ---------------------------------------------------------------------------
+// #409 — GET /api/invites/pending?trip_id=ID
+// The members page's Pending invites list. pending_invites is superuser-read
+// only (migration 0070), so this is the one member-facing read. Any ACTIVE member
+// may call it (the list was always visible to the whole roster); what changes is
+// the label, which never carries an address the caller didn't already know:
+//   1. invitee is a co-traveler of the caller → their NAME (the #352 rule —
+//      a picker-created invite must not round-trip the address);
+//   2. else the caller is the inviter → the address they typed themselves;
+//   3. else → masked (`j•••@gmail.com`).
+// Never returns `email` or `code`.
+// Returns { invites: [{ id, role, invited_by, expires_at, label }] }, newest first.
+// ---------------------------------------------------------------------------
+routerAdd('GET', '/api/invites/pending', (e) => {
+	const auth = e.auth;
+	if (!auth) throw new UnauthorizedError('Authentication required');
+
+	const query = e.requestInfo().query || {};
+	const tripId = Array.isArray(query['trip_id']) ? query['trip_id'][0] : query['trip_id'] || '';
+	if (!tripId) throw new BadRequestError('trip_id is required');
+
+	let callerMember;
+	try {
+		callerMember = e.app.findFirstRecordByFilter(
+			'trip_members',
+			'trip = {:tripId} && user = {:userId} && removed_at = ""',
+			{ tripId: tripId, userId: auth.id }
+		);
+	} catch (_) {
+		throw new ForbiddenError('You are not a member of this trip');
+	}
+
+	let invites = [];
+	try {
+		invites = e.app.findRecordsByFilter(
+			'pending_invites',
+			'trip = {:tripId}',
+			'-expires_at',
+			0,
+			0,
+			{ tripId: tripId }
+		);
+	} catch (_) {
+		invites = [];
+	}
+	if (invites.length === 0) return e.json(200, { invites: [] });
+
+	// The caller's co-travelers: active real users on any trip the caller is
+	// currently on (same pool definition as /api/invites/co-travelers).
+	const coTravelerName = {}; // lowercased email → name
+	let myMemberships = [];
+	try {
+		myMemberships = e.app.findRecordsByFilter(
+			'trip_members',
+			'user = {:userId} && removed_at = ""',
+			'',
+			0,
+			0,
+			{ userId: auth.id }
+		);
+	} catch (_) {
+		myMemberships = [];
+	}
+	const seenUser = {};
+	for (const mine of myMemberships) {
+		let others = [];
+		try {
+			others = e.app.findRecordsByFilter(
+				'trip_members',
+				'trip = {:tripId} && user != "" && user != {:userId} && removed_at = ""',
+				'',
+				0,
+				0,
+				{ tripId: mine.getString('trip'), userId: auth.id }
+			);
+		} catch (_) {
+			others = [];
+		}
+		for (const other of others) {
+			const uid = other.getString('user');
+			if (!uid || seenUser[uid]) continue;
+			seenUser[uid] = true;
+			let u;
+			try {
+				u = e.app.findRecordById('users', uid);
+			} catch (_) {
+				continue;
+			}
+			const addr = String(u.email() || '').trim().toLowerCase();
+			if (!addr) continue;
+			coTravelerName[addr] = u.getString('name') || other.getString('display_name') || 'Traveler';
+		}
+	}
+
+	const out = [];
+	for (const inv of invites) {
+		const addr = inv.getString('email').trim().toLowerCase();
+		let label;
+		if (addr && coTravelerName[addr]) {
+			label = coTravelerName[addr];
+		} else if (inv.getString('invited_by') === callerMember.id) {
+			label = addr;
+		} else {
+			const at = addr.indexOf('@');
+			label = at > 0 ? addr.charAt(0) + '•••' + addr.substring(at) : 'Invited guest';
+		}
+		out.push({
+			id: inv.id,
+			role: inv.getString('role'),
+			invited_by: inv.getString('invited_by'),
+			expires_at: inv.getString('expires_at'),
+			label: label
+		});
+	}
+
+	return e.json(200, { invites: out });
 });
 
 // POST /api/invites/create-for-user

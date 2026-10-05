@@ -78,6 +78,38 @@ onRecordUpdateRequest((e) => {
 	e.next();
 }, 'trips');
 
+// #407 — trips delete gate. deleteRule is bare MEMBER (0014) and nothing else
+// gated it, so any member — viewers included — could DELETE the trip over REST
+// and cascade-wipe every phase/day/item/expense/memory. The settings "Delete
+// trip" action already requires owner/co_owner; this makes PB enforce the same.
+// Superusers pass (scripts/clean-dev-trips.mjs purges test trips as admin).
+onRecordDeleteRequest((e) => {
+	if (e.hasSuperuserAuth()) {
+		e.next();
+		return;
+	}
+	const authId = e.requestInfo().auth?.id;
+	if (!authId) throw new UnauthorizedError('Authentication required');
+
+	let callerMember;
+	try {
+		callerMember = e.app.findFirstRecordByFilter(
+			'trip_members',
+			'trip = {:tripId} && user = {:uid} && removed_at = ""',
+			{ tripId: e.record.id, uid: authId }
+		);
+	} catch (_) {
+		throw new ForbiddenError('You are not a member of this trip');
+	}
+
+	const callerRole = '' + callerMember.get('role');
+	if (callerRole !== 'owner' && callerRole !== 'co_owner') {
+		throw new ForbiddenError('Only an owner or co-owner can delete the trip');
+	}
+
+	e.next();
+}, 'trips');
+
 // #270 / ADR-0022 — both-or-neither dates on create. A trip is either dateless
 // (forming) or fully dated; a start-only / end-only trip must never exist. The
 // schema can't express a cross-field requirement (0062 relaxed both to

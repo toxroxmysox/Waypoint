@@ -170,6 +170,8 @@ function deleteTargetId(fixture, collection) {
 // so we collapse to allow / deny / auth_error and report the raw status alongside.
 function classifyList(status, items, fixtureId) {
 	if (status === 401) return 'auth_error';
+	// A null (superuser-only) listRule answers 403 rather than an empty page (#409).
+	if (status === 403) return 'deny';
 	if (status !== 200) return 'http_' + status;
 	if (!Array.isArray(items)) return 'http_' + status;
 	return items.some((r) => r.id === fixtureId) ? 'allow' : 'deny';
@@ -263,18 +265,24 @@ const EXPECT = {
 		update: SELF_ONLY,
 		delete: DENY_ALL
 	},
+	// trips:
+	//   delete: owner·co_owner only (#407). deleteRule stays MEMBER; the
+	//           trips.pb.js delete hook resolves the caller's role (was wide open —
+	//           a viewer could cascade-wipe the trip over REST). Superuser
+	//           deletes still pass (trips.delete_superuser novel case).
 	trips: {
 		list: ALLOW_MEMBERS_DENY_NONMEMBER,
 		view: ALLOW_MEMBERS_DENY_NONMEMBER,
 		create: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'allow', non_member: 'allow' },
 		update: ALLOW_MEMBERS_DENY_NONMEMBER,
-		delete: ALLOW_MEMBERS_DENY_NONMEMBER
+		delete: OWNER_COOWNER_ONLY
 	},
 	// trip_members (#279 — AUTHZ-1):
-	//   update: a NON-role edit (the matrix PATCHes the owner row's display_name)
-	//           stays at MEMBER_VIA_TRIP — any member passes. trip_members.pb.js only
-	//           gates `role` CHANGES (owner/co_owner only) — see the novel
-	//           role-escalation cases below.
+	//   update: the matrix PATCHes the OWNER row's display_name. Since #408 a
+	//           display_name edit is own-row, or any row for owner/co_owner — so
+	//           owner (self) + co_owner pass, traveler/viewer deny. `role` changes
+	//           are owner/co_owner only (#279); identity/lifecycle fields are
+	//           locked for everyone (#408 novel cases below).
 	//   delete: owner/co_owner only. The matrix deletes the childless `spare`
 	//           placeholder (user=""), so it's never a self-leave for any role;
 	//           trip_members.pb.js requires owner/co_owner to delete someone else's
@@ -284,7 +292,7 @@ const EXPECT = {
 		list: ALLOW_MEMBERS_DENY_NONMEMBER,
 		view: ALLOW_MEMBERS_DENY_NONMEMBER,
 		create: DENY_ALL,
-		update: ALLOW_MEMBERS_DENY_NONMEMBER,
+		update: OWNER_COOWNER_ONLY,
 		delete: OWNER_COOWNER_ONLY
 	},
 	// phases (#175):
@@ -335,7 +343,9 @@ const EXPECT = {
 		delete: ALLOW_MEMBERS_DENY_NONMEMBER
 	},
 	// pending_invites (M2b):
-	//   list/view: any member can see invites for the trip
+	//   list/view: superuser only (#409, 0070) — rows carry the invitee's email +
+	//           the live code. Members read GET /api/invites/pending instead
+	//           (labels, never email/code) — see the #409 novel cases.
 	//   create: null (rule) — legitimate path is /api/invites/create endpoint
 	//   update: null (rule) — invites are immutable; revoke + re-invite to change
 	//   delete: rule = member; HOOK enforces SPEC §3 — owner/co_owner can
@@ -343,8 +353,8 @@ const EXPECT = {
 	//           Fixture invite is created by the owner, so traveler/viewer
 	//           both deny here.
 	pending_invites: {
-		list: ALLOW_MEMBERS_DENY_NONMEMBER,
-		view: ALLOW_MEMBERS_DENY_NONMEMBER,
+		list: DENY_ALL,
+		view: DENY_ALL,
 		create: DENY_ALL,
 		update: DENY_ALL,
 		delete: {
@@ -813,9 +823,13 @@ async function runUpdatePhase(tokens, fixture) {
 	for (const col of COLLECTIONS) {
 		const fid = fixtureRecordId(fixture, col);
 		for (const role of ROLES) {
+			// trip_members.pb.js (#408) passes a no-op PATCH (nothing changed), so
+			// each role must send a value that actually differs from the last one.
+			const body =
+				col === 'trip_members' ? { display_name: `Harness updated by ${role}` } : updateBody(col);
 			const r = await pbRequest('PATCH', `/api/collections/${col}/records/${fid}`, {
 				token: tokens[role],
-				body: updateBody(col)
+				body
 			});
 			recordResult(col, 'update', role, EXPECT[col].update[role], classifyWrite(r.status), r.status);
 		}
@@ -1677,6 +1691,159 @@ function printMemberRoleGateReport() {
 	}
 }
 
+// --- #408 trip_members field allowlist -------------------------------------
+// Before #408 the update hook only gated `role`, so any member could rewrite any
+// other field on any row: hijack the owner row by pointing its `user` at a second
+// account, or move their own row to another trip id. Now identity/lifecycle
+// fields are locked for every caller (server flows run in admin context), a
+// display_name edit is own-row or owner/co_owner, and digest_opt_out is own-row.
+const MEMBER_FIELD_GATE_OPS = [
+	'hijack_owner_row_user',
+	'move_own_row_trip',
+	'owner_rewrite_placeholder_email',
+	'rename_other_traveler',
+	'rename_other_owner',
+	'own_digest_opt_out',
+	'other_digest_opt_out_owner',
+	'superuser_edit'
+];
+
+async function runMemberFieldGateNovelCases(tokens) {
+	// 1. Traveler points the OWNER row at another account (stand-in for the
+	//    attacker's second login) → deny.
+	let fixture = await setupFixture();
+	const hijack = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.owner}`, {
+		token: tokens.traveler,
+		body: { user: fixture.userIds.non_member }
+	});
+	recordResult('trip_members', 'hijack_owner_row_user', 'traveler', 'deny', classifyWrite(hijack.status), hijack.status);
+
+	// 2. Traveler moves their own row onto a trip they're not on → deny.
+	fixture = await setupFixture();
+	const other = await pbRequest('POST', '/api/collections/trips/records', {
+		token: tokens.non_member,
+		body: { slug: 'e2e-rules-other-' + Date.now(), title: 'Other trip', created_by: fixture.userIds.non_member }
+	});
+	const move = other.data?.id
+		? await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.traveler}`, {
+				token: tokens.traveler,
+				body: { trip: other.data.id }
+			})
+		: { status: 0 };
+	recordResult('trip_members', 'move_own_row_trip', 'traveler', 'deny', classifyWrite(move.status), move.status);
+	if (other.data?.id) {
+		await pbRequest('DELETE', `/api/collections/trips/records/${other.data.id}`, { token: tokens.non_member });
+	}
+
+	// 3. Even an owner can't rewrite a locked field directly → deny.
+	fixture = await setupFixture();
+	const pe = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.spare}`, {
+		token: tokens.owner,
+		body: { placeholder_email: 'someone-else@e2e.test' }
+	});
+	recordResult('trip_members', 'owner_rewrite_placeholder_email', 'owner', 'deny', classifyWrite(pe.status), pe.status);
+
+	// 4. Traveler renames ANOTHER member → deny.
+	fixture = await setupFixture();
+	const tRename = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.viewer}`, {
+		token: tokens.traveler,
+		body: { display_name: 'Renamed by traveler' }
+	});
+	recordResult('trip_members', 'rename_other_traveler', 'traveler', 'deny', classifyWrite(tRename.status), tRename.status);
+
+	// 5. Owner renames another member → allow (roster management).
+	fixture = await setupFixture();
+	const oRename = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.traveler}`, {
+		token: tokens.owner,
+		body: { display_name: 'Renamed by owner' }
+	});
+	recordResult('trip_members', 'rename_other_owner', 'owner', 'allow', classifyWrite(oRename.status), oRename.status);
+
+	// 6. Traveler flips their own digest_opt_out (the settings toggle) → allow.
+	fixture = await setupFixture();
+	const ownDigest = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.traveler}`, {
+		token: tokens.traveler,
+		body: { digest_opt_out: true }
+	});
+	recordResult('trip_members', 'own_digest_opt_out', 'traveler', 'allow', classifyWrite(ownDigest.status), ownDigest.status);
+
+	// 7. Owner flips someone else's digest_opt_out → deny (personal preference).
+	fixture = await setupFixture();
+	const otherDigest = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.traveler}`, {
+		token: tokens.owner,
+		body: { digest_opt_out: true }
+	});
+	recordResult('trip_members', 'other_digest_opt_out_owner', 'owner', 'deny', classifyWrite(otherDigest.status), otherDigest.status);
+
+	// 8. Superusers bypass the allowlist (admin tooling) → allow.
+	fixture = await setupFixture();
+	const su = await superuserToken();
+	const suEdit = su
+		? await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.spare}`, {
+				token: su,
+				body: { placeholder_name: 'Admin fixed name' }
+			})
+		: { status: 0 };
+	recordResult('trip_members', 'superuser_edit', 'superuser', 'allow', classifyWrite(suEdit.status), suEdit.status);
+}
+
+function printMemberFieldGateReport() {
+	console.log('\n[#408 trip_members — identity/lifecycle fields locked; display_name own-or-owner; digest own-only]');
+	for (const r of results.filter((x) => MEMBER_FIELD_GATE_OPS.includes(x.op))) {
+		const mark = r.passed ? 'PASS' : 'FAIL';
+		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+	}
+}
+
+// --- #409 pending invites read route ---------------------------------------
+// pending_invites list/view is superuser-only (0070); members read labels through
+// GET /api/invites/pending. The fixture invite is the OWNER's, to a non-user
+// address, so the owner (inviter) sees it, everyone else gets a mask, a
+// non-member is refused, and no response ever carries `email` or `code`.
+const PENDING_ROUTE_OPS = [
+	'route_inviter_sees_own',
+	'route_viewer_masked',
+	'route_no_email_or_code',
+	'route_nonmember_denied'
+];
+
+async function runPendingRouteNovelCases(tokens) {
+	const fixture = await setupFixture();
+	const path = `/api/invites/pending?trip_id=${fixture.tripId}`;
+	const su = await superuserToken();
+	const raw = su
+		? await pbRequest('GET', `/api/collections/pending_invites/records/${fixture.pendingInviteId}`, { token: su })
+		: { data: null };
+	const address = raw.data?.email || '';
+	const code = raw.data?.code || '';
+
+	const asOwner = await pbRequest('GET', path, { token: tokens.owner });
+	const ownRow = (asOwner.data?.invites || []).find((i) => i.id === fixture.pendingInviteId);
+	recordResult('pending_invites', 'route_inviter_sees_own', 'owner', 'yes',
+		address && ownRow?.label === address ? 'yes' : 'no', asOwner.status);
+
+	const asViewer = await pbRequest('GET', path, { token: tokens.viewer });
+	const viewerRow = (asViewer.data?.invites || []).find((i) => i.id === fixture.pendingInviteId);
+	recordResult('pending_invites', 'route_viewer_masked', 'viewer', 'yes',
+		viewerRow && viewerRow.label !== address && viewerRow.label.includes('•••') ? 'yes' : 'no', asViewer.status);
+
+	const bodies = JSON.stringify([asOwner.data, asViewer.data]);
+	const clean = (asOwner.data?.invites || []).every((i) => !('email' in i) && !('code' in i)) &&
+		(!code || !bodies.includes(code)) && (!address || !JSON.stringify(asViewer.data).includes(address));
+	recordResult('pending_invites', 'route_no_email_or_code', 'viewer', 'yes', clean ? 'yes' : 'no', asViewer.status);
+
+	const asNon = await pbRequest('GET', path, { token: tokens.non_member });
+	recordResult('pending_invites', 'route_nonmember_denied', 'non_member', 'deny', classifyWrite(asNon.status), asNon.status);
+}
+
+function printPendingRouteReport() {
+	console.log('\n[#409 pending invites — superuser-only collection; /api/invites/pending labels (inviter sees own, others masked, never email/code)]');
+	for (const r of results.filter((x) => PENDING_ROUTE_OPS.includes(x.op))) {
+		const mark = r.passed ? 'PASS' : 'FAIL';
+		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+	}
+}
+
 // --- #280 (AUTHZ-2) trips lifecycle/publishing role gate -------------------
 // The fixed trips.update matrix PATCHes location_summary (an ORDINARY field) and
 // stays ALLOW_MEMBERS_DENY_NONMEMBER — proving the gate doesn't over-reach. These
@@ -1693,7 +1860,8 @@ const TRIPS_GATE_OPS = [
 	'protected_owner_archive_enabled',
 	'protected_coowner_publish_at',
 	'ordinary_traveler_title_date',
-	'reconcile_after_gate'
+	'reconcile_after_gate',
+	'delete_superuser'
 ];
 
 async function runTripsGateNovelCases(tokens) {
@@ -1773,10 +1941,19 @@ async function runTripsGateNovelCases(tokens) {
 		reconciled = (days.data?.items || []).some((d) => (d.date || '').substring(0, 10) === '2026-06-04');
 	}
 	recordResult('trips', 'reconcile_after_gate', 'owner', 'yes', reconciled ? 'yes' : 'no', ext.status);
+
+	// 9. #407: the delete hook lets a superuser through (clean-dev-trips purges
+	//    test trips as admin). Role denials are covered by the delete matrix.
+	fixture = await setupFixture();
+	const suToken = await superuserToken();
+	const suDel = suToken
+		? await pbRequest('DELETE', `/api/collections/trips/records/${fixture.tripId}`, { token: suToken })
+		: { status: 0 };
+	recordResult('trips', 'delete_superuser', 'superuser', 'allow', classifyWrite(suDel.status), suDel.status);
 }
 
 function printTripsGateReport() {
-	console.log('\n[#280 trips — gate archive/publish/share/auto-approve to owner·co_owner; ordinary edits + day-reconcile unaffected]');
+	console.log('\n[#280/#407 trips — gate archive/publish/share/auto-approve + delete to owner·co_owner; ordinary edits + day-reconcile unaffected]');
 	for (const r of results.filter((x) => TRIPS_GATE_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
 		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
@@ -2470,6 +2647,12 @@ async function main() {
 	console.log('#279 cases: trip_members role gate (block escalation, gate cross-member delete, self-leave, sole-owner cap)');
 	await runMemberRoleGateNovelCases(tokens);
 
+	console.log('#408 cases: trip_members field allowlist (identity fields locked; display_name own-or-owner; digest own-only)');
+	await runMemberFieldGateNovelCases(tokens);
+
+	console.log('#409 cases: pending invites read route (superuser-only collection; labels, never email/code)');
+	await runPendingRouteNovelCases(tokens);
+
 	console.log('#280 cases: trips lifecycle/publishing gate (protected fields owner·co_owner only; ordinary edits + reconcile unaffected)');
 	await runTripsGateNovelCases(tokens);
 
@@ -2505,6 +2688,8 @@ async function main() {
 	printMemberRemovalReport();
 	printMemberRelationDriftReport();
 	printMemberRoleGateReport();
+	printMemberFieldGateReport();
+	printPendingRouteReport();
 	printTripsGateReport();
 	printMoneyUnitReport();
 	printChecklistTaskReport();
