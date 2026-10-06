@@ -276,11 +276,20 @@ Flights write departure → arrival (`2:05p → 4:20p`). **In text, an end time 
   - `✓ Booked`, who's going **with names**, and `⋯` (Skip)
 - **Free time (Scott, 2026-10-06, keeping the old card's look):** centred, with the time as the focus: `FREE TIME`, then a large `25m`, then `until Return rental clubs` (the next item by name). It counts down to the next timed thing **including deadlines**, which fixes the countdown half of #392. No second line about later free time; the rail's free-time label already says it.
 
+**Several Heroes when several items are ongoing (Scott asked for it 2026-10-06; rules PROPOSED, awaiting Scott).** Scott: check "we have the option of having multiple hero cards in trip mode if we have multiple ongoing items with different people." As built, Now keeps only the ongoing item that ends last and drops the others from the page entirely (`findCurrentItem`, verified 2026-10-06). Proposed rules, drawn on the before/after page:
+- Every [[Ongoing]] item gets a Hero, the full Hero (clay border, filled icon, `NOW` line, codes, Going with names).
+- **Yours first:** items the viewer is going to, then everyone else's; by start time within each group.
+- Heroes don't repeat the neutral `Overlaps …` note between themselves, because stacking already says "at the same time". A red conflict (the same people on both) still shows.
+- The free-time card shows only when nothing is ongoing for anyone.
+- *Glossary impact:* [[Focus]] is defined as "the single emphasised block"; with this it can hold several Heroes.
+
 **Swipe face = Hero, details shown by default (Scott, 2026-10-06).** The 40px icon beside the Fraunces title; place and cost; then the date and time when it has them, or **`Unplanned`** when it has none; then the description; then `Added by Kim` on its own line; then, below a divider and centred, `Others' votes hidden until you vote`. *(Scott, 2026-10-06: keep those two apart.)* No `Details` tap, no `Planned` / `Idea` pill, no "not on a day yet".
 
 **Inbox suggestion (Scott, 2026-10-06).** The pending idea card, with **Approve / Edit / Reject** on the outside. **Edit** opens the item, and its actions inside are **Reject / Save / Approve**. Save keeps the edits and leaves it pending. The `TRAVELER` role badge goes.
 
-### D12 — Item detail, the full page (PROPOSED 2026-10-06, awaiting Scott)
+### D12 — Item detail, the full page (2026-10-06: partly approved — see the status line)
+
+*Status (2026-10-06):* **approved by Scott:** "Are you going?" ("that's good"), no job dock, planned items stay in the swipe quiz with a quiet vote row, and Mark booked going to the existing Add expense. **Not yet explicitly approved:** a visible Edit with a role-filtered `⋯`, the Hero as the venue kit (place line opens Maps, codes, documents, live line), the Details card, empty sections shrinking to one line, the comment box first, the type and subtype in words, and trip mode's "Plan details" plus Log payment under the Hero.
 
 Scott: the detail page "might deserve a bit more review". A panel (contrarian, alternative proposer, user advocate) reviewed a first draft, and this is where they agreed. It is drawn in three states on the before/after page: planned in planning mode with needs booking, trip mode mid-event, and an unplanned idea.
 
@@ -301,9 +310,9 @@ Scott: the detail page "might deserve a bit more review". A panel (contrarian, a
 - **Planned items stay in the swipe quiz (Scott, 2026-10-06).** So a planned item can carry votes. Its detail page shows one quiet Details row, `Your vote: Love · change` (tap to open the four pills), and never the vote pills on the face. Cards still show no votes on planned items (D3).
 - **Desktop:** see D13.
 
-### D13 — Desktop (PROPOSED 2026-10-06, awaiting Scott)
+### D13 — Desktop (approved by Scott 2026-10-06: "no notes")
 
-Drawn at true 1280px on the before/after page: the day page while dragging an idea, Now, and item detail. AppShell already has three widths: phones below 900px; a 72px icon rail plus content from 900px; and from 1280px, a 240px side rail, a 720px content column and a 320px context rail.
+Drawn at true 1280px on the before/after page: the day page while dragging an idea, Now, and item detail. *Follow-up on the back burner: desktop card variants that use the extra width (#417).* AppShell already has three widths: phones below 900px; a 72px icon rail plus content from 900px; and from 1280px, a 240px side rail, a 720px content column and a 320px context rail.
 
 - **One card, any width.** No desktop-only card layout. Cards stretch to the content column (about 610px beside the 48px rail) and keep D2's rows and D8's heights.
 - **Ideas live in the context rail at ≥1280px** (as built), now grouped by type, sorted by votes and carrying the vote pills (D3). Below 1280px they stay under the timeline, as on phones.
@@ -422,3 +431,7 @@ On any list hosted by the [[Timeline Rail]], **time is printed only in the rail,
    - Inbox suggestion (E9) is the pending idea card with an Approve / Edit & approve / Reject tray. The TRAVELER role badge goes, because "Suggested by Jess" already says who.
    - Confirmation codes (Docs, F4) are Rows with the code in mono in the sub-line and a copy action. No gold: a code is a closed loop, not an open one. The tinted type circles go (D10).
    - Goal rows (F5) say "Idea · Phase 1" or "Planned · Thu Oct 1 · 6:30p" in words. The gold Unplanned and blue Planned pills go.
+8. **#392's two remaining product calls** (its third, "does an imminent deadline count as next?", is answered by D11: yes):
+   - A start-only item after its start (`Lunch 1:00p` at 1:15p): ongoing until the next timed item starts (a Hero, `NOW · since 1:00p`), or straight to Earlier today? *Recommended: ongoing until the next timed item starts.*
+   - A deadline after its time: Earlier today (past), or an "overdue" state? *Recommended: past. Trip mode can't mark things done, and red is reserved for shared-people conflicts.*
+9. **Mock vs decision log, to confirm:** D2 gives Live cards a `⋯` (Skip, owner/co_owner); the Coming up mocks drew none. D3 left trip mode's Ideas for now open; the mocks drew it grouped by type with vote pills.
