@@ -156,7 +156,7 @@ The main **Card** is built from these zones, top to bottom. Empty zones collapse
 | **Marker** | The type glyph, at the left. A timeline host may lift it onto the rail (decided with the time grammar, §4.2–4.3). |
 | **Head** | The title (wraps to 2 lines max, then ellipsis) and **one** trailing value, chosen per job. |
 | **Meta** | One line: the best "where" for the type. Location. Flight or transport shows the route (`MKE → DEN`, from `location_name` + the description's arrival label). A note shows the first line of its description. The record shows place · time. |
-| **Strip** | **Left = info and pills, exception-first:** `Needs booking` (loud), overlap warning, then quiet `✓ Booked`, documents count, `✓ Done`. **Right = people:** the [[Assignment]] people bubbles (and votes only where D3 allows them). |
+| **Strip** | *(`Needs booking` stays gold for now — Scott, 2026-10-06 — with darker text to clear 4.5:1. Moving it to the red error scheme is an option for the colour-vocabulary step.)* **Left = info and pills, exception-first:** `Needs booking` (loud), overlap warning, then quiet `✓ Booked`, documents count, `✓ Done`. **Right = people:** the [[Assignment]] people bubbles (and votes only where D3 allows them). |
 | **Action** | Secondary verbs go in `⋯`. At most one primary action shows on the face. *(The exact position is still open.)* |
 
 - **Heights** are 1, 2 or 3 rows (head / +meta / +strip), plus one line when a title wraps. Never more. The as-built loaded timeline card is 7 rows.
@@ -209,7 +209,14 @@ The `assigned_to` people are **who is going on or doing the item**. That's all. 
 - The nodes break up the spine line, which Scott found made the vertical line read better than the bare hairline did.
 - **Off the rail** (the parking lot / phase planning ideas), the card carries **no** glyph. The list is **grouped by type**, and each group has a divider with the icon and a plain-language label ("Places to eat", "Things to do", …).
 - *Supersedes:* the 32px in-card `TypeIcon` on the timeline card and the type tag on Phase Detail parking cards (E3).
-- *Open within D7:* the group labels per type, and the sort order within a group (votes lead in phase planning, D3, #401).
+- **Group headings use the type names (Scott, 2026-10-06), not translations:** Meals, not "Places to eat". They are the plural type labels Trip Documents already groups by: Lodging · Flights · Transportation · Activities · Meals · Notes.
+- *Open within D7:* the sort order within a group (votes lead in phase planning, D3, #401).
+
+### D8 — Card height follows content, never duration (Scott, 2026-10-06)
+
+- A card is 1, 2 or 3 rows (head / +meta / +strip), plus one line when the title wraps. A card with both a start and an end has a minimum height that fits both rail labels (about 46–50px). Duration never stretches a card.
+- *Panel (2026-10-03):* both reviewers rejected duration scaling, including the one assigned to argue for it. Scaling would size only 3 of the fixture's 9 cards (content height swamps the scale below about 1.5h), and two 45-minute meals would render at different heights. Untimed, start-only and deadline items have no duration, so every list would mix two systems. Gaps between cards aren't scaled, so it gives "calendar looks without calendar meaning". It adds about 19% scroll and pushes the next item below the fold in trip mode. And the drafting precedent cuts against it: "do not scale drawing" — the dimension text governs.
+- *Proposed alongside D8 (user advocate; awaiting Scott):* a **free-time marker** on the rail. When the gap between a *known* end (an end time or a `by` deadline) and the next timed start is ≥ 60 minutes, draw a dashed rail segment labelled `2h free · 4:30p to 6:30p`. It is not a card, can't be dragged and has no tap target. A start-only item creates no gap. Screen readers hear "Free, 4:30p to 6:30p".
 
 ### D6 — "Going" has three states; dissent shows as "not going", not as votes (Scott, 2026-10-03)
 
@@ -254,6 +261,6 @@ On any list hosted by the [[Timeline Rail]], **time is printed only in the rail,
 1. ~~**Do we need this many card types?**~~ Resolved by **D1**: four shapes.
 2. **Time grammar (#388).** *Rail-hosted cards resolved by D5; Row / Hero / Span still open.* One way to show start, range, deadline and untimed, used on every surface. Start and end must stay distinguishable (Scott, 2026-10-01).
 3. ~~**Rail direction**~~ Resolved by D5: the clock rail with leader lines; the glyph stays in the card.
-4. **Card height.** Fixed, proportional to duration, or driven by content with a consistent minimum.
+4. ~~**Card height.**~~ Resolved by **D8**: content-driven, never duration.
 5. **What goes on the face versus the detail page**, per job.
 6. **Text versus symbol versus color.** One vocabulary for type, status and mode.
