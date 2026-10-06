@@ -349,7 +349,7 @@ Drawn at true 1280px on the before/after page: the day page while dragging an id
 - **Icon size scale, from 11 sizes to 3:** a 16px bare glyph (Row, Span *(⟶ the approved Span mock uses the 24px disc, in line with the rail nodes)*, group heading); 16px in a 24px disc (rail node); 26px in a 40px disc (Hero). State icons are 1em of their text.
 - **Overlap with nobody shared** (or nobody has said who's going yet): a plain **ink** `Overlaps tee time` note. It is informational, not a conflict, and red is reserved for shared people. *(Claude's call 2026-10-06 when Scott left it open; reversible.)*
 - **Earlier today = soft fade (Scott, 2026-10-06):** past items keep the full Card shape but **without the white fill**, in ink-muted text (5.4:1 on paper, never opacity), with a lighter rail rule and an outlined node. They stay tappable, so you can find the code or address you just used.
-- **Span = full-width band (Scott, 2026-10-06):** all-day and multi-day items sit **outside the timeline**, with a border spanning the full width. The icon sits **in the rail column, in line with the rail nodes**, and the title lines up with the card titles. The band is a neutral surface-2 fill.
+- **Span = full-width band (Scott, 2026-10-06):** all-day and multi-day items *(⟶ there is no separate all-day item: "all-day" here means the [[Multi-day Item]] bands, Scott's "all-day events")* sit **outside the timeline**, with a border spanning the full width. The icon sits **in the rail column, in line with the rail nodes**, and the title lines up with the card titles. The band is a neutral surface-2 fill.
 
 ### D9 — Rail geometry: a centred time · icon · time column (Scott, 2026-10-06)
 
