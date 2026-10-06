@@ -215,7 +215,7 @@ Votes belong where ideas are **weighed and moved**: a phase-focused planning con
 - *Seeded a product direction:* a **phase planning mode**, a focused workspace for weighing a phase's ideas and moving them into days. That is bigger than cards and is captured as its own issue (#401). It connects to #391 (getting into a phase).
 - *Open:* trip mode's "Ideas for now" strip (E4), where votes help pick a backup on the day.
 - **Amendment (Scott, 2026-10-06):** idea cards in the **day page's parking lot** and the **desktop Ideas panel** may show votes too, as an add-on for **unplanned** items, so you can tell which idea is the favourite. Planned cards still show none. **Form (Scott, 2026-10-06): tap-to-vote pills under the sub-line** (the Closeout pill structure). One pill per sentiment, **all four** (love / like / flexible / pass, matching the data model and `VoteButtons`), each with its count. The viewer's own vote is filled, and tapping toggles it. **Ideas sort by votes within each type group**, using the existing `sortByVoteScore` (weights 2 / 1 / 0 / −2, ties by `sort_order`). The cost: idea cards are about 30px taller.
-  - *Consequence (open):* with votes setting the order, dragging to reorder **within** the parking lot has nothing left to do. Drag becomes "move to a day" only, and `sort_order` survives only as the tie-break.
+  - **Drag only plans (Scott, 2026-10-06):** votes set the order, so dragging within the ideas list does nothing; a card dropped back among ideas resolves to its vote position. Drag is "put this on a day" only. `sort_order` survives only as the tie-break.
   - **Approved on the before/after page (Scott, 2026-10-06):** the categorized idea list, "really love" it. Phase planning ideas and the pending review tray: "no notes".
 
 ### D4 — Assignment means "who's going" (Scott, 2026-10-03)
@@ -261,7 +261,7 @@ The `assigned_to` people are **who is going on or doing the item**. That's all. 
 | Deadline | `by 4:30p` |
 | Untimed | Omitted |
 
-Flights write departure → arrival (`2:05p → 4:20p`). An end time never appears on its own without `by`. On the booking list, the date is prefixed (`Thu Oct 1 · 6:30p`).
+Flights write departure → arrival (`2:05p → 4:20p`). **In text, an end time never appears on its own without `by`.** Text has no top or bottom edge to carry the meaning, so `by` stays here even though the rail dropped it (2026-10-06). On the booking list, the date is prefixed (`Thu Oct 1 · 6:30p`).
 
 **Span, day by day** (approved by Scott, 2026-10-06, "no notes"):
 - A stay reads `Check-in 3:00p · 3 nights` on the first day, then `Night 2 of 3 · check-out Sat by 11:00a`, then `Check-out by 11:00a`.
@@ -276,7 +276,7 @@ Flights write departure → arrival (`2:05p → 4:20p`). An end time never appea
   - `✓ Booked`, who's going **with names**, and `⋯` (Skip)
 - **Free time (Scott, 2026-10-06, keeping the old card's look):** centred, with the time as the focus: `FREE TIME`, then a large `25m`, then `until Return rental clubs` (the next item by name). It counts down to the next timed thing **including deadlines**, which fixes the countdown half of #392. No second line about later free time; the rail's free-time label already says it.
 
-**Swipe face = Hero, details shown by default (Scott, 2026-10-06).** The 40px icon beside the Fraunces title; place and cost; then the date and time when it has them, or **`Unplanned`** when it has none; then the description; then `Others' votes hidden until you vote` and `Added by Kim`. No `Details` tap, no `Planned` / `Idea` pill, no "not on a day yet".
+**Swipe face = Hero, details shown by default (Scott, 2026-10-06).** The 40px icon beside the Fraunces title; place and cost; then the date and time when it has them, or **`Unplanned`** when it has none; then the description; then `Added by Kim` on its own line; then, below a divider and centred, `Others' votes hidden until you vote`. *(Scott, 2026-10-06: keep those two apart.)* No `Details` tap, no `Planned` / `Idea` pill, no "not on a day yet".
 
 **Inbox suggestion (Scott, 2026-10-06).** The pending idea card, with **Approve / Edit / Reject** on the outside. **Edit** opens the item, and its actions inside are **Reject / Save / Approve**. Save keeps the edits and leaves it pending. The `TRAVELER` role badge goes.
 
@@ -292,14 +292,27 @@ Scott: the detail page "might deserve a bit more review". A panel (contrarian, a
   - codes as large, arm's-length mono rows, tap to copy
   - **documents as rows under the codes**
   - Going
-- **Needs booking is a button** (owner/co_owner/creator): `Needs booking · Book ↗ · Mark booked`. Mark booked opens a sheet with an optional code and an optional "Paid now?" prefilled from the estimate, which logs an expense. Booked and paid stay separate (ADR-0014). This takes booking from about 8 taps to about 4, with no trip through the Edit form.
+- **Needs booking is a button** (owner/co_owner/creator): `Needs booking · Book ↗ · Mark booked`. Mark booked opens a sheet with an optional code and a **"Log what I paid next"** checkbox. After Save, that opens the **existing Add expense** (#228's prefilled form: amount from the estimate, you as payer, the usual split, all editable), **not** a cut-down inline expense. *(Scott, 2026-10-06: an inline version would have allowed only even splits.)* Booked and paid stay separate (ADR-0014). Booking drops from about 8 taps to about 4, with no trip through the Edit form.
 - **Going is a question until you answer:** "Are you going? Going · Not going", then "You're going · change". Others' bubbles have names. "Not going" waits on #402's migration.
 - **Votes or Going, never both.** An idea shows your four vote pills plus who voted what, and an **Add to a day** primary button. A planned item shows Going.
 - **Body:** description, then one **Details** label/value card (cost estimate, Log payment / Paid $X as its own row that never depends on an estimate, booking link, cancellation, phase), then Goals if linked. Empty Documents and Checklist shrink to one `+ Document · + Checklist` line. Comments come next, with the composer **above** the newest-first list.
 - **Trip mode** reorders for use, not planning: Log payment sits under the Hero once the item has started; Details collapses to "Plan details".
-- **Not adopted:** the proposer's sticky **job dock** (a bottom bar with Going / Comment / Edit, or Directions / Copy code / Going, replacing the tab bar). The Hero already puts those verbs at zero scroll, and the dock needs a new AppShell mode. Left to Scott.
-- **Open:** the swipe deck includes **planned** items, so "votes only on ideas" leaves an invisible vote. Either drop planned items from the deck, or show one quiet line on planned detail, "You voted Love · change".
-- **Desktop (open, with the desktop pass):** two columns at ≥900px — Hero, Details and Docs on the left; Checklist and Comments on the right.
+- **Rejected (Scott, 2026-10-06):** the proposer's sticky **job dock** (a bottom bar with Going / Comment / Edit, or Directions / Copy code / Going, replacing the tab bar). The Hero already puts those verbs at zero scroll.
+- **Planned items stay in the swipe quiz (Scott, 2026-10-06).** So a planned item can carry votes. Its detail page shows one quiet Details row, `Your vote: Love · change` (tap to open the four pills), and never the vote pills on the face. Cards still show no votes on planned items (D3).
+- **Desktop:** see D13.
+
+### D13 — Desktop (PROPOSED 2026-10-06, awaiting Scott)
+
+Drawn at true 1280px on the before/after page: the day page while dragging an idea, Now, and item detail. AppShell already has three widths: phones below 900px; a 72px icon rail plus content from 900px; and from 1280px, a 240px side rail, a 720px content column and a 320px context rail.
+
+- **One card, any width.** No desktop-only card layout. Cards stretch to the content column (about 610px beside the 48px rail) and keep D2's rows and D8's heights.
+- **Ideas live in the context rail at ≥1280px** (as built), now grouped by type, sorted by votes and carrying the vote pills (D3). Below 1280px they stay under the timeline, as on phones.
+- **Drag with the mouse, straight away.** The long-press exists only to separate drag from scroll on touch. A mouse press-and-move lifts the card immediately. Valid drops (a free gap, a slot) highlight in the planning accent: `Drop to plan · 2h free · 4:30p to 6:30p`. The keyboard path is the item's "Add to a day".
+- **The context rail's Up next becomes mini day cards:** the date, the day title, the item count and any `1 needs booking`. As built, it repeats "Phase 1" for every day.
+- **Hover adds speed, never facts.** A card lifts on hover. A vote pill's tooltip lists who voted, which is also shown on the item page. Nothing exists only on hover.
+- **Item detail splits into two columns** in the content column: the Hero, description, Details and Goals on the left; `+ Document · + Checklist` and Comments (composer first) on the right. Each column is about a phone's width.
+- **Now in trip mode:** the same Hero and rail in the content column; Ideas for now and tomorrow's rows in the context rail.
+- **Group order everywhere** follows D7's type order (Lodging · Flights · Transportation · Activities · Meals · Notes). The earlier phone mocks had Meals first; fixed 2026-10-06.
 
 ### D10 — Colour means "act on this"; type icons are monochrome (Scott, 2026-10-06)
 
@@ -334,7 +347,7 @@ This refines D5 and D7. The rail becomes a **narrow centred column per card** (g
 |---|---|
 | Start and end | Start label centred at the top, end label centred at the bottom, a line segment **between the two times**, and the type icon in the middle of the segment |
 | Start only | Start label at the top; the segment runs down to the icon |
-| Deadline | The icon, then the segment down to `by 4:30p` at the bottom |
+| Deadline (end only) | The icon, then the segment down to a plain `4:30p` at the bottom. **No `by` on the rail (Scott, 2026-10-06):** sitting alone at the card's bottom edge already says "ends", and the prefix was clutter. The segment and leader work the same as for any end time. |
 | Untimed | The icon alone, dashed, centred on the card |
 
 - **Leaders (Scott, 2026-10-06): a rule *across* the time, level with the card edge.** The start rule runs over the start label along the card's top edge. The end rule runs under the end label (or `by` label) along the bottom edge. Each spans from the column's left edge to the card.
@@ -350,7 +363,7 @@ This refines D5 and D7. The rail becomes a **narrow centred column per card** (g
 - **No line between cards.** The old continuous spine is gone, and so is the dotted "journey" connector.
 - **Time-slot dividers (Scott, 2026-10-06):** Morning / Afternoon / Evening sit **centred on the screen with a rule on either side**. They are not indented to the card column, which aligned them with nothing.
 - **Free time (accepted):** when there are ≥ 60 minutes between a known end and the next start, the gap shows a **text label only**, `2h free · 4:30p to 6:30p`. It has no line, no card and no tap target. Screen readers hear it as a separator. This closes D8's proposal.
-- *Supersedes:* D5's left-hand time labels and the continuous spine. D5's grammar stands: time only in the rail, start up top, end at the bottom, `by` for deadlines, `6:30p`.
+- *Supersedes:* D5's left-hand time labels and the continuous spine. D5's grammar stands: time only in the rail, start up top, end at the bottom, `6:30p`. *(Amended 2026-10-06: the rail drops `by`; see the Deadline row.)*
 
 ### D6 — "Going" has three states; dissent shows as "not going", not as votes (Scott, 2026-10-03)
 
@@ -379,13 +392,13 @@ On any list hosted by the [[Timeline Rail]], **time is printed only in the rail,
 
 - **Labels sit inside the card's vertical extent:** start just below the top leader, end just above the bottom one, so adjacent cards' labels never collide. Times are single-line (`12:30 PM`), so the gutter grows from 44px to about 66px. A card with both a start and an end gets a minimum height that fits both labels (about 46px), which constrains §4.4.
 - **The type glyph stays in the card.** The 2026-10-01 "stop rail" option (B, glyph on the spine) is retired, because the gutter now holds top and bottom labels. The rail direction resolves to the clock rail (A) plus leader lines.
-- *Resolves #388:* the card no longer repeats the time. Start, end and deadline stay distinguishable by position and by the `by` prefix. This also answers the contrarian's main objection to D2 (end times and deadlines disappearing): the rail now carries them.
+- *Resolves #388:* the card no longer repeats the time. Start, end and deadline stay distinguishable by position (an end-only time sits alone at the bottom edge; the rail's `by` prefix was dropped 2026-10-06). This also answers the contrarian's main objection to D2 (end times and deadlines disappearing): the rail now carries them.
 - **Revised after the first mockup (Scott, 2026-10-03):**
   - **No duration bar.** The thick spine segment is gone and the spine stays a hairline.
   - **The leaders extend left across the time column,** so a rule sits *on top of* the start label (level with the card's top edge) and *under* the end label (level with its bottom edge). It reads like a dimension line.
   - **The untimed dot is centred vertically on its card.**
 - **Trip mode is rail-hosted too (Scott, 2026-10-03).** The Coming up list uses the same rail and the same grammar. The Hero (Now Focus) keeps its own live line, for example "until 4:00 PM · 55m left".
-- **Time format (Scott, 2026-10-03): `6:30p` / `10:30a`.** The colon stays; the space and the "m" go. A deadline reads `by 4:30p`.
+- **Time format (Scott, 2026-10-03): `6:30p` / `10:30a`.** The colon stays; the space and the "m" go. A deadline reads `by 4:30p` **in text** (Rows, Hero, Span). On the rail it is a plain bottom label (D9, 2026-10-06).
 - *Open within D5:* the time grammar for Row, Hero and Span.
 
 ---
