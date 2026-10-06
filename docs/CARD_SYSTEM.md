@@ -216,7 +216,23 @@ The `assigned_to` people are **who is going on or doing the item**. That's all. 
 
 - A card is 1, 2 or 3 rows (head / +meta / +strip), plus one line when the title wraps. A card with both a start and an end has a minimum height that fits both rail labels (about 46–50px). Duration never stretches a card.
 - *Panel (2026-10-03):* both reviewers rejected duration scaling, including the one assigned to argue for it. Scaling would size only 3 of the fixture's 9 cards (content height swamps the scale below about 1.5h), and two 45-minute meals would render at different heights. Untimed, start-only and deadline items have no duration, so every list would mix two systems. Gaps between cards aren't scaled, so it gives "calendar looks without calendar meaning". It adds about 19% scroll and pushes the next item below the fold in trip mode. And the drafting precedent cuts against it: "do not scale drawing" — the dimension text governs.
-- *Proposed alongside D8 (user advocate; awaiting Scott):* a **free-time marker** on the rail. When the gap between a *known* end (an end time or a `by` deadline) and the next timed start is ≥ 60 minutes, draw a dashed rail segment labelled `2h free · 4:30p to 6:30p`. It is not a card, can't be dragged and has no tap target. A start-only item creates no gap. Screen readers hear "Free, 4:30p to 6:30p".
+- *Accepted 2026-10-06 (see D9, text label only, no line):* a **free-time marker** on the rail. When the gap between a *known* end (an end time or a `by` deadline) and the next timed start is ≥ 60 minutes, draw a dashed rail segment labelled `2h free · 4:30p to 6:30p`. It is not a card, can't be dragged and has no tap target. A start-only item creates no gap. Screen readers hear "Free, 4:30p to 6:30p".
+
+### D9 — Rail geometry: a centred time · icon · time column (Scott, 2026-10-06)
+
+This refines D5 and D7. The rail becomes a **narrow centred column per card** (gutter about 56px, down from about 70px, so cards gain about 14px):
+
+| Shape | Column |
+|---|---|
+| Start and end | Start label centred at the top, end label centred at the bottom, a line segment **between the two times**, and the type icon in the middle of the segment |
+| Start only | Start label at the top; the segment runs down to the icon |
+| Deadline | The icon, then the segment down to `by 4:30p` at the bottom |
+| Untimed | The icon alone, dashed, centred on the card |
+
+- **Leaders:** a short line from each time to the card edge (option 2 of the 2026-10-06 mockup). They must align with the text. The choice between a tick **centred on** the time and a rule running **across the top/bottom** of the time is the last open detail.
+- **No line between cards.** The old continuous spine is gone, and so is the dotted "journey" connector.
+- **Free time (accepted):** when there are ≥ 60 minutes between a known end and the next start, the gap shows a **text label only**, `2h free · 4:30p to 6:30p`. It has no line, no card and no tap target. Screen readers hear it as a separator. This closes D8's proposal.
+- *Supersedes:* D5's left-hand time labels and the continuous spine. D5's grammar stands: time only in the rail, start up top, end at the bottom, `by` for deadlines, `6:30p`.
 
 ### D6 — "Going" has three states; dissent shows as "not going", not as votes (Scott, 2026-10-03)
 
