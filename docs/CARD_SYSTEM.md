@@ -200,6 +200,7 @@ Per-job subsets (*same places, different subsets*):
   - the card's accessible name carries time + title + type + state (for example "6:30 to 8:30 PM, Dinner at The Immigrant, meal, needs booking")
 - **Meta for flights:** the route is `location_name` plus the description's `→` arrival label written by FlightLookup. Transport has no destination field, so it shows its location only. The arrival *time* is the rail's end label.
 
+- **Drag works one way everywhere (Scott, 2026-10-06):** long-press the whole card, on every list. The parking lot's grip handles are retired.
 - **Joining ("I'm going") happens by tapping into the card (Scott, 2026-10-03).** There's no per-card button. Expect the item view to make it more obvious later.
 - *Open:* a traveller's primary action on idea cards (owners pull up; travellers can't), deferred to #401.
 
@@ -210,6 +211,7 @@ Votes belong where ideas are **weighed and moved**: a phase-focused planning con
 - *Supersedes:* ADR-0011's "vote count pill on planned and parking-lot cards" (amended in ADR-0011, 2026-10-03). Note the collision: **#394 was fixed on `main` on 2026-10-02 (`98ef885`, PR #398) by *adding* votes to the day-page parking lot and desktop rail.** D3 reverses that. When the card system ships, day-page parking cards drop the vote pill and the phase's idea cards gain it (today's Phase Detail parking cards, E3, show no votes).
 - *Seeded a product direction:* a **phase planning mode**, a focused workspace for weighing a phase's ideas and moving them into days. That is bigger than cards and is captured as its own issue (#401). It connects to #391 (getting into a phase).
 - *Open:* trip mode's "Ideas for now" strip (E4), where votes help pick a backup on the day.
+- **Amendment (Scott, 2026-10-06):** idea cards in the **day page's parking lot** and the **desktop Ideas panel** may show votes too, as an add-on for **unplanned** items, so you can tell which idea is the favourite. Planned cards still show none. The form is being chosen from four mocked options: vote pills under the sub-line, a trailing summary, a group-favourite badge, or sorting by votes with counts in the sub-line.
 
 ### D4 — Assignment means "who's going" (Scott, 2026-10-03)
 
@@ -255,12 +257,12 @@ The `assigned_to` people are **who is going on or doing the item**. That's all. 
 
 Flights write departure → arrival (`2:05p → 4:20p`). An end time never appears on its own without `by`. On the booking list, the date is prefixed (`Thu Oct 1 · 6:30p`).
 
-**Span, day by day** (proposed; Scott commented only on Rows):
+**Span, day by day** (approved by Scott, 2026-10-06, "no notes"):
 - A stay reads `Check-in 3:00p · 3 nights` on the first day, then `Night 2 of 3 · check-out Sat by 11:00a`, then `Check-out by 11:00a`.
 - A rental car reads `Pick up 10:00a`, then `Day 2 of 5 · return Sun by 12:00p`, then `Return by 12:00p`.
 - Check-out and return are deadlines, so they use `by`.
 
-**Hero** (the Now Focus; proposed):
+**Hero** (the Now Focus). *Scott, 2026-10-06: the title comes first, top-down. The order is title → place → the `NOW` node and `until 4:00p · 55m left` → codes → booked and going.*
 - **Mid-event:**
   - a 40px node filled with the accent, then `NOW` and `until 4:00p · 55m left` (live, the end time matters most)
   - a large title, the place plus address
