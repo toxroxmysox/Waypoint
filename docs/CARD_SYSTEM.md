@@ -147,6 +147,8 @@ The Focus slot also holds four **state cards** that are not item cards: Free tim
 
 *(Filled in as decisions are made. Each entry gets the date, the decision, why, and what it supersedes.)*
 
+> **Reading this log:** entries are history, and later decisions amend earlier ones (D9 refines D5's rail, D10 sets the colour and icon rules, D11 settles Row / Hero / Span). A line that a later decision overrides is marked *(⟶ …)* with what replaced it. The **resolved** rules, in one place, are the card system spec issue; implementers build from that, and use this log for the why.
+
 ### D1 — Four card shapes (Scott, 2026-10-03)
 
 Every [[Item]] rendering is one of **four shapes**. Surfaces configure a shape; they don't invent one.
@@ -155,9 +157,10 @@ Every [[Item]] rendering is one of **four shapes**. Surfaces configure a shape; 
 |---|---|---|---|
 | **Card** | "a main" | The standard shape: the full anatomy, at a consistent rhythm. The unit of a working list. | A, B (Coming up), Next 3 Days, E1–E5, G2 |
 | **Hero** | "a larger hero" | The Card enlarged for the one item that *is* the moment: live status, codes and docs up front, larger type. | B (Now Focus), E6 (swipe face), H (detail header) |
-| **Row** | "a smaller row" | One line: glyph, title, one trailing value (time, cost, status or route), plus an optional trailing action. For lists where the item is a reference. | C1, C2, E7, E8, E9, F1–F6, G1, G3 |
+| **Row** | "a smaller row" | One line: glyph, title, one trailing value (time, cost, status or route), plus an optional trailing action. *(⟶ D11: two lines, a headline and a sub-line)* For lists where the item is a reference. | C1, C2, E7, E8, E9, F1–F6, G1, G3 |
 | **Span** | "an informational/span shape" | An item shown as **context rather than a step**: lower weight than a Card, never dragged. Today that means multi-day stays and rentals. | D (multi-day banner), D′ (stay chip) |
 
+- *Later mapping changes (2026-10-06):* C1 "Earlier today" became soft-faded Cards on the rail (D10); E9 the Inbox card became the pending idea Card (D11); the Span icon is the 24px disc in the rail column (approved mock).
 - **An item's lifecycle state marks a shape but doesn't change its layout.** The states are idea, pending, planned, live (past, now or next) and done.
 - **One time grammar spans all four shapes** (§4.2), so #388's start-versus-end rule is solved once.
 - **Each surface's verbs** (drag, pull up, `Do this`, check booked, Done/Swap/Skip, vote, approve) sit in one consistent action position per shape. That position is decided with the anatomy.
@@ -174,7 +177,7 @@ The main **Card** is built from these zones, top to bottom. Empty zones collapse
 | **Marker** | The type glyph, at the left. A timeline host may lift it onto the rail (decided with the time grammar, §4.2–4.3). |
 | **Head** | The title (wraps to 2 lines max, then ellipsis) and **one** trailing value, chosen per job. |
 | **Meta** | One line: the best "where" for the type. Location. Flight or transport shows the route (`MKE → DEN`, from `location_name` + the description's arrival label). A note shows the first line of its description. The record shows place · time. |
-| **Strip** | *(`Needs booking` stays gold for now — Scott, 2026-10-06 — with darker text to clear 4.5:1. Moving it to the red error scheme is an option for the colour-vocabulary step.)* **Left = info and pills, exception-first:** `Needs booking` (loud), overlap warning, then quiet `✓ Booked`, documents count, `✓ Done`. **Right = people:** the [[Assignment]] people bubbles (and votes only where D3 allows them). |
+| **Strip** | *(`Needs booking` stays gold for now — Scott, 2026-10-06 — with darker text to clear 4.5:1. Moving it to the red error scheme is an option for the colour-vocabulary step.)* **Left = info and pills, exception-first:** `Needs booking` (loud), overlap warning, then quiet `✓ Booked`, documents count, `✓ Done`. *(⟶ D10: overlap comes first, then Needs booking)* **Right = people:** the [[Assignment]] people bubbles (and votes only where D3 allows them). |
 | **Action** | Secondary verbs go in `⋯`. At most one primary action shows on the face. *(The exact position is still open.)* |
 
 - **Heights** are 1, 2 or 3 rows (head / +meta / +strip), plus one line when a title wraps. Never more. The as-built loaded timeline card is 7 rows.
@@ -185,8 +188,8 @@ Per-job subsets (*same places, different subsets*):
 
 | | Plan (day page) | Live (trip mode) | Idea (phase planning) | Record |
 |---|---|---|---|---|
-| Head trailing value | cost | — **(no cost in trip mode — Scott)** | cost | — |
-| Strip: info and pills | Needs booking / ✓ Booked · docs · overlap | Needs booking (loud) · docs · overlap *(open: show the code instead of ✓ Booked?)* | — | ✓ Done / Considered |
+| Head trailing value | cost | — **(no cost in trip mode — Scott)** | cost *(⟶ idea cards show cost in the sub-line, `Sheboygan · $40`, per the approved mocks)* | — |
+| Strip: info and pills | Needs booking / ✓ Booked · docs · overlap | Needs booking (loud) · docs · overlap *(open: show the code instead of ✓ Booked?)* *(⟶ resolved below: a code chip upgrades ✓ Booked)* | — | ✓ Done / Considered *(⟶ the record shows no outcome stamp, below)* |
 | Strip: people | **who's going (bubbles)** | **who's going (bubbles)** | votes (D3) | — |
 
 *Panel review (2026-10-03: contrarian, alternative proposer, user advocate).* All three attacked "time off the card", and D5 answers that. These points are adopted into D2 as low-controversy rules:
@@ -207,13 +210,13 @@ Per-job subsets (*same places, different subsets*):
 - **Joining ("I'm going") happens by tapping into the card (Scott, 2026-10-03).** There's no per-card button. Expect the item view to make it more obvious later.
 - *Open:* a traveller's primary action on idea cards (owners pull up; travellers can't), deferred to #401.
 
-### D3 — Votes live in phase planning, not on the day page (Scott, 2026-10-03)
+### D3 — Votes live in phase planning, not on the day page (Scott, 2026-10-03; amended 2026-10-06)
 
-Votes belong where ideas are **weighed and moved**: a phase-focused planning context built around the phase's [[Parking Lot]]. The day page (overview/day planning) shows **no votes**, neither on planned cards nor on its parking-lot cards; its people slot is the who's-going bubbles.
+Votes belong where ideas are **weighed and moved**: a phase-focused planning context built around the phase's [[Parking Lot]]. The day page (overview/day planning) shows **no votes**, neither on planned cards nor on its parking-lot cards; its people slot is the who's-going bubbles. *(⟶ amended 2026-10-06, below: the day page's parking-lot ideas show tap-to-vote pills; planned cards still show none)*
 
 - *Supersedes:* ADR-0011's "vote count pill on planned and parking-lot cards" (amended in ADR-0011, 2026-10-03). Note the collision: **#394 was fixed on `main` on 2026-10-02 (`98ef885`, PR #398) by *adding* votes to the day-page parking lot and desktop rail.** D3 reverses that. When the card system ships, day-page parking cards drop the vote pill and the phase's idea cards gain it (today's Phase Detail parking cards, E3, show no votes).
 - *Seeded a product direction:* a **phase planning mode**, a focused workspace for weighing a phase's ideas and moving them into days. That is bigger than cards and is captured as its own issue (#401). It connects to #391 (getting into a phase).
-- *Open:* trip mode's "Ideas for now" strip (E4), where votes help pick a backup on the day.
+- *Open:* trip mode's "Ideas for now" strip (E4), where votes help pick a backup on the day. *(⟶ mocked with vote pills, phone and desktop; awaiting Scott, §4.9)*
 - **Amendment (Scott, 2026-10-06):** idea cards in the **day page's parking lot** and the **desktop Ideas panel** may show votes too, as an add-on for **unplanned** items, so you can tell which idea is the favourite. Planned cards still show none. **Form (Scott, 2026-10-06): tap-to-vote pills under the sub-line** (the Closeout pill structure). One pill per sentiment, **all four** (love / like / flexible / pass, matching the data model and `VoteButtons`), each with its count. The viewer's own vote is filled, and tapping toggles it. **Ideas sort by votes within each type group**, using the existing `sortByVoteScore` (weights 2 / 1 / 0 / −2, ties by `sort_order`). The cost: idea cards are about 30px taller.
   - **Drag only plans (Scott, 2026-10-06):** votes set the order, so dragging within the ideas list does nothing; a card dropped back among ideas resolves to its vote position. Drag is "put this on a day" only. `sort_order` survives only as the tie-break.
   - **Approved on the before/after page (Scott, 2026-10-06):** the categorized idea list, "really love" it. Phase planning ideas and the pending review tray: "no notes".
@@ -227,19 +230,19 @@ The `assigned_to` people are **who is going on or doing the item**. That's all. 
 
 ### D7 — The type symbol lives on the rail; off the rail, type becomes a group heading (Scott, 2026-10-03)
 
-- **On rail-hosted lists** (planning day, trip-mode Coming up), the type glyph is a **node on the spine, centred vertically on its card.** It takes the place of the old hollow dot. It is **filled** (type tint) for timed items and **dashed** for untimed ones, so "pinned vs flexible" survives. The card's text starts at its left edge; nothing pushes it right.
-- **Bigger glyph, same footprint:** the node grows only slightly (about 26px). The glyph fills most of it (about 17px) instead of floating in padding. "Use the space of the icon for the icon."
+- **On rail-hosted lists** (planning day, trip-mode Coming up), the type glyph is a **node on the spine, centred vertically on its card.** It takes the place of the old hollow dot. It is **filled** (type tint) *(⟶ D10: monochrome, ink-soft glyph on surface-2)* for timed items and **dashed** for untimed ones, so "pinned vs flexible" survives. The card's text starts at its left edge; nothing pushes it right.
+- **Bigger glyph, same footprint:** the node grows only slightly (about 26px). The glyph fills most of it (about 17px) *(⟶ D9: a 24px disc with a 16px glyph)* instead of floating in padding. "Use the space of the icon for the icon."
 - The nodes break up the spine line, which Scott found made the vertical line read better than the bare hairline did.
-- **Off the rail** (the parking lot / phase planning ideas), the card carries **no** glyph. The list is **grouped by type**, and each group has a divider with the icon and a plain-language label ("Places to eat", "Things to do", …).
+- **Off the rail** (the parking lot / phase planning ideas), the card carries **no** glyph. The list is **grouped by type**, and each group has a divider with the icon and a plain-language label ("Places to eat", "Things to do", …). *(⟶ the type names, next bullet: Activities, Meals…)*
 - *Supersedes:* the 32px in-card `TypeIcon` on the timeline card and the type tag on Phase Detail parking cards (E3).
 - **Group headings use the type names (Scott, 2026-10-06), not translations:** Meals, not "Places to eat". They are the plural type labels Trip Documents already groups by: Lodging · Flights · Transportation · Activities · Meals · Notes.
-- *Open within D7:* the sort order within a group (votes lead in phase planning, D3, #401).
+- *Open within D7:* the sort order within a group (votes lead in phase planning, D3, #401). *(⟶ resolved by the D3 amendment: by votes wherever ideas show)*
 
 ### D8 — Card height follows content, never duration (Scott, 2026-10-06)
 
-- A card is 1, 2 or 3 rows (head / +meta / +strip), plus one line when the title wraps. A card with both a start and an end has a minimum height that fits both rail labels (about 46–50px). Duration never stretches a card.
+- A card is 1, 2 or 3 rows (head / +meta / +strip), plus one line when the title wraps. A card with both a start and an end has a minimum height that fits both rail labels (about 46–50px) *(⟶ D9: about 62px)*. Duration never stretches a card.
 - *Panel (2026-10-03):* both reviewers rejected duration scaling, including the one assigned to argue for it. Scaling would size only 3 of the fixture's 9 cards (content height swamps the scale below about 1.5h), and two 45-minute meals would render at different heights. Untimed, start-only and deadline items have no duration, so every list would mix two systems. Gaps between cards aren't scaled, so it gives "calendar looks without calendar meaning". It adds about 19% scroll and pushes the next item below the fold in trip mode. And the drafting precedent cuts against it: "do not scale drawing" — the dimension text governs.
-- *Accepted 2026-10-06 (see D9, text label only, no line):* a **free-time marker** on the rail. When the gap between a *known* end (an end time or a `by` deadline) and the next timed start is ≥ 60 minutes, draw a dashed rail segment labelled `2h free · 4:30p to 6:30p`. It is not a card, can't be dragged and has no tap target. A start-only item creates no gap. Screen readers hear "Free, 4:30p to 6:30p".
+- *Accepted 2026-10-06 (see D9, text label only, no line):* a **free-time marker** on the rail. When the gap between a *known* end (an end time or a `by` deadline) and the next timed start is ≥ 60 minutes, draw a dashed rail segment *(⟶ D9: text label only, no line)* labelled `2h free · 4:30p to 6:30p`. It is not a card, can't be dragged and has no tap target. A start-only item creates no gap. Screen readers hear "Free, 4:30p to 6:30p".
 
 ### D11 — Row, Span and Hero designs (2026-10-06)
 
@@ -343,7 +346,7 @@ Drawn at true 1280px on the before/after page: the day page while dragging an id
 
 - **Today in planning (Scott, 2026-10-06):** the overview's day card for today gets a **moss outline** instead of a `TODAY` pill. The day card's date block is centred vertically on the card. Its `1 needs booking` gold pill is approved as is.
 - **Collisions retired:** moss keeps only the planning accent; clay keeps only the trip accent (plus primary actions like `Do this`); gold keeps only open loops; sky leaves item cards (info banners and links only).
-- **Icon size scale, from 11 sizes to 3:** a 16px bare glyph (Row, Span, group heading); 16px in a 24px disc (rail node); 26px in a 40px disc (Hero). State icons are 1em of their text.
+- **Icon size scale, from 11 sizes to 3:** a 16px bare glyph (Row, Span *(⟶ the approved Span mock uses the 24px disc, in line with the rail nodes)*, group heading); 16px in a 24px disc (rail node); 26px in a 40px disc (Hero). State icons are 1em of their text.
 - **Overlap with nobody shared** (or nobody has said who's going yet): a plain **ink** `Overlaps tee time` note. It is informational, not a conflict, and red is reserved for shared people. *(Claude's call 2026-10-06 when Scott left it open; reversible.)*
 - **Earlier today = soft fade (Scott, 2026-10-06):** past items keep the full Card shape but **without the white fill**, in ink-muted text (5.4:1 on paper, never opacity), with a lighter rail rule and an outlined node. They stay tappable, so you can find the code or address you just used.
 - **Span = full-width band (Scott, 2026-10-06):** all-day and multi-day items sit **outside the timeline**, with a border spanning the full width. The icon sits **in the rail column, in line with the rail nodes**, and the title lines up with the card titles. The band is a neutral surface-2 fill.
@@ -359,7 +362,7 @@ This refines D5 and D7. The rail becomes a **narrow centred column per card** (g
 | Deadline (end only) | The icon, then the segment down to a plain `4:30p` at the bottom. **No `by` on the rail (Scott, 2026-10-06):** sitting alone at the card's bottom edge already says "ends", and the prefix was clutter. The segment and leader work the same as for any end time. |
 | Untimed | The icon alone, dashed, centred on the card |
 
-- **Leaders (Scott, 2026-10-06): a rule *across* the time, level with the card edge.** The start rule runs over the start label along the card's top edge. The end rule runs under the end label (or `by` label) along the bottom edge. Each spans from the column's left edge to the card.
+- **Leaders (Scott, 2026-10-06): a rule *across* the time, level with the card edge.** The start rule runs over the start label along the card's top edge. The end rule runs under the end label (or `by` label *(⟶ the rail dropped `by` on 2026-10-06)*) along the bottom edge. Each spans from the column's left edge to the card.
 - **Spacing is a spec, not eyeballed (Scott: "enough margin around the time text and all lines"):**
   - 5px from each rule to its time text
   - 4px from the text to the line segment
@@ -380,11 +383,11 @@ The panel wanted a vote-based "Pass" marker on planned cards. Scott reframed it:
 
 | State | Shown on the card? |
 |---|---|
-| **Going** | Yes: their bubble, in colour |
-| **Not going** (said so) | Yes: their bubble greyed and struck through, after the going bubbles |
+| **Going** | Yes: their bubble, in colour *(⟶ D10: a neutral initials bubble)* |
+| **Not going** (said so) | Yes: their bubble greyed and struck through, after the going bubbles *(⟶ D10: struck through, no grey or opacity; the letter stays ≥ 4.5:1)* |
 | **No answer** | No. "I don't want to know if someone hasn't responded" |
 
-- D3 stands: votes stay off the day page. Dissent on planned items is a participation fact, not a sentiment.
+- D3 stands: votes stay off the day page. *(⟶ D3 amended 2026-10-06: unplanned ideas show votes; planned cards still don't)* Dissent on planned items is a participation fact, not a sentiment.
 - *Data implication:* `assigned_to` (a list of who's going) can't express "not going". This needs a new stored state, an append-only migration, and a way to say it (inside the item, per D2's tap-into-the-card rule). Captured as its own issue (#402).
 
 ### D5 — The rail owns time: start at the card's top edge, end at its bottom edge (Scott, 2026-10-03)
@@ -394,13 +397,13 @@ On any list hosted by the [[Timeline Rail]], **time is printed only in the rail,
 | Shape | Rail |
 |---|---|
 | Start only | Start label at the card's **top edge**, with a short leader line level with the top border |
-| Start and end | Start at the top edge, end at the **bottom edge**, both with leaders. The spine between them is drawn heavier, as a duration bar, so the card is bracketed like a dimension line. |
-| Deadline (end only, #346) | **Bottom edge only**, labelled `by 4:30 PM` |
-| Untimed | No time. A hollow dot (the 09-17 rule stands). |
-| Overlap | Falls out of the grammar: the earlier card's end label (`1:30 PM`) sits *above* the next card's start label (`1:00 PM`). The late start is also tinted, and the card carries an `Overlaps …` strip chip. |
+| Start and end | Start at the top edge, end at the **bottom edge**, both with leaders. The spine between them is drawn heavier, as a duration bar, so the card is bracketed like a dimension line. *(⟶ no duration bar, below; D9's per-card segments)* |
+| Deadline (end only, #346) | **Bottom edge only**, labelled `by 4:30 PM` *(⟶ D9 2026-10-06: a plain `4:30p`, no `by`)* |
+| Untimed | No time. A hollow dot (the 09-17 rule stands). *(⟶ D7/D10: a dashed type icon, centred on the card)* |
+| Overlap | Falls out of the grammar: the earlier card's end label (`1:30 PM`) sits *above* the next card's start label (`1:00 PM`). The late start is also tinted, and the card carries an `Overlaps …` strip chip. *(⟶ D10: both items carry it; both colliding times turn red, only when people are shared)* |
 
-- **Labels sit inside the card's vertical extent:** start just below the top leader, end just above the bottom one, so adjacent cards' labels never collide. Times are single-line (`12:30 PM`), so the gutter grows from 44px to about 66px. A card with both a start and an end gets a minimum height that fits both labels (about 46px), which constrains §4.4.
-- **The type glyph stays in the card.** The 2026-10-01 "stop rail" option (B, glyph on the spine) is retired, because the gutter now holds top and bottom labels. The rail direction resolves to the clock rail (A) plus leader lines.
+- **Labels sit inside the card's vertical extent:** start just below the top leader, end just above the bottom one, so adjacent cards' labels never collide. Times are single-line (`12:30 PM`), so the gutter grows from 44px to about 66px. A card with both a start and an end gets a minimum height that fits both labels (about 46px) *(⟶ D9: a 48px column plus 8px, and about 62px minimum)*, which constrains §4.4.
+- **The type glyph stays in the card.** *(⟶ reversed by D7: the icon is the rail node)* The 2026-10-01 "stop rail" option (B, glyph on the spine) is retired, because the gutter now holds top and bottom labels. The rail direction resolves to the clock rail (A) plus leader lines.
 - *Resolves #388:* the card no longer repeats the time. Start, end and deadline stay distinguishable by position (an end-only time sits alone at the bottom edge; the rail's `by` prefix was dropped 2026-10-06). This also answers the contrarian's main objection to D2 (end times and deadlines disappearing): the rail now carries them.
 - **Revised after the first mockup (Scott, 2026-10-03):**
   - **No duration bar.** The thick spine segment is gone and the spine stays a hairline.
@@ -408,7 +411,7 @@ On any list hosted by the [[Timeline Rail]], **time is printed only in the rail,
   - **The untimed dot is centred vertically on its card.**
 - **Trip mode is rail-hosted too (Scott, 2026-10-03).** The Coming up list uses the same rail and the same grammar. The Hero (Now Focus) keeps its own live line, for example "until 4:00 PM · 55m left".
 - **Time format (Scott, 2026-10-03): `6:30p` / `10:30a`.** The colon stays; the space and the "m" go. A deadline reads `by 4:30p` **in text** (Rows, Hero, Span). On the rail it is a plain bottom label (D9, 2026-10-06).
-- *Open within D5:* the time grammar for Row, Hero and Span.
+- *Open within D5:* the time grammar for Row, Hero and Span. *(⟶ resolved by D11)*
 
 ---
 
@@ -420,7 +423,7 @@ On any list hosted by the [[Timeline Rail]], **time is printed only in the rail,
 4. ~~**Card height.**~~ Resolved by **D8**: content-driven, never duration.
 5. ~~**What goes on the face versus the detail page**, per job.~~ Resolved by **D2** (Card), **D11** (Row, Span, Hero) and D3 (votes only on ideas).
 6. ~~**Text versus symbol versus color.**~~ Resolved by **D10**.
-7. **Proposed defaults from the before/after page (2026-10-06).** Scott's review the same day: phase planning ideas and pending, **approved**; overview day cards, approved with amendments (D10); swipe, inbox and goal rows, amended (D11); detail header, **expanded to the full page, D12**. No comment yet on: the record on the rail, the empty day, the desktop Ideas panel, codes losing gold.
+7. **Proposed defaults from the before/after page (2026-10-06)** *(⟶ the bullets below are the original proposals; the swipe, inbox and detail-header ones were superseded by D11 and D12, and the desktop Ideas panel by D13's approval)*. Scott's review the same day: phase planning ideas and pending, **approved**; overview day cards, approved with amendments (D10); swipe, inbox and goal rows, amended (D11); detail header, **expanded to the full page, D12**. No comment yet on: the record on the rail, the empty day, the desktop Ideas panel, codes losing gold.
    - Phase planning idea cards: grouped by type, sorted by votes, tap-to-vote pills. A pending suggestion is the same card, dashed, with an Approve / Reject tray.
    - The record (What we did) uses the rail, read-only, with full descriptions (no Done stamp, per D2).
    - The item detail header is a Hero: the icon beside the title, then the place, the time in text form, Booked / Going, then the code rows. The type and subtype pills go (finding 9). **Vote buttons show only while the item is an idea.**
