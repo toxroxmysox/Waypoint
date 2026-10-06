@@ -234,6 +234,28 @@ The `assigned_to` people are **who is going on or doing the item**. That's all. 
 - *Panel (2026-10-03):* both reviewers rejected duration scaling, including the one assigned to argue for it. Scaling would size only 3 of the fixture's 9 cards (content height swamps the scale below about 1.5h), and two 45-minute meals would render at different heights. Untimed, start-only and deadline items have no duration, so every list would mix two systems. Gaps between cards aren't scaled, so it gives "calendar looks without calendar meaning". It adds about 19% scroll and pushes the next item below the fold in trip mode. And the drafting precedent cuts against it: "do not scale drawing" — the dimension text governs.
 - *Accepted 2026-10-06 (see D9, text label only, no line):* a **free-time marker** on the rail. When the gap between a *known* end (an end time or a `by` deadline) and the next timed start is ≥ 60 minutes, draw a dashed rail segment labelled `2h free · 4:30p to 6:30p`. It is not a card, can't be dragged and has no tap target. A start-only item creates no gap. Screen readers hear "Free, 4:30p to 6:30p".
 
+### D10 — Colour means "act on this"; type icons are monochrome (Scott, 2026-10-06)
+
+**Rule:** on an item, colour only ever means *act on this*. **Gold** marks an open loop (needs booking, pending). **Red** (`error`) marks a real conflict. The **mode accent** (moss in planning, clay in trip mode) means "now / your move". Everything else — type, settled states, people, votes — is **ink**, told apart by glyph and word, never by colour alone. *Evidence: finding §2.13, the contrast and colour-blind audit.*
+
+| Meaning | Treatment |
+|---|---|
+| Type icon (rail node, Row, heading) | **Monochrome:** ink-soft glyph on surface-2 with a `line` ring; dashed when untimed. *(Scott: "the monochrome logos are great".)* |
+| Now (trip mode) | **Node filled** with the accent, plus a `NOW · until 4:00p · 55m left` label |
+| Next (trip mode) | **Node outlined** in the accent, plus `NEXT`. The clay card wash is dropped. |
+| Needs booking | Gold chip. `gold-deep` is retuned `#8a6f24 → #745a1c` (5.81:1 on gold-tint, 6.52:1 on white). It stays gold, not red: red would match moss Booked for protans, and lodging, flight and transport are pre-flagged as needing booking, so red would fire on every new booking. |
+| Pending suggestion | Gold `Pending` chip + dashed card |
+| Overlap | **Red** text with an icon, `Overlaps tee time`, and the late start label on the rail in red. **Only when the same people are going to both items** (Scott). It outranks Needs booking in the strip (D2 priority amended). |
+| Booked / with code | Quiet ink `✓ Booked`. Trip mode shows an ink, mono code chip (tap to copy, `+n` for several). |
+| Documents, Done, Considered, Free time | Ink / ink-muted, with icon + word |
+| Going / not going | Neutral initials bubble (the moss avatar fallback is retired). Not going = a diagonal strike, **no opacity**; the letter stays ≥4.5:1. Its accessible name is "Kevin, not going". |
+| Votes (phase planning only) | Icons + counts: heart, thumb-up, level hand, thumb-down, in a fixed order, zero groups hidden; the accessible name is "2 love, 1 pass". No `+ – ~` glyphs, no score. |
+| Span (multi-day) | A neutral surface-2 band, never a solid accent fill (fixes §2.10) |
+
+- **Collisions retired:** moss keeps only the planning accent; clay keeps only the trip accent (plus primary actions like `Do this`); gold keeps only open loops; sky leaves item cards (info banners and links only).
+- **Icon size scale, from 11 sizes to 3:** a 16px bare glyph (Row, Span, group heading); 16px in a 24px disc (rail node); 26px in a 40px disc (Hero). State icons are 1em of their text.
+- *Open within D10:* what an overlap shows when nobody is shared, or nobody has said who's going (red is reserved for shared people; neutral ink text vs nothing); and the `Earlier today` treatment (fade vs rows; mocked 2026-10-06).
+
 ### D9 — Rail geometry: a centred time · icon · time column (Scott, 2026-10-06)
 
 This refines D5 and D7. The rail becomes a **narrow centred column per card** (gutter about 56px, down from about 70px, so cards gain about 14px):
@@ -304,4 +326,4 @@ On any list hosted by the [[Timeline Rail]], **time is printed only in the rail,
 3. ~~**Rail direction**~~ Resolved by D5: the clock rail with leader lines; the glyph stays in the card.
 4. ~~**Card height.**~~ Resolved by **D8**: content-driven, never duration.
 5. **What goes on the face versus the detail page**, per job.
-6. **Text versus symbol versus color.** One vocabulary for type, status and mode. *Proposal with evidence: 2026-10-06 ("colour only means act on this"); awaiting Scott.*
+6. ~~**Text versus symbol versus color.**~~ Resolved by **D10**.
