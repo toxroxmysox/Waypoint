@@ -211,7 +211,7 @@ Votes belong where ideas are **weighed and moved**: a phase-focused planning con
 - *Supersedes:* ADR-0011's "vote count pill on planned and parking-lot cards" (amended in ADR-0011, 2026-10-03). Note the collision: **#394 was fixed on `main` on 2026-10-02 (`98ef885`, PR #398) by *adding* votes to the day-page parking lot and desktop rail.** D3 reverses that. When the card system ships, day-page parking cards drop the vote pill and the phase's idea cards gain it (today's Phase Detail parking cards, E3, show no votes).
 - *Seeded a product direction:* a **phase planning mode**, a focused workspace for weighing a phase's ideas and moving them into days. That is bigger than cards and is captured as its own issue (#401). It connects to #391 (getting into a phase).
 - *Open:* trip mode's "Ideas for now" strip (E4), where votes help pick a backup on the day.
-- **Amendment (Scott, 2026-10-06):** idea cards in the **day page's parking lot** and the **desktop Ideas panel** may show votes too, as an add-on for **unplanned** items, so you can tell which idea is the favourite. Planned cards still show none. The form is being chosen from four mocked options: vote pills under the sub-line, a trailing summary, a group-favourite badge, or sorting by votes with counts in the sub-line.
+- **Amendment (Scott, 2026-10-06):** idea cards in the **day page's parking lot** and the **desktop Ideas panel** may show votes too, as an add-on for **unplanned** items, so you can tell which idea is the favourite. Planned cards still show none. **Form (Scott, 2026-10-06): tap-to-vote pills under the sub-line** (the Closeout pill structure). One pill per sentiment — heart / thumb-up / thumb-down — each with its count. The viewer's own vote is filled, and tapping toggles it. **Ideas sort by votes within each type group.** The cost: idea cards are about 30px taller.
 
 ### D4 — Assignment means "who's going" (Scott, 2026-10-03)
 
@@ -262,7 +262,7 @@ Flights write departure → arrival (`2:05p → 4:20p`). An end time never appea
 - A rental car reads `Pick up 10:00a`, then `Day 2 of 5 · return Sun by 12:00p`, then `Return by 12:00p`.
 - Check-out and return are deadlines, so they use `by`.
 
-**Hero** (the Now Focus). *Scott, 2026-10-06: the title comes first, top-down. The order is title → place → the `NOW` node and `until 4:00p · 55m left` → codes → booked and going.*
+**Hero** (the Now Focus). *Scott, 2026-10-06: the title comes first, top-down. The 40px type icon sits **upper left, beside the title**. Then the place, then the `NOW · until 4:00p · 55m left` line, then the codes, then booked and going.*
 - **Mid-event:**
   - a 40px node filled with the accent, then `NOW` and `until 4:00p · 55m left` (live, the end time matters most)
   - a large title, the place plus address
