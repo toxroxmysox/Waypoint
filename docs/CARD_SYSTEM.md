@@ -245,7 +245,16 @@ This refines D5 and D7. The rail becomes a **narrow centred column per card** (g
 | Deadline | The icon, then the segment down to `by 4:30p` at the bottom |
 | Untimed | The icon alone, dashed, centred on the card |
 
-- **Leaders:** a short line from each time to the card edge (option 2 of the 2026-10-06 mockup). They must align with the text. The choice between a tick **centred on** the time and a rule running **across the top/bottom** of the time is the last open detail.
+- **Leaders (Scott, 2026-10-06): a rule *across* the time, level with the card edge.** The start rule runs over the start label along the card's top edge. The end rule runs under the end label (or `by` label) along the bottom edge. Each spans from the column's left edge to the card.
+- **Spacing is a spec, not eyeballed (Scott: "enough margin around the time text and all lines"):**
+  - 5px from each rule to its time text
+  - 4px from the text to the line segment
+  - 4px from the segment to the icon disc
+  - icon disc 24px with a 16px glyph
+  - column 48px, then 8px to the card
+  - at least 3px side padding around each label
+  - Where a card is too short for a segment to be at least 6px, the segment is dropped and only the labels and icon render.
+- **Consequence for D8:** a card with a time label has a **minimum height of about 62px** (5 + 11 + 4 + 4 + 24 + 4 + 4 + 11 + 5 − overlap), so the labels, segment and icon never crowd. A typical 2-row card is about 56px naturally, so timed 2-row cards grow slightly. Untimed cards keep their content height.
 - **No line between cards.** The old continuous spine is gone, and so is the dotted "journey" connector.
 - **Free time (accepted):** when there are ≥ 60 minutes between a known end and the next start, the gap shows a **text label only**, `2h free · 4:30p to 6:30p`. It has no line, no card and no tap target. Screen readers hear it as a separator. This closes D8's proposal.
 - *Supersedes:* D5's left-hand time labels and the continuous spine. D5's grammar stands: time only in the rail, start up top, end at the bottom, `by` for deadlines, `6:30p`.
