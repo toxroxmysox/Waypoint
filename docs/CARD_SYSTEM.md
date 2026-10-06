@@ -234,6 +234,40 @@ The `assigned_to` people are **who is going on or doing the item**. That's all. 
 - *Panel (2026-10-03):* both reviewers rejected duration scaling, including the one assigned to argue for it. Scaling would size only 3 of the fixture's 9 cards (content height swamps the scale below about 1.5h), and two 45-minute meals would render at different heights. Untimed, start-only and deadline items have no duration, so every list would mix two systems. Gaps between cards aren't scaled, so it gives "calendar looks without calendar meaning". It adds about 19% scroll and pushes the next item below the fold in trip mode. And the drafting precedent cuts against it: "do not scale drawing" — the dimension text governs.
 - *Accepted 2026-10-06 (see D9, text label only, no line):* a **free-time marker** on the rail. When the gap between a *known* end (an end time or a `by` deadline) and the next timed start is ≥ 60 minutes, draw a dashed rail segment labelled `2h free · 4:30p to 6:30p`. It is not a card, can't be dragged and has no tap target. A start-only item creates no gap. Screen readers hear "Free, 4:30p to 6:30p".
 
+### D11 — Row, Span and Hero designs (2026-10-06)
+
+**Row (Scott's revision):** every Row has **two lines**.
+- **Icon on the left:** a 16px bare glyph.
+- **Headline:** the title.
+- **Sub-line:** the time and the place (or date).
+- **Trailing slot:** one value or action (a chip, a cost, a chevron, people bubbles).
+- **Leading action** (the booking list's checkbox) sits to the **left of the icon** and shifts the row right. That's accepted.
+- **Closeout:** its `Done` / `Swap` / `Skip` pills sit **under the sub-line, inside the row**, making that row taller.
+
+**Time on shapes without a rail (text form of the D5 grammar):**
+
+| Shape | Text |
+|---|---|
+| Start only | `9:30p` |
+| Start and end | `10:00a–12:00p` |
+| Deadline | `by 4:30p` |
+| Untimed | Omitted |
+
+Flights write departure → arrival (`2:05p → 4:20p`). An end time never appears on its own without `by`. On the booking list, the date is prefixed (`Thu Oct 1 · 6:30p`).
+
+**Span, day by day** (proposed; Scott commented only on Rows):
+- A stay reads `Check-in 3:00p · 3 nights` on the first day, then `Night 2 of 3 · check-out Sat by 11:00a`, then `Check-out by 11:00a`.
+- A rental car reads `Pick up 10:00a`, then `Day 2 of 5 · return Sun by 12:00p`, then `Return by 12:00p`.
+- Check-out and return are deadlines, so they use `by`.
+
+**Hero** (the Now Focus; proposed):
+- **Mid-event:**
+  - a 40px node filled with the accent, then `NOW` and `until 4:00p · 55m left` (live, the end time matters most)
+  - a large title, the place plus address
+  - codes as large tap-to-copy rows
+  - `✓ Booked`, who's going **with names**, and `⋯` (Skip)
+- **Free time:** counts down to the next timed thing **including deadlines**, e.g. `25m until your next deadline`. The next item is outlined in the accent, followed by `Then 2h free until Dinner, 6:30p`. This also fixes the countdown half of #392.
+
 ### D10 — Colour means "act on this"; type icons are monochrome (Scott, 2026-10-06)
 
 **Rule:** on an item, colour only ever means *act on this*. **Gold** marks an open loop (needs booking, pending). **Red** (`error`) marks a real conflict. The **mode accent** (moss in planning, clay in trip mode) means "now / your move". Everything else — type, settled states, people, votes — is **ink**, told apart by glyph and word, never by colour alone. *Evidence: finding §2.13, the contrast and colour-blind audit.*
