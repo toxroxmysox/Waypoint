@@ -159,20 +159,22 @@ test.describe('#352 past co-traveler picker', () => {
 			// …and they drop out of the pool (already invited).
 			await expect(picker.locator('[data-testid="co-traveler-row"]')).toHaveCount(0);
 
-			// It is a real pending_invites row for the right person — verified
-			// server-side, where the address legitimately lives.
+			// It is a real pending invite for the right person. pending_invites is
+			// superuser-read only (#409), so check through the member-facing route:
+			// labelled by NAME, and the payload never carries the address or code.
 			const t = await token(EMAILS.owner);
-			const invites = (await (
-				await fetch(
-					`${PB_BASE}/api/collections/pending_invites/records?filter=${encodeURIComponent(
-						`trip="${fixture.targetTripId}"`
-					)}`,
-					{ headers: { Authorization: `Bearer ${t}` } }
-				)
-			).json()) as { items: Array<{ email: string; role: string }> };
-			expect(invites.items).toHaveLength(1);
-			expect(invites.items[0].email).toBe(EMAILS.co_owner);
-			expect(invites.items[0].role).toBe('traveler');
+			const pendingRes = await fetch(
+				`${PB_BASE}/api/invites/pending?trip_id=${encodeURIComponent(fixture.targetTripId)}`,
+				{ headers: { Authorization: `Bearer ${t}` } }
+			);
+			const pendingText = await pendingRes.text();
+			const invites = JSON.parse(pendingText) as {
+				invites: Array<{ label: string; role: string }>;
+			};
+			expect(invites.invites).toHaveLength(1);
+			expect(invites.invites[0].label).toBe('E2E co_owner');
+			expect(invites.invites[0].role).toBe('traveler');
+			expect(pendingText).not.toContain(EMAILS.co_owner);
 
 			// The inviter's side never saw it: not in the HTML, not in the action
 			// response, not in a form value.
@@ -222,13 +224,11 @@ test.describe('#352 past co-traveler picker', () => {
 			const t = await token(EMAILS.owner);
 			const invites = (await (
 				await fetch(
-					`${PB_BASE}/api/collections/pending_invites/records?filter=${encodeURIComponent(
-						`trip="${fixture.targetTripId}"`
-					)}`,
+					`${PB_BASE}/api/invites/pending?trip_id=${encodeURIComponent(fixture.targetTripId)}`,
 					{ headers: { Authorization: `Bearer ${t}` } }
 				)
-			).json()) as { items: unknown[] };
-			expect(invites.items).toHaveLength(0);
+			).json()) as { invites: unknown[] };
+			expect(invites.invites).toHaveLength(0);
 		} finally {
 			await ctx.close();
 		}

@@ -1036,7 +1036,9 @@ routerAdd('POST', '/api/members/remove', (e) => {
 		if (uid) {
 			try {
 				const u = e.app.findRecordById('users', uid);
-				snapName = (u.get('name') || u.email() || '').trim();
+				// Name only — never the email (#409): the snapshot stays readable
+				// by every member for the life of the trip.
+				snapName = (u.get('name') || '').trim();
 			} catch (_) {}
 		}
 	}

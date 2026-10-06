@@ -10,12 +10,16 @@
 	let submitting = $state(false);
 
 	let fileInput: HTMLInputElement | undefined = $state();
+	// #410: `fileInput.files` is a DOM property Svelte doesn't track, so gating the
+	// button on it left Import disabled forever after a file was picked.
+	let hasFile = $state(false);
 	let preview = $state<{ title: string; dates: string; phases: number; items: number } | null>(
 		null
 	);
 
 	function handleFileChange() {
 		const file = fileInput?.files?.[0];
+		hasFile = !!file;
 		if (!file) {
 			preview = null;
 			return;
@@ -94,7 +98,7 @@
 			</div>
 		{/if}
 
-		<Button type="submit" disabled={submitting || !fileInput?.files?.length} loading={submitting} variant="moss" size="md" class="w-full">
+		<Button type="submit" disabled={submitting || !hasFile} loading={submitting} variant="moss" size="md" class="w-full">
 			{submitting ? 'Importing...' : 'Import Trip'}
 		</Button>
 	</form>

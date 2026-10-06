@@ -12,10 +12,15 @@
 // endpoints, but bound NO request hook to the collection itself.
 //
 // This file adds the request-hook gate (mirrors items.pb.js / budgets.pb.js):
-//   - update: a `role` change is owner/co_owner only. Everything else (the self
-//     `display_name` edit the roster UI does, joined_at, placeholders) stays at
-//     the MEMBER_VIA_TRIP rule allowance — so ordinary member edits are unaffected,
-//     and only role escalation is blocked.
+//   - update: a `role` change is owner/co_owner only. #408 narrowed the rest to
+//     a field allowlist: `display_name` (own row, or any row for owner/co_owner)
+//     and `digest_opt_out` (own row only). Identity/lifecycle fields — trip, user,
+//     placeholder_*, claimable_by, removed_at, soft_token, joined_at — are never
+//     writable over REST; their legitimate flows (claim, remove, invite accept,
+//     join) run as admin-context saves in members.pb.js / invites.pb.js / join.pb.js,
+//     which don't fire request hooks. Before #408 any member could PATCH the
+//     owner row's `user` to a second account (owner takeover) or move their own
+//     row to another trip id.
 //   - delete: a member may delete only THEIR OWN row (self-leave); deleting
 //     someone else's row is owner/co_owner only; the sole active owner can never
 //     be deleted. (The product's real removal path is /api/members/remove, which
@@ -31,29 +36,48 @@
 // String-coerce field compares (goja reads empty/relation fields back as objects).
 
 // ---------------------------------------------------------------------------
-// Before update: a `role` change requires owner/co_owner. Other field edits
-// (display_name, etc.) pass through to the MEMBER_VIA_TRIP rule unchanged.
+// Before update: field allowlist (#408) + role gate (#279). Superusers pass.
 // ---------------------------------------------------------------------------
 onRecordUpdateRequest((e) => {
+	if (e.hasSuperuserAuth()) {
+		e.next();
+		return;
+	}
 	const authId = e.requestInfo().auth?.id;
 	if (!authId) throw new UnauthorizedError('Authentication required');
 
-	// Is the role actually changing? Compare new vs the persisted original
-	// (string-coerced — goja). If role is untouched, this hook does not restrict
-	// the edit (display_name self-edits etc. stay at the rule's MEMBER allowance).
+	// Which fields actually change? getString on both sides — goja reads empty /
+	// relation / date fields back as objects, so compare their string forms.
 	const original = e.record.original();
-	const newRole = '' + e.record.get('role');
-	const oldRole = '' + original.get('role');
-	if (newRole === oldRole) {
+	const changed = (f) => e.record.getString(f) !== original.getString(f);
+
+	// Identity + lifecycle fields: server flows only, never REST.
+	const locked = [
+		'trip',
+		'user',
+		'placeholder_name',
+		'placeholder_email',
+		'claimable_by',
+		'removed_at',
+		'soft_token',
+		'joined_at'
+	];
+	for (let i = 0; i < locked.length; i++) {
+		if (changed(locked[i])) {
+			throw new ForbiddenError('`' + locked[i] + '` can’t be changed directly');
+		}
+	}
+
+	const roleChanged = changed('role');
+	const nameChanged = changed('display_name');
+	const digestChanged = changed('digest_opt_out');
+	if (!roleChanged && !nameChanged && !digestChanged) {
 		e.next();
 		return;
 	}
 
-	// A role change: resolve the CALLER's membership on this member's trip and
-	// require owner/co_owner. This blocks a traveler/viewer self-escalating to
-	// owner (their own role is traveler/viewer → denied) and any non-privileged
-	// member changing anyone's role.
-	const tripId = e.record.get('trip');
+	// Resolve the CALLER's membership on this member's (unchanged) trip.
+	const tripId = original.getString('trip');
 	let callerMember;
 	try {
 		callerMember = e.app.findFirstRecordByFilter(
@@ -65,9 +89,23 @@ onRecordUpdateRequest((e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 
-	const callerRole = callerMember.get('role');
-	if (callerRole !== 'owner' && callerRole !== 'co_owner') {
+	const callerRole = '' + callerMember.get('role');
+	const isPrivileged = callerRole === 'owner' || callerRole === 'co_owner';
+	const isSelf = original.getString('user') === authId;
+
+	// Role: owner/co_owner only — blocks a traveler/viewer self-escalating to
+	// owner (their own role is traveler/viewer → denied) and any non-privileged
+	// member changing anyone's role.
+	if (roleChanged && !isPrivileged) {
 		throw new ForbiddenError('Only an owner or co-owner can change a member’s role');
+	}
+	// Display name: your own, or anyone's if you run the trip.
+	if (nameChanged && !isSelf && !isPrivileged) {
+		throw new ForbiddenError('You can only change your own display name');
+	}
+	// Digest opt-out is a personal preference: own row only.
+	if (digestChanged && !isSelf) {
+		throw new ForbiddenError('You can only change your own digest preference');
 	}
 
 	e.next();

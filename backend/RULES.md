@@ -30,13 +30,13 @@ Role-agnostic. Any member of a trip can do anything to that trip's data; non-mem
 | Collection | list | view | create | update | delete |
 |---|---|---|---|---|---|
 | `users` | self only | **co-traveler** (name+avatar) | null (OTP hook) | self only | null (no API) |
-| `trips` | member | member | authed | member | member |
-| `trip_members` | member of trip | member of trip | null (hooks/admin) | member of trip | member of trip |
+| `trips` | member | member | authed | member + hook (protected fields owner/co_owner, #280) | member + hook (owner/co_owner, #407) |
+| `trip_members` | member of trip | member of trip | null (hooks/admin) | member of trip + hook (field allowlist, #279/#408) | member of trip + hook (#279) |
 | `phases` | member of trip | member of trip | member + hook (owner/co_owner, #175) | member + hook (owner/co_owner, #175) | member + hook (owner/co_owner, #175) |
 | `days` | member of trip | member of trip | null (hooks) | member of trip | null (hooks) |
 | `items` | member of trip | member of trip | member + hook (owner/co_owner, #175) | member + hook (owner/co_owner, #175) | member + hook (owner/co_owner, #175) |
 | `checklist_items` | member of item.trip | member of item.trip | member of item.trip | member of item.trip | member of item.trip |
-| `pending_invites` | member of trip | member of trip | null (endpoint) | null (immutable) | member of trip + hook (SPEC §3) |
+| `pending_invites` | null (superuser; members read `GET /api/invites/pending`, #409) | null (superuser, #409) | null (endpoint) | null (immutable) | member of trip + hook (SPEC §3) |
 
 **Reasoning for each `null`:**
 
@@ -189,6 +189,31 @@ Migration `0043_users_viewable_by_cotravelers.js` loosens **only** `users.viewRu
 - **list** — stays **self-only** (`id = @request.auth.id`). No user enumeration: every role's `list` returns only their own row.
 - **field-level visibility** — asserted by `runUsersCrossReadCases` in `test-rules.mjs`: a co-traveler's payload exposes `name` (populated) and `avatar` (key present, cross-readable) but **not** `email` (blanked — `emailVisibility` off), `password`, or `tokenKey` (PB always strips auth secrets). Email is **not** newly exposed by this change.
 - **create / update / delete** — unchanged: create/delete admin-only (OTP hook / no API), update self-only (`/account` self-edit).
+
+## Trip delete, member fields, invite reads (#407 / #408 / #409)
+
+Three REST holes closed after the 2026-10-05 agent-access audit:
+
+- **`trips` delete (#407)** — `deleteRule` stays `member`; `trips.pb.js`
+  `onRecordDeleteRequest` resolves the caller's active `trip_members` row and
+  allows owner/co_owner only (mirrors the settings "Delete trip" action).
+  Superusers pass (`clean-dev-trips`). Before: a viewer could cascade-delete the trip.
+- **`trip_members` update (#408)** — the #279 hook now runs a field allowlist.
+  `trip`, `user`, `placeholder_name`, `placeholder_email`, `claimable_by`,
+  `removed_at`, `soft_token`, `joined_at` are never writable over REST (claim /
+  remove / accept / join run as admin-context saves, which skip request hooks).
+  `display_name`: own row, or any row for owner/co_owner. `digest_opt_out`: own
+  row only. `role`: owner/co_owner (#279). A no-op PATCH passes. Superusers pass.
+  Before: a traveler could point the owner row's `user` at a second account.
+- **`pending_invites` read (#409, migration 0070)** — list/view are superuser-only:
+  rows carry the invitee's `email` and the live `code`. Members read
+  `GET /api/invites/pending?trip_id=` (`invites.pb.js`), which returns
+  `{id, role, invited_by, expires_at, label}` — label = the invitee's name when
+  they're the caller's co-traveler, the address only for the caller's own
+  invite, otherwise masked (`j•••@domain`). Never `email` or `code`.
+
+Harness: `test-rules.mjs` matrix (`trips.delete`, `trip_members.update`,
+`pending_invites.list/view`) + the `#408` / `#409` / `trips.delete_superuser` novel cases.
 
 ## Shared join links (#118 / #152)
 

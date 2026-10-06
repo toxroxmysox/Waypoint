@@ -1,6 +1,8 @@
 import { fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { validateTripImport, generateImportSlug } from '$lib/portability/import';
+import { applyRetile } from '$lib/itinerary/phase-tiling.server';
+import type { Day, Phase } from '$lib/types';
 
 export const load: PageServerLoad = async () => {
 	return {};
@@ -34,13 +36,20 @@ export const actions: Actions = {
 
 		const importData = validation.data;
 		const slug = generateImportSlug(importData.trip.title);
+		const tripStart = importData.trip.start_date.slice(0, 10);
+		const tripEnd = importData.trip.end_date.slice(0, 10);
 
+		let tripId = '';
 		try {
+			// #410: the trips.pb.js create hook seeds the owner membership, a "Phase 1"
+			// spanning the trip and a day for every date. Import must BUILD ON that
+			// seed (like clone does) — creating its own owner row 403s (createRule
+			// null) and its own days collide with idx_days_trip_date(trip,date).
 			const trip = await locals.pb.collection('trips').create({
 				slug,
 				title: importData.trip.title,
-				start_date: importData.trip.start_date + ' 00:00:00.000Z',
-				end_date: importData.trip.end_date + ' 00:00:00.000Z',
+				start_date: tripStart + ' 00:00:00.000Z',
+				end_date: tripEnd + ' 00:00:00.000Z',
 				timezone: importData.trip.timezone || '',
 				location_summary: importData.trip.location_summary || '',
 				countries: importData.trip.countries || [],
@@ -51,50 +60,88 @@ export const actions: Actions = {
 				created_by: locals.user!.id,
 				archived: false
 			});
+			tripId = trip.id;
 
-			await locals.pb.collection('trip_members').create({
-				trip: trip.id,
-				user: locals.user!.id,
-				display_name: locals.user!.name || locals.user!.email?.split('@')[0] || 'Owner',
-				role: 'owner',
-				joined_at: new Date().toISOString()
+			// Phases tile the trip (ADR-0021): the first phase is pinned to the trip
+			// start, every other phase is defined by a unique start strictly inside
+			// the trip, and ends are derived. Retarget the seeded Phase 1 as the
+			// first imported phase, create the rest by start, then retile. A phase
+			// whose start can't tile (outside the trip / duplicate start) folds into
+			// the phase covering that day, so its items still land somewhere sensible.
+			const seeded = await locals.pb.collection('phases').getFullList<Phase>({
+				filter: `trip = "${trip.id}"`,
+				sort: 'order'
 			});
-
-			const phaseMap = new Map<string, string>();
-			for (const phase of importData.phases) {
-				const created = await locals.pb.collection('phases').create({
-					trip: trip.id,
+			const firstPhaseId = seeded[0].id;
+			const sortedPhases = [...importData.phases].sort(
+				(a, b) =>
+					(a.start_date || '').slice(0, 10).localeCompare((b.start_date || '').slice(0, 10)) ||
+					a.order - b.order
+			);
+			const phaseMap = new Map<string, string>(); // imported name → phase id
+			const phaseStarts: Array<{ start: string; id: string }> = [
+				{ start: tripStart, id: firstPhaseId }
+			];
+			for (const [i, phase] of sortedPhases.entries()) {
+				const fields = {
 					name: phase.name,
 					location: phase.location || '',
-					country_code: phase.country_code || '',
-					start_date: phase.start_date ? phase.start_date + ' 00:00:00.000Z' : '',
-					end_date: phase.end_date ? phase.end_date + ' 00:00:00.000Z' : '',
-					order: phase.order
+					country_code: phase.country_code || ''
+				};
+				if (i === 0) {
+					await locals.pb.collection('phases').update(firstPhaseId, fields);
+					phaseMap.set(phase.name, firstPhaseId);
+					continue;
+				}
+				const start = (phase.start_date || '').slice(0, 10);
+				const tiles =
+					start > tripStart && start < tripEnd && !phaseStarts.some((p) => p.start === start);
+				if (!tiles) {
+					const covering = [...phaseStarts].reverse().find((p) => p.start <= start);
+					phaseMap.set(phase.name, (covering ?? phaseStarts[0]).id);
+					continue;
+				}
+				const created = await locals.pb.collection('phases').create({
+					trip: trip.id,
+					...fields,
+					start_date: start + ' 00:00:00.000Z',
+					end_date: tripEnd + ' 00:00:00.000Z',
+					order: i
 				});
+				phaseStarts.push({ start, id: created.id });
+				phaseStarts.sort((a, b) => a.start.localeCompare(b.start));
 				phaseMap.set(phase.name, created.id);
 			}
+			await applyRetile(locals.pb, trip.id, tripEnd);
 
-			const dayMap = new Map<string, string>();
+			// Days: reuse the hook-seeded day for each date (phases were bucketed by
+			// the phases hooks during retile); carry the imported notes onto it.
+			const seededDays = await locals.pb.collection('days').getFullList<Day>({
+				filter: `trip = "${trip.id}"`,
+				sort: 'date'
+			});
+			const dayMap = new Map<string, Day>(); // 'YYYY-MM-DD' → seeded day
+			for (const d of seededDays) dayMap.set(d.date.slice(0, 10), d);
 			for (const day of importData.days) {
-				const phaseIds = (day.phase_names || [])
-					.map((name) => phaseMap.get(name))
-					.filter(Boolean) as string[];
-				const created = await locals.pb.collection('days').create({
-					trip: trip.id,
-					phases: phaseIds,
-					date: day.date + ' 00:00:00.000Z',
-					notes: day.notes || ''
-				});
-				dayMap.set(day.date, created.id);
+				const seededDay = dayMap.get(day.date.slice(0, 10));
+				if (seededDay && day.notes) {
+					await locals.pb.collection('days').update(seededDay.id, { notes: day.notes });
+				}
 			}
 
 			for (const item of importData.items) {
-				const phaseId = item.phase_name ? phaseMap.get(item.phase_name) || '' : '';
-				const dayId = item.day_date ? dayMap.get(item.day_date) || '' : '';
+				const day = item.day_date ? dayMap.get(item.day_date.slice(0, 10)) : undefined;
+				// Every item belongs to a phase: the named one, else its day's first
+				// phase, else the trip's first phase. A dated status needs a day —
+				// an item whose day didn't resolve parks as an unplanned idea.
+				const phaseId =
+					(item.phase_name && phaseMap.get(item.phase_name)) || day?.phases?.[0] || firstPhaseId;
+				const wantsDay = item.status === 'planned' || item.status === 'done' || !item.status;
+				const status = wantsDay && !day ? 'unplanned' : item.status || 'planned';
 				const createdItem = await locals.pb.collection('items').create<{ id: string }>({
 					trip: trip.id,
 					phase: phaseId,
-					day: dayId,
+					day: day?.id ?? '',
 					type: item.type,
 					subtype: item.subtype || '',
 					title: item.title,
@@ -108,7 +155,7 @@ export const actions: Actions = {
 					start_tz: item.start_tz || '',
 					end_tz: item.end_tz || '',
 					end_date: item.end_date || '',
-					status: item.status || 'planned',
+					status,
 					booked: item.booked || false,
 					requires_booking: item.requires_booking || false,
 					// #268 / ADR-0016 — codes import as `kind: 'code'` Documents (below),
@@ -161,6 +208,15 @@ export const actions: Actions = {
 			redirect(303, `/trips/${slug}`);
 		} catch (err: unknown) {
 			if (isRedirect(err)) throw err;
+			// Never leave a half-built trip behind (#410) — each failed attempt used
+			// to strand an empty trip under a fresh slug.
+			if (tripId) {
+				try {
+					await locals.pb.collection('trips').delete(tripId);
+				} catch {
+					// Best effort; the original error is what the user needs.
+				}
+			}
 			const message = err instanceof Error ? err.message : 'Failed to import trip.';
 			return fail(500, { error: message });
 		}

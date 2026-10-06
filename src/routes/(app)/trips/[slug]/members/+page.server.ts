@@ -33,6 +33,15 @@ type PendingRow = {
 	expiresAtLabel: string;
 };
 
+// #409 — one row of GET /api/invites/pending. No email/code by construction.
+type PendingInviteRow = {
+	id: string;
+	role: PendingInvite['role'];
+	invited_by: string;
+	expires_at: string;
+	label: string;
+};
+
 // #352 — a past co-traveler offered in the picker. Name + avatar only: the
 // server never hands the browser their email (see /api/invites/co-travelers).
 type CoTravelerRow = {
@@ -131,21 +140,19 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 	const activeMembers = memberRows.filter((m) => !m.isDeparted);
 	const formerMembers = memberRows.filter((m) => m.isDeparted);
 
-	let pending: PendingInvite[] = [];
+	// #409 — pending_invites is superuser-read only (0070); this hook route is the
+	// member-facing read. It returns a display label per invite (co-traveler →
+	// name, your own typed invite → the address, anyone else's → masked) and never
+	// `email` or `code`. Already newest-first (-expires_at).
+	let pending: PendingInviteRow[] = [];
 	try {
-		pending = await locals.pb.collection('pending_invites').getFullList<PendingInvite>({
-			filter: `trip = "${trip.id}"`,
-			// NOT '-created': migration 0015 built pending_invites without autodate
-			// fields, so PB 400s on that sort and the catch below swallowed it —
-			// the Pending invites section had never rendered for anyone (found
-			// while building #352, which needs it to show the picked invite).
-			// expires_at is created + a fixed 7 days, so it orders identically.
-			// 0069 (#390) has since added `created`, but invites that predate it
-			// keep it blank, so expires_at stays the reliable key.
-			sort: '-expires_at'
-		});
+		const res = (await locals.pb.send(
+			`/api/invites/pending?trip_id=${encodeURIComponent(trip.id)}`,
+			{ method: 'GET' }
+		)) as { invites?: PendingInviteRow[] };
+		pending = res?.invites ?? [];
 	} catch {
-		// listRule denies non-members; surface empty.
+		// Not a member / hook error: surface empty.
 	}
 
 	const memberById = new Map(members.map((m) => [m.id, m]));
@@ -159,7 +166,6 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 				inviterLabel =
 					inviter.display_name ||
 					inviter.expand?.user?.name ||
-					inviter.expand?.user?.email ||
 					inviter.placeholder_name ||
 					'someone';
 			}
@@ -167,7 +173,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 		return {
 			id: p.id,
 			role: p.role,
-			displayLabel: p.email,
+			displayLabel: p.label,
 			inviterLabel,
 			expiresAtLabel: p.expires_at ? p.expires_at.split(' ')[0] : ''
 		};
@@ -203,8 +209,8 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 	// Active owners only — a tombstoned owner must not prop up the sole-owner count.
 	const ownerCount = members.filter((m) => m.role === 'owner' && !m.removed_at).length;
 
-	// #352 — past co-traveler picker. The pool and the name-masking map come from
-	// the hook because they can't be resolved from here: users.listRule is
+	// #352 — past co-traveler picker. The pool comes from the hook (pending-invite
+	// name masking moved to /api/invites/pending, #409) because they can't be resolved from here: users.listRule is
 	// self-only and emailVisibility is off (0043 opened viewRule to co-travelers
 	// for name+avatar ONLY). That's also the point — the address is resolved in
 	// PB and never crosses back, so it can't reach this process, the payload, or
@@ -217,21 +223,12 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 				{ method: 'GET' }
 			)) as {
 				co_travelers?: Array<{ user_id: string; name: string; avatar: string }>;
-				pending_names?: Record<string, string>;
 			};
 			coTravelers = (res?.co_travelers ?? []).map((c) => ({
 				userId: c.user_id,
 				name: c.name,
 				avatarUrl: c.avatar ? pbFileUrl({ id: c.user_id, collectionName: 'users' }, c.avatar) : ''
 			}));
-			// Swap the address out for the name on any pending invite that belongs
-			// to a co-traveler — otherwise picking someone would round-trip their
-			// email straight back into the Pending list.
-			const pendingNames = res?.pending_names ?? {};
-			for (const row of pendingRows) {
-				const name = pendingNames[row.id];
-				if (name) row.displayLabel = name;
-			}
 		} catch {
 			coTravelers = [];
 		}
