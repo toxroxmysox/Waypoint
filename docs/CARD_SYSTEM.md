@@ -147,7 +147,7 @@ The Focus slot also holds four **state cards** that are not item cards: Free tim
 
 *(Filled in as decisions are made. Each entry gets the date, the decision, why, and what it supersedes.)*
 
-> **Reading this log:** entries are history, and later decisions amend earlier ones (D9 refines D5's rail, D10 sets the colour and icon rules, D11 settles Row / Hero / Span). A line that a later decision overrides is marked *(⟶ …)* with what replaced it. The **resolved** rules, in one place, are the card system spec issue; implementers build from that, and use this log for the why.
+> **Reading this log:** entries are history, and later decisions amend earlier ones (D9 refines D5's rail, D10 sets the colour and icon rules, D11 settles Row / Hero / Span). A line that a later decision overrides is marked *(⟶ …)* with what replaced it. The **resolved** rules, in one place, are the card system spec, **#418** (its 30 tickets are #419–#448, plus #402, #416 and #393 for the 1.0 release); implementers build from that, and use this log for the why.
 
 ### D1 — Four card shapes (Scott, 2026-10-03)
 
