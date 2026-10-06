@@ -147,7 +147,7 @@ The Focus slot also holds four **state cards** that are not item cards: Free tim
 
 *(Filled in as decisions are made. Each entry gets the date, the decision, why, and what it supersedes.)*
 
-> **Reading this log:** entries are history, and later decisions amend earlier ones (D9 refines D5's rail, D10 sets the colour and icon rules, D11 settles Row / Hero / Span). A line that a later decision overrides is marked *(⟶ …)* with what replaced it. The **resolved** rules, in one place, are the card system spec, **#418** (its 30 tickets are #419–#448, plus #402, #416 and #393 for the 1.0 release); implementers build from that, and use this log for the why.
+> **Reading this log:** entries are history, and later decisions amend earlier ones (D9 refines D5's rail, D10 sets the colour and icon rules, D11 settles Row / Hero / Span). A line that a later decision overrides is marked *(⟶ …)* with what replaced it. The **resolved** rules, in one place, are the card system spec, **#418** (its 30 tickets are #419–#448, plus #402, #416 and #393 for the 3.0 release); implementers build from that, and use this log for the why.
 
 ### D1 — Four card shapes (Scott, 2026-10-03)
 
@@ -216,7 +216,7 @@ Votes belong where ideas are **weighed and moved**: a phase-focused planning con
 
 - *Supersedes:* ADR-0011's "vote count pill on planned and parking-lot cards" (amended in ADR-0011, 2026-10-03). Note the collision: **#394 was fixed on `main` on 2026-10-02 (`98ef885`, PR #398) by *adding* votes to the day-page parking lot and desktop rail.** D3 reverses that. When the card system ships, day-page parking cards drop the vote pill and the phase's idea cards gain it (today's Phase Detail parking cards, E3, show no votes).
 - *Seeded a product direction:* a **phase planning mode**, a focused workspace for weighing a phase's ideas and moving them into days. That is bigger than cards and is captured as its own issue (#401). It connects to #391 (getting into a phase).
-- *Open:* trip mode's "Ideas for now" strip (E4), where votes help pick a backup on the day. *(⟶ mocked with vote pills, phone and desktop; awaiting Scott, §4.9)*
+- *Open:* trip mode's "Ideas for now" strip (E4), where votes help pick a backup on the day. *(⟶ approved by Scott 2026-10-06: grouped idea cards with vote pills; "Do this" stays)*
 - **Amendment (Scott, 2026-10-06):** idea cards in the **day page's parking lot** and the **desktop Ideas panel** may show votes too, as an add-on for **unplanned** items, so you can tell which idea is the favourite. Planned cards still show none. **Form (Scott, 2026-10-06): tap-to-vote pills under the sub-line** (the Closeout pill structure). One pill per sentiment, **all four** (love / like / flexible / pass, matching the data model and `VoteButtons`), each with its count. The viewer's own vote is filled, and tapping toggles it. **Ideas sort by votes within each type group**, using the existing `sortByVoteScore` (weights 2 / 1 / 0 / −2, ties by `sort_order`). The cost: idea cards are about 30px taller.
   - **Drag only plans (Scott, 2026-10-06):** votes set the order, so dragging within the ideas list does nothing; a card dropped back among ideas resolves to its vote position. Drag is "put this on a day" only. `sort_order` survives only as the tie-break.
   - **Approved on the before/after page (Scott, 2026-10-06):** the categorized idea list, "really love" it. Phase planning ideas and the pending review tray: "no notes".
@@ -290,7 +290,7 @@ Flights write departure → arrival (`2:05p → 4:20p`). **In text, an end time 
 
 **Inbox suggestion (Scott, 2026-10-06).** The pending idea card, with **Approve / Edit / Reject** on the outside. **Edit** opens the item, and its actions inside are **Reject / Save / Approve**. Save keeps the edits and leaves it pending. The `TRAVELER` role badge goes.
 
-### D12 — Item detail, the full page (2026-10-06: partly approved — see the status line)
+### D12 — Item detail, the full page (approved by Scott 2026-10-06: "the item page is good to go")
 
 *Status (2026-10-06, second review):* Scott approved the `⋯` contents by role and asked to **see** the layout (planning, and Trip Mode with documents, the live line and Log payment); both were shown inline the same day and **await his OK**. His "no notes" on the desktop mocks was not meant as approval of the item page. **Approved earlier:** "Are you going?" ("that's good"), no job dock, planned items stay in the swipe quiz with a quiet vote row, and Mark booked going to the existing Add expense. **Not yet explicitly approved:** a visible Edit with a role-filtered `⋯`, the Hero as the venue kit (place line opens Maps, codes, documents, live line), the Details card, empty sections shrinking to one line, the comment box first, the type and subtype in words, and trip mode's "Plan details" plus Log payment under the Hero.
 
@@ -439,3 +439,4 @@ On any list hosted by the [[Timeline Rail]], **time is printed only in the rail,
    - A deadline after its time: Earlier today (past), or an "overdue" state? *Recommended: past. Trip mode can't mark things done, and red is reserved for shared-people conflicts.*
 9. **Mock vs decision log, to confirm** *(⟶ Scott 2026-10-06: yes to `⋯` Skip on Coming up cards; Ideas for now with vote pills still open)*: D2 gives Live cards a `⋯` (Skip, owner/co_owner); the Coming up mocks drew none. D3 left trip mode's Ideas for now open; the mocks drew it grouped by type with vote pills.
 10. **Build and release (Scott, 2026-10-06):** tickets merge into an integration branch; Scott delegates the build and integration plan (open PRs and branches included) to Claude; **one big deploy with an app version change.**
+11. **Closed 2026-10-06:** Scott approved the item page (Planning and Trip Mode), Ideas for now with vote pills, and Skip's destination (stay on the page in Planning Mode, go to Now in Trip Mode, #416). The release ships as **Waypoint 3.0.0**, from the integration branch `release/3.0`.
