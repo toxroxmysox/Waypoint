@@ -6,6 +6,8 @@
 >
 > **⚠️ Partially superseded (2026-06-13, ADR-0011 / #210 Item Assignment):** the "card avatars = votes only, never assignees" rule is **reversed**. Item-card avatars now denote **assignees** (`assigned_to`, when trip >1 member); **votes move to an icon + count pill** on cards (the who-voted-what avatar stacks remain on item **detail**). Affected below: decision **#5**, the timeline card **Reactor avatars** row, and the **parking-lot card** line.
 
+> **⚠️ Being superseded (2026-10-03, updated 2026-10-06):** the card redesign in `docs/CARD_SYSTEM.md` (decisions D1–D13: four card shapes, the rail owns time, colour means "act on this", Going, votes on ideas only, the item page, desktop) replaces this doc's per-surface tables. Each card-system ticket amends this doc **as its surface ships**, updating the section for its surface or adding one (this doc covers only four surfaces today). Until then, the rows below describe the *as-built* contract, not the target.
+
 ## Why this exists
 
 The design handoff's "data model" table and field-map screenshots make binding field→slot claims. Several don't survive contact with the code: they render fields that **no create/edit flow captures** (always-empty slots are lies), or describe lifecycle behavior the code contradicts. This doc resolves every such slot to one of:
