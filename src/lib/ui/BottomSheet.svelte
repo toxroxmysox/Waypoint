@@ -2,7 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import { untrack } from 'svelte';
 	import { fly, fade } from 'svelte/transition';
-	import { pushState } from '$app/navigation';
+	import { pushState, replaceState } from '$app/navigation';
 	import { page } from '$app/state';
 	import { reducedMotion } from '$lib/shell/stores/reduced-motion';
 	import { lockBodyScroll, unlockBodyScroll } from '$lib/shell/scroll-lock';
@@ -155,6 +155,26 @@
 	/** Which navigation this vestigial state belongs to; stale in any later one. */
 	let vestigialEpoch = -1;
 
+	/**
+	 * Is the browser's CURRENT history entry still ours? A drop in page.state's
+	 * depth is not proof of a back press: SvelteKit's invalidateAll() — run by
+	 * EVERY `use:enhance` success — resets page.state to {} in place without
+	 * touching history (kit 2.68 `_invalidate(…, reset_page_state = true)`). So a
+	 * form finishing while a sheet is open (tick a task, then open its ⋯ sheet)
+	 * read as "back" and closed the sheet. On a real back, history.state is
+	 * already the previous entry; on a reset it is still ours. Measured: on back,
+	 * kit applies the new page.state BEFORE `popstate` fires, so a popstate flag
+	 * cannot tell them apart. If kit renames its states key this returns false
+	 * and we fall back to treating the drop as a back — today's behaviour.
+	 */
+	function ourEntryIsCurrent(): boolean {
+		if (entryId === 0) return false;
+		const states = (history.state as Record<string, unknown> | null)?.['sveltekit:states'] as
+			| { sheetId?: number }
+			| undefined;
+		return states?.sheetId === entryId;
+	}
+
 	/** Pop our own entry, synchronously, if it is still the current one. */
 	function popOurEntry() {
 		if (historyToken === 0) return;
@@ -259,6 +279,20 @@
 		}
 
 		if (!untrack(() => open) || historyToken === 0 || depth >= historyToken) return;
+
+		// page.state was reset in place by an invalidation, not popped: we are
+		// still on our own entry. Re-sync page.state to it (so depth stays true
+		// for nested sheets) and stay open.
+		if (ourEntryIsCurrent()) {
+			untrack(() => {
+				try {
+					replaceState('', { ...page.state, sheet: historyToken, sheetId: entryId });
+				} catch {
+					// Router not ready: staying open is what matters.
+				}
+			});
+			return;
+		}
 
 		// #370 — back is a dismissal like any other, so a dirty sheet asks first.
 		// The browser has already dropped our entry, so re-push it: the sheet is

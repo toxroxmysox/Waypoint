@@ -34,7 +34,7 @@ PORT="${PB_PORT:-$((8097 + SLOT))}"
 DIR="${PB_DIR:-/tmp/pb-harness-slot${SLOT}}"
 PB_URL="http://127.0.0.1:${PORT}"
 
-ALL=(rules members invites suggestions money tripnames timestamps)
+ALL=(rules members invites suggestions money tripnames timestamps invitations)
 SELECTED=("$@")
 [ ${#SELECTED[@]} -eq 0 ] && SELECTED=("${ALL[@]}")
 
