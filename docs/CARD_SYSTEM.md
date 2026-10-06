@@ -360,8 +360,19 @@ On any list hosted by the [[Timeline Rail]], **time is printed only in the rail,
 ## 4. Open questions (queue)
 
 1. ~~**Do we need this many card types?**~~ Resolved by **D1**: four shapes.
-2. **Time grammar (#388).** *Rail-hosted cards resolved by D5; Row / Hero / Span still open.* One way to show start, range, deadline and untimed, used on every surface. Start and end must stay distinguishable (Scott, 2026-10-01).
-3. ~~**Rail direction**~~ Resolved by D5: the clock rail with leader lines; the glyph stays in the card.
+2. ~~**Time grammar (#388).**~~ Resolved by **D5** (rail-hosted cards) and **D11** (Row, Hero and Span text grammar). Start and end stay distinguishable everywhere (Scott, 2026-10-01).
+3. ~~**Rail direction**~~ Resolved by D5 and D9: the clock rail with leader lines. The icon moved onto the rail in **D7**.
 4. ~~**Card height.**~~ Resolved by **D8**: content-driven, never duration.
-5. **What goes on the face versus the detail page**, per job.
+5. ~~**What goes on the face versus the detail page**, per job.~~ Resolved by **D2** (Card), **D11** (Row, Span, Hero) and D3 (votes only on ideas).
 6. ~~**Text versus symbol versus color.**~~ Resolved by **D10**.
+7. **Proposed defaults, awaiting Scott's confirmation** (drawn on the before/after page, 2026-10-06):
+   - Phase planning idea cards: grouped by type, sorted by votes, tap-to-vote pills. A pending suggestion is the same card, dashed, with an Approve / Reject tray.
+   - The record (What we did) uses the rail, read-only, with full descriptions (no Done stamp, per D2).
+   - The item detail header is a Hero: the icon beside the title, then the place, the time in text form, Booked / Going, then the code rows. The type and subtype pills go (finding 9). **Vote buttons show only while the item is an idea.**
+   - Overview day cards: the stay line moves to neutral ink (it is not something to act on). "2/3 booked" becomes the open loop itself, "1 needs booking", in gold. TODAY stays accent as an outline.
+   - Empty day: a dashed panel saying "Nothing planned. Add something, or drag an idea here." with + Add item. The day card reads "Nothing planned yet".
+   - The desktop Ideas panel matches the day page parking lot: grouped by type, vote pills, sorted by votes.
+   - The swipe face (E6) is a Hero: the 40px icon beside a Fraunces title, then place and cost, then the status in words ("Idea · not on a day yet · added by Kim"). The green Planned pill goes.
+   - Inbox suggestion (E9) is the pending idea card with an Approve / Edit & approve / Reject tray. The TRAVELER role badge goes, because "Suggested by Jess" already says who.
+   - Confirmation codes (Docs, F4) are Rows with the code in mono in the sub-line and a copy action. No gold: a code is a closed loop, not an open one. The tinted type circles go (D10).
+   - Goal rows (F5) say "Idea · Phase 1" or "Planned · Thu Oct 1 · 6:30p" in words. The gold Unplanned and blue Planned pills go.
