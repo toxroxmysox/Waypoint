@@ -52,3 +52,6 @@ handoff*.md
 BRIEF.md
 handoff-issue116.md
 .superpowers/
+
+# svw operating model scratch (execution ledgers, briefs, review packages)
+.svw/

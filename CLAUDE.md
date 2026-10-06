@@ -14,12 +14,12 @@ Be as concise as possible. Sacrifice grammar for concision.
 
 ## Scope discipline
 
-Work that spans sessions or needs a plan should trace to a GitHub Issue.
+Work that spans sessions or needs a plan should trace to a GitHub Issue. Scott files issues; agents read them and never create them (findings go in the handoff for Scott).
 Small, self-contained fixes (single-session, no plan needed) — just do them.
 
 "Let's just..." on anything non-trivial is a scope-creep trigger. Interrogate:
 - Is this a quick fix or a rabbit hole?
-- If it needs a plan, create an issue first.
+- If it needs a plan, it needs Scott's issue first.
 
 ---
 
@@ -37,6 +37,8 @@ Ceremony by type:
 Issues labeled `afk` can run unsupervised. `hitl` needs human checkpoints.
 
 Session scope: one issue or one PR. If a task needs both planning and execution, split into separate sessions.
+
+Process is the svw operating model (`svw:workflow`); multi-ticket releases run under the `pm-hub` skill, which sits on top (see its "With svw" section). svw doc-roots here: glossary = `CONTEXT.md`, ADRs = `docs/adr/`, grill records and plans = `docs/plans/YYYY-MM-DD-<topic>/`. Not `.wolf/cerebrum.md`: that is local, gitignored scar tissue, not the domain model.
 
 ---
 

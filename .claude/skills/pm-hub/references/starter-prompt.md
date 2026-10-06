@@ -14,10 +14,18 @@ SCOPE
 - <2–4 lines. Acceptance criteria live on the issue and are binding — don't restate, point.>
 - Binding contract: <docs/<CONTRACT>.md §refs — these override your judgment | "none">
 - Out of scope: <the adjacent thing this issue is NOT>
+- Intent sources: <spec path in docs/plans/<effort>/, decision log §refs, CONTEXT.md, ADRs>
+
+PROCESS (svw; load each skill by name with the Skill tool)
+- <bug: svw:diagnosing-bugs | slice: svw:writing-plans → save the plan at docs/plans/<effort>/<N>-<slug>.md, commit it, then svw:executing-plans | trivial: just do it>
+- svw:test-driven-development on every behavior change. Red-green covers derivations, hooks/rules (harness cases) and any critical-path E2E the issue names. Pure layout is proven by `pnpm verify:visual` screenshots, never by markup/class assertions (CLAUDE.md Testing).
+- Execution method and plan review are pre-answered: you execute inline; the PM reviews. Don't stop to ask Scott.
+- Never dispatch subagents or reviewers. When you report, the PM runs svw's code + intent review and sends findings back to you for one fix pass.
+- svw:verification-before-completion before you report done.
 
 ENV (a fresh worktree has nothing)
 - pnpm install
-- Copy .env.local from the main checkout (gitignored — never commit it)
+- Copy .env.local from the main checkout WITHOUT the mail keys: `grep -vE '^(RESEND_|SMTP_)' <main>/.env.local > .env.local` (gitignored — never commit it). The real file holds a live Resend key; harnesses source it and would send real email.
 - Copy `backend/pocketbase` in from the main checkout — **the binary is gitignored, so NO worktree ever has it**, and without it every PB-backed check (e2e, `verify:visual`, the probe) dies with `pocketbase exited (1)` after a 45s timeout that looks like a port problem. Bit wave 3.
 - Copy `.wolf/` in for cerebrum context: `cp -r <main-checkout>/.wolf .wolf` — without it you're blind to the Do-Not-Repeat scars (gitignored, absent from worktrees). Your `.wolf` edits are throwaway; the PM writes canonical `.wolf` at integration.
 - Backend via ./backend/start.sh ONLY — never the bare pocketbase binary
@@ -39,8 +47,9 @@ VERIFY (all green before reporting done)
 
 REPORT BACK
 - Desktop session only: write handoff-issue<N>.md in the worktree root (gitignored) — what changed, decisions made, surprises, verification evidence.
-- **Commit each issue separately** to the worktree branch (`<type>(#<N>): <summary>`) — these per-issue commits are how the PM recovers if you're interrupted mid-run. **Desktop/HITL only:** also open a PR marked DO NOT MERGE. **PM-spawned background agents: no PR** — leave the commits on the branch; the PM integrates them.
-- Don't touch main. Don't merge. Don't close the issue.
+- **Commit each issue separately** to the worktree branch (`<type>(#<N>): <summary>`) — these per-issue commits are how the PM recovers if you're interrupted mid-run. **Desktop/HITL only:** also open a PR marked DO NOT MERGE. **PM-spawned background agents: no PR** — leave the commits on the branch; the PM integrates them. **Exception: a ticket that names an integration branch** — push and open the PR against it (`svw:pr` body; `Refs #<N>`, not `Closes`, since merges to a non-default branch don't close issues).
+- Final message: status, branch + PR URL, one-line test evidence, screenshot paths, then "Rulings I made" (every `Ruling:` from your ledger, each with its cost if wrong) and "Deferred minors". Both lists exhaustive.
+- Don't touch main. Don't merge. Don't close the issue. Don't create issues.
 ```
 
 ## Slot guide
