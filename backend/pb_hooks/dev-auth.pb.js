@@ -520,6 +520,10 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 	invite.set('invited_by', memberIds.owner);
 	invite.set('code', inviteCode);
 	invite.set('expires_at', expiresAt);
+	// #449 — stands in for an address the owner TYPED (POST /api/invites/create),
+	// so test-rules' route_inviter_sees_own case gets the address back. An
+	// origin-less row is pre-0072 data and is masked even for its inviter.
+	invite.set('origin', 'typed');
 	e.app.save(invite);
 
 	// Seed a trip-scoped document owned by the owner so the harness has a fixture

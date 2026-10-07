@@ -5,6 +5,7 @@
 	import Button from '$lib/ui/Button.svelte';
 	import Avatar from '$lib/ui/Avatar.svelte';
 	import Skeleton from '$lib/ui/Skeleton.svelte';
+	import AppVersion from '$lib/ui/AppVersion.svelte';
 	import BottomSheet from '$lib/ui/BottomSheet.svelte';
 	import AvatarCropper from '$lib/account/components/AvatarCropper.svelte';
 	import { toast } from '$lib/shell/stores/toast';
@@ -177,6 +178,8 @@
 			</div>
 		</form>
 	</Card>
+
+	<AppVersion />
 </main>
 
 <BottomSheet bind:open={cropperOpen} title="Position your photo">

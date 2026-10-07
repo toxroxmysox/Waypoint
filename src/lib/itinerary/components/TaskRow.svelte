@@ -21,7 +21,8 @@
 		assigneeImg = '',
 		assignable = true,
 		divider = true,
-		onAssign
+		onAssign,
+		readonly = false
 	}: {
 		taskId: string;
 		title: string;
@@ -33,6 +34,8 @@
 		assignable?: boolean;
 		divider?: boolean;
 		onAssign?: () => void;
+		/** #416 — viewers see the task and its state, with no toggle or ⋯. */
+		readonly?: boolean;
 	} = $props();
 
 	// #364 — optimistic toggle. `override` is non-null only while a submit is in
@@ -56,47 +59,59 @@
 	});
 </script>
 
+{#snippet face()}
+	<span
+		class="flex h-[21px] w-[21px] shrink-0 items-center justify-center rounded-[5px] border-[1.5px] transition-colors
+			{shown ? 'border-moss bg-moss text-paper' : 'border-line bg-surface'}"
+	>
+		{#if shown}
+			<svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+				<path d="M2.5 6.2l2.3 2.3L9.5 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+			</svg>
+		{/if}
+	</span>
+	<span
+		class="min-w-0 flex-1 text-[14.5px] leading-snug font-medium {shown
+			? 'text-ink-muted line-through decoration-ink-muted/50'
+			: 'text-ink'}"
+	>
+		{title}
+	</span>
+{/snippet}
+
 <div
 	class="flex items-center gap-3 py-3 {divider ? 'border-line border-b' : ''}"
 >
-	<form method="POST" action={toggleAction} use:enhance={toggle} class="flex min-w-0 flex-1">
-		<input type="hidden" name="task_id" value={taskId} />
-		<button
-			type="submit"
-			class="active:bg-surface-2 flex min-w-0 flex-1 items-center gap-3 rounded-md text-left transition-colors duration-75 select-none"
-			aria-label={shown ? 'Uncheck task' : 'Check task'}
-		>
-			<span
-				class="flex h-[21px] w-[21px] shrink-0 items-center justify-center rounded-[5px] border-[1.5px] transition-colors
-					{shown ? 'border-moss bg-moss text-paper' : 'border-line bg-surface'}"
+	{#if readonly}
+		<div class="flex min-w-0 flex-1 items-center gap-3">
+			{@render face()}
+		</div>
+	{:else}
+		<form method="POST" action={toggleAction} use:enhance={toggle} class="flex min-w-0 flex-1">
+			<input type="hidden" name="task_id" value={taskId} />
+			<button
+				type="submit"
+				class="active:bg-surface-2 flex min-w-0 flex-1 items-center gap-3 rounded-md text-left transition-colors duration-75 select-none"
+				aria-label={shown ? 'Uncheck task' : 'Check task'}
 			>
-				{#if shown}
-					<svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-						<path d="M2.5 6.2l2.3 2.3L9.5 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-					</svg>
-				{/if}
-			</span>
-			<span
-				class="min-w-0 flex-1 text-[14.5px] leading-snug font-medium {shown
-					? 'text-ink-muted line-through decoration-ink-muted/50'
-					: 'text-ink'}"
-			>
-				{title}
-			</span>
-		</button>
-	</form>
+				{@render face()}
+			</button>
+		</form>
+	{/if}
 
 	{#if assignable}
-		<button
-			type="button"
-			onclick={onAssign}
-			class="text-ink-muted hover:text-ink-soft active:text-ink-soft hit-44 shrink-0 px-1 py-0.5"
-			aria-label="Assign or remove task"
-		>
-			<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-				<circle cx="10" cy="4.5" r="1.4" /><circle cx="10" cy="10" r="1.4" /><circle cx="10" cy="15.5" r="1.4" />
-			</svg>
-		</button>
+		{#if !readonly}
+			<button
+				type="button"
+				onclick={onAssign}
+				class="text-ink-muted hover:text-ink-soft active:text-ink-soft hit-44 shrink-0 px-1 py-0.5"
+				aria-label="Assign or remove task"
+			>
+				<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+					<circle cx="10" cy="4.5" r="1.4" /><circle cx="10" cy="10" r="1.4" /><circle cx="10" cy="15.5" r="1.4" />
+				</svg>
+			</button>
+		{/if}
 		{#if assigneeInitial}
 			<span class="shrink-0 transition-opacity" style="opacity:{shown ? 0.4 : 1};">
 				<Avatar img={assigneeImg} initial={assigneeInitial} alt={assigneeAlt} size={24} />

@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import ArchiveDaySection from '$lib/portability/components/ArchiveDaySection.svelte';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
-	import { titleCase } from '$lib/shell/format';
+	import { formatCalendarDate, titleCase } from '$lib/shell/format';
 	import type { PageData } from './$types';
 
 	let { data } = $props();
@@ -15,22 +15,14 @@
 	const pending = $derived('pending' in data ? data : null);
 	const publishDateLabel = $derived(
 		pending?.publishDate
-			? new Date(pending.publishDate).toLocaleDateString('en-US', {
-					month: 'long',
-					day: 'numeric',
-					year: 'numeric'
-				})
+			? formatCalendarDate(pending.publishDate, { month: 'long', day: 'numeric', year: 'numeric' })
 			: ''
 	);
 
 	const dateRange = $derived.by(() => {
 		if ('pending' in data) return '';
 		const fmt = (d: string) =>
-			new Date(d.replace(' ', 'T')).toLocaleDateString('en-US', {
-				month: 'long',
-				day: 'numeric',
-				year: 'numeric'
-			});
+			formatCalendarDate(d, { month: 'long', day: 'numeric', year: 'numeric' });
 		return `${fmt(data.trip.start_date)} – ${fmt(data.trip.end_date)}`;
 	});
 

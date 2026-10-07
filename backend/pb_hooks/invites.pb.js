@@ -120,6 +120,9 @@ routerAdd('POST', '/api/invites/create', (e) => {
 	invite.set('invited_by', requesterMember.id);
 	invite.set('code', code);
 	invite.set('expires_at', expiresAt);
+	// #449 — the inviter typed this address, so the pending list may show it
+	// back to them. Picker invites are 'picked' and never do.
+	invite.set('origin', 'typed');
 
 	try {
 		e.app.save(invite);
@@ -892,8 +895,13 @@ routerAdd('GET', '/api/invites/co-travelers', (e) => {
 // the label, which never carries an address the caller didn't already know:
 //   1. invitee is a co-traveler of the caller → their NAME (the #352 rule —
 //      a picker-created invite must not round-trip the address);
-//   2. else the caller is the inviter → the address they typed themselves;
-//   3. else → masked (`j•••@gmail.com`).
+//   2. else the caller is the inviter AND typed the address (origin 'typed',
+//      #449) → that address;
+//   3. else the caller is the inviter of a PICKER invite (origin 'picked') →
+//      the name captured when they picked (picked_name). A picked invitee who
+//      has since left every shared trip used to fall into 2 and leak (#449);
+//   4. else → masked (`j•••@gmail.com`). Pre-0072 rows (origin '') land here
+//      for everyone: how they were created is unknown, so never the address.
 // Never returns `email` or `code`.
 // Returns { invites: [{ id, role, invited_by, expires_at, label }] }, newest first.
 // ---------------------------------------------------------------------------
@@ -981,11 +989,16 @@ routerAdd('GET', '/api/invites/pending', (e) => {
 	const out = [];
 	for (const inv of invites) {
 		const addr = inv.getString('email').trim().toLowerCase();
+		const origin = inv.getString('origin'); // #449: 'typed' | 'picked' | '' (pre-0072)
+		const isInviter = inv.getString('invited_by') === callerMember.id;
+		const pickedName = inv.getString('picked_name').trim();
 		let label;
 		if (addr && coTravelerName[addr]) {
 			label = coTravelerName[addr];
-		} else if (inv.getString('invited_by') === callerMember.id) {
+		} else if (isInviter && origin === 'typed') {
 			label = addr;
+		} else if (isInviter && origin === 'picked' && pickedName) {
+			label = pickedName;
 		} else {
 			const at = addr.indexOf('@');
 			label = at > 0 ? addr.charAt(0) + '•••' + addr.substring(at) : 'Invited guest';
@@ -1058,6 +1071,7 @@ routerAdd('POST', '/api/invites/create-for-user', (e) => {
 	// crafted user id would invite a stranger — and reveal, by success/failure,
 	// that their account exists.
 	let shared = false;
+	let sharedNickname = ''; // #449 — the target's display_name on that shared trip
 	let myMemberships = [];
 	try {
 		myMemberships = e.app.findRecordsByFilter(
@@ -1075,12 +1089,13 @@ routerAdd('POST', '/api/invites/create-for-user', (e) => {
 		const sharedTripId = mine.getString('trip');
 		if (!sharedTripId) continue;
 		try {
-			e.app.findFirstRecordByFilter(
+			const theirs = e.app.findFirstRecordByFilter(
 				'trip_members',
 				'trip = {:tripId} && user = {:userId} && removed_at = ""',
 				{ tripId: sharedTripId, userId: userId }
 			);
 			shared = true;
+			sharedNickname = theirs.getString('display_name').trim();
 			break;
 		} catch (_) {
 			// not on that trip; keep looking
@@ -1133,6 +1148,12 @@ routerAdd('POST', '/api/invites/create-for-user', (e) => {
 	invite.set('invited_by', requesterMember.id);
 	invite.set('code', code);
 	invite.set('expires_at', expiresAt);
+	// #449 — picked by name: the pending list must never show this address, not
+	// even to the inviter. Capture the name they picked (same chain as the
+	// co-travelers pool, minus its 'Traveler' filler) so the label outlives the
+	// pair sharing a trip; empty → the list masks it.
+	invite.set('origin', 'picked');
+	invite.set('picked_name', (target.getString('name').trim() || sharedNickname).substring(0, 200));
 
 	try {
 		e.app.save(invite);
