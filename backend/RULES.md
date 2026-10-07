@@ -215,6 +215,38 @@ Three REST holes closed after the 2026-10-05 agent-access audit:
 Harness: `test-rules.mjs` matrix (`trips.delete`, `trip_members.update`,
 `pending_invites.list/view`) + the `#408` / `#409` / `trips.delete_superuser` novel cases.
 
+## Invite origin + stored-email scrub (#449, migrations 0072 / 0073)
+
+Supersedes the #409 label rule above: "the caller's own invite" no longer gets
+the address unless the caller typed it.
+
+- **`pending_invites.origin` + `picked_name` (0072)** — `origin` is `typed`
+  (`POST /api/invites/create`) or `picked` (`POST /api/invites/create-for-user`);
+  `''` on rows written before 0072. `picked_name` is the name the inviter picked
+  (account name, else the shared-trip nickname), captured at creation; empty for
+  typed invites. Both are written only by those two routes (createRule/updateRule
+  stay `null`) and read only by `GET /api/invites/pending` — list/view stay
+  superuser-only (0070), and the route never returns either field.
+- **`GET /api/invites/pending` label**, first match wins:
+  1. invitee is the caller's current co-traveler → their name (#352);
+  2. caller is the inviter and `origin = typed` → the address they typed;
+  3. caller is the inviter and `origin = picked` → `picked_name` (if non-empty);
+  4. otherwise → masked (`j•••@domain`). Pre-0072 rows (`origin = ''`) land here
+     for everyone, the inviter included: how they were made is unknown.
+  Before: a picked invitee who left every trip shared with the inviter dropped
+  out of 1 and fell into "inviter → address", revealing an email the inviter was
+  never shown.
+- **0073 — one-time scrub** of addresses stored by pre-#415 fallbacks:
+  `member_joined` notification bodies (or any body ending " joined the trip")
+  → `Someone joined the trip`; tombstoned (`removed_at` set) `trip_members.display_name`
+  → `Former member`. Only rows containing `@`; idempotent; never throws (logs
+  the row id and skips). Other notification bodies and live member rows are out
+  of scope (people's own typed text / live data).
+
+Harness: `test-invites.mjs` `[#449 …]` section (picker repro: pick → leave →
+pending list) and `test-scrub.mjs` (`bash scripts/backend-harnesses.sh scrub`:
+seeds below 0073, boots PB with it, asserts acceptance + controls + a no-op re-run).
+
 ## Shared join links (#118 / #152)
 
 The `join_tokens` collection (#118) backs the shared-link join flow. Management
