@@ -14,12 +14,12 @@ Be as concise as possible. Sacrifice grammar for concision.
 
 ## Scope discipline
 
-Work that spans sessions or needs a plan should trace to a GitHub Issue. Scott files issues; agents read them and never create them (findings go in the handoff for Scott).
+Work that spans sessions or needs a plan should trace to a GitHub Issue. File issues for bugs and future features you find; don't create one for each task you work on.
 Small, self-contained fixes (single-session, no plan needed) — just do them.
 
 "Let's just..." on anything non-trivial is a scope-creep trigger. Interrogate:
 - Is this a quick fix or a rabbit hole?
-- If it needs a plan, it needs Scott's issue first.
+- If it's out of scope, park it as an issue (bug or future feature) rather than doing it now.
 
 ---
 
