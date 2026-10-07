@@ -1359,9 +1359,93 @@ async function runNotGoingNovelCases(tokens) {
 	recordResult('items', 'create_ng_self', 'owner', 'allow', classifyWrite(r.status), r.status);
 }
 
+// #402 — departure clean-up treats not_going the way it treats assigned_to
+// (members.pb.js /api/members/remove + /api/members/can-purge):
+//   keep     → the tombstone stays in not_going, and that reference blocks purge;
+//   reassign → the departed's answer moves to the target, but the target's OWN
+//              answer always wins over an inherited one (lists stay exclusive);
+//   cascade  → the departed's not going is cleared.
+const NOT_GOING_DEPARTURE_OPS = [
+	'ng_purge_control',
+	'ng_canpurge_blocks',
+	'ng_remove_tombstones',
+	'ng_kept_on_tombstone',
+	'reassign_moves_ng',
+	'reassign_own_answer_wins_going',
+	'reassign_own_answer_wins_ng',
+	'cascade_clears_ng'
+];
+
+function ngListsAre(s, going, notGoing) {
+	const same = (a, b) => a.length === b.length && a.every((x) => b.includes(x));
+	return same(s.going, going) && same(s.notGoing, notGoing)
+		? 'yes'
+		: `no(going=${JSON.stringify(s.going)} not_going=${JSON.stringify(s.notGoing)})`;
+}
+
+async function runNotGoingDepartureCases(tokens) {
+	// --- keep: not going alone is a reference → tombstone, never purge.
+	let fixture = await setupFixture();
+	let m = fixture.memberIds;
+	// The traveler's only blocking reference in the fixture is the goal they
+	// authored (their goal/suggestion votes always drop). Delete it, so not going
+	// is the one thing left to keep them.
+	await pbRequest('DELETE', `/api/collections/trip_goals/records/${fixture.goalId}`, { token: tokens.traveler });
+	const probe = () =>
+		pbRequest('GET', `/api/members/can-purge?member_id=${m.traveler}`, { token: tokens.owner });
+	let p = await probe();
+	recordResult('trip_members', 'ng_purge_control', 'owner', 'yes', p.data?.zero_ref === true ? 'yes' : `no(${JSON.stringify(p.data)})`, p.status);
+
+	await ngPatch(tokens.traveler, fixture.itemId, { 'not_going+': m.traveler });
+	p = await probe();
+	recordResult('trip_members', 'ng_canpurge_blocks', 'owner', 'yes', p.data?.zero_ref === false ? 'yes' : `no(${JSON.stringify(p.data)})`, p.status);
+
+	const rmKeep = await pbRequest('POST', '/api/members/remove', {
+		token: tokens.owner,
+		body: { member_id: m.traveler }
+	});
+	recordResult('trip_members', 'ng_remove_tombstones', 'owner', 'yes', rmKeep.status === 200 && rmKeep.data?.deleted === false ? 'yes' : `no(${JSON.stringify(rmKeep.data)})`, rmKeep.status);
+	let s = await ngRead(tokens, fixture.itemId);
+	recordResult('items', 'ng_kept_on_tombstone', 'owner', 'yes', s.notGoing.includes(m.traveler) ? 'yes' : `no(${JSON.stringify(s.notGoing)})`, s.status);
+
+	// --- reassign the traveler's answers to the co_owner.
+	fixture = await setupFixture();
+	m = fixture.memberIds;
+	const a = await ngFreshItem(tokens, fixture); // traveler not going; co_owner no answer
+	await ngPatch(tokens.traveler, a, { 'not_going+': m.traveler });
+	const b = await ngFreshItem(tokens, fixture); // traveler not going; co_owner going
+	await ngPatch(tokens.traveler, b, { 'not_going+': m.traveler });
+	await ngPatch(tokens.co_owner, b, { 'assigned_to+': m.co_owner });
+	const c = await ngFreshItem(tokens, fixture); // traveler going; co_owner not going
+	await ngPatch(tokens.traveler, c, { 'assigned_to+': m.traveler });
+	await ngPatch(tokens.co_owner, c, { 'not_going+': m.co_owner });
+
+	const rmReassign = await pbRequest('POST', '/api/members/remove', {
+		token: tokens.owner,
+		body: { member_id: m.traveler, disposition: 'reassign', reassign_to: m.co_owner }
+	});
+	s = await ngRead(tokens, a);
+	recordResult('items', 'reassign_moves_ng', 'owner', 'yes', ngListsAre(s, [], [m.co_owner]), rmReassign.status);
+	s = await ngRead(tokens, b);
+	recordResult('items', 'reassign_own_answer_wins_going', 'owner', 'yes', ngListsAre(s, [m.co_owner], []), rmReassign.status);
+	s = await ngRead(tokens, c);
+	recordResult('items', 'reassign_own_answer_wins_ng', 'owner', 'yes', ngListsAre(s, [], [m.co_owner]), rmReassign.status);
+
+	// --- cascade clears the departed's not going.
+	fixture = await setupFixture();
+	m = fixture.memberIds;
+	await ngPatch(tokens.traveler, fixture.itemId, { 'not_going+': m.traveler });
+	const rmCascade = await pbRequest('POST', '/api/members/remove', {
+		token: tokens.owner,
+		body: { member_id: m.traveler, disposition: 'cascade' }
+	});
+	s = await ngRead(tokens, fixture.itemId);
+	recordResult('items', 'cascade_clears_ng', 'owner', 'yes', ngListsAre(s, [], []), rmCascade.status);
+}
+
 function printNotGoingReport() {
-	console.log('\n[#402 not going — self-only for every role, viewers can\'t answer, going/not going exclusive]');
-	for (const r of results.filter((x) => NOT_GOING_OPS.includes(x.op))) {
+	console.log('\n[#402 not going — self-only for every role, viewers can\'t answer, going/not going exclusive, departure clean-up]');
+	for (const r of results.filter((x) => NOT_GOING_OPS.includes(x.op) || NOT_GOING_DEPARTURE_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
 		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
 	}
@@ -2841,6 +2925,7 @@ async function main() {
 
 	console.log('#402 cases: not going (self-only, viewers can\'t answer, going/not going exclusive)');
 	await runNotGoingNovelCases(tokens);
+	await runNotGoingDepartureCases(tokens);
 
 	console.log('#217 cases: last-phase delete block (deny removing the only phase)');
 	await runLastPhaseDeleteCases(tokens);
