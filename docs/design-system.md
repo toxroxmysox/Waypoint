@@ -172,9 +172,9 @@ Main content: `max-w-lg` (mobile), `md-desktop:max-w-2xl` (desktop).
 | `Pill` | Small label/tag (status badges, categories). |
 | `PhaseChip` | Circular phase initial with moss background. Sizes: 16, 18, 20px. |
 | `Avatar` | User avatar circle with initials fallback. |
-| `PersonBubble` | Card system (#419): a neutral initials bubble for Going. `notGoing` strikes it through (no opacity; accessible name "Kevin, not going"). Replaces the coloured avatar fallback on item cards. |
+| `PersonBubble` | Card system (#419): a neutral initials bubble for Going. `notGoing` strikes it through (no opacity; accessible name "Kevin, not going"). `img` shows an uploaded photo; `placeholder` (not joined yet) and `departed` (#133 tombstone) are dashed rings. Will replace the coloured `Avatar` fallback on item cards as #420/#428/#433 adopt it. |
 | `TypeIcon` | Legacy **coloured** item type icon (a tinted circle per type). Item surfaces move to `MonoTypeIcon` as the card system ships. |
-| `MonoTypeIcon` | Card system (#419): the monochrome type icon, three sizes only. `16` bare glyph (Row, group heading); `24` disc with a 16px glyph (rail node, Span); `40` disc with a 26px glyph (Hero). Variants `plain`, `dashed` (untimed), `filled` (the Hero while ongoing, mode accent). |
+| `MonoTypeIcon` | Card system (#419): the monochrome type icon, three sizes only. `16` bare glyph (Row, group heading); `24` disc with a 16px glyph (rail node, Span); `40` disc with a 26px glyph (Hero). Variants `plain`, `dashed` (untimed), `filled` (the Hero while ongoing, mode accent); disc sizes only — the types reject `variant` at 16. |
 | `TypeGlyph` | The bare type glyph in `currentColor`; the one source of glyph paths for both type icons. |
 | `BottomSheet` | Mobile modal sliding up from bottom. |
 | `FAB` | Floating action button with safe-area positioning. |

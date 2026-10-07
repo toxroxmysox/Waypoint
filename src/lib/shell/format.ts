@@ -1,9 +1,11 @@
 import { timeShape, type TimeFields } from '$lib/itinerary/timeline';
+import type { ItemType } from '$lib/itinerary/types';
 
 export function titleCase(s: string): string {
 	return s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/** @deprecated The legacy "6:30 PM" form. Card surfaces use `formatClock` / `formatTimeText` (#419 time grammar). */
 export function formatTime(t: string): string {
 	if (!t) return '';
 	const timePart = t.includes('T') ? t.split('T')[1] : t.includes(' ') ? t.split(' ')[1] : t;
@@ -25,6 +27,7 @@ export function datetimeToTime(dt: string): string {
 	return match ? match[1] : '';
 }
 
+/** @deprecated The legacy "6:30 PM – 8:00 PM" form. Card surfaces use `formatTimeText` / `railTimeLabels` (#419 time grammar). */
 export function formatTimeRange(start: string, end: string): string {
 	if (!start && !end) return '';
 	if (start && end) return `${formatTime(start)} – ${formatTime(end)}`;
@@ -79,9 +82,11 @@ export function formatCalendarDate(day: string, options: Intl.DateTimeFormatOpti
 export function formatClock(t: string): string {
 	if (!t) return '';
 	const timePart = t.includes('T') ? t.split('T')[1] : t.includes(' ') ? t.split(' ')[1] : t;
-	const [h, m] = timePart.split(':');
-	const hour = parseInt(h, 10);
-	return `${hour % 12 || 12}:${m.slice(0, 2)}${hour >= 12 ? 'p' : 'a'}`;
+	// A date-only or malformed string has no clock: '' rather than a throw.
+	const clock = /^(\d{1,2}):(\d{2})/.exec(timePart ?? '');
+	if (!clock) return '';
+	const hour = parseInt(clock[1], 10);
+	return `${hour % 12 || 12}:${clock[2]}${hour >= 12 ? 'p' : 'a'}`;
 }
 
 /**
@@ -104,7 +109,7 @@ export function formatDayDate(date: string): string {
  * or the date alone when untimed.
  */
 export function formatTimeText(
-	item: TimeFields & { type?: string },
+	item: TimeFields & { type?: ItemType },
 	opts: { date?: string } = {}
 ): string {
 	const start = formatClock(item.start_time ?? '');

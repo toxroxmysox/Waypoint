@@ -7,23 +7,18 @@
 	//   40 — a 40px disc around a 26px glyph (Hero)
 	// Disc variants: `plain` (ink-soft glyph on surface-2, `line` ring), `dashed`
 	// (untimed: ink-muted glyph and dashed ink-muted ring on surface), `filled`
-	// (the Hero while ongoing: accent fill, surface glyph). The bare glyph ignores
-	// `variant`. Decorative unless `label` is given: a card's accessible name
-	// already carries its type.
+	// (the Hero while ongoing: accent fill, surface glyph). The bare glyph has no
+	// disc, so the types forbid `variant` at size 16. Decorative unless `label` is
+	// given: a card's accessible name already carries its type.
 	import type { ItemType } from '$lib/types';
 	import TypeGlyph from './TypeGlyph.svelte';
 
-	let {
-		type,
-		size,
-		variant = 'plain',
-		label
-	}: {
-		type: ItemType;
-		size: 16 | 24 | 40;
-		variant?: 'plain' | 'dashed' | 'filled';
-		label?: string;
-	} = $props();
+	type Props = { type: ItemType; label?: string } & (
+		| { size: 16; variant?: never }
+		| { size: 24 | 40; variant?: 'plain' | 'dashed' | 'filled' }
+	);
+
+	let { type, size, variant = 'plain', label }: Props = $props();
 
 	const glyph = $derived(size === 40 ? 26 : 16);
 

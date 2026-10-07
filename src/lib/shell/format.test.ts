@@ -10,6 +10,7 @@ import {
 	formatTimeText,
 	railTimeLabels
 } from './format';
+import type { ItemType } from '$lib/itinerary/types';
 
 describe('formatCountdown', () => {
 	it('returns "< 1m" for 0 or negative minutes', () => {
@@ -121,14 +122,22 @@ describe('formatCalendarDate edge cases', () => {
 describe('time grammar (#419, D5/D11)', () => {
 	// Stored anchor times are naive trip-local wall clock: 'YYYY-MM-DD HH:MM:00.000Z'.
 	const at = (hhmm: string) => `2026-10-01 ${hhmm}:00.000Z`;
-	const range = (a: string, b: string, type = 'meal') => ({
+	const range = (a: string, b: string, type: ItemType = 'meal') => ({
 		type,
 		start_time: at(a),
 		end_time: at(b)
 	});
-	const startOnly = (a: string, type = 'meal') => ({ type, start_time: at(a), end_time: '' });
-	const endOnly = (b: string, type = 'activity') => ({ type, start_time: '', end_time: at(b) });
-	const untimed = { type: 'note', start_time: '', end_time: '' };
+	const startOnly = (a: string, type: ItemType = 'meal') => ({
+		type,
+		start_time: at(a),
+		end_time: ''
+	});
+	const endOnly = (b: string, type: ItemType = 'activity') => ({
+		type,
+		start_time: '',
+		end_time: at(b)
+	});
+	const untimed = { type: 'note' as ItemType, start_time: '', end_time: '' };
 
 	describe('formatClock — 6:30p: the colon stays, the space and the "m" go', () => {
 		it('formats evening and morning times', () => {
@@ -144,6 +153,11 @@ describe('time grammar (#419, D5/D11)', () => {
 		});
 		it('is empty for an empty time', () => {
 			expect(formatClock('')).toBe('');
+		});
+		it('is empty, not a throw, for a date-only or malformed string', () => {
+			expect(formatClock('2026-10-01')).toBe('');
+			expect(formatClock('2026-10-01 ')).toBe('');
+			expect(formatClock('soon')).toBe('');
 		});
 	});
 
