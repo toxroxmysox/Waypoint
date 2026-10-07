@@ -278,11 +278,12 @@ const EXPECT = {
 		delete: OWNER_COOWNER_ONLY
 	},
 	// trip_members (#279 — AUTHZ-1):
-	//   update: the matrix PATCHes the OWNER row's display_name. Since #408 a
-	//           display_name edit is own-row, or any row for owner/co_owner — so
-	//           owner (self) + co_owner pass, traveler/viewer deny. `role` changes
-	//           are owner/co_owner only (#279); identity/lifecycle fields are
-	//           locked for everyone (#408 novel cases below).
+	//   update: the matrix PATCHes the OWNER row's display_name. Since #450 a
+	//           display_name edit is own-row ONLY (#415's owner/co_owner rename-any
+	//           path was removed) — so the owner (self) passes and co_owner/traveler/
+	//           viewer deny. `role` changes are owner/co_owner only (#279); every
+	//           field outside {role, display_name, digest_opt_out} is rejected for
+	//           everyone (#408 + #450 allowlist; novel cases below).
 	//   delete: owner/co_owner only. The matrix deletes the childless `spare`
 	//           placeholder (user=""), so it's never a self-leave for any role;
 	//           trip_members.pb.js requires owner/co_owner to delete someone else's
@@ -292,7 +293,7 @@ const EXPECT = {
 		list: ALLOW_MEMBERS_DENY_NONMEMBER,
 		view: ALLOW_MEMBERS_DENY_NONMEMBER,
 		create: DENY_ALL,
-		update: OWNER_COOWNER_ONLY,
+		update: SELF_ONLY,
 		delete: OWNER_COOWNER_ONLY
 	},
 	// phases (#175):
@@ -1963,7 +1964,30 @@ const MEMBER_FIELD_GATE_OPS = [
 	'rename_other_owner',
 	'own_digest_opt_out',
 	'other_digest_opt_out_owner',
-	'superuser_edit'
+	'superuser_edit',
+	// #450
+	'rename_other_coowner',
+	'hijack_user_owner',
+	'hijack_user_co_owner',
+	'hijack_user_traveler',
+	'hijack_user_viewer',
+	'move_trip_owner',
+	'move_trip_co_owner',
+	'move_trip_traveler',
+	'move_trip_viewer',
+	'allowlist_unknown_field_owner',
+	'allowlist_unknown_field_viewer',
+	'allowlist_unknown_field_superuser',
+	'placeholder_email_hidden_owner',
+	'placeholder_email_hidden_co_owner',
+	'placeholder_email_hidden_traveler',
+	'placeholder_email_hidden_viewer',
+	'placeholder_email_route_owner',
+	'placeholder_email_route_co_owner',
+	'placeholder_email_route_traveler',
+	'placeholder_email_route_viewer',
+	'placeholder_email_route_non_member',
+	'placeholder_email_route_values'
 ];
 
 async function runMemberFieldGateNovelCases(tokens) {
@@ -2009,13 +2033,19 @@ async function runMemberFieldGateNovelCases(tokens) {
 	});
 	recordResult('trip_members', 'rename_other_traveler', 'traveler', 'deny', classifyWrite(tRename.status), tRename.status);
 
-	// 5. Owner renames another member → allow (roster management).
+	// 5. Owner renames another member → deny (#450: display_name is own-row only;
+	//    #415 had added an owner/co_owner rename-any path nobody asked for).
 	fixture = await setupFixture();
 	const oRename = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.traveler}`, {
 		token: tokens.owner,
 		body: { display_name: 'Renamed by owner' }
 	});
-	recordResult('trip_members', 'rename_other_owner', 'owner', 'allow', classifyWrite(oRename.status), oRename.status);
+	recordResult('trip_members', 'rename_other_owner', 'owner', 'deny', classifyWrite(oRename.status), oRename.status);
+	const coRename = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.traveler}`, {
+		token: tokens.co_owner,
+		body: { display_name: 'Renamed by co-owner' }
+	});
+	recordResult('trip_members', 'rename_other_coowner', 'co_owner', 'deny', classifyWrite(coRename.status), coRename.status);
 
 	// 6. Traveler flips their own digest_opt_out (the settings toggle) → allow.
 	fixture = await setupFixture();
@@ -2043,6 +2073,90 @@ async function runMemberFieldGateNovelCases(tokens) {
 			})
 		: { status: 0 };
 	recordResult('trip_members', 'superuser_edit', 'superuser', 'allow', classifyWrite(suEdit.status), suEdit.status);
+
+	// --- #450: every role vs the locked identity fields -----------------------
+	// Before #450 only a traveler was tried. Each role PATCHes `user` and `trip`
+	// on ANOTHER member's row; all deny (403 from the hook, not a 4xx from
+	// validation). Deny cases don't mutate, so one fixture serves all.
+	fixture = await setupFixture();
+	const otherTrip = await pbRequest('POST', '/api/collections/trips/records', {
+		token: tokens.non_member,
+		body: { slug: 'e2e-rules-other450-' + Date.now(), title: 'Other trip', created_by: fixture.userIds.non_member }
+	});
+	const targetFor = { owner: 'traveler', co_owner: 'owner', traveler: 'owner', viewer: 'owner' };
+	for (const role of ['owner', 'co_owner', 'traveler', 'viewer']) {
+		const rowId = fixture.memberIds[targetFor[role]];
+		const u = await pbRequest('PATCH', `/api/collections/trip_members/records/${rowId}`, {
+			token: tokens[role],
+			body: { user: fixture.userIds.non_member }
+		});
+		recordResult('trip_members', `hijack_user_${role}`, role, 'deny', u.status === 403 ? 'deny' : `status_${u.status}`, u.status);
+		const t = otherTrip.data?.id
+			? await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds[role]}`, {
+					token: tokens[role],
+					body: { trip: otherTrip.data.id }
+				})
+			: { status: 0 };
+		recordResult('trip_members', `move_trip_${role}`, role, 'deny', t.status === 403 ? 'deny' : `status_${t.status}`, t.status);
+	}
+	if (otherTrip.data?.id) {
+		await pbRequest('DELETE', `/api/collections/trips/records/${otherTrip.data.id}`, { token: tokens.non_member });
+	}
+
+	// --- #450: the guard is an ALLOWLIST ---------------------------------------
+	// A field added to trip_members later must NOT be writable by members. Prove
+	// it by adding a throwaway text field as superuser and PATCHing it per role.
+	{
+		const su = await superuserToken();
+		const colRes = su
+			? await pbRequest('GET', '/api/collections/trip_members', { token: su })
+			: { status: 0, data: null };
+		const probeName = 'zz_probe_450';
+		let added = false;
+		if (colRes.status === 200) {
+			const fields = colRes.data.fields.concat([{ type: 'text', name: probeName }]);
+			const up = await pbRequest('PATCH', '/api/collections/trip_members', { token: su, body: { fields } });
+			added = up.status === 200;
+		}
+		fixture = await setupFixture();
+		const row = fixture.memberIds.traveler;
+		const asOwner = added
+			? await pbRequest('PATCH', `/api/collections/trip_members/records/${row}`, { token: tokens.owner, body: { [probeName]: 'x' } })
+			: { status: 0 };
+		recordResult('trip_members', 'allowlist_unknown_field_owner', 'owner', 'deny', asOwner.status === 403 ? 'deny' : `status_${asOwner.status}`, asOwner.status);
+		const asViewerSelf = added
+			? await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.viewer}`, { token: tokens.viewer, body: { [probeName]: 'x' } })
+			: { status: 0 };
+		recordResult('trip_members', 'allowlist_unknown_field_viewer', 'viewer', 'deny', asViewerSelf.status === 403 ? 'deny' : `status_${asViewerSelf.status}`, asViewerSelf.status);
+		const asSu = added
+			? await pbRequest('PATCH', `/api/collections/trip_members/records/${row}`, { token: su, body: { [probeName]: 'x' } })
+			: { status: 0 };
+		recordResult('trip_members', 'allowlist_unknown_field_superuser', 'superuser', 'allow', classifyWrite(asSu.status), asSu.status);
+		if (added) {
+			const cur = await pbRequest('GET', '/api/collections/trip_members', { token: su });
+			const fields = cur.data.fields.filter((f) => f.name !== probeName);
+			await pbRequest('PATCH', '/api/collections/trip_members', { token: su, body: { fields } });
+		}
+	}
+
+	// --- #450: placeholder_email is hidden over REST; owner/co_owner read it via a route
+	fixture = await setupFixture();
+	for (const role of ['owner', 'co_owner', 'traveler', 'viewer']) {
+		const g = await pbRequest('GET', `/api/collections/trip_members/records/${fixture.memberIds.spare}`, { token: tokens[role] });
+		const leaked = g.status === 200 && 'placeholder_email' in (g.data || {});
+		const list = await pbRequest('GET', `/api/collections/trip_members/records?perPage=200&filter=${filterQuery(fixture.tripId, '')}`, { token: tokens[role] });
+		const leakedList = (list.data?.items || []).some((r) => 'placeholder_email' in r);
+		recordResult('trip_members', `placeholder_email_hidden_${role}`, role, 'yes', g.status === 200 && !leaked && !leakedList ? 'yes' : `no(view=${g.status},leaked=${leaked},list=${leakedList})`, g.status);
+	}
+	const routeExpect = { owner: 200, co_owner: 200, traveler: 403, viewer: 403, non_member: 403 };
+	for (const role of ['owner', 'co_owner', 'traveler', 'viewer', 'non_member']) {
+		const r = await pbRequest('GET', `/api/members/placeholder-emails?trip_id=${fixture.tripId}`, { token: tokens[role] });
+		const leaked = JSON.stringify(r.data || {}).includes('@e2e.test');
+		const ok = r.status === routeExpect[role] && (routeExpect[role] === 200 || !leaked);
+		recordResult('trip_members', `placeholder_email_route_${role}`, role, 'yes', ok ? 'yes' : `no(status=${r.status})`, r.status);
+	}
+	const vals = await pbRequest('GET', `/api/members/placeholder-emails?trip_id=${fixture.tripId}`, { token: tokens.owner });
+	recordResult('trip_members', 'placeholder_email_route_values', 'owner', 'yes', vals.data?.emails?.[fixture.memberIds.spare] === 'spare-450@e2e.test' ? 'yes' : `no(${JSON.stringify(vals.data)})`, vals.status);
 }
 
 function printMemberFieldGateReport() {
