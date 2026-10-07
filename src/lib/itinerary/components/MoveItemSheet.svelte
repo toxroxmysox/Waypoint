@@ -4,6 +4,7 @@
 	import type { Day, Phase } from '$lib/types';
 	import BottomSheet from '$lib/ui/BottomSheet.svelte';
 	import Button from '$lib/ui/Button.svelte';
+	import { ITEM_ACTION_ERRORS } from '$lib/itinerary/item-actions';
 
 	let {
 		open = $bindable(false),
@@ -24,6 +25,9 @@
 	let selectedDay = $state(untrack(() => currentDay));
 	let selectedPhase = $state(untrack(() => currentPhase));
 	let submitting = $state(false);
+	// #416 — a refused move (or a dropped connection) keeps the sheet open and
+	// says so here, where the user acted. It used to close and show nothing.
+	let moveError = $state('');
 
 	// #196/#172 — an unscheduled item must keep a phase (every parking surface is
 	// phase-scoped). Require a phase when no day is picked and phases exist.
@@ -43,6 +47,7 @@
 		if (open) {
 			selectedDay = currentDay;
 			selectedPhase = currentPhase;
+			moveError = '';
 		}
 	});
 </script>
@@ -53,8 +58,13 @@
 		action="{actionUrl}?/moveItem"
 		use:enhance={() => {
 			submitting = true;
-			return async ({ update }) => {
+			moveError = '';
+			return async ({ result, update }) => {
 				submitting = false;
+				if (result.type !== 'success') {
+					moveError = ITEM_ACTION_ERRORS.move;
+					return;
+				}
 				open = false;
 				await update();
 			};
@@ -99,6 +109,10 @@
 					</p>
 				{/if}
 			</div>
+		{/if}
+
+		{#if moveError}
+			<p role="alert" class="text-clay text-sm">{moveError}</p>
 		{/if}
 
 		<Button type="submit" disabled={submitting} variant="moss" size="md" class="w-full">

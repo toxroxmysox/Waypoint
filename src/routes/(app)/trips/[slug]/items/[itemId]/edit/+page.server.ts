@@ -7,6 +7,7 @@ import { syncGoalLinks } from '$lib/itinerary/goal-links';
 import type { Document } from '$lib/types';
 import { codesForItem } from '$lib/documents/codes';
 import { reconcileItemCodes } from '$lib/documents/reconcile-codes';
+import { itemPermissions } from '$lib/itinerary/item-actions';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, membership, phases, days } = await parent();
@@ -26,12 +27,9 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	// member who created this item (created_by holds a trip_members.id). Matches
 	// the items.pb.js update hook so a traveler can reach + submit edits to their
 	// OWN item, but a direct nav to another member's item returns 403 here rather
-	// than rendering a form whose submit would 403.
-	const canEdit =
-		membership.role === 'owner' ||
-		membership.role === 'co_owner' ||
-		(!!item.created_by && item.created_by === membership.id);
-	if (!canEdit) {
+	// than rendering a form whose submit would 403. Same rule as the detail page's
+	// Edit link (#416 — itemPermissions).
+	if (!itemPermissions(membership, item).canEdit) {
 		error(403, 'Only an owner, co-owner, or the item’s creator can edit this item.');
 	}
 
