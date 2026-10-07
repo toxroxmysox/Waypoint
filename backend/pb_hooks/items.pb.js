@@ -39,6 +39,17 @@ onRecordCreateRequest((e) => {
 		throw new ForbiddenError('Only an owner or co-owner can add items directly; travelers suggest items.');
 	}
 
+	// #402 — Not going is self-only: a new item may carry the caller's own "not
+	// going", never another member's answer.
+	const rawNotGoing = e.record.get('not_going');
+	if (rawNotGoing) {
+		for (let i = 0; i < rawNotGoing.length; i++) {
+			if ('' + rawNotGoing[i] !== '' + callerMember.id) {
+				throw new ForbiddenError("Only you can say you're not going.");
+			}
+		}
+	}
+
 	e.next();
 }, 'items');
 
@@ -64,6 +75,12 @@ onRecordCreateRequest((e) => {
 // other field is rejected. The diff is computed SERVER-SIDE from the original
 // record, so the client can't sneak in extra changes.
 //
+// NOT GOING (#402): the same exception covers the caller's own id in
+// `not_going` (going ↔ not going ↔ no answer). Separately, and for EVERY role,
+// a change to `not_going` may only ever touch the caller's own id, and viewers
+// can't answer at all. Exclusivity of the two lists is the model hooks at the
+// bottom of this file.
+//
 // goja scars (cerebrum): all logic inlined in the body (no file-scope helpers);
 // explicit string comparisons (empty fields read back as truthy objects).
 onRecordUpdateRequest((e) => {
@@ -84,6 +101,37 @@ onRecordUpdateRequest((e) => {
 	}
 
 	const role = callerMember.get('role');
+	const original = e.record.original();
+	const me = '' + callerMember.id;
+
+	// --- #402 Not going: self-only for EVERY role, viewers can't answer --------
+	// Checked BEFORE the owner and creator bypasses: nothing was agreed about
+	// anyone setting or clearing another member's "not going". (An owner assigning
+	// someone GOING still clears that member's not going — that is the
+	// exclusivity model hook below, not a not_going write in this request.)
+	const rawNgOld = original.get('not_going');
+	const rawNgNew = e.record.get('not_going');
+	const ngOld = [];
+	if (rawNgOld) for (let i = 0; i < rawNgOld.length; i++) ngOld.push('' + rawNgOld[i]);
+	const ngNew = [];
+	if (rawNgNew) for (let i = 0; i < rawNgNew.length; i++) ngNew.push('' + rawNgNew[i]);
+	const ngChanged = [];
+	for (let i = 0; i < ngOld.length; i++) {
+		if (ngNew.indexOf(ngOld[i]) === -1 && ngChanged.indexOf(ngOld[i]) === -1) ngChanged.push(ngOld[i]);
+	}
+	for (let i = 0; i < ngNew.length; i++) {
+		if (ngOld.indexOf(ngNew[i]) === -1 && ngChanged.indexOf(ngNew[i]) === -1) ngChanged.push(ngNew[i]);
+	}
+	if (ngChanged.length > 0) {
+		if (role === 'viewer') {
+			throw new ForbiddenError("Viewers can't answer whether they're going.");
+		}
+		if (ngChanged.length !== 1 || ngChanged[0] !== me) {
+			throw new ForbiddenError("Only you can say you're not going.");
+		}
+	}
+	// --- end #402 ---------------------------------------------------------------
+
 	if (role === 'owner' || role === 'co_owner') {
 		e.next();
 		return;
@@ -106,9 +154,10 @@ onRecordUpdateRequest((e) => {
 	}
 
 	// --- Self-assign exception (traveler) --------------------------------------
-	const original = e.record.original();
+	// (`original` and `me` are resolved above, before the #402 not going check.)
 
-	// (1) Reject any OTHER field delta. Every item field except assigned_to must
+	// (1) Reject any OTHER field delta. Every item field except assigned_to and
+	// not_going (#402 — checked self-only above, and in (2) below) must
 	// be byte-for-byte unchanged. Explicit, stable field list (no goja schema
 	// introspection) + string-coercion compares (empty/JSON fields read back as
 	// objects; '' + x normalizes them — cerebrum goja scar).
@@ -138,8 +187,6 @@ onRecordUpdateRequest((e) => {
 	const newIds = [];
 	if (rawNew) for (let i = 0; i < rawNew.length; i++) newIds.push('' + rawNew[i]);
 
-	const me = '' + callerMember.id;
-
 	// Symmetric difference of old vs new ids — the ids that were added or removed.
 	const changed = [];
 	for (let i = 0; i < oldIds.length; i++) {
@@ -147,6 +194,11 @@ onRecordUpdateRequest((e) => {
 	}
 	for (let i = 0; i < newIds.length; i++) {
 		if (oldIds.indexOf(newIds[i]) === -1 && changed.indexOf(newIds[i]) === -1) changed.push(newIds[i]);
+	}
+	// #402 — a member answering not going (or switching going ↔ not going in one
+	// write) touches both lists; the union of both deltas must still be only them.
+	for (let i = 0; i < ngChanged.length; i++) {
+		if (changed.indexOf(ngChanged[i]) === -1) changed.push(ngChanged[i]);
 	}
 
 	if (changed.length !== 1 || changed[0] !== me) {
@@ -181,6 +233,71 @@ onRecordDeleteRequest((e) => {
 	const role = callerMember.get('role');
 	if (role !== 'owner' && role !== 'co_owner') {
 		throw new ForbiddenError('Only an owner or co-owner can delete items.');
+	}
+
+	e.next();
+}, 'items');
+
+// ---------------------------------------------------------------------------
+// #402 — going / not going are EXCLUSIVE: a member is in at most one of
+// `assigned_to` (going) and `not_going` (said not going); in neither = no answer.
+// "Setting one clears the other." MODEL hooks (not request hooks), so they run on
+// every save — REST writes AND internal e.app.save calls (members/remove reassign,
+// suggestion approval) — after the request hooks above have authorised the write.
+//
+// Resolution for a member found in both lists after a change:
+//   - newly added to not_going and NOT newly added to assigned_to → they just
+//     said "not going": drop them from assigned_to;
+//   - anything else (newly going; added to both at once; a new record) → going
+//     wins: drop them from not_going. Same tie-break as goingStateOf() in
+//     src/lib/itinerary/assignment.ts.
+// goja: helpers inlined per callback; ids string-coerced ('' + x).
+// ---------------------------------------------------------------------------
+onRecordCreate((e) => {
+	const rawGoing = e.record.get('assigned_to');
+	const rawNot = e.record.get('not_going');
+	const going = [];
+	if (rawGoing) for (let i = 0; i < rawGoing.length; i++) going.push('' + rawGoing[i]);
+	const notGoing = [];
+	if (rawNot) for (let i = 0; i < rawNot.length; i++) notGoing.push('' + rawNot[i]);
+
+	// A new record has no prior answers: any overlap resolves to going.
+	const keep = [];
+	for (let i = 0; i < notGoing.length; i++) {
+		if (going.indexOf(notGoing[i]) === -1) keep.push(notGoing[i]);
+	}
+	if (keep.length !== notGoing.length) e.record.set('not_going', keep);
+
+	e.next();
+}, 'items');
+
+onRecordUpdate((e) => {
+	const original = e.record.original();
+	const toIds = (raw) => {
+		const out = [];
+		if (raw) for (let i = 0; i < raw.length; i++) out.push('' + raw[i]);
+		return out;
+	};
+	const oldGoing = toIds(original.get('assigned_to'));
+	const oldNot = toIds(original.get('not_going'));
+	const going = toIds(e.record.get('assigned_to'));
+	const notGoing = toIds(e.record.get('not_going'));
+
+	const dropFromGoing = [];
+	const dropFromNot = [];
+	for (let i = 0; i < notGoing.length; i++) {
+		const id = notGoing[i];
+		if (going.indexOf(id) === -1) continue;
+		const newlyNot = oldNot.indexOf(id) === -1;
+		const newlyGoing = oldGoing.indexOf(id) === -1;
+		if (newlyNot && !newlyGoing) dropFromGoing.push(id);
+		else dropFromNot.push(id);
+	}
+	if (dropFromGoing.length > 0) {
+		e.record.set('assigned_to', going.filter((id) => dropFromGoing.indexOf(id) === -1));
+	}
+	if (dropFromNot.length > 0) {
+		e.record.set('not_going', notGoing.filter((id) => dropFromNot.indexOf(id) === -1));
 	}
 
 	e.next();

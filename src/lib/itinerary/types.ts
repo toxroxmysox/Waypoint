@@ -80,6 +80,11 @@ export interface Item extends RecordModel {
 	cost_estimate_usd: number;
 	cost_actual_usd: number;
 	assigned_to: string[];
+	// #402 — members who said they're NOT going (trip_members.id[]). Exclusive
+	// with assigned_to (the server keeps them apart); in neither = no answer.
+	// Optional because fixtures and `fields:`-limited loaders omit it; PocketBase
+	// always returns [] for a full record.
+	not_going?: string[];
 	sort_order: number;
 	parent_item: string;
 	requires_booking: boolean;

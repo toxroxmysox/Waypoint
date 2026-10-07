@@ -85,6 +85,7 @@ All test harnesses require PocketBase running via `./backend/start.sh` with `WAY
 | Create/edit trip metadata | ✓ | ✓ | — | — | — |
 | Add/edit/delete items | ✓ | ✓ | suggest only*; edit OWN immediate‡ | — | — |
 | Self-assign (toggle own `assigned_to`) | ✓ | ✓ | ✓ (immediate)† | — | — |
+| Say Not going (own `not_going`, #402) | ✓ own only | ✓ own only | ✓ own only (immediate)† | — | — |
 | Book / unbook items | ✓ | ✓ | suggest only | — | — |
 | Mark done / use closeout wizard (item walk) | ✓ | ✓ | ✓§ | — | — |
 | Publish public record (closeout publish step / Publish control) | ✓ | ✓ | — | — | — |
@@ -107,7 +108,7 @@ All test harnesses require PocketBase running via `./backend/start.sh` with `WAY
 
 *Traveler-suggested items can be auto-approved via per-trip setting (default: yes).
 
-†**Self-assign exception (#226, ADR-0011):** the suggest-only gate on item edits has one narrow carve-out — a Traveler (and Co-Owner/Owner) may add or remove **their own** `trip_members.id` in an item's `assigned_to`, even on an item they didn't create, and it takes effect **immediately** (no review queue). Declaring "I'm doing this" is a note about one's own participation, not a plan change an owner must approve. The exception is self-only: it is enforced in `items.pb.js` (the update hook compares old-vs-new `assigned_to` server-side and rejects any change to another member's id or to any other field), and Viewers are excluded. Assigning *other* members stays the deliberate owner/co-owner edit-form path.
+†**Self-assign exception (#226, ADR-0011):** the suggest-only gate on item edits has one narrow carve-out — a Traveler (and Co-Owner/Owner) may add or remove **their own** `trip_members.id` in an item's `assigned_to`, even on an item they didn't create, and it takes effect **immediately** (no review queue). Declaring "I'm doing this" is a note about one's own participation, not a plan change an owner must approve. The exception is self-only: it is enforced in `items.pb.js` (the update hook compares old-vs-new `assigned_to` server-side and rejects any change to another member's id or to any other field), and Viewers are excluded. Assigning *other* members stays the deliberate owner/co-owner edit-form path. **Not going (#402):** the same exception covers the caller's own id in `not_going` (going / not going / no answer, via `POST /api/items/:id/assign-self { state }`). Not going is self-only for **every** role, owners included, and Viewers can't answer. A member is in at most one of `assigned_to` / `not_going`; the server clears one when the other is set (an owner assigning someone going clears their not going).
 
 ‡**Creator-edit exception (#219):** "suggest only" governs contributing to *others'* plans. A Traveler may **edit ALL fields of an item they created** (`created_by` == the caller's own `trip_members.id`) **directly and immediately** — including booking/money fields — with no suggestion queue. Enforced in `items.pb.js` (the update hook allows the write when `created_by` matches the caller's member id) and mirrored in the edit-form UI gate (the Edit affordance and the `…/edit` route both check the same condition, so a Traveler reaches and submits the form for their own item, while another member's item still 403s). **Delete remains owner/co-owner only** — a creator can edit but not delete. Editing items created by *others* stays suggest-only.
 
@@ -224,6 +225,7 @@ Days are auto-generated from trip start/end dates and re-bucketed (multi-relatio
 | cost_estimate_usd | number, nullable | Per-item estimated cost |
 | cost_actual_usd | number, nullable | Filled in after booking/spending |
 | assigned_to | relation→trip_members, multiple | Subset of members this applies to (room assignments, sub-group activities) |
+| not_going | relation→trip_members, multiple | Members who said they're not going (#402). Exclusive with `assigned_to`; in neither = no answer. Self-only |
 | sort_order | int | Drag-to-reorder position for untimed items within a day view |
 | parent_item | relation→items, nullable | For multi-leg transit (flight with layover) |
 | created_by | relation→trip_members | |

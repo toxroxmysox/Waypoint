@@ -471,6 +471,11 @@ routerAdd('GET', '/api/members/can-purge', (e) => {
 		e.app.findFirstRecordByFilter('items', 'assigned_to ~ {:mid}', { mid: memberId });
 		return e.json(200, { ok: true, member_id: memberId, zero_ref: false });
 	} catch (_) {}
+	// #402 — items.not_going, the multi twin of assigned_to (~).
+	try {
+		e.app.findFirstRecordByFilter('items', 'not_going ~ {:mid}', { mid: memberId });
+		return e.json(200, { ok: true, member_id: memberId, zero_ref: false });
+	} catch (_) {}
 
 	// expenses.split_data (JSON, no FK) — a member present only in a split is
 	// referenced. Decode the byte-array JSON exactly as the remove hook does.
@@ -617,6 +622,8 @@ routerAdd('POST', '/api/members/remove', (e) => {
 		['items', 'paid_by', 'block'],
 		['items', 'booked_by', 'block'],
 		['items', 'assigned_to', 'block_multi'],
+		// #402 (migration 0071) — not going, the twin of assigned_to.
+		['items', 'not_going', 'block_multi'],
 		['tasks', 'assignee', 'block'],
 		// memories (#269, migration 0058) — required + no cascade (block). A
 		// departed member's memories survive on the tombstone; they are NEVER
@@ -777,7 +784,10 @@ routerAdd('POST', '/api/members/remove', (e) => {
 	};
 	// Rewrite a multi-relation field (items.assigned_to): drop the departed id,
 	// add `toId` when non-empty (deduped).
-	const rewriteMulti = (col, field, toId) => {
+	// #402 — `otherField` names an EXCLUSIVE twin list (assigned_to ↔ not_going):
+	// `toId` is not added when the record's twin already holds it, so the target's
+	// OWN answer (going / not going) always wins over the one they inherit.
+	const rewriteMulti = (col, field, toId, otherField) => {
 		let rows = [];
 		try {
 			rows = e.app.findRecordsByFilter(col, field + ' ~ {:mid}', '', 0, 0, { mid: target.id });
@@ -790,7 +800,14 @@ routerAdd('POST', '/api/members/remove', (e) => {
 			for (const id of cur) {
 				if (id !== target.id) next.push(id);
 			}
-			if (toId && next.indexOf(toId) === -1) next.push(toId);
+			let toIdAnsweredOther = false;
+			if (toId && otherField) {
+				const twin = r.get(otherField) || [];
+				for (let i = 0; i < twin.length; i++) {
+					if ('' + twin[i] === toId) toIdAnsweredOther = true;
+				}
+			}
+			if (toId && !toIdAnsweredOther && next.indexOf(toId) === -1) next.push(toId);
 			r.set(field, next);
 			try {
 				e.app.save(r);
@@ -905,7 +922,8 @@ routerAdd('POST', '/api/members/remove', (e) => {
 		rewriteSingle('items', 'created_by', reassignTo);
 		rewriteSingle('items', 'paid_by', reassignTo);
 		rewriteSingle('items', 'booked_by', reassignTo);
-		rewriteMulti('items', 'assigned_to', reassignTo);
+		rewriteMulti('items', 'assigned_to', reassignTo, 'not_going');
+		rewriteMulti('items', 'not_going', reassignTo, 'assigned_to'); // #402
 		rewriteSingle('tasks', 'assignee', reassignTo);
 		// memories are NOT reassigned (#269): a memory is personal expression, and
 		// rewriting author would collide with the target's own (day, author) row
@@ -923,6 +941,7 @@ routerAdd('POST', '/api/members/remove', (e) => {
 		rewriteSingle('items', 'paid_by', '');
 		rewriteSingle('items', 'booked_by', '');
 		rewriteMulti('items', 'assigned_to', '');
+		rewriteMulti('items', 'not_going', ''); // #402
 		rewriteSingle('tasks', 'assignee', '');
 	}
 	// disposition === 'keep': children keep pointing at the tombstone — nothing to do.
