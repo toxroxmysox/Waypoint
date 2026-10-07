@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import CloseoutItemRow from '$lib/itinerary/components/CloseoutItemRow.svelte';
+	import { formatCalendarDate } from '$lib/shell/format';
 	import type { Day, Item, Phase } from '$lib/types';
 
 	let {
@@ -23,11 +24,7 @@
 	const phaseMap = $derived(new Map(phases.map((p) => [p.id, p])));
 
 	const dayDate = $derived(
-		new Date(day.date.replace(' ', 'T')).toLocaleDateString('en-US', {
-			weekday: 'long',
-			month: 'long',
-			day: 'numeric'
-		})
+		formatCalendarDate(day.date, { weekday: 'long', month: 'long', day: 'numeric' })
 	);
 
 	const phaseName = $derived.by(() => {
