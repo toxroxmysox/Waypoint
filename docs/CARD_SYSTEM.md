@@ -91,7 +91,7 @@ The Focus slot also holds four **state cards** that are not item cards: Free tim
 
 ### Dead code
 
-`TodayItemCard.svelte` and `TodayTimeline.svelte` have **no importers**. They have been orphaned since #244 (`e2de1d5`, 2026-06-19) merged Today into Now, and only a code comment still mentions them.
+`TodayItemCard.svelte` and `TodayTimeline.svelte` have **no importers**. They have been orphaned since #244 (`e2de1d5`, 2026-06-19) merged Today into Now, and only a code comment still mentions them. *(⟶ deleted by #419, 2026-10-06.)*
 
 ---
 
