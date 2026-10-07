@@ -27,7 +27,7 @@ onRecordUpdateRequest((e) => {
 		throw new ForbiddenError('You are not a member of this trip.');
 	}
 
-	if (member.get('role') === 'viewer') {
+	if (member.getString('role') === 'viewer') {
 		throw new ForbiddenError('Viewers cannot edit goals.');
 	}
 
@@ -56,7 +56,7 @@ onRecordDeleteRequest((e) => {
 		throw new ForbiddenError('You are not a member of this trip.');
 	}
 
-	const role = member.get('role');
+	const role = member.getString('role');
 	const isOwner = role === 'owner' || role === 'co_owner';
 
 	// Owners/co-owners delete regardless of votes.

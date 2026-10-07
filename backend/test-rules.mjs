@@ -2017,13 +2017,21 @@ async function runMemberFieldGateNovelCases(tokens) {
 		await pbRequest('DELETE', `/api/collections/trips/records/${other.data.id}`, { token: tokens.non_member });
 	}
 
-	// 3. Even an owner can't rewrite a locked field directly → deny.
+	// 3. Even an owner can't rewrite a locked field directly → the stored value
+	//    never changes. placeholder_email is HIDDEN (0074), and PB drops writes to a
+	//    hidden field from non-superusers, so the PATCH may be a 200 no-op rather
+	//    than a 403; what matters is the stored address (read as superuser).
 	fixture = await setupFixture();
 	const pe = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.spare}`, {
 		token: tokens.owner,
 		body: { placeholder_email: 'someone-else@e2e.test' }
 	});
-	recordResult('trip_members', 'owner_rewrite_placeholder_email', 'owner', 'deny', classifyWrite(pe.status), pe.status);
+	const peSu = await superuserToken();
+	const peAfter = peSu
+		? await pbRequest('GET', `/api/collections/trip_members/records/${fixture.memberIds.spare}`, { token: peSu })
+		: { data: null };
+	const peUnchanged = peAfter.data?.placeholder_email === 'spare-450@e2e.test';
+	recordResult('trip_members', 'owner_rewrite_placeholder_email', 'owner', 'deny', peUnchanged ? 'deny' : `changed(${peAfter.data?.placeholder_email},${pe.status})`, pe.status);
 
 	// 4. Traveler renames ANOTHER member → deny.
 	fixture = await setupFixture();

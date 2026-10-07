@@ -43,7 +43,7 @@ onRecordCreateRequest((e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 
-	const role = callerMember.get('role');
+	const role = callerMember.getString('role');
 	if (role !== 'owner' && role !== 'co_owner') {
 		throw new ForbiddenError('Only an owner or co-owner can create phases.');
 	}
@@ -68,7 +68,7 @@ onRecordUpdateRequest((e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 
-	const role = callerMember.get('role');
+	const role = callerMember.getString('role');
 	if (role !== 'owner' && role !== 'co_owner') {
 		throw new ForbiddenError('Only an owner or co-owner can edit phases.');
 	}
@@ -93,7 +93,7 @@ onRecordDeleteRequest((e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 
-	const role = callerMember.get('role');
+	const role = callerMember.getString('role');
 	if (role !== 'owner' && role !== 'co_owner') {
 		throw new ForbiddenError('Only an owner or co-owner can delete phases.');
 	}

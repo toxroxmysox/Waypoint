@@ -46,7 +46,7 @@ onRecordUpdateRequest((e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 
-	const callerRole = callerMember.get('role');
+	const callerRole = callerMember.getString('role');
 	if (callerRole === 'owner' || callerRole === 'co_owner') {
 		e.next();
 		return;
@@ -89,7 +89,7 @@ onRecordDeleteRequest((e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 
-	const callerRole = callerMember.get('role');
+	const callerRole = callerMember.getString('role');
 	if (callerRole === 'owner' || callerRole === 'co_owner') {
 		e.next();
 		return;

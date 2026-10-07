@@ -34,7 +34,7 @@ onRecordCreateRequest((e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 
-	const role = callerMember.get('role');
+	const role = callerMember.getString('role');
 	if (role !== 'owner' && role !== 'co_owner') {
 		throw new ForbiddenError('Only an owner or co-owner can add items directly; travelers suggest items.');
 	}
@@ -100,7 +100,7 @@ onRecordUpdateRequest((e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 
-	const role = callerMember.get('role');
+	const role = callerMember.getString('role');
 	const original = e.record.original();
 	const me = '' + callerMember.id;
 
@@ -230,7 +230,7 @@ onRecordDeleteRequest((e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 
-	const role = callerMember.get('role');
+	const role = callerMember.getString('role');
 	if (role !== 'owner' && role !== 'co_owner') {
 		throw new ForbiddenError('Only an owner or co-owner can delete items.');
 	}
