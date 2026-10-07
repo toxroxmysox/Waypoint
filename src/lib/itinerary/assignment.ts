@@ -26,3 +26,51 @@ export function toggleAssignee(assignedTo: readonly string[], memberId: string):
 	}
 	return [...assignedTo, memberId];
 }
+
+// ---------------------------------------------------------------------------
+// #402 — three-state Going (CONTEXT.md "Assignment"; CARD_SYSTEM D6). A member is
+// going (in `assigned_to`), not going (in `not_going`, said so) or has no answer
+// (in neither). The server keeps the two lists exclusive (items.pb.js model
+// hook); these pure helpers are the client/endpoint side of the same model.
+// ---------------------------------------------------------------------------
+
+/** A member's answer to "Are you going?" on one item. */
+export type GoingState = 'going' | 'not_going' | 'no_answer';
+
+const GOING_STATES: readonly GoingState[] = ['going', 'not_going', 'no_answer'];
+
+/** Parse an untrusted value into a GoingState (exact match), else `null`. */
+export function parseGoingState(raw: unknown): GoingState | null {
+	return typeof raw === 'string' && (GOING_STATES as readonly string[]).includes(raw)
+		? (raw as GoingState)
+		: null;
+}
+
+/**
+ * A member's answer on an item. Going wins if the member is somehow in both
+ * lists — the same tie-break the server applies when it restores exclusivity.
+ */
+export function goingStateOf(
+	item: { assigned_to?: readonly string[] | null; not_going?: readonly string[] | null },
+	memberId: string
+): GoingState {
+	if (item.assigned_to?.includes(memberId)) return 'going';
+	if (item.not_going?.includes(memberId)) return 'not_going';
+	return 'no_answer';
+}
+
+/**
+ * The PocketBase update body that sets ONE member's answer, using the relation
+ * `+`/`-` modifiers so it only ever touches that member's id and never clobbers
+ * another member's concurrent answer (no read-then-write of the whole list).
+ */
+export function goingPatch(state: GoingState, memberId: string): Record<string, string> {
+	switch (state) {
+		case 'going':
+			return { 'assigned_to+': memberId, 'not_going-': memberId };
+		case 'not_going':
+			return { 'not_going+': memberId, 'assigned_to-': memberId };
+		case 'no_answer':
+			return { 'assigned_to-': memberId, 'not_going-': memberId };
+	}
+}

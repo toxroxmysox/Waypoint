@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { canSelfAssign, toggleAssignee } from './assignment';
+import {
+	canSelfAssign,
+	toggleAssignee,
+	parseGoingState,
+	goingStateOf,
+	goingPatch
+} from './assignment';
 
 describe('canSelfAssign', () => {
 	it('allows traveler, co_owner, owner', () => {
@@ -62,5 +68,60 @@ describe('toggleAssignee', () => {
 		toggleAssignee(start, 'm3');
 		toggleAssignee(start, 'm1');
 		expect(start).toEqual(copy);
+	});
+});
+
+// #402 — three-state Going (going / not going / no answer).
+describe('parseGoingState', () => {
+	it('parses the three states', () => {
+		expect(parseGoingState('going')).toBe('going');
+		expect(parseGoingState('not_going')).toBe('not_going');
+		expect(parseGoingState('no_answer')).toBe('no_answer');
+	});
+
+	it('rejects anything else (exact match only)', () => {
+		for (const raw of ['Going', '', 'none', 'not going', null, undefined, 1, {}]) {
+			expect(parseGoingState(raw)).toBeNull();
+		}
+	});
+});
+
+describe('goingStateOf', () => {
+	it('reads going from assigned_to', () => {
+		expect(goingStateOf({ assigned_to: ['m1'], not_going: [] }, 'm1')).toBe('going');
+	});
+
+	it('reads not going from not_going', () => {
+		expect(goingStateOf({ assigned_to: [], not_going: ['m1'] }, 'm1')).toBe('not_going');
+	});
+
+	it('reads no answer when the member is in neither list (or the lists are missing)', () => {
+		expect(goingStateOf({}, 'm1')).toBe('no_answer');
+		expect(goingStateOf({ assigned_to: null, not_going: null }, 'm1')).toBe('no_answer');
+		expect(goingStateOf({ assigned_to: ['m2'], not_going: ['m3'] }, 'm1')).toBe('no_answer');
+	});
+
+	it('going wins when a member is (illegally) in both lists, as on the server', () => {
+		expect(goingStateOf({ assigned_to: ['m1'], not_going: ['m1'] }, 'm1')).toBe('going');
+	});
+});
+
+describe('goingPatch', () => {
+	it('going adds the member to assigned_to and clears their not going', () => {
+		expect(goingPatch('going', 'm1')).toEqual({ 'assigned_to+': 'm1', 'not_going-': 'm1' });
+	});
+
+	it('not going adds the member to not_going and clears their going', () => {
+		expect(goingPatch('not_going', 'm1')).toEqual({ 'not_going+': 'm1', 'assigned_to-': 'm1' });
+	});
+
+	it('no answer removes the member from both lists', () => {
+		expect(goingPatch('no_answer', 'm1')).toEqual({ 'assigned_to-': 'm1', 'not_going-': 'm1' });
+	});
+
+	it('only ever touches the given member', () => {
+		for (const state of ['going', 'not_going', 'no_answer'] as const) {
+			expect(Object.values(goingPatch(state, 'm1')).every((v) => v === 'm1')).toBe(true);
+		}
 	});
 });
