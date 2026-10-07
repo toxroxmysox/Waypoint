@@ -45,6 +45,6 @@ The core decision stands: **card avatars mean assignment, never votes.**
 ## Amendment (2026-10-06, card system D3 amendment, D6 and D10 — Scott)
 
 1. **Unplanned ideas show votes again, in a new form (D3 amended).** This corrects point 2 above. On the day page's parking lot, the desktop Ideas panel, the phase's parking lot, [[Ghost Card]]s and pending suggestions, an **unplanned** idea shows **tap-to-vote pills** under its sub-line: Love, Like, Flexible and Pass, each with its count, the viewer's own vote filled, tap to toggle. Ideas sort by the weighted score within each type group. **Planned cards still show no votes.** A planned item's detail page shows one quiet "Your vote" row.
-2. **How the avatars look (D6, D10).** Going members show as **neutral initials bubbles** (the coloured avatar fallback is retired). A member who said **not going** shows as a struck-through bubble after the going ones, with no grey or opacity; this needs #402. No answer is not shown.
+2. **How the avatars look (D6, D10).** Going members show as **neutral initials bubbles** (the coloured avatar fallback is retired). A member who said **not going** shows as a struck-through bubble after the going ones, with no grey or opacity (stored in `items.not_going`, #402). No answer is not shown.
 
 The core decision still stands: the avatar slot means who's going; votes are a separate control.

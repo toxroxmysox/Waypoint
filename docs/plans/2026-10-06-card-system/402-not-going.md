@@ -4,7 +4,7 @@
 
 **Goal:** Items store who said "not going" (`not_going`, beside `assigned_to`); the server keeps the two lists exclusive, lets only a member answer for themselves, and the self-assign endpoint takes a target state (going / not going / no answer).
 
-**Architecture:** One append-only migration adds the relation list. `items.pb.js` gets two layers: the existing *request* hooks enforce who may change what (Not going is self-only for every role; viewers can't answer), and a new *model* hook (`onRecordCreate` / `onRecordUpdate`) enforces exclusivity on every save, including internal `e.app.save` calls from departure clean-up and Suggestion approval. The SvelteKit self-assign endpoint writes with PB's `field+` / `field-` modifiers so it never clobbers another member's concurrent answer. No UI (that is #440).
+**Architecture:** One append-only migration adds the relation list. `items.pb.js` gets two layers: the existing *request* hooks enforce who may change what (Not going is self-only for every role; viewers can't answer), and a new *model* hook (`onRecordCreate` / `onRecordUpdate`) enforces exclusivity on every save, including internal `e.app.save` calls from departure clean-up and Suggestion approval. The SvelteKit self-assign endpoint writes with PB's `field+` / `field-` modifiers, so it only ever touches the caller's id. *(Corrected in review: the modifiers apply to the record as loaded, so two answers landing within a few ms can lose one. Accepted as rare; assigning "going" already had the same race.)* No UI (that is #440).
 
 **Tech Stack:** PocketBase 0.27 JSVM (goja) hooks + migrations, SvelteKit server route, Vitest, the PB harnesses (`backend/test-rules.mjs`, `backend/test-suggestions.mjs`).
 

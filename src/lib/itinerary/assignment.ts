@@ -61,8 +61,9 @@ export function goingStateOf(
 
 /**
  * The PocketBase update body that sets ONE member's answer, using the relation
- * `+`/`-` modifiers so it only ever touches that member's id and never clobbers
- * another member's concurrent answer (no read-then-write of the whole list).
+ * `+`/`-` modifiers so it only ever touches that member's id (no client-supplied
+ * array). Not a concurrency guarantee: PB applies the modifiers to the record as
+ * loaded, so two answers within a few ms can lose one — accepted (#402 review).
  */
 export function goingPatch(state: GoingState, memberId: string): Record<string, string> {
 	switch (state) {
