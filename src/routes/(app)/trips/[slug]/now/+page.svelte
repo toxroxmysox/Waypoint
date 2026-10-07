@@ -104,8 +104,8 @@
 	);
 
 	// Auto-scroll to the Focus on open (the contract's anchor). This naturally
-	// pushes the faded past above the fold → "reveal on scroll-up". Mirrors
-	// TodayTimeline's onMount scroll. No-op on SSR / when there's no past to hide.
+	// pushes the faded past above the fold → "reveal on scroll-up". No-op on
+	// SSR / when there's no past to hide.
 	onMount(() => {
 		// Add-sheet door: /now?capture=memory opens the composer directly.
 		if (page.url.searchParams.get('capture') === 'memory' && canCapture) {
