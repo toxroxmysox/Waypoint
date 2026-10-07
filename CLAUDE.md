@@ -14,12 +14,12 @@ Be as concise as possible. Sacrifice grammar for concision.
 
 ## Scope discipline
 
-Work that spans sessions or needs a plan should trace to a GitHub Issue.
+Work that spans sessions or needs a plan should trace to a GitHub Issue. Scott files issues; agents read them and never create them (findings go in the handoff for Scott).
 Small, self-contained fixes (single-session, no plan needed) — just do them.
 
 "Let's just..." on anything non-trivial is a scope-creep trigger. Interrogate:
 - Is this a quick fix or a rabbit hole?
-- If it needs a plan, create an issue first.
+- If it needs a plan, it needs Scott's issue first.
 
 ---
 
@@ -37,6 +37,8 @@ Ceremony by type:
 Issues labeled `afk` can run unsupervised. `hitl` needs human checkpoints.
 
 Session scope: one issue or one PR. If a task needs both planning and execution, split into separate sessions.
+
+Process is the svw operating model (`svw:workflow`), one ticket per session. The `pm-hub` orchestration skill is shelved (2026-10-07, Pro plan); its standing rules are in "Integrating and shipping" below. svw doc-roots here: glossary = `CONTEXT.md`, ADRs = `docs/adr/`, grill records and plans = `docs/plans/YYYY-MM-DD-<topic>/`. Not `.wolf/cerebrum.md`: that is local, gitignored scar tissue, not the domain model.
 
 ---
 
@@ -73,6 +75,21 @@ E2E PB targets:
 - `pnpm test:e2e:clean` — preferred. Spins up an isolated, disposable PB on :8097 (`scripts/e2e-isolated.sh` → #67's `e2e-clean-pb.sh`), runs the suite, throws it away. Keeps :8090 clean.
 - `E2E_SLOT=N` — one per worktree. Offsets every verifier's ports + data dirs by N (e2e PB :8097+N, preview :4173+N, harnesses, `verify:visual` :5199+N), so worktrees on different slots run concurrently (#384). Default 0. Specs read `BASE` from `tests/e2e/e2e-env.ts` — never hardcode a port.
 - `pnpm clean:dev-trips` — purge test trips (slug `e2e-`/`harness-`/`expand-test-*` or test-owner emails) already piled up on :8090. `--dry-run` to preview. Needs `PB_ADMIN_EMAIL`/`PB_ADMIN_PASSWORD` (a :8090 superuser). Localhost-guarded.
+
+---
+
+## Integrating and shipping
+
+Rules paid for in real failures (distilled from the shelved `pm-hub` skill):
+
+- **Migration-dependent? Verify on a fresh PB** (`pnpm test:e2e:clean` / `scripts/e2e-clean-pb.sh`, :8097). Never trust :8090: it migrates only on boot, so mid-session it serves stale schema and gives false results.
+- **Removed or renamed a user-facing label, affordance, or selector class → `grep -rn '<old text>' tests/`** and fix the assertions in the same commit. Otherwise it's green on the branch, red on merge.
+- **A PR adds a dependency → `pnpm install`** before judging `pnpm check` failures.
+- **Real or dogfood data (:8090, prod) is a hard stop.** Dry-run, eyeball every match, surface it to Scott. No confidence level overrides this.
+- **Merging to `main` and deploying happen only on Scott's word.**
+- **v3.0 in flight:** ticket branches start from `origin/release/3.0` and merge back into it, not `main`. Desktop worktrees base off `main`, so check out from `release/3.0` first.
+- **Evidence rule:** every working/broken/true claim states how it was verified. Unverified → label it "inference".
+- **Two strikes → step back.** Same error survives two fixes → stop patching, reassess the approach, check `.wolf/` cerebrum + buglog (if present) before a third attempt.
 
 ---
 

@@ -7,9 +7,12 @@ description: >
   resuming from handoff-pm-hub.md, integrating session handoffs or PRs,
   dispatching AFK work, running an integration wave, or when Scott says
   "PM hub", "integrate", or "fire the next wave".
+disable-model-invocation: true
 ---
 
 # PM Hub
+
+Shelved 2026-10-07 for the Pro plan; Max-plan mode. Default flow is svw:workflow, one ticket per session.
 
 North star: **intent fidelity**. Shipped PRs must match Scott's vision and quality bar — right and thorough first, Scott-minute-efficient second. Throughput that ships the wrong thing is failure, not speed.
 
