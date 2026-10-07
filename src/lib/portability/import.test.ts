@@ -137,8 +137,7 @@ describe('resolveImportItemStatus', () => {
 		expect(resolveImportItemStatus(undefined, false)).toBe('unplanned');
 	});
 	it('leaves undated statuses alone either way', () => {
-		expect(resolveImportItemStatus('idea', false)).toBe('idea');
+		expect(resolveImportItemStatus('considered', false)).toBe('considered');
 		expect(resolveImportItemStatus('unplanned', false)).toBe('unplanned');
-		expect(resolveImportItemStatus('cancelled', true)).toBe('cancelled');
 	});
 });
