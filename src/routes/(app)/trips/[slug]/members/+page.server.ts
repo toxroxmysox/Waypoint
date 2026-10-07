@@ -2,6 +2,7 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { TripMember, PendingInvite, User, JoinToken } from '$lib/types';
 import { memberAvatarUrl } from '$lib/collaboration/member-avatar';
+import { memberDisplayName } from '$lib/itinerary/member-name';
 import { pbFileUrl } from '$lib/shell/pb-file-url';
 import { PUBLIC_PB_URL } from '$env/static/public';
 
@@ -72,6 +73,22 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 
 	const authUser = (locals.user ?? null) as User | null;
 
+	// #450: trip_members.placeholder_email is a HIDDEN field (0074) — no REST read
+	// carries it. Owners/co-owners get the addresses from this admin-context route;
+	// everyone else gets nothing (the route 403s, and they have no use for them).
+	let placeholderEmails: Record<string, string> = {};
+	if (membership.role === 'owner' || membership.role === 'co_owner') {
+		try {
+			const res = (await locals.pb.send(
+				`/api/members/placeholder-emails?trip_id=${encodeURIComponent(trip.id)}`,
+				{ method: 'GET' }
+			)) as { emails?: Record<string, string> };
+			placeholderEmails = res?.emails ?? {};
+		} catch {
+			placeholderEmails = {};
+		}
+	}
+
 	const memberRows: MemberRow[] = members.map((m) => {
 		const avatarUrl = memberAvatarUrl(locals.pb, m);
 		// #133: a Departed Member tombstone (removed_at set). `user` is cleared, so
@@ -93,7 +110,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 			return {
 				...m,
 				displayLabel: m.display_name || m.placeholder_name || '(placeholder)',
-				emailLabel: m.placeholder_email || '',
+				emailLabel: placeholderEmails[m.id] || '',
 				isPlaceholder: true,
 				isDeparted: false,
 				removedAtLabel: '',
@@ -121,12 +138,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 			// here (e.g. a stale/orphaned `user` ref that doesn't expand), it must
 			// still show its entered name, not the generic "(member)". Mirrors the
 			// canonical display chain (VoteStacks / member-name.ts).
-			displayLabel:
-				m.display_name ||
-				m.expand?.user?.name ||
-				m.expand?.user?.email ||
-				m.placeholder_name ||
-				'(member)',
+			displayLabel: memberDisplayName(m),
 			// Other members' email stays hidden on the roster (emailVisibility is off; #223 fixes names, not email exposure).
 			emailLabel: '',
 			isPlaceholder: false,
@@ -163,11 +175,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 			if (authUser && inviter.user === authUser.id) {
 				inviterLabel = inviter.display_name || authUser.name || authUser.email || 'you';
 			} else {
-				inviterLabel =
-					inviter.display_name ||
-					inviter.expand?.user?.name ||
-					inviter.placeholder_name ||
-					'someone';
+				inviterLabel = memberDisplayName(inviter);
 			}
 		}
 		return {

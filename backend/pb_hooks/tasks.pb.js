@@ -40,7 +40,7 @@ onRecordCreateRequest((e) => {
 	} catch (_) {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
-	if (callerMember.get('role') === 'viewer') {
+	if (callerMember.getString('role') === 'viewer') {
 		throw new ForbiddenError('Viewers cannot create tasks');
 	}
 	e.next();
@@ -67,7 +67,7 @@ onRecordUpdateRequest((e) => {
 	} catch (_) {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
-	if (callerMember.get('role') === 'viewer') {
+	if (callerMember.getString('role') === 'viewer') {
 		throw new ForbiddenError('Viewers cannot edit tasks');
 	}
 	e.next();
@@ -94,7 +94,7 @@ onRecordDeleteRequest((e) => {
 	} catch (_) {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
-	if (callerMember.get('role') === 'viewer') {
+	if (callerMember.getString('role') === 'viewer') {
 		throw new ForbiddenError('Viewers cannot delete tasks');
 	}
 	e.next();

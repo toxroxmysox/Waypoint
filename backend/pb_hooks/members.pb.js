@@ -79,11 +79,63 @@ routerAdd('GET', '/api/members/my-claims', (e) => {
 			trip_slug: trip.get('slug'),
 			trip_title: trip.get('title'),
 			placeholder_name: row.get('placeholder_name') || '',
-			role: row.get('role')
+			role: row.getString('role')
 		});
 	}
 
 	return e.json(200, { claims: claims });
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/members/placeholder-emails?trip_id=ID   (#450)
+// trip_members.placeholder_email is a HIDDEN field (migration 0074): no REST read
+// returns it. Owners and co-owners — who add/chase placeholders — read the
+// addresses here, in admin context. Everyone else gets 403 (a traveler or viewer
+// has no use for another person's invite address).
+// Returns { emails: { <memberId>: <email> } } for the trip's ACTIVE placeholders
+// that have an address.
+// ---------------------------------------------------------------------------
+routerAdd('GET', '/api/members/placeholder-emails', (e) => {
+	const authRecord = e.auth;
+	if (!authRecord) throw new UnauthorizedError('Authentication required');
+
+	const query = e.requestInfo().query || {};
+	const tripId = '' + (Array.isArray(query['trip_id']) ? query['trip_id'][0] : query['trip_id'] || '');
+	if (!tripId) throw new BadRequestError('trip_id is required');
+
+	let callerMember;
+	try {
+		callerMember = e.app.findFirstRecordByFilter(
+			'trip_members',
+			'trip = {:tripId} && user = {:uid} && removed_at = ""',
+			{ tripId: tripId, uid: authRecord.id }
+		);
+	} catch (_) {
+		throw new ForbiddenError('You are not a member of this trip');
+	}
+	const callerRole = callerMember.getString('role');
+	if (callerRole !== 'owner' && callerRole !== 'co_owner') {
+		throw new ForbiddenError('Only an owner or co-owner can see placeholder emails');
+	}
+
+	let rows = [];
+	try {
+		rows = e.app.findRecordsByFilter(
+			'trip_members',
+			'trip = {:tripId} && user = "" && placeholder_email != "" && removed_at = ""',
+			'',
+			0,
+			0,
+			{ tripId: tripId }
+		);
+	} catch (_) {
+		rows = [];
+	}
+	const emails = {};
+	for (const row of rows) {
+		emails[row.id] = row.getString('placeholder_email');
+	}
+	return e.json(200, { emails: emails });
 });
 
 // ---------------------------------------------------------------------------
@@ -229,7 +281,7 @@ routerAdd('POST', '/api/members/add-placeholder', (e) => {
 			throw new ForbiddenError('You are not a member of this trip');
 		}
 
-		const callerRole = callerMember.get('role');
+		const callerRole = callerMember.getString('role');
 
 		// Viewer cannot add members.
 		if (callerRole === 'viewer') {
@@ -361,12 +413,12 @@ routerAdd('POST', '/api/members/promote', (e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 
-	const callerRole = callerMember.get('role');
+	const callerRole = callerMember.getString('role');
 	if (callerRole !== 'owner' && callerRole !== 'co_owner') {
 		throw new ForbiddenError('Only owners and co-owners can promote members');
 	}
 
-	if (target.get('role') !== 'traveler') {
+	if (target.getString('role') !== 'traveler') {
 		throw new BadRequestError('Only travelers can be promoted to co-owner');
 	}
 
@@ -690,14 +742,14 @@ routerAdd('POST', '/api/members/remove', (e) => {
 		} catch (_) {
 			throw new ForbiddenError('You are not a member of this trip');
 		}
-		const callerRole = callerMember.get('role');
+		const callerRole = callerMember.getString('role');
 		if (callerRole !== 'owner' && callerRole !== 'co_owner') {
 			throw new ForbiddenError('Only owners and co-owners can remove members');
 		}
 	}
 
 	// Cannot remove the sole (active) owner.
-	if (target.get('role') === 'owner') {
+	if (target.getString('role') === 'owner') {
 		let ownerCount = 0;
 		try {
 			const owners = e.app.findRecordsByFilter(

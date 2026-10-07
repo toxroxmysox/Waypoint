@@ -81,6 +81,8 @@ start_pb() {
 	# The dev-fixture routes (auth-bypass, rules-fixture) are gated on
 	# WAYPOINT_DEV_MODE + the E2E_TEST_EMAILS whitelist, both of which live in
 	# .env.local. --hooksWatch=false so PB never restarts mid-run (#67 scar).
+	# --automigrate=false: test-rules' allowlist probe edits the schema as superuser;
+	# with automigrate on, PB writes that edit into backend/pb_migrations (#450 scar).
 	set -a
 	# shellcheck disable=SC1091
 	[ -f "$ROOT/.env.local" ] && source "$ROOT/.env.local"
@@ -91,6 +93,7 @@ start_pb() {
 		--migrationsDir "$ROOT/backend/pb_migrations" \
 		--hooksDir "$ROOT/backend/pb_hooks" \
 		--hooksWatch=false \
+		--automigrate=false \
 		--http 127.0.0.1:"$PORT" >"$DIR.log" 2>&1 &
 	PB_PID=$!
 

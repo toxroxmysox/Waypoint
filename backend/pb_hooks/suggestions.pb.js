@@ -36,7 +36,7 @@ routerAdd('POST', '/api/suggestions/create', (e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 
-	const callerRole = callerMember.get('role');
+	const callerRole = callerMember.getString('role');
 	if (callerRole === 'viewer') {
 		throw new ForbiddenError('Viewers cannot submit suggestions');
 	}
@@ -196,7 +196,7 @@ routerAdd('GET', '/api/suggestions/list', (e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 
-	const callerRole = callerMember.get('role');
+	const callerRole = callerMember.getString('role');
 	const isPrivileged = callerRole === 'owner' || callerRole === 'co_owner';
 
 	// Build filter.
@@ -224,7 +224,7 @@ routerAdd('GET', '/api/suggestions/list', (e) => {
 		try {
 			const authorMember = e.app.findRecordById('trip_members', r.get('author'));
 			authorName = authorMember.get('display_name') || authorMember.get('placeholder_name') || '';
-			authorRole = authorMember.get('role');
+			authorRole = authorMember.getString('role');
 		} catch (_) {}
 
 		return {
@@ -291,7 +291,7 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 
-	const callerRole = callerMember.get('role');
+	const callerRole = callerMember.getString('role');
 	if (callerRole !== 'owner' && callerRole !== 'co_owner') {
 		throw new ForbiddenError('Only owners and co-owners can review suggestions');
 	}

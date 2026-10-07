@@ -68,7 +68,7 @@ onRecordUpdateRequest((e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 
-	const callerRole = callerMember.get('role');
+	const callerRole = callerMember.getString('role');
 	if (callerRole !== 'owner' && callerRole !== 'co_owner') {
 		throw new ForbiddenError(
 			'Only an owner or co-owner can change a trip’s publishing or lifecycle settings'
@@ -102,7 +102,7 @@ onRecordDeleteRequest((e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 
-	const callerRole = '' + callerMember.get('role');
+	const callerRole = '' + callerMember.getString('role');
 	if (callerRole !== 'owner' && callerRole !== 'co_owner') {
 		throw new ForbiddenError('Only an owner or co-owner can delete the trip');
 	}

@@ -286,6 +286,8 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 	spare.set('role', 'traveler');
 	spare.set('placeholder_name', 'Spare Delete Target');
 	spare.set('display_name', 'Spare Delete Target');
+	// #450: a stored address so the harness can prove placeholder_email is hidden over REST.
+	spare.set('placeholder_email', 'spare-450@e2e.test');
 	e.app.save(spare);
 	memberIds.spare = spare.id;
 

@@ -4,6 +4,7 @@
 	import { toast } from '$lib/shell/stores/toast';
 	import type { DebtEdge } from '$lib/money/debt-simplify';
 	import type { TripMember } from '$lib/types';
+	import { memberDisplayName } from '$lib/itinerary/member-name';
 
 	interface Props {
 		debts: DebtEdge[];
@@ -69,7 +70,7 @@
 		const m = members.find((mem) => mem.id === memberId);
 		if (!m) return 'Unknown';
 		if (m.id === membershipId) return 'You';
-		return m.display_name || m.expand?.user?.name || m.expand?.user?.email || m.placeholder_name || '(member)';
+		return memberDisplayName(m);
 	}
 
 	function fmt(n: number): string {
