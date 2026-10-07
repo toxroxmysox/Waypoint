@@ -489,7 +489,10 @@
 					</button>
 					<button
 						type="button"
-						onclick={() => (confirmDelete = false)}
+						onclick={() => {
+							confirmDelete = false;
+							deleteError = '';
+						}}
 						class="hit-44 text-ink-muted hover:text-ink-soft active:text-ink-soft text-sm"
 					>
 						Cancel

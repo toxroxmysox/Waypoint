@@ -7,7 +7,7 @@ import { syncGoalLinks } from '$lib/itinerary/goal-links';
 import type { Document } from '$lib/types';
 import { codesForItem } from '$lib/documents/codes';
 import { reconcileItemCodes } from '$lib/documents/reconcile-codes';
-import { itemPermissions } from '$lib/itinerary/item-actions';
+import { itemPermissions, ITEM_ACTION_ERRORS } from '$lib/itinerary/item-actions';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, membership, phases, days } = await parent();
@@ -29,7 +29,8 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	// OWN item, but a direct nav to another member's item returns 403 here rather
 	// than rendering a form whose submit would 403. Same rule as the detail page's
 	// Edit link (#416 — itemPermissions).
-	if (!itemPermissions(membership, item).canEdit) {
+	const permissions = itemPermissions(membership, item);
+	if (!permissions.canEdit) {
 		error(403, 'Only an owner, co-owner, or the item’s creator can edit this item.');
 	}
 
@@ -69,7 +70,10 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		phases,
 		days,
 		tripStartDate: String(trip.start_date || '').split(/[T ]/)[0],
-		tripEndDate: String(trip.end_date || '').split(/[T ]/)[0]
+		tripEndDate: String(trip.end_date || '').split(/[T ]/)[0],
+		// #416 — a traveler-creator may edit but not delete (items.pb.js delete:
+		// owner/co_owner only), so the Delete panel is gated separately.
+		canDelete: permissions.canDelete
 	};
 };
 
@@ -244,8 +248,11 @@ export const actions: Actions = {
 			redirect(303, `/trips/${params.slug}`);
 		} catch (err: unknown) {
 			if (isRedirect(err)) throw err;
-			const message = err instanceof Error ? err.message : 'Failed to delete item.';
-			return fail(500, { error: message });
+			// #416 — generic and in the Delete panel, not raw PB text in the page alert.
+			const status = (err as { status?: number } | null)?.status;
+			return fail(typeof status === 'number' && status >= 400 && status < 600 ? status : 500, {
+				deleteError: ITEM_ACTION_ERRORS.delete
+			});
 		}
 	}
 };

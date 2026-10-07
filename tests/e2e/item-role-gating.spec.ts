@@ -6,11 +6,11 @@ import { E2E_BASE, E2E_PB_BASE } from './e2e-env';
 //
 // The server gates (items.pb.js, documents.pb.js, checklists/tasks hooks,
 // votes.createRule 0055, the skipItem action) are the source of truth; the page
-// gates every control with `itemPermissions()` (src/lib/itinerary/item-permissions.ts).
+// gates every control with `itemPermissions()` (src/lib/itinerary/item-actions.ts).
 // This spec drives the real roles through the UI:
 //   - a traveler who isn't the creator sees no Move, Skip, Delete or Edit
 //   - a viewer additionally sees no upload, checklist or vote controls
-//   - the creator gets Move + Edit, never Delete or Skip
+//   - the creator gets Move + Edit, never Delete or Skip — on the edit page too
 //   - a member whose role is lowered while the page is open gets an in-context
 //     error from Move, Skip and Delete (was: nothing)
 //   - Skip stays on the item page in Planning Mode, goes to Now in Trip Mode
@@ -102,6 +102,9 @@ async function openItem(page: Page, slug: string, itemId: string, title = ITEM_T
 	await expect(
 		page.getByRole('button', { name: 'Post' }).filter({ visible: true }).first()
 	).toBeVisible();
+	// Hydrated: Move/Skip/Delete handlers are client-side, so a click on a
+	// not-yet-hydrated page silently does nothing (flaked under full-suite load).
+	await page.waitForLoadState('networkidle');
 }
 
 const visible = (page: Page) => ({
@@ -224,6 +227,47 @@ test.describe('#416 item detail role gating', () => {
 			await expect(c.edit.first()).toBeVisible();
 			await expect(c.del).toHaveCount(0);
 			await expect(c.skip).toHaveCount(0);
+		} finally {
+			await traveler.close();
+		}
+	});
+
+	test('the edit page shows Delete to the owner, not to a traveler-creator', async ({
+		browser
+	}) => {
+		const created = await pb(ownerToken, 'POST', '/api/collections/items/records', {
+			trip: ids.tripId,
+			phase: ids.phaseId,
+			day: ids.dayId,
+			type: 'activity',
+			title: 'Traveler-made lunch',
+			status: 'planned',
+			created_by: ids.memberIds.traveler
+		});
+		const editPath = `${BASE}/trips/${FIXTURE_SLUG}/items/${created.id as string}/edit`;
+		const saveBtn = (page: Page) =>
+			page.getByRole('button', { name: 'Save changes' }).filter({ visible: true }).first();
+		const delHeading = (page: Page) =>
+			page.getByRole('heading', { name: 'Delete item' }).filter({ visible: true });
+
+		const owner = await devLogin(browser, EMAILS.owner);
+		try {
+			const { page } = owner;
+			await page.goto(editPath);
+			await expect(saveBtn(page)).toBeVisible({ timeout: 10000 });
+			await expect(delHeading(page).first()).toBeVisible();
+			await expect(visible(page).del.first()).toBeVisible();
+		} finally {
+			await owner.close();
+		}
+
+		const traveler = await devLogin(browser, EMAILS.traveler);
+		try {
+			const { page } = traveler;
+			await page.goto(editPath);
+			await expect(saveBtn(page)).toBeVisible({ timeout: 10000 });
+			await expect(delHeading(page)).toHaveCount(0);
+			await expect(visible(page).del).toHaveCount(0);
 		} finally {
 			await traveler.close();
 		}
