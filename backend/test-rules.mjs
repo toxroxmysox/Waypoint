@@ -1385,28 +1385,34 @@ function ngListsAre(s, going, notGoing) {
 
 async function runNotGoingDepartureCases(tokens) {
 	// --- keep: not going alone is a reference → tombstone, never purge.
+	// Only the childless `spare` placeholder is zero-ref in the fixture (every
+	// user-backed member receives fixture notifications). A placeholder can't
+	// answer, so the traveler's not going is REASSIGNED onto the spare; the
+	// traveler first deletes the goal they authored so the reassign hands the
+	// spare nothing else. The spare's only reference is then not_going.
 	let fixture = await setupFixture();
 	let m = fixture.memberIds;
-	// The traveler's only blocking reference in the fixture is the goal they
-	// authored (their goal/suggestion votes always drop). Delete it, so not going
-	// is the one thing left to keep them.
 	await pbRequest('DELETE', `/api/collections/trip_goals/records/${fixture.goalId}`, { token: tokens.traveler });
 	const probe = () =>
-		pbRequest('GET', `/api/members/can-purge?member_id=${m.traveler}`, { token: tokens.owner });
+		pbRequest('GET', `/api/members/can-purge?member_id=${m.spare}`, { token: tokens.owner });
 	let p = await probe();
 	recordResult('trip_members', 'ng_purge_control', 'owner', 'yes', p.data?.zero_ref === true ? 'yes' : `no(${JSON.stringify(p.data)})`, p.status);
 
 	await ngPatch(tokens.traveler, fixture.itemId, { 'not_going+': m.traveler });
+	await pbRequest('POST', '/api/members/remove', {
+		token: tokens.owner,
+		body: { member_id: m.traveler, disposition: 'reassign', reassign_to: m.spare }
+	});
 	p = await probe();
 	recordResult('trip_members', 'ng_canpurge_blocks', 'owner', 'yes', p.data?.zero_ref === false ? 'yes' : `no(${JSON.stringify(p.data)})`, p.status);
 
 	const rmKeep = await pbRequest('POST', '/api/members/remove', {
 		token: tokens.owner,
-		body: { member_id: m.traveler }
+		body: { member_id: m.spare }
 	});
 	recordResult('trip_members', 'ng_remove_tombstones', 'owner', 'yes', rmKeep.status === 200 && rmKeep.data?.deleted === false ? 'yes' : `no(${JSON.stringify(rmKeep.data)})`, rmKeep.status);
 	let s = await ngRead(tokens, fixture.itemId);
-	recordResult('items', 'ng_kept_on_tombstone', 'owner', 'yes', s.notGoing.includes(m.traveler) ? 'yes' : `no(${JSON.stringify(s.notGoing)})`, s.status);
+	recordResult('items', 'ng_kept_on_tombstone', 'owner', 'yes', s.notGoing.includes(m.spare) ? 'yes' : `no(${JSON.stringify(s.notGoing)})`, s.status);
 
 	// --- reassign the traveler's answers to the co_owner.
 	fixture = await setupFixture();
