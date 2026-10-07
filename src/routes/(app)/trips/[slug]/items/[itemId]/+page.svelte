@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { withOrigin } from '$lib/shell/back-nav';
 	import { enhance } from '$app/forms';
+	import { toast } from '$lib/shell/stores/toast';
+	import { useChromeMode } from '$lib/shell/chrome-mode';
+	import { skipDestination, ITEM_ACTION_ERRORS } from '$lib/itinerary/item-actions';
 	import { goto } from '$app/navigation';
 	import { getFieldConfig } from '$lib/itinerary/item-fields';
 	import NavBar from '$lib/ui/NavBar.svelte';
@@ -24,8 +27,16 @@
 
 	let { data, form } = $props();
 
+	// #416 — every control below renders only for roles the server accepts it
+	// from (itemPermissions, computed in the loader). #437 reuses the same set.
+	const can = $derived(data.permissions);
+	const chromeMode = useChromeMode();
+
 	let confirmDelete = $state(false);
 	let deleting = $state(false);
+	// A refused/failed action says so in place (#416). Local state covers the JS
+	// path, including network errors; `form` covers a no-JS post.
+	let deleteError = $state('');
 	let moveSheetOpen = $state(false);
 	const itemUrl = $derived(`/trips/${data.trip.slug}/items/${data.item.id}`);
 	const docCount = $derived(data.documents.length);
@@ -42,15 +53,12 @@
 		return n.toFixed(2);
 	}
 	// #246 Door 2 — skip from item detail (second entry point). Only meaningful for
-	// a planned, scheduled item, and only owner/co_owner may skip (SPEC §4). Skipping
-	// returns it to the parking lot (reversible) and pulls it off the day → bounce
-	// back to Now where the ideas strip offers a replacement.
+	// a planned, scheduled item, and only owner/co_owner may skip (SPEC §4 —
+	// `can.canSkip`). Skipping returns it to the parking lot (reversible). Where it
+	// lands is mode-aware (#416): Trip Mode → Now, where the ideas strip offers a
+	// replacement; Planning Mode → stay here.
 	let skipping = $state(false);
-	const canSkip = $derived(
-		(data.membership?.role === 'owner' || data.membership?.role === 'co_owner') &&
-			data.item.status === 'planned' &&
-			!!data.item.day
-	);
+	let skipError = $state('');
 
 	// Comments
 	let commentText = $state('');
@@ -80,14 +88,16 @@
 <NavBar title={data.item.title} subtitle={data.trip.title} back {backHref}>
 	{#snippet right()}
 		<div class="flex items-center gap-2">
-			<button
-				type="button"
-				onclick={() => (moveSheetOpen = true)}
-				class="border-line text-ink-muted hover:text-ink-soft active:text-ink-soft rounded-md border px-3 py-1.5 text-xs font-semibold"
-			>
-				Move
-			</button>
-			{#if data.canEdit}
+			{#if can.canMove}
+				<button
+					type="button"
+					onclick={() => (moveSheetOpen = true)}
+					class="border-line text-ink-muted hover:text-ink-soft active:text-ink-soft rounded-md border px-3 py-1.5 text-xs font-semibold"
+				>
+					Move
+				</button>
+			{/if}
+			{#if can.canEdit}
 				<a
 					href={withOrigin(`/trips/${data.trip.slug}/items/${data.item.id}/edit`, page.url.pathname)}
 					class="text-ink-soft hover:text-ink active:text-ink text-[12px] font-semibold"
@@ -121,9 +131,11 @@
 					<h2 class="font-display text-ink mt-2 text-xl leading-tight font-semibold">
 						{data.item.title}
 					</h2>
-					<div class="mt-3 flex items-center gap-3">
-						<VoteButtons myVote={data.myVote} {itemUrl} />
-					</div>
+					{#if can.canVote}
+						<div class="mt-3 flex items-center gap-3">
+							<VoteButtons myVote={data.myVote} {itemUrl} />
+						</div>
+					{/if}
 				</div>
 			</div>
 
@@ -193,7 +205,7 @@
 				</svg>
 			</span>
 		</a>
-	{:else if data.canLogPayment}
+	{:else if can.canLogPayment}
 		<a
 			href={payHref}
 			class="border-line bg-surface hover:bg-surface-2 active:bg-surface-2 flex items-center justify-between rounded-lg border px-4 py-3"
@@ -240,6 +252,7 @@
 		itemId={data.item.id}
 		membershipId={data.membership.id}
 		role={data.membership.role}
+		canUpload={can.canUpload}
 	/>
 
 	{#if form?.uploadError}
@@ -265,6 +278,7 @@
 				showControls={false}
 				addLabel="Add an item"
 				onAssign={openAssign}
+				readonly={!can.canEditChecklist}
 			/>
 
 			<div class="text-ink-muted mt-3 flex items-center gap-1.5 px-1">
@@ -274,12 +288,14 @@
 				<span class="font-display text-[11px] italic">This list lives on the item — it travels with it.</span>
 			</div>
 
-			<form method="POST" action="?/deleteChecklist" use:enhance class="mt-2 px-1">
-				<input type="hidden" name="checklist_id" value={data.checklist.id} />
-				<button type="submit" class="text-ink-muted hover:text-clay active:text-clay text-xs"> Remove checklist </button>
-			</form>
+			{#if can.canEditChecklist}
+				<form method="POST" action="?/deleteChecklist" use:enhance class="mt-2 px-1">
+					<input type="hidden" name="checklist_id" value={data.checklist.id} />
+					<button type="submit" class="text-ink-muted hover:text-clay active:text-clay text-xs"> Remove checklist </button>
+				</form>
+			{/if}
 		</div>
-	{:else}
+	{:else if can.canEditChecklist}
 		<Card>
 			<div class="p-4">
 				<SectionH>Checklist</SectionH>
@@ -378,9 +394,10 @@
 	</Card>
 
 	<!-- #246 Door 2 — Skip (reversible; distinct from Delete). Pulls the item off
-	     today back into its phase's parking lot, then returns to Now where the
-	     ideas strip offers a replacement. Owner/co_owner only, planned items only. -->
-	{#if canSkip}
+	     its day back into its phase's parking lot. Trip Mode then goes to Now, where
+	     the ideas strip offers a replacement; Planning Mode stays here (#416).
+	     Owner/co_owner only, planned items only. -->
+	{#if can.canSkip}
 		<div class="border-line rounded-lg border p-4">
 			<h3 class="text-ink-soft text-sm font-semibold">Not happening?</h3>
 			<p class="text-ink-muted mt-1 text-sm">
@@ -392,11 +409,21 @@
 				action="?/skipItem"
 				use:enhance={() => {
 					skipping = true;
-					return async ({ result }) => {
+					skipError = '';
+					return async ({ result, update }) => {
 						skipping = false;
-						// Skipped → off today → bounce to Now (the ideas strip opens there).
-						if (result.type === 'success') {
-							await goto(`/trips/${data.trip.slug}/now`);
+						if (result.type !== 'success') {
+							skipError = ITEM_ACTION_ERRORS.skip;
+							return;
+						}
+						// Trip Mode → Now (the ideas strip opens there). Planning Mode →
+						// stay: reload this page, where the item is an idea again.
+						const destination = skipDestination(chromeMode(), data.trip.slug);
+						if (destination) {
+							await goto(destination);
+						} else {
+							await update();
+							toast.show("Skipped. It's back in your ideas.");
 						}
 					};
 				}}
@@ -410,67 +437,85 @@
 					{skipping ? 'Skipping…' : 'Skip — not happening'}
 				</button>
 			</form>
+			{#if skipError || form?.skipError}
+				<p role="alert" class="text-clay mt-2 text-sm">{skipError || form?.skipError}</p>
+			{/if}
 		</div>
 	{/if}
 
-	<!-- Delete -->
-	<div class="border-clay/30 rounded-lg border p-4">
-		<h3 class="text-clay text-sm font-semibold">Delete item</h3>
-		{#if !confirmDelete}
-			<button
-				type="button"
-				onclick={() => (confirmDelete = true)}
-				class="hit-44 border-clay/40 text-clay hover:bg-clay/10 active:bg-clay/10 mt-2 rounded-md border px-3 py-1.5 text-sm font-semibold"
-			>
-				Delete
-			</button>
-		{:else}
-			<p class="text-ink-soft mt-2 text-sm">
-				{#if docCount > 0}
-					Delete this {typeLabel} and its {docCount} document{docCount === 1 ? '' : 's'}? This can't be undone.
-				{:else}
-					Delete this {typeLabel}? This can't be undone.
-				{/if}
-			</p>
-			<form
-				method="POST"
-				action="?/delete"
-				use:enhance={() => {
-					deleting = true;
-					return async ({ update }) => {
-						await update();
-						deleting = false;
-					};
-				}}
-				class="mt-2 flex items-center gap-2"
-			>
-				<button
-					type="submit"
-					disabled={deleting}
-					class="hit-44 bg-clay text-paper hover:bg-clay/90 active:bg-clay/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-40"
-				>
-					{deleting ? 'Deleting…' : 'Confirm'}
-				</button>
+	<!-- Delete — owner/co_owner only (items.pb.js delete gate) -->
+	{#if can.canDelete}
+		<div class="border-clay/30 rounded-lg border p-4">
+			<h3 class="text-clay text-sm font-semibold">Delete item</h3>
+			{#if !confirmDelete}
 				<button
 					type="button"
-					onclick={() => (confirmDelete = false)}
-					class="hit-44 text-ink-muted hover:text-ink-soft active:text-ink-soft text-sm"
+					onclick={() => (confirmDelete = true)}
+					class="hit-44 border-clay/40 text-clay hover:bg-clay/10 active:bg-clay/10 mt-2 rounded-md border px-3 py-1.5 text-sm font-semibold"
 				>
-					Cancel
+					Delete
 				</button>
-			</form>
-		{/if}
-	</div>
+			{:else}
+				<p class="text-ink-soft mt-2 text-sm">
+					{#if docCount > 0}
+						Delete this {typeLabel} and its {docCount} document{docCount === 1 ? '' : 's'}? This can't be undone.
+					{:else}
+						Delete this {typeLabel}? This can't be undone.
+					{/if}
+				</p>
+				<form
+					method="POST"
+					action="?/delete"
+					use:enhance={() => {
+						deleting = true;
+						deleteError = '';
+						return async ({ result, update }) => {
+							if (result.type === 'redirect' || result.type === 'success') {
+								await update();
+							} else {
+								deleteError = ITEM_ACTION_ERRORS.delete;
+							}
+							deleting = false;
+						};
+					}}
+					class="mt-2 flex items-center gap-2"
+				>
+					<button
+						type="submit"
+						disabled={deleting}
+						class="hit-44 bg-clay text-paper hover:bg-clay/90 active:bg-clay/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-40"
+					>
+						{deleting ? 'Deleting…' : 'Confirm'}
+					</button>
+					<button
+						type="button"
+						onclick={() => {
+							confirmDelete = false;
+							deleteError = '';
+						}}
+						class="hit-44 text-ink-muted hover:text-ink-soft active:text-ink-soft text-sm"
+					>
+						Cancel
+					</button>
+				</form>
+			{/if}
+			{#if deleteError || form?.deleteError}
+				<p role="alert" class="text-clay mt-2 text-sm">{deleteError || form?.deleteError}</p>
+			{/if}
+		</div>
+	{/if}
 </main>
 
-<MoveItemSheet
-	bind:open={moveSheetOpen}
-	days={data.days}
-	phases={data.phases}
-	currentDay={data.item.day}
-	currentPhase={data.item.phase}
-	actionUrl={itemUrl}
-/>
+{#if can.canMove}
+	<MoveItemSheet
+		bind:open={moveSheetOpen}
+		days={data.days}
+		phases={data.phases}
+		currentDay={data.item.day}
+		currentPhase={data.item.phase}
+		actionUrl={itemUrl}
+	/>
+{/if}
 
 {#if activeTask}
 	<AssignMemberSheet
