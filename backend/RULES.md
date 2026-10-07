@@ -138,6 +138,25 @@ Lands the long-documented "Target rules per SPEC §3" matrix for `items` and `ph
 - **items.create — travelers suggest, they don't create.** The `items/new` action routes every traveler through `/api/suggestions/create` (admin context, bypasses the gate): auto-approved when `trip.auto_approve_suggestions` is on (item created immediately), queued otherwise. SPEC §4 "Add/edit/delete items: traveler suggest only*" — the asterisk = auto-approvable. Owner/co_owner keep the direct-create path.
 - **owner/co_owner flows unchanged** — all existing item/phase create/edit/reorder/delete/book paths pass the hook (caller is owner/co_owner). Harness: `items` + `phases` create/update/delete cells flip to `OWNER_COOWNER_ONLY` (traveler + viewer now deny; the fixture item/phase is owner-authored, so traveler/viewer mutating it deny on the caller's role). UI affordance-hiding for travelers/viewers on day-view/phase/item surfaces is a separate follow-up; this issue is the server-side enforcement.
 
+## Going: self-assign and Not going (#226 / #402)
+
+Three-state Going (CARD_SYSTEM D6): a member is **going** (in `items.assigned_to`), **not going** (in `items.not_going`, migration 0071) or has **no answer** (in neither). Rules stay `MEMBER_VIA_TRIP`; everything is in `items.pb.js`, because "only your own id" is a diff against the stored record, which a rule can't express.
+
+| Change | Owner | Co-Owner | Traveler | Viewer |
+|---|:---:|:---:|:---:|:---:|
+| own going (`assigned_to`) | ✓ | ✓ | ✓ (#226 exception) | — |
+| someone else's going | ✓ | ✓ | — | — |
+| own not going (`not_going`) | ✓ | ✓ | ✓ | — |
+| someone else's not going (set or clear) | — | — | — | — |
+
+- **Not going is self-only for every role** (update request hook, checked *before* the owner and #219 creator bypasses): the `not_going` delta must be empty or exactly the caller's own member id. On create, `not_going` may hold only the caller's id. Viewers can't answer at all.
+- **Traveler exception (#226, extended):** a traveler may update an item they didn't create iff no locked field changed and the union of the `assigned_to` and `not_going` deltas is exactly their own id (so going ↔ not going in one write is allowed).
+- **Exclusive lists (model hooks `onRecordCreate` / `onRecordUpdate`):** they run on every save, REST and internal `e.app.save` alike. A member found in both lists after a change: newly added to `not_going` but not newly going → removed from `assigned_to`; anything else (newly going, both at once, a new record) → removed from `not_going` (going wins). So an owner assigning someone going clears that member's not going.
+- **Endpoint:** `POST /api/items/:id/assign-self { state: going | not_going | no_answer }` writes only the caller's id with relation modifiers (`assigned_to+`, `not_going-` …), through the caller's own auth, so these hooks still apply. An empty body is the legacy "+ Me" toggle (going ↔ no answer).
+- **Departure (`/api/members/remove`):** `items.not_going` is `block_multi` like `assigned_to` (keep → stays on the tombstone and blocks purge; `can-purge` probes it). Reassign moves the departed's answer to the target unless the target already answered the other way (their own answer wins); cascade clears it.
+- **Suggestion approval:** the new item gets the payload's `assigned_to` and, of its `not_going`, only the author's own id.
+- Harness: `test-rules.mjs` `#402` block (role × own/other × going/not going/no answer, exclusivity, guards, departure) and `test-suggestions.mjs` §14.
+
 ## Documents (#70)
 
 The `documents` collection (created 0032) is exercised by the harness as of #70:
