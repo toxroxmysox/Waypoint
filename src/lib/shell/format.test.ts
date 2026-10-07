@@ -111,7 +111,11 @@ describe('formatCalendarDate edge cases', () => {
 describe('time grammar (#419, D5/D11)', () => {
 	// Stored anchor times are naive trip-local wall clock: 'YYYY-MM-DD HH:MM:00.000Z'.
 	const at = (hhmm: string) => `2026-10-01 ${hhmm}:00.000Z`;
-	const range = (a: string, b: string, type = 'meal') => ({ type, start_time: at(a), end_time: at(b) });
+	const range = (a: string, b: string, type = 'meal') => ({
+		type,
+		start_time: at(a),
+		end_time: at(b)
+	});
 	const startOnly = (a: string, type = 'meal') => ({ type, start_time: at(a), end_time: '' });
 	const endOnly = (b: string, type = 'activity') => ({ type, start_time: '', end_time: at(b) });
 	const untimed = { type: 'note', start_time: '', end_time: '' };

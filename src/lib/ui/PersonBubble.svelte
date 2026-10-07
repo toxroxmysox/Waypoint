@@ -25,13 +25,24 @@
 
 	const letter = $derived((initial || name || '?').slice(0, 1).toUpperCase());
 	const label = $derived(notGoing ? `${name}, not going` : name);
+	const bubbleStyle = $derived(
+		[
+			'box-sizing:border-box',
+			`width:${size}px`,
+			`height:${size}px`,
+			`font-size:${Math.round(size * 0.55)}px`,
+			'line-height:1',
+			'border:2px solid var(--color-surface)',
+			'background:var(--color-surface-2)',
+			'box-shadow:inset 0 0 0 1px var(--color-line)',
+			`color:var(${notGoing ? '--color-ink-muted' : '--color-ink-soft'})`
+		].join(';')
+	);
 </script>
 
 <span
 	class="relative inline-flex shrink-0 items-center justify-center rounded-full font-semibold select-none"
-	style="box-sizing:border-box;width:{size}px;height:{size}px;font-size:{Math.round(size * 0.55)}px;line-height:1;border:2px solid var(--color-surface);background:var(--color-surface-2);box-shadow:inset 0 0 0 1px var(--color-line);color:{notGoing
-		? 'var(--color-ink-muted)'
-		: 'var(--color-ink-soft)'};"
+	style={bubbleStyle}
 	role="img"
 	aria-label={label}
 	title={label}
