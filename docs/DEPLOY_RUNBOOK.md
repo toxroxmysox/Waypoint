@@ -18,12 +18,20 @@ Shared infra facts (SSH, layout, Caddy, backups) are canonical in `homeserver-st
 | No git on NAS | source ships via `git archive <sha> | ssh | tar` |
 | PB admin creds | `$PB_ADMIN_EMAIL` / `$PB_ADMIN_PASSWORD` — env vars **inside** the container |
 
+## 0. Bump the version (before you pick the SHA)
+
+`package.json` `version` is the single source for the app version. It feeds the footer ("Waypoint 3.0.0" on More and Profile) and the service-worker cache namespace (`kit.version.name` in `svelte.config.js`, #447). Offline caches roll when it changes, not on every build, so a deploy that ships user-visible change needs a new version or devices keep the old cache set.
+
+Edit `version` in `package.json` (semver: major = a release like 3.0, minor = new features, patch = fixes) and commit it to `main`. The SHA you deploy must contain that commit.
+
 ## Pre-flight (on the Mac)
 
 ```bash
 cd /Users/Scott/Waypoint
 git fetch origin && git log --oneline -1 origin/main   # the SHA you intend to deploy
 SHA=$(git rev-parse origin/main)                        # or pin an explicit commit
+VERSION=$(git show "$SHA:package.json" | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version")
+git tag -l "v$VERSION"                                  # must print nothing: a tag already exists = you forgot to bump
 pnpm check && pnpm test:unit                            # main must be green before it ships
 ```
 First connection of a session may need the host key: prepend
@@ -88,7 +96,15 @@ docker logs waypoint 2>&1 | grep -iE "migrat|smtp\.pb|ratelimit\.pb|error|panic|
 curl -sS -I https://app.vandenwarsen.com/ | grep -iE 'HTTP/|content-type-options|frame-options|strict-transport|referrer-policy|permissions-policy'
 # Want 200/303 + nosniff, X-Frame DENY, HSTS, Referrer-Policy, Permissions-Policy.
 ```
-Then load `https://app.vandenwarsen.com` and **send yourself an OTP** to confirm end-to-end login.
+Then load `https://app.vandenwarsen.com` and **send yourself an OTP** to confirm end-to-end login. The Profile page footer must read `Waypoint {version}` (anything else means a stale build or a cached shell).
+
+## 4b. Tag the release (only after verify passes)
+
+```bash
+git tag -a "v$VERSION" "$SHA" -m "Waypoint $VERSION"   # the exact SHA that shipped
+git push origin "v$VERSION"
+```
+No tag for a failed or rolled-back deploy: `v{version}` marks what was live.
 
 ## 5. Rollback (if verify fails)
 

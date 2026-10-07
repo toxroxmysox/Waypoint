@@ -1,6 +1,7 @@
 <script lang="ts">
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
+	import AppVersion from '$lib/ui/AppVersion.svelte';
 	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
 	import { untrack } from 'svelte';
 	import type { Notification } from '$lib/types';
@@ -164,4 +165,6 @@
 			</svg>
 		</a>
 	</Card>
+
+	<AppVersion />
 </main>
