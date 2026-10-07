@@ -1,3 +1,5 @@
+import { timeShape, type TimeFields } from '$lib/itinerary/timeline';
+
 export function titleCase(s: string): string {
 	return s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
@@ -63,4 +65,70 @@ export function formatCalendarDate(day: string, options: Intl.DateTimeFormatOpti
 		...options,
 		timeZone: 'UTC'
 	});
+}
+
+// --- The card time grammar (#419; spec §Time grammar, CARD_SYSTEM D5/D9/D11) ---
+// The legacy `formatTime` ("6:30 PM") above stays until each surface moves to
+// this grammar in its own ticket.
+
+/**
+ * `6:30p` / `10:30a`: the colon stays, the space and the "m" go. Reads the wall
+ * clock straight from the stored string ('YYYY-MM-DD HH:MM:SS.sssZ', ISO, or a
+ * bare 'HH:MM'), never through `Date`, so no zone can shift it. '' for ''.
+ */
+export function formatClock(t: string): string {
+	if (!t) return '';
+	const timePart = t.includes('T') ? t.split('T')[1] : t.includes(' ') ? t.split(' ')[1] : t;
+	const [h, m] = timePart.split(':');
+	const hour = parseInt(h, 10);
+	return `${hour % 12 || 12}:${m.slice(0, 2)}${hour >= 12 ? 'p' : 'a'}`;
+}
+
+/**
+ * A calendar day as `Thu Oct 1` (no comma) from 'YYYY-MM-DD' or a stored
+ * 'YYYY-MM-DD 00:00:00.000Z'. Formats in UTC, because a calendar-day date is
+ * not an instant (#393). '' for ''.
+ */
+export function formatDayDate(date: string): string {
+	if (!date) return '';
+	const d = new Date(`${date.split(/[T ]/)[0]}T00:00:00Z`);
+	const part = (opts: Intl.DateTimeFormatOptions) =>
+		d.toLocaleDateString('en-US', { ...opts, timeZone: 'UTC' });
+	return `${part({ weekday: 'short' })} ${part({ month: 'short' })} ${part({ day: 'numeric' })}`;
+}
+
+/**
+ * The text form of an item's time, for shapes without a rail (Row, Hero, Span):
+ * start-only `9:30p`, range `10:00a–12:00p`, deadline `by 4:30p`, untimed ''.
+ * A flight's range reads `2:05p → 4:20p`. In text an end never appears without
+ * `by`. With `opts.date` (a calendar day), the date leads: `Thu Oct 1 · 6:30p`,
+ * or the date alone when untimed.
+ */
+export function formatTimeText(
+	item: TimeFields & { type?: string },
+	opts: { date?: string } = {}
+): string {
+	const start = formatClock(item.start_time ?? '');
+	const end = formatClock(item.end_time ?? '');
+	const time = {
+		untimed: '',
+		'start-only': start,
+		range: item.type === 'flight' ? `${start} → ${end}` : `${start}–${end}`,
+		'end-only': `by ${end}`
+	}[timeShape(item)];
+	const date = formatDayDate(opts.date ?? '');
+	return [date, time].filter(Boolean).join(' · ');
+}
+
+/**
+ * The Timeline Rail's labels: the start on the card's top edge, the end on its
+ * bottom edge. A deadline is a plain bottom label, with no `by` on the rail (D9).
+ * '' where the shape has no time for that edge.
+ */
+export function railTimeLabels(item: TimeFields): { top: string; bottom: string } {
+	const shape = timeShape(item);
+	return {
+		top: shape === 'range' || shape === 'start-only' ? formatClock(item.start_time ?? '') : '',
+		bottom: shape === 'range' || shape === 'end-only' ? formatClock(item.end_time ?? '') : ''
+	};
 }
