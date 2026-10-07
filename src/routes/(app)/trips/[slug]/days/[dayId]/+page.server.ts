@@ -66,7 +66,22 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const votesByItem: Record<string, Vote[]> = {};
 	for (const v of votes) (votesByItem[v.item] ??= []).push(v);
 
-	return { day, dayItems: items, dayPhases, votesByItem, members: withAvatarUrls(locals.pb, members), parkingLotItems, spanningItems, allDays: days };
+	// #420 — the strip's documents count: attached FILES per day item (codes are
+	// Documents too, ADR-0016, but they get their own chip in Trip Mode).
+	const dayItemIds = new Set(items.map((i) => i.id));
+	const docCountByItem: Record<string, number> = {};
+	if (dayItemIds.size > 0) {
+		const docs = await locals.pb
+			.collection('documents')
+			.getFullList<{ item: string }>({
+				filter: `trip = "${trip.id}" && item != "" && kind != "code"`,
+				fields: 'id,item'
+			})
+			.catch(() => []);
+		for (const d of docs) if (dayItemIds.has(d.item)) docCountByItem[d.item] = (docCountByItem[d.item] ?? 0) + 1;
+	}
+
+	return { day, dayItems: items, dayPhases, votesByItem, docCountByItem, members: withAvatarUrls(locals.pb, members), parkingLotItems, spanningItems, allDays: days };
 };
 
 export const actions: Actions = {

@@ -179,7 +179,7 @@
 					items={timelineItems}
 					tripSlug={data.trip.slug}
 					dayId={data.day.id}
-					votesByItem={data.votesByItem}
+					docCountByItem={data.docCountByItem}
 					members={data.members}
 					onConsider={onTimelineConsider}
 					onFinalize={onTimelineFinalize}
