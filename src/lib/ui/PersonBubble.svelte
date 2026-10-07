@@ -37,14 +37,16 @@
 	} = $props();
 
 	const who = $derived(name.trim());
+	const ring = $derived(departed || placeholder);
+	// Only a joined member can answer Going, so the ring variants ignore notGoing.
+	const struck = $derived(notGoing && !ring);
 	const letter = $derived((initial || who || '?').slice(0, 1).toUpperCase());
 	const label = $derived.by(() => {
 		if (departed) return who ? `${who} (removed)` : 'Removed member';
 		const base = who || (placeholder ? 'Not joined yet' : 'Member');
 		const joined = placeholder && who ? `${base}, not joined yet` : base;
-		return notGoing ? `${joined}, not going` : joined;
+		return struck ? `${joined}, not going` : joined;
 	});
-	const ring = $derived(departed || placeholder);
 	const showImg = $derived(!!img && !ring);
 	const bubbleStyle = $derived(
 		[
@@ -56,7 +58,7 @@
 			ring
 				? 'border:1.5px dashed var(--color-ink-muted);background:var(--color-surface)'
 				: 'border:2px solid var(--color-surface);background:var(--color-surface-2);box-shadow:inset 0 0 0 1px var(--color-line)',
-			`color:var(${notGoing || ring ? '--color-ink-muted' : '--color-ink-soft'})`
+			`color:var(${struck || ring ? '--color-ink-muted' : '--color-ink-soft'})`
 		].join(';')
 	);
 </script>
@@ -95,7 +97,7 @@
 	{:else if !placeholder}
 		{letter}
 	{/if}
-	{#if notGoing && !departed}
+	{#if struck}
 		<span
 			class="pointer-events-none absolute"
 			style="left:1px;right:1px;top:50%;height:1.5px;margin-top:-0.75px;background:var(--color-ink-soft);transform:rotate(-45deg);"
