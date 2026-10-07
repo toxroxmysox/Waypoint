@@ -86,14 +86,13 @@ export function formatClock(t: string): string {
 
 /**
  * A calendar day as `Thu Oct 1` (no comma) from 'YYYY-MM-DD' or a stored
- * 'YYYY-MM-DD 00:00:00.000Z'. Formats in UTC, because a calendar-day date is
- * not an instant (#393). '' for ''.
+ * 'YYYY-MM-DD 00:00:00.000Z'. Goes through `formatCalendarDate`, so it formats in
+ * UTC: a calendar-day date is not an instant (#393). Built from parts because
+ * Intl's en-US weekday form adds a comma. '' for ''.
  */
 export function formatDayDate(date: string): string {
 	if (!date) return '';
-	const d = new Date(`${date.split(/[T ]/)[0]}T00:00:00Z`);
-	const part = (opts: Intl.DateTimeFormatOptions) =>
-		d.toLocaleDateString('en-US', { ...opts, timeZone: 'UTC' });
+	const part = (opts: Intl.DateTimeFormatOptions) => formatCalendarDate(date, opts);
 	return `${part({ weekday: 'short' })} ${part({ month: 'short' })} ${part({ day: 'numeric' })}`;
 }
 

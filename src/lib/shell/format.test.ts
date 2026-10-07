@@ -99,6 +99,16 @@ describe.each(['America/Detroit', 'Pacific/Honolulu', 'Pacific/Auckland'])(
 				})
 			).toBe('September 22, 2026');
 		});
+
+		it('keeps the card date prefix on the stored day (#419)', () => {
+			expect(formatDayDate('2026-10-01 00:00:00.000Z')).toBe('Thu Oct 1');
+			expect(
+				formatTimeText(
+					{ start_time: '2026-10-01 18:30:00.000Z', end_time: '' },
+					{ date: '2026-10-01 00:00:00.000Z' }
+				)
+			).toBe('Thu Oct 1 · 6:30p');
+		});
 	}
 );
 
