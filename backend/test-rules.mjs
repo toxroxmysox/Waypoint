@@ -1202,6 +1202,172 @@ function printCreatorEditReport() {
 	}
 }
 
+// ═══ #402 — Not going (three-state Going) ══════════════════════════════════
+// items.not_going (migration 0071) sits beside assigned_to. items.pb.js:
+//   - Not going is SELF-ONLY for every role (owners included); viewers can't
+//     answer (request hooks);
+//   - a member is in at most one of the two lists — setting one clears the other
+//     (model hooks, so internal saves are covered too); going wins a tie.
+// Every case mints its own owner-authored item on one fixture, then seeds
+// answers with each member's OWN token. `other` = whose answer a role tries to
+// change. Writes use PB's relation modifiers ('field+' / 'field-'), the same
+// shape the self-assign endpoint sends.
+const NOT_GOING_OPS = [
+	'ng_self',
+	'ng_other',
+	'going_self',
+	'going_other',
+	'no_answer_self',
+	'no_answer_other',
+	'exclusive_going_to_ng',
+	'exclusive_ng_to_going',
+	'exclusive_swap_one_patch',
+	'exclusive_both_at_once',
+	'exclusive_owner_assigns_ng_member',
+	'ng_with_other_field',
+	'creator_ng_other',
+	'create_ng_other',
+	'create_ng_self'
+];
+
+async function ngFreshItem(tokens, fixture, extra = {}) {
+	const made = await pbRequest('POST', '/api/collections/items/records', {
+		token: tokens.owner,
+		body: { trip: fixture.tripId, type: 'activity', title: 'Not going harness item (#402)', ...extra }
+	});
+	return made.data?.id;
+}
+
+function ngPatch(token, itemId, body) {
+	return pbRequest('PATCH', `/api/collections/items/records/${itemId}`, { token, body });
+}
+
+async function ngRead(tokens, itemId) {
+	const r = await pbRequest('GET', `/api/collections/items/records/${itemId}`, { token: tokens.owner });
+	return { going: r.data?.assigned_to || [], notGoing: r.data?.not_going || [], status: r.status };
+}
+
+// 'yes' iff the write succeeded AND the stored lists say `member` is in exactly `state`.
+async function ngStateCell(tokens, itemId, write, member, state) {
+	const s = await ngRead(tokens, itemId);
+	const inGoing = s.going.includes(member);
+	const inNot = s.notGoing.includes(member);
+	const ok =
+		write.status >= 200 &&
+		write.status < 300 &&
+		(state === 'going' ? inGoing && !inNot : state === 'not_going' ? inNot && !inGoing : !inGoing && !inNot);
+	return ok ? 'yes' : `no(going=${JSON.stringify(s.going)} not_going=${JSON.stringify(s.notGoing)})`;
+}
+
+async function runNotGoingNovelCases(tokens) {
+	const fixture = await setupFixture();
+	const m = fixture.memberIds;
+	const OTHER = { owner: 'traveler', co_owner: 'traveler', traveler: 'co_owner', viewer: 'traveler' };
+	const ANSWERS = new Set(['owner', 'co_owner', 'traveler']); // viewers can't answer
+	const MAY_SET_OTHERS_GOING = new Set(['owner', 'co_owner']);
+
+	// --- Role matrix: own answer vs someone else's, for all three states.
+	for (const role of ['owner', 'co_owner', 'traveler', 'viewer']) {
+		const own = m[role];
+		const otherRole = OTHER[role];
+		const other = m[otherRole];
+		let id;
+		let r;
+
+		id = await ngFreshItem(tokens, fixture);
+		r = await ngPatch(tokens[role], id, { 'not_going+': own });
+		recordResult('items', 'ng_self', role, ANSWERS.has(role) ? 'allow' : 'deny', classifyWrite(r.status), r.status);
+
+		id = await ngFreshItem(tokens, fixture);
+		r = await ngPatch(tokens[role], id, { 'not_going+': other });
+		recordResult('items', 'ng_other', role, 'deny', classifyWrite(r.status), r.status);
+
+		id = await ngFreshItem(tokens, fixture);
+		r = await ngPatch(tokens[role], id, { 'assigned_to+': own });
+		recordResult('items', 'going_self', role, ANSWERS.has(role) ? 'allow' : 'deny', classifyWrite(r.status), r.status);
+
+		id = await ngFreshItem(tokens, fixture);
+		r = await ngPatch(tokens[role], id, { 'assigned_to+': other });
+		recordResult('items', 'going_other', role, MAY_SET_OTHERS_GOING.has(role) ? 'allow' : 'deny', classifyWrite(r.status), r.status);
+
+		// No answer = clear your own not going (seeded by you; a viewer has none).
+		id = await ngFreshItem(tokens, fixture);
+		if (ANSWERS.has(role)) await ngPatch(tokens[role], id, { 'not_going+': own });
+		r = await ngPatch(tokens[role], id, { 'not_going-': own });
+		recordResult('items', 'no_answer_self', role, ANSWERS.has(role) ? 'allow' : 'deny', classifyWrite(r.status), r.status);
+
+		// Clearing SOMEONE ELSE's not going is never allowed (self-only, owners too).
+		id = await ngFreshItem(tokens, fixture);
+		await ngPatch(tokens[otherRole], id, { 'not_going+': other });
+		r = await ngPatch(tokens[role], id, { 'not_going-': other });
+		recordResult('items', 'no_answer_other', role, 'deny', classifyWrite(r.status), r.status);
+	}
+
+	// Non-member: not on the trip at all.
+	let id = await ngFreshItem(tokens, fixture);
+	let r = await ngPatch(tokens.non_member, id, { 'not_going+': m.traveler });
+	recordResult('items', 'ng_self', 'non_member', 'deny', classifyWrite(r.status), r.status);
+
+	// --- Exclusivity: setting one clears the other.
+	const t = m.traveler;
+
+	id = await ngFreshItem(tokens, fixture);
+	await ngPatch(tokens.traveler, id, { 'assigned_to+': t });
+	r = await ngPatch(tokens.traveler, id, { 'not_going+': t }); // going → not going, assigned_to untouched
+	recordResult('items', 'exclusive_going_to_ng', 'traveler', 'yes', await ngStateCell(tokens, id, r, t, 'not_going'), r.status);
+
+	id = await ngFreshItem(tokens, fixture);
+	await ngPatch(tokens.traveler, id, { 'not_going+': t });
+	r = await ngPatch(tokens.traveler, id, { 'assigned_to+': t }); // not going → going, not_going untouched
+	recordResult('items', 'exclusive_ng_to_going', 'traveler', 'yes', await ngStateCell(tokens, id, r, t, 'going'), r.status);
+
+	id = await ngFreshItem(tokens, fixture);
+	await ngPatch(tokens.traveler, id, { 'assigned_to+': t });
+	r = await ngPatch(tokens.traveler, id, { assigned_to: [], not_going: [t] }); // both lists, one PATCH
+	recordResult('items', 'exclusive_swap_one_patch', 'traveler', 'yes', await ngStateCell(tokens, id, r, t, 'not_going'), r.status);
+
+	id = await ngFreshItem(tokens, fixture);
+	r = await ngPatch(tokens.traveler, id, { assigned_to: [t], not_going: [t] }); // contradictory → going wins
+	recordResult('items', 'exclusive_both_at_once', 'traveler', 'yes', await ngStateCell(tokens, id, r, t, 'going'), r.status);
+
+	id = await ngFreshItem(tokens, fixture);
+	await ngPatch(tokens.traveler, id, { 'not_going+': t });
+	r = await ngPatch(tokens.owner, id, { 'assigned_to+': t }); // owner's deliberate assignment clears it
+	recordResult('items', 'exclusive_owner_assigns_ng_member', 'owner', 'yes', await ngStateCell(tokens, id, r, t, 'going'), r.status);
+
+	// --- Guards.
+	id = await ngFreshItem(tokens, fixture);
+	r = await ngPatch(tokens.traveler, id, { 'not_going+': t, title: 'Sneaky edit (#402)' });
+	recordResult('items', 'ng_with_other_field', 'traveler', 'deny', classifyWrite(r.status), r.status);
+
+	// The #219 creator exception (full edit of your own item) does not extend to
+	// someone else's not going.
+	id = await ngFreshItem(tokens, fixture, { created_by: t });
+	r = await ngPatch(tokens.traveler, id, { 'not_going+': m.co_owner });
+	recordResult('items', 'creator_ng_other', 'traveler', 'deny', classifyWrite(r.status), r.status);
+
+	r = await pbRequest('POST', '/api/collections/items/records', {
+		token: tokens.owner,
+		body: { trip: fixture.tripId, type: 'activity', title: 'Create with other not going (#402)', not_going: [t] }
+	});
+	recordResult('items', 'create_ng_other', 'owner', 'deny', classifyWrite(r.status), r.status);
+
+	r = await pbRequest('POST', '/api/collections/items/records', {
+		token: tokens.owner,
+		body: { trip: fixture.tripId, type: 'activity', title: 'Create with own not going (#402)', not_going: [m.owner] }
+	});
+	recordResult('items', 'create_ng_self', 'owner', 'allow', classifyWrite(r.status), r.status);
+}
+
+function printNotGoingReport() {
+	console.log('\n[#402 not going — self-only for every role, viewers can\'t answer, going/not going exclusive]');
+	for (const r of results.filter((x) => NOT_GOING_OPS.includes(x.op))) {
+		const mark = r.passed ? 'PASS' : 'FAIL';
+		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+	}
+}
+// ═══ end #402 ═══════════════════════════════════════════════════════════════
+
 // #103 / ADR-0006 — co-traveler cross-read of the `users` row. The fixed
 // (collection, op, role) matrix proves co_owner/traveler/viewer can *view* the
 // owner's row and non_member can't, but it only inspects HTTP status. These
@@ -1489,6 +1655,8 @@ const CANONICAL_MEMBER_RELATIONS = new Set([
 	'items.paid_by',
 	'items.booked_by',
 	'items.assigned_to',
+	// #402 (migration 0071) — not going, the twin of assigned_to (block_multi).
+	'items.not_going',
 	'tasks.assignee',
 	'checklist_items.checked_by',
 	'notifications.recipient',
@@ -2671,6 +2839,9 @@ async function main() {
 	console.log('#219 cases: creator-edit exception (member edits their own item; cannot delete it)');
 	await runCreatorEditNovelCases(tokens);
 
+	console.log('#402 cases: not going (self-only, viewers can\'t answer, going/not going exclusive)');
+	await runNotGoingNovelCases(tokens);
+
 	console.log('#217 cases: last-phase delete block (deny removing the only phase)');
 	await runLastPhaseDeleteCases(tokens);
 
@@ -2696,6 +2867,7 @@ async function main() {
 	printJoinLinkReport();
 	printSelfAssignReport();
 	printCreatorEditReport();
+	printNotGoingReport(); // #402
 	printLastPhaseDeleteReport();
 	printMemoriesReport();
 	printScenarioChampionReport();
