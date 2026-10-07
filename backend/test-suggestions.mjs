@@ -332,6 +332,65 @@ console.log('\n13. Edit-and-approve (modified payload)');
 	}
 }
 
+// ─── 14. #402 — approval carries the AUTHOR's own not going, nobody else's ──────
+// Suggestion approval treats not_going the way it treats assigned_to (copied onto
+// the new item), but not going is self-only: only the author's own id survives.
+// Going and not going stay exclusive on the new item (going wins a tie).
+
+console.log('\n14. #402 not going on approval (author-only, exclusive)');
+{
+	const sameIds = (a, b) => Array.isArray(a) && a.length === b.length && a.every((x) => b.includes(x));
+	const readItem = async (id) => (await api('GET', `/api/collections/items/records/${id}`, null, tokens.owner)).json || {};
+
+	// (a) Owner create → auto-approved: owner's own not going kept, traveler's dropped.
+	const a = await api('POST', '/api/suggestions/create', {
+		trip_id: tripId,
+		payload: { ...samplePayload, title: 'Owner not going (#402)', assigned_to: [memberIds.co_owner], not_going: [memberIds.owner, memberIds.traveler] }
+	}, tokens.owner);
+	if (a.json?.item_id) {
+		const it = await readItem(a.json.item_id);
+		sameIds(it.not_going, [memberIds.owner]) && sameIds(it.assigned_to, [memberIds.co_owner])
+			? pass('auto-approve → only the author\'s not going is kept; assigned_to copied')
+			: fail('auto-approve → author-only not going', `assigned_to=${JSON.stringify(it.assigned_to)} not_going=${JSON.stringify(it.not_going)}`);
+	} else {
+		fail('auto-approve → author-only not going', `create: ${a.status} ${JSON.stringify(a.json)}`);
+	}
+
+	// (b) Traveler's pending suggestion → owner approves: the AUTHOR's not going is kept.
+	const b = await api('POST', '/api/suggestions/create', {
+		trip_id: tripId,
+		payload: { ...samplePayload, title: 'Traveler not going (#402)', not_going: [memberIds.traveler, memberIds.co_owner] }
+	}, tokens.traveler);
+	const bApproved = b.json?.suggestion_id
+		? await api('POST', '/api/suggestions/review', { suggestion_id: b.json.suggestion_id, action: 'approve' }, tokens.owner)
+		: null;
+	if (bApproved?.json?.item_id) {
+		const it = await readItem(bApproved.json.item_id);
+		sameIds(it.not_going, [memberIds.traveler])
+			? pass('approve → the author\'s (traveler) not going is kept, the co_owner\'s dropped')
+			: fail('approve → author-only not going', `not_going=${JSON.stringify(it.not_going)}`);
+	} else {
+		fail('approve → author-only not going', `create ${b.status} / approve ${bApproved?.status} ${JSON.stringify(bApproved?.json)}`);
+	}
+
+	// (c) Contradictory payload (author in both lists) → going wins on the item.
+	const c = await api('POST', '/api/suggestions/create', {
+		trip_id: tripId,
+		payload: { ...samplePayload, title: 'Both lists (#402)', assigned_to: [memberIds.traveler], not_going: [memberIds.traveler] }
+	}, tokens.traveler);
+	const cApproved = c.json?.suggestion_id
+		? await api('POST', '/api/suggestions/review', { suggestion_id: c.json.suggestion_id, action: 'approve' }, tokens.owner)
+		: null;
+	if (cApproved?.json?.item_id) {
+		const it = await readItem(cApproved.json.item_id);
+		sameIds(it.assigned_to, [memberIds.traveler]) && sameIds(it.not_going, [])
+			? pass('approve → author in both lists ends up going only (exclusive)')
+			: fail('approve → exclusive lists', `assigned_to=${JSON.stringify(it.assigned_to)} not_going=${JSON.stringify(it.not_going)}`);
+	} else {
+		fail('approve → exclusive lists', `create ${c.status} / approve ${cApproved?.status} ${JSON.stringify(cApproved?.json)}`);
+	}
+}
+
 // ─── summary ─────────────────────────────────────────────────────────────────
 
 console.log(`\n${'─'.repeat(50)}`);
