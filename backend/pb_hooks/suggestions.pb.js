@@ -113,6 +113,16 @@ routerAdd('POST', '/api/suggestions/create', (e) => {
 		item.set('cost_estimate_usd', Number(payload.cost_estimate_usd) || 0);
 		item.set('cost_actual_usd', Number(payload.cost_actual_usd) || 0);
 		item.set('assigned_to', Array.isArray(payload.assigned_to) ? payload.assigned_to : []);
+		// #402 — not going is carried like assigned_to, but it is self-only: keep
+		// only the author's (the caller's) own answer. items.pb.js keeps the two
+		// lists exclusive on save.
+		let authorNotGoing = false;
+		if (Array.isArray(payload.not_going)) {
+			for (let i = 0; i < payload.not_going.length; i++) {
+				if ('' + payload.not_going[i] === '' + callerMember.id) authorNotGoing = true;
+			}
+		}
+		item.set('not_going', authorNotGoing ? [callerMember.id] : []);
 		// #268 / ADR-0016 — codes persist as `kind: 'code'` Documents, not on the
 		// item. Leave the legacy json field inert; create code docs below.
 		item.set('sort_order', 0);
@@ -377,6 +387,16 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 		item.set('cost_estimate_usd', Number(payload.cost_estimate_usd) || 0);
 		item.set('cost_actual_usd', Number(payload.cost_actual_usd) || 0);
 		item.set('assigned_to', Array.isArray(payload.assigned_to) ? payload.assigned_to : []);
+		// #402 — not going is carried like assigned_to, but it is self-only: keep
+		// only the suggestion AUTHOR's own answer (never the reviewer's edit of
+		// someone else's). items.pb.js keeps the two lists exclusive on save.
+		let authorNotGoing = false;
+		if (authorMemberId && Array.isArray(payload.not_going)) {
+			for (let i = 0; i < payload.not_going.length; i++) {
+				if ('' + payload.not_going[i] === '' + authorMemberId) authorNotGoing = true;
+			}
+		}
+		item.set('not_going', authorNotGoing ? [authorMemberId] : []);
 		// #268 / ADR-0016 — codes persist as `kind: 'code'` Documents, not on the
 		// item. Leave the legacy json field inert; create code docs below.
 		item.set('sort_order', 0);
