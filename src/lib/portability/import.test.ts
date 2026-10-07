@@ -73,7 +73,14 @@ describe('generateImportSlug', () => {
 });
 
 describe('planImportPhases', () => {
-	const p = (name: string, start_date: string, order = 0) => ({ name, start_date, order });
+	const p = (name: string, start_date: string, order = 0) => ({
+		name,
+		location: '',
+		country_code: '',
+		start_date,
+		end_date: '',
+		order
+	});
 	const TS = '2026-06-01';
 	const TE = '2026-06-10';
 
