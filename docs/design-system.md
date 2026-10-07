@@ -78,7 +78,7 @@ Text color: ink (`#1C1B18`). Star color: ink. Both on transparent background.
 | `clay` | `#a5593a` | **Trip Mode** accent. Nav highlights, destructive-adjacent actions (delete confirmation). |
 | `clay-tint` | `#f0e0d6` | Clay background tint. |
 | `gold` | `#c89b3c` | Unplanned items, suggestion cards (dashed gold border). |
-| `gold-deep` | `#8a6f24` | High-contrast gold for text on light backgrounds. |
+| `gold-deep` | `#745a1c` | High-contrast gold for text on light backgrounds: the open-loop chips (`Needs booking`, `Pending`). 5.81:1 on `gold-tint`, 6.52:1 on white. Retuned from `#8a6f24` (4.27:1, below AA) by card system D10 (#419). |
 | `gold-tint` | `#fbf1dc` | Gold background tint. |
 | `sky` | `#3b6ba5` | Multi-day / ongoing indicator. |
 | `sky-tint` | `#e6eef8` | Sky background tint. |
@@ -172,7 +172,10 @@ Main content: `max-w-lg` (mobile), `md-desktop:max-w-2xl` (desktop).
 | `Pill` | Small label/tag (status badges, categories). |
 | `PhaseChip` | Circular phase initial with moss background. Sizes: 16, 18, 20px. |
 | `Avatar` | User avatar circle with initials fallback. |
-| `TypeIcon` | Item type icon (lodging, flight, activity, etc.). |
+| `PersonBubble` | Card system (#419): a neutral initials bubble for Going. `notGoing` strikes it through (no opacity; accessible name "Kevin, not going"). Replaces the coloured avatar fallback on item cards. |
+| `TypeIcon` | Legacy **coloured** item type icon (a tinted circle per type). Item surfaces move to `MonoTypeIcon` as the card system ships. |
+| `MonoTypeIcon` | Card system (#419): the monochrome type icon, three sizes only. `16` bare glyph (Row, group heading); `24` disc with a 16px glyph (rail node, Span); `40` disc with a 26px glyph (Hero). Variants `plain`, `dashed` (untimed), `filled` (the Hero while ongoing, mode accent). |
+| `TypeGlyph` | The bare type glyph in `currentColor`; the one source of glyph paths for both type icons. |
 | `BottomSheet` | Mobile modal sliding up from bottom. |
 | `FAB` | Floating action button with safe-area positioning. |
 | `Toast` | Transient notification bar. |
