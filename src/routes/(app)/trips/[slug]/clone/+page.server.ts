@@ -211,6 +211,7 @@ export const actions: Actions = {
 						cost_estimate_usd: item.cost_estimate_usd,
 						cost_actual_usd: 0,
 						assigned_to: [],
+						not_going: [], // #402 — answers are per-trip, like assigned_to
 						sort_order: item.sort_order,
 						parent_item: '',
 						created_by: membership.id

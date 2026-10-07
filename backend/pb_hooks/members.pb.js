@@ -617,6 +617,8 @@ routerAdd('POST', '/api/members/remove', (e) => {
 		['items', 'paid_by', 'block'],
 		['items', 'booked_by', 'block'],
 		['items', 'assigned_to', 'block_multi'],
+		// #402 (migration 0071) — not going, the twin of assigned_to.
+		['items', 'not_going', 'block_multi'],
 		['tasks', 'assignee', 'block'],
 		// memories (#269, migration 0058) — required + no cascade (block). A
 		// departed member's memories survive on the tombstone; they are NEVER
