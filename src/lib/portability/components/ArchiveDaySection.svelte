@@ -1,6 +1,6 @@
 <script lang="ts">
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
-	import { formatTime } from '$lib/shell/format';
+	import { formatCalendarDate, formatTime } from '$lib/shell/format';
 	import type { Day, Phase, ItemType } from '$lib/types';
 
 	type SanitizedItem = {
@@ -32,11 +32,7 @@
 	const phaseMap = $derived(new Map(phases.map((p) => [p.id, p])));
 
 	const dayDate = $derived(
-		new Date(day.date.replace(' ', 'T')).toLocaleDateString('en-US', {
-			weekday: 'long',
-			month: 'long',
-			day: 'numeric'
-		})
+		formatCalendarDate(day.date, { weekday: 'long', month: 'long', day: 'numeric' })
 	);
 
 	const dayPhase = $derived.by(() => {

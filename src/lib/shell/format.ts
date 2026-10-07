@@ -49,3 +49,18 @@ export function formatDateRange(start: string, end: string): string {
 		});
 	return `${fmt(start)} → ${fmt(end)}`;
 }
+
+/**
+ * Format a stored calendar day for display. Accepts 'YYYY-MM-DD' or the stored
+ * day shape ('YYYY-MM-DD 00:00:00.000Z' / ISO). Calendar days are UTC midnight, so
+ * they MUST be formatted in UTC — in the viewer's local zone a viewer west of UTC
+ * sees every day one day early (#393). Not for timestamps (created, decided_at):
+ * those are real instants and format in local time.
+ */
+export function formatCalendarDate(day: string, options: Intl.DateTimeFormatOptions): string {
+	if (!day) return '';
+	return new Date(`${day.split(/[T ]/)[0]}T00:00:00Z`).toLocaleDateString('en-US', {
+		...options,
+		timeZone: 'UTC'
+	});
+}
