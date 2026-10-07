@@ -367,6 +367,14 @@ async function main() {
 		});
 	}
 
+	// ---------- #449: a picked co-traveler's address never comes back ----------
+	// Repro from the issue: A invites C by PICKING them (/create-for-user), so A
+	// never typed C's address. C then leaves every trip they shared with A, which
+	// drops C out of A's co-traveler pool. GET /api/invites/pending used to fall
+	// through to "caller is the inviter → full address" and hand A C's email.
+	console.log('\n[#449: picker invite → pending list never returns the address]');
+	await runPickerPrivacyCases(tokens);
+
 	// ---------- Report ----------
 	console.log('\n' + (fail === 0 ? 'PASS' : 'FAIL') + `: ${pass}/${pass + fail} assertions`);
 	if (fail > 0) {
@@ -376,6 +384,161 @@ async function main() {
 		}
 	}
 	exit(fail === 0 ? 0 : 1);
+}
+
+// #449 — A = owner, B = co_owner (a bystander member of the target trip),
+// C = non_member (the invitee A picks). Own trips with their own slugs, so the
+// rules-fixture resets above can't disturb them.
+async function runPickerPrivacyCases(tokens) {
+	const must = (label, r) => {
+		if (r.status !== 200) {
+			console.error(`#449 setup failed: ${label}: HTTP ${r.status}`, r.data);
+			exit(2);
+		}
+		return r.data;
+	};
+	const admin = must(
+		'superuser auth',
+		await pb('POST', '/api/collections/_superusers/auth-with-password', {
+			body: { identity: 'admin@e2e.test', password: 'e2eAdminPass123' }
+		})
+	).token;
+	const userId = async (email) =>
+		must('auth-bypass ' + email, await pb('POST', '/api/dev/auth-bypass', { body: { email } }))
+			.record.id;
+	const A = await userId(EMAILS.owner);
+	const B = await userId(EMAILS.co_owner);
+	const C = await userId(EMAILS.non_member);
+	must(
+		'name C',
+		await pb('PATCH', `/api/collections/users/records/${C}`, {
+			token: admin,
+			body: { name: 'Casey Picked' }
+		})
+	);
+
+	const stamp = Date.now();
+	const trip = async (title) =>
+		must(
+			'trip ' + title,
+			await pb('POST', '/api/collections/trips/records', {
+				token: tokens.owner,
+				body: { title, slug: `i449-${title}-${stamp}`, created_by: A, timezone: 'UTC' }
+			})
+		);
+	const shared = await trip('shared'); // A + C: what makes C pickable
+	const target = await trip('target'); // A + B: where A picks C
+	const addMember = async (tripId, user, role) =>
+		must(
+			'member ' + user,
+			await pb('POST', '/api/collections/trip_members/records', {
+				token: admin,
+				body: { trip: tripId, user, role }
+			})
+		);
+	const cOnShared = await addMember(shared.id, C, 'traveler');
+	await addMember(target.id, B, 'co_owner');
+
+	const picked = await pb('POST', '/api/invites/create-for-user', {
+		token: tokens.owner,
+		body: { trip_id: target.id, user_id: C, role: 'traveler' }
+	});
+	assert('A picks C onto the target trip', picked.status === 200, picked);
+	const typedAddr = `i449-typed-${stamp}@e2e.test`;
+	const typed = await pb('POST', '/api/invites/create', {
+		token: tokens.owner,
+		body: { trip_id: target.id, email: typedAddr, role: 'viewer' }
+	});
+	assert('A types an address onto the target trip', typed.status === 200, typed);
+
+	// A pre-#449 row: no record of how it was created. Superuser insert, the way
+	// every invite written before migration 0072 looks.
+	const legacyAddr = `i449-legacy-${stamp}@e2e.test`;
+	const aOnTarget = must(
+		'A member row',
+		await pb(
+			'GET',
+			`/api/collections/trip_members/records?filter=${encodeURIComponent(`trip = "${target.id}" && user = "${A}"`)}`,
+			{ token: admin }
+		)
+	).items[0];
+	const legacy = must(
+		'legacy invite',
+		await pb('POST', '/api/collections/pending_invites/records', {
+			token: admin,
+			body: {
+				trip: target.id,
+				email: legacyAddr,
+				role: 'viewer',
+				invited_by: aOnTarget.id,
+				code: `i449legacy${stamp}abcdefgh`,
+				expires_at: '2099-01-01 00:00:00.000Z'
+			}
+		})
+	);
+
+	const pending = async (token) =>
+		pb('GET', `/api/invites/pending?trip_id=${target.id}`, { token });
+	const labelOf = (r, id) => (r.data?.invites || []).find((i) => i.id === id)?.label;
+
+	let r = await pending(tokens.owner);
+	assert(
+		'while C is still a co-traveler, A sees their name',
+		labelOf(r, picked.data?.id) === 'Casey Picked',
+		r.data
+	);
+
+	// C leaves the only trip they shared with A.
+	const left = await pb('POST', '/api/members/remove', {
+		token: await authBypass(EMAILS.non_member),
+		body: { member_id: cOnShared.id }
+	});
+	assert('C leaves the shared trip', left.status === 200, left);
+
+	r = await pending(tokens.owner);
+	assert('A: pending → 200', r.status === 200, r);
+	assert(
+		"A's pending list never carries C's address (the #449 leak)",
+		!JSON.stringify(r.data).includes(EMAILS.non_member),
+		r.data
+	);
+	assert(
+		'A: the picked invite keeps the name captured when A picked C',
+		labelOf(r, picked.data?.id) === 'Casey Picked',
+		labelOf(r, picked.data?.id)
+	);
+	assert(
+		'A: an address A typed still shows in full',
+		labelOf(r, typed.data?.id) === typedAddr,
+		labelOf(r, typed.data?.id)
+	);
+	assert(
+		'A: a pre-0072 invite (origin unknown) never shows the full address',
+		labelOf(r, legacy.id) !== legacyAddr && labelOf(r, legacy.id) === 'i•••@e2e.test',
+		labelOf(r, legacy.id)
+	);
+	assert(
+		'A: no row carries email, code or origin',
+		(r.data?.invites || []).every((i) => !('email' in i) && !('code' in i) && !('origin' in i)),
+		r.data
+	);
+
+	r = await pending(tokens.co_owner);
+	assert(
+		"B (not the inviter): never C's address",
+		r.status === 200 && !JSON.stringify(r.data).includes(EMAILS.non_member),
+		r.data
+	);
+	assert(
+		"B: A's picked invite is masked",
+		labelOf(r, picked.data?.id) === 'r•••@e2e.test',
+		labelOf(r, picked.data?.id)
+	);
+	assert(
+		"B: A's typed address is masked",
+		labelOf(r, typed.data?.id) === 'i•••@e2e.test',
+		labelOf(r, typed.data?.id)
+	);
 }
 
 main().catch((err) => {
