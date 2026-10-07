@@ -10,6 +10,7 @@
 	import { isTripActive } from '$lib/trip-mode/activation';
 	import type { TripViewMode } from '$lib/trip-mode/activation';
 	import { getNavConfig, resolveChromeMode } from '$lib/shell/nav-tabs';
+	import { provideChromeMode } from '$lib/shell/chrome-mode';
 	import { tripToday, tripTz } from '$lib/shell/trip-time';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
@@ -46,6 +47,8 @@
 	// planning surface — including the bare Overview — always renders planning
 	// chrome even on an active trip, so the mode pill can't lie (#197 B-011).
 	const mode: TripViewMode = $derived(resolveChromeMode(page.url.pathname, active, userOverride));
+	// #416 — pages read the mode the user sees (Skip lands by mode).
+	provideChromeMode(() => mode);
 
 	$effect(() => {
 		if (!active) userOverride = null;

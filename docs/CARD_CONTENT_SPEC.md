@@ -100,6 +100,17 @@ Timeline membership = `dayItems` (`day = X && end_date = ""`), ordered by `build
 
 **Cut:** `paid_by`, `booked_by`, `cost_actual_usd`, `start_tz`/`end_tz` display.
 
+**Actions by role (#416).** Each control renders only for roles the server accepts it from, via `itemPermissions()` (`src/lib/itinerary/item-actions.ts`), which mirrors the server gates:
+
+| Control | Shown to | Server gate |
+|---|---|---|
+| Edit, Move | owner, co-owner, the item's creator | `items.pb.js` update hook |
+| Skip | owner, co-owner; planned item on a day | item page `skipItem` action |
+| Delete | owner, co-owner | `items.pb.js` delete hook |
+| Upload, checklist (add/remove, tick, assign, add task), votes, Log payment | everyone but viewers (Log payment: not on a note) | `documents.pb.js`, `checklists.pb.js` + `tasks.pb.js`, `votes.createRule` (0055), expenses |
+
+A viewer sees an existing checklist read-only. A refused or failed Move, Skip or Delete says so in place ("Couldn't … Reload the page and try again."): Move inside its sheet, Skip and Delete in their panels. After Skip, Trip Mode goes to Now; Planning Mode stays on the page with a "back in your ideas" toast.
+
 ### 4. Item create / edit
 
 Field visibility is driven by `getFieldConfig(type).visibility` (`item-fields.ts`) — the design's "progressive disclosure" is this config. Captured fields exactly as the ground-truth list above. Specifics:
