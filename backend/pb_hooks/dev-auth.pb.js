@@ -871,8 +871,8 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 		{
 			notes: 'Long drive up, then dinner with the Kohler crew.',
 			items: [
-				{ title: 'Blackwolf Run tee time', type: 'activity', time: '09:00', cost: 180, booked: true },
-				{ title: 'Lunch at The Horse & Plow', type: 'meal', time: '12:30', cost: 45, booked: false },
+				{ title: 'Blackwolf Run tee time', type: 'activity', time: '09:00', end: '11:30', cost: 180, booked: true },
+				{ title: 'Lunch at The Horse & Plow', type: 'meal', time: '12:30', end: '14:00', cost: 45, booked: false, requires: true },
 				{ title: 'Pack the clubs', type: 'note', time: '', cost: 0, booked: false }
 			]
 		},
@@ -883,13 +883,13 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 		{
 			notes: '',
 			items: [
-				{ title: 'American Club check-in', type: 'lodging', time: '15:00', cost: 320, booked: true },
+				{ title: 'American Club check-in', type: 'lodging', time: '15:00', end: '16:00', cost: 320, booked: true },
 				{ title: 'Kayak the Sheboygan', type: 'activity', time: '', cost: 60, booked: false }
 			]
 		},
 		{
 			notes: '',
-			items: [{ title: 'Drive home', type: 'transportation', time: '11:00', cost: 0, booked: false }]
+			items: [{ title: 'Drive home', type: 'transportation', time: '11:00', end: '17:00', cost: 0, booked: false, requires: true }]
 		},
 		{ notes: 'Buffer day — notes but nothing planned.', items: [] },
 		{ notes: '', items: [] }
@@ -920,6 +920,8 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 			rec.set('status', 'planned');
 			rec.set('sort_order', j);
 			if (it.time) rec.set('start_time', isoDay + ' ' + it.time + ':00.000Z');
+			if (it.end) rec.set('end_time', isoDay + ' ' + it.end + ':00.000Z');
+			if (it.requires) rec.set('requires_booking', true);
 			if (it.cost) rec.set('cost_estimate_usd', it.cost);
 			if (it.booked) rec.set('booked', true);
 			rec.set('created_by', ownerMember.id);
@@ -932,6 +934,68 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 			itemCount: spec.items.length,
 			hasNotes: spec.notes ? true : false
 		});
+	}
+
+	// Optional { rich: true } (#420): a crowded day 5 + four placeholder members, so
+	// the day timeline's rail, overlap, Going and strip-overflow rules have pixels to
+	// prove against. Off by default: the day-fullness matrix above stays exactly as
+	// documented (day 5 = 0 items).
+	if (info.body && info.body['rich']) {
+		const tripMembersCol = e.app.findCollectionByNameOrId('trip_members');
+		const mkMember = (name) => {
+			const m = new Record(tripMembersCol);
+			m.set('trip', trip.id);
+			m.set('role', 'traveler');
+			m.set('placeholder_name', name);
+			m.set('display_name', name);
+			e.app.save(m);
+			return m.id;
+		};
+		const owner = ownerMember.id;
+		const kev = mkMember('Kevin');
+		const jess = mkMember('Jess');
+		const pat = mkMember('Pat');
+		const lee = mkMember('Lee');
+		const day = days[4];
+		const iso = day.getString('date').substring(0, 10);
+		const at = (hm) => iso + ' ' + hm + ':00.000Z';
+		const rich = [
+			{ title: 'Flight to Denver', type: 'flight', start_time: at('07:00'), end_time: at('09:15'), location_name: 'Milwaukee (MKE)', description: '→ Denver (DEN)', requires_booking: true, assigned_to: [owner, kev] },
+			{ title: 'Brunch', type: 'meal', start_time: at('10:30'), end_time: at('12:30'), location_name: 'Denver Biscuit Co.', cost_estimate_usd: 60, assigned_to: [kev, jess] },
+			{ title: 'Red Rocks hike', type: 'activity', start_time: at('11:30'), end_time: at('14:30'), location_name: 'Red Rocks Park', assigned_to: [kev] },
+			{ title: 'Museum', type: 'activity', start_time: at('15:00'), end_time: at('17:30'), location_name: 'Denver Art Museum', assigned_to: [owner] },
+			{ title: 'Spa hour', type: 'activity', start_time: at('16:00'), end_time: at('16:50'), assigned_to: [jess] },
+			{ title: 'Return rental clubs', type: 'transportation', end_time: at('18:15'), location_name: 'Golf Galaxy' },
+			{ title: 'Dinner at The Immigrant with the whole extended crew, tasting menu and wine pairing', type: 'meal', start_time: at('19:00'), end_time: at('21:30'), location_name: 'The Immigrant Restaurant', cost_estimate_usd: 420, requires_booking: true, assigned_to: [owner, kev, jess, pat], not_going: [lee], docs: 2 },
+			{ title: 'Night walk', type: 'activity', start_time: at('22:00') },
+			{ title: 'Bring cash for the tip jar and the ski lift', type: 'note', description: 'Bring cash for the tip jar and the ski lift\nsecond line' },
+			{ title: 'Pick up the keys', type: 'activity', location_name: 'Front desk' }
+		];
+		const docsCol = e.app.findCollectionByNameOrId('documents');
+		for (let k = 0; k < rich.length; k++) {
+			const r = rich[k];
+			const rec = new Record(itemsCol);
+			rec.set('trip', trip.id);
+			if (phaseId) rec.set('phase', phaseId);
+			rec.set('day', day.id);
+			rec.set('status', 'planned');
+			rec.set('sort_order', k);
+			rec.set('created_by', owner);
+			for (const f of ['title', 'type', 'start_time', 'end_time', 'location_name', 'description', 'cost_estimate_usd', 'requires_booking', 'assigned_to', 'not_going']) {
+				if (r[f] !== undefined) rec.set(f, r[f]);
+			}
+			e.app.save(rec);
+			for (let d = 0; d < (r.docs || 0); d++) {
+				const doc = new Record(docsCol);
+				doc.set('trip', trip.id);
+				doc.set('item', rec.id);
+				doc.set('uploaded_by', owner);
+				doc.set('kind', 'file');
+				doc.set('file', $filesystem.fileFromBytes([37, 80, 68, 70, 45, 49], 'ticket' + d + '.pdf'));
+				e.app.save(doc);
+			}
+		}
+		summary[4].itemCount = rich.length;
 	}
 
 	return e.json(200, { tripId: trip.id, slug: slug, days: summary });
