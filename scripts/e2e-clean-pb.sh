@@ -37,4 +37,5 @@ exec "$PB" serve \
   --migrationsDir "$ROOT/backend/pb_migrations" \
   --hooksDir "$ROOT/backend/pb_hooks" \
   --hooksWatch=false \
+  --automigrate=false \
   --http 127.0.0.1:"$PORT"
