@@ -22,8 +22,10 @@ import {
 
 declare const self: ServiceWorkerGlobalScope;
 
-// One namespace per build version. Bumping `version` (SvelteKit does this per
-// build) orphans the previous set, which `activate` then evicts.
+// One namespace per release version. `version` is `kit.version.name`, pinned to
+// the package.json version in svelte.config.js (#447), so it rolls per release,
+// not per build. Bumping package.json orphans the previous set, which `activate`
+// then evicts. Rebuilds within one release reuse (and top up) the same set.
 const STATIC_CACHE = `waypoint-static-${version}`;
 const DATA_CACHE = `waypoint-data-${version}`;
 // Document artifact bytes (S5, #74). Populated by precache (active trip) and by
