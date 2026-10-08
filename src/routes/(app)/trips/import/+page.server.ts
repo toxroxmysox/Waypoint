@@ -1,6 +1,11 @@
 import { fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { validateTripImport, generateImportSlug } from '$lib/portability/import';
+import {
+	validateTripImport,
+	generateImportSlug,
+	planImportPhases,
+	resolveImportItemStatus
+} from '$lib/portability/import';
 import { applyRetile } from '$lib/itinerary/phase-tiling.server';
 import type { Day, Phase } from '$lib/types';
 
@@ -73,44 +78,31 @@ export const actions: Actions = {
 				sort: 'order'
 			});
 			const firstPhaseId = seeded[0].id;
-			const sortedPhases = [...importData.phases].sort(
-				(a, b) =>
-					(a.start_date || '').slice(0, 10).localeCompare((b.start_date || '').slice(0, 10)) ||
-					a.order - b.order
-			);
 			const phaseMap = new Map<string, string>(); // imported name → phase id
-			const phaseStarts: Array<{ start: string; id: string }> = [
-				{ start: tripStart, id: firstPhaseId }
-			];
-			for (const [i, phase] of sortedPhases.entries()) {
+			const idByStart = new Map<string, string>([[tripStart, firstPhaseId]]); // planned start → phase id
+			for (const [i, step] of planImportPhases(importData.phases, tripStart, tripEnd).entries()) {
+				const { phase } = step;
 				const fields = {
 					name: phase.name,
 					location: phase.location || '',
 					country_code: phase.country_code || ''
 				};
-				if (i === 0) {
+				if (step.action === 'first') {
 					await locals.pb.collection('phases').update(firstPhaseId, fields);
 					phaseMap.set(phase.name, firstPhaseId);
-					continue;
+				} else if (step.action === 'fold') {
+					phaseMap.set(phase.name, idByStart.get(step.intoStart!) ?? firstPhaseId);
+				} else {
+					const created = await locals.pb.collection('phases').create({
+						trip: trip.id,
+						...fields,
+						start_date: step.start + ' 00:00:00.000Z',
+						end_date: tripEnd + ' 00:00:00.000Z',
+						order: i
+					});
+					idByStart.set(step.start, created.id);
+					phaseMap.set(phase.name, created.id);
 				}
-				const start = (phase.start_date || '').slice(0, 10);
-				const tiles =
-					start > tripStart && start < tripEnd && !phaseStarts.some((p) => p.start === start);
-				if (!tiles) {
-					const covering = [...phaseStarts].reverse().find((p) => p.start <= start);
-					phaseMap.set(phase.name, (covering ?? phaseStarts[0]).id);
-					continue;
-				}
-				const created = await locals.pb.collection('phases').create({
-					trip: trip.id,
-					...fields,
-					start_date: start + ' 00:00:00.000Z',
-					end_date: tripEnd + ' 00:00:00.000Z',
-					order: i
-				});
-				phaseStarts.push({ start, id: created.id });
-				phaseStarts.sort((a, b) => a.start.localeCompare(b.start));
-				phaseMap.set(phase.name, created.id);
 			}
 			await applyRetile(locals.pb, trip.id, tripEnd);
 
@@ -136,8 +128,7 @@ export const actions: Actions = {
 				// an item whose day didn't resolve parks as an unplanned idea.
 				const phaseId =
 					(item.phase_name && phaseMap.get(item.phase_name)) || day?.phases?.[0] || firstPhaseId;
-				const wantsDay = item.status === 'planned' || item.status === 'done' || !item.status;
-				const status = wantsDay && !day ? 'unplanned' : item.status || 'planned';
+				const status = resolveImportItemStatus(item.status, !!day);
 				const createdItem = await locals.pb.collection('items').create<{ id: string }>({
 					trip: trip.id,
 					phase: phaseId,

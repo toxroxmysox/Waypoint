@@ -11,6 +11,7 @@
 	import { itemDateRange } from '$lib/itinerary/multi-day';
 	import PhaseChip from '$lib/ui/PhaseChip.svelte';
 	import { untrack } from 'svelte';
+	import { memberDisplayName } from '$lib/itinerary/member-name';
 	import type { ItemFormMode, ItemFormData, ItemFormContext } from './ItemFormFields';
 
 	interface Props {
@@ -294,7 +295,7 @@
 					{#each initialData.assigned_to as memberId}
 						{@const member = context.members.find((m) => m.id === memberId)}
 						<Pill variant="default" size="md">
-							{member?.display_name || member?.expand?.user?.name || member?.expand?.user?.email || member?.placeholder_name || 'Unknown'}
+							{memberDisplayName(member)}
 						</Pill>
 					{/each}
 				</div>
@@ -670,11 +671,7 @@
 									class="border-line rounded"
 								/>
 								<span class="text-ink-soft text-sm">
-									{member.display_name ||
-										member.expand?.user?.name ||
-										member.expand?.user?.email ||
-										member.placeholder_name ||
-										'Unknown'}
+									{memberDisplayName(member)}
 								</span>
 							</label>
 						{/each}

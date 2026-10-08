@@ -2,7 +2,7 @@
 
 Source of truth for who can do what against the API. Generated and verified by `backend/test-rules.mjs`. Update this file when rules change; the harness will fail if the documented intent diverges from observed behavior.
 
-Last reviewed: 2026-06-09 (#103 / ADR-0006 — `users.viewRule` loosened from self-only to co-traveler so members read each other's name + avatar; `listRule` stays self-only, `emailVisibility` off). Prior: #70 — documents collection added to the harness.
+Last reviewed: 2026-10-07 (#450 — `trip_members` update guard is a field allowlist, `display_name` own-row only, `placeholder_email` hidden + owner/co_owner route; hooks read roles with `getString`). Prior: #449 invite origin + stored-email scrub (0072/0073); #409 `pending_invites` list/view → superuser (0070); #408 `trip_members` field guard; #407 `trips` delete gate; #103 / ADR-0006 `users.viewRule` co-traveler.
 
 ---
 
@@ -31,7 +31,7 @@ Role-agnostic. Any member of a trip can do anything to that trip's data; non-mem
 |---|---|---|---|---|---|
 | `users` | self only | **co-traveler** (name+avatar) | null (OTP hook) | self only | null (no API) |
 | `trips` | member | member | authed | member + hook (protected fields owner/co_owner, #280) | member + hook (owner/co_owner, #407) |
-| `trip_members` | member of trip | member of trip | null (hooks/admin) | member of trip + hook (field allowlist, #279/#408) | member of trip + hook (#279) |
+| `trip_members` | member of trip | member of trip | null (hooks/admin) | member of trip + hook (field allowlist {role, display_name, digest_opt_out}, #279/#408/#450); `placeholder_email` hidden field (0074, #450) | member of trip + hook (#279) |
 | `phases` | member of trip | member of trip | member + hook (owner/co_owner, #175) | member + hook (owner/co_owner, #175) | member + hook (owner/co_owner, #175) |
 | `days` | member of trip | member of trip | null (hooks) | member of trip | null (hooks) |
 | `items` | member of trip | member of trip | member + hook (owner/co_owner, #175) | member + hook (owner/co_owner, #175) | member + hook (owner/co_owner, #175) |
@@ -46,6 +46,7 @@ Role-agnostic. Any member of a trip can do anything to that trip's data; non-mem
 - `days.create` — generated automatically by trips after-create / after-update hooks based on the trip's date range. Users never create days directly.
 - `days.delete` — same: pruning happens inside the trips after-update hook when the date range shrinks.
 - `pending_invites.create` — invite creation goes through `POST /api/invites/create`, which validates the inviter's role per SPEC §3 (travelers can only invite traveler/viewer; viewers cannot invite at all) and generates `code` + `expires_at` server-side. Direct API POST would let any member set arbitrary codes / lifetimes / inviter ids.
+- `pending_invites.list` / `pending_invites.view` (#409, migration 0070) — rows carry the invitee's `email` and the live invite `code`. Under the old member rule any member token (viewers included) could read every invitee's address and a working join code straight off REST. Members now read `GET /api/invites/pending?trip_id=`, which returns a per-invite label (never `email` or `code`). Everything else that reads the collection runs in admin context. The #449 `origin` / `picked_name` columns (0072) are read only by that route.
 - `pending_invites.update` — invites are immutable. To change a role or extend expiry, revoke and re-invite. Keeps the audit trail honest.
 
 **Identity expressions used in 0014 (+ 0043):**
@@ -221,9 +222,13 @@ Three REST holes closed after the 2026-10-05 agent-access audit:
   `trip`, `user`, `placeholder_name`, `placeholder_email`, `claimable_by`,
   `removed_at`, `soft_token`, `joined_at` are never writable over REST (claim /
   remove / accept / join run as admin-context saves, which skip request hooks).
-  `display_name`: own row, or any row for owner/co_owner. `digest_opt_out`: own
-  row only. `role`: owner/co_owner (#279). A no-op PATCH passes. Superusers pass.
+  `display_name`: own row, or any row for owner/co_owner (**own row only since
+  #450**, see below). `digest_opt_out`: own row only. `role`: owner/co_owner
+  (#279). A no-op PATCH passes. Superusers pass.
   Before: a traveler could point the owner row's `user` at a second account.
+  **#450:** the guard is now a true ALLOWLIST: it iterates the collection's live
+  field list and rejects any changed field outside `{role, display_name,
+  digest_opt_out}`, so a field added later is locked by default.
 - **`pending_invites` read (#409, migration 0070)** — list/view are superuser-only:
   rows carry the invitee's `email` and the live `code`. Members read
   `GET /api/invites/pending?trip_id=` (`invites.pb.js`), which returns
@@ -233,6 +238,32 @@ Three REST holes closed after the 2026-10-05 agent-access audit:
 
 Harness: `test-rules.mjs` matrix (`trips.delete`, `trip_members.update`,
 `pending_invites.list/view`) + the `#408` / `#409` / `trips.delete_superuser` novel cases.
+
+## trip_members hardening (#450, migration 0074)
+
+- **Update allowlist** — see #408 above. Proven by a probe: the harness adds a
+  throwaway text field to `trip_members` as superuser and shows owner and viewer
+  PATCHes of it 403 (superuser still passes), then removes the field. Every role
+  (owner, co_owner, traveler, viewer) is also tried against `user` and `trip` on
+  another member's row (all 403).
+- **`display_name` is own-row only.** #415 had let owner/co_owner rename any
+  member; no screen used it and it was never asked for. The matrix `trip_members.update`
+  target is the owner's row, so only the owner (self) passes. Owner/co_owner
+  renaming someone else is a denied novel case (`rename_other_owner`,
+  `rename_other_coowner`). Traveler and viewer renaming themselves stay allowed.
+- **`placeholder_email` is a hidden field (0074).** PB rules can't hide one field
+  per role, so the field is `hidden`: no list/view/expand response carries it for
+  any non-superuser, and a member token can't filter on it either. Owner and
+  co_owner read it through `GET /api/members/placeholder-emails?trip_id=`
+  (`members.pb.js`, admin context) → `{emails: {<memberId>: <email>}}` for the
+  trip's active placeholders; traveler, viewer and non-member get 403. Hooks that
+  filter on the field run in admin context and are unaffected. Writes stay
+  locked: a member PATCH of it is dropped (200 no-op) and the stored value is
+  unchanged (`owner_rewrite_placeholder_email`).
+- **Roles in hooks** are read with `getString('role')` everywhere (goja reads
+  some field types back as objects; one idiom, no surprises).
+- **`/api/invites/co-travelers`** no longer returns `pending_names` (its consumer
+  moved to `/api/invites/pending` in #409).
 
 ## Invite origin + stored-email scrub (#449, migrations 0072 / 0073)
 

@@ -736,12 +736,9 @@ routerAdd('POST', '/api/invites/decline', (e) => {
 // GET /api/invites/co-travelers?trip_id=ID
 // Auth + trip membership + non-viewer required (same authority as inviting).
 // Returns:
-//   { co_travelers: [{ user_id, name, avatar }], pending_names: { <inviteId>: name } }
-// `pending_names` exists so the members page can label a pending invite for a
-// co-traveler by NAME instead of rendering their address — a picker-created
-// invite must not leak the email back through the Pending list. It only ever
-// names people the requester can already see (shared-trip co-travellers), so it
-// discloses nothing new.
+//   { co_travelers: [{ user_id, name, avatar }] }
+// (#450: `pending_names` was removed — its only consumer moved to
+// GET /api/invites/pending in #409.)
 routerAdd('GET', '/api/invites/co-travelers', (e) => {
 	const auth = e.auth;
 	if (!auth) throw new UnauthorizedError('Authentication required');
@@ -846,8 +843,7 @@ routerAdd('GET', '/api/invites/co-travelers', (e) => {
 	const alreadyMember = {};
 	for (const m of currentMembers) alreadyMember[m.getString('user')] = true;
 
-	// 4. Exclude anyone with an open invite on this trip, and build the
-	//    id → name map the members page uses to mask those invites' addresses.
+	// 4. Exclude anyone with an open invite on this trip.
 	let invites = [];
 	try {
 		invites = e.app.findRecordsByFilter(
@@ -862,17 +858,10 @@ routerAdd('GET', '/api/invites/co-travelers', (e) => {
 		invites = [];
 	}
 	const invitedEmails = {};
-	const pendingNames = {};
 	for (const inv of invites) {
 		const invEmail = inv.getString('email').trim().toLowerCase();
 		if (!invEmail) continue;
 		invitedEmails[invEmail] = true;
-		for (const c of pool) {
-			if (c.email && c.email === invEmail) {
-				pendingNames[inv.id] = c.name;
-				break;
-			}
-		}
 	}
 
 	const out = [];
@@ -884,7 +873,7 @@ routerAdd('GET', '/api/invites/co-travelers', (e) => {
 	}
 	out.sort((a, b) => (a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1));
 
-	return e.json(200, { co_travelers: out.slice(0, 60), pending_names: pendingNames });
+	return e.json(200, { co_travelers: out.slice(0, 60) });
 });
 
 // ---------------------------------------------------------------------------

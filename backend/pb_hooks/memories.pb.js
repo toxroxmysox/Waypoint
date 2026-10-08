@@ -37,7 +37,7 @@ onRecordCreateRequest((e) => {
 	}
 
 	// Viewers are read-only (PRD — viewers see memories, never author them).
-	if (callerMember.get('role') === 'viewer') {
+	if (callerMember.getString('role') === 'viewer') {
 		throw new ForbiddenError('Viewers cannot capture memories');
 	}
 

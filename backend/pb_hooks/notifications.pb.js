@@ -152,7 +152,7 @@ onRecordAfterCreateSuccess((e) => {
 
 	const tripId = e.record.get('trip');
 	const newMemberId = e.record.id;
-	const newMemberRole = e.record.get('role');
+	const newMemberRole = e.record.getString('role');
 
 	// Resolve the joiner's name. On a REAL join the trip_members row's own
 	// display_name/placeholder_name are EMPTY (the name lives on the linked

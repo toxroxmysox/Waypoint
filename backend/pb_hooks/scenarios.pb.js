@@ -98,7 +98,7 @@ routerAdd('POST', '/api/scenarios/promote', (e) => {
 	} catch (_) {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
-	const role = caller.get('role');
+	const role = caller.getString('role');
 	if (role !== 'owner' && role !== 'co_owner') {
 		throw new ForbiddenError('Only an owner or co-owner can choose a scenario');
 	}

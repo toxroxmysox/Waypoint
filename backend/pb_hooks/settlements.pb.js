@@ -36,7 +36,7 @@ onRecordCreateRequest((e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 
-	if (callerMember.get('role') === 'viewer') {
+	if (callerMember.getString('role') === 'viewer') {
 		throw new ForbiddenError('Viewers cannot record settlements');
 	}
 
@@ -72,7 +72,7 @@ onRecordDeleteRequest((e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 
-	const callerRole = callerMember.get('role');
+	const callerRole = callerMember.getString('role');
 	const isCreator = callerMember.id === createdById;
 	const isPrivileged = callerRole === 'owner' || callerRole === 'co_owner';
 

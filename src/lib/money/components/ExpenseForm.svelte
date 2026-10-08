@@ -7,6 +7,7 @@
 	import { buildSplitData } from '$lib/money/build-split-data';
 	import { presetMembers, activePreset, type SplitPreset } from '$lib/money/split-presets';
 	import type { Expense, ExpenseCategory, TripMember } from '$lib/types';
+	import { memberDisplayName } from '$lib/itinerary/member-name';
 
 	interface Props {
 		members: TripMember[];
@@ -81,7 +82,7 @@
 		const m = members.find((mem) => mem.id === memberId);
 		if (!m) return 'Unknown';
 		if (m.id === membershipId) return 'You';
-		return m.display_name || m.expand?.user?.name || m.expand?.user?.email || m.placeholder_name || '(member)';
+		return memberDisplayName(m);
 	}
 
 	// ADD-mode initializers fall back to the #228 prefill props (edit wins — when

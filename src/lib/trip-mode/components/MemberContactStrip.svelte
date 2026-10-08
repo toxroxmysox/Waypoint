@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Avatar from '$lib/ui/Avatar.svelte';
 	import type { TripMember } from '$lib/types';
+	import { memberDisplayName } from '$lib/itinerary/member-name';
 	import type { User } from '$lib/shell/types';
 
 	// #244: Members left the Trip nav (Now · Money · Add · Docs). To not orphan
@@ -19,10 +20,12 @@
 	} = $props();
 
 	function nameOf(m: MemberRow): string {
-		return m.display_name || m.expand?.user?.name || m.placeholder_name || m.expand?.user?.email || 'Member';
+		return memberDisplayName(m);
 	}
+	// #450: placeholder_email is hidden from members (0074), so only a real user's
+	// email (when their emailVisibility allows it) can appear here.
 	function emailOf(m: MemberRow): string {
-		return m.expand?.user?.email || m.placeholder_email || '';
+		return m.expand?.user?.email || '';
 	}
 
 	// Everyone but you, with a reachable email. Placeholders with no email are
