@@ -237,18 +237,17 @@ test.describe('Day timeline whole-card drag (#353)', () => {
 		}
 	});
 
-	test('the rail prints a time for timed items and a dot for untimed ones', async ({ browser }) => {
+	test('the rail prints start on top and end on the bottom; untimed gets a node and no time (#420)', async ({ browser }) => {
 		const { ctx, page } = await openDay(browser);
 		try {
-			// The rail replaces the desktop-only `-left-16` column, so it has to be
-			// there at 375 — where nothing rendered a gutter time before.
-			await expect(cards(page).nth(0).locator('[data-rail="time"]')).toContainText('9:00');
-			await expect(cards(page).nth(1).locator('[data-rail="time"]')).toContainText('12:30');
+			await expect(cards(page).nth(0).locator('[data-rail="time-top"]')).toHaveText('9:00a');
+			await expect(cards(page).nth(0).locator('[data-rail="time-bottom"]')).toHaveText('11:30a');
+			await expect(cards(page).nth(1).locator('[data-rail="time-top"]')).toHaveText('12:30p');
 			await expect(
-				cards(page).nth(2).locator('[data-rail="dot"]'),
-				'an untimed item gets a hollow dot and no time'
+				cards(page).nth(2).locator('[data-rail="node"]'),
+				'an untimed item keeps its icon node'
 			).toHaveCount(1);
-			await expect(cards(page).nth(2).locator('[data-rail="time"]')).toHaveCount(0);
+			await expect(cards(page).nth(2).locator('[data-rail="time-top"], [data-rail="time-bottom"]')).toHaveCount(0);
 		} finally {
 			await ctx.close();
 		}
