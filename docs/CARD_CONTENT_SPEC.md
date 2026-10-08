@@ -65,7 +65,27 @@ Convention: every optional slot is **omitted when empty** (graceful degradation 
 
 **Cut:** Morn/Aft/Eve coverage pills (decision #3). **Loader note:** the overview must fetch items-per-day to compute the count — it doesn't today (loads days only). Count and the budget toggle ride the same fetch; no extra query.
 
-### 2. Itinerary timeline card (+ parking-lot card)
+### 2a. Day page timeline (Planning Mode) — AMENDED by #420 (card system)
+
+This block replaces the timeline-card table below for the day page. The parking-lot card paragraph below still describes the as-built idea card until #421.
+
+Components: `ItemCard` (head / meta / strip), `RailStack` (the rail's per-card stretch), `CardStrip`, `TimeSlotDivider`, `FreeTimeLabel`; derivations in `src/lib/itinerary/card-anatomy.ts`.
+
+| Slot | Field / source | Rule |
+|---|---|---|
+| Rail: time | `start_time` (top edge), `end_time` (bottom edge) via `railTimeLabels` | `6:30p` grammar. End-only = plain bottom label, no `by`. Untimed = none. **The card never prints a time.** Both times of a real overlap turn red (earlier item's end, later item's start). |
+| Rail: node | `type` | `MonoTypeIcon` 24px disc, vertically centred on the card; dashed when untimed. Segments (within the item only) are dropped under 6px. No line between cards. |
+| Head | `title` (2 lines max), `cost_estimate_usd` on the right | Cost shown in Planning Mode only. |
+| Meta | location; flight `MKE → DEN` (airport codes in `location_name` + the description's arrival label); note = first description line | One line, omitted when empty. Flight number not stored yet (#flights ticket). |
+| Strip left (priority order) | `Overlaps {partner}` · `Needs booking` (gold, `needsBooking()`) or `✓ Booked` · documents count (`documents` where `kind != 'code'`) | Overflow: the lowest-priority entry shrinks to its icon, then drops (`fitStrip`). Overlap is red only when both items share a Going member, else ink. |
+| Strip right | `assigned_to` bubbles (`PersonBubble`), then struck `not_going` bubbles; max 3 then `+n` | Shown when the trip has >1 member. The as-built "+ Me" chip and who's-on-this sheet are unchanged (#440 retires them). |
+| Votes | — | Not shown on planned cards. |
+| Height | content only | A card with a time label is at least 62px. |
+| Dividers | derived from the first anchor of each slot | Morning / Afternoon / Evening, centred, rule on either side. |
+| Free time | gap of ≥ 60 min from a known end (end or deadline) to the next timed start | `2h free · 4:30p to 6:30p`, text only; spoken "Free, 4:30p to 6:30p". |
+| Accessible name | time + title + type + state | e.g. "6:30 to 8:30 PM, Dinner at The Immigrant, meal, needs booking". On the card's link; the drag wrapper keeps `aria-label={title}`. |
+
+### 2. Itinerary timeline card (+ parking-lot card) — AS BUILT before #420 (superseded for the day timeline by 2a)
 
 Timeline membership = `dayItems` (`day = X && end_date = ""`), ordered by `buildTimeline()` (anchored by time, untimed by `sort_order`). Dayparts (Morning/Afternoon/Evening dividers) live **here**, from `start_time` (`timeline.ts`) — not on the day card.
 

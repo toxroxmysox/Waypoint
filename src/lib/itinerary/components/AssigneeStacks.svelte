@@ -11,6 +11,8 @@
 	import { untrack } from 'svelte';
 	import { page } from '$app/state';
 	import Avatar from '$lib/ui/Avatar.svelte';
+	import PersonBubble from '$lib/ui/PersonBubble.svelte';
+	import { goingBubbles } from '$lib/itinerary/card-anatomy';
 	import AssigneeViewSheet from './AssigneeViewSheet.svelte';
 	import { memberDisplayName, memberInitial } from '$lib/itinerary/member-name';
 	import { canSelfAssign, toggleAssignee } from '$lib/itinerary/assignment';
@@ -22,6 +24,8 @@
 		assignedTo = [],
 		members = [],
 		size = 20,
+		variant = 'legacy',
+		notGoing = [],
 		class: klass = ''
 	}: {
 		itemId: string;
@@ -30,6 +34,12 @@
 		assignedTo?: string[];
 		members?: Array<TripMember & { avatarUrl?: string }>;
 		size?: number;
+		/** `strip` (#420): the Card's Going slot. Neutral PersonBubbles (max 3, then
+		 *  `+n`), struck not-going bubbles after the going ones, no own padding. The
+		 *  "+ Me" chip and the sheet are the same as `legacy`. */
+		variant?: 'legacy' | 'strip';
+		/** `not_going` — trip_members.id[] (#402). Shown only by the `strip` variant. */
+		notGoing?: string[];
 		/** Extra classes on the root row. The host card passes the in-border
 		 *  padding/indent here so an empty footer collapses (the row renders only
 		 *  when there's something to show — #231). */
@@ -95,7 +105,55 @@
 	}
 </script>
 
-{#if multiMember && (assignees.length > 0 || mayToggle)}
+{#if multiMember && (assignees.length > 0 || mayToggle || (variant === 'strip' && notGoing.length > 0))}
+	{#if variant === 'strip'}
+		{@const bubbles = goingBubbles({ assigned_to: optimistic, not_going: notGoing })}
+		<div class="flex items-center gap-2 {klass}">
+			{#if assignees.length === 0 && mayToggle}
+				<button
+					type="button"
+					class="border-line text-ink-muted hover:border-ink-muted active:border-ink-muted hover:text-ink-soft active:text-ink-soft relative inline-flex items-center gap-1 rounded-full border border-dashed px-2 py-0.5 text-[11px] font-medium before:absolute before:-inset-x-1 before:-inset-y-3 before:content-['']"
+					aria-label="Assign yourself to this item"
+					onclick={(e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						sheetOpen = true;
+					}}
+				>
+					+ Me
+				</button>
+			{/if}
+			{#if bubbles.shown.length > 0}
+				<button
+					type="button"
+					class="relative flex items-center rounded-full before:absolute before:-inset-x-2 before:-inset-y-3 before:content-['']"
+					aria-label="{assignees.length} going — view who's on this"
+					onclick={(e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						sheetOpen = true;
+					}}
+				>
+					<span class="flex -space-x-1.5">
+						{#each bubbles.shown as b (b.memberId)}
+							{@const m = members.find((mm) => mm.id === b.memberId)}
+							<PersonBubble
+								name={m ? memberDisplayName(m) : ''}
+								img={m?.avatarUrl}
+								notGoing={b.notGoing}
+								placeholder={!!m && !m.user}
+								departed={!m || !!m.removed_at}
+								{size}
+							/>
+						{/each}
+					</span>
+					{#if bubbles.extra > 0}
+						<span class="text-ink-soft ml-1 text-[11px] font-semibold">+{bubbles.extra}</span>
+					{/if}
+				</button>
+			{/if}
+		</div>
+	{:else}
 	<div class="mt-1.5 flex items-center gap-2 pl-1 {klass}">
 	{#if assignees.length > 0}
 		<button
@@ -137,6 +195,7 @@
 		</button>
 	{/if}
 	</div>
+	{/if}
 
 	<AssigneeViewSheet bind:open={sheetOpen} {itemTitle} {assignees}>
 		{#snippet selfAssign()}
