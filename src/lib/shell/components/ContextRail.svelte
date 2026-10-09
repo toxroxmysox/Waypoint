@@ -35,6 +35,9 @@
 		(page.data.votesByItem as Record<string, Vote[]> | undefined) ?? {}
 	);
 
+	// Trip layout data (merged page data): who the viewer is, for the vote pills (#425).
+	const railMembership = $derived(page.data.membership as TripMember | undefined);
+
 	const today = $derived(tripToday(tripTz(trip ?? {})));
 
 	const todayDay = $derived(days.find((d) => d.date.split(/[T ]/)[0] === today));
@@ -185,6 +188,8 @@
 					tripSlug={slug}
 					members={railMembers}
 					votesByItem={railVotesByItem}
+					myMemberId={railMembership?.id ?? ''}
+					canVote={!!railMembership && railMembership.role !== 'viewer'}
 				/>
 			</div>
 		{/if}
