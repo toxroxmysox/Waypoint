@@ -12,7 +12,7 @@
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import NowDivider from '$lib/trip-mode/components/NowDivider.svelte';
 	import ItemCard from '$lib/itinerary/components/ItemCard.svelte';
-	import MultiDayBanner from '$lib/itinerary/components/MultiDayBanner.svelte';
+	import SpanBand from '$lib/itinerary/components/SpanBand.svelte';
 	import TaskRow from '$lib/itinerary/components/TaskRow.svelte';
 	import IdeasStrip from '$lib/trip-mode/components/IdeasStrip.svelte';
 	import MemorySheet from '$lib/memory/components/MemorySheet.svelte';
@@ -168,12 +168,11 @@
 	{#if data.multiDayItems.length > 0}
 		<div class="space-y-2">
 			{#each data.multiDayItems as item (item.id)}
-				<MultiDayBanner
+				<SpanBand
 					{item}
 					days={data.days}
 					dayDate={todayStr}
 					tripSlug={data.trip.slug}
-					ongoing={true}
 				/>
 			{/each}
 		</div>

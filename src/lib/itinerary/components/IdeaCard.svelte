@@ -58,7 +58,7 @@
 			/>
 		</div>
 	</div>
-	<!-- Assignee avatars + self-assign (ADR-0011 / #226) — child of the bordered
+	<!-- Going bubbles + struck not-going (ADR-0011 / #440) — child of the bordered
 	     card (#231); padding on the row collapses it when empty. -->
-	<AssigneeStacks itemId={item.id} itemTitle={item.title} assignedTo={item.assigned_to} {members} size={18} class="relative z-10 mb-2 px-3" />
+	<AssigneeStacks itemTitle={item.title} assignedTo={item.assigned_to} notGoing={item.not_going ?? []} {members} size={18} class="relative z-10 mb-2 px-3" />
 </Card>

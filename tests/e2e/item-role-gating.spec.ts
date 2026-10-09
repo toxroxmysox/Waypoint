@@ -116,8 +116,10 @@ const visible = (page: Page) => ({
 	edit: page.getByRole('link', { name: 'Edit', exact: true }).filter({ visible: true }),
 	/** The edit page's own Delete button (out of scope for #437). */
 	del: page.getByRole('button', { name: 'Delete', exact: true }).filter({ visible: true }),
+	/** #438: empty Documents / Checklist are one `+ Document · + Checklist` line. */
+	addDocument: page.getByRole('button', { name: '+ Document', exact: true }).filter({ visible: true }),
 	upload: page.getByRole('button', { name: 'Upload', exact: true }).filter({ visible: true }),
-	addChecklist: page.getByRole('button', { name: 'Add checklist' }).filter({ visible: true }),
+	addChecklist: page.getByRole('button', { name: '+ Checklist', exact: true }).filter({ visible: true }),
 	votes: page.getByRole('group', { name: 'Vote on this item' }).filter({ visible: true })
 });
 
@@ -188,8 +190,10 @@ test.describe('#416 item detail role gating', () => {
 			await expect(c.edit).toHaveCount(0);
 
 			// A traveler may still upload, keep a checklist and vote (server allows it).
-			await expect(c.upload.first()).toBeVisible();
+			await expect(c.addDocument.first()).toBeVisible();
 			await expect(c.addChecklist.first()).toBeVisible();
+			await c.addDocument.first().click();
+			await expect(c.upload.first()).toBeVisible();
 			await expect(c.votes.first()).toBeVisible();
 		} finally {
 			await traveler.close();
@@ -205,6 +209,7 @@ test.describe('#416 item detail role gating', () => {
 
 			await expect(c.menuBtn).toHaveCount(0);
 			await expect(c.edit).toHaveCount(0);
+			await expect(c.addDocument).toHaveCount(0);
 			await expect(c.upload).toHaveCount(0);
 			await expect(c.addChecklist).toHaveCount(0);
 			await expect(c.votes).toHaveCount(0);

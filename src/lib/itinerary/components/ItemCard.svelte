@@ -132,13 +132,11 @@
 			{#snippet going()}
 				<div class="relative z-10">
 					<AssigneeStacks
-						itemId={item.id}
 						itemTitle={item.title}
 						assignedTo={item.assigned_to}
 						notGoing={item.not_going ?? []}
 						{members}
 						size={20}
-						variant="strip"
 					/>
 				</div>
 			{/snippet}

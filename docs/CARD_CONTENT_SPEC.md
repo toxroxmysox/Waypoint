@@ -83,7 +83,7 @@ Components: `ItemCard` (head / meta / strip), `RailStack` (the rail's per-card s
 | Head | `title` (2 lines max), `cost_estimate_usd` on the right | Cost shown in Planning Mode only. |
 | Meta | location; flight `MKE → DEN` (airport codes in `location_name` + the description's arrival label); note = first description line | One line, omitted when empty. Flight number not stored yet (#flights ticket). |
 | Strip left (priority order) | `Overlaps {partner}` · `To book` (gold, `needsBooking()`) or `✓ Booked` · documents count (`documents` where `kind != 'code'`) | Overflow: the lowest-priority entry shrinks to its icon, then drops (`fitStrip`). Overlap is red only when both items share a Going member (`assigned_to`; `not_going` never counts), else ink. The partner is the other item's title clipped to 16 characters (`Overlaps Red Rocks hike`; Scott, 2026-10-09). Only items with both a start and an end can overlap; untimed, start-only and end-only never do. Three-way: the note names a partner sharing people if one exists, else the first by start; each rail time goes red per collision with shared people, so a middle item can be red at both ends. |
-| Strip right | `assigned_to` bubbles (`PersonBubble`), then struck `not_going` bubbles; max 3 then `+n` | Shown when the trip has >1 member. The as-built "+ Me" chip and who's-on-this sheet are unchanged (#440 retires them). |
+| Strip right | `assigned_to` bubbles (`PersonBubble`), then struck `not_going` bubbles; max 3 then `+n` | Shown when the trip has >1 member. Display only: the "+ Me" chip is retired (#440); members answer on the item page. Tapping the bubbles opens a read-only who's-on-this sheet (going names, then struck not-going names). No answer is never shown. |
 | Votes | — | Not shown on planned cards. |
 | Height | content only | A card with a time label is at least 62px. |
 | Dividers | derived from the first anchor of each slot | Morning / Afternoon / Evening, centred, rule on either side. |
@@ -106,6 +106,26 @@ Timeline membership = `dayItems` (`day = X && end_date = ""`), ordered by `build
 
 **Parking-lot card** — AMENDED by #424 (card system, D7): see **2d** below. As built before #424: drag handle, `TypeIcon`, `title`, `subtype`, assignee avatars, pull-up. **No "Needs booking" pill** (uncommitted). Lifecycle per `PHASE_REDESIGN_PRD.md` (`pullToPlan` → planned+day; `pushToParking` → unplanned, day cleared, time stripped).
 
+### 2e. Span band — Multi-day Items on the day page and Now — NEW by #423 (card system, D10/D11)
+
+Replaces `MultiDayBanner` (solid moss/clay fill, `Ongoing` pill; both gone). Component `SpanBand`; text from `spanBandText(item, days, date)` in `src/lib/itinerary/multi-day.ts`.
+
+| Slot | Rule |
+|---|---|
+| Where | Top of the day page (above the timeline, outside the dnd zone, never dragged) and top of Now (above the Hero; the Hero is the only accent). One band per spanning item. |
+| Shape | Full-width, `surface-2`, no shadow, no accent, min 44px tall; the whole band links to the item. |
+| Icon | `MonoTypeIcon` 24px disc (`sub` passed, so a car rental shows the car), centred in the 48px rail column. |
+| Title | Item title, starting where card titles start (rail 48 + gap 8 + card padding 12). One line, truncated. |
+| Text | One line, ink-soft, below: see below. |
+
+| Phase | Stay (lodging) | Rental (transportation) | Other type |
+|---|---|---|---|
+| First day | `Check-in 3:00p · 3 nights` | `Pick up 10:00a` | `Starts 10:00a` |
+| Middle | `Night 2 of 3 · check-out Sat by 11:00a` | `Day 2 of 5 · return Sun by 12:00p` | `Day 2 of 5 · ends Sun by 12:00p` |
+| Last day | `Check-out by 11:00a` | `Return by 12:00p` | `Ends by 12:00p` |
+
+Times are `start_time` (first day) and `end_time` (middle and last) through `formatClock`; each part drops when the time is unset (`Check-in · 3 nights`, `Night 2 of 3 · check-out Sat`, `Check-out`). One night reads `1 night`. The weekday is the end date as a calendar day (UTC, #393). The rental's `Day N of M` counts days (M = nights + 1); a stay counts nights. The day card's stay line (§1) is unchanged.
+
 ### 2d. Ideas grouped by type (Parking Lot) — NEW by #424 (card system, D7)
 
 Surfaces: the day page's Parking Lot (phone and tablet), the desktop Ideas panel (>= 1280px), Phase Detail's parking list (`PhaseIdeas`; includes pending Ghost Cards).
@@ -117,7 +137,7 @@ Surfaces: the day page's Parking Lot (phone and tablet), the desktop Ideas panel
 | Sort in a group | Weighted vote score desc (2 / 1 / 0 / -2), ties by `sort_order` asc. Never shown as a number. | `voting.ts`, `ideaGroups` |
 | Idea card | `title`, then a sub-line `place · cost` (`Sheboygan · $40`; empty parts dropped). Place = card meta (location; a flight's `MKE → DEN`; a note's first line). **No type icon**, no subtype line. | `ideaSub`, `cardMeta` |
 | Votes | **Tap-to-vote pills (#425)** under the sub-line: Love ♥ · Like + · Flexible ~ · Pass –, **all four always shown**, each with its count (glyph + count; the label is in the accessible name and tooltip). The viewer's own pill is filled; tapping it again clears the vote; tapping another moves it. No score is ever shown. Each pill is a real 44px box (no pseudo-element overlay). The group's accessible name reads `2 love, 1 pass, your vote love` (`no votes` when empty); each pill reads `Love, 2: You, Sam`. Desktop hover/focus shows a tooltip of who voted. Viewers (`role = viewer`) see the same four pills as counts only, not tappable. A tap never opens the card nor starts a drag; the pills are not a drag handle (press the title or sub-line to drag). Writes go through the item page's `?/vote` / `?/unvote` actions (optimistic, double-tap guarded). Dragging among ideas still changes nothing: a vote moves an idea within its group after the round-trip. | `VotePills`, `votePills`, `votePillsLabel`, `withMyVote` (`voting.ts`) |
-| Assignees | Unchanged (who's going, ADR-0011). | `AssigneeStacks` |
+| Assignees | `assigned_to` bubbles, then struck `not_going` bubbles (#440; same strip as Planning cards: max 3 then `+n`, no "+ Me"). | `AssigneeStacks` |
 | Primary action | The owner's pull-up chevron on the day page (44px hit area), as built. A traveler's action stays deferred to #401. | `pullToPlan` |
 | Drag | Grip handles retired. Touch: long-press (250ms) anywhere on the card; mouse: immediate. Dropping on the day plans the idea. Dragging among ideas changes nothing (the order is the vote order): the zone snaps back, no write. Phase Detail has no drag (no day to drop on). The desktop Ideas panel is inert until #445. | `DragDropTimeline`, `ParkingLotSection` |
 
@@ -170,20 +190,25 @@ Earlier today, Coming up and the Next 3 days tab use the day page's Timeline Rai
 
 ### 3. Item detail
 
-| Slot | Field / source | Capture path | Notes |
-|---|---|---|---|
-| Hero: type/subtype, title | `type`, `subtype`, `title` | form | |
-| Hero pills | `booked` → Booked; `status === 'done'` → Done | form | |
-| Description | `description` | form | |
-| Schedule | `day` (date), `phase`, `start_time`–`end_time` | form | **When row = `date · start_time – end_time`. No tz.** |
-| Location | `location_name`, `location_address` | form (Places) | **⚠️ add** "Open in Maps" from `google_place_id` (deferred). |
-| Booking | `reservation_url`, `free_cancellation`, `confirmation_codes[]` | form | **No `booked_by`.** |
-| **Cost** | **`cost_estimate_usd`** (single "Cost") | form | **⚠️ add** conditional "View in expenses" → filtered expenses list, only when ≥1 `expenses.linked_item` points here (deferred). |
-| Assigned to | `assigned_to[]` | form (>1 member) + self-assign | **Keep.** Detail **and** card avatars now (ADR-0011 #210; no longer detail-only). |
-| Votes | item `votes` | VoteButtons | Header VoteButtons + stacks. |
-| Goals | linked `trip_goals.items` | form (goal-side) | **⚠️ add-render** (deferred); detail currently passes `linked_goal_ids: []`. |
-| Documents | `documents[]` | DocumentSection | Keep. |
-| Comments | `suggestions` (target_item) | comment form | Keep. |
+**Hero + body — AMENDED by #438 (card system, D12/D13), Planning Mode.** The Hero (#428) is the header; the old header card and the view-mode Schedule / Location / Booking / Cost / Assigned-to cards are gone. Pure rules in `src/lib/itinerary/item-page.ts`.
+
+| Slot | Field / source | Notes |
+|---|---|---|
+| Hero: icon, title | `type`, `subtype` (`MonoTypeIcon`), `title` | Not live in Planning Mode: no accent, no `status`. |
+| Hero: type in words | `itemTypeLine` | `Meal · Dinner`. A subtype of "other" drops. |
+| Hero: place | `location_name`, `location_address` | The line is the Maps link (`mapsUrl`). |
+| Hero: time | `itemTimeText` | Date leads: `Thu Oct 1 · 6:30p–8:30p`; a stay reads `Thu Oct 1–Sat Oct 3 · 2 nights`. Untimed: the date alone. |
+| Hero: codes, documents | code documents; file documents | Codes are large tap-to-copy rows; documents are 44px rows that open the file, newest first. Documents also stay in the Documents section, which manages them. |
+| Hero: status | `booked` → `✓ Booked`; `status === 'done'` → `✓ Done`; `needsBooking` → gold `To book` chip | #441 turns the chip into the Book / Mark booked button. |
+| Hero: Going (#440) | `assigned_to`, `not_going`, the viewer's own answer (`goingView`) | Non-viewers on a trip with >1 member see their own control first: unanswered `Are you going?` + **Going** / **Not going**; answered `You're going · change` or `You're not going · change` (`change` reveals the two buttons again). All controls are 44px tall; selected is ink, never colour. Below it, `Going` + a bubble and name per going member, then struck bubbles with struck names for the not-going. No answer is never listed. Viewers see the names and no controls. The write is the caller's own `POST /api/items/{id}/assign-self` with `{ state }` (optimistic, rolled back with an inline error on failure). No "clear my answer" control. The same people row shows on Now's Hero. |
+| Votes | `VoteButtons` (non-viewers) | Under the Hero; #442 decides where votes and Going each show. |
+| Description | `description` | Plain paragraph. |
+| Details (one card) | `detailsRows` | Rows, each omitted when empty: **Estimate** (`cost_estimate_usd`), **Payment**, **Booking** (host of `reservation_url`, opens it), **Cancellation** (`Free cancellation`), **Phase**. Payment is its own row and never reads the estimate: `Paid $X` + `n expenses` (links to the item's expenses) once any expense links the item, else `Log payment` (prefilled add) for non-viewers on non-notes. No rows, no card. |
+| Goals | linked `trip_goals.items` | Read-only rows, omitted when none. |
+| Documents, Checklist | `documents[]`, item checklist | Full section only when it has content (Documents also after `+ Document`). Otherwise one dashed line: `+ Document · + Checklist`, each entry only for roles that may add it (`canUpload`, `canEditChecklist`); none for viewers. `+ Checklist` attaches in place. |
+| Comments | `suggestions` (target_item) | The composer first, then the list newest first (`newestFirst`). |
+
+**Layout.** One column on phones in the order above (Hero, votes, description, Details, Goals, Documents, Checklist, add line, Comments). From 900px two columns, each about a phone wide: left = Hero, votes, description, Details, Goals; right = Documents, Checklist, the add line, Comments. **Copy:** "Assigned to" is now "Going" everywhere (Hero, edit form).
 
 **Cut:** `paid_by`, `booked_by`, `cost_actual_usd`, `start_tz`/`end_tz` display.
 

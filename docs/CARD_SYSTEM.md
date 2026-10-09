@@ -47,9 +47,9 @@ The Focus slot also holds four **state cards** that are not item cards: Free tim
 
 | | |
 |---|---|
-| Component | `src/lib/itinerary/components/MultiDayBanner.svelte` |
-| Where | Top of the Day page (`spanningItems`) and top of Now (ongoing, with an `Ongoing` pill) |
-| Face | Solid **mode-accent** fill (moss in planning, clay in trip mode) · glyph in a translucent circle · title · `Ongoing` pill (Now only) · `Jun 18 → Jun 22 · Check in · 3:00 PM` / `night 2 of 3` / `Check out · 11:00 AM`. Non-lodging items say `Starts` / `Ends`. |
+| Component | `src/lib/itinerary/components/SpanBand.svelte` (#423; was `MultiDayBanner`) |
+| Where | Top of the Day page (`spanningItems`) and top of Now |
+| Face | Quiet full-width `surface-2` band (CARD_CONTENT_SPEC §2e): 24px disc · title · one line (`Check-in 3:00p · 3 nights` / `Night 2 of 3 · check-out Sat by 11:00a` / `Check-out by 11:00a`; rentals `Pick up` / `Day N of M · return` / `Return by`). No accent fill, no `Ongoing` pill. |
 | Projections | **Day card stay chip** (overview + phase): moss `Check-in · Name` / `Check-out · Name`. **Overview "Flights & stays"** rows: 20px glyph + title. |
 
 ### E. Weigh ideas — Parking-lot and idea renderings

@@ -16,7 +16,7 @@
 	import { ideaScores } from '$lib/itinerary/idea-groups';
 	import ParkingDivider from '$lib/itinerary/components/ParkingDivider.svelte';
 	import DragDropTimeline from '$lib/itinerary/components/DragDropTimeline.svelte';
-	import MultiDayBanner from '$lib/itinerary/components/MultiDayBanner.svelte';
+	import SpanBand from '$lib/itinerary/components/SpanBand.svelte';
 	import ServerErrorAlert from '$lib/ui/ServerErrorAlert.svelte';
 
 	let { data, form } = $props();
@@ -140,7 +140,7 @@
 	{#if data.spanningItems.length > 0}
 		<div class="space-y-2">
 			{#each data.spanningItems as item (item.id)}
-				<MultiDayBanner
+				<SpanBand
 					{item}
 					days={data.allDays}
 					dayDate={data.day.date.split(/[T ]/)[0]}
