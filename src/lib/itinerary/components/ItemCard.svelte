@@ -96,8 +96,8 @@
 	<RailStack
 		{item}
 		{height}
-		redTop={redConflict && overlapNote?.role === 'later'}
-		redBottom={redConflict && overlapNote?.role === 'earlier'}
+		redTop={!!overlapNote?.redStart}
+		redBottom={!!overlapNote?.redEnd}
 		past={muted}
 	/>
 
