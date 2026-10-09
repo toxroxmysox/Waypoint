@@ -2,15 +2,19 @@ import { test, expect, type Browser, type Page } from '@playwright/test';
 import { E2E_BASE, E2E_PB_BASE } from './e2e-env';
 
 // #416 — item detail shows only the actions the server allows, and a refused
-// action says so in place instead of failing silently.
+// action says so in place instead of failing silently. #437 moved Move / Skip /
+// Delete into the NavBar's role-filtered ⋯ menu (each opens its own sheet), so
+// this spec drives that menu; Edit stays a visible link.
 //
 // The server gates (items.pb.js, documents.pb.js, checklists/tasks hooks,
 // votes.createRule 0055, the skipItem action) are the source of truth; the page
 // gates every control with `itemPermissions()` (src/lib/itinerary/item-actions.ts).
 // This spec drives the real roles through the UI:
-//   - a traveler who isn't the creator sees no Move, Skip, Delete or Edit
+//   - a traveler who isn't the creator sees no ⋯ and no Edit
 //   - a viewer additionally sees no upload, checklist or vote controls
-//   - the creator gets Move + Edit, never Delete or Skip — on the edit page too
+//   - the creator gets Edit and a ⋯ with Move only, never Delete or Skip — and no
+//     Delete on the edit page either
+//   - owner / co_owner get Move, Skip…, Delete in the ⋯
 //   - a member whose role is lowered while the page is open gets an in-context
 //     error from Move, Skip and Delete (was: nothing)
 //   - Skip stays on the item page in Planning Mode, goes to Now in Trip Mode
@@ -108,14 +112,36 @@ async function openItem(page: Page, slug: string, itemId: string, title = ITEM_T
 }
 
 const visible = (page: Page) => ({
-	move: page.getByRole('button', { name: 'Move', exact: true }).filter({ visible: true }),
+	menuBtn: page.getByRole('button', { name: 'Item actions' }).filter({ visible: true }),
 	edit: page.getByRole('link', { name: 'Edit', exact: true }).filter({ visible: true }),
-	skip: page.getByRole('button', { name: /Skip — not happening/ }).filter({ visible: true }),
+	/** The edit page's own Delete button (out of scope for #437). */
 	del: page.getByRole('button', { name: 'Delete', exact: true }).filter({ visible: true }),
 	upload: page.getByRole('button', { name: 'Upload', exact: true }).filter({ visible: true }),
 	addChecklist: page.getByRole('button', { name: 'Add checklist' }).filter({ visible: true }),
 	votes: page.getByRole('group', { name: 'Vote on this item' }).filter({ visible: true })
 });
+
+const MOVE = 'Move to another day';
+const SKIP = 'Skip…';
+const DELETE = 'Delete';
+
+const menuItem = (page: Page, name: string) =>
+	page.getByRole('menuitem', { name, exact: true }).filter({ visible: true });
+const sheet = (page: Page) => page.locator('[data-sheet-panel]').filter({ visible: true }).first();
+
+/** Open the ⋯ menu; the caller then clicks (or asserts on) its rows. */
+async function openMenu(page: Page) {
+	await visible(page).menuBtn.first().click();
+	await expect(page.getByRole('menu').filter({ visible: true }).first()).toBeVisible();
+}
+
+/** ⋯ → Skip… → confirm in the sheet. */
+async function skipViaMenu(page: Page) {
+	await openMenu(page);
+	await menuItem(page, SKIP).click();
+	await expect(sheet(page)).toContainText('Nothing is deleted');
+	await sheet(page).getByRole('button', { name: 'Skip', exact: true }).click();
+}
 
 /**
  * A Planning Mode skip finished AND left us on the item page. Waits on the
@@ -133,10 +159,11 @@ async function expectStayedAfterSkip(page: Page, itemPath: string) {
 	});
 	await page.waitForLoadState('networkidle');
 	expect(new URL(page.url()).pathname).toBe(itemPath);
-	// The panel is gone: the item is an idea again, so there is nothing to skip.
-	await expect(
-		page.getByRole('heading', { name: 'Not happening?' }).filter({ visible: true })
-	).toHaveCount(0);
+	// The item is an idea again, so the menu no longer offers Skip… (Move and Delete stay).
+	await openMenu(page);
+	await expect(menuItem(page, MOVE)).toHaveCount(1);
+	await expect(menuItem(page, SKIP)).toHaveCount(0);
+	await page.keyboard.press('Escape');
 }
 
 test.describe('#416 item detail role gating', () => {
@@ -150,18 +177,14 @@ test.describe('#416 item detail role gating', () => {
 		ids = await setupFixture(ownerToken);
 	});
 
-	test("a traveler who isn't the creator sees no Delete, Move, Skip or Edit", async ({
-		browser
-	}) => {
+	test("a traveler who isn't the creator sees no ⋯ and no Edit", async ({ browser }) => {
 		const traveler = await devLogin(browser, EMAILS.traveler);
 		try {
 			const { page } = traveler;
 			await openItem(page, FIXTURE_SLUG, ids.itemId);
 			const c = visible(page);
 
-			await expect(c.del).toHaveCount(0);
-			await expect(c.move).toHaveCount(0);
-			await expect(c.skip).toHaveCount(0);
+			await expect(c.menuBtn).toHaveCount(0);
 			await expect(c.edit).toHaveCount(0);
 
 			// A traveler may still upload, keep a checklist and vote (server allows it).
@@ -180,9 +203,7 @@ test.describe('#416 item detail role gating', () => {
 			await openItem(page, FIXTURE_SLUG, ids.itemId);
 			const c = visible(page);
 
-			await expect(c.del).toHaveCount(0);
-			await expect(c.move).toHaveCount(0);
-			await expect(c.skip).toHaveCount(0);
+			await expect(c.menuBtn).toHaveCount(0);
 			await expect(c.edit).toHaveCount(0);
 			await expect(c.upload).toHaveCount(0);
 			await expect(c.addChecklist).toHaveCount(0);
@@ -192,7 +213,9 @@ test.describe('#416 item detail role gating', () => {
 		}
 	});
 
-	test('the owner sees every action; the creator gets Move and Edit only', async ({ browser }) => {
+	test('the owner gets Move, Skip… and Delete; the creator gets Edit and Move only', async ({
+		browser
+	}) => {
 		// An item the TRAVELER created (created_by = their member id).
 		const created = await pb(ownerToken, 'POST', '/api/collections/items/records', {
 			trip: ids.tripId,
@@ -210,10 +233,13 @@ test.describe('#416 item detail role gating', () => {
 			const { page } = owner;
 			await openItem(page, FIXTURE_SLUG, ids.itemId);
 			const c = visible(page);
-			await expect(c.move.first()).toBeVisible();
 			await expect(c.edit.first()).toBeVisible();
-			await expect(c.skip.first()).toBeVisible();
-			await expect(c.del.first()).toBeVisible();
+			await openMenu(page);
+			await expect(menuItem(page, MOVE)).toHaveCount(1);
+			await expect(menuItem(page, SKIP)).toHaveCount(1);
+			await expect(menuItem(page, DELETE)).toHaveCount(1);
+			// Delete sits below a divider, apart from the reversible actions.
+			await expect(page.getByRole('separator').filter({ visible: true })).toHaveCount(1);
 		} finally {
 			await owner.close();
 		}
@@ -223,10 +249,12 @@ test.describe('#416 item detail role gating', () => {
 			const { page } = traveler;
 			await openItem(page, FIXTURE_SLUG, travelerItemId, 'Traveler-made dinner');
 			const c = visible(page);
-			await expect(c.move.first()).toBeVisible();
 			await expect(c.edit.first()).toBeVisible();
-			await expect(c.del).toHaveCount(0);
-			await expect(c.skip).toHaveCount(0);
+			await openMenu(page);
+			await expect(menuItem(page, MOVE)).toHaveCount(1);
+			await expect(page.getByRole('menuitem').filter({ visible: true })).toHaveCount(1);
+			await expect(menuItem(page, SKIP)).toHaveCount(0);
+			await expect(menuItem(page, DELETE)).toHaveCount(0);
 		} finally {
 			await traveler.close();
 		}
@@ -278,8 +306,7 @@ test.describe('#416 item detail role gating', () => {
 		try {
 			const { page } = coOwner;
 			await openItem(page, FIXTURE_SLUG, ids.itemId);
-			const c = visible(page);
-			await expect(c.del.first()).toBeVisible();
+			await expect(visible(page).menuBtn.first()).toBeVisible();
 
 			// The owner lowers the co-owner to traveler while their page is open: the
 			// controls are still on screen, and the server now refuses all three.
@@ -293,28 +320,27 @@ test.describe('#416 item detail role gating', () => {
 			);
 
 			// Move → the sheet stays open and says it failed.
-			await c.move.first().click();
-			const sheet = page.locator('[data-sheet-panel]').filter({ visible: true }).first();
-			await expect(sheet).toBeVisible();
-			await sheet.locator('select[name="day"]').selectOption(ids.dayId2);
-			await sheet.getByRole('button', { name: 'Move', exact: true }).click();
-			await expect(sheet.getByRole('alert')).toContainText("Couldn't move this item");
+			await openMenu(page);
+			await menuItem(page, MOVE).click();
+			await expect(sheet(page)).toBeVisible();
+			await sheet(page).locator('select[name="day"]').selectOption(ids.dayId2);
+			await sheet(page).getByRole('button', { name: 'Move', exact: true }).click();
+			await expect(sheet(page).getByRole('alert')).toContainText("Couldn't move this item");
 			await page.keyboard.press('Escape');
 			await expect(page.locator('[data-sheet-panel]').filter({ visible: true })).toHaveCount(0);
 
-			// Skip → error in the Skip panel, and we stay on the page.
-			await c.skip.first().click();
-			await expect(
-				page.getByRole('alert').filter({ hasText: "Couldn't skip this" }).first()
-			).toBeVisible();
+			// Skip → error in the Skip sheet, and we stay on the page.
+			await skipViaMenu(page);
+			await expect(sheet(page).getByRole('alert')).toContainText("Couldn't skip this");
 			expect(page.url()).toContain(`/items/${ids.itemId}`);
+			await page.keyboard.press('Escape');
+			await expect(page.locator('[data-sheet-panel]').filter({ visible: true })).toHaveCount(0);
 
-			// Delete → Confirm → error in the Delete panel.
-			await c.del.first().click();
-			await page.getByRole('button', { name: 'Confirm' }).filter({ visible: true }).first().click();
-			await expect(
-				page.getByRole('alert').filter({ hasText: "Couldn't delete this" }).first()
-			).toBeVisible();
+			// Delete → confirm in the sheet → error in the Delete sheet.
+			await openMenu(page);
+			await menuItem(page, DELETE).click();
+			await sheet(page).getByRole('button', { name: 'Delete', exact: true }).click();
+			await expect(sheet(page).getByRole('alert')).toContainText("Couldn't delete this");
 			expect(page.url()).toContain(`/items/${ids.itemId}`);
 		} finally {
 			await coOwner.close();
@@ -333,8 +359,7 @@ test.describe('#416 item detail role gating', () => {
 		try {
 			const { page } = owner;
 			await openItem(page, FIXTURE_SLUG, ids.itemId);
-			const c = visible(page);
-			await c.skip.first().click();
+			await skipViaMenu(page);
 			await expectStayedAfterSkip(page, `/trips/${FIXTURE_SLUG}/items/${ids.itemId}`);
 		} finally {
 			await owner.close();
@@ -404,7 +429,7 @@ test.describe('#416 item detail role gating', () => {
 
 			// Trip Mode (an active trip's item page defaults to it) → Skip → Now.
 			await openItem(page, slug, liveItem, 'Live skip');
-			await visible(page).skip.first().click();
+			await skipViaMenu(page);
 			await page.waitForURL(`${BASE}/trips/${slug}/now`, { timeout: 10000 });
 
 			// Switch to Planning Mode, then drill to the other item in-app (the mode
@@ -431,7 +456,7 @@ test.describe('#416 item detail role gating', () => {
 				page.getByRole('button', { name: 'Trip Mode' }).filter({ visible: true }).first()
 			).toBeVisible();
 
-			await visible(page).skip.first().click();
+			await skipViaMenu(page);
 			await expectStayedAfterSkip(page, `/trips/${slug}/items/${plannedItem}`);
 		} finally {
 			await owner.close();
