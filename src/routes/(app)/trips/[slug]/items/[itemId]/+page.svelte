@@ -3,7 +3,9 @@
 	import { enhance } from '$app/forms';
 	import { itemMenuEntries } from '$lib/itinerary/item-actions';
 	import { getFieldConfig } from '$lib/itinerary/item-fields';
-	import { addLine, detailsRows, itemTimeText, itemTypeLine, newestFirst } from '$lib/itinerary/item-page';
+	import { addLine, detailsRows, goingView, itemTimeText, itemTypeLine, newestFirst } from '$lib/itinerary/item-page';
+	import { applyGoing } from '$lib/itinerary/assignment';
+	import { invalidateAll } from '$app/navigation';
 	import { needsBooking } from '$lib/itinerary/booking-projection';
 	import { documentLabel } from '$lib/documents/files';
 	import NavBar from '$lib/ui/NavBar.svelte';
@@ -13,6 +15,7 @@
 	import { titleCase } from '$lib/shell/format';
 	import { page } from '$app/state';
 	import Hero from '$lib/itinerary/components/Hero.svelte';
+	import GoingAnswer from '$lib/itinerary/components/GoingAnswer.svelte';
 
 	import VoteButtons from '$lib/collaboration/components/VoteButtons.svelte';
 	import ItemActionsMenu from '$lib/itinerary/components/ItemActionsMenu.svelte';
@@ -62,6 +65,45 @@
 			expensesHref
 		})
 	);
+	// #440 — "Are you going?". The answer is written by the caller's own endpoint
+	// (self-only server-side); the Hero flips at once from a local mirror (applyGoing),
+	// snaps back if the write fails, and the loader's value takes over after invalidate.
+	let goingOverride = $state<{ assigned_to: string[]; not_going: string[] } | null>(null);
+	let goingPending = $state(false);
+	let goingFailed = $state(false);
+	$effect(() => {
+		void data.item.assigned_to;
+		void data.item.not_going;
+		goingOverride = null;
+	});
+	const heroItem = $derived(goingOverride ? { ...data.item, ...goingOverride } : data.item);
+	const going = $derived(
+		goingView({ item: heroItem, members: data.members, myMemberId: data.membership.id, role: data.membership.role })
+	);
+	async function answerGoing(state: 'going' | 'not_going') {
+		if (goingPending || !going.canAnswer) return;
+		goingFailed = false;
+		goingPending = true;
+		goingOverride = applyGoing(heroItem, data.membership.id, state);
+		try {
+			const res = await fetch(`/api/items/${data.item.id}/assign-self`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ state })
+			});
+			if (!res.ok) throw new Error('write failed');
+			const saved = (await res.json()) as { assigned_to?: string[]; not_going?: string[] };
+			if (Array.isArray(saved.assigned_to) && Array.isArray(saved.not_going)) {
+				goingOverride = { assigned_to: saved.assigned_to, not_going: saved.not_going };
+			}
+			await invalidateAll();
+		} catch {
+			goingOverride = null;
+			goingFailed = true;
+		} finally {
+			goingPending = false;
+		}
+	}
 	// Empty Documents / Checklist shrink to one line; tapping + Document opens the section.
 	let docsOpen = $state(false);
 	const adds = $derived(
@@ -98,6 +140,10 @@
 	}
 </script>
 
+{#snippet goingAnswer()}
+	<GoingAnswer line={going.line} mine={going.mine} pending={goingPending} failed={goingFailed} onanswer={answerGoing} />
+{/snippet}
+
 <NavBar title={data.trip.title} back {backHref}>
 	{#snippet right()}
 		<div class="flex items-center gap-1">
@@ -129,9 +175,9 @@
 			<!-- #438 — the Hero is the header: icon + title, type in words, the place (opens Maps),
 			     the time, codes, documents, status, Going. Planning Mode: not live, no accent.
 			     Slots left for the next tickets: Hero `children` (#441 Book / Mark booked),
-			     `hero-going` (#440 Are you going?), the votes block below (#442). -->
+			     `hero-going` (#440, mounted below), the votes block below (#442). -->
 			<Hero
-				item={data.item}
+				item={heroItem}
 				members={data.members}
 				{typeLine}
 				{timeText}
@@ -139,6 +185,7 @@
 				docs={heroDocs}
 				done={data.item.status === 'done'}
 				needsBooking={needsBooking(data.item)}
+				goingControl={going.canAnswer ? goingAnswer : undefined}
 			/>
 
 			{#if can.canVote}

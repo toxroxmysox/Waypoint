@@ -19,7 +19,7 @@
 	import PersonBubble from '$lib/ui/PersonBubble.svelte';
 	import CodeRow from '$lib/documents/components/CodeRow.svelte';
 	import NeedsBookingChip from '$lib/ui/NeedsBookingChip.svelte';
-	import { goingNames, mapsUrl, type HeroStatus } from '$lib/trip-mode/hero';
+	import { goingPeople, mapsUrl, type HeroStatus } from '$lib/trip-mode/hero';
 	import type { Item, TripMember } from '$lib/types';
 	import type { ConfirmationCode } from '$lib/itinerary/types';
 
@@ -34,6 +34,7 @@
 		| 'google_place_id'
 		| 'booked'
 		| 'assigned_to'
+		| 'not_going'
 	>;
 
 	let {
@@ -49,6 +50,7 @@
 		href = '',
 		placeLink = true,
 		showGoing = true,
+		goingControl,
 		menu,
 		children
 	}: {
@@ -73,6 +75,8 @@
 		/** The place line opens Maps. Off for the swipe face, whose gestures own the card. */
 		placeLink?: boolean;
 		showGoing?: boolean;
+		/** Above the Going names (item page, #440): the viewer's own "Are you going?" control. */
+		goingControl?: Snippet;
 		/** Top-right slot: the `⋯` menu. */
 		menu?: Snippet;
 		/** After the Going row. */
@@ -80,7 +84,9 @@
 	} = $props();
 
 	const live = $derived(!!status);
-	const going = $derived(goingNames(item, members));
+	const people = $derived(goingPeople(item, members));
+	const goers = $derived(people.filter((p) => !p.notGoing));
+	const passers = $derived(people.filter((p) => p.notGoing));
 	const maps = $derived(placeLink ? mapsUrl(item) : '');
 	const hasPlace = $derived(!!(item.location_name || item.location_address));
 	const memberOf = (id: string) => members.find((m) => m.id === id);
@@ -175,7 +181,7 @@
 			</div>
 		{/if}
 
-		{#if item.booked || done || needsBooking || (showGoing && going.length > 0)}
+		{#if item.booked || done || needsBooking}
 			<div class="flex flex-wrap items-center gap-x-4 gap-y-2">
 				{#if needsBooking && !item.booked}
 					<NeedsBookingChip />
@@ -192,16 +198,28 @@
 						Booked
 					</span>
 				{/if}
-				{#if showGoing && going.length > 0}
-					<span class="inline-flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5" data-testid="hero-going">
-						<span class="text-ink-muted text-sm">Going</span>
-						{#each going as g (g.memberId)}
+			</div>
+		{/if}
+
+		{#if showGoing && (people.length > 0 || goingControl)}
+			<div class="space-y-2" data-testid="hero-going">
+				{#if goingControl}{@render goingControl()}{/if}
+				{#if people.length > 0}
+					<div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5" data-testid="hero-going-people">
+						{#if goers.length > 0}<span class="text-ink-muted text-sm">Going</span>{/if}
+						{#each goers as g (g.memberId)}
 							<span class="text-ink-soft inline-flex items-center gap-1.5 text-sm">
 								<PersonBubble name={g.name} img={memberOf(g.memberId)?.avatarUrl} size={24} />
 								{g.name}
 							</span>
 						{/each}
-					</span>
+						{#each passers as g (g.memberId)}
+							<span class="text-ink-muted inline-flex items-center gap-1.5 text-sm line-through" data-testid="hero-not-going">
+								<PersonBubble name={g.name} img={memberOf(g.memberId)?.avatarUrl} notGoing size={24} />
+								{g.name}
+							</span>
+						{/each}
+					</div>
 				{/if}
 			</div>
 		{/if}
