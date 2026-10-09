@@ -5,6 +5,8 @@
 import { formatClock, formatDayDate, formatTimeText } from '$lib/shell/format';
 import { estimateTextWidth } from '$lib/itinerary/card-anatomy';
 import type { TimeFields } from '$lib/itinerary/timeline';
+import { needsBooking } from '$lib/itinerary/booking-projection';
+import type { Day, Item } from '$lib/types';
 import type { ItemType } from '$lib/itinerary/types';
 import { arrivalKey, arrivalLabel, departureKey, type FlightItemInput } from '$lib/itinerary/flights-lineup';
 
@@ -132,7 +134,7 @@ export function rowTrailing(input: { chip?: string; cost?: number; people?: numb
 
 // --- One call per item ------------------------------------------------------
 /** The fields `rowContent` reads; any Item satisfies it. */
-export type RowContentItem = RowItemFields & Pick<FlightItemInput, 'description'>;
+export type RowContentItem = RowItemFields & { description?: string };
 
 /**
  * What a Row shows under the title: a flight's four parts (the Row fits them to
@@ -152,4 +154,49 @@ export function rowContent(
 		to: arrivalLabel(item.description ?? '')
 	});
 	return { sub: fitFlightSub(flight, Number.POSITIVE_INFINITY).text, flight };
+}
+
+// --- The overview's Flights & stays ------------------------------------------
+export type KeyItem = RowContentItem &
+	Pick<Item, 'id' | 'title' | 'subtype' | 'day' | 'status' | 'booked' | 'requires_booking'>;
+
+export interface KeyItemRow {
+	id: string;
+	type: ItemType;
+	subtype: string;
+	title: string;
+	sub: string;
+	flight: FlightSub | null;
+	/** The trailing chip: gold `Needs booking` when the loop is open. */
+	needsBooking: boolean;
+}
+
+/**
+ * Flights and stays as Rows, in date order (undated last, then by start time),
+ * with whether each still needs booking. Pure: the loader hands in the fetched
+ * items and the trip's days.
+ */
+export function keyItemRows(items: KeyItem[], days: Pick<Day, 'id' | 'date'>[]): KeyItemRow[] {
+	return items
+		.filter((i) => i.type === 'flight' || i.type === 'lodging')
+		.map((i) => {
+			const dayDate = i.day ? dateOnly(days.find((d) => d.id === i.day)?.date) : '';
+			return { i, dayDate, start: i.start_time ?? '' };
+		})
+		.sort(
+			(a, b) =>
+				Number(!a.dayDate) - Number(!b.dayDate) ||
+				a.dayDate.localeCompare(b.dayDate) ||
+				Number(!a.start) - Number(!b.start) ||
+				a.start.localeCompare(b.start) ||
+				a.i.title.localeCompare(b.i.title)
+		)
+		.map(({ i, dayDate }) => ({
+			id: i.id,
+			type: i.type,
+			subtype: i.subtype ?? '',
+			title: i.title,
+			...rowContent(i, { dayDate }),
+			needsBooking: needsBooking(i)
+		}));
 }

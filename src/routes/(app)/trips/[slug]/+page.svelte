@@ -15,6 +15,10 @@
 	import MiniListCard from '$lib/itinerary/components/MiniListCard.svelte';
 	import DayCard from '$lib/itinerary/components/DayCard.svelte';
 	import DayMetricToggle from '$lib/itinerary/components/DayMetricToggle.svelte';
+	import Row from '$lib/ui/Row.svelte';
+	import NeedsBookingChip from '$lib/ui/NeedsBookingChip.svelte';
+	import FlightSubLine from '$lib/itinerary/components/FlightSubLine.svelte';
+	import { rowTrailing } from '$lib/itinerary/row';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import WrapUpBanner from '$lib/trip-mode/components/WrapUpBanner.svelte';
 	import RecordView from '$lib/portability/components/RecordView.svelte';
@@ -415,17 +419,28 @@
 			<div class="text-ink-muted flex items-center gap-1.5 px-0.5 text-[9.5px] font-bold tracking-[0.14em] uppercase">
 				Flights &amp; stays
 			</div>
-			<div class="grid gap-1.5">
-				{#each data.keyItems as it (it.id)}
-					<a
-						href={withOrigin(`/trips/${data.trip.slug}/items/${it.id}`, page.url.pathname)}
-						class="border-line bg-surface hover:bg-surface-2 active:bg-surface-2 flex items-center gap-2.5 rounded-lg border px-3 py-2"
-					>
-						<TypeIcon type={it.type} size={20} />
-						<span class="text-ink truncate text-sm">{it.title}</span>
-					</a>
-				{/each}
-			</div>
+			<Card>
+				<div class="px-4" data-key-items>
+					{#each data.keyItems as it, i (it.id)}
+						{#snippet subline()}
+							{#if it.flight}<FlightSubLine sub={it.flight} />{/if}
+						{/snippet}
+						{#snippet chip()}
+							<NeedsBookingChip />
+						{/snippet}
+						<Row
+							type={it.type}
+							subtype={it.subtype}
+							title={it.title}
+							sub={it.sub}
+							subline={it.flight ? subline : undefined}
+							href={withOrigin(`/trips/${data.trip.slug}/items/${it.id}`, page.url.pathname)}
+							trailing={rowTrailing({ chip: it.needsBooking ? 'needs-booking' : undefined }) === 'chip' ? chip : undefined}
+							divider={i < data.keyItems.length - 1}
+						/>
+					{/each}
+				</div>
+			</Card>
 		</section>
 	{/if}
 	{/if}

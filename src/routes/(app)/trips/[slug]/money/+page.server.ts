@@ -1,5 +1,6 @@
 import type { PageServerLoad } from './$types';
-import type { Expense, Settlement, TripMember, Item, TripBudget, MoneyUnitRecord } from '$lib/types';
+import type { Expense, Settlement, TripMember, Item, TripBudget, MoneyUnitRecord, Day, Phase } from '$lib/types';
+import { rowContent } from '$lib/itinerary/row';
 import { tripToday, tripTz } from '$lib/shell/trip-time';
 import { computeBalances } from '$lib/money/debt-simplify';
 import { moneyGlance, groupBudgetTotal, myShareOfExpenses } from '$lib/money/money-glance';
@@ -12,7 +13,7 @@ import { unitForMember, effectiveUnitBudget, unitSpent } from '$lib/money/money-
 // to settle or edit. The Money *tab* is blocked by #166's nav merge; this route is
 // reachable directly and renders Trip-Mode (clay) chrome via resolveChromeMode.
 export const load: PageServerLoad = async ({ parent, locals }) => {
-	const { trip, membership } = await parent();
+	const { trip, membership, days, phases } = await parent();
 
 	const [expenses, settlements, members, items, moneyUnits] = await Promise.all([
 		locals.pb.collection('expenses').getFullList<Expense>({
@@ -32,7 +33,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 		// for the drill-down list; linkage to an expense is read from expenses.linked_item.
 		locals.pb.collection('items').getFullList<Item>({
 			filter: `trip = "${trip.id}"`,
-			fields: 'id,title,type,subtype,booked,cost_estimate_usd',
+			fields: 'id,title,type,subtype,booked,cost_estimate_usd,day,phase,start_time,end_time,end_date,location_name,description',
 			sort: '-cost_estimate_usd'
 		}),
 		// #230 / ADR-0015 — Money Units, for auto-scoping the glance to the viewer's own
@@ -79,13 +80,21 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 	const linkedItemIds = new Set(expenses.map((e) => e.linked_item).filter(Boolean) as string[]);
 	const remainingPlannedItems = items
 		.filter((i) => !i.booked && !linkedItemIds.has(i.id) && (i.cost_estimate_usd ?? 0) > 0)
-		.map((i) => ({
-			id: i.id,
-			title: i.title,
-			type: i.type,
-			subtype: i.subtype,
-			cost_estimate_usd: i.cost_estimate_usd
-		}));
+		.map((i) => {
+			// The Row's sub-line (#433): date · time · place, or a flight's parts.
+			const dayDate = i.day ? (days.find((d: Day) => d.id === i.day)?.date ?? '') : '';
+			const phaseName = i.phase ? (phases.find((p: Phase) => p.id === i.phase)?.name ?? '') : '';
+			const { sub, flight } = rowContent(i, { dayDate, phaseName });
+			return {
+				id: i.id,
+				title: i.title,
+				type: i.type,
+				subtype: i.subtype,
+				cost_estimate_usd: i.cost_estimate_usd,
+				sub,
+				flight
+			};
+		});
 
 	// #230 / ADR-0015 — auto-scope a UNIT view of the glance to the viewer's own unit
 	// (persistent + declared → no per-view picking; solo member = unit of one, unchanged).

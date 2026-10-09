@@ -2,17 +2,21 @@
 	import { withOrigin } from '$lib/shell/back-nav';
 	import { page } from '$app/state';
 	// Flights Smart List (#225) — a read-only chronological lens over the trip's
-	// flight items. Route (from → to) · departure/arrival date-times · per-flight
-	// passenger avatars. NO check-off, NO write actions: it is a view, not a
-	// checklist. Mirrors the Booking list's chrome (NavBar + lens banner + Card).
+	// flight items. Each flight is a Row (#433): the title, then `Thu Oct 1 · 2:05p →
+	// 4:20p · MKE → DEN` (the arrival time drops first when it won't fit), with the
+	// passengers as the trailing value. NO check-off, NO write actions: it is a view,
+	// not a checklist. Mirrors the Booking list's chrome (NavBar + lens banner + Card).
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
-	import TypeIcon from '$lib/ui/TypeIcon.svelte';
-	import Avatar from '$lib/ui/Avatar.svelte';
+	import Row from '$lib/ui/Row.svelte';
+	import PersonBubble from '$lib/ui/PersonBubble.svelte';
+	import FlightSubLine from '$lib/itinerary/components/FlightSubLine.svelte';
+	import { rowTrailing } from '$lib/itinerary/row';
 
 	let { data } = $props();
 
 	const listsBase = $derived(`/trips/${data.trip.slug}/lists`);
+	const MAX_BUBBLES = 3;
 </script>
 
 <NavBar title="Flights" subtitle="Auto · read-only" back backHref={listsBase} />
@@ -40,88 +44,29 @@
 		<Card>
 			<div class="px-4">
 				{#each data.rows as row, i (row.id)}
-					<div
-						class="flex items-center gap-3 py-[13px] {i < data.rows.length - 1
-							? 'border-line border-b'
-							: ''}"
-					>
-						<TypeIcon type="flight" size={34} />
-
-						<div class="min-w-0 flex-1">
-							<!-- Route: from → to -->
-							<div class="text-ink flex items-center gap-1.5 text-sm leading-tight font-semibold">
-								<span class="truncate">{row.from || row.title}</span>
-								<svg
-									class="text-ink-muted shrink-0"
-									width="13"
-									height="13"
-									viewBox="0 0 20 20"
-									fill="none"
-									aria-label="to"
-								>
-									<path
-										d="M4 10h11M11 6l4 4-4 4"
-										stroke="currentColor"
-										stroke-width="1.8"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									/>
-								</svg>
-								<span class="truncate">{row.to || '—'}</span>
-							</div>
-
-							<!-- Departure / arrival date-times -->
-							<div class="text-ink-muted mt-0.5 truncate font-mono text-[11px] tracking-tight">
-								{#if row.dep.date || row.dep.time}
-									<span>{[row.dep.date, row.dep.time].filter(Boolean).join(' · ')}</span>
-								{:else}
-									<span class="italic">No departure set</span>
-								{/if}
-								{#if row.arr.date || row.arr.time}
-									<span class="text-line">&nbsp;→&nbsp;</span>
-									<span>{[row.arr.date, row.arr.time].filter(Boolean).join(' · ')}</span>
-								{/if}
-							</div>
-						</div>
-
-						<!-- Passenger avatars (placeholder → initials) -->
-						{#if row.assignees.length > 0}
-							<span class="flex shrink-0 items-center" aria-label="Passengers">
-								{#each row.assignees.slice(0, 4) as a, j (j)}
-									<span
-										class="ring-surface inline-flex rounded-full ring-[1.5px]"
-										style="margin-left:{j === 0 ? 0 : -6}px;"
-									>
-										<Avatar img={a.img} initial={a.initial} alt={a.name} size={20} />
-									</span>
+					{#snippet subline()}
+						<FlightSubLine sub={row.sub} />
+					{/snippet}
+					{#snippet trailing()}
+						<span class="flex items-center" aria-label="{row.assignees.length} on this flight">
+							<span class="flex -space-x-1.5">
+								{#each row.assignees.slice(0, MAX_BUBBLES) as a, j (j)}
+									<PersonBubble name={a.name} initial={a.initial} img={a.img} />
 								{/each}
-								{#if row.assignees.length > 4}
-									<span
-										class="border-line bg-surface-2 text-ink-muted ring-surface inline-flex h-5 w-5 items-center justify-center rounded-full border text-[8px] font-bold ring-[1.5px]"
-										style="margin-left:-6px;"
-									>
-										+{row.assignees.length - 4}
-									</span>
-								{/if}
 							</span>
-						{/if}
-
-						<a
-							href={withOrigin(`/trips/${data.trip.slug}/items/${row.id}`, page.url.pathname)}
-							class="text-sky inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold"
-						>
-							Open
-							<svg width="13" height="13" viewBox="0 0 20 20" fill="none">
-								<path
-									d="M8 5l5 5-5 5"
-									stroke="currentColor"
-									stroke-width="1.8"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								/>
-							</svg>
-						</a>
-					</div>
+							{#if row.assignees.length > MAX_BUBBLES}
+								<span class="text-ink-soft ml-1 text-[11px] font-semibold">+{row.assignees.length - MAX_BUBBLES}</span>
+							{/if}
+						</span>
+					{/snippet}
+					<Row
+						type="flight"
+						title={row.title}
+						{subline}
+						href={withOrigin(`/trips/${data.trip.slug}/items/${row.id}`, page.url.pathname)}
+						trailing={rowTrailing({ people: row.assignees.length }) === 'people' ? trailing : undefined}
+						divider={i < data.rows.length - 1}
+					/>
 				{/each}
 			</div>
 		</Card>

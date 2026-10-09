@@ -10,7 +10,9 @@
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
-	import TypeIcon from '$lib/ui/TypeIcon.svelte';
+	import Row from '$lib/ui/Row.svelte';
+	import FlightSubLine from '$lib/itinerary/components/FlightSubLine.svelte';
+	import { rowTrailing } from '$lib/itinerary/row';
 	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
 	import { untrack } from 'svelte';
 
@@ -194,18 +196,24 @@
 				</span>
 			</div>
 			<Card>
-				<div class="divide-line divide-y">
-					{#each data.remainingPlannedItems as item (item.id)}
-						<a
+				<div class="px-4">
+					{#each data.remainingPlannedItems as item, i (item.id)}
+						{#snippet subline()}
+							{#if item.flight}<FlightSubLine sub={item.flight} />{/if}
+						{/snippet}
+						{#snippet cost()}
+							<span class="text-ink-soft font-mono text-sm">${fmt(item.cost_estimate_usd ?? 0)}</span>
+						{/snippet}
+						<Row
+							type={item.type}
+							subtype={item.subtype}
+							title={item.title}
+							sub={item.sub}
+							subline={item.flight ? subline : undefined}
 							href={withOrigin(`/trips/${slug}/items/${item.id}`, page.url.pathname)}
-							class="hover:bg-surface-2 active:bg-surface-2 flex items-center gap-3 px-4 py-2.5 transition-colors"
-						>
-							<TypeIcon type={item.type} sub={item.subtype} size={28} />
-							<span class="text-ink-soft min-w-0 flex-1 truncate text-sm">{item.title}</span>
-							<span class="text-ink-muted shrink-0 font-mono text-sm"
-								>${fmt(item.cost_estimate_usd ?? 0)}</span
-							>
-						</a>
+							trailing={rowTrailing({ cost: item.cost_estimate_usd ?? 0 }) === 'cost' ? cost : undefined}
+							divider={i < data.remainingPlannedItems.length - 1}
+						/>
 					{/each}
 				</div>
 			</Card>

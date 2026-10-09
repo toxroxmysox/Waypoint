@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rowSub, flightSub, fitFlightSub, rowTrailing, flightRoute, rowContent } from './row';
+import { rowSub, flightSub, fitFlightSub, rowTrailing, flightRoute, rowContent, keyItemRows } from './row';
 
 const est = (s: string) => s.length * 7; // 7px per char, deterministic
 
@@ -116,6 +116,37 @@ describe('rowTrailing: the single trailing value', () => {
 		expect(rowTrailing({ people: 2 })).toBe('people');
 		expect(rowTrailing({})).toBe('chevron');
 		expect(rowTrailing({ cost: 0, people: 0 })).toBe('chevron');
+	});
+});
+
+describe('keyItemRows: the overview Flights & stays list', () => {
+	const days = [
+		{ id: 'd1', date: '2026-10-01 00:00:00.000Z' },
+		{ id: 'd2', date: '2026-10-03 00:00:00.000Z' }
+	];
+	const base = { subtype: '', status: 'planned' as const, booked: false, requires_booking: true, description: '', location_name: '' };
+	it('keeps flights and stays only, in date order, undated last', () => {
+		const rows = keyItemRows(
+			[
+				{ ...base, id: 'u', type: 'lodging', title: 'Undated', day: '', start_time: '', end_time: '', end_date: '' },
+				{ ...base, id: 'b', type: 'flight', title: 'Home', day: 'd2', start_time: '', end_time: '', end_date: '' },
+				{ ...base, id: 'meal', type: 'meal', title: 'Dinner', day: 'd1', start_time: '', end_time: '', end_date: '' },
+				{ ...base, id: 'a', type: 'lodging', title: 'Hotel', day: 'd1', start_time: '', end_time: '', end_date: '2026-10-03' }
+			],
+			days
+		);
+		expect(rows.map((r) => r.id)).toEqual(['a', 'b', 'u']);
+		expect(rows[0].sub).toBe('Thu Oct 1–Sat Oct 3 · 2 nights');
+	});
+	it('flags what still needs booking', () => {
+		const [open, done] = keyItemRows(
+			[
+				{ ...base, id: 'o', type: 'flight', title: 'Out', day: 'd1', start_time: '', end_time: '', end_date: '' },
+				{ ...base, id: 'k', type: 'flight', title: 'Back', day: 'd2', booked: true, start_time: '', end_time: '', end_date: '' }
+			],
+			days
+		);
+		expect([open.needsBooking, done.needsBooking]).toEqual([true, false]);
 	});
 });
 
