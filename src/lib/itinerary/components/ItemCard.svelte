@@ -122,7 +122,7 @@
 				{/if}
 				{#if menu}
 					<!-- 44px hit inside the card's own padding: -my-3 cancels the p-3 above and below. -->
-					<div class="relative z-10 -my-3 -mr-1 shrink-0">{@render menu()}</div>
+					<div class="relative z-10 focus-within:z-30 -my-3 -mr-1 shrink-0">{@render menu()}</div>
 				{/if}
 			</div>
 

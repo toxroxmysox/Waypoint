@@ -23,7 +23,7 @@
 // Route tokens: {slug} {tripId} {day1}..{day6} (day ids, 1-indexed).
 // Flags: --widths 375,768  --viewport (no full-page)  --out DIR  --keep
 //        --click SELECTOR (repeatable: click the first VISIBLE match before the shot,
-//        e.g. to open a menu)  --tag NAME (suffix on the filenames)
+//        e.g. to open a menu; a `scroll:SELECTOR` entry scrolls it to the top instead)  --tag NAME (suffix on the filenames)
 //        --timeout SECONDS.  VISUAL_DEBUG=1 surfaces PB/vite stderr.
 //
 // Shots are full-page by default, which means position:fixed chrome (BottomNav,
@@ -293,7 +293,15 @@ for (const width of widths) {
 		// Braces are stripped — they're shell brace-expansion in zsh/bash.
 		const stem = (route.replace(/^\//, '').replace(/[^a-zA-Z0-9-]+/g, '_') || 'root') + (tag ? `-${tag}` : '');
 		for (const sel of clicks) {
-			await page.locator(sel).filter({ visible: true }).first().click();
+			if (sel.startsWith('scroll:')) {
+				await page
+					.locator(sel.slice(7))
+					.filter({ visible: true })
+					.first()
+					.evaluate((el) => el.scrollIntoView({ block: 'start' }));
+			} else {
+				await page.locator(sel).filter({ visible: true }).first().click();
+			}
 			await page.waitForTimeout(300);
 		}
 		const file = path.join(outDir, `${stem}@${width}.png`);
