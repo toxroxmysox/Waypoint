@@ -314,7 +314,7 @@
 	<!-- Weight 3: the rest at NORMAL weight (overrides #154's muted later-today
 	     tier). Forward timed items woven with all untimed items. Full cards. -->
 	{#if restItems.length > 0}
-		<section class="space-y-2">
+		<section class="space-y-2" aria-label="Coming up">
 			<NowDivider label="Coming up" />
 			{#each restItems as item (item.id)}
 				{@const entries = skipEntries(item)}
