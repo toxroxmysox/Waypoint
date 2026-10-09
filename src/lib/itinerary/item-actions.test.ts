@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { itemPermissions, skipDestination, type ItemPermissionItem } from './item-actions';
+import {
+	itemMenuEntries,
+	itemPermissions,
+	skipDestination,
+	type ItemPermissionItem
+} from './item-actions';
 
 // #416 — each rule mirrors a real server gate. If one of these flips, the
 // matching gate changed (or this drifted from it): check items.pb.js,
@@ -121,5 +126,55 @@ describe('skipDestination', () => {
 
 	it('Planning Mode stays on the item page', () => {
 		expect(skipDestination('planning', 'paris-2026')).toBeNull();
+	});
+});
+
+// #437 — the ⋯ menu is a pure projection of the permissions: nothing here
+// decides who may do what, it only lists what #416 already allows.
+describe('itemMenuEntries (#437)', () => {
+	const ids = (role: string, item: Partial<ItemPermissionItem> = {}) =>
+		itemMenuEntries(perms(role, item)).map((e) => e.id);
+
+	it('owner and co_owner: Move, Skip, divider, Delete', () => {
+		for (const role of ['owner', 'co_owner']) {
+			expect(ids(role)).toEqual(['move', 'skip', 'divider', 'delete']);
+		}
+	});
+
+	it('labels read as the spec words', () => {
+		const labels = itemMenuEntries(perms('owner'))
+			.filter((e) => e.id !== 'divider')
+			.map((e) => (e as { label: string }).label);
+		expect(labels).toEqual(['Move to another day', 'Skip…', 'Delete']);
+	});
+
+	it("the item's creator (traveler) gets Move only", () => {
+		expect(ids('traveler', { created_by: ME })).toEqual(['move']);
+	});
+
+	it('a viewer who created the item still gets Move only (creator check precedes the viewer block)', () => {
+		expect(ids('viewer', { created_by: ME })).toEqual(['move']);
+	});
+
+	it('everyone else gets no entries, so no ⋯', () => {
+		expect(ids('traveler')).toEqual([]);
+		expect(ids('viewer')).toEqual([]);
+		expect(ids('')).toEqual([]);
+	});
+
+	it('an idea (not on a day) has nothing to skip', () => {
+		expect(ids('owner', { status: 'unplanned', day: '' })).toEqual(['move', 'divider', 'delete']);
+	});
+
+	it('never starts or ends with a divider', () => {
+		for (const role of ['owner', 'co_owner', 'traveler', 'viewer']) {
+			for (const created_by of [ME, OTHER]) {
+				for (const item of [{}, { status: 'unplanned', day: '' }]) {
+					const e = ids(role, { created_by, ...item });
+					expect(e[0]).not.toBe('divider');
+					expect(e.at(-1)).not.toBe('divider');
+				}
+			}
+		}
 	});
 });
