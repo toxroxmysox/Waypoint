@@ -103,7 +103,7 @@ test.describe('Ideas grouped by type (#424)', () => {
 		const t = (await target.boundingBox())!;
 		const from = { x: f.x + 60, y: f.y + f.height / 2 };
 		const to = { x: t.x + t.width / 2, y: t.y + t.height / 2 };
-		const touch = (type: string, pts: { x: number; y: number }[]) =>
+		const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', pts: { x: number; y: number }[]) =>
 			cdp.send('Input.dispatchTouchEvent', {
 				type,
 				touchPoints: pts.map((p, i) => ({ x: p.x, y: p.y, id: i, radiusX: 1, radiusY: 1, force: 1 }))
