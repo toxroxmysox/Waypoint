@@ -1109,7 +1109,7 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 		}
 	}
 
-	// Optional { now: 'hero' | 'free' | 'rail' | 'multi' } (#428; 'multi' = #430): items pinned to the REAL clock on today's
+	// Optional { now: 'hero' | 'free' | 'rail' | 'multi' | 'buckets' | 'deadline' } (#428; 'multi' = #430; 'buckets', 'deadline' = #431): items pinned to the REAL clock on today's
 	// day (days[1]; the trip is UTC, so UTC wall clock = trip-local), so Now has a live
 	// state to photograph. 'hero': a dinner that began 65 min ago and ends in 55, with
 	// place + address, booked, two codes and three Going members. 'free': nothing
@@ -1124,6 +1124,11 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 		const wall = (ms) => new Date(ms).toISOString().substring(0, 19).replace('T', ' ') + '.000Z';
 		const nowMs = Date.now();
 		const min = 60 * 1000;
+		// #431: a start-only item stays ongoing until a later timed item starts, so the default
+		// matrix's 'Whistling Straits walk' (10:00, no end) on today's day would be an extra
+		// Hero for the whole day, at a wall-clock-dependent moment. A `now` seed owns today.
+		const defaultToday = e.app.findRecordsByFilter('items', 'day = {:dayId}', '', 0, 0, { dayId: todayDay.id });
+		for (let d = 0; d < defaultToday.length; d++) e.app.delete(defaultToday[d]);
 		const tripMembersCol = e.app.findCollectionByNameOrId('trip_members');
 		const mkMember = (name) => {
 			const m = new Record(tripMembersCol);
@@ -1188,6 +1193,21 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 			const stayEnd = days.length >= 4 ? days[3].getString('date').substring(0, 10) : days[days.length - 1].getString('date').substring(0, 10);
 			mk({ title: 'Lakeside cabin', type: 'lodging', start_time: wall(nowMs - 200 * min), end_time: stayEnd + ' 11:00:00.000Z', end_date: stayEnd + ' 00:00:00.000Z', location_name: 'Cabin 6' });
 			mk({ title: 'Night walk', type: 'activity', start_time: wall(nowMs + 120 * min), sort_order: 51 });
+		} else if (mode === 'buckets') {
+			// #431: every time shape at once. Earlier today: 'Bike rental' (start-only, ended
+			// by 'Lunch'), 'Return rental clubs' (a deadline already past). Ongoing: 'Lunch at
+			// Fika' (start-only, no end) -> `NOW · since`. Coming up: 'Return kayaks' (a
+			// deadline), 'Sunset cruise', one untimed. Nothing may appear twice.
+			mk({ title: 'Bike rental', type: 'activity', start_time: wall(nowMs - 300 * min), location_name: 'Lakefront Bikes' });
+			mk({ title: 'Return rental clubs', type: 'transportation', end_time: wall(nowMs - 45 * min), location_name: 'Golf Galaxy' });
+			mk({ title: 'Lunch at Fika', type: 'meal', start_time: wall(nowMs - 95 * min), location_name: 'Fika Cafe', location_address: '210 N 8th St, Sheboygan, WI', assigned_to: [ownerMember.id] });
+			mk({ title: 'Return kayaks', type: 'activity', end_time: wall(nowMs + 150 * min), location_name: 'Sheboygan Marina', sort_order: 51 });
+			mk({ title: 'Sunset cruise', type: 'activity', start_time: wall(nowMs + 200 * min), end_time: wall(nowMs + 260 * min), location_name: 'Harbor Dock 4', sort_order: 52 });
+			mk({ title: 'Stargazing', type: 'activity', sort_order: 99 });
+		} else if (mode === 'deadline') {
+			// #431: free time counting down to a DEADLINE 25 min out, with dinner later.
+			mk({ title: 'Return rental clubs', type: 'transportation', end_time: wall(nowMs + 25 * min), location_name: 'Golf Galaxy' });
+			mk({ title: 'Dinner at The Immigrant', type: 'meal', start_time: wall(nowMs + 145 * min), end_time: wall(nowMs + 205 * min), location_name: 'The Immigrant Restaurant', sort_order: 51 });
 		} else if (mode === 'free') {
 			mk({ title: 'Return rental clubs', type: 'transportation', start_time: wall(nowMs + 90 * min), end_time: wall(nowMs + 120 * min), location_name: 'Golf Galaxy' });
 		}
