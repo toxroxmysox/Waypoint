@@ -82,7 +82,7 @@ Components: `ItemCard` (head / meta / strip), `RailStack` (the rail's per-card s
 | Rail: node | `type` | `MonoTypeIcon` 24px disc, vertically centred on the card; dashed when untimed. Segments (within the item only) are dropped under 6px. No line between cards. |
 | Head | `title` (2 lines max), `cost_estimate_usd` on the right | Cost shown in Planning Mode only. |
 | Meta | location; flight `MKE → DEN` (airport codes in `location_name` + the description's arrival label); note = first description line | One line, omitted when empty. Flight number not stored yet (#flights ticket). |
-| Strip left (priority order) | `Overlaps {partner}` · `To book` (gold, `needsBooking()`) or `✓ Booked` · documents count (`documents` where `kind != 'code'`) | Overflow: the lowest-priority entry shrinks to its icon, then drops (`fitStrip`). Overlap is red only when both items share a Going member, else ink. |
+| Strip left (priority order) | `Overlaps {partner}` · `To book` (gold, `needsBooking()`) or `✓ Booked` · documents count (`documents` where `kind != 'code'`) | Overflow: the lowest-priority entry shrinks to its icon, then drops (`fitStrip`). Overlap is red only when both items share a Going member (`assigned_to`; `not_going` never counts), else ink. The partner is the other item's title clipped to 16 characters (`Overlaps Red Rocks hike`; Scott, 2026-10-09). Only items with both a start and an end can overlap; untimed, start-only and end-only never do. Three-way: the note names a partner sharing people if one exists, else the first by start; each rail time goes red per collision with shared people, so a middle item can be red at both ends. |
 | Strip right | `assigned_to` bubbles (`PersonBubble`), then struck `not_going` bubbles; max 3 then `+n` | Shown when the trip has >1 member. The as-built "+ Me" chip and who's-on-this sheet are unchanged (#440 retires them). |
 | Votes | — | Not shown on planned cards. |
 | Height | content only | A card with a time label is at least 62px. |
@@ -123,7 +123,7 @@ Surfaces: the day page's Parking Lot (phone and tablet), the desktop Ideas panel
 
 ### 2b. Now — the Hero (mid-event Focus) — added by #428 (card system, D10/D11)
 
-One component, `Hero.svelte`, built here and reused by the item page header (#438) and the Swipe-Quiz face (#443). On Now it renders the ongoing item (one, for now; several Heroes are #429).
+One component, `Hero.svelte`, built here and reused by the item page header (#438) and the Swipe-Quiz face (#443). On Now it renders one Hero per ongoing item (several Heroes: #430, below).
 
 | Row, top to bottom | Shows | Absent when |
 |---|---|---|
@@ -137,7 +137,8 @@ One component, `Hero.svelte`, built here and reused by the item page header (#43
 - **`⋯`:** `itemMenuEntries` with Move and Delete masked off, so only `Skip…` (owner / co_owner). The sheet is `ItemActionSheets`; a refused Skip shows `ITEM_ACTION_ERRORS.skip` in the sheet. Now is the Skip destination, so it refreshes in place and opens the "Replace it" ideas strip.
 - **Tap:** the card opens the item page; the place, codes and `⋯` sit above that link.
 - **Props (for #438 / #443):** `item`, `members`, `status` (live styling when set), `timeText` (non-live time line), `typeLine` (`Meal · Fine dining`), `codes`, `href`, `placeLink`, `showGoing`, `menu` snippet, `children` snippet.
-- **Not here:** the free-time card text, several Heroes, start-only `NOW · since` (#430, #431). The lists around the Hero are 2c.
+- **Several Heroes (#430):** every ongoing timed item gets a full Hero, stacked 12px apart, no divider. Order: items the viewer is going to (their trip_members id in `assigned_to`), then everyone else's; each group by start time, then end time. A Multi-day Item is never a Hero (it stays the banner / Span). No conflict is shown between Heroes: no overlap note, no red times. The free-time card shows only when nothing is ongoing for anyone. Each Hero has its own `⋯` / Skip (one shared sheet, pointed at that item). Seam: `getNowFeed(items, now, hasToday, viewerMemberId)`; mid-event focus is `{ heroes, currentItem (= heroes[0]), minutesRemaining (of heroes[0]) }`.
+- **Not here:** the free-time card text, start-only `NOW · since` (#431). The lists around the Hero are 2c.
 
 ### 2c. Now's lists and Next 3 days — Trip Mode on the rail — added by #429 (card system, D2/D5/D10)
 
@@ -156,7 +157,7 @@ Earlier today, Coming up and the Next 3 days tab use the day page's Timeline Rai
 - **Next item:** no accent, no `Up next` pill. The Hero is the only accent on Now.
 - **Strip, left, in priority order:** `To book` (gold) > the booked slot > documents count. The booked slot in Trip Mode is `✓ {code}` (first code in mono, `+n` for the rest) when the item is booked and has a code, else `✓ Booked`. The chip is a button: tap copies the first code (toast `Code copied`; clipboard refused: `Could not copy — open the item to copy the code`) and does not open the item. Its 44px hit area is padding cancelled by negative margin, so card height does not change. Overflow: the chip shrinks to its check icon like any entry; its accessible name always carries the code and the `+n`. Earlier today keeps the chip, in ink-muted.
 - **Strip, right:** Going bubbles, unchanged. Documents count comes from `docCountsForItems` (files only; codes are the chip).
-- **Feed rules unchanged** (`getNowFeed`): Earlier today = timed items whose end has passed in the trip's clock; Coming up = forward timed items woven with untimed ones. Deadline-only and start-only items are #431; several Heroes and `NOW · since` are #430; the free-time `until {next}` text is #431.
+- **Feed rules unchanged** (`getNowFeed`): Earlier today = timed items whose end has passed in the trip's clock; Coming up = forward timed items woven with untimed ones. Deadline-only and start-only items are #431; `NOW · since` is #431 (several Heroes shipped in #430); the free-time `until {next}` text is #431.
 - **`ItemCard` props added:** `muted`, `menu` (snippet). `RailStack`: `past`. `MonoTypeIcon`: variant `outlined`. `CardStrip`: `muted`; `StripEntry` / `stripEntries` / `stripCode` live in `card-anatomy.ts`.
 
 ### 3. Item detail

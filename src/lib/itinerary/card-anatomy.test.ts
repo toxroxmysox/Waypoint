@@ -98,11 +98,41 @@ describe('overlapPairs', () => {
 		expect(overlapPairs([a, b]).get('a')?.shared).toBe(false);
 		expect(overlapPairs([{ ...a, assigned_to: ['x'] }, { ...b, assigned_to: ['y'] }]).get('a')?.shared).toBe(false);
 	});
-	it('touching ranges do not overlap; start-only never does', () => {
+	it('Going only: not_going members never count as shared', () => {
+		const a = mk({ id: 'a', start_time: t('10:00'), end_time: t('12:00'), assigned_to: ['x'], not_going: ['y'] });
+		const b = mk({ id: 'b', start_time: t('11:00'), end_time: t('13:00'), assigned_to: ['z'], not_going: ['x'] });
+		expect(overlapPairs([a, b]).get('a')?.shared).toBe(false);
+	});
+	it('flags which rail times go red: earlier end, later start', () => {
+		const m = overlapPairs([lunch, tee]);
+		expect(m.get('tee')).toMatchObject({ redStart: false, redEnd: true });
+		expect(m.get('lunch')).toMatchObject({ redStart: true, redEnd: false });
+		const a = mk({ id: 'a', start_time: t('10:00'), end_time: t('12:00') });
+		const b = mk({ id: 'b', start_time: t('11:00'), end_time: t('13:00') });
+		expect(overlapPairs([a, b]).get('a')).toMatchObject({ redStart: false, redEnd: false });
+	});
+	it('three-way: a shared partner outranks an earlier unshared one', () => {
+		const a = mk({ id: 'a', title: 'A', start_time: t('10:00'), end_time: t('14:00'), assigned_to: ['k'] });
+		const b = mk({ id: 'b', title: 'B', start_time: t('11:00'), end_time: t('12:00'), assigned_to: ['j'] });
+		const c = mk({ id: 'c', title: 'C', start_time: t('12:30'), end_time: t('13:30'), assigned_to: ['k'] });
+		const m = overlapPairs([a, b, c]);
+		expect(m.get('a')).toMatchObject({ partnerTitle: 'C', shared: true, redEnd: true });
+		expect(m.get('c')).toMatchObject({ partnerTitle: 'A', shared: true, redStart: true });
+		// B only collides with A, and they share nobody: ink.
+		expect(m.get('b')).toMatchObject({ partnerTitle: 'A', shared: false, redStart: false, redEnd: false });
+	});
+	it('three-way: a middle item is red at both ends when it collides with shared people on each side', () => {
+		const a = mk({ id: 'a', start_time: t('10:00'), end_time: t('12:00'), assigned_to: ['k'] });
+		const b = mk({ id: 'b', start_time: t('11:00'), end_time: t('13:00'), assigned_to: ['k'] });
+		const c = mk({ id: 'c', start_time: t('12:30'), end_time: t('14:00'), assigned_to: ['k'] });
+		expect(overlapPairs([a, b, c]).get('b')).toMatchObject({ redStart: true, redEnd: true });
+	});
+	it('touching ranges do not overlap; start-only and end-only never do', () => {
 		const a = mk({ id: 'a', start_time: t('10:00'), end_time: t('12:00') });
 		const b = mk({ id: 'b', start_time: t('12:00'), end_time: t('13:00') });
 		const c = mk({ id: 'c', start_time: t('11:00') });
-		expect(overlapPairs([a, b, c]).size).toBe(0);
+		const d = mk({ id: 'd', end_time: t('11:30') });
+		expect(overlapPairs([a, b, c, d]).size).toBe(0);
 	});
 });
 
@@ -179,7 +209,7 @@ describe('stripCode (#429: the Trip Mode ✓ {code} chip)', () => {
 });
 
 describe('stripEntries (#429)', () => {
-	const pair: OverlapInfo = { partnerId: 'p', partnerTitle: 'Lunch', shared: true, role: 'later' };
+	const pair: OverlapInfo = { partnerId: 'p', partnerTitle: 'Lunch', shared: true, role: 'later', redStart: true, redEnd: false };
 	const base = { overlap: pair, needsBooking: false, booked: true, codes: [{ label: '', value: 'ABC123' }], docCount: 2 };
 	const kinds = (e: { kind: string }[]) => e.map((x) => x.kind);
 

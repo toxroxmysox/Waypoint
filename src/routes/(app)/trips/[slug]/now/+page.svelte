@@ -62,7 +62,7 @@
 
 	// The merged feed: faded past / Focus / normal rest (timed + untimed woven).
 	// Named nowFeed (not `feed`/`state`) to avoid shadowing the $state rune.
-	const nowFeed = $derived(getNowFeed(data.todayItems, now, data.hasToday));
+	const nowFeed = $derived(getNowFeed(data.todayItems, now, data.hasToday, data.membership?.id ?? ''));
 	const focus = $derived(nowFeed.focus);
 	const pastItems = $derived(nowFeed.pastItems);
 	const restItems = $derived(nowFeed.restItems);
@@ -83,7 +83,6 @@
 	// Coming up card's `⋯` (#429). Entries come from the item permissions (Skip for
 	// owner/co_owner of a planned, dated item); Move and Delete stay on the item
 	// page, so they are masked off here. ONE Skip sheet, pointed at `skipTarget`.
-	const heroItem = $derived(focus.kind === 'mid-event' ? focus.currentItem : null);
 	function skipEntries(item: Item) {
 		const perms = data.membership ? itemPermissions(data.membership, item) : null;
 		return perms ? itemMenuEntries({ canMove: false, canSkip: perms.canSkip, canDelete: false }) : [];
@@ -203,22 +202,29 @@
 	<!-- Weight 2: Focus — the live state, front-and-centre, full detail. Auto-scroll target. -->
 	<div id="now-focus" class="scroll-mt-[110px]">
 		{#if focus.kind === 'mid-event'}
-			<Hero
-				item={focus.currentItem}
-				members={data.members}
-				status={heroStatus(focus.currentItem, now)}
-				codes={focus.currentItem.confirmation_codes ?? []}
-				href={`/trips/${data.trip.slug}/items/${focus.currentItem.id}`}
-			>
-				{#snippet menu()}
-					<ItemActionsMenu
-						entries={skipEntries(focus.currentItem)}
-						onselect={(id) => {
-							if (id === 'skip') askSkip(focus.currentItem);
-						}}
-					/>
-				{/snippet}
-			</Hero>
+			<!-- #430: a Hero for every ongoing item (the viewer's first, then by start). Stacking
+			     already says "at the same time", so no conflict is shown between them. -->
+			<div class="space-y-3" data-testid="now-heroes">
+				{#each focus.heroes as hero (hero.id)}
+					{@const heroEntries = skipEntries(hero)}
+					<Hero
+						item={hero}
+						members={data.members}
+						status={heroStatus(hero, now)}
+						codes={hero.confirmation_codes ?? []}
+						href={`/trips/${data.trip.slug}/items/${hero.id}`}
+					>
+						{#snippet menu()}
+							<ItemActionsMenu
+								entries={heroEntries}
+								onselect={(id) => {
+									if (id === 'skip') askSkip(hero);
+								}}
+							/>
+						{/snippet}
+					</Hero>
+				{/each}
+			</div>
 		{:else if focus.kind === 'free-time'}
 			<Card>
 				<div class="p-6 text-center">

@@ -26,18 +26,26 @@ function isMultiDay(i: Item): boolean {
 	return !!i.end_date && i.end_date.trim() !== '';
 }
 
-/** The ongoing same-day timed item (latest end_time wins when several overlap). */
-function findCurrentItem(items: Item[], now: Date): Item | null {
+/**
+ * Every ongoing same-day timed item (#430: each one gets a Hero). Order: items
+ * the viewer is going to (their trip_members id in `assigned_to`) first, then
+ * everyone else's; each group by start time, then end time.
+ */
+function findOngoingItems(items: Item[], now: Date, viewerMemberId: string): Item[] {
 	const t = now.getTime();
-	const ongoing = items.filter((i) => {
-		if (isMultiDay(i)) return false;
-		if (!i.start_time || !i.end_time) return false;
-		return parseDateTime(i.start_time).getTime() <= t && t < parseDateTime(i.end_time).getTime();
-	});
-	if (ongoing.length === 0) return null;
-	return ongoing.sort(
-		(a, b) => parseDateTime(b.end_time).getTime() - parseDateTime(a.end_time).getTime()
-	)[0];
+	const isMine = (i: Item) => !!viewerMemberId && (i.assigned_to ?? []).includes(viewerMemberId);
+	return items
+		.filter((i) => {
+			if (isMultiDay(i)) return false;
+			if (!i.start_time || !i.end_time) return false;
+			return parseDateTime(i.start_time).getTime() <= t && t < parseDateTime(i.end_time).getTime();
+		})
+		.sort(
+			(a, b) =>
+				Number(isMine(b)) - Number(isMine(a)) ||
+				parseDateTime(a.start_time).getTime() - parseDateTime(b.start_time).getTime() ||
+				parseDateTime(a.end_time).getTime() - parseDateTime(b.end_time).getTime()
+		);
 }
 
 /** Same-day timed items that have not yet started, earliest first. */
@@ -60,16 +68,18 @@ function minutesBetween(from: Date, to: Date): number {
 export function getNowViewState(
 	todayItems: Item[],
 	now: Date,
-	hasToday: boolean
+	hasToday: boolean,
+	viewerMemberId = ''
 ): NowViewState {
 	if (!hasToday) return { focus: { kind: 'no-day' }, forwardItems: [] };
 
-	const currentItem = findCurrentItem(todayItems, now);
+	const heroes = findOngoingItems(todayItems, now, viewerMemberId);
 	const forwardItems = upcomingItems(todayItems, now);
 
-	if (currentItem) {
+	if (heroes.length > 0) {
+		const currentItem = heroes[0];
 		const minutesRemaining = minutesBetween(now, parseDateTime(currentItem.end_time));
-		return { focus: { kind: 'mid-event', currentItem, minutesRemaining }, forwardItems };
+		return { focus: { kind: 'mid-event', heroes, currentItem, minutesRemaining }, forwardItems };
 	}
 
 	if (forwardItems.length > 0) {
@@ -112,12 +122,18 @@ function pastItems(items: Item[], now: Date): Item[] {
  * Untimed items are the reason this exists: the old Now filtered to timed-only,
  * so a promoted (untimed) idea never rendered. The merge surfaces them here.
  *
- * In mid-event the ongoing item is the Focus and is excluded from `restItems`.
+ * In mid-event the Focus holds a Hero per ongoing item (#430: mine first, then by
+ * start) and none of them is in `restItems`.
  * In free-time / nothing-else / wrapped the Focus is a countdown/summary CARD
  * (not an item), so the next item stays as the first `restItems` row. Pure (no IO).
  */
-export function getNowFeed(todayItems: Item[], now: Date, hasToday: boolean): NowFeed {
-	const view = getNowViewState(todayItems, now, hasToday);
+export function getNowFeed(
+	todayItems: Item[],
+	now: Date,
+	hasToday: boolean,
+	viewerMemberId = ''
+): NowFeed {
+	const view = getNowViewState(todayItems, now, hasToday, viewerMemberId);
 
 	if (!hasToday) {
 		return { focus: view.focus, pastItems: [], restItems: [] };
@@ -125,8 +141,9 @@ export function getNowFeed(todayItems: Item[], now: Date, hasToday: boolean): No
 
 	const past = pastItems(todayItems, now);
 
-	// The ongoing item (mid-event Focus) must not double-render in the rest.
-	const focusItemId = view.focus.kind === 'mid-event' ? view.focus.currentItem.id : null;
+	// Every Hero (ongoing item) must not double-render in the rest. They have
+	// started, so `forwardItems` already omits them; this is a belt-and-braces guard.
+	const heroIds = new Set(view.focus.kind === 'mid-event' ? view.focus.heroes.map((i) => i.id) : []);
 
 	// Untimed, non-spanning items always belong to the rest (they're never past:
 	// no time pins them, and Trip Mode can't set 'done' — that's Closeout's).
@@ -134,7 +151,7 @@ export function getNowFeed(todayItems: Item[], now: Date, hasToday: boolean): No
 
 	// Forward timed items minus the Focus's ongoing item. `view.forwardItems` is
 	// already the timed, not-yet-started, multi-day-excluded set, earliest first.
-	const forwardTimed = view.forwardItems.filter((i) => i.id !== focusItemId);
+	const forwardTimed = view.forwardItems.filter((i) => !heroIds.has(i.id));
 
 	// Weave forward-timed + untimed into one display order (the #120 shared core).
 	const restItems = orderDayItems([...forwardTimed, ...untimed]);

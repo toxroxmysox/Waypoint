@@ -62,7 +62,6 @@
 	const meta = $derived(cardMeta(item));
 	const cost = $derived(mode === 'planning' ? item.cost_estimate_usd : 0);
 	const overlapNote = $derived(mode === 'planning' ? overlap : undefined);
-	const redConflict = $derived(!!overlapNote?.shared);
 
 	// Priority order (D2/D10): Overlaps > Needs booking > Booked (the `✓ {code}`
 	// chip in Trip Mode) > documents. Trip Mode drops the overlap note (#429).
@@ -96,8 +95,8 @@
 	<RailStack
 		{item}
 		{height}
-		redTop={redConflict && overlapNote?.role === 'later'}
-		redBottom={redConflict && overlapNote?.role === 'earlier'}
+		redTop={!!overlapNote?.redStart}
+		redBottom={!!overlapNote?.redEnd}
 		past={muted}
 	/>
 
