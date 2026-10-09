@@ -32,7 +32,7 @@
 {#if band}
 	<a
 		href={withOrigin(`/trips/${tripSlug}/items/${item.id}`, page.url.pathname)}
-		class="bg-surface-2 hover:bg-line/40 active:bg-line/40 relative block min-h-[44px] rounded-lg py-2 pr-3 transition-colors"
+		class="bg-surface-2 border-line hover:bg-line/40 active:bg-line/40 relative block min-h-[44px] rounded-lg border py-2 pr-3 transition-colors"
 		style="padding-left:{titleLeft}px;"
 		data-span-band={item.id}
 	>

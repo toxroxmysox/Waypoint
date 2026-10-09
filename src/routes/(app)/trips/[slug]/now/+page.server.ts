@@ -14,6 +14,7 @@ import { promotePlacement } from '$lib/trip-mode/promote';
 import { scoreVotes, sortByVoteScore } from '$lib/collaboration/voting';
 import { handleSaveMemory } from '$lib/memory/save-memory.server';
 import type { Memory } from '$lib/memory/types';
+import { sortSpans } from '$lib/itinerary/multi-day';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, membership, phases, days } = await parent();
@@ -175,7 +176,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		todayItems,
 		tomorrowItems,
 		tomorrowDate: tomorrowDay?.date ?? null,
-		multiDayItems,
+		multiDayItems: sortSpans(multiDayItems, days as Day[]),
 		checklists,
 		votesByItem,
 		docCountByItem,

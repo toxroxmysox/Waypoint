@@ -33,10 +33,29 @@ export function itemDateRange(item: Item, days: Day[]): { start: string; end: st
 
 /** Multi-day items whose [start, end] range includes targetDate ('YYYY-MM-DD'). */
 export function spanningItemsForDate(items: Item[], days: Day[], targetDate: string): Item[] {
-	return items.filter((item) => {
-		const range = itemDateRange(item, days);
-		return range !== null && range.start <= targetDate && targetDate <= range.end;
-	});
+	return sortSpans(
+		items.filter((item) => {
+			const range = itemDateRange(item, days);
+			return range !== null && range.start <= targetDate && targetDate <= range.end;
+		}),
+		days
+	);
+}
+
+/**
+ * Span bands in a stable, chronological order: earliest start date, then start
+ * time (untimed after timed on the same day), then title. Loaders can't do this
+ * in the query — `sort: 'day'` orders by the day's random id.
+ */
+export function sortSpans(items: Item[], days: Day[]): Item[] {
+	const key = (i: Item) => itemDateRange(i, days)?.start ?? '';
+	const time = (i: Item) => String(i.start_time ?? '') || '~';
+	return [...items].sort(
+		(a, b) =>
+			key(a).localeCompare(key(b)) ||
+			time(a).localeCompare(time(b)) ||
+			(a.title ?? '').localeCompare(b.title ?? '')
+	);
 }
 
 /** 'night X of N' for a spanned target date. total = number of nights. null if not multi-day. */
