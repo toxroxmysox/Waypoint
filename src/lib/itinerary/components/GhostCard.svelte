@@ -15,11 +15,9 @@
 	import type { GhostCard } from '$lib/itinerary/parking-lot-cards';
 	import type { MemberWithAvatar } from '$lib/collaboration/member-avatar';
 	import { VOTE_OPTIONS, type VoteValue } from '$lib/collaboration/voting';
-	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import { optimisticSubmit, nextVote } from '$lib/ui/optimistic-submit';
 	import VoteStacks from '$lib/collaboration/components/VoteStacks.svelte';
 	import VoteSentimentPill from '$lib/collaboration/components/VoteSentimentPill.svelte';
-	import type { ItemType } from '$lib/itinerary/types';
 
 	let {
 		card,
@@ -43,8 +41,6 @@
 
 	const payload = $derived(card.suggestion.payload ?? {});
 	const title = $derived((payload.title as string) || 'Untitled idea');
-	const type = $derived(((payload.type as ItemType) || 'activity') as ItemType);
-	const subtype = $derived((payload.subtype as string) || '');
 	const authorName = $derived(card.suggestion.author_name || 'A member');
 
 	// Authorship is the implicit endorsement — the author never votes their own.
@@ -97,7 +93,6 @@
 	aria-label="Pending idea: {title}"
 >
 	<div class="flex items-start gap-3 px-3 py-2.5">
-		<TypeIcon {type} sub={subtype} size={18} />
 		<div class="min-w-0 flex-1">
 			<div class="flex items-center gap-2">
 				<p class="text-ink truncate text-sm" title={title}>{title}</p>

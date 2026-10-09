@@ -1,0 +1,54 @@
+<script lang="ts">
+	// The idea card (#424; spec §Ideas grouping, D2/D7): title, then a `place · cost`
+	// sub-line. NO type icon: the group heading above carries the type. The vote pill
+	// is the existing read-only one (tap-to-vote pills are #425). Navigation is a
+	// stretched <a> (a button can't nest in an anchor); the pill and assignee footer
+	// ride above it (relative z-10). The host supplies the drag wrapper and any
+	// pull-up beside the card.
+	import { withOrigin } from '$lib/shell/back-nav';
+	import { page } from '$app/state';
+	import type { Item, TripMember } from '$lib/types';
+	import type { DisplayVote } from '$lib/collaboration/voting';
+	import Card from '$lib/ui/Card.svelte';
+	import VoteSentimentPill from '$lib/collaboration/components/VoteSentimentPill.svelte';
+	import AssigneeStacks from '$lib/itinerary/components/AssigneeStacks.svelte';
+	import { ideaSub } from '$lib/itinerary/idea-groups';
+
+	let {
+		item,
+		tripSlug,
+		votes = [],
+		members = [],
+		class: klass = ''
+	}: {
+		item: Item;
+		tripSlug: string;
+		votes?: DisplayVote[];
+		members?: TripMember[];
+		class?: string;
+	} = $props();
+
+	const sub = $derived(ideaSub(item));
+</script>
+
+<Card class="no-callout group-hover:shadow-card-strong group-active:bg-surface-2 {klass}">
+	<div class="relative min-h-[44px] px-3 py-2">
+		<a
+			href={withOrigin(`/trips/${tripSlug}/items/${item.id}`, page.url.pathname)}
+			class="absolute inset-0 rounded-lg after:absolute after:inset-0"
+			aria-label={item.title}
+		></a>
+		<p class="text-ink truncate text-sm font-semibold" title={item.title}>{item.title}</p>
+		{#if sub}
+			<p class="text-ink-muted mt-0.5 truncate text-xs" data-idea-sub>{sub}</p>
+		{/if}
+		{#if votes.length}
+			<div class="relative z-10 mt-1.5 w-fit">
+				<VoteSentimentPill {votes} />
+			</div>
+		{/if}
+	</div>
+	<!-- Assignee avatars + self-assign (ADR-0011 / #226) — child of the bordered
+	     card (#231); padding on the row collapses it when empty. -->
+	<AssigneeStacks itemId={item.id} itemTitle={item.title} assignedTo={item.assigned_to} {members} size={18} class="relative z-10 mb-2 px-3" />
+</Card>

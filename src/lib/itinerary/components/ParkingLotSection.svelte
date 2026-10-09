@@ -1,15 +1,17 @@
 <script lang="ts">
-	import { withOrigin } from '$lib/shell/back-nav';
-	import { page } from '$app/state';
 	import { dndzone, type DndEvent } from 'svelte-dnd-action';
 	import { flip } from 'svelte/animate';
 	import type { Item, Phase, Vote, TripMember } from '$lib/types';
-	import TypeIcon from '$lib/ui/TypeIcon.svelte';
-	import Card from '$lib/ui/Card.svelte';
-	import VoteSentimentPill from '$lib/collaboration/components/VoteSentimentPill.svelte';
-	import AssigneeStacks from '$lib/itinerary/components/AssigneeStacks.svelte';
-	import { titleCase } from '$lib/shell/format';
+	import IdeaCard from '$lib/itinerary/components/IdeaCard.svelte';
+	import IdeaGroupHeading from '$lib/itinerary/components/IdeaGroupHeading.svelte';
+	import { ideaDisplayOrder, ideaRunStarts, ideaScores } from '$lib/itinerary/idea-groups';
 
+	// #424: ideas under type headings (Lodging · Flights · Transportation ·
+	// Activities · Meals · Notes), idea cards without a type icon, no grip handle.
+	// Dnd mode: the WHOLE card is the drag source (touch: long-press; mouse:
+	// immediate) and `items` arrives already in display order from the day page, so
+	// svelte-dnd-action's children map 1:1 to the bound array; each group heading
+	// lives INSIDE the wrapper of the first idea of its run.
 	let {
 		items,
 		phases,
@@ -18,8 +20,7 @@
 		members = [],
 		dndEnabled = false,
 		collapsed = false,
-		dragDisabled = true,
-		startDrag = () => {},
+		dragActive = false,
 		pullUp = () => {},
 		onConsider = () => {},
 		onFinalize = () => {}
@@ -37,27 +38,36 @@
 		 * bound array. Keeps the parking lot a drop target while the cards are hidden.
 		 */
 		collapsed?: boolean;
-		dragDisabled?: boolean;
-		startDrag?: () => void;
+		/** A drag is in flight anywhere on the day: the collapsed strip grows so the drop target is easy to hit (#294). */
+		dragActive?: boolean;
 		/** Tap-to-plan from the pull-up chevron (appends the idea to the day). */
 		pullUp?: (itemId: string) => void;
 		onConsider?: (e: CustomEvent<DndEvent<Item>>) => void;
 		onFinalize?: (e: CustomEvent<DndEvent<Item>>) => void;
 	} = $props();
 
-	// Inert callers (desktop rail) pass mixed lists; keep the unplanned filter.
-	// In dnd mode the day page passes the already-scoped parking list verbatim so
-	// svelte-dnd-action's children map 1:1 to the bound array.
-	const unplannedItems = $derived(dndEnabled ? items : items.filter((i) => i.status === 'unplanned'));
+	const typeOf = (i: Item) => i.type;
+
+	// Inert callers (desktop rail) pass mixed lists: filter to unplanned, then group
+	// and sort by vote score. In dnd mode the day page passes the already-ordered
+	// parking list verbatim so the dnd children map 1:1 to the bound array.
+	const inertItems = $derived(
+		ideaDisplayOrder(
+			items.filter((i) => i.status === 'unplanned'),
+			typeOf,
+			ideaScores(votesByItem)
+		)
+	);
+	const starts = $derived(ideaRunStarts(dndEnabled ? items : inertItems, typeOf));
 	const FLIP_MS = 150;
 
-	function onHandlePointer(e: Event) {
-		e.stopPropagation();
-		e.preventDefault();
-		startDrag();
-	}
-	function onHandleKeydown(e: KeyboardEvent) {
-		if (e.key === 'Enter' || e.key === ' ') startDrag();
+	// #353: hold this long before a touch becomes a drag (same as the timeline);
+	// below it the press is a tap (the card opens) and movement means scroll.
+	const LONG_PRESS_MS = 250;
+
+	// The dragged clone drops its heading: the heading belongs to the list, not the card.
+	function dropHeading(el: HTMLElement | undefined) {
+		el?.querySelector('[data-idea-heading]')?.remove();
 	}
 </script>
 
@@ -71,16 +81,19 @@
 	     itinerary-item is in flight so the user sees where they can drop (#294). -->
 	<section
 		class="parking-dropzone {collapsed
-			? `parking-dropzone--collapsed flex ${dragDisabled ? 'min-h-[2.75rem]' : 'min-h-[5.5rem]'} items-center justify-center rounded-lg border border-dashed border-line px-2 transition-[min-height] duration-150`
+			? `parking-dropzone--collapsed flex ${dragActive ? 'min-h-[5.5rem]' : 'min-h-[2.75rem]'} items-center justify-center rounded-lg border border-dashed border-line px-2 transition-[min-height] duration-150`
 			: 'min-h-[3rem] space-y-1.5'}"
 		data-empty={items.length === 0}
+		data-parking-zone
 		use:dndzone={{
 			items,
-			dragDisabled,
+			dragDisabled: false,
 			type: 'itinerary-item',
 			flipDurationMs: FLIP_MS,
 			dropTargetStyle: {},
 			dropTargetClasses: ['parking-dropzone--over'],
+			delayTouchStart: LONG_PRESS_MS,
+			transformDraggedElement: dropHeading,
 			// #324: resolve the target zone by the FINGER/cursor position, not the
 			// dragged card's centre. A thin collapsed empty strip (min-h-[2.75rem])
 			// loses the default centre-of-card overlap contest to its taller
@@ -94,75 +107,38 @@
 		onfinalize={onFinalize}
 	>
 		{#each items as item (item.id)}
+			{@const start = starts.get(item.id)}
 			<!-- The flip wrapper must be the only keyed child. When collapsed it renders
 			     empty + zero-height: still a 1:1 DOM child for svelte-dnd-action, but the
-			     card is hidden behind the divider (#87). -->
+			     card is hidden behind the divider (#87). Otherwise it IS the drag target
+			     (whole-card drag) and carries the idea's name for the library's
+			     announcements. -->
 			<div
 				animate:flip={{ duration: FLIP_MS }}
-				class={collapsed
-					? 'no-callout h-0 w-0 shrink-0 basis-0 overflow-hidden'
-					: 'no-callout flex items-stretch gap-1'}
+				class={collapsed ? 'no-callout h-0 w-0 shrink-0 basis-0 overflow-hidden' : 'no-callout group'}
 				aria-hidden={collapsed}
+				aria-label={collapsed ? undefined : item.title}
 			>
 				{#if !collapsed}
-				<!-- Slot: drag handle (sibling of the link → no navigation) -->
-				<button
-					type="button"
-					class="text-ink-muted flex shrink-0 touch-none cursor-grab items-center px-1"
-					aria-label="Drag to plan or reorder"
-					onpointerdown={onHandlePointer}
-					onmousedown={onHandlePointer}
-					ontouchstart={onHandlePointer}
-					onkeydown={onHandleKeydown}
-				>
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-						<circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" />
-						<circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
-						<circle cx="9" cy="18" r="1.5" /><circle cx="15" cy="18" r="1.5" />
-					</svg>
-				</button>
-
-				<div class="min-w-0 flex-1">
-					<!-- #231: assignee footer inside the card border. Bordered <div> card
-					     + stretched <a> for navigation (button can't nest in an anchor);
-					     the footer rides above it (relative z-10). -->
-					<Card class="no-callout group-hover:shadow-card-strong group-active:bg-surface-2">
-						<div class="relative flex items-center gap-3 px-3 py-2">
-							<a
-								href={withOrigin(`/trips/${tripSlug}/items/${item.id}`, page.url.pathname)}
-								class="absolute inset-0 rounded-lg after:absolute after:inset-0"
-								aria-label={item.title}
-							></a>
-							<TypeIcon type={item.type} sub={item.subtype} size={18} />
-							<div class="min-w-0 flex-1">
-								<p class="text-ink truncate text-sm" title={item.title}>{item.title}</p>
-								{#if item.subtype}
-									<p class="text-ink-muted mt-0.5 text-[11px] tracking-wide uppercase">{titleCase(item.subtype)}</p>
-								{/if}
-								{#if votesByItem[item.id]?.length}
-									<div class="relative z-10 mt-1.5 w-fit">
-										<VoteSentimentPill votes={votesByItem[item.id]} />
-									</div>
-								{/if}
-							</div>
+					{#if start}
+						<IdeaGroupHeading type={start} />
+					{/if}
+					<div class="flex items-stretch gap-1">
+						<div class="min-w-0 flex-1">
+							<IdeaCard {item} {tripSlug} votes={votesByItem[item.id] ?? []} {members} />
 						</div>
-						<!-- Assignee avatars + self-assign (ADR-0011 / #226) — child of the
-						     bordered card (#231); padding on the row collapses it when empty. -->
-						<AssigneeStacks itemId={item.id} itemTitle={item.title} assignedTo={item.assigned_to} {members} size={18} class="relative z-10 mb-2 pr-3 pl-[2.25rem]" />
-					</Card>
-				</div>
-
-				<!-- Slot: pull-up affordance (tap to plan — sibling of the link) -->
-				<button
-					type="button"
-					class="text-ink-muted hover:text-ink-soft active:text-ink-soft flex shrink-0 items-center px-1"
-					aria-label="Pull up to plan"
-					onclick={() => pullUp(item.id)}
-				>
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-						<polyline points="18 15 12 9 6 15" />
-					</svg>
-				</button>
+						<!-- Pull-up: the owner's one primary action on the card (tap to plan). -->
+						<button
+							type="button"
+							class="text-ink-muted hover:text-ink-soft active:text-ink-soft flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center"
+							aria-label="Pull up to plan"
+							onclick={() => pullUp(item.id)}
+						>
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<polyline points="18 15 12 9 6 15" />
+							</svg>
+						</button>
+					</div>
 				{/if}
 			</div>
 		{/each}
@@ -170,57 +146,30 @@
 	{#if !collapsed && items.length === 0}
 		<p class="text-ink-muted mt-1.5 px-2 py-3 text-center text-xs italic">Drag an item here to unschedule it.</p>
 	{/if}
-{:else if unplannedItems.length === 0}
+{:else if inertItems.length === 0}
 	<p class="text-ink-muted text-sm italic">No parking lot items.</p>
 {:else}
 	<section class="space-y-1.5">
-		{#each unplannedItems as item (item.id)}
-			<!--
-				CARD_CONTENT_SPEC §2 parking-lot card (inert mode — desktop rail).
-				Drag/pull wiring lives in the dndEnabled branch above (#60).
-			-->
-			<!-- #231: assignee footer inside the card border. Bordered <div> card +
-			     stretched <a> for navigation; footer rides above it (relative z-10). -->
-			<Card class="group-hover:shadow-card-strong group-active:bg-surface-2">
-				<div class="relative flex items-center gap-3 px-3 py-2">
-					<a
-						href={withOrigin(`/trips/${tripSlug}/items/${item.id}`, page.url.pathname)}
-						class="absolute inset-0 rounded-lg after:absolute after:inset-0"
-						aria-label={item.title}
-					></a>
-					<div class="text-line flex shrink-0 cursor-grab items-center" aria-label="Drag to reorder">
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-							<circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" />
-							<circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
-							<circle cx="9" cy="18" r="1.5" /><circle cx="15" cy="18" r="1.5" />
-						</svg>
-					</div>
-
-					<TypeIcon type={item.type} sub={item.subtype} size={18} />
-
+		{#each inertItems as item (item.id)}
+			{@const start = starts.get(item.id)}
+			<!-- Inert mode (desktop Ideas panel): same grouping and card; no drag yet
+			     (mouse drag-to-plan from the rail is #445). The chevron is the
+			     card's affordance, not a control. -->
+			<div class="group">
+				{#if start}
+					<IdeaGroupHeading type={start} />
+				{/if}
+				<div class="flex items-stretch gap-1">
 					<div class="min-w-0 flex-1">
-						<p class="text-ink truncate text-sm" title={item.title}>{item.title}</p>
-						{#if item.subtype}
-							<p class="text-ink-muted mt-0.5 text-[11px] tracking-wide uppercase">{titleCase(item.subtype)}</p>
-						{/if}
-						{#if votesByItem[item.id]?.length}
-							<div class="relative z-10 mt-1.5 w-fit">
-								<VoteSentimentPill votes={votesByItem[item.id]} />
-							</div>
-						{/if}
+						<IdeaCard {item} {tripSlug} votes={votesByItem[item.id] ?? []} {members} />
 					</div>
-
-					<div class="text-ink-muted shrink-0" aria-label="Pull up to plan">
+					<div class="text-ink-muted flex shrink-0 items-center px-1" aria-label="Pull up to plan">
 						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 							<polyline points="18 15 12 9 6 15" />
 						</svg>
 					</div>
 				</div>
-				<!-- Assignee avatars + self-assign (ADR-0011 / #226) — child of the
-				     bordered card (#231); padding on the row collapses it when empty.
-				     Indent aligns past the 14px grip + 18px glyph. -->
-				<AssigneeStacks itemId={item.id} itemTitle={item.title} assignedTo={item.assigned_to} {members} size={18} class="relative z-10 mb-2 pr-3 pl-[3.5rem]" />
-			</Card>
+			</div>
 		{/each}
 	</section>
 {/if}

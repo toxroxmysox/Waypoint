@@ -5,8 +5,7 @@
 	import Button from '$lib/ui/Button.svelte';
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import DayCard from '$lib/itinerary/components/DayCard.svelte';
-	import PhaseParkingReorder from '$lib/itinerary/components/PhaseParkingReorder.svelte';
-	import GhostCard from '$lib/itinerary/components/GhostCard.svelte';
+	import PhaseIdeas from '$lib/itinerary/components/PhaseIdeas.svelte';
 	import DayMetricToggle from '$lib/itinerary/components/DayMetricToggle.svelte';
 	import FAB from '$lib/shell/components/FAB.svelte';
 	import IdeaCaptureSheet from '$lib/itinerary/components/IdeaCaptureSheet.svelte';
@@ -319,26 +318,17 @@
 					</Card>
 				{/if}
 
-				{#if parkingLotItems.length > 0}
-					<!-- #88 — drag-reorder ideas; persists sort_order among this phase's unplanned items. -->
-					<PhaseParkingReorder items={parkingLotItems} tripSlug={data.trip.slug} />
-				{/if}
-
-				{#if ghostCards.length > 0}
-					<!-- #248 — pending suggestions as dotted Ghost Cards, visible to all
-					     members and votable (viewers read-only). Below the real ideas;
-					     they're proposals awaiting review, not settled parking-lot items. -->
-					<div class="space-y-1.5">
-						{#each ghostCards as card (card.id)}
-							<GhostCard
-								{card}
-								members={data.members}
-								myMemberId={data.myMemberId}
-								canVote={canVoteGhosts}
-								canReview={canReviewGhosts}
-							/>
-						{/each}
-					</div>
+				{#if data.parkingCards.length > 0}
+					<!-- #424 — the phase's ideas (items + pending Ghost Cards, #248) grouped
+					     by type, each group sorted by vote score. -->
+					<PhaseIdeas
+						cards={data.parkingCards}
+						tripSlug={data.trip.slug}
+						members={data.members}
+						myMemberId={data.myMemberId}
+						canVoteGhosts={canVoteGhosts}
+						canReviewGhosts={canReviewGhosts}
+					/>
 				{/if}
 
 				{#if parkingLotItems.length === 0 && ghostCards.length === 0 && !addingIdea}

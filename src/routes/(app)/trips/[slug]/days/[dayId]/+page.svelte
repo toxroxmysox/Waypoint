@@ -13,6 +13,7 @@
 	import DayNav from '$lib/shell/components/DayNav.svelte';
 	import PhaseChip from '$lib/ui/PhaseChip.svelte';
 	import DayTimeline from '$lib/itinerary/components/DayTimeline.svelte';
+	import { ideaScores } from '$lib/itinerary/idea-groups';
 	import ParkingDivider from '$lib/itinerary/components/ParkingDivider.svelte';
 	import DragDropTimeline from '$lib/itinerary/components/DragDropTimeline.svelte';
 	import MultiDayBanner from '$lib/itinerary/components/MultiDayBanner.svelte';
@@ -156,10 +157,11 @@
 			items: data.parkingLotItems.filter((i) => i.phase === p.id)
 		}))}
 		dayPhaseIds={data.dayPhases.map((p) => p.id)}
+		scoreById={ideaScores(data.votesByItem)}
 		tripSlug={data.trip.slug}
 		dayId={data.day.id}
 	>
-		{#snippet children({ timelineItems, startDrag, pullUp, onTimelineConsider, onTimelineFinalize, parkingZones })}
+		{#snippet children({ timelineItems, pullUp, onTimelineConsider, onTimelineFinalize, parkingZones })}
 			<!-- Items -->
 			<section class="space-y-1.5">
 				<SectionH>
@@ -200,8 +202,7 @@
 							: null}
 						votesByItem={data.votesByItem}
 						members={data.members}
-						dragDisabled={zone.dragDisabled}
-						{startDrag}
+						dragActive={zone.dragActive}
 						{pullUp}
 						onConsider={zone.onConsider}
 						onFinalize={zone.onFinalize}

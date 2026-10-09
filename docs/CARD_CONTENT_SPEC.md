@@ -82,7 +82,7 @@ Components: `ItemCard` (head / meta / strip), `RailStack` (the rail's per-card s
 | Rail: node | `type` | `MonoTypeIcon` 24px disc, vertically centred on the card; dashed when untimed. Segments (within the item only) are dropped under 6px. No line between cards. |
 | Head | `title` (2 lines max), `cost_estimate_usd` on the right | Cost shown in Planning Mode only. |
 | Meta | location; flight `MKE → DEN` (airport codes in `location_name` + the description's arrival label); note = first description line | One line, omitted when empty. Flight number not stored yet (#flights ticket). |
-| Strip left (priority order) | `Overlaps {partner}` · `To book` (gold, `needsBooking()`) or `✓ Booked` · documents count (`documents` where `kind != 'code'`) | Overflow: the lowest-priority entry shrinks to its icon, then drops (`fitStrip`). Overlap is red only when both items share a Going member, else ink. |
+| Strip left (priority order) | `Overlaps {partner}` · `To book` (gold, `needsBooking()`) or `✓ Booked` · documents count (`documents` where `kind != 'code'`) | Overflow: the lowest-priority entry shrinks to its icon, then drops (`fitStrip`). Overlap is red only when both items share a Going member (`assigned_to`; `not_going` never counts), else ink. The partner is the other item's title clipped to 16 characters (`Overlaps Red Rocks hike`; Scott, 2026-10-09). Only items with both a start and an end can overlap; untimed, start-only and end-only never do. Three-way: the note names a partner sharing people if one exists, else the first by start; each rail time goes red per collision with shared people, so a middle item can be red at both ends. |
 | Strip right | `assigned_to` bubbles (`PersonBubble`), then struck `not_going` bubbles; max 3 then `+n` | Shown when the trip has >1 member. The as-built "+ Me" chip and who's-on-this sheet are unchanged (#440 retires them). |
 | Votes | — | Not shown on planned cards. |
 | Height | content only | A card with a time label is at least 62px. |
@@ -104,7 +104,22 @@ Timeline membership = `dayItems` (`day = X && end_date = ""`), ordered by `build
 | ~~Reactor avatars~~ → **Assignee avatars** | `assigned_to` (avatars via `member-avatar`); ~~`votes`~~ | self-assign "+ Me" / ItemForm | **ADR-0011 (#210):** card avatar slot = **assignees** (>1 member) + self-assign target. Votes now render as an **icon + count** pill (avatar stacks moved to detail). |
 | Cost | **`cost_estimate_usd`** (single "Cost") | form | Number only on the card — no expense link here (keep dense card clean). |
 
-**Parking-lot card** (phase-scoped `unplanned` pool, rendered under every day in the leg): drag handle, `TypeIcon`, `title`, `subtype`, **assignee avatars** (ADR-0011 #210 — was reactor avatars; votes → count pill), pull-up affordance. **No "Needs booking" pill** (uncommitted). Lifecycle per `PHASE_REDESIGN_PRD.md` (`pullToPlan` → planned+day; `pushToParking` → unplanned, day cleared, time stripped).
+**Parking-lot card** — AMENDED by #424 (card system, D7): see **2d** below. As built before #424: drag handle, `TypeIcon`, `title`, `subtype`, assignee avatars, pull-up. **No "Needs booking" pill** (uncommitted). Lifecycle per `PHASE_REDESIGN_PRD.md` (`pullToPlan` → planned+day; `pushToParking` → unplanned, day cleared, time stripped).
+
+### 2d. Ideas grouped by type (Parking Lot) — NEW by #424 (card system, D7)
+
+Surfaces: the day page's Parking Lot (phone and tablet), the desktop Ideas panel (>= 1280px), Phase Detail's parking list (`PhaseIdeas`; includes pending Ghost Cards).
+
+| Part | Rule | Source |
+|---|---|---|
+| Groups | One group per item type present, in this order: **Lodging · Flights · Transportation · Activities · Meals · Notes**. Empty groups are omitted; the legacy `checklist` type folds into Notes. | `idea-groups.ts` |
+| Heading | The 16px mono type glyph + the plural label (`IdeaGroupHeading`). | `MonoTypeIcon` |
+| Sort in a group | Weighted vote score desc (2 / 1 / 0 / -2), ties by `sort_order` asc. Never shown as a number. | `voting.ts`, `ideaGroups` |
+| Idea card | `title`, then a sub-line `place · cost` (`Sheboygan · $40`; empty parts dropped). Place = card meta (location; a flight's `MKE → DEN`; a note's first line). **No type icon**, no subtype line. | `ideaSub`, `cardMeta` |
+| Votes | The existing read-only sentiment pill under the sub-line. Tap-to-vote pills are #425. | `VoteSentimentPill` |
+| Assignees | Unchanged (who's going, ADR-0011). | `AssigneeStacks` |
+| Primary action | The owner's pull-up chevron on the day page (44px hit area), as built. A traveler's action stays deferred to #401. | `pullToPlan` |
+| Drag | Grip handles retired. Touch: long-press (250ms) anywhere on the card; mouse: immediate. Dropping on the day plans the idea. Dragging among ideas changes nothing (the order is the vote order): the zone snaps back, no write. Phase Detail has no drag (no day to drop on). The desktop Ideas panel is inert until #445. | `DragDropTimeline`, `ParkingLotSection` |
 
 ### 2b. Now — the Hero (mid-event Focus) — added by #428 (card system, D10/D11)
 
