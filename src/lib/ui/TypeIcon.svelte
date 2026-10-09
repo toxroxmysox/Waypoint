@@ -42,5 +42,5 @@
 	aria-hidden="true"
 	title={sub ?? type}
 >
-	<TypeGlyph {type} size={glyphSize} />
+	<TypeGlyph {type} {sub} size={glyphSize} />
 </span>

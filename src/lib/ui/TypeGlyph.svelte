@@ -4,7 +4,10 @@
 	// (#419). It carries no colour, box or accessible name; its host does.
 	import type { ItemType } from '$lib/types';
 
-	let { type, size }: { type: ItemType; size: number } = $props();
+	// `sub` refines the glyph where a subtype changes the picture: transportation
+	// draws a car / train / bus (Scott, 2026-10-09); `other` or none keeps the arrow.
+	// Plane is the separate `flight` type.
+	let { type, size, sub }: { type: ItemType; size: number; sub?: string } = $props();
 </script>
 
 {#if type === 'lodging'}
@@ -22,6 +25,63 @@
 		<path d="M3 11 12 4l9 7" />
 		<path d="M5 10v10h14V10" />
 		<path d="M10 20v-5h4v5" />
+	</svg>
+{:else if type === 'transportation' && sub === 'car'}
+	<svg
+		aria-hidden="true"
+		width={size}
+		height={size}
+		viewBox="0 0 24 24"
+		fill="none"
+		stroke="currentColor"
+		stroke-width="2"
+		stroke-linecap="round"
+		stroke-linejoin="round"
+	>
+		<path d="M5 17H3v-5l2-5h14l2 5v5h-2" />
+		<path d="M3 12h18" />
+		<circle cx="7.5" cy="17" r="1.5" />
+		<circle cx="16.5" cy="17" r="1.5" />
+		<path d="M9 17h6" />
+	</svg>
+{:else if type === 'transportation' && sub === 'train'}
+	<svg
+		aria-hidden="true"
+		width={size}
+		height={size}
+		viewBox="0 0 24 24"
+		fill="none"
+		stroke="currentColor"
+		stroke-width="2"
+		stroke-linecap="round"
+		stroke-linejoin="round"
+	>
+		<rect x="5" y="3" width="14" height="14" rx="4" />
+		<path d="M5 10h14" />
+		<path d="M12 3v7" />
+		<path d="M9 14h.01" />
+		<path d="M15 14h.01" />
+		<path d="m8 21 2-4" />
+		<path d="m16 21-2-4" />
+	</svg>
+{:else if type === 'transportation' && sub === 'bus'}
+	<svg
+		aria-hidden="true"
+		width={size}
+		height={size}
+		viewBox="0 0 24 24"
+		fill="none"
+		stroke="currentColor"
+		stroke-width="2"
+		stroke-linecap="round"
+		stroke-linejoin="round"
+	>
+		<rect x="4" y="3" width="16" height="15" rx="2" />
+		<path d="M4 11h16" />
+		<path d="M8 15h.01" />
+		<path d="M16 15h.01" />
+		<path d="M7 18v3" />
+		<path d="M17 18v3" />
 	</svg>
 {:else if type === 'transportation'}
 	<svg
