@@ -3,6 +3,9 @@
 import { getFieldConfig } from '$lib/itinerary/item-fields';
 import { rowSub, type RowItemFields } from '$lib/itinerary/row';
 import { titleCase } from '$lib/shell/format';
+import { canSelfAssign, goingStateOf, type GoingState } from '$lib/itinerary/assignment';
+import { goingPeople, type GoingPerson } from '$lib/trip-mode/hero';
+import type { TripMember } from '$lib/types';
 import type { ItemType } from '$lib/itinerary/types';
 
 /** `Meal · Dinner`: the type and subtype in words. A subtype of "other" adds nothing and drops. */
@@ -19,6 +22,37 @@ export function itemTypeLine(type: ItemType, subtype: string | undefined): strin
  */
 export function itemTimeText(item: Omit<RowItemFields, 'location_name'>, dayDate: string | undefined): string {
 	return rowSub({ type: item.type, start_time: item.start_time, end_time: item.end_time, end_date: item.end_date }, { dayDate });
+}
+
+export interface GoingView {
+	/** Going people first, then the struck not-going; never a no-answer member. */
+	people: GoingPerson[];
+	/** The viewer's own answer. */
+	mine: GoingState;
+	/** May the viewer answer: a non-viewer on a trip with more than one member. */
+	canAnswer: boolean;
+	/** `Are you going?` / `You're going` / `You're not going`; '' when they cannot answer. */
+	line: string;
+}
+
+/** The Hero's Going row (#440, CARD_SYSTEM D6): who answered, and the viewer's own prompt. */
+export function goingView(p: {
+	item: { assigned_to?: string[] | null; not_going?: string[] | null };
+	members: Array<Pick<TripMember, 'id'> & Partial<TripMember>>;
+	myMemberId: string;
+	role: string | undefined;
+}): GoingView {
+	const mine = p.myMemberId ? goingStateOf(p.item, p.myMemberId) : 'no_answer';
+	const active = p.members.filter((m) => !m.removed_at).length;
+	const canAnswer = !!p.myMemberId && canSelfAssign(p.role) && active > 1;
+	const line = !canAnswer
+		? ''
+		: mine === 'going'
+			? "You're going"
+			: mine === 'not_going'
+				? "You're not going"
+				: 'Are you going?';
+	return { people: goingPeople(p.item, p.members), mine, canAnswer, line };
 }
 
 /** `opentable.com` from a booking URL; the raw string when it is not one. */
