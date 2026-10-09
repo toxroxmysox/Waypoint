@@ -9,15 +9,17 @@ function wall(t: string | undefined): number {
 
 export interface HeroStatus {
 	label: 'NOW';
-	/** `until 4:00p · 55m left` */
+	/** `until 4:00p · 55m left`, or `since 1:00p` for a start-only item */
 	text: string;
 }
 
 /**
- * The live line: `NOW` + `until 4:00p · 55m left`. `now` is a trip-local-as-UTC
- * Date (trip-time `tripNow`), the same frame item times are stored in. Null
- * unless the item has a start and an end and `now` is inside [start, end): the
- * end is exclusive, so an item that ends this minute is already over.
+ * The live line: `NOW` + `until 4:00p · 55m left` for a range, `since 1:00p` for a
+ * start-only item (#431: no end to count to). `now` is a trip-local-as-UTC Date
+ * (trip-time `tripNow`), the same frame item times are stored in. Null for a
+ * range outside [start, end) (the end is exclusive: an item that ends this
+ * minute is already over), a start-only item before its start, and a deadline
+ * (end-only), which is never live.
  */
 export function heroStatus(
 	item: { start_time?: string; end_time?: string },
@@ -26,7 +28,9 @@ export function heroStatus(
 	const s = wall(item.start_time);
 	const e = wall(item.end_time);
 	const t = now.getTime();
-	if (Number.isNaN(s) || Number.isNaN(e) || t < s || t >= e) return null;
+	if (Number.isNaN(s) || t < s) return null;
+	if (Number.isNaN(e)) return { label: 'NOW', text: `since ${formatClock(item.start_time!)}` };
+	if (t >= e) return null;
 	const left = formatCountdown(Math.round((e - t) / 60000));
 	return { label: 'NOW', text: `until ${formatClock(item.end_time!)} · ${left} left` };
 }

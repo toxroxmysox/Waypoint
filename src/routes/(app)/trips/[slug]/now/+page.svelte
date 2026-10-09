@@ -227,12 +227,16 @@
 			</div>
 		{:else if focus.kind === 'free-time'}
 			<Card>
-				<div class="p-6 text-center">
-					<p class="text-ink-muted text-xs font-medium uppercase tracking-wide">Free time</p>
-					<p class="text-ink font-display mt-2 text-3xl font-semibold">
+				<!-- #431: centred. FREE TIME, a large countdown to the next timed start or
+				     deadline, `until {title}`. No second line (the rail's free-time label says it). -->
+				<div class="p-6 text-center" data-testid="free-time">
+					<p class="text-ink-muted text-xs font-semibold uppercase tracking-wide">Free time</p>
+					<p class="text-ink font-display mt-2 text-5xl leading-none font-semibold" data-testid="free-time-countdown">
 						{formatCountdown(focus.minutesUntilNext)}
 					</p>
-					<p class="text-ink-muted mt-1 text-sm">until next activity</p>
+					<p class="text-ink-soft mt-3 text-base break-words" data-testid="free-time-until">
+						until {focus.nextItem.title}
+					</p>
 				</div>
 			</Card>
 		{:else if focus.kind === 'wrapped-summary'}

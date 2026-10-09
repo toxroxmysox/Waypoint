@@ -35,8 +35,10 @@ export interface TripModeState {
 export type NowFocus =
 	| { kind: 'no-day' }
 	// #430: `heroes` = every ongoing timed item (viewer's first, then by start). `currentItem`
-	// is heroes[0] and `minutesRemaining` is its remainder; the view renders `heroes`.
-	| { kind: 'mid-event'; heroes: Item[]; currentItem: Item; minutesRemaining: number }
+	// is heroes[0]; `minutesRemaining` is its remainder, null for a start-only Hero (#431: no
+	// end to count to). The view renders `heroes`.
+	| { kind: 'mid-event'; heroes: Item[]; currentItem: Item; minutesRemaining: number | null }
+	// #431: `nextItem` is the next timed start OR deadline (end-only); `minutesUntilNext` counts to it.
 	| { kind: 'free-time'; nextItem: Item; minutesUntilNext: number }
 	| { kind: 'nothing-else-planned' }
 	// Day-wrapped summary counts what was PLANNED for today, not what's "done":
