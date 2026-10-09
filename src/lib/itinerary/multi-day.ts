@@ -1,4 +1,5 @@
 import type { Item, Day } from '$lib/types';
+import { formatClock, formatCalendarDate } from '$lib/shell/format';
 
 /** Extract 'YYYY-MM-DD' from a stored date/datetime string. '' if empty. */
 export function toDateOnly(s: string): string {
@@ -49,4 +50,44 @@ export function nightInfo(
 	const total = daysBetween(range.start, range.end);
 	const night = Math.min(daysBetween(range.start, targetDate) + 1, total);
 	return { night, total };
+}
+
+export type SpanPhase = 'first' | 'middle' | 'last';
+
+/**
+ * The Span band's one line for a spanned date (#423; spec §Span, CARD_SYSTEM D10/D11).
+ *  - stay (lodging):          `Check-in 3:00p · 3 nights` · `Night 2 of 3 · check-out Sat by 11:00a` · `Check-out by 11:00a`
+ *  - rental (transportation): `Pick up 10:00a` · `Day 2 of 5 · return Sun by 12:00p` · `Return by 12:00p`
+ *  - anything else:           `Starts` · `Day 2 of 5 · ends Sun` · `Ends` (neutral; the spec names only the two above)
+ * Times come from the stored wall clock (`start_time` on the first day, `end_time`
+ * on the last) and drop out when absent. The check-out weekday is a calendar date,
+ * formatted in UTC (#393). null when the item isn't multi-day.
+ */
+export function spanBandText(
+	item: Item,
+	days: Day[],
+	targetDate: string
+): { phase: SpanPhase; text: string } | null {
+	const range = itemDateRange(item, days);
+	if (!range) return null;
+	const nights = daysBetween(range.start, range.end);
+	const phase: SpanPhase =
+		targetDate <= range.start ? 'first' : targetDate >= range.end ? 'last' : 'middle';
+	const start = formatClock(item.start_time ?? '');
+	const end = formatClock(item.end_time ?? '');
+	const join = (...parts: string[]) => parts.filter(Boolean).join(' ');
+	const lodging = item.type === 'lodging';
+	const rental = item.type === 'transportation';
+	const startWord = lodging ? 'Check-in' : rental ? 'Pick up' : 'Starts';
+	const endWord = lodging ? 'Check-out' : rental ? 'Return' : 'Ends';
+
+	if (phase === 'first') {
+		const lead = join(startWord, start);
+		return { phase, text: lodging ? `${lead} · ${nights} ${nights === 1 ? 'night' : 'nights'}` : lead };
+	}
+	if (phase === 'last') return { phase, text: join(endWord, end ? `by ${end}` : '') };
+	const weekday = formatCalendarDate(range.end, { weekday: 'short' });
+	const idx = daysBetween(range.start, targetDate);
+	const count = lodging ? `Night ${idx + 1} of ${nights}` : `Day ${idx + 1} of ${nights + 1}`;
+	return { phase, text: `${count} · ${endWord.toLowerCase()} ${join(weekday, end ? `by ${end}` : '')}` };
 }
