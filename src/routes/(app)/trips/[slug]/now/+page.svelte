@@ -13,7 +13,6 @@
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import NowDivider from '$lib/trip-mode/components/NowDivider.svelte';
 	import TripModeCard from '$lib/trip-mode/components/TripModeCard.svelte';
-	import MemberContactStrip from '$lib/trip-mode/components/MemberContactStrip.svelte';
 	import MultiDayBanner from '$lib/itinerary/components/MultiDayBanner.svelte';
 	import TaskRow from '$lib/itinerary/components/TaskRow.svelte';
 	import IdeasStrip from '$lib/trip-mode/components/IdeasStrip.svelte';
@@ -386,9 +385,6 @@
 			{/each}
 		</div>
 	{/if}
-
-	<!-- #244: Members left the Trip nav — surface tap-to-contact a fellow traveller here. -->
-	<MemberContactStrip members={data.members} selfUserId={data.membership.user} />
 </main>
 
 <!-- #269 — the one memory composer (photo slot + 280-char thought). -->
