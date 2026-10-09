@@ -10,6 +10,8 @@
 	let {
 		item,
 		slug = '',
+		// #428: `isNext` no longer styles anything. The Hero is the only accent on Now
+		// (CARD_SYSTEM D10: Next carries no accent). Kept so callers need not change.
 		isNext = false,
 		// #246 Door 2 — skip affordance. Shown only for owner/co_owner (canSkip);
 		// posts ?/skipItem on the host route (the merged Now). onSkipped lets the
@@ -46,7 +48,7 @@
      stretched link via z-index. -->
 <div
 	class="relative rounded-xl border p-4 transition-colors
-		{isNext ? 'border-clay bg-clay/5 shadow-sm' : 'border-line bg-paper hover:border-ink-muted active:border-ink-muted'}"
+		border-line bg-paper hover:border-ink-muted active:border-ink-muted"
 >
 	<a
 		href={withOrigin(`/trips/${slug}/items/${item.id}`, page.url.pathname)}
@@ -62,9 +64,6 @@
 					<span class="font-mono text-ink text-base font-semibold">
 						{formatTime(item.start_time)}
 					</span>
-				{/if}
-				{#if isNext}
-					<Pill variant="trip" size="sm">Up next</Pill>
 				{/if}
 				{#if item.booked}
 					<Pill variant="booked" size="sm">Booked</Pill>

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { toast } from '$lib/shell/stores/toast';
 	import { useChromeMode } from '$lib/shell/chrome-mode';
 	import { skipDestination, ITEM_ACTION_ERRORS } from '$lib/itinerary/item-actions';
@@ -29,7 +29,8 @@
 		phases = [] as Phase[],
 		currentDay = '',
 		currentPhase = '',
-		form = null
+		form = null,
+		onskipped
 	}: {
 		moveOpen?: boolean;
 		skipOpen?: boolean;
@@ -48,6 +49,9 @@
 		currentPhase?: string;
 		/** The page's `form` result — covers a no-JS post that came back with an error. */
 		form?: { skipError?: string; deleteError?: string } | null;
+		/** A host that is itself the Skip destination (Now's Hero, #428) refreshes in place
+		 *  and gets this call, instead of navigating to itself. */
+		onskipped?: () => void;
 	} = $props();
 
 	const chromeMode = useChromeMode();
@@ -95,6 +99,11 @@
 						return;
 					}
 					skipOpen = false;
+					if (onskipped) {
+						await invalidateAll();
+						onskipped();
+						return;
+					}
 					// Trip Mode → Now (the ideas strip opens there). Planning Mode →
 					// stay: reload this page, where the item is an idea again.
 					const destination = skipDestination(chromeMode(), slug);

@@ -1017,6 +1017,71 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 		e.app.save(rec);
 	}
 
+	// Optional { now: 'hero' | 'free' } (#428): items pinned to the REAL clock on today's
+	// day (days[1]; the trip is UTC, so UTC wall clock = trip-local), so Now has a live
+	// state to photograph. 'hero': a dinner that began 65 min ago and ends in 55, with
+	// place + address, booked, two codes and three Going members. 'free': nothing
+	// ongoing, one item starting in 90 min. Default off: the fullness matrix is unchanged.
+	if (info.body && info.body['now'] && days.length >= 2) {
+		const mode = info.body['now'];
+		const todayDay = days[1];
+		const wall = (ms) => new Date(ms).toISOString().substring(0, 19).replace('T', ' ') + '.000Z';
+		const nowMs = Date.now();
+		const min = 60 * 1000;
+		const tripMembersCol = e.app.findCollectionByNameOrId('trip_members');
+		const mkMember = (name) => {
+			const m = new Record(tripMembersCol);
+			m.set('trip', trip.id);
+			m.set('role', 'traveler');
+			m.set('placeholder_name', name);
+			m.set('display_name', name);
+			e.app.save(m);
+			return m.id;
+		};
+		const mk = (fields) => {
+			const rec = new Record(itemsCol);
+			rec.set('trip', trip.id);
+			if (phaseId) rec.set('phase', phaseId);
+			rec.set('day', todayDay.id);
+			rec.set('status', 'planned');
+			rec.set('sort_order', 50);
+			rec.set('created_by', ownerMember.id);
+			for (const k in fields) rec.set(k, fields[k]);
+			e.app.save(rec);
+			return rec;
+		};
+		if (mode === 'hero') {
+			const kim = mkMember('Kim');
+			const dev = mkMember('Dev');
+			const dinner = mk({
+				title: 'Dinner at The Immigrant',
+				type: 'meal',
+				subtype: 'fine_dining',
+				start_time: wall(nowMs - 65 * min),
+				end_time: wall(nowMs + 55 * min),
+				location_name: 'The Immigrant Restaurant',
+				location_address: '1 Main St, Kohler, WI 53044',
+				booked: true,
+				assigned_to: [ownerMember.id, kim, dev]
+			});
+			const docsCol = e.app.findCollectionByNameOrId('documents');
+			const codes = [['Confirmation', 'IMM-48213'], ['Door PIN', '7731']];
+			for (let c = 0; c < codes.length; c++) {
+				const doc = new Record(docsCol);
+				doc.set('trip', trip.id);
+				doc.set('item', dinner.id);
+				doc.set('uploaded_by', ownerMember.id);
+				doc.set('kind', 'code');
+				doc.set('code_label', codes[c][0]);
+				doc.set('code_value', codes[c][1]);
+				e.app.save(doc);
+			}
+			mk({ title: 'Night walk', type: 'activity', start_time: wall(nowMs + 120 * min), sort_order: 51 });
+		} else if (mode === 'free') {
+			mk({ title: 'Return rental clubs', type: 'transportation', start_time: wall(nowMs + 90 * min), end_time: wall(nowMs + 120 * min), location_name: 'Golf Galaxy' });
+		}
+	}
+
 	return e.json(200, { tripId: trip.id, slug: slug, days: summary });
 });
 

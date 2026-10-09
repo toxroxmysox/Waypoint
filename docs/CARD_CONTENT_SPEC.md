@@ -104,6 +104,24 @@ Timeline membership = `dayItems` (`day = X && end_date = ""`), ordered by `build
 
 **Parking-lot card** (phase-scoped `unplanned` pool, rendered under every day in the leg): drag handle, `TypeIcon`, `title`, `subtype`, **assignee avatars** (ADR-0011 #210 — was reactor avatars; votes → count pill), pull-up affordance. **No "Needs booking" pill** (uncommitted). Lifecycle per `PHASE_REDESIGN_PRD.md` (`pullToPlan` → planned+day; `pushToParking` → unplanned, day cleared, time stripped).
 
+### 2b. Now — the Hero (mid-event Focus) — added by #428 (card system, D10/D11)
+
+One component, `Hero.svelte`, built here and reused by the item page header (#438) and the Swipe-Quiz face (#443). On Now it renders the ongoing item (one, for now; several Heroes are #429).
+
+| Row, top to bottom | Shows | Absent when |
+|---|---|---|
+| Header | 40px accent-filled type icon beside the title (Fraunces 22px); `⋯` at the right | `⋯`: viewer / traveler (no Skip), as `itemMenuEntries` |
+| Place | name, then address; the block opens Maps (44px min) | no place |
+| Live line | `NOW · until 4:00p · 55m left` in the accent (end exclusive; `< 1m left` in the last minute; ticks every 30s) | not ongoing |
+| Codes | one large (56px) mono tap-to-copy row per code, `LABEL` above the value, toast `Code copied` | no codes |
+| People | `✓ Booked` (ink, quiet), `Going` + a neutral bubble and name per going member | not booked / nobody going |
+
+- **Accent:** clay border (2px) and filled icon. The Hero is the only accent on Now: the Coming up divider is ink, and the next card has no accent or `Up next` pill (D10).
+- **`⋯`:** `itemMenuEntries` with Move and Delete masked off, so only `Skip…` (owner / co_owner). The sheet is `ItemActionSheets`; a refused Skip shows `ITEM_ACTION_ERRORS.skip` in the sheet. Now is the Skip destination, so it refreshes in place and opens the "Replace it" ideas strip.
+- **Tap:** the card opens the item page; the place, codes and `⋯` sit above that link.
+- **Props (for #438 / #443):** `item`, `members`, `status` (live styling when set), `timeText` (non-live time line), `typeLine` (`Meal · Fine dining`), `codes`, `href`, `placeLink`, `showGoing`, `menu` snippet, `children` snippet.
+- **Not here:** the free-time card, several Heroes, start-only `NOW · since` (#429).
+
 ### 3. Item detail
 
 | Slot | Field / source | Capture path | Notes |
