@@ -23,8 +23,18 @@ describe('heroStatus (the NOW line)', () => {
 	it('is null before the start', () => {
 		expect(heroStatus(item, now('12:59'))).toBeNull();
 	});
-	it('is null with no end time', () => {
-		expect(heroStatus({ start_time: at('13:00'), end_time: '' }, now('14:00'))).toBeNull();
+	it('#431: start-only reads `since` (no time left to count)', () => {
+		expect(heroStatus({ start_time: at('13:00'), end_time: '' }, now('14:00'))).toEqual({
+			label: 'NOW',
+			text: 'since 1:00p'
+		});
+		expect(heroStatus({ start_time: at('13:00') }, now('13:00'))?.text).toBe('since 1:00p');
+	});
+	it('#431: start-only is null before its start', () => {
+		expect(heroStatus({ start_time: at('13:00'), end_time: '' }, now('12:59'))).toBeNull();
+	});
+	it('#431: a deadline (end-only) has no live line', () => {
+		expect(heroStatus({ start_time: '', end_time: at('16:30') }, now('16:00'))).toBeNull();
 	});
 });
 
