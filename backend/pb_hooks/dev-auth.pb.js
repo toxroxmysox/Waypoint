@@ -1057,6 +1057,58 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 		fl(5, { title: 'Spirit to the coast', start_time: on(5, '11:15'), end_time: on(5, '19:50'), location_name: 'Milwaukee Mitchell International', description: '→ Fort Lauderdale Hollywood International' });
 	}
 
+	// Optional { ideas: true } (#424): unplanned ideas across five type groups in the
+	// trip's first phase, with places, costs and a few votes (so the in-group sort has
+	// something to order), for the grouped Parking Lot. Off by default: the fullness
+	// matrix is untouched (the returned `days` summary does not count these).
+	if (info.body && info.body['ideas'] && phaseId) {
+		const tripMembersCol = e.app.findCollectionByNameOrId('trip_members');
+		const votesCol = e.app.findCollectionByNameOrId('votes');
+		const mkMember = (name) => {
+			const m = new Record(tripMembersCol);
+			m.set('trip', trip.id);
+			m.set('role', 'traveler');
+			m.set('placeholder_name', name);
+			m.set('display_name', name);
+			e.app.save(m);
+			return m.id;
+		};
+		const kev = mkMember('Kevin');
+		const jess = mkMember('Jess');
+		const ideas = [
+			{ title: 'Kohler Waters Spa', type: 'activity', location_name: 'Kohler', cost_estimate_usd: 40, votes: [[ownerMember.id, 'like']] },
+			{ title: 'Whistling Straits tour', type: 'activity', location_name: 'Sheboygan', cost_estimate_usd: 120, votes: [[ownerMember.id, 'love'], [kev, 'love'], [jess, 'like']] },
+			{ title: 'Sheboygan lakefront walk', type: 'activity', location_name: 'Sheboygan', votes: [[kev, 'dislike']] },
+			{ title: 'Pier 17 fish fry', type: 'meal', location_name: 'Sheboygan', cost_estimate_usd: 28, votes: [[jess, 'love']] },
+			{ title: 'Late-night custard stand', type: 'meal', cost_estimate_usd: 9 },
+			{ title: 'The American Club', type: 'lodging', location_name: 'Kohler', cost_estimate_usd: 1250 },
+			{ title: 'Rental car, 3 days', type: 'transportation', location_name: 'MKE airport', cost_estimate_usd: 210 },
+			{ title: 'Flight home', type: 'flight', location_name: 'Milwaukee (MKE)', description: '→ Denver (DEN)', cost_estimate_usd: 320 },
+			{ title: 'Ask about the shuttle schedule', type: 'note', description: 'Ask about the shuttle schedule\nand the late checkout' }
+		];
+		for (let k = 0; k < ideas.length; k++) {
+			const it = ideas[k];
+			const rec = new Record(itemsCol);
+			rec.set('trip', trip.id);
+			rec.set('phase', phaseId);
+			rec.set('status', 'unplanned');
+			rec.set('sort_order', 200 + k);
+			rec.set('created_by', ownerMember.id);
+			for (const f of ['title', 'type', 'location_name', 'description', 'cost_estimate_usd']) {
+				if (it[f] !== undefined) rec.set(f, it[f]);
+			}
+			e.app.save(rec);
+			for (const v of it.votes || []) {
+				const vote = new Record(votesCol);
+				vote.set('trip', trip.id);
+				vote.set('item', rec.id);
+				vote.set('member', v[0]);
+				vote.set('value', v[1]);
+				e.app.save(vote);
+			}
+		}
+	}
+
 	// Optional { now: 'hero' | 'free' | 'rail' | 'multi' } (#428; 'multi' = #430): items pinned to the REAL clock on today's
 	// day (days[1]; the trip is UTC, so UTC wall clock = trip-local), so Now has a live
 	// state to photograph. 'hero': a dinner that began 65 min ago and ends in 55, with
@@ -1172,7 +1224,7 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 		}
 	}
 
-	return e.json(200, { tripId: trip.id, slug: slug, days: summary });
+	return e.json(200, { tripId: trip.id, slug: slug, phaseId: phaseId, days: summary });
 });
 
 // ---------------------------------------------------------------------------

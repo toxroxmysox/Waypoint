@@ -1,20 +1,26 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { SOURCES, TRIGGERS, type DndEvent } from 'svelte-dnd-action';
+	import { TRIGGERS, type DndEvent } from 'svelte-dnd-action';
 	import type { Snippet } from 'svelte';
 	import type { Item } from '$lib/types';
 	import { buildTimelineFlat } from '$lib/itinerary/timeline';
 	import { neighborsForMove, resolveDrop, type OrderedRef } from '$lib/itinerary/drag-reorder';
+	import { ideaDisplayOrder } from '$lib/itinerary/idea-groups';
 
 	interface ParkingZoneInput {
 		phaseId: string;
 		items: Item[];
 	}
 
+	// #424: a parking zone binds its ideas in DISPLAY order (type groups, then vote
+	// score), so the headings the zone renders line up with the dnd children.
+	const ideaOrder = (items: Item[]) => ideaDisplayOrder(items, (i) => i.type, scoreById);
+
 	interface ParkingZone {
 		phaseId: string;
 		items: Item[];
-		dragDisabled: boolean;
+		/** A drag is in flight anywhere on the day (grows the collapsed drop strip). */
+		dragActive: boolean;
 		onConsider: (e: CustomEvent<DndEvent<Item>>) => void;
 		onFinalize: (e: CustomEvent<DndEvent<Item>>) => void;
 	}
@@ -23,6 +29,7 @@
 		dayItems,
 		parkingByPhase = [],
 		dayPhaseIds = [],
+		scoreById = {},
 		tripSlug,
 		dayId,
 		children
@@ -31,13 +38,14 @@
 		/** One entry per phase the day belongs to (two on a boundary day). #87. */
 		parkingByPhase?: ParkingZoneInput[];
 		dayPhaseIds?: string[];
+		/** Weighted vote score per idea id: orders ideas within each type group. */
+		scoreById?: Record<string, number>;
 		tripSlug: string;
 		dayId: string;
 		children: Snippet<
 			[
 				{
 					timelineItems: Item[];
-					startDrag: () => void;
 					pullUp: (itemId: string) => void;
 					onTimelineConsider: (e: CustomEvent<DndEvent<Item>>) => void;
 					onTimelineFinalize: (e: CustomEvent<DndEvent<Item>>) => void;
@@ -62,7 +70,7 @@
 	});
 	$effect(() => {
 		const next: Record<string, Item[]> = {};
-		for (const zone of parkingByPhase) next[zone.phaseId] = [...zone.items];
+		for (const zone of parkingByPhase) next[zone.phaseId] = ideaOrder(zone.items);
 		parkingItemsByPhase = next;
 	});
 
@@ -72,47 +80,29 @@
 		queueMicrotask(() => {
 			timelineItems = ordered(dayItems);
 			const next: Record<string, Item[]> = {};
-			for (const zone of parkingByPhase) next[zone.phaseId] = [...zone.items];
+			for (const zone of parkingByPhase) next[zone.phaseId] = ideaOrder(zone.items);
 			parkingItemsByPhase = next;
 		});
 	}
 
-	// Only the parking zones still arm on a handle press. The timeline arms
-	// itself now (#353: whole-card long-press via `delayTouchStart`), so it has
-	// no disabled state to track.
-	let parkingDragDisabled = $state(true);
+	// #424: every zone arms itself (whole-card long-press / immediate mouse drag),
+	// so there is no handle to unlock. This only tells the collapsed parking strip a
+	// drag is in flight, so it grows into an easier drop target (#294).
+	let dragActive = $state(false);
 
 	let reorderForm = $state<HTMLFormElement | undefined>();
 	let pullForm = $state<HTMLFormElement | undefined>();
 	let pushForm = $state<HTMLFormElement | undefined>();
-	let parkingReorderForm = $state<HTMLFormElement | undefined>();
 
 	let formItemId = $state('');
-	let formBefore = $state('');
-	let formAfter = $state('');
 	// Full resulting timeline display order (comma-joined ids) for the whole-day
 	// rebalance on the `reorder`/`pullToPlan` actions (#237).
 	let formOrder = $state('');
-	let formParkingPhaseId = $state('');
-
-	// A parking-lot handle press enables every parking zone — svelte-dnd-action
-	// grabs whatever item is under the pointer (which lives in exactly one zone).
-	function startDrag() {
-		parkingDragDisabled = false;
-	}
 
 	// Tap-to-plan: the parking card's pull-up chevron schedules an idea without a
 	// drag (appends to the day tail — pullToPlan treats null/null neighbors as append).
 	function pullUp(itemId: string) {
 		submit(pullForm, itemId, null, null);
-	}
-
-	// Re-lock the parking zones after a POINTER drag so a stray tap never starts
-	// a drag. Keyboard drags re-lock on DRAG_STOPPED (in the consider handlers).
-	function reDisable(source: DndEvent<Item>['info']['source']) {
-		if (source === SOURCES.POINTER) {
-			parkingDragDisabled = true;
-		}
 	}
 
 	function submit(
@@ -123,26 +113,20 @@
 		order: string[] | null = null
 	) {
 		formItemId = itemId;
-		formBefore = before?.toString() ?? '';
-		formAfter = after?.toString() ?? '';
 		formOrder = order?.join(',') ?? '';
 		queueMicrotask(() => form?.requestSubmit());
 	}
 
-	function reDisableOnKeyboardStop(info: DndEvent<Item>['info']) {
-		if (info.source === SOURCES.KEYBOARD && info.trigger === TRIGGERS.DRAG_STOPPED) {
-			parkingDragDisabled = true;
-		}
+	// A drag (any zone, any input) starts the strip growing; finalize or a keyboard
+	// stop ends it.
+	function trackDrag(info: DndEvent<Item>['info']) {
+		if (info.trigger === TRIGGERS.DRAG_STARTED) dragActive = true;
+		else if (info.trigger === TRIGGERS.DRAG_STOPPED) dragActive = false;
 	}
 
 	function onTimelineConsider(e: CustomEvent<DndEvent<Item>>) {
 		timelineItems = e.detail.items;
-		// #353: a timeline drag now starts on its own (long-press, no handle), so
-		// the drag itself has to unlock the parking zones — the shared handle press
-		// used to do it for both. Without this, a card dragged OUT of the day has
-		// nowhere to land.
-		if (e.detail.info.trigger === TRIGGERS.DRAG_STARTED) parkingDragDisabled = false;
-		reDisableOnKeyboardStop(e.detail.info);
+		trackDrag(e.detail.info);
 	}
 
 	function onTimelineFinalize(e: CustomEvent<DndEvent<Item>>) {
@@ -179,12 +163,12 @@
 					break;
 			}
 		}
-		reDisable(e.detail.info.source);
+		dragActive = false;
 	}
 
 	function onParkingConsider(phaseId: string, e: CustomEvent<DndEvent<Item>>) {
 		parkingItemsByPhase[phaseId] = e.detail.items;
-		reDisableOnKeyboardStop(e.detail.info);
+		trackDrag(e.detail.info);
 	}
 
 	function onParkingFinalize(phaseId: string, e: CustomEvent<DndEvent<Item>>) {
@@ -218,37 +202,21 @@
 				});
 				if (action.kind === 'reject') reseed();
 			} else if (moved) {
-				// Same-zone reorder (#160): persist through the owning phase's Phase
-				// Detail `reorder` action — the canonical idea-reorder home (#88) — so
-				// its guard and phase-scoped rebalance are reused, never forked. The
-				// zone holds the phase's full idea list, so neighbors here match what
-				// that action's rebalance fetches.
-				const { before, after } = neighborsForMove(refs(next), movedId);
-				const action = resolveDrop({
-					source: 'parking',
-					target: 'parking',
-					item: { phase: moved.phase, start_time: moved.start_time },
-					before,
-					after,
-					dayPhases: [phaseId]
-				});
-				if (action.kind === 'reorder') {
-					formParkingPhaseId = phaseId;
-					submit(parkingReorderForm, movedId, action.before, action.after);
-				} else {
-					// No other action is reachable parking→parking, but stay defensive.
-					reseed();
-				}
+				// Same-zone drop (#424): dragging among ideas changes nothing. The
+				// order is the vote order (type group, then score), so snap back to
+				// server truth instead of persisting a hand sort (retires #160's
+				// parking reorder post).
+				reseed();
 			}
 		}
-		reDisable(e.detail.info.source);
+		dragActive = false;
 	}
 
 	const parkingZones = $derived<ParkingZone[]>(
 		parkingByPhase.map((zone) => ({
 			phaseId: zone.phaseId,
 			items: parkingItemsByPhase[zone.phaseId] ?? [],
-			dragDisabled: parkingDragDisabled,
+			dragActive,
 			onConsider: (e: CustomEvent<DndEvent<Item>>) => onParkingConsider(zone.phaseId, e),
 			onFinalize: (e: CustomEvent<DndEvent<Item>>) => onParkingFinalize(zone.phaseId, e)
 		}))
@@ -271,24 +239,9 @@
 <form bind:this={pushForm} method="POST" action="?/pushToParking" use:enhance class="hidden">
 	<input type="hidden" name="item_id" value={formItemId} />
 </form>
-<!-- Parking→parking reorder posts cross-route to the zone's phase (#160) — the
-     Phase Detail action guards (this phase, unplanned, day-less) and rebalances
-     the phase's ideas; enhance still invalidates this page's load on success. -->
-<form
-	bind:this={parkingReorderForm}
-	method="POST"
-	action="/trips/{tripSlug}/phases/{formParkingPhaseId}?/reorder"
-	use:enhance
-	class="hidden"
->
-	<input type="hidden" name="item_id" value={formItemId} />
-	<input type="hidden" name="before_order" value={formBefore} />
-	<input type="hidden" name="after_order" value={formAfter} />
-</form>
 
 {@render children({
 	timelineItems,
-	startDrag,
 	pullUp,
 	onTimelineConsider,
 	onTimelineFinalize,
