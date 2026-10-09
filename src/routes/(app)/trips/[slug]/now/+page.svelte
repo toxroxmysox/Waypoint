@@ -9,7 +9,6 @@
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import SubTabs from '$lib/ui/SubTabs.svelte';
 	import Card from '$lib/ui/Card.svelte';
-	import Pill from '$lib/ui/Pill.svelte';
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import NowDivider from '$lib/trip-mode/components/NowDivider.svelte';
 	import TripModeCard from '$lib/trip-mode/components/TripModeCard.svelte';
@@ -19,6 +18,11 @@
 	import MemorySheet from '$lib/memory/components/MemorySheet.svelte';
 	import MemoryCard from '$lib/memory/components/MemoryCard.svelte';
 	import { getNowFeed } from '$lib/trip-mode/now-state';
+	import Hero from '$lib/itinerary/components/Hero.svelte';
+	import ItemActionsMenu from '$lib/itinerary/components/ItemActionsMenu.svelte';
+	import ItemActionSheets from '$lib/itinerary/components/ItemActionSheets.svelte';
+	import { itemMenuEntries, itemPermissions } from '$lib/itinerary/item-actions';
+	import { heroStatus } from '$lib/trip-mode/hero';
 	import { formatCountdown, formatTime } from '$lib/shell/format';
 	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
 	import { page } from '$app/state';
@@ -37,8 +41,23 @@
 	});
 
 	const nowIso = untrack(() => data.now);
-	const now = new Date(nowIso);
 	const todayStr = nowIso.split('T')[0];
+	// Trip-local "now" (UTC fields = the trip's wall clock). Ticks every 30s so the
+	// Hero's "55m left" counts down and the Focus hands over when the item ends.
+	let now = $state(new Date(nowIso));
+	let clockBase = { server: new Date(nowIso).getTime(), at: Date.now() };
+	// A reload (e.g. after Skip) brings a fresh server "now": re-anchor to it.
+	$effect(() => {
+		clockBase = { server: new Date(data.now).getTime(), at: Date.now() };
+		now = new Date(data.now);
+	});
+	onMount(() => {
+		const id = setInterval(
+			() => (now = new Date(clockBase.server + (Date.now() - clockBase.at))),
+			30_000
+		);
+		return () => clearInterval(id);
+	});
 
 	// The merged feed: faded past / Focus / normal rest (timed + untimed woven).
 	// Named nowFeed (not `feed`/`state`) to avoid shadowing the $state rune.
@@ -64,6 +83,18 @@
 	// for the session after a skip even if a later item keeps the Focus engaged —
 	// the strip renders below the rest list as the "replace what you skipped" rail.
 	let justSkipped = $state(false);
+
+	// #428 — the Hero's `⋯` is #437's menu: entries from the item permissions (Skip
+	// for owner/co_owner only), sheet from ItemActionSheets. Move and Delete stay on
+	// the item page, so they are masked off here.
+	const heroItem = $derived(focus.kind === 'mid-event' ? focus.currentItem : null);
+	const heroPerms = $derived(
+		heroItem && data.membership ? itemPermissions(data.membership, heroItem) : null
+	);
+	const heroEntries = $derived(
+		heroPerms ? itemMenuEntries({ canMove: false, canSkip: heroPerms.canSkip, canDelete: false }) : []
+	);
+	let heroSkipOpen = $state(false);
 
 	function dayLabel(dateStr: string): string {
 		return new Date(dateStr.replace(' ', 'T')).toLocaleDateString('en-US', {
@@ -170,18 +201,22 @@
 	<!-- Weight 2: Focus — the live state, front-and-centre, full detail. Auto-scroll target. -->
 	<div id="now-focus" class="scroll-mt-[110px]">
 		{#if focus.kind === 'mid-event'}
-			<section class="space-y-2">
-				<div class="flex items-center justify-between">
-					<Pill variant="trip" size="sm">Right now</Pill>
-					<p class="text-ink-muted text-xs">{formatCountdown(focus.minutesRemaining)} remaining</p>
-				</div>
-				<TripModeCard
-					item={focus.currentItem}
-					slug={data.trip.slug}
-					canSkip={data.canPromote}
-					onSkipped={() => (justSkipped = true)}
-				/>
-			</section>
+			<Hero
+				item={focus.currentItem}
+				members={data.members}
+				status={heroStatus(focus.currentItem, now)}
+				codes={focus.currentItem.confirmation_codes ?? []}
+				href={`/trips/${data.trip.slug}/items/${focus.currentItem.id}`}
+			>
+				{#snippet menu()}
+					<ItemActionsMenu
+						entries={heroEntries}
+						onselect={(id) => {
+							if (id === 'skip') heroSkipOpen = true;
+						}}
+					/>
+				{/snippet}
+			</Hero>
 		{:else if focus.kind === 'free-time'}
 			<Card>
 				<div class="p-6 text-center">
@@ -386,6 +421,22 @@
 		</div>
 	{/if}
 </main>
+
+<!-- #428 — the Skip sheet behind the Hero's ⋯. Outside <main> so no ancestor is a
+     containing block for its fixed positioning. Now IS the Skip destination, so it
+     refreshes in place and opens the ideas strip (Door 2) via onskipped. -->
+{#if heroItem && heroPerms?.canSkip}
+	<ItemActionSheets
+		bind:skipOpen={heroSkipOpen}
+		canMove={false}
+		canSkip={true}
+		canDelete={false}
+		slug={data.trip.slug}
+		itemId={heroItem.id}
+		typeLabel={heroItem.type}
+		onskipped={() => (justSkipped = true)}
+	/>
+{/if}
 
 <!-- #269 — the one memory composer (photo slot + 280-char thought). -->
 {#if canCapture && data.todayDayId}
