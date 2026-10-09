@@ -12,6 +12,7 @@
 	import IdeaCaptureSheet from '$lib/itinerary/components/IdeaCaptureSheet.svelte';
 	import { toast } from '$lib/shell/stores/toast';
 	import { titleCase } from '$lib/shell/format';
+	import { tripToday, tripTz } from '$lib/shell/trip-time';
 	import { page } from '$app/state';
 	import { afterNavigate, replaceState } from '$app/navigation';
 	import { revealServerError, errorField } from '$lib/shell/actions/validate-form';
@@ -49,7 +50,8 @@
 		replaceState(url, page.state);
 	});
 
-	let today = new Date().toISOString().split('T')[0];
+	// Trip-local calendar date (the trip's timezone), not the viewer's UTC clock (#426).
+	const today = $derived(tripToday(tripTz(data.trip)));
 
 	let editing = $state(false);
 	let loading = $state(false);
