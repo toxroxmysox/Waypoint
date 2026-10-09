@@ -19,7 +19,7 @@
 **3. Nav + the cross-cut.** Trip nav becomes **`Now · Money · ⊕Add · Docs`** — merging Now+Today frees the slot #211's Money tab needs (375px can't hold a 5th tab + the centre FAB). Two modes only (Planning/Trip) — reaffirmed; the "one nav, kill Trip mode's nav" option was rejected (reverses shipped, deliberate v3 design).
 - **SPEC §2 delta (ship with #166's issues):** rewrite the stale Trip nav `Now, Today, Add, Vault` → `Now, Money, Add, Docs`.
 - **Sequencing:** #166 lands FIRST (owns the merge + tab count in `nav-tabs.ts`); #211 rebases to drop Money into the freed slot — never concurrent (same file clobbers).
-- **Don't orphan member-contact:** with Members gone from Trip nav, surface tap-to-call/text a member on the Now surface or the Add sheet (Dogfood's catch).
+- **Don't orphan member-contact:** with Members gone from Trip nav, surface tap-to-call/text a member on the Now surface or the Add sheet (Dogfood's catch). *(The Now "Trip crew" strip that did this was removed in 3.0 — Scott, 2026-10-09: travelers already have each other's contact info outside the app.)*
 
 **4. Door 1 — ideas for now.** When the Focus is *free time* or *nothing else planned*, surface the **current phase's** parked ideas (the existing per-phase parking zone, #87), one-tap promote. Scoped to the current phase (NOT pooled across the day's phases). **Empty current phase → no door** (no widening — every idea already has a phase; there are no phase-less items). Ordered by vote score.
 
