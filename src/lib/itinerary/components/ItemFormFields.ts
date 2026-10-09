@@ -1,6 +1,6 @@
 import type { ItemType, ConfirmationCode, Day, Phase, TripMember } from '$lib/types';
 
-export type ItemFormMode = 'create' | 'edit' | 'view';
+export type ItemFormMode = 'create' | 'edit';
 
 // #78 — a goal this item can be linked to (the "Addresses goal(s)" multi-select).
 // The link is stored goal-side; the form just collects the selected goal ids.

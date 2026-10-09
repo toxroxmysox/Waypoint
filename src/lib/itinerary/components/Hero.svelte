@@ -18,6 +18,7 @@
 	import MonoTypeIcon from '$lib/ui/MonoTypeIcon.svelte';
 	import PersonBubble from '$lib/ui/PersonBubble.svelte';
 	import CodeRow from '$lib/documents/components/CodeRow.svelte';
+	import NeedsBookingChip from '$lib/ui/NeedsBookingChip.svelte';
 	import { goingNames, mapsUrl, type HeroStatus } from '$lib/trip-mode/hero';
 	import type { Item, TripMember } from '$lib/types';
 	import type { ConfirmationCode } from '$lib/itinerary/types';
@@ -42,6 +43,9 @@
 		timeText = '',
 		typeLine = '',
 		codes = [],
+		docs = [],
+		done = false,
+		needsBooking = false,
 		href = '',
 		placeLink = true,
 		showGoing = true,
@@ -58,6 +62,12 @@
 		/** `Meal · Fine dining` — type and subtype in words (item page). */
 		typeLine?: string;
 		codes?: ConfirmationCode[];
+		/** Document rows under the codes (item page): tap opens the file. */
+		docs?: Array<{ id: string; label: string; href: string }>;
+		/** `✓ Done` beside Booked (item page). */
+		done?: boolean;
+		/** The gold `To book` chip (item page). #441 turns it into the Book / Mark booked button via `children`. */
+		needsBooking?: boolean;
 		/** Makes the whole card open this URL (Now). Omit on the item page itself. */
 		href?: string;
 		/** The place line opens Maps. Off for the swipe face, whose gestures own the card. */
@@ -147,8 +157,35 @@
 			</div>
 		{/if}
 
-		{#if item.booked || (showGoing && going.length > 0)}
+		{#if docs.length > 0}
+			<div class="pointer-events-auto relative z-10 space-y-2" data-testid="hero-docs">
+				{#each docs as d (d.id)}
+					<a
+						href={d.href}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="border-line bg-surface hover:border-ink-muted active:border-ink-muted flex min-h-11 items-center gap-3 rounded-lg border px-3 py-2"
+						data-testid="hero-doc"
+					>
+						<svg class="text-ink-soft shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+						<span class="text-ink min-w-0 flex-1 truncate text-sm font-medium">{d.label}</span>
+						<span class="sr-only">Opens in a new tab</span>
+					</a>
+				{/each}
+			</div>
+		{/if}
+
+		{#if item.booked || done || needsBooking || (showGoing && going.length > 0)}
 			<div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+				{#if needsBooking && !item.booked}
+					<NeedsBookingChip />
+				{/if}
+				{#if done}
+					<span class="text-ink-soft inline-flex items-center gap-1 text-sm font-medium" data-testid="hero-done">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg>
+						Done
+					</span>
+				{/if}
 				{#if item.booked}
 					<span class="text-ink-soft inline-flex items-center gap-1 text-sm font-medium" data-testid="hero-booked">
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg>
