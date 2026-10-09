@@ -155,7 +155,7 @@ export function stripEntries(p: {
 			tone: overlap.shared ? 'red' : 'ink'
 		});
 	if (p.needsBooking)
-		out.push({ key: 'needs', kind: 'needs-booking', text: 'Needs booking', label: 'Needs booking', tone: 'gold' });
+		out.push({ key: 'needs', kind: 'needs-booking', text: 'To book', label: 'Needs booking', tone: 'gold' });
 	else if (p.booked) {
 		const code = p.mode === 'trip' ? stripCode(p.codes) : null;
 		if (code)

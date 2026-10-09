@@ -102,7 +102,8 @@
 						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 							<circle cx="12" cy="12" r="9" /><path d="M12 7v6M12 17h.01" />
 						</svg>
-						{summary.needsBookingCount} needs booking
+						<span aria-hidden="true">{summary.needsBookingCount} to book</span>
+						<span class="sr-only">{summary.needsBookingCount} needs booking</span>
 					</span>
 				{:else if summary.bookableCount > 0}
 					<!-- All set (Scott, 2026-10-09): a quiet count, no colour — nothing to act on. -->
