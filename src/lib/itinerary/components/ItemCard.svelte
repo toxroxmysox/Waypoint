@@ -10,14 +10,22 @@
 	// above it (relative z-10). The host supplies the drag wrapper.
 	import { withOrigin } from '$lib/shell/back-nav';
 	import { page } from '$app/state';
+	import type { Snippet } from 'svelte';
 	import type { Item, TripMember } from '$lib/types';
 	import Card from '$lib/ui/Card.svelte';
 	import AssigneeStacks from '$lib/itinerary/components/AssigneeStacks.svelte';
 	import RailStack from './RailStack.svelte';
-	import CardStrip, { type StripEntry } from './CardStrip.svelte';
+	import CardStrip from './CardStrip.svelte';
 	import { needsBooking } from '$lib/itinerary/booking-projection';
 	import { timeShape } from '$lib/itinerary/timeline';
-	import { cardAccessibleName, cardMeta, RAIL, TIMED_MIN_HEIGHT, type OverlapInfo } from '$lib/itinerary/card-anatomy';
+	import {
+		cardAccessibleName,
+		cardMeta,
+		stripEntries,
+		RAIL,
+		TIMED_MIN_HEIGHT,
+		type OverlapInfo
+	} from '$lib/itinerary/card-anatomy';
 
 	let {
 		item,
@@ -25,7 +33,9 @@
 		members = [],
 		overlap,
 		docCount = 0,
-		mode = 'planning'
+		mode = 'planning',
+		muted = false,
+		menu
 	}: {
 		item: Item;
 		tripSlug: string;
@@ -36,6 +46,12 @@
 		docCount?: number;
 		/** Trip Mode shows no cost and no conflicts (spec §Overlap, D2). */
 		mode?: 'planning' | 'trip';
+		/** Earlier today (#429): same shape, no white fill, ink-muted text (never
+		 *  opacity), a lighter rail rule and an outlined node. Still a link. */
+		muted?: boolean;
+		/** The head's top-right slot: Trip Mode's `⋯` (Coming up, #429). Role logic
+		 *  stays with the caller; this only hosts it. */
+		menu?: Snippet;
 	} = $props();
 
 	let height = $state(0);
@@ -48,33 +64,18 @@
 	const overlapNote = $derived(mode === 'planning' ? overlap : undefined);
 	const redConflict = $derived(!!overlapNote?.shared);
 
-	const clip = (s: string, n = 16) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s);
-
-	// Priority order (D2/D10): Overlaps > Needs booking > Booked > documents.
-	const entries = $derived.by<StripEntry[]>(() => {
-		const out: StripEntry[] = [];
-		if (overlapNote)
-			out.push({
-				key: 'overlap',
-				kind: 'overlap',
-				text: `Overlaps ${clip(overlapNote.partnerTitle)}`,
-				label: `Overlaps ${overlapNote.partnerTitle}`,
-				tone: overlapNote.shared ? 'red' : 'ink'
-			});
-		if (showNeedsBooking)
-			out.push({ key: 'needs', kind: 'needs-booking', text: 'Needs booking', label: 'Needs booking', tone: 'gold' });
-		else if (item.booked)
-			out.push({ key: 'booked', kind: 'booked', text: 'Booked', label: 'Booked', tone: 'quiet' });
-		if (docCount > 0)
-			out.push({
-				key: 'docs',
-				kind: 'docs',
-				text: String(docCount),
-				label: `${docCount} ${docCount === 1 ? 'document' : 'documents'}`,
-				tone: 'ink'
-			});
-		return out;
-	});
+	// Priority order (D2/D10): Overlaps > Needs booking > Booked (the `✓ {code}`
+	// chip in Trip Mode) > documents. Trip Mode drops the overlap note (#429).
+	const entries = $derived(
+		stripEntries({
+			mode,
+			overlap: overlapNote,
+			needsBooking: showNeedsBooking,
+			booked: !!item.booked,
+			codes: item.confirmation_codes,
+			docCount
+		})
+	);
 
 	const accessibleName = $derived(
 		cardAccessibleName({
@@ -97,9 +98,14 @@
 		{height}
 		redTop={redConflict && overlapNote?.role === 'later'}
 		redBottom={redConflict && overlapNote?.role === 'earlier'}
+		past={muted}
 	/>
 
-	<Card class="group-hover:shadow-card-strong group-active:bg-surface-2 relative h-full {timed ? 'min-h-[62px]' : ''}">
+	<Card
+		class="group-hover:shadow-card-strong group-active:bg-surface-2 relative h-full {timed ? 'min-h-[62px]' : ''} {muted
+			? 'bg-transparent! shadow-none!'
+			: ''}"
+	>
 		<div class="p-3">
 			<a
 				href={withOrigin(`/trips/${tripSlug}/items/${item.id}`, page.url.pathname)}
@@ -108,11 +114,15 @@
 			></a>
 
 			<div class="flex items-start justify-between gap-2">
-				<h4 class="text-ink line-clamp-2 min-w-0 text-sm leading-5 font-semibold" data-card="title">{item.title}</h4>
+				<h4 class="{muted ? 'text-ink-muted' : 'text-ink'} line-clamp-2 min-w-0 text-sm leading-5 font-semibold" data-card="title">{item.title}</h4>
 				{#if cost > 0}
 					<div class="text-ink shrink-0 text-sm leading-5 font-medium tabular-nums" data-card="cost">
 						${cost.toLocaleString('en-US')}
 					</div>
+				{/if}
+				{#if menu}
+					<!-- 44px hit inside the card's own padding: -my-3 cancels the p-3 above and below. -->
+					<div class="relative z-10 focus-within:z-30 -my-3 -mr-1 shrink-0">{@render menu()}</div>
 				{/if}
 			</div>
 
@@ -133,7 +143,7 @@
 					/>
 				</div>
 			{/snippet}
-			<CardStrip {entries} right={showGoing ? going : undefined} />
+			<CardStrip {entries} {muted} right={showGoing ? going : undefined} />
 		</div>
 	</Card>
 </div>

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import SubTabs from '$lib/ui/SubTabs.svelte';
-	import TripModeCard from '$lib/trip-mode/components/TripModeCard.svelte';
+	import ItemCard from '$lib/itinerary/components/ItemCard.svelte';
 	import Card from '$lib/ui/Card.svelte';
 	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
 	import { getTripModeState } from '$lib/trip-mode/trip-mode';
@@ -65,9 +65,18 @@
 				{#if group.items.length === 0}
 					<p class="text-ink-muted text-sm">Nothing scheduled.</p>
 				{:else}
-					{#each group.items as item}
-						<TripModeCard {item} slug={data.trip.slug} />
-					{/each}
+					<!-- #429: the day page's rail + Card in Trip Mode: no cost, no overlap, no accent. -->
+					<div class="space-y-2">
+						{#each group.items as item (item.id)}
+							<ItemCard
+								{item}
+								tripSlug={data.trip.slug}
+								members={data.members}
+								mode="trip"
+								docCount={data.docCountByItem[item.id] ?? 0}
+							/>
+						{/each}
+					</div>
 				{/if}
 			</section>
 		{/each}

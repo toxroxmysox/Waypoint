@@ -9,7 +9,10 @@ import {
 	overlapPairs,
 	railSegments,
 	spokenTime,
-	type CardItemFields
+	stripCode,
+	stripEntries,
+	type CardItemFields,
+	type OverlapInfo
 } from './card-anatomy';
 
 const mk = (o: Partial<CardItemFields> & { id: string }): CardItemFields => ({ title: o.id, type: 'activity', ...o });
@@ -140,5 +143,67 @@ describe('accessible name', () => {
 		expect(
 			cardAccessibleName({ item: mk({ id: 'x', title: 'Hike' }), needsBooking: false, booked: true, overlapWith: 'Lunch' })
 		).toBe('Hike, activity, overlaps Lunch, booked');
+	});
+});
+
+describe('stripCode (#429: the Trip Mode ✓ {code} chip)', () => {
+	it('null without a usable code', () => {
+		expect(stripCode([])).toBeNull();
+		expect(stripCode(undefined)).toBeNull();
+		expect(stripCode([{ label: 'PIN', value: '   ' }])).toBeNull();
+	});
+	it('one code: the code itself', () => {
+		const c = stripCode([{ label: 'Confirmation', value: ' IMM-48213 ' }])!;
+		expect(c.value).toBe('IMM-48213');
+		expect(c.text).toBe('IMM-48213');
+		expect(c.extra).toBe(0);
+		expect(c.label).toBe('Copy confirmation code IMM-48213');
+	});
+	it('several: the first code plus +n, and the label says how many more', () => {
+		const c = stripCode([
+			{ label: 'Confirmation', value: 'IMM-48213' },
+			{ label: '', value: '   ' },
+			{ label: 'Door PIN', value: '7731' },
+			{ label: 'Gate', value: 'B12' }
+		])!;
+		expect(c.value).toBe('IMM-48213');
+		expect(c.text).toBe('IMM-48213 +2');
+		expect(c.extra).toBe(2);
+		expect(c.label).toBe('Copy confirmation code IMM-48213, 2 more codes on the item');
+	});
+	it('singular wording for exactly one more', () => {
+		expect(stripCode([{ label: '', value: 'A1' }, { label: '', value: 'B2' }])!.label).toBe(
+			'Copy confirmation code A1, 1 more code on the item'
+		);
+	});
+});
+
+describe('stripEntries (#429)', () => {
+	const pair: OverlapInfo = { partnerId: 'p', partnerTitle: 'Lunch', shared: true, role: 'later' };
+	const base = { overlap: pair, needsBooking: false, booked: true, codes: [{ label: '', value: 'ABC123' }], docCount: 2 };
+	const kinds = (e: { kind: string }[]) => e.map((x) => x.kind);
+
+	it('Planning Mode: overlap first, then booked, then documents; never a code chip', () => {
+		expect(kinds(stripEntries({ ...base, mode: 'planning' }))).toEqual(['overlap', 'booked', 'docs']);
+	});
+	it('Trip Mode shows no overlap at all, even when a pair is passed', () => {
+		const e = stripEntries({ ...base, mode: 'trip' });
+		expect(kinds(e)).not.toContain('overlap');
+		expect(e.some((x) => x.tone === 'red')).toBe(false);
+	});
+	it('Trip Mode: a booked item with a code gets the chip in the booked slot', () => {
+		const e = stripEntries({ ...base, mode: 'trip' });
+		expect(kinds(e)).toEqual(['code', 'docs']);
+		expect(e[0].copy).toBe('ABC123');
+		expect(e[0].text).toBe('ABC123');
+	});
+	it('Trip Mode: booked without a code keeps ✓ Booked', () => {
+		const e = stripEntries({ ...base, mode: 'trip', codes: [] });
+		expect(kinds(e)).toEqual(['booked', 'docs']);
+		expect(e[0].text).toBe('Booked');
+	});
+	it('Trip Mode: a stray code on an unbooked item shows Needs booking, not a chip', () => {
+		const e = stripEntries({ ...base, mode: 'trip', booked: false, needsBooking: true });
+		expect(kinds(e)).toEqual(['needs-booking', 'docs']);
 	});
 });

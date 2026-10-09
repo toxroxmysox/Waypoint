@@ -1061,7 +1061,11 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 	// day (days[1]; the trip is UTC, so UTC wall clock = trip-local), so Now has a live
 	// state to photograph. 'hero': a dinner that began 65 min ago and ends in 55, with
 	// place + address, booked, two codes and three Going members. 'free': nothing
-	// ongoing, one item starting in 90 min. Default off: the fullness matrix is unchanged.
+	// ongoing, one item starting in 90 min. 'rail' (#429): the 'hero' state plus the
+	// lists around it: three Earlier today items (one booked with a code),
+	// Coming up (booked with two codes, an overlapping pair, booked without a code,
+	// one untimed) and one booked-with-code item on tomorrow's day for Next 3 days.
+	// Default off: the fullness matrix is unchanged.
 	if (info.body && info.body['now'] && days.length >= 2) {
 		const mode = info.body['now'];
 		const todayDay = days[1];
@@ -1090,9 +1094,11 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 			e.app.save(rec);
 			return rec;
 		};
-		if (mode === 'hero') {
-			const kim = mkMember('Kim');
-			const dev = mkMember('Dev');
+		let kim = '';
+		let dev = '';
+		if (mode === 'hero' || mode === 'rail') {
+			kim = mkMember('Kim');
+			dev = mkMember('Dev');
 			const dinner = mk({
 				title: 'Dinner at The Immigrant',
 				type: 'meal',
@@ -1119,6 +1125,37 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 			mk({ title: 'Night walk', type: 'activity', start_time: wall(nowMs + 120 * min), sort_order: 51 });
 		} else if (mode === 'free') {
 			mk({ title: 'Return rental clubs', type: 'transportation', start_time: wall(nowMs + 90 * min), end_time: wall(nowMs + 120 * min), location_name: 'Golf Galaxy' });
+		}
+		if (mode === 'rail') {
+			const docsCol2 = e.app.findCollectionByNameOrId('documents');
+			const addCodes = (item, list) => {
+				for (let c = 0; c < list.length; c++) {
+					const doc = new Record(docsCol2);
+					doc.set('trip', trip.id);
+					doc.set('item', item.id);
+					doc.set('uploaded_by', ownerMember.id);
+					doc.set('kind', 'code');
+					doc.set('code_label', list[c][0]);
+					doc.set('code_value', list[c][1]);
+					e.app.save(doc);
+				}
+			};
+			// Earlier today.
+			mk({ title: 'Breakfast at Cafe Hollander', type: 'meal', start_time: wall(nowMs - 330 * min), end_time: wall(nowMs - 270 * min), location_name: 'Cafe Hollander', assigned_to: [ownerMember.id, kim] });
+			const kayak = mk({ title: 'Kayak rental pickup', type: 'activity', start_time: wall(nowMs - 210 * min), end_time: wall(nowMs - 150 * min), location_name: 'Sheboygan Marina', booked: true, assigned_to: [ownerMember.id] });
+			addCodes(kayak, [['Reservation', 'KYK-20931']]);
+			mk({ title: 'Cabin tidy-up', type: 'activity', start_time: wall(nowMs - 120 * min), end_time: wall(nowMs - 75 * min), location_name: 'Cabin 6' });
+			// Coming up (the Hero's 'Night walk' at +120 is added above).
+			const cruise = mk({ title: 'Sunset cruise', type: 'activity', start_time: wall(nowMs + 150 * min), end_time: wall(nowMs + 240 * min), location_name: 'Harbor Dock 4', booked: true, assigned_to: [ownerMember.id, kim], sort_order: 52 });
+			addCodes(cruise, [['Confirmation', 'SUN-5521'], ['Boarding group', 'B12']]);
+			mk({ title: 'Wine tasting', type: 'activity', start_time: wall(nowMs + 180 * min), end_time: wall(nowMs + 230 * min), location_name: 'Kohler Wine Bar', assigned_to: [ownerMember.id, dev], sort_order: 53 });
+			mk({ title: 'Fireside tacos', type: 'meal', start_time: wall(nowMs + 270 * min), end_time: wall(nowMs + 330 * min), location_name: 'The Cabin Fire Pit', booked: true, sort_order: 54 });
+			mk({ title: 'Stargazing', type: 'activity', sort_order: 99 });
+			// Next 3 days: tomorrow carries a booked item with a code.
+			if (days.length >= 3) {
+				const tmr = mk({ title: 'Breakfast at Sip Coffeehouse', type: 'meal', day: days[2].id, start_time: days[2].getString('date').substring(0, 10) + ' 09:00:00.000Z', end_time: days[2].getString('date').substring(0, 10) + ' 10:00:00.000Z', location_name: 'Sip Coffeehouse', booked: true });
+				addCodes(tmr, [['Reservation', 'SIP-7742']]);
+			}
 		}
 	}
 

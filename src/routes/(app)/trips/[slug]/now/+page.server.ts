@@ -2,6 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Trip, Day, Item, Checklist, Task, TripMember, Vote, Document } from '$lib/types';
 import { attachCodesToItems } from '$lib/documents/codes';
+import { docCountsForItems } from '$lib/documents/doc-counts';
 import { tripNow, tripTz } from '$lib/shell/trip-time';
 import { isTripActive } from '$lib/trip-mode/activation';
 import { fetchManualChecklists } from '$lib/itinerary/checklist-loaders';
@@ -82,7 +83,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const votesByItem: Record<string, Vote[]> = {};
 	for (const v of votes) (votesByItem[v.item] ??= []).push(v);
 
-	// #268 / ADR-0016 — the TripModeCard renders `item.confirmation_codes`, but codes
+	// #268 / ADR-0016 — the Trip Mode card renders `item.confirmation_codes`, but codes
 	// now live as `kind: 'code'` Documents (the legacy json field is inert). Re-source
 	// them onto today's + tomorrow's cards (oldest-first → creation order).
 	const codeDocs = await locals.pb.collection('documents').getFullList<Document>({
@@ -91,6 +92,13 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	});
 	attachCodesToItems(todayItems, codeDocs);
 	attachCodesToItems(tomorrowItems, codeDocs);
+
+	// #429 — the Card strip's documents count for today's rail cards.
+	const docCountByItem = await docCountsForItems(
+		locals.pb,
+		trip.id,
+		todayItems.map((i) => i.id)
+	);
 
 	// Trip Mode checklists (#52): read + check-off in place (Slice B). Trip/phase-
 	// scoped manual lists only; item-scoped lists stay on their Item.
@@ -170,6 +178,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		multiDayItems,
 		checklists,
 		votesByItem,
+		docCountByItem,
 		members: withAvatarUrls(locals.pb, members),
 		hasToday: today !== null,
 		todayDayId: today?.id ?? null,

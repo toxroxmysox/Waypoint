@@ -100,21 +100,23 @@ test.describe('Trip Mode Door 2 — skip → parking lot + ideas strip (#246)', 
 		// --- Skip it via the card overflow → confirm in the little menu. ---
 		// The overflow button sits inside the planned item's card (visible tree).
 		const card = page
-			.locator('.relative.rounded-xl', { hasText: PLANNED_TITLE })
+			.locator('.no-callout', { hasText: PLANNED_TITLE })
 			.filter({ visible: true })
 			.first();
 		await card.getByRole('button', { name: 'Item actions' }).click();
 		await card.getByRole('menuitem', { name: /Skip/ }).click();
+		// #437's menu opens the Skip sheet; confirm there.
+		await page.getByRole('button', { name: 'Skip', exact: true }).filter({ visible: true }).click();
 
 		// After the skip the planned item is GONE from the "Coming up" rest list — it's
-		// unplanned now. Scope the negative to the rest-list CARD (TripModeCard's
-		// `.relative.rounded-xl` container), NOT the whole page: skip returns the item to
+		// unplanned now. Scope the negative to the rest-list CARD (the rail ItemCard's
+		// `.no-callout` container), NOT the whole page: skip returns the item to
 		// THIS phase's parking lot, so it correctly REAPPEARS in the ideas strip below as a
 		// re-promotable backup (an <a> inside an <li>, not a card). A page-wide
 		// link-count-0 would falsely catch that legitimate strip occurrence.
 		await expect(
 			page
-				.locator('.relative.rounded-xl', { hasText: PLANNED_TITLE })
+				.locator('.no-callout', { hasText: PLANNED_TITLE })
 				.filter({ visible: true })
 		).toHaveCount(0, { timeout: 7000 });
 

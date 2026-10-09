@@ -15,7 +15,7 @@
 
 	type Props = { type: ItemType; sub?: string; label?: string } & (
 		| { size: 16; variant?: never }
-		| { size: 24 | 40; variant?: 'plain' | 'dashed' | 'filled' }
+		| { size: 24 | 40; variant?: 'plain' | 'dashed' | 'filled' | 'outlined' }
 	);
 
 	let { type, sub, size, variant = 'plain', label }: Props = $props();
@@ -30,6 +30,9 @@
 				'background:var(--color-surface-2);color:var(--color-ink-soft);border:1px solid var(--color-line);',
 			dashed:
 				'background:var(--color-surface);color:var(--color-ink-muted);border:1.5px dashed var(--color-ink-muted);',
+			// Earlier today (#429): no fill, ink-muted glyph and ring.
+			outlined:
+				'background:transparent;color:var(--color-ink-muted);border:1px solid var(--color-ink-muted);',
 			filled:
 				'background:var(--color-accent);color:var(--color-surface);border:1px solid var(--color-accent);'
 		}[variant]
