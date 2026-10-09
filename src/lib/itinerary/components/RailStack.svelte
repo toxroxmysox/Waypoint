@@ -21,7 +21,7 @@
 		redTop = false,
 		redBottom = false
 	}: {
-		item: TimeFields & { type: ItemType };
+		item: TimeFields & { type: ItemType; subtype?: string };
 		/** The card's rendered height in px (0 before it is measured: no segments). */
 		height?: number;
 		/** The later item's START in a real conflict (D10). */
@@ -60,6 +60,6 @@
 		<div class="bg-ink-muted/40 absolute w-px" style="left:{RAIL.column / 2 - 0.5}px;top:{segs.bottom.top}px;height:{segs.bottom.length}px;" data-rail="seg-bottom"></div>
 	{/if}
 	<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" data-rail="node">
-		<MonoTypeIcon type={item.type} size={24} variant={shape === 'untimed' ? 'dashed' : 'plain'} />
+		<MonoTypeIcon type={item.type} sub={item.subtype} size={24} variant={shape === 'untimed' ? 'dashed' : 'plain'} />
 	</div>
 </div>

@@ -13,12 +13,12 @@
 	import type { ItemType } from '$lib/types';
 	import TypeGlyph from './TypeGlyph.svelte';
 
-	type Props = { type: ItemType; label?: string } & (
+	type Props = { type: ItemType; sub?: string; label?: string } & (
 		| { size: 16; variant?: never }
 		| { size: 24 | 40; variant?: 'plain' | 'dashed' | 'filled' }
 	);
 
-	let { type, size, variant = 'plain', label }: Props = $props();
+	let { type, sub, size, variant = 'plain', label }: Props = $props();
 
 	const glyph = $derived(size === 40 ? 26 : 16);
 
@@ -44,7 +44,7 @@
 		aria-label={label}
 		aria-hidden={label ? undefined : 'true'}
 	>
-		<TypeGlyph {type} size={16} />
+		<TypeGlyph {type} {sub} size={16} />
 	</span>
 {:else}
 	<span
@@ -54,6 +54,6 @@
 		aria-label={label}
 		aria-hidden={label ? undefined : 'true'}
 	>
-		<TypeGlyph {type} size={glyph} />
+		<TypeGlyph {type} {sub} size={glyph} />
 	</span>
 {/if}
