@@ -101,7 +101,8 @@ test.describe('Ideas grouped by type (#424)', () => {
 		const target = page.locator('[data-day-timeline]:visible > div').first();
 		const f = (await idea.boundingBox())!;
 		const t = (await target.boundingBox())!;
-		const from = { x: f.x + 60, y: f.y + f.height / 2 };
+		// The title row: the vote pills (#425) sit lower and take their own taps.
+		const from = { x: f.x + 60, y: f.y + 18 };
 		const to = { x: t.x + t.width / 2, y: t.y + t.height / 2 };
 		const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', pts: { x: number; y: number }[]) =>
 			cdp.send('Input.dispatchTouchEvent', {
