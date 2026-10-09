@@ -105,6 +105,8 @@ test.describe('Trip Mode Door 2 — skip → parking lot + ideas strip (#246)', 
 			.first();
 		await card.getByRole('button', { name: 'Item actions' }).click();
 		await card.getByRole('menuitem', { name: /Skip/ }).click();
+		// #437's menu opens the Skip sheet; confirm there.
+		await page.getByRole('button', { name: 'Skip', exact: true }).filter({ visible: true }).click();
 
 		// After the skip the planned item is GONE from the "Coming up" rest list — it's
 		// unplanned now. Scope the negative to the rest-list CARD (the rail ItemCard's

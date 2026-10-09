@@ -120,7 +120,27 @@ One component, `Hero.svelte`, built here and reused by the item page header (#43
 - **`⋯`:** `itemMenuEntries` with Move and Delete masked off, so only `Skip…` (owner / co_owner). The sheet is `ItemActionSheets`; a refused Skip shows `ITEM_ACTION_ERRORS.skip` in the sheet. Now is the Skip destination, so it refreshes in place and opens the "Replace it" ideas strip.
 - **Tap:** the card opens the item page; the place, codes and `⋯` sit above that link.
 - **Props (for #438 / #443):** `item`, `members`, `status` (live styling when set), `timeText` (non-live time line), `typeLine` (`Meal · Fine dining`), `codes`, `href`, `placeLink`, `showGoing`, `menu` snippet, `children` snippet.
-- **Not here:** the free-time card, several Heroes, start-only `NOW · since` (#429).
+- **Not here:** the free-time card text, several Heroes, start-only `NOW · since` (#430, #431). The lists around the Hero are 2c.
+
+### 2c. Now's lists and Next 3 days — Trip Mode on the rail — added by #429 (card system, D2/D5/D10)
+
+Earlier today, Coming up and the Next 3 days tab use the day page's Timeline Rail and `ItemCard` (2a) with `mode="trip"`. `TripModeCard` is gone.
+
+| | Earlier today | Coming up | Next 3 days |
+|---|---|---|---|
+| Where | above the Hero, under an `EARLIER TODAY` divider | under the Hero, `COMING UP` | one group per day, day heading |
+| Card | full Card, no white fill (transparent), 1px line border, no shadow | full Card | full Card |
+| Text | title, meta and strip in ink-muted (5.4:1), never opacity | ink | ink |
+| Rail | lighter rule and segments (`line`), outlined node (ink-muted ring, no fill) | monochrome node | monochrome node |
+| `⋯` | none | Skip only, owner / co_owner of a planned dated item (`itemPermissions` + `itemMenuEntries`, Move and Delete masked, same sheet as the Hero) | none |
+| Tap | opens the item | opens the item | opens the item |
+
+- **Cost:** none, in any of them. **Overlap:** none, neither the note nor red rail times (`stripEntries` ignores a pair in Trip Mode).
+- **Next item:** no accent, no `Up next` pill. The Hero is the only accent on Now.
+- **Strip, left, in priority order:** `Needs booking` (gold) > the booked slot > documents count. The booked slot in Trip Mode is `✓ {code}` (first code in mono, `+n` for the rest) when the item is booked and has a code, else `✓ Booked`. The chip is a button: tap copies the first code (toast `Code copied`; clipboard refused: `Could not copy — open the item to copy the code`) and does not open the item. Its 44px hit area is padding cancelled by negative margin, so card height does not change. Overflow: the chip shrinks to its check icon like any entry; its accessible name always carries the code and the `+n`. Earlier today keeps the chip, in ink-muted.
+- **Strip, right:** Going bubbles, unchanged. Documents count comes from `docCountsForItems` (files only; codes are the chip).
+- **Feed rules unchanged** (`getNowFeed`): Earlier today = timed items whose end has passed in the trip's clock; Coming up = forward timed items woven with untimed ones. Deadline-only and start-only items are #431; several Heroes and `NOW · since` are #430; the free-time `until {next}` text is #431.
+- **`ItemCard` props added:** `muted`, `menu` (snippet). `RailStack`: `past`. `MonoTypeIcon`: variant `outlined`. `CardStrip`: `muted`; `StripEntry` / `stripEntries` / `stripCode` live in `card-anatomy.ts`.
 
 ### 3. Item detail
 
