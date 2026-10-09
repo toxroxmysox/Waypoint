@@ -1,6 +1,6 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Phase, Day, Item, TripMember, Suggestion, SuggestionVote } from '$lib/types';
+import type { Phase, Day, Item, TripMember, Suggestion, SuggestionVote, Vote } from '$lib/types';
 import { nextSortOrder, insertBetween, reorderUpdates } from '$lib/itinerary/sort-order';
 import { summarizeDays } from '$lib/itinerary/day-card';
 import { withAvatarUrls } from '$lib/collaboration/member-avatar';
@@ -97,12 +97,28 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const votesBySuggestion: Record<string, SuggestionVote[]> = {};
 	for (const v of suggestionVotes) (votesBySuggestion[v.suggestion] ??= []).push(v);
 
+	// #424: item votes for this phase's ideas — the in-group sort (weighted score)
+	// needs them. One trip-scoped query kept to the shown ids (an id-per-clause OR
+	// chain would grow with the parking lot and hit PB's filter-length limit).
+	const unplanned = items.filter((it) => it.status === 'unplanned');
+	const unplannedIds = new Set(unplanned.map((it) => it.id));
+	const itemVotes =
+		unplannedIds.size > 0
+			? await locals.pb
+					.collection('votes')
+					.getFullList<Vote>({ filter: `trip = "${trip.id}"` })
+					.then((all) => all.filter((v) => unplannedIds.has(v.item)))
+			: [];
+	const votesByItem: Record<string, Vote[]> = {};
+	for (const v of itemVotes) (votesByItem[v.item] ??= []).push(v);
+
 	// The single ordered, vote-tagged card list every parking-lot surface renders.
-	const parkingCards = parkingLotCards(
-		items.filter((it) => it.status === 'unplanned'),
-		pendingSuggestions,
-		{ phaseId: phase.id, viewerRole, votesBySuggestion }
-	);
+	const parkingCards = parkingLotCards(unplanned, pendingSuggestions, {
+		phaseId: phase.id,
+		viewerRole,
+		votesByItem,
+		votesBySuggestion
+	});
 
 	return {
 		phase,
