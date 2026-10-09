@@ -104,8 +104,17 @@
 						</svg>
 						{summary.needsBookingCount} needs booking
 					</span>
+				{:else if summary.bookableCount > 0}
+					<!-- All set (Scott, 2026-10-09): a quiet count, no colour — nothing to act on. -->
+					<span class="text-line">·</span>
+					<span class="text-ink-soft" data-day-all-booked>✓ {summary.bookedCount}/{summary.bookableCount} booked</span>
 				{/if}
 			</div>
+
+			{#if isEmpty}
+				<!-- Spec #418 empty day: suggest the next step (adding / dragging happens on the day page this card opens). -->
+				<p class="text-ink-muted mt-1 text-[12px]" data-day-empty-hint>Add something, or drag an idea here</p>
+			{/if}
 
 			{#each summary.stays as chip (chip.kind + chip.name)}
 				<!-- Plain ink, lodging icon: a stay is context, not something to act on (D10). -->
