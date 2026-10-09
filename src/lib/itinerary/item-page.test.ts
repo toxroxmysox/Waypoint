@@ -1,5 +1,49 @@
 import { describe, it, expect } from 'vitest';
-import { itemTypeLine, itemTimeText, detailsRows, addLine, newestFirst, hostLabel } from './item-page';
+import { itemTypeLine, itemTimeText, detailsRows, addLine, newestFirst, hostLabel, goingView } from './item-page';
+
+describe('goingView (#440): the Hero Going row', () => {
+	const members = [
+		{ id: 'm1', display_name: 'Ana', role: 'owner' },
+		{ id: 'm2', display_name: 'Ben', role: 'traveler' },
+		{ id: 'm3', display_name: 'Cy', role: 'viewer' }
+	] as any[];
+	const base = { members, myMemberId: 'm1', role: 'owner' as const };
+	it('unanswered: asks "Are you going?"', () => {
+		const v = goingView({ ...base, item: { assigned_to: [], not_going: [] } });
+		expect(v.mine).toBe('no_answer');
+		expect(v.line).toBe('Are you going?');
+		expect(v.canAnswer).toBe(true);
+	});
+	it('answered going', () => {
+		const v = goingView({ ...base, item: { assigned_to: ['m1'], not_going: [] } });
+		expect(v.mine).toBe('going');
+		expect(v.line).toBe("You're going");
+	});
+	it('answered not going', () => {
+		const v = goingView({ ...base, item: { assigned_to: [], not_going: ['m1'] } });
+		expect(v.mine).toBe('not_going');
+		expect(v.line).toBe("You're not going");
+	});
+	it('people: going before struck not-going; no-answer members absent', () => {
+		const v = goingView({ ...base, item: { assigned_to: ['m2'], not_going: ['m1'] } });
+		expect(v.people.map((p) => [p.name, p.notGoing])).toEqual([
+			['Ben', false],
+			['Ana', true]
+		]);
+	});
+	it('viewers get no controls and no prompt, but still see people', () => {
+		const v = goingView({ ...base, myMemberId: 'm3', role: 'viewer', item: { assigned_to: ['m1'], not_going: [] } });
+		expect(v.canAnswer).toBe(false);
+		expect(v.line).toBe('');
+		expect(v.people).toHaveLength(1);
+	});
+	it('no membership id: no controls', () => {
+		expect(goingView({ ...base, myMemberId: '', item: {} }).canAnswer).toBe(false);
+	});
+	it('solo trip (one active member): no controls', () => {
+		expect(goingView({ ...base, members: [members[0]], item: {} }).canAnswer).toBe(false);
+	});
+});
 
 describe('itemTypeLine: type and subtype in words', () => {
 	it('joins the type label and the subtype', () => {

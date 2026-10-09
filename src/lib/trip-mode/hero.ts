@@ -49,6 +49,35 @@ export function goingNames(
 	return out;
 }
 
+export interface GoingPerson {
+	memberId: string;
+	name: string;
+	/** Said they're not going (struck). */
+	notGoing: boolean;
+}
+
+/**
+ * Everyone who answered (#440), by name: the going ones in `assigned_to` order, then
+ * the not-going ones in `not_going` order. No answer is in neither list, so never
+ * appears. Departed and unknown ids drop.
+ */
+export function goingPeople(
+	item: { assigned_to?: string[] | null; not_going?: string[] | null },
+	members: Array<Pick<TripMember, 'id'> & Partial<TripMember>>
+): GoingPerson[] {
+	const out: GoingPerson[] = [];
+	const add = (ids: string[] | null | undefined, notGoing: boolean) => {
+		for (const id of ids ?? []) {
+			const m = members.find((mm) => mm.id === id);
+			if (!m || m.removed_at) continue;
+			out.push({ memberId: id, name: memberDisplayName(m as TripMember), notGoing });
+		}
+	};
+	add(item.assigned_to, false);
+	add(item.not_going, true);
+	return out;
+}
+
 /**
  * Google Maps universal link: place id, else coords, else address, else name.
  * '' when there is nothing to search. Opens the Maps app on iOS (embedded maps

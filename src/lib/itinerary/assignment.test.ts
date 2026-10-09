@@ -4,8 +4,27 @@ import {
 	toggleAssignee,
 	parseGoingState,
 	goingStateOf,
-	goingPatch
+	goingPatch,
+	applyGoing
 } from './assignment';
+
+describe('applyGoing (#440, optimistic mirror of goingPatch)', () => {
+	const lists = { assigned_to: ['a', 'b'], not_going: ['c'] };
+	it('going: appended to assigned_to, removed from not_going', () => {
+		expect(applyGoing(lists, 'c', 'going')).toEqual({ assigned_to: ['a', 'b', 'c'], not_going: [] });
+	});
+	it('not going: moves out of assigned_to', () => {
+		expect(applyGoing(lists, 'a', 'not_going')).toEqual({ assigned_to: ['b'], not_going: ['c', 'a'] });
+	});
+	it('no answer: out of both', () => {
+		expect(applyGoing(lists, 'b', 'no_answer')).toEqual({ assigned_to: ['a'], not_going: ['c'] });
+	});
+	it('same state is idempotent; missing lists tolerated; input not mutated', () => {
+		expect(applyGoing(lists, 'a', 'going')).toEqual({ assigned_to: ['a', 'b'], not_going: ['c'] });
+		expect(applyGoing({}, 'x', 'not_going')).toEqual({ assigned_to: [], not_going: ['x'] });
+		expect(lists.assigned_to).toEqual(['a', 'b']);
+	});
+});
 
 describe('canSelfAssign', () => {
 	it('allows traveler, co_owner, owner', () => {

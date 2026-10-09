@@ -60,6 +60,27 @@ export function goingStateOf(
 }
 
 /**
+ * The two lists after `memberId` answers `state` (#440): the client mirror of
+ * `goingPatch` for the optimistic update. Appends, keeps order, never duplicates,
+ * does not mutate the input.
+ */
+export function applyGoing(
+	lists: { assigned_to?: readonly string[] | null; not_going?: readonly string[] | null },
+	memberId: string,
+	state: GoingState
+): { assigned_to: string[]; not_going: string[] } {
+	const without = (a?: readonly string[] | null) => (a ?? []).filter((id) => id !== memberId);
+	const assigned = state === 'going' ? [...(lists.assigned_to ?? [])] : without(lists.assigned_to);
+	const notGoing = state === 'not_going' ? [...(lists.not_going ?? [])] : without(lists.not_going);
+	if (state === 'going' && !assigned.includes(memberId)) assigned.push(memberId);
+	if (state === 'not_going' && !notGoing.includes(memberId)) notGoing.push(memberId);
+	return {
+		assigned_to: state === 'not_going' ? without(assigned) : assigned,
+		not_going: state === 'going' ? without(notGoing) : notGoing
+	};
+}
+
+/**
  * The PocketBase update body that sets ONE member's answer, using the relation
  * `+`/`-` modifiers so it only ever touches that member's id (no client-supplied
  * array). Not a concurrency guarantee: PB applies the modifiers to the record as

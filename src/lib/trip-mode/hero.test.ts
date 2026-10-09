@@ -1,5 +1,32 @@
 import { describe, it, expect } from 'vitest';
-import { heroStatus, goingNames, mapsUrl } from './hero';
+import { heroStatus, goingNames, goingPeople, mapsUrl } from './hero';
+
+describe('goingPeople (#440): going first, then struck not-going; no answer never listed', () => {
+	const ms = [
+		{ id: 'm1', display_name: 'Ana' },
+		{ id: 'm2', display_name: 'Ben' },
+		{ id: 'm3', display_name: 'Cy' },
+		{ id: 'm4', display_name: 'Di', removed_at: '2026-01-01' }
+	] as any[];
+	it('orders going (assigned_to order) before not going', () => {
+		const r = goingPeople({ assigned_to: ['m2'], not_going: ['m1', 'm3'] }, ms);
+		expect(r.map((p) => [p.memberId, p.notGoing])).toEqual([
+			['m2', false],
+			['m1', true],
+			['m3', true]
+		]);
+	});
+	it('a member with no answer (in neither list) does not appear', () => {
+		expect(goingPeople({ assigned_to: ['m1'], not_going: [] }, ms).map((p) => p.memberId)).toEqual(['m1']);
+	});
+	it('departed and unknown ids drop; names resolve', () => {
+		const r = goingPeople({ assigned_to: ['m4', 'zz', 'm1'], not_going: ['m4'] }, ms);
+		expect(r).toEqual([{ memberId: 'm1', name: 'Ana', notGoing: false }]);
+	});
+	it('tolerates missing lists', () => {
+		expect(goingPeople({}, ms)).toEqual([]);
+	});
+});
 
 const at = (hm: string) => `2026-10-15 ${hm}:00.000Z`;
 const now = (hm: string) => new Date(`2026-10-15T${hm}:00Z`);
