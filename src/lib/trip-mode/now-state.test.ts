@@ -70,15 +70,39 @@ describe('getNowViewState — Focus + forward list (#153)', () => {
 			}
 		});
 
-		it('picks the ongoing item with the latest end_time when several overlap', () => {
+		it('#430: every ongoing item is a Hero (no longer only the one that ends last)', () => {
 			const items = [
 				makeItem({ id: 'a', start_time: '2026-10-15 12:00:00.000Z', end_time: '2026-10-15 14:00:00.000Z' }),
 				makeItem({ id: 'b', start_time: '2026-10-15 13:00:00.000Z', end_time: '2026-10-15 15:00:00.000Z' })
 			];
 			const state = getNowViewState(items, new Date('2026-10-15T13:30:00Z'), true);
+			expect(state.focus.kind).toBe('mid-event');
 			if (state.focus.kind === 'mid-event') {
-				expect(state.focus.currentItem.id).toBe('b');
+				expect(state.focus.heroes.map((i) => i.id)).toEqual(['a', 'b']);
+				expect(state.focus.currentItem.id).toBe('a');
 			}
+		});
+
+		it('#430: the viewer\'s items lead, then everyone else\'s, each group by start time', () => {
+			const items = [
+				makeItem({ id: 'other-early', start_time: '2026-10-15 09:00:00.000Z', end_time: '2026-10-15 15:00:00.000Z', assigned_to: ['m2'] }),
+				makeItem({ id: 'mine-late', start_time: '2026-10-15 12:30:00.000Z', end_time: '2026-10-15 15:00:00.000Z', assigned_to: ['m2', 'me'] }),
+				makeItem({ id: 'nobody', start_time: '2026-10-15 11:00:00.000Z', end_time: '2026-10-15 15:00:00.000Z' }),
+				makeItem({ id: 'mine-early', start_time: '2026-10-15 10:00:00.000Z', end_time: '2026-10-15 15:00:00.000Z', assigned_to: ['me'] })
+			];
+			const state = getNowViewState(items, new Date('2026-10-15T13:00:00Z'), true, 'me');
+			if (state.focus.kind !== 'mid-event') throw new Error('expected mid-event');
+			expect(state.focus.heroes.map((i) => i.id)).toEqual(['mine-early', 'mine-late', 'other-early', 'nobody']);
+		});
+
+		it('#430: without a viewer id the order is plain start time', () => {
+			const items = [
+				makeItem({ id: 'b', start_time: '2026-10-15 12:30:00.000Z', end_time: '2026-10-15 15:00:00.000Z', assigned_to: ['me'] }),
+				makeItem({ id: 'a', start_time: '2026-10-15 12:00:00.000Z', end_time: '2026-10-15 15:00:00.000Z' })
+			];
+			const state = getNowViewState(items, new Date('2026-10-15T13:00:00Z'), true);
+			if (state.focus.kind !== 'mid-event') throw new Error('expected mid-event');
+			expect(state.focus.heroes.map((i) => i.id)).toEqual(['a', 'b']);
 		});
 
 		it('forward list during mid-event holds only items after now, not the ongoing focus item', () => {
@@ -438,5 +462,62 @@ describe('getNowFeed — merged Now: faded past / Focus / normal rest (#244)', (
 		expect(feed.pastItems.some((i) => i.id === 'hotel')).toBe(false);
 		expect(feed.restItems.some((i) => i.id === 'hotel')).toBe(false);
 		expect(feed.restItems.map((i) => i.id)).toEqual(['dinner']);
+	});
+});
+
+describe('getNowFeed — several Heroes (#430)', () => {
+	const NOW = new Date('2026-10-15T13:00:00Z');
+	const ongoing = (id: string, start: string, extra: Partial<Item> = {}) =>
+		makeItem({ id, start_time: `2026-10-15 ${start}:00.000Z`, end_time: '2026-10-15 15:00:00.000Z', ...extra });
+
+	it('three ongoing items: all are Heroes, mine first, none repeated in the rest', () => {
+		const items = [
+			ongoing('theirs', '11:00', { assigned_to: ['m2'] }),
+			ongoing('mine', '12:00', { assigned_to: ['me'] }),
+			ongoing('also-theirs', '12:30'),
+			makeItem({ id: 'dinner', start_time: '2026-10-15 19:00:00.000Z', end_time: '2026-10-15 21:00:00.000Z' })
+		];
+		const feed = getNowFeed(items, NOW, true, 'me');
+		if (feed.focus.kind !== 'mid-event') throw new Error('expected mid-event');
+		expect(feed.focus.heroes.map((i) => i.id)).toEqual(['mine', 'theirs', 'also-theirs']);
+		expect(feed.restItems.map((i) => i.id)).toEqual(['dinner']);
+		expect(feed.pastItems).toEqual([]);
+	});
+
+	it('a Multi-day Item is never a Hero, even alongside timed ongoing items', () => {
+		const items = [
+			ongoing('lunch', '12:00'),
+			makeItem({ id: 'hotel', start_time: '2026-10-14 15:00:00.000Z', end_time: '2026-10-18 11:00:00.000Z', end_date: '2026-10-18', assigned_to: ['me'] })
+		];
+		const feed = getNowFeed(items, NOW, true, 'me');
+		if (feed.focus.kind !== 'mid-event') throw new Error('expected mid-event');
+		expect(feed.focus.heroes.map((i) => i.id)).toEqual(['lunch']);
+		expect(feed.restItems.some((i) => i.id === 'hotel')).toBe(false);
+	});
+
+	it('a Multi-day Item alone is not mid-event', () => {
+		const items = [
+			makeItem({ id: 'hotel', start_time: '2026-10-14 15:00:00.000Z', end_time: '2026-10-18 11:00:00.000Z', end_date: '2026-10-18', assigned_to: ['me'] })
+		];
+		expect(getNowFeed(items, NOW, true, 'me').focus.kind).not.toBe('mid-event');
+	});
+
+	it('the free-time card shows only when nothing is ongoing for anyone', () => {
+		const later = makeItem({ id: 'dinner', start_time: '2026-10-15 19:00:00.000Z', end_time: '2026-10-15 21:00:00.000Z' });
+		expect(getNowFeed([later], NOW, true, 'me').focus.kind).toBe('free-time');
+		// someone else's item is ongoing -> their Hero shows, not free time
+		const theirs = ongoing('theirs', '12:00', { assigned_to: ['m2'] });
+		expect(getNowFeed([later, theirs], NOW, true, 'me').focus.kind).toBe('mid-event');
+	});
+
+	it('an ended item is not a Hero; a start-equal item is', () => {
+		const items = [
+			makeItem({ id: 'ended', start_time: '2026-10-15 11:00:00.000Z', end_time: '2026-10-15 13:00:00.000Z' }),
+			ongoing('starting', '13:00')
+		];
+		const feed = getNowFeed(items, NOW, true);
+		if (feed.focus.kind !== 'mid-event') throw new Error('expected mid-event');
+		expect(feed.focus.heroes.map((i) => i.id)).toEqual(['starting']);
+		expect(feed.pastItems.map((i) => i.id)).toEqual(['ended']);
 	});
 });

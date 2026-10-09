@@ -1057,7 +1057,7 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 		fl(5, { title: 'Spirit to the coast', start_time: on(5, '11:15'), end_time: on(5, '19:50'), location_name: 'Milwaukee Mitchell International', description: '→ Fort Lauderdale Hollywood International' });
 	}
 
-	// Optional { now: 'hero' | 'free' } (#428): items pinned to the REAL clock on today's
+	// Optional { now: 'hero' | 'free' | 'rail' | 'multi' } (#428; 'multi' = #430): items pinned to the REAL clock on today's
 	// day (days[1]; the trip is UTC, so UTC wall clock = trip-local), so Now has a live
 	// state to photograph. 'hero': a dinner that began 65 min ago and ends in 55, with
 	// place + address, booked, two codes and three Going members. 'free': nothing
@@ -1122,6 +1122,19 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 				doc.set('code_value', codes[c][1]);
 				e.app.save(doc);
 			}
+			mk({ title: 'Night walk', type: 'activity', start_time: wall(nowMs + 120 * min), sort_order: 51 });
+		} else if (mode === 'multi') {
+			// #430: several Heroes. 'Beach volleyball' (not the viewer's; Kim + Dev) began
+			// EARLIEST, so plain start order would put it first. 'Dinner at The Immigrant'
+			// (the viewer + Kim) began later and must lead. 'Harbor walk' has no one
+			// assigned. 'Lakeside cabin' is an ongoing multi-day stay: banner, never a Hero.
+			kim = mkMember('Kim');
+			dev = mkMember('Dev');
+			mk({ title: 'Beach volleyball', type: 'activity', start_time: wall(nowMs - 150 * min), end_time: wall(nowMs + 30 * min), location_name: 'Lakefront Courts', assigned_to: [kim, dev] });
+			mk({ title: 'Dinner at The Immigrant', type: 'meal', subtype: 'fine_dining', start_time: wall(nowMs - 65 * min), end_time: wall(nowMs + 55 * min), location_name: 'The Immigrant Restaurant', location_address: '1 Main St, Kohler, WI 53044', booked: true, assigned_to: [ownerMember.id, kim] });
+			mk({ title: 'Harbor walk', type: 'activity', start_time: wall(nowMs - 20 * min), end_time: wall(nowMs + 40 * min), location_name: 'Sheboygan Harbor' });
+			const stayEnd = days.length >= 4 ? days[3].getString('date').substring(0, 10) : days[days.length - 1].getString('date').substring(0, 10);
+			mk({ title: 'Lakeside cabin', type: 'lodging', start_time: wall(nowMs - 200 * min), end_time: stayEnd + ' 11:00:00.000Z', end_date: stayEnd + ' 00:00:00.000Z', location_name: 'Cabin 6' });
 			mk({ title: 'Night walk', type: 'activity', start_time: wall(nowMs + 120 * min), sort_order: 51 });
 		} else if (mode === 'free') {
 			mk({ title: 'Return rental clubs', type: 'transportation', start_time: wall(nowMs + 90 * min), end_time: wall(nowMs + 120 * min), location_name: 'Golf Galaxy' });
