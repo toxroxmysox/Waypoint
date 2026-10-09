@@ -1,12 +1,18 @@
 <script lang="ts">
 	import type { Day } from '$lib/types';
-	import type { DayCardSummary, StayKind } from '$lib/itinerary/day-card';
+	import { todayTreatment, type DayCardSummary } from '$lib/itinerary/day-card';
 	import Card from '$lib/ui/Card.svelte';
+	import MonoTypeIcon from '$lib/ui/MonoTypeIcon.svelte';
 	import { dayCardMetric } from '$lib/shell/stores/day-card-metric';
+	import { useChromeMode } from '$lib/shell/chrome-mode';
+	import { formatCalendarDate } from '$lib/shell/format';
 
 	// Unified day card for the trip overview and Phase Detail (CARD_CONTENT_SPEC
 	// §1). The whole card is the tap target. Optional slots degrade gracefully —
 	// omitted when empty, never rendered as empty placeholders.
+	// Colour rule (#426, CARD_SYSTEM D10): colour means "act on this". Gold is the
+	// open loop (`N needs booking`); the stay line is plain ink; today in Planning
+	// Mode is the mode accent (moss) as an outline.
 
 	let {
 		day,
@@ -17,17 +23,17 @@
 		day: Day;
 		href: string;
 		summary: DayCardSummary;
-		/** Today's date as 'YYYY-MM-DD' (computed once by the parent). */
+		/** The trip-local date as 'YYYY-MM-DD' (`tripToday`, computed once by the parent). */
 		today?: string;
 	} = $props();
 
-	const dateOnly = $derived(day.date.split(/[T ]/)[0]);
-	const isToday = $derived(today != null && dateOnly === today);
-	const d = $derived(new Date(dateOnly + 'T00:00:00.000Z'));
+	// Planning Mode outlines today (the accent is moss there); Trip Mode keeps the pill.
+	const chromeMode = useChromeMode();
+	const treatment = $derived(todayTreatment(day.date, today, chromeMode()));
 
-	const dow = $derived(d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }));
-	const dayNum = $derived(d.toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' }));
-	const mon = $derived(d.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }));
+	const dow = $derived(formatCalendarDate(day.date, { weekday: 'short' }));
+	const dayNum = $derived(formatCalendarDate(day.date, { day: 'numeric' }));
+	const mon = $derived(formatCalendarDate(day.date, { month: 'short' }));
 
 	// Headline priority (#355): the day's notes, else what the day actually
 	// holds — its first item, "+ N more" for the rest. The count itself stays in
@@ -53,33 +59,23 @@
 			maximumFractionDigits: 0
 		}).format(summary.budgetTotal)
 	);
-
-	const stayLabel: Record<StayKind, string> = {
-		'check-in': 'Check-in',
-		staying: 'Staying',
-		'check-out': 'Check-out'
-	};
-
-	// Only check-in and check-out chips are ever emitted; 'staying' is kept in the
-	// map for type completeness but is never rendered (#221).
-
 </script>
 
-<Card {href}>
-	<div class="flex items-stretch gap-3 px-3 py-2.5">
-		<!-- Date anchor -->
+<Card {href} class={treatment === 'outline' ? 'outline-accent outline-2 -outline-offset-1' : ''}>
+	<div class="flex items-center gap-3 px-3 py-2.5" data-day-card data-today={treatment}>
+		<!-- Date anchor: centred vertically on the card (#426) -->
 		<div class="flex w-11 shrink-0 flex-col items-center justify-center text-center">
 			<span class="text-ink-muted text-[10px] font-bold tracking-wide uppercase">{dow}</span>
 			<span class="text-ink font-mono text-lg leading-none font-semibold">{dayNum}</span>
 			<span class="text-ink-muted text-[10px] uppercase">{mon}</span>
 		</div>
 
-		<div class="border-line/60 min-w-0 flex-1 border-l pl-3">
+		<div class="border-line/60 min-w-0 flex-1 self-stretch border-l pl-3">
 			<div class="flex items-center gap-2">
 				<p class="min-w-0 flex-1 truncate text-sm {isEmpty ? 'text-ink-muted italic' : 'text-ink'}">
 					{headline}
 				</p>
-				{#if isToday}
+				{#if treatment === 'pill'}
 					<span class="bg-accent text-paper shrink-0 rounded-full px-1.5 py-[1px] text-[9.5px] font-bold tracking-wide uppercase">
 						Today
 					</span>
@@ -96,21 +92,28 @@
 						<span class="text-line">·</span>
 						<span>{budgetLabel}</span>
 					{/if}
-				{:else if summary.bookableCount > 0}
+				{:else if summary.needsBookingCount > 0}
 					<span class="text-line">·</span>
-					<span>{summary.bookedCount}/{summary.bookableCount} booked</span>
-				{/if}
-
-				{#each summary.stays as chip (chip.kind + chip.name)}
-					<span class="text-line">·</span>
-					<span class="text-moss inline-flex min-w-0 items-center gap-1">
-						<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-							<path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4" />
+					<!-- Same chip as the #420 strip: gold is the open loop, nothing else. -->
+					<span
+						class="bg-gold-tint border-gold/30 text-gold-deep inline-flex items-center gap-1 rounded-full border px-2 py-[1px] font-sans text-[11px] leading-4 font-semibold tracking-wide uppercase"
+						data-day-needs-booking
+					>
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<circle cx="12" cy="12" r="9" /><path d="M12 7v6M12 17h.01" />
 						</svg>
-						<span class="truncate">{stayLabel[chip.kind]}{chip.name ? ` · ${chip.name}` : ''}</span>
+						{summary.needsBookingCount} needs booking
 					</span>
-				{/each}
+				{/if}
 			</div>
+
+			{#each summary.stays as chip (chip.kind + chip.name)}
+				<!-- Plain ink, lodging icon: a stay is context, not something to act on (D10). -->
+				<p class="text-ink-soft mt-1 flex min-w-0 items-center gap-1.5 text-[12px]" data-day-stay>
+					<span class="shrink-0"><MonoTypeIcon type="lodging" size={16} /></span>
+					<span class="truncate">{chip.text}</span>
+				</p>
+			{/each}
 		</div>
 	</div>
 </Card>

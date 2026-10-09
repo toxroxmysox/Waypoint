@@ -23,6 +23,7 @@
 	import { titleCase } from '$lib/shell/format';
 	import { isTripActive } from '$lib/trip-mode/activation';
 	import { untrack } from 'svelte';
+	import { tripToday, tripTz } from '$lib/shell/trip-time';
 	import { enhance } from '$app/forms';
 	import type { Notification } from '$lib/types';
 
@@ -87,7 +88,8 @@
 	}
 
 	let firstDayId = $derived(data.days[0]?.id);
-	let today = new Date().toISOString().split('T')[0];
+	// Trip-local calendar date (the trip's timezone), not the viewer's UTC clock (#426).
+	const today = $derived(tripToday(tripTz(data.trip)));
 
 	// Empty-trip state (#111/ES-1, absorbed by #274). Keyed on user CONTENT = ITEMS.
 	// The old ES-1 also required `phases.length === 0`, but #217 auto-seeds a default

@@ -1,6 +1,7 @@
 import type { Item, Day } from '$lib/types';
 import { needsBooking } from './booking-projection';
-import { toDateOnly, spanningItemsForDate } from './multi-day';
+import { toDateOnly, spanningItemsForDate, nightInfo } from './multi-day';
+import type { TripViewMode } from '$lib/trip-mode/activation';
 import { orderDayItems } from './timeline';
 
 // Day-card content per CARD_CONTENT_SPEC §1. One flat item list in, per-day
@@ -13,6 +14,8 @@ export interface StayChip {
 	kind: StayKind;
 	/** Lodging title. */
 	name: string;
+	/** The stay line as shown (#426): `Night 2 of 3 · The American Club`, or `Check-out · Name` on the last day. */
+	text: string;
 }
 
 export interface DayCardSummary {
@@ -22,9 +25,11 @@ export interface DayCardSummary {
 	bookedCount: number;
 	/** Items that can be booked (booked + still-needs-booking). */
 	bookableCount: number;
+	/** Items that still need booking: the open loop the gold pill names (#426). */
+	needsBookingCount: number;
 	/** Σ cost_estimate_usd over the day's items. */
 	budgetTotal: number;
-	/** State-change chips for this date: check-in and check-out only (never 'staying'). Empty when no state changes. */
+	/** One stay line per lodging spanning this date (#426): Night N of M, or Check-out on the last day. Empty when none. */
 	stays: StayChip[];
 	/**
 	 * Title of the day's first item in itinerary order (#355) — what the card
@@ -58,16 +63,25 @@ export function summarizeDay(items: Item[], days: Day[], day: Day): DayCardSumma
 		const start = it.day ? toDateOnly(days.find((d) => d.id === it.day)?.date ?? '') : '';
 		const end = toDateOnly(it.end_date ?? '');
 		const kind: StayKind = date === start ? 'check-in' : date === end ? 'check-out' : 'staying';
-		if (kind !== 'staying') {
-			stays.push({ kind, name: it.title });
-		}
+		const name = it.title ?? '';
+		const night = nightInfo(it, days, date);
+		const lead = kind === 'check-out' || !night ? 'Check-out' : `Night ${night.night} of ${night.total}`;
+		stays.push({ kind, name, text: name ? `${lead} · ${name}` : lead });
 	}
 
 	// First *titled* item in itinerary order — an untitled item shouldn't make a
 	// non-empty day read as empty.
 	const leadTitle = orderDayItems(own).find((i) => i.title?.trim())?.title.trim() ?? '';
 
-	return { itemCount: own.length, bookedCount, bookableCount, budgetTotal, stays, leadTitle };
+	return {
+		itemCount: own.length,
+		bookedCount,
+		bookableCount,
+		needsBookingCount: bookableCount - bookedCount,
+		budgetTotal,
+		stays,
+		leadTitle
+	};
 }
 
 /** Per-day summaries keyed by day id, for a whole trip's (or phase's) items. */
@@ -75,4 +89,16 @@ export function summarizeDays(items: Item[], days: Day[]): Record<string, DayCar
 	const out: Record<string, DayCardSummary> = {};
 	for (const day of days) out[day.id] = summarizeDay(items, days, day);
 	return out;
+}
+
+export type TodayTreatment = 'outline' | 'pill' | 'none';
+
+/**
+ * How the card marks today (#426, CARD_SYSTEM D10). Planning Mode: the accent
+ * (moss) outline, no pill. Trip Mode keeps the TODAY pill. Compares calendar-date
+ * strings only; `today` is the trip-local date (`tripToday`), never local Date math.
+ */
+export function todayTreatment(dayDate: string, today: string | undefined, mode: TripViewMode): TodayTreatment {
+	if (!today || toDateOnly(dayDate) !== today) return 'none';
+	return mode === 'planning' ? 'outline' : 'pill';
 }

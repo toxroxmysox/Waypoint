@@ -204,7 +204,8 @@ console.log('→ seeding populated trip');
 const seedRes = await fetch(`${PB_URL}/api/dev/seed-visual-trip`, {
 	method: 'POST',
 	headers: { 'Content-Type': 'application/json' },
-	body: '{}'
+	// VISUAL_SEED='{"stay":true}' opts into extra seed fixtures (#426 stay, #420 rich).
+	body: process.env.VISUAL_SEED || '{}'
 });
 if (!seedRes.ok) fail(`seed-visual-trip failed (${seedRes.status}): ${await seedRes.text()}`);
 const seed = await seedRes.json();

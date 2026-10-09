@@ -53,17 +53,20 @@ Status reality: the edit dropdown offers **Planned / Done only**. `unplanned` is
 
 Convention: every optional slot is **omitted when empty** (graceful degradation — no empty placeholders). `field` = the real `items` field that feeds it.
 
-### 1. Day card — trip overview
+### 1. Day card — trip overview — AMENDED by #426 (card system, D10)
+
+Colour means "act on this": gold is the one open loop, the stay is plain ink, today is the mode accent. Component `DayCard`; derivations in `src/lib/itinerary/day-card.ts` (`summarizeDay`, `todayTreatment`).
 
 | Slot | Field / source | Capture path | Notes |
 |---|---|---|---|
-| Date anchor (dow/date/mon) | `day.date` | system | "Today" pill when date = now. |
-| Note headline | `day.notes` | `days/[dayId]` `updateNotes` action | Fallback "Nothing planned yet" when empty. |
+| Date anchor (dow/date/mon) | `day.date` | system | Centred vertically on the card. Formatted with `formatCalendarDate` (UTC). |
+| Today marker | `day.date` vs the trip-local date (`tripToday`) | derived | **Planning Mode:** accent (moss) outline on the card, no pill. **Trip Mode:** the TODAY pill. |
+| Note headline | `day.notes` | `days/[dayId]` `updateNotes` action | Else first item "+ N more"; fallback "Nothing planned yet" when empty. |
 | **Item count ("N items")** | count of `dayItems` (`day = X && end_date = ""`) | derived | **The sole fullness signal.** Timed + untimed alike. Excludes multi-day banners (`spanningItems`). |
-| Second metric (toggle) | `booked`/bookable counts **or** Σ `cost_estimate_usd` | derived | UI-preference toggle (booked | budget), persisted. Budget sums the single Cost. |
-| Stay chip | multi-day `lodging` spanning the date | `spanningItemsForDate` | Check-in/Staying/Check-out · name. |
+| Second metric (toggle) | `needsBookingCount` **or** Σ `cost_estimate_usd` | derived | UI-preference toggle (booked | budget), persisted. Booked view: gold pill `N needs booking` (same chip as the item card strip, 5.81:1); omitted when nothing needs booking (no `2/3 booked`). Budget sums the single Cost. |
+| Stay line | multi-day `lodging` spanning the date | `spanningItemsForDate`, `nightInfo` | Plain ink-soft text + 16px lodging icon, one line per lodging: `Night 2 of 3 · The American Club` (check-in and middle days), `Check-out · Name` on the last day. |
 
-**Cut:** Morn/Aft/Eve coverage pills (decision #3). **Loader note:** the overview must fetch items-per-day to compute the count — it doesn't today (loads days only). Count and the budget toggle ride the same fetch; no extra query.
+**Cut:** Morn/Aft/Eve coverage pills (decision #3); the moss Check-in/Check-out chip and the `x/y booked` ratio (#426). **Loader note:** the overview must fetch items-per-day to compute the count — it doesn't today (loads days only). Count and the budget toggle ride the same fetch; no extra query. The whole card is the tap target (no new controls, so no new hit areas).
 
 ### 2a. Day page timeline (Planning Mode) — AMENDED by #420 (card system)
 

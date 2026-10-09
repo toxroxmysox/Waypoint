@@ -1000,6 +1000,23 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 		summary[4].itemCount = rich.length;
 	}
 
+	// Optional { stay: true } (#426): one multi-day lodging, day 3 → day 6 (3 nights),
+	// so the day cards' "Night N of M" stay line has pixels to prove against.
+	// Multi-day items are not day items, so no itemCount in the matrix changes.
+	if (info.body && info.body['stay'] && days.length >= 6) {
+		const rec = new Record(itemsCol);
+		rec.set('trip', trip.id);
+		if (phaseId) rec.set('phase', phaseId);
+		rec.set('day', days[2].id);
+		rec.set('type', 'lodging');
+		rec.set('title', 'The American Club');
+		rec.set('status', 'planned');
+		rec.set('sort_order', 99);
+		rec.set('end_date', days[5].getString('date').substring(0, 10) + ' 00:00:00.000Z');
+		rec.set('created_by', ownerMember.id);
+		e.app.save(rec);
+	}
+
 	return e.json(200, { tripId: trip.id, slug: slug, days: summary });
 });
 

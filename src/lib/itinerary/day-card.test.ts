@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { summarizeDay, summarizeDays } from './day-card';
+import { summarizeDay, summarizeDays, todayTreatment } from './day-card';
 import type { Item, Day } from '$lib/types';
 
 const days = [
@@ -85,29 +85,38 @@ describe('summarizeDay — budget metric', () => {
 	});
 });
 
-describe('summarizeDay — stay chips: state-change only (check-in / check-out)', () => {
+describe('summarizeDay — stay line: Night N of M (#426)', () => {
 	const hotel = item({
 		id: 'h',
 		type: 'lodging',
 		day: 'd1',
-		end_date: '2026-06-20 00:00:00.000Z'
+		end_date: '2026-06-20 00:00:00.000Z',
+		title: 'The American Club'
 	});
 
-	it('check-in day emits 1 chip with kind=check-in', () => {
-		expect(summarizeDay([hotel], days, days[0]).stays).toEqual([{ kind: 'check-in', name: '' }]);
+	it('check-in day reads Night 1 of 2', () => {
+		expect(summarizeDay([hotel], days, days[0]).stays).toEqual([
+			{ kind: 'check-in', name: 'The American Club', text: 'Night 1 of 2 · The American Club' }
+		]);
 	});
 
-	it('middle (staying) day emits NO chip', () => {
-		expect(summarizeDay([hotel], days, days[1]).stays).toEqual([]);
+	it('middle day reads Night 2 of 3 (was blank before #426)', () => {
+		const h3 = item({ id: 'h3', type: 'lodging', day: 'd1', end_date: '2026-06-21 00:00:00.000Z', title: 'The American Club' });
+		const four = [...days, { id: 'd4', date: '2026-06-21 00:00:00.000Z' }] as Day[];
+		const s = summarizeDay([h3], four, four[1]).stays;
+		expect(s).toEqual([{ kind: 'staying', name: 'The American Club', text: 'Night 2 of 3 · The American Club' }]);
 	});
 
-	it('check-out day emits 1 chip with kind=check-out', () => {
-		expect(summarizeDay([hotel], days, days[2]).stays).toEqual([{ kind: 'check-out', name: '' }]);
+	it('check-out day reads Check-out · Name, never a night count', () => {
+		expect(summarizeDay([hotel], days, days[2]).stays).toEqual([
+			{ kind: 'check-out', name: 'The American Club', text: 'Check-out · The American Club' }
+		]);
 	});
 
-	it('uses the lodging title as the name', () => {
-		const named = item({ id: 'h', type: 'lodging', day: 'd1', end_date: '2026-06-20 00:00:00.000Z', title: 'Hotel Splendide' });
-		expect(summarizeDay([named], days, days[0]).stays[0]?.name).toBe('Hotel Splendide');
+	it('a blank lodging title drops the separator', () => {
+		const bare = item({ id: 'h', type: 'lodging', day: 'd1', end_date: '2026-06-20 00:00:00.000Z' });
+		expect(summarizeDay([bare], days, days[0]).stays[0]?.text).toBe('Night 1 of 2');
+		expect(summarizeDay([bare], days, days[2]).stays[0]?.text).toBe('Check-out');
 	});
 
 	it('is empty when no lodging spans the date', () => {
@@ -119,32 +128,50 @@ describe('summarizeDay — stay chips: state-change only (check-in / check-out)'
 		expect(summarizeDay([train], days, days[0]).stays).toEqual([]);
 	});
 
-	// 3-night lodging: only check-in + check-out emit chips; middle day is blank.
-	it('3-night lodging: check-in=1 chip, middle=0, check-out=1 chip', () => {
-		const h3 = item({ id: 'h3', type: 'lodging', day: 'd1', end_date: '2026-06-20 00:00:00.000Z' });
-		expect(summarizeDay([h3], days, days[0]).stays).toHaveLength(1); // check-in
-		expect(summarizeDay([h3], days, days[1]).stays).toHaveLength(0); // staying → blank
-		expect(summarizeDay([h3], days, days[2]).stays).toHaveLength(1); // check-out
-	});
-
-	// Two lodgings both check in on the same day → 2 chips.
-	it('two lodgings checking in the same day emits 2 chips', () => {
+	it('two lodgings checking in the same day emit two lines', () => {
 		const a = item({ id: 'ha', type: 'lodging', day: 'd1', end_date: '2026-06-19 00:00:00.000Z', title: 'Hotel A' });
 		const b = item({ id: 'hb', type: 'lodging', day: 'd1', end_date: '2026-06-20 00:00:00.000Z', title: 'Hotel B' });
 		const stays = summarizeDay([a, b], days, days[0]).stays;
-		expect(stays).toHaveLength(2);
-		expect(stays.map((s) => s.kind)).toEqual(['check-in', 'check-in']);
-		expect(stays.map((s) => s.name)).toEqual(['Hotel A', 'Hotel B']);
+		expect(stays.map((s) => s.text)).toEqual(['Night 1 of 1 · Hotel A', 'Night 1 of 2 · Hotel B']);
 	});
 
-	// Two lodgings both checking out on the same day → 2 chips.
-	// Both start on d1, both end on d2 (June 19) — so on d2 both emit check-out.
-	it('two lodgings checking out the same day emits 2 chips', () => {
+	it('two lodgings checking out the same day emit two lines', () => {
 		const a = item({ id: 'xa', type: 'lodging', day: 'd1', end_date: '2026-06-19 00:00:00.000Z', title: 'Place A' });
 		const b = item({ id: 'xb', type: 'lodging', day: 'd1', end_date: '2026-06-19 00:00:00.000Z', title: 'Place B' });
 		const stays = summarizeDay([a, b], days, days[1]).stays;
-		expect(stays).toHaveLength(2);
 		expect(stays.map((s) => s.kind)).toEqual(['check-out', 'check-out']);
+	});
+});
+
+describe('summarizeDay — needsBookingCount (#426)', () => {
+	it('= bookable minus booked: only planned, requires-booking, unbooked items', () => {
+		const items = [
+			item({ id: 'a', booked: true, requires_booking: true }),
+			item({ id: 'b', booked: false, requires_booking: true }),
+			item({ id: 'c', booked: false, requires_booking: true }),
+			item({ id: 'd', booked: false, requires_booking: false })
+		];
+		expect(summarizeDay(items, days, days[0]).needsBookingCount).toBe(2);
+	});
+	it('is 0 when everything bookable is booked, and for an empty day', () => {
+		expect(summarizeDay([item({ booked: true, requires_booking: true })], days, days[0]).needsBookingCount).toBe(0);
+		expect(summarizeDay([], days, days[0]).needsBookingCount).toBe(0);
+	});
+});
+
+describe('todayTreatment (#426)', () => {
+	it('Planning Mode: today gets the outline, not the pill', () => {
+		expect(todayTreatment('2026-06-18 00:00:00.000Z', '2026-06-18', 'planning')).toBe('outline');
+	});
+	it('Trip Mode keeps the TODAY pill', () => {
+		expect(todayTreatment('2026-06-18 00:00:00.000Z', '2026-06-18', 'trip')).toBe('pill');
+	});
+	it('any other day, or no today, is none', () => {
+		expect(todayTreatment('2026-06-19 00:00:00.000Z', '2026-06-18', 'planning')).toBe('none');
+		expect(todayTreatment('2026-06-18 00:00:00.000Z', undefined, 'planning')).toBe('none');
+	});
+	it('compares calendar dates, so the stored time-of-day never matters', () => {
+		expect(todayTreatment('2026-06-18T00:00:00.000Z', '2026-06-18', 'planning')).toBe('outline');
 	});
 });
 
