@@ -1017,6 +1017,46 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 		e.app.save(rec);
 	}
 
+	// Optional { flights: true } (#433): three flights for the Row's sub-line: a snug
+	// day flight (codes), a red-eye landing the next day (the `+1`), and one whose
+	// labels have no codes (a long route, so at 375px the arrival time must drop).
+	// Off by default: the day-fullness matrix is untouched (the returned `days` summary
+	// does not count these flights).
+	if (info.body && info.body['flights'] && days.length >= 6) {
+		const tripMembersCol = e.app.findCollectionByNameOrId('trip_members');
+		const mkMember = (name) => {
+			const m = new Record(tripMembersCol);
+			m.set('trip', trip.id);
+			m.set('role', 'traveler');
+			m.set('placeholder_name', name);
+			m.set('display_name', name);
+			e.app.save(m);
+			return m.id;
+		};
+		const kev = mkMember('Kevin');
+		const jess = mkMember('Jess');
+		const fl = (dayIdx, extra) => {
+			const rec = new Record(itemsCol);
+			rec.set('trip', trip.id);
+			if (phaseId) rec.set('phase', phaseId);
+			rec.set('day', days[dayIdx].id);
+			rec.set('type', 'flight');
+			rec.set('status', 'planned');
+			rec.set('requires_booking', true);
+			rec.set('sort_order', 90 + dayIdx);
+			rec.set('created_by', ownerMember.id);
+			for (const f in extra) rec.set(f, extra[f]);
+			e.app.save(rec);
+		};
+		const on = (idx, hm) => {
+			const d = days[idx].getString('date').substring(0, 10);
+			return d + ' ' + hm + ':00.000Z';
+		};
+		fl(1, { title: 'UA 1234', start_time: on(1, '14:05'), end_time: on(1, '16:20'), location_name: 'Milwaukee Mitchell Intl (MKE)', description: '→ Denver Intl (DEN)', assigned_to: [ownerMember.id, kev] });
+		fl(3, { title: 'DL 482 overnight', start_time: on(3, '22:40'), end_time: on(4, '06:10'), location_name: 'Denver Intl (DEN)', description: '→ Atlanta Hartsfield-Jackson (ATL)', assigned_to: [ownerMember.id, kev, jess] });
+		fl(5, { title: 'Spirit to the coast', start_time: on(5, '11:15'), end_time: on(5, '19:50'), location_name: 'Milwaukee Mitchell International', description: '→ Fort Lauderdale Hollywood International' });
+	}
+
 	return e.json(200, { tripId: trip.id, slug: slug, days: summary });
 });
 

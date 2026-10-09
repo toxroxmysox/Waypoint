@@ -156,6 +156,22 @@ Field visibility is driven by `getFieldConfig(type).visibility` (`item-fields.ts
 
 ---
 
+### 4a. Rows, part 1 — booking and flights Smart Lists, money's Still planned, overview Flights & stays — NEW by #433 (card system, D11)
+
+One two-line Row for every list. Component `Row` (`src/lib/ui/Row.svelte`); derivations in `src/lib/itinerary/row.ts` (`rowSub`, `flightSub`, `fitFlightSub`, `rowTrailing`, `rowContent`, `keyItemRows`). Rows part 2 (#434) adopts it on the remaining lists.
+
+| Slot | Field / source | Rule |
+|---|---|---|
+| Leading action | booking list only: the `Mark booked` checkbox | Left of the icon; shifts the row right. 44x44 hit area. |
+| Icon | `type` / `subtype` | `MonoTypeIcon` 16px bare glyph, ink-soft. Never coloured. |
+| Headline | `title` | One line, ellipsis. |
+| Sub-line, non-flight | day date · time (text grammar) · place | `Thu Oct 1 · 6:30p · Immigrant`. Range `10:00a–12:00p`, deadline `by 4:30p`, untimed = date only. Place = `location_name`, else the phase name. A multi-day lodging reads `Thu Oct 1–Sat Oct 3 · 2 nights · Place`. Parts are omitted when empty. |
+| Sub-line, flight | departure date · `dep → arr` · route | `Thu Oct 1 · 2:05p → 4:20p · MKE → DEN`. Route = airport codes in the labels, else the labels. A later-day arrival reads `6:10a +1`; a clock-less red-eye shows the arrival date. **Overflow:** parts drop in this order: arrival time, departure time, date. The route never drops (CSS truncates it last). Measured with the real font (`FlightSubLine`). |
+| Trailing slot (one value) | `rowTrailing`: chip > cost > people > chevron | Booking list: moss `Booked` chip once checked, else chevron. Flights list: passenger bubbles (max 3, then `+n`), else chevron. Money Still planned: `$cost` (mono). Overview Flights & stays: gold `Needs booking` chip (`NeedsBookingChip`, the #420 / #426 chip) when `needsBooking()`, else chevron. |
+| Tap target | the whole body | One link to the item, at least 44px tall. |
+
+Flights & stays on the overview now sorts by date (undated last, then start time) and reads from a small flights-and-lodging query so the main items fetch stays light. The flight title and `UA 1234 · MKE → DEN` place line are #435.
+
 ## Cut list (do not render; schema columns retained per append-only rule)
 
 - `paid_by` — Expense concept, not an item concept.

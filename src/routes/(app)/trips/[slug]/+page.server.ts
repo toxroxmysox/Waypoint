@@ -258,6 +258,9 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		// (kept off the main fetch so every item doesn't carry its description).
 		locals.pb.collection('items').getFullList<Item>({
 			filter: `trip = "${trip.id}" && (type = "flight" || type = "lodging")`,
+			// Same collection + method as the fetch above, run concurrently: without a
+			// null key the JS SDK auto-cancels one of the two.
+			requestKey: null,
 			fields:
 				'id,day,end_date,type,subtype,title,status,booked,requires_booking,start_time,end_time,location_name,description'
 		})
