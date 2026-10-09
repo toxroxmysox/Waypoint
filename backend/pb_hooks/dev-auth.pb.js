@@ -1109,6 +1109,34 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 		}
 	}
 
+	// Optional { span: true } (#423): the Span bands' fixtures. A timed stay, day 3 -> day 6
+	// (check-in 3:00p, check-out 11:00a), and a timed car rental, day 2 -> day 5 (pick up
+	// 10:00a, return 12:00p), so day 2 / 3 / 5 / 6 show first / middle / last for both.
+	// Multi-day items are not day items: the fullness matrix is untouched.
+	if (info.body && info.body['span'] && days.length >= 6) {
+		const mkSpan = (title, type, subtype, startIdx, endIdx, startClock, endClock, place) => {
+			const rec = new Record(itemsCol);
+			rec.set('trip', trip.id);
+			if (phaseId) rec.set('phase', phaseId);
+			rec.set('day', days[startIdx].id);
+			rec.set('type', type);
+			if (subtype) rec.set('subtype', subtype);
+			rec.set('title', title);
+			rec.set('status', 'planned');
+			rec.set('sort_order', 98);
+			const startDate = days[startIdx].getString('date').substring(0, 10);
+			const endDate = days[endIdx].getString('date').substring(0, 10);
+			rec.set('start_time', startDate + ' ' + startClock + ':00.000Z');
+			rec.set('end_time', endDate + ' ' + endClock + ':00.000Z');
+			rec.set('end_date', endDate + ' 00:00:00.000Z');
+			rec.set('location_name', place);
+			rec.set('created_by', ownerMember.id);
+			e.app.save(rec);
+		};
+		mkSpan('The American Club', 'lodging', '', 2, 5, '15:00', '11:00', 'Kohler, WI');
+		mkSpan('Hertz rental car', 'transportation', 'car', 1, 4, '10:00', '12:00', 'MKE airport');
+	}
+
 	// Optional { now: 'hero' | 'free' | 'rail' | 'multi' | 'buckets' | 'deadline' } (#428; 'multi' = #430; 'buckets', 'deadline' = #431): items pinned to the REAL clock on today's
 	// day (days[1]; the trip is UTC, so UTC wall clock = trip-local), so Now has a live
 	// state to photograph. 'hero': a dinner that began 65 min ago and ends in 55, with
