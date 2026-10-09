@@ -29,7 +29,7 @@ test.describe('Trip Mode Views (#244 merged Now)', () => {
 		await expect(
 			page
 				.locator(':visible', {
-					hasText: /Right now|Free time|Day wrapped|Nothing else planned|No itinerary for today/
+					hasText: /NOW ·|Free time|Day wrapped|Nothing else planned|No itinerary for today/
 				})
 				.first()
 		).toBeVisible();
