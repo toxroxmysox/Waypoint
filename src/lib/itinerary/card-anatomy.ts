@@ -215,8 +215,12 @@ export interface OverlapInfo {
 	partnerTitle: string;
 	/** Red only when the same people are going to both. */
 	shared: boolean;
-	/** The earlier-starting item's END and the later one's START turn red (when shared). */
+	/** Role against the NAMED partner: the earlier-starting item's END and the later one's START go red (when shared). */
 	role: 'earlier' | 'later';
+	/** This item's start time is red: it starts inside an item it shares people with. */
+	redStart: boolean;
+	/** This item's end time is red: a shared-people item starts before it ends. */
+	redEnd: boolean;
 }
 
 /** Minutes since midnight from a stored time string; NaN when none. */
@@ -227,8 +231,11 @@ export function clockMinutes(t: string | undefined): number {
 
 /**
  * Overlap as pairs: each item with a start AND an end that collides with another
- * learns its (first) partner and whether they share a Going member. Both items of
- * a pair carry it.
+ * learns a partner and whether they share a Going member (`assigned_to` only).
+ * Both items of a pair carry it. With several collisions (three-way) the note
+ * names a partner sharing people if there is one, else the first by start; the
+ * rail times go red per collision with shared people, so one item can be red at
+ * both its start and its end.
  */
 export function overlapPairs(items: CardItemFields[]): Map<string, OverlapInfo> {
 	const ranged = items
@@ -236,14 +243,26 @@ export function overlapPairs(items: CardItemFields[]): Map<string, OverlapInfo> 
 		.map((i) => ({ i, s: clockMinutes(i.start_time), e: clockMinutes(i.end_time) }))
 		.sort((a, b) => a.s - b.s);
 	const out = new Map<string, OverlapInfo>();
+	const note = (self: CardItemFields, other: CardItemFields, shared: boolean, role: 'earlier' | 'later') => {
+		const cur = out.get(self.id);
+		const redStart = (cur?.redStart ?? false) || (shared && role === 'later');
+		const redEnd = (cur?.redEnd ?? false) || (shared && role === 'earlier');
+		// First collision names the partner; a later shared one replaces an unshared one.
+		const keep = cur && (cur.shared || !shared);
+		out.set(self.id, {
+			...(keep ? cur : { partnerId: other.id, partnerTitle: other.title, shared, role }),
+			redStart,
+			redEnd
+		});
+	};
 	for (let a = 0; a < ranged.length; a++) {
 		for (let b = a + 1; b < ranged.length; b++) {
 			if (ranged[b].s >= ranged[a].e) break;
-			const shared = (ranged[a].i.assigned_to ?? []).some((id) => ranged[b].i.assigned_to?.includes(id));
-			if (!out.has(ranged[a].i.id))
-				out.set(ranged[a].i.id, { partnerId: ranged[b].i.id, partnerTitle: ranged[b].i.title, shared, role: 'earlier' });
-			if (!out.has(ranged[b].i.id))
-				out.set(ranged[b].i.id, { partnerId: ranged[a].i.id, partnerTitle: ranged[a].i.title, shared, role: 'later' });
+			const ia = ranged[a].i;
+			const ib = ranged[b].i;
+			const shared = (ia.assigned_to ?? []).some((id) => ib.assigned_to?.includes(id));
+			note(ia, ib, shared, 'earlier');
+			note(ib, ia, shared, 'later');
 		}
 	}
 	return out;
