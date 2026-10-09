@@ -18,6 +18,8 @@
 		tripSlug,
 		votesByItem = {},
 		members = [],
+		myMemberId = '',
+		canVote = false,
 		dndEnabled = false,
 		collapsed = false,
 		dragActive = false,
@@ -30,6 +32,9 @@
 		tripSlug: string;
 		votesByItem?: Record<string, Vote[]>;
 		members?: TripMember[];
+		/** The viewer's trip_members.id + whether they may vote (#425 pills). */
+		myMemberId?: string;
+		canVote?: boolean;
 		/** Turns the section into a svelte-dnd-action drop zone + drag source (#60). */
 		dndEnabled?: boolean;
 		/**
@@ -125,7 +130,7 @@
 					{/if}
 					<div class="flex items-stretch gap-1">
 						<div class="min-w-0 flex-1">
-							<IdeaCard {item} {tripSlug} votes={votesByItem[item.id] ?? []} {members} />
+							<IdeaCard {item} {tripSlug} votes={votesByItem[item.id] ?? []} {members} {myMemberId} {canVote} />
 						</div>
 						<!-- Pull-up: the owner's one primary action on the card (tap to plan). -->
 						<button
@@ -161,7 +166,7 @@
 				{/if}
 				<div class="flex items-stretch gap-1">
 					<div class="min-w-0 flex-1">
-						<IdeaCard {item} {tripSlug} votes={votesByItem[item.id] ?? []} {members} />
+						<IdeaCard {item} {tripSlug} votes={votesByItem[item.id] ?? []} {members} {myMemberId} {canVote} />
 					</div>
 					<div class="text-ink-muted flex shrink-0 items-center px-1" aria-label="Pull up to plan">
 						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

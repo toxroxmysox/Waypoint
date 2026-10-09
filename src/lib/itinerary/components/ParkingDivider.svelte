@@ -10,6 +10,8 @@
 		phaseName = null,
 		votesByItem = {},
 		members = [],
+		myMemberId = '',
+		canVote = false,
 		dragActive = false,
 		pullUp = () => {},
 		onConsider = () => {},
@@ -22,6 +24,8 @@
 		phaseName?: string | null;
 		votesByItem?: Record<string, Vote[]>;
 		members?: TripMember[];
+		myMemberId?: string;
+		canVote?: boolean;
 		dragActive?: boolean;
 		pullUp?: (itemId: string) => void;
 		onConsider?: (e: CustomEvent<DndEvent<Item>>) => void;
@@ -86,6 +90,8 @@
 		{tripSlug}
 		{votesByItem}
 		{members}
+		{myMemberId}
+		{canVote}
 		dndEnabled={true}
 		collapsed={!expanded}
 		{dragActive}

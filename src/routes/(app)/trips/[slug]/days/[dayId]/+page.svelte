@@ -202,6 +202,8 @@
 							: null}
 						votesByItem={data.votesByItem}
 						members={data.members}
+						myMemberId={data.membership.id}
+						canVote={data.membership.role !== 'viewer'}
 						dragActive={zone.dragActive}
 						{pullUp}
 						onConsider={zone.onConsider}

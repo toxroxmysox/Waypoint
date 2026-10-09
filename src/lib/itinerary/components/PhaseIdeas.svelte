@@ -42,7 +42,7 @@
 			<IdeaGroupHeading type={group.type} />
 			{#each group.items as card (card.id)}
 				{#if card.kind === 'item'}
-					<IdeaCard item={card.item} {tripSlug} votes={card.votes} {members} />
+					<IdeaCard item={card.item} {tripSlug} votes={card.votes} {members} {myMemberId} canVote={canVoteGhosts} />
 				{:else}
 					<!-- #248 — a pending suggestion: dotted, votable, in its type group. -->
 					<GhostCard {card} {members} {myMemberId} canVote={canVoteGhosts} canReview={canReviewGhosts} />

@@ -1,16 +1,15 @@
 <script lang="ts">
 	// The idea card (#424; spec §Ideas grouping, D2/D7): title, then a `place · cost`
-	// sub-line. NO type icon: the group heading above carries the type. The vote pill
-	// is the existing read-only one (tap-to-vote pills are #425). Navigation is a
-	// stretched <a> (a button can't nest in an anchor); the pill and assignee footer
-	// ride above it (relative z-10). The host supplies the drag wrapper and any
+	// sub-line, then the four tap-to-vote pills (#425). NO type icon: the group
+	// heading above carries the type. Navigation is a stretched <a> (a button can't
+	// nest in an anchor); the pills and assignee footer ride above it (relative z-10). The host supplies the drag wrapper and any
 	// pull-up beside the card.
 	import { withOrigin } from '$lib/shell/back-nav';
 	import { page } from '$app/state';
 	import type { Item, TripMember } from '$lib/types';
 	import type { DisplayVote } from '$lib/collaboration/voting';
 	import Card from '$lib/ui/Card.svelte';
-	import VoteSentimentPill from '$lib/collaboration/components/VoteSentimentPill.svelte';
+	import VotePills from '$lib/collaboration/components/VotePills.svelte';
 	import AssigneeStacks from '$lib/itinerary/components/AssigneeStacks.svelte';
 	import { ideaSub } from '$lib/itinerary/idea-groups';
 
@@ -19,12 +18,18 @@
 		tripSlug,
 		votes = [],
 		members = [],
+		myMemberId = '',
+		canVote = false,
 		class: klass = ''
 	}: {
 		item: Item;
 		tripSlug: string;
 		votes?: DisplayVote[];
 		members?: TripMember[];
+		/** The viewer's trip_members.id (their pill is filled). */
+		myMemberId?: string;
+		/** False for viewers: the pills show counts only. */
+		canVote?: boolean;
 		class?: string;
 	} = $props();
 
@@ -42,11 +47,16 @@
 		{#if sub}
 			<p class="text-ink-muted mt-0.5 truncate text-xs" data-idea-sub>{sub}</p>
 		{/if}
-		{#if votes.length}
-			<div class="relative z-10 mt-1.5 w-fit">
-				<VoteSentimentPill {votes} />
-			</div>
-		{/if}
+		<div class="relative z-10 mt-1.5 w-fit">
+			<VotePills
+				{votes}
+				{members}
+				{myMemberId}
+				{canVote}
+				voteAction="/trips/{tripSlug}/items/{item.id}?/vote"
+				unvoteAction="/trips/{tripSlug}/items/{item.id}?/unvote"
+			/>
+		</div>
 	</div>
 	<!-- Going bubbles + struck not-going (ADR-0011 / #440) — child of the bordered
 	     card (#231); padding on the row collapses it when empty. -->
