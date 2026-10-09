@@ -169,7 +169,7 @@ describe('itemMenuEntries (#437)', () => {
 	it('never starts or ends with a divider', () => {
 		for (const role of ['owner', 'co_owner', 'traveler', 'viewer']) {
 			for (const created_by of [ME, OTHER]) {
-				for (const item of [{}, { status: 'unplanned', day: '' }]) {
+				for (const item of [{}, { status: 'unplanned' as const, day: '' }]) {
 					const e = ids(role, { created_by, ...item });
 					expect(e[0]).not.toBe('divider');
 					expect(e.at(-1)).not.toBe('divider');
