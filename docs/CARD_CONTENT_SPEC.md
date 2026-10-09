@@ -106,6 +106,26 @@ Timeline membership = `dayItems` (`day = X && end_date = ""`), ordered by `build
 
 **Parking-lot card** — AMENDED by #424 (card system, D7): see **2d** below. As built before #424: drag handle, `TypeIcon`, `title`, `subtype`, assignee avatars, pull-up. **No "Needs booking" pill** (uncommitted). Lifecycle per `PHASE_REDESIGN_PRD.md` (`pullToPlan` → planned+day; `pushToParking` → unplanned, day cleared, time stripped).
 
+### 2e. Span band — Multi-day Items on the day page and Now — NEW by #423 (card system, D10/D11)
+
+Replaces `MultiDayBanner` (solid moss/clay fill, `Ongoing` pill; both gone). Component `SpanBand`; text from `spanBandText(item, days, date)` in `src/lib/itinerary/multi-day.ts`.
+
+| Slot | Rule |
+|---|---|
+| Where | Top of the day page (above the timeline, outside the dnd zone, never dragged) and top of Now (above the Hero; the Hero is the only accent). One band per spanning item. |
+| Shape | Full-width, `surface-2`, no shadow, no accent, min 44px tall; the whole band links to the item. |
+| Icon | `MonoTypeIcon` 24px disc (`sub` passed, so a car rental shows the car), centred in the 48px rail column. |
+| Title | Item title, starting where card titles start (rail 48 + gap 8 + card padding 12). One line, truncated. |
+| Text | One line, ink-soft, below: see below. |
+
+| Phase | Stay (lodging) | Rental (transportation) | Other type |
+|---|---|---|---|
+| First day | `Check-in 3:00p · 3 nights` | `Pick up 10:00a` | `Starts 10:00a` |
+| Middle | `Night 2 of 3 · check-out Sat by 11:00a` | `Day 2 of 5 · return Sun by 12:00p` | `Day 2 of 5 · ends Sun by 12:00p` |
+| Last day | `Check-out by 11:00a` | `Return by 12:00p` | `Ends by 12:00p` |
+
+Times are `start_time` (first day) and `end_time` (middle and last) through `formatClock`; each part drops when the time is unset (`Check-in · 3 nights`, `Night 2 of 3 · check-out Sat`, `Check-out`). One night reads `1 night`. The weekday is the end date as a calendar day (UTC, #393). The rental's `Day N of M` counts days (M = nights + 1); a stay counts nights. The day card's stay line (§1) is unchanged.
+
 ### 2d. Ideas grouped by type (Parking Lot) — NEW by #424 (card system, D7)
 
 Surfaces: the day page's Parking Lot (phone and tablet), the desktop Ideas panel (>= 1280px), Phase Detail's parking list (`PhaseIdeas`; includes pending Ghost Cards).
