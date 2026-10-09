@@ -1,11 +1,14 @@
 <script lang="ts">
-	// Booking smart-list row (#50) — a projected, read-only lens row. Square
-	// checkbox marks the source Item booked (write-through); TypeIcon tile +
-	// title + mono meta line; "Open ›" links to the Item. No assignee/notes.
-	// Translated from design/lists-checklists/source-jsx → SmartRow.
+	// Booking smart-list row (#50, adopted onto the Row in #433) — a projected lens
+	// row. The square checkbox is the Row's LEADING action (left of the icon, 44px hit
+	// area) and marks the source Item booked (write-through); the body is the Row
+	// (16px glyph, title, `Thu Oct 1 · 6:30p · Place` sub-line) linking to the Item.
+	// Trailing: the moss `Booked` confirmation once checked, else the chevron.
 	import { enhance } from '$app/forms';
-	import TypeIcon from '$lib/ui/TypeIcon.svelte';
+	import Row from '$lib/ui/Row.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
+	import FlightSubLine from './FlightSubLine.svelte';
+	import { rowTrailing, type FlightSub } from '$lib/itinerary/row';
 	import type { ItemType } from '$lib/types';
 
 	let {
@@ -13,7 +16,8 @@
 		type,
 		subtype = '',
 		title,
-		meta,
+		sub,
+		flight = null,
 		href,
 		bookAction,
 		pending = false,
@@ -24,22 +28,24 @@
 		type: ItemType;
 		subtype?: string;
 		title: string;
-		meta: string;
+		sub: string;
+		/** A flight's sub-line parts; the Row fits them to its width (arrival drops first). */
+		flight?: FlightSub | null;
 		href: string;
 		bookAction: string;
 		pending?: boolean;
 		divider?: boolean;
 		onBook?: () => void;
 	} = $props();
+
+	const trailingKind = $derived(rowTrailing({ chip: pending ? 'booked' : undefined }));
 </script>
 
-<div
-	class="flex items-center gap-3 py-[13px] {divider ? 'border-line border-b' : ''} transition-opacity"
-	style="opacity:{pending ? 0.4 : 1};"
->
+{#snippet leading()}
 	<form
 		method="POST"
 		action={bookAction}
+		class="flex"
 		use:enhance={() => {
 			onBook?.();
 			return async ({ update }) => {
@@ -48,9 +54,14 @@
 		}}
 	>
 		<input type="hidden" name="item_id" value={itemId} />
-		<button type="submit" class="flex items-center" aria-label="Mark booked" aria-pressed={pending}>
+		<button
+			type="submit"
+			class="-ml-3 flex h-11 w-11 shrink-0 items-center justify-center"
+			aria-label="Mark booked"
+			aria-pressed={pending}
+		>
 			<span
-				class="flex h-[21px] w-[21px] shrink-0 items-center justify-center rounded-[5px] border-[1.5px] transition-colors
+				class="flex h-[21px] w-[21px] items-center justify-center rounded-[5px] border-[1.5px] transition-colors
 					{pending ? 'border-moss bg-moss text-paper' : 'border-line bg-surface'}"
 			>
 				{#if pending}
@@ -61,26 +72,28 @@
 			</span>
 		</button>
 	</form>
+{/snippet}
 
-	<TypeIcon {type} sub={subtype} size={34} />
+{#snippet flightLine()}
+	{#if flight}<FlightSubLine sub={flight} />{/if}
+{/snippet}
 
-	<div class="min-w-0 flex-1">
-		<div class="text-ink truncate text-sm leading-tight font-semibold {pending ? 'line-through' : ''}">
-			{title}
-		</div>
-		{#if meta}
-			<div class="text-ink-muted mt-0.5 truncate font-mono text-[11px] tracking-tight">{meta}</div>
-		{/if}
-	</div>
-
-	{#if pending}
+{#snippet trailing()}
+	{#if trailingKind === 'chip'}
 		<Pill variant="booked" size="sm">Booked</Pill>
-	{:else}
-		<a {href} class="text-sky inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold">
-			Open
-			<svg width="13" height="13" viewBox="0 0 20 20" fill="none">
-				<path d="M8 5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-			</svg>
-		</a>
 	{/if}
-</div>
+{/snippet}
+
+<Row
+	{type}
+	{subtype}
+	{title}
+	{sub}
+	subline={flight ? flightLine : undefined}
+	{href}
+	{leading}
+	trailing={trailingKind === 'chip' ? trailing : undefined}
+	strike={pending}
+	dim={pending}
+	{divider}
+/>
