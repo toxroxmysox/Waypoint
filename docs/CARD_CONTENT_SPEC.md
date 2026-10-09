@@ -147,20 +147,25 @@ Earlier today, Coming up and the Next 3 days tab use the day page's Timeline Rai
 
 ### 3. Item detail
 
-| Slot | Field / source | Capture path | Notes |
-|---|---|---|---|
-| Hero: type/subtype, title | `type`, `subtype`, `title` | form | |
-| Hero pills | `booked` → Booked; `status === 'done'` → Done | form | |
-| Description | `description` | form | |
-| Schedule | `day` (date), `phase`, `start_time`–`end_time` | form | **When row = `date · start_time – end_time`. No tz.** |
-| Location | `location_name`, `location_address` | form (Places) | **⚠️ add** "Open in Maps" from `google_place_id` (deferred). |
-| Booking | `reservation_url`, `free_cancellation`, `confirmation_codes[]` | form | **No `booked_by`.** |
-| **Cost** | **`cost_estimate_usd`** (single "Cost") | form | **⚠️ add** conditional "View in expenses" → filtered expenses list, only when ≥1 `expenses.linked_item` points here (deferred). |
-| Assigned to | `assigned_to[]` | form (>1 member) + self-assign | **Keep.** Detail **and** card avatars now (ADR-0011 #210; no longer detail-only). |
-| Votes | item `votes` | VoteButtons | Header VoteButtons + stacks. |
-| Goals | linked `trip_goals.items` | form (goal-side) | **⚠️ add-render** (deferred); detail currently passes `linked_goal_ids: []`. |
-| Documents | `documents[]` | DocumentSection | Keep. |
-| Comments | `suggestions` (target_item) | comment form | Keep. |
+**Hero + body — AMENDED by #438 (card system, D12/D13), Planning Mode.** The Hero (#428) is the header; the old header card and the view-mode Schedule / Location / Booking / Cost / Assigned-to cards are gone. Pure rules in `src/lib/itinerary/item-page.ts`.
+
+| Slot | Field / source | Notes |
+|---|---|---|
+| Hero: icon, title | `type`, `subtype` (`MonoTypeIcon`), `title` | Not live in Planning Mode: no accent, no `status`. |
+| Hero: type in words | `itemTypeLine` | `Meal · Dinner`. A subtype of "other" drops. |
+| Hero: place | `location_name`, `location_address` | The line is the Maps link (`mapsUrl`). |
+| Hero: time | `itemTimeText` | Date leads: `Thu Oct 1 · 6:30p–8:30p`; a stay reads `Thu Oct 1–Sat Oct 3 · 2 nights`. Untimed: the date alone. |
+| Hero: codes, documents | code documents; file documents | Codes are large tap-to-copy rows; documents are 44px rows that open the file, newest first. Documents also stay in the Documents section, which manages them. |
+| Hero: status | `booked` → `✓ Booked`; `status === 'done'` → `✓ Done`; `needsBooking` → gold `To book` chip | #441 turns the chip into the Book / Mark booked button. |
+| Hero: Going | `assigned_to` | Names with bubbles, read-only until #440. Hidden when nobody is going. |
+| Votes | `VoteButtons` (non-viewers) | Under the Hero; #442 decides where votes and Going each show. |
+| Description | `description` | Plain paragraph. |
+| Details (one card) | `detailsRows` | Rows, each omitted when empty: **Estimate** (`cost_estimate_usd`), **Payment**, **Booking** (host of `reservation_url`, opens it), **Cancellation** (`Free cancellation`), **Phase**. Payment is its own row and never reads the estimate: `Paid $X` + `n expenses` (links to the item's expenses) once any expense links the item, else `Log payment` (prefilled add) for non-viewers on non-notes. No rows, no card. |
+| Goals | linked `trip_goals.items` | Read-only rows, omitted when none. |
+| Documents, Checklist | `documents[]`, item checklist | Full section only when it has content (Documents also after `+ Document`). Otherwise one dashed line: `+ Document · + Checklist`, each entry only for roles that may add it (`canUpload`, `canEditChecklist`); none for viewers. `+ Checklist` attaches in place. |
+| Comments | `suggestions` (target_item) | The composer first, then the list newest first (`newestFirst`). |
+
+**Layout.** One column on phones in the order above (Hero, votes, description, Details, Goals, Documents, Checklist, add line, Comments). From 900px two columns, each about a phone wide: left = Hero, votes, description, Details, Goals; right = Documents, Checklist, the add line, Comments. **Copy:** "Assigned to" is now "Going" everywhere (Hero, edit form).
 
 **Cut:** `paid_by`, `booked_by`, `cost_actual_usd`, `start_tz`/`end_tz` display.
 

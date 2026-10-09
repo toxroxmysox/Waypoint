@@ -7,9 +7,7 @@
 	import Pill from '$lib/ui/Pill.svelte';
 	import PlacesAutocomplete from '$lib/itinerary/components/PlacesAutocomplete.svelte';
 	import FlightLookup from '$lib/itinerary/components/FlightLookup.svelte';
-	import { titleCase, formatTime, formatDateRange } from '$lib/shell/format';
-	import { itemDateRange } from '$lib/itinerary/multi-day';
-	import PhaseChip from '$lib/ui/PhaseChip.svelte';
+	import { titleCase } from '$lib/shell/format';
 	import { untrack } from 'svelte';
 	import { memberDisplayName } from '$lib/itinerary/member-name';
 	import type { ItemFormMode, ItemFormData, ItemFormContext } from './ItemFormFields';
@@ -138,172 +136,8 @@
 		}
 	}
 
-	let itemDay = $derived(
-		initialData.day
-			? context.days.find((d) => d.id === initialData.day) ?? null
-			: null
-	);
-	let itemPhase = $derived(
-		initialData.phase
-			? context.phases.find((p) => p.id === initialData.phase) ?? null
-			: null
-	);
-
-	// Detail "When" row = date · start–end (no tz). §3 of CARD_CONTENT_SPEC.
-	// For multi-day items, show the full date span instead of just the start date.
-	let multiDayRange = $derived(
-		itemDateRange(initialData as unknown as Item, context.days)
-	);
-	let scheduleDate = $derived(
-		multiDayRange
-			? formatDateRange(multiDayRange.start, multiDayRange.end)
-			: itemDay
-				? new Date(itemDay.date.replace(' ', 'T')).toLocaleDateString('en-US', {
-						weekday: 'long',
-						month: 'long',
-						day: 'numeric',
-						timeZone: 'UTC'
-					})
-				: ''
-	);
-	// #346: an end-only item is a deadline — read view shows "Ends by <end>", parallel to the card.
-	let scheduleTimes = $derived(
-		!fields.times
-			? ''
-			: initialData.start_time
-				? `${formatTime(initialData.start_time)}${initialData.end_time ? ` – ${formatTime(initialData.end_time)}` : ''}`
-				: initialData.end_time
-					? `Ends by ${formatTime(initialData.end_time)}`
-					: ''
-	);
-	let whenRow = $derived([scheduleDate, scheduleTimes].filter(Boolean).join(' · '));
-
-	// #131 — Open in Maps: link OUT to the device map app (embedded maps off the
-	// table per CLAUDE.md). Prefer google_place_id, fall back to location_coords,
-	// then location_address. Google Maps universal URL (api=1) opens the Maps app
-	// on iOS and the browser on desktop. Empty → no affordance.
-	let mapsUrl = $derived.by(() => {
-		const placeId = initialData.google_place_id;
-		const coords = initialData.location_coords as { lat: number; lng: number } | null;
-		if (placeId) {
-			const q = encodeURIComponent(initialData.location_name || initialData.location_address || placeId);
-			return `https://www.google.com/maps/search/?api=1&query=${q}&query_place_id=${encodeURIComponent(placeId)}`;
-		}
-		if (coords && typeof coords.lat === 'number' && typeof coords.lng === 'number') {
-			return `https://www.google.com/maps/search/?api=1&query=${coords.lat},${coords.lng}`;
-		}
-		if (initialData.location_address) {
-			return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(initialData.location_address)}`;
-		}
-		return '';
-	});
 </script>
 
-{#if mode === 'view'}
-	{#if itemDay || itemPhase || (fields.times && (initialData.start_time || initialData.end_time))}
-		<Card>
-			<div class="p-4 space-y-2">
-				<SectionH>Schedule</SectionH>
-				{#if whenRow}
-					<p class="text-ink text-sm">{whenRow}</p>
-				{/if}
-				{#if itemPhase}
-					<p class="text-ink-muted flex items-center gap-1.5 text-sm">
-						<PhaseChip name={itemPhase.name} size={16} />
-						{itemPhase.name}
-					</p>
-				{/if}
-			</div>
-		</Card>
-	{/if}
-
-	{#if fields.location && (initialData.location_name || initialData.location_address)}
-		<Card>
-			<div class="p-4 space-y-1">
-				<SectionH>Location</SectionH>
-				{#if initialData.location_name}
-					<p class="text-ink text-sm font-semibold">{initialData.location_name}</p>
-				{/if}
-				{#if initialData.location_address}
-					<p class="text-ink-soft text-sm">{initialData.location_address}</p>
-				{/if}
-				{#if mapsUrl}
-					<a
-						href={mapsUrl}
-						target="_blank"
-						rel="noopener"
-						class="text-sky inline-flex items-center gap-1.5 pt-1 text-sm font-medium hover:underline active:underline"
-					>
-						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-							<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
-							<circle cx="12" cy="10" r="3" />
-						</svg>
-						Open in Maps
-					</a>
-				{/if}
-			</div>
-		</Card>
-	{/if}
-
-	{#if fields.booking && (initialData.booked || initialData.reservation_url || initialData.confirmation_codes.length > 0)}
-		<Card>
-			<div class="p-4 space-y-2">
-				<SectionH>Booking</SectionH>
-				{#if initialData.reservation_url}
-					<a
-						href={initialData.reservation_url}
-						target="_blank"
-						rel="noopener"
-						class="text-sky block truncate text-sm hover:underline active:underline"
-					>
-						{initialData.reservation_url}
-					</a>
-				{/if}
-				{#if initialData.free_cancellation}
-					<p class="text-moss text-xs font-semibold">Free cancellation</p>
-				{/if}
-				{#if initialData.confirmation_codes.length > 0}
-					<div class="space-y-1">
-						{#each initialData.confirmation_codes as code}
-							<div class="bg-surface-2 flex items-center justify-between rounded px-2 py-1.5">
-								<span class="text-ink-muted text-xs uppercase tracking-wide">{code.label}</span>
-								<span class="font-mono text-ink text-sm">{code.value}</span>
-							</div>
-						{/each}
-					</div>
-				{/if}
-			</div>
-		</Card>
-	{/if}
-
-	{#if fields.costs && initialData.cost_estimate_usd}
-		<Card>
-			<div class="p-4">
-				<SectionH>Cost</SectionH>
-				<p class="font-mono text-ink mt-2 text-sm font-semibold">
-					${initialData.cost_estimate_usd.toFixed(2)}
-				</p>
-			</div>
-		</Card>
-	{/if}
-
-	{#if initialData.assigned_to.length > 0}
-		<Card>
-			<div class="p-4">
-				<SectionH>Assigned to</SectionH>
-				<div class="mt-2 flex flex-wrap gap-2">
-					{#each initialData.assigned_to as memberId}
-						{@const member = context.members.find((m) => m.id === memberId)}
-						<Pill variant="default" size="md">
-							{memberDisplayName(member)}
-						</Pill>
-					{/each}
-				</div>
-			</div>
-		</Card>
-	{/if}
-
-{:else}
 	<Card>
 		<div class="p-4 space-y-4" oninput={markDirty}>
 			{#if typeEditable}
@@ -659,7 +493,7 @@
 		<Card>
 			<div class="p-4">
 				<fieldset>
-					<legend class="text-moss text-[11px] font-bold tracking-[0.2em] uppercase">Assigned to</legend>
+					<legend class="text-moss text-[11px] font-bold tracking-[0.2em] uppercase">Going</legend>
 					<div class="mt-2 space-y-1">
 						{#each context.members as member}
 							<label class="flex items-center gap-2">
@@ -705,4 +539,3 @@
 			</div>
 		</Card>
 	{/if}
-{/if}

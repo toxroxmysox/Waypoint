@@ -55,7 +55,7 @@ test.describe('Inline item checklist (#48 primitive · #55 ledger)', () => {
 		// The trip layout is a dual tree (mobile + desktop, one CSS-hidden), so scope
 		// every control to the visible subtree to avoid strict-mode violations.
 		// No checklist yet → the attach affordance is offered.
-		const addChecklist = page.getByRole('button', { name: 'Add checklist' }).filter({ visible: true }).first();
+		const addChecklist = page.getByRole('button', { name: '+ Checklist', exact: true }).filter({ visible: true }).first();
 		await expect(addChecklist).toBeVisible();
 		await addChecklist.click();
 
