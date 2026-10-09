@@ -132,7 +132,17 @@ Timeline membership = `dayItems` (`day = X && end_date = ""`), ordered by `build
 | Delete | owner, co-owner | `items.pb.js` delete hook |
 | Upload, checklist (add/remove, tick, assign, add task), votes, Log payment | everyone but viewers (Log payment: not on a note) | `documents.pb.js`, `checklists.pb.js` + `tasks.pb.js`, `votes.createRule` (0055), expenses |
 
-A viewer sees an existing checklist read-only. A refused or failed Move, Skip or Delete says so in place ("Couldn't … Reload the page and try again."): Move inside its sheet, Skip and Delete in their panels. After Skip, Trip Mode goes to Now; Planning Mode stays on the page with a "back in your ideas" toast.
+A viewer sees an existing checklist read-only. A refused or failed Move, Skip or Delete says so in place ("Couldn't … Reload the page and try again."), inside the sheet that tried it. After Skip, Trip Mode goes to Now; Planning Mode stays on the page with a "back in your ideas" toast.
+
+**Header bar and `⋯` menu (#437, D12).** The NavBar is: back · trip name · **Edit** · `⋯`. The item title is not in the bar (the Hero shows it). Edit is a visible 44px link for anyone who can edit. `⋯` is a 44px button that opens a popover; its rows are 44px tall and come from `itemMenuEntries(itemPermissions(...))`, a pure projection of the permissions, so the menu never lists what the server would refuse:
+
+| Viewer | `⋯` contents |
+|---|---|
+| owner, co-owner | Move to another day · Skip… · divider · Delete (Skip only for a planned item on a day) |
+| the item's creator | Move to another day |
+| everyone else (incl. viewers) | no `⋯` (and no Edit unless they created it) |
+
+Each row opens its own bottom sheet (the app's modal shape): **Move** (day / phase pickers), **Skip** ("Not happening?", keeps "Nothing is deleted" and says the item returns to the ideas; Skip / Cancel), **Delete** (names the document count; Delete / Cancel, clay). A refused action shows its `ITEM_ACTION_ERRORS` message inside that sheet and leaves it open. The sheets render outside the NavBar, because the header's backdrop blur would otherwise contain their `position: fixed`. The bottom-of-page "Not happening?" and "Delete item" panels are gone. The edit page keeps its own Delete panel (gated by `canDelete`).
 
 ### 4. Item create / edit
 

@@ -1,10 +1,7 @@
 <script lang="ts">
 	import { withOrigin } from '$lib/shell/back-nav';
 	import { enhance } from '$app/forms';
-	import { toast } from '$lib/shell/stores/toast';
-	import { useChromeMode } from '$lib/shell/chrome-mode';
-	import { skipDestination, ITEM_ACTION_ERRORS } from '$lib/itinerary/item-actions';
-	import { goto } from '$app/navigation';
+		import { itemMenuEntries } from '$lib/itinerary/item-actions';
 	import { getFieldConfig } from '$lib/itinerary/item-fields';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
@@ -17,7 +14,8 @@
 	import ItemForm from '$lib/itinerary/components/ItemForm.svelte';
 
 	import VoteButtons from '$lib/collaboration/components/VoteButtons.svelte';
-	import MoveItemSheet from '$lib/itinerary/components/MoveItemSheet.svelte';
+	import ItemActionsMenu from '$lib/itinerary/components/ItemActionsMenu.svelte';
+	import ItemActionSheets from '$lib/itinerary/components/ItemActionSheets.svelte';
 	import ChecklistBody from '$lib/itinerary/components/ChecklistBody.svelte';
 	import AssignMemberSheet from '$lib/itinerary/components/AssignMemberSheet.svelte';
 	import Avatar from '$lib/ui/Avatar.svelte';
@@ -30,14 +28,11 @@
 	// #416 — every control below renders only for roles the server accepts it
 	// from (itemPermissions, computed in the loader). #437 reuses the same set.
 	const can = $derived(data.permissions);
-	const chromeMode = useChromeMode();
-
-	let confirmDelete = $state(false);
-	let deleting = $state(false);
-	// A refused/failed action says so in place (#416). Local state covers the JS
-	// path, including network errors; `form` covers a no-JS post.
-	let deleteError = $state('');
+	// #437 — the ⋯ menu's entries are a projection of the same permissions.
+	const menuEntries = $derived(itemMenuEntries(can));
 	let moveSheetOpen = $state(false);
+	let skipSheetOpen = $state(false);
+	let deleteSheetOpen = $state(false);
 	const itemUrl = $derived(`/trips/${data.trip.slug}/items/${data.item.id}`);
 	const docCount = $derived(data.documents.length);
 	const typeLabel = $derived(getFieldConfig(data.item.type).labels.typeLabel.toLowerCase());
@@ -52,14 +47,6 @@
 	function formatAmount(n: number): string {
 		return n.toFixed(2);
 	}
-	// #246 Door 2 — skip from item detail (second entry point). Only meaningful for
-	// a planned, scheduled item, and only owner/co_owner may skip (SPEC §4 —
-	// `can.canSkip`). Skipping returns it to the parking lot (reversible). Where it
-	// lands is mode-aware (#416): Trip Mode → Now, where the ideas strip offers a
-	// replacement; Planning Mode → stay here.
-	let skipping = $state(false);
-	let skipError = $state('');
-
 	// Comments
 	let commentText = $state('');
 	let commentSubmitting = $state(false);
@@ -85,26 +72,25 @@
 	}
 </script>
 
-<NavBar title={data.item.title} subtitle={data.trip.title} back {backHref}>
+<NavBar title={data.trip.title} back {backHref}>
 	{#snippet right()}
-		<div class="flex items-center gap-2">
-			{#if can.canMove}
-				<button
-					type="button"
-					onclick={() => (moveSheetOpen = true)}
-					class="border-line text-ink-muted hover:text-ink-soft active:text-ink-soft rounded-md border px-3 py-1.5 text-xs font-semibold"
-				>
-					Move
-				</button>
-			{/if}
+		<div class="flex items-center gap-1">
 			{#if can.canEdit}
 				<a
 					href={withOrigin(`/trips/${data.trip.slug}/items/${data.item.id}/edit`, page.url.pathname)}
-					class="text-ink-soft hover:text-ink active:text-ink text-[12px] font-semibold"
+					class="text-ink-soft hover:text-ink active:text-ink active:bg-surface-2 flex h-11 items-center rounded-md px-3 text-sm font-semibold"
 				>
 					Edit
 				</a>
 			{/if}
+			<ItemActionsMenu
+				entries={menuEntries}
+				onselect={(id) => {
+					if (id === 'move') moveSheetOpen = true;
+					else if (id === 'skip') skipSheetOpen = true;
+					else deleteSheetOpen = true;
+				}}
+			/>
 		</div>
 	{/snippet}
 </NavBar>
@@ -392,130 +378,25 @@
 			</form>
 		</div>
 	</Card>
-
-	<!-- #246 Door 2 — Skip (reversible; distinct from Delete). Pulls the item off
-	     its day back into its phase's parking lot. Trip Mode then goes to Now, where
-	     the ideas strip offers a replacement; Planning Mode stays here (#416).
-	     Owner/co_owner only, planned items only. -->
-	{#if can.canSkip}
-		<div class="border-line rounded-lg border p-4">
-			<h3 class="text-ink-soft text-sm font-semibold">Not happening?</h3>
-			<p class="text-ink-muted mt-1 text-sm">
-				Skip this {typeLabel} — it returns to your ideas so you can do it later or pick a
-				replacement. Nothing is deleted.
-			</p>
-			<form
-				method="POST"
-				action="?/skipItem"
-				use:enhance={() => {
-					skipping = true;
-					skipError = '';
-					return async ({ result, update }) => {
-						skipping = false;
-						if (result.type !== 'success') {
-							skipError = ITEM_ACTION_ERRORS.skip;
-							return;
-						}
-						// Trip Mode → Now (the ideas strip opens there). Planning Mode →
-						// stay: reload this page, where the item is an idea again.
-						const destination = skipDestination(chromeMode(), data.trip.slug);
-						if (destination) {
-							await goto(destination);
-						} else {
-							await update();
-							toast.show("Skipped. It's back in your ideas.");
-						}
-					};
-				}}
-				class="mt-2"
-			>
-				<button
-					type="submit"
-					disabled={skipping}
-					class="hit-44 border-ink-muted/40 text-ink-soft hover:bg-surface-2 active:bg-surface-2 rounded-md border px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
-				>
-					{skipping ? 'Skipping…' : 'Skip — not happening'}
-				</button>
-			</form>
-			{#if skipError || form?.skipError}
-				<p role="alert" class="text-clay mt-2 text-sm">{skipError || form?.skipError}</p>
-			{/if}
-		</div>
-	{/if}
-
-	<!-- Delete — owner/co_owner only (items.pb.js delete gate) -->
-	{#if can.canDelete}
-		<div class="border-clay/30 rounded-lg border p-4">
-			<h3 class="text-clay text-sm font-semibold">Delete item</h3>
-			{#if !confirmDelete}
-				<button
-					type="button"
-					onclick={() => (confirmDelete = true)}
-					class="hit-44 border-clay/40 text-clay hover:bg-clay/10 active:bg-clay/10 mt-2 rounded-md border px-3 py-1.5 text-sm font-semibold"
-				>
-					Delete
-				</button>
-			{:else}
-				<p class="text-ink-soft mt-2 text-sm">
-					{#if docCount > 0}
-						Delete this {typeLabel} and its {docCount} document{docCount === 1 ? '' : 's'}? This can't be undone.
-					{:else}
-						Delete this {typeLabel}? This can't be undone.
-					{/if}
-				</p>
-				<form
-					method="POST"
-					action="?/delete"
-					use:enhance={() => {
-						deleting = true;
-						deleteError = '';
-						return async ({ result, update }) => {
-							if (result.type === 'redirect' || result.type === 'success') {
-								await update();
-							} else {
-								deleteError = ITEM_ACTION_ERRORS.delete;
-							}
-							deleting = false;
-						};
-					}}
-					class="mt-2 flex items-center gap-2"
-				>
-					<button
-						type="submit"
-						disabled={deleting}
-						class="hit-44 bg-clay text-paper hover:bg-clay/90 active:bg-clay/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-40"
-					>
-						{deleting ? 'Deleting…' : 'Confirm'}
-					</button>
-					<button
-						type="button"
-						onclick={() => {
-							confirmDelete = false;
-							deleteError = '';
-						}}
-						class="hit-44 text-ink-muted hover:text-ink-soft active:text-ink-soft text-sm"
-					>
-						Cancel
-					</button>
-				</form>
-			{/if}
-			{#if deleteError || form?.deleteError}
-				<p role="alert" class="text-clay mt-2 text-sm">{deleteError || form?.deleteError}</p>
-			{/if}
-		</div>
-	{/if}
 </main>
 
-{#if can.canMove}
-	<MoveItemSheet
-		bind:open={moveSheetOpen}
-		days={data.days}
-		phases={data.phases}
-		currentDay={data.item.day}
-		currentPhase={data.item.phase}
-		actionUrl={itemUrl}
-	/>
-{/if}
+<ItemActionSheets
+	bind:moveOpen={moveSheetOpen}
+	bind:skipOpen={skipSheetOpen}
+	bind:deleteOpen={deleteSheetOpen}
+	canMove={can.canMove}
+	canSkip={can.canSkip}
+	canDelete={can.canDelete}
+	slug={data.trip.slug}
+	itemId={data.item.id}
+	{typeLabel}
+	{docCount}
+	days={data.days}
+	phases={data.phases}
+	currentDay={data.item.day}
+	currentPhase={data.item.phase}
+	{form}
+/>
 
 {#if activeTask}
 	<AssignMemberSheet

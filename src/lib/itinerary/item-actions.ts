@@ -82,3 +82,25 @@ export const ITEM_ACTION_ERRORS = {
 export function skipDestination(mode: TripViewMode, slug: string): string | null {
 	return mode === 'trip' ? `/trips/${slug}/now` : null;
 }
+
+/** One row of the item page's ⋯ menu (#437). */
+export type ItemMenuEntry =
+	| { id: 'move' | 'skip' | 'delete'; label: string }
+	| { id: 'divider' };
+
+/**
+ * #437 — what the ⋯ menu lists, from the #416 permissions: Move to another day,
+ * Skip…, a divider, Delete. Pure projection, no role logic of its own. An empty
+ * list means the page renders no ⋯ at all. The divider only appears when
+ * something precedes Delete.
+ */
+export function itemMenuEntries(p: Pick<ItemPermissions, 'canMove' | 'canSkip' | 'canDelete'>): ItemMenuEntry[] {
+	const entries: ItemMenuEntry[] = [];
+	if (p.canMove) entries.push({ id: 'move', label: 'Move to another day' });
+	if (p.canSkip) entries.push({ id: 'skip', label: 'Skip…' });
+	if (p.canDelete) {
+		if (entries.length > 0) entries.push({ id: 'divider' });
+		entries.push({ id: 'delete', label: 'Delete' });
+	}
+	return entries;
+}
