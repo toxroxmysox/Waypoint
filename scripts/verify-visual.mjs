@@ -22,6 +22,8 @@
 //
 // Route tokens: {slug} {tripId} {day1}..{day6} (day ids, 1-indexed).
 // Flags: --widths 375,768  --viewport (no full-page)  --out DIR  --keep
+//        --click SELECTOR (repeatable: click the first VISIBLE match before the shot,
+//        e.g. to open a menu)  --tag NAME (suffix on the filenames)
 //        --timeout SECONDS.  VISUAL_DEBUG=1 surfaces PB/vite stderr.
 //
 // Shots are full-page by default, which means position:fixed chrome (BottomNav,
@@ -120,6 +122,8 @@ let outDir = path.join(ROOT, '.visual');
 let budgetMs = 240_000;
 let keep = false;
 let fullPage = true;
+const clicks = [];
+let tag = '';
 
 // Flags taking a value read argv[++i]; `value()` turns a missing one into the
 // usage error rather than an undefined that blows up three lines later.
@@ -134,6 +138,8 @@ for (let i = 0; i < argv.length; i++) {
 	else if (a === '--out') outDir = path.resolve(ROOT, value(++i, a));
 	else if (a === '--timeout') budgetMs = Number(value(++i, a)) * 1000;
 	else if (a === '--keep') keep = true;
+	else if (a === '--click') clicks.push(value(++i, a));
+	else if (a === '--tag') tag = value(++i, a);
 	else if (a === '--viewport') fullPage = false;
 	else if (a.startsWith('-')) fail(`unknown flag: ${a}`);
 	else routes.push(a);
@@ -285,7 +291,11 @@ for (const width of widths) {
 		// Name from the UNRESOLVED route: record ids are regenerated on every
 		// run, so resolved names would never diff against the previous run's.
 		// Braces are stripped — they're shell brace-expansion in zsh/bash.
-		const stem = route.replace(/^\//, '').replace(/[^a-zA-Z0-9-]+/g, '_') || 'root';
+		const stem = (route.replace(/^\//, '').replace(/[^a-zA-Z0-9-]+/g, '_') || 'root') + (tag ? `-${tag}` : '');
+		for (const sel of clicks) {
+			await page.locator(sel).filter({ visible: true }).first().click();
+			await page.waitForTimeout(300);
+		}
 		const file = path.join(outDir, `${stem}@${width}.png`);
 		await page.screenshot({ path: file, fullPage: fullPage });
 		shots.push({ file, status: res?.status() ?? 0, url });

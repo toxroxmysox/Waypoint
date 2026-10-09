@@ -86,6 +86,93 @@ export function estimateTextWidth(text: string, px = 11): number {
 	return Math.ceil(text.length * px * 0.56);
 }
 
+// --- Strip entries (D2, #429) -------------------------------------------------
+export type StripKind = 'overlap' | 'needs-booking' | 'booked' | 'code' | 'docs';
+export interface StripEntry {
+	key: string;
+	kind: StripKind;
+	/** The visible text. */
+	text: string;
+	/** Spoken in full, including when shrunk to the icon. */
+	label: string;
+	tone: 'red' | 'ink' | 'gold' | 'quiet';
+	/** A `code` entry: the value the chip copies on tap. */
+	copy?: string;
+}
+
+export interface StripCode {
+	/** Copied on tap: the first usable code. */
+	value: string;
+	/** What the chip prints: `ABC123` or `ABC123 +2`. */
+	text: string;
+	/** Other codes the item holds (the `+n`). */
+	extra: number;
+	label: string;
+}
+
+/**
+ * The Trip Mode `✓ {code}` chip: the first non-blank code, `+n` for the rest.
+ * Null when the item has no usable code (it then keeps `✓ Booked`).
+ */
+export function stripCode(codes: { label?: string; value?: string }[] | undefined): StripCode | null {
+	const usable = (codes ?? []).map((c) => (c.value ?? '').trim()).filter(Boolean);
+	if (usable.length === 0) return null;
+	const extra = usable.length - 1;
+	return {
+		value: usable[0],
+		text: extra > 0 ? `${usable[0]} +${extra}` : usable[0],
+		extra,
+		label:
+			extra > 0
+				? `Copy confirmation code ${usable[0]}, ${extra} more ${extra === 1 ? 'code' : 'codes'} on the item`
+				: `Copy confirmation code ${usable[0]}`
+	};
+}
+
+const clip = (s: string, n = 16) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s);
+
+/**
+ * The strip's left side in priority order: Overlaps > Needs booking > Booked (a
+ * `✓ {code}` chip in Trip Mode when the item has a code) > documents. Trip Mode
+ * shows no conflicts at all: an overlap pair passed in is ignored (spec §Overlap).
+ */
+export function stripEntries(p: {
+	mode: 'planning' | 'trip';
+	overlap?: OverlapInfo;
+	needsBooking: boolean;
+	booked: boolean;
+	codes?: { label?: string; value?: string }[];
+	docCount: number;
+}): StripEntry[] {
+	const out: StripEntry[] = [];
+	const overlap = p.mode === 'planning' ? p.overlap : undefined;
+	if (overlap)
+		out.push({
+			key: 'overlap',
+			kind: 'overlap',
+			text: `Overlaps ${clip(overlap.partnerTitle)}`,
+			label: `Overlaps ${overlap.partnerTitle}`,
+			tone: overlap.shared ? 'red' : 'ink'
+		});
+	if (p.needsBooking)
+		out.push({ key: 'needs', kind: 'needs-booking', text: 'Needs booking', label: 'Needs booking', tone: 'gold' });
+	else if (p.booked) {
+		const code = p.mode === 'trip' ? stripCode(p.codes) : null;
+		if (code)
+			out.push({ key: 'code', kind: 'code', text: code.text, label: code.label, tone: 'ink', copy: code.value });
+		else out.push({ key: 'booked', kind: 'booked', text: 'Booked', label: 'Booked', tone: 'quiet' });
+	}
+	if (p.docCount > 0)
+		out.push({
+			key: 'docs',
+			kind: 'docs',
+			text: String(p.docCount),
+			label: `${p.docCount} ${p.docCount === 1 ? 'document' : 'documents'}`,
+			tone: 'ink'
+		});
+	return out;
+}
+
 // --- Meta (D2) ----------------------------------------------------------------
 const AIRPORT = /\(([A-Z0-9]{3,4})\)/;
 /**

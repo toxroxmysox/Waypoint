@@ -359,6 +359,28 @@ describe('getNowFeed — merged Now: faded past / Focus / normal rest (#244)', (
 		expect(feed.restItems.map((i) => i.id)).toEqual(['dinner']);
 	});
 
+	it('#429: the Earlier today / Coming up split follows the TRIP clock, not the server clock', () => {
+		// 2026-10-15 21:30 UTC is 17:30 in New York (EDT) and 06:30 next day in Tokyo.
+		const instant = new Date('2026-10-15T21:30:00Z');
+		const items = [
+			makeItem({ id: 'lunch', start_time: '2026-10-15 12:00:00.000Z', end_time: '2026-10-15 13:30:00.000Z' }),
+			makeItem({ id: 'dinner', start_time: '2026-10-15 19:00:00.000Z', end_time: '2026-10-15 21:00:00.000Z' })
+		];
+		const ny = getNowFeed(items, tripNow('America/New_York', instant), true);
+		expect(ny.pastItems.map((i) => i.id)).toEqual(['lunch']);
+		expect(ny.restItems.map((i) => i.id)).toEqual(['dinner']);
+		const tokyo = getNowFeed(items, tripNow('Asia/Tokyo', instant), true);
+		expect(tokyo.pastItems.map((i) => i.id)).toEqual(['lunch', 'dinner']);
+		expect(tokyo.restItems).toEqual([]);
+	});
+
+	it('#429: an item that ends exactly now is Earlier today, never in both lists', () => {
+		const items = [makeItem({ id: 'brunch', start_time: '2026-10-15 12:00:00.000Z', end_time: '2026-10-15 13:00:00.000Z' })];
+		const feed = getNowFeed(items, NOW, true);
+		expect(feed.pastItems.map((i) => i.id)).toEqual(['brunch']);
+		expect(feed.restItems).toEqual([]);
+	});
+
 	it('the ongoing Focus item never double-renders in the rest (mid-event)', () => {
 		const items = [
 			makeItem({ id: 'museum', start_time: '2026-10-15 12:00:00.000Z', end_time: '2026-10-15 14:00:00.000Z' }),

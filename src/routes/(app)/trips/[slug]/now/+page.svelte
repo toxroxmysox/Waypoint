@@ -11,7 +11,7 @@
 	import Card from '$lib/ui/Card.svelte';
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import NowDivider from '$lib/trip-mode/components/NowDivider.svelte';
-	import TripModeCard from '$lib/trip-mode/components/TripModeCard.svelte';
+	import ItemCard from '$lib/itinerary/components/ItemCard.svelte';
 	import MultiDayBanner from '$lib/itinerary/components/MultiDayBanner.svelte';
 	import TaskRow from '$lib/itinerary/components/TaskRow.svelte';
 	import IdeasStrip from '$lib/trip-mode/components/IdeasStrip.svelte';
@@ -25,6 +25,7 @@
 	import { heroStatus } from '$lib/trip-mode/hero';
 	import { formatCountdown, formatTime } from '$lib/shell/format';
 	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
+	import type { Item } from '$lib/types';
 	import { page } from '$app/state';
 	import { untrack, tick, onMount } from 'svelte';
 
@@ -66,12 +67,6 @@
 	const pastItems = $derived(nowFeed.pastItems);
 	const restItems = $derived(nowFeed.restItems);
 
-	// "Up next" highlight keys off the Focus's actual next TIMED item, not a
-	// positional index — an untimed idea can sort ahead of the next timed thing in
-	// the woven rest, and it isn't the "next" anything. In mid-event the ongoing
-	// item is the Focus, so nothing in the rest is "up next".
-	const nextItemId = $derived(focus.kind === 'free-time' ? focus.nextItem.id : null);
-
 	// #245 Door 1 — the ideas strip opens proactively at the two states where the
 	// need arises: free time (countdown to the next thing) and nothing-else-planned.
 	// Mid-event = engaged; wrapped = day's over (Closeout's territory) — no door.
@@ -84,17 +79,21 @@
 	// the strip renders below the rest list as the "replace what you skipped" rail.
 	let justSkipped = $state(false);
 
-	// #428 — the Hero's `⋯` is #437's menu: entries from the item permissions (Skip
-	// for owner/co_owner only), sheet from ItemActionSheets. Move and Delete stay on
-	// the item page, so they are masked off here.
+	// #437's menu + sheet serve two doors on this page: the Hero's `⋯` (#428) and each
+	// Coming up card's `⋯` (#429). Entries come from the item permissions (Skip for
+	// owner/co_owner of a planned, dated item); Move and Delete stay on the item
+	// page, so they are masked off here. ONE Skip sheet, pointed at `skipTarget`.
 	const heroItem = $derived(focus.kind === 'mid-event' ? focus.currentItem : null);
-	const heroPerms = $derived(
-		heroItem && data.membership ? itemPermissions(data.membership, heroItem) : null
-	);
-	const heroEntries = $derived(
-		heroPerms ? itemMenuEntries({ canMove: false, canSkip: heroPerms.canSkip, canDelete: false }) : []
-	);
-	let heroSkipOpen = $state(false);
+	function skipEntries(item: Item) {
+		const perms = data.membership ? itemPermissions(data.membership, item) : null;
+		return perms ? itemMenuEntries({ canMove: false, canSkip: perms.canSkip, canDelete: false }) : [];
+	}
+	let skipTarget = $state<Item | null>(null);
+	let skipOpen = $state(false);
+	function askSkip(item: Item) {
+		skipTarget = item;
+		skipOpen = true;
+	}
 
 	function dayLabel(dateStr: string): string {
 		return new Date(dateStr.replace(' ', 'T')).toLocaleDateString('en-US', {
@@ -181,19 +180,22 @@
 		</div>
 	{/if}
 
-	<!-- Weight 1: faded past (peek above the Focus; auto-scroll lands on the Focus
-	     so these need a scroll-up to reach). Hidden entirely when nothing's behind. -->
+	<!-- Weight 1: Earlier today (#429): the same rail + Card as Coming up, muted (no
+	     white fill, ink-muted text, lighter rule, outlined node), still tappable.
+	     Peeks above the Focus; the auto-scroll lands on the Focus, so these need a
+	     scroll-up to reach. Hidden entirely when nothing's behind. -->
 	{#if pastItems.length > 0}
-		<section class="space-y-1 opacity-55">
-			<p class="text-ink-muted text-[11px] font-medium uppercase tracking-wide">Earlier today</p>
+		<section class="space-y-2" aria-label="Earlier today">
+			<NowDivider label="Earlier today" />
 			{#each pastItems as item (item.id)}
-				<a
-					href={withOrigin(`/trips/${data.trip.slug}/items/${item.id}`, page.url.pathname)}
-					class="hover:bg-surface-2 active:bg-surface-2 flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors"
-				>
-					<span class="font-mono text-ink-muted w-16 shrink-0 text-xs">{formatTime(item.start_time)}</span>
-					<span class="text-ink-soft truncate text-sm">{item.title}</span>
-				</a>
+				<ItemCard
+					{item}
+					tripSlug={data.trip.slug}
+					members={data.members}
+					mode="trip"
+					muted
+					docCount={data.docCountByItem[item.id] ?? 0}
+				/>
 			{/each}
 		</section>
 	{/if}
@@ -210,9 +212,9 @@
 			>
 				{#snippet menu()}
 					<ItemActionsMenu
-						entries={heroEntries}
+						entries={skipEntries(focus.currentItem)}
 						onselect={(id) => {
-							if (id === 'skip') heroSkipOpen = true;
+							if (id === 'skip') askSkip(focus.currentItem);
 						}}
 					/>
 				{/snippet}
@@ -305,12 +307,22 @@
 		<section class="space-y-2">
 			<NowDivider label="Coming up" />
 			{#each restItems as item (item.id)}
-				<TripModeCard
+				{@const entries = skipEntries(item)}
+				{#snippet cardMenu()}
+					<ItemActionsMenu
+						{entries}
+						onselect={(id) => {
+							if (id === 'skip') askSkip(item);
+						}}
+					/>
+				{/snippet}
+				<ItemCard
 					{item}
-					slug={data.trip.slug}
-					isNext={item.id === nextItemId}
-					canSkip={data.canPromote}
-					onSkipped={() => (justSkipped = true)}
+					tripSlug={data.trip.slug}
+					members={data.members}
+					mode="trip"
+					docCount={data.docCountByItem[item.id] ?? 0}
+					menu={entries.length > 0 ? cardMenu : undefined}
 				/>
 			{/each}
 		</section>
@@ -422,20 +434,23 @@
 	{/if}
 </main>
 
-<!-- #428 — the Skip sheet behind the Hero's ⋯. Outside <main> so no ancestor is a
-     containing block for its fixed positioning. Now IS the Skip destination, so it
-     refreshes in place and opens the ideas strip (Door 2) via onskipped. -->
-{#if heroItem && heroPerms?.canSkip}
-	<ItemActionSheets
-		bind:skipOpen={heroSkipOpen}
-		canMove={false}
-		canSkip={true}
-		canDelete={false}
-		slug={data.trip.slug}
-		itemId={heroItem.id}
-		typeLabel={heroItem.type}
-		onskipped={() => (justSkipped = true)}
-	/>
+<!-- The Skip sheet behind every `⋯` on this page (Hero #428, Coming up cards #429).
+     Outside <main> so no ancestor is a containing block for its fixed positioning.
+     Now IS the Skip destination, so it refreshes in place and opens the ideas strip
+     (Door 2) via onskipped. -->
+{#if skipTarget}
+	{#key skipTarget.id}
+		<ItemActionSheets
+			bind:skipOpen
+			canMove={false}
+			canSkip={true}
+			canDelete={false}
+			slug={data.trip.slug}
+			itemId={skipTarget.id}
+			typeLabel={skipTarget.type}
+			onskipped={() => (justSkipped = true)}
+		/>
+	{/key}
 {/if}
 
 <!-- #269 — the one memory composer (photo slot + 280-char thought). -->
