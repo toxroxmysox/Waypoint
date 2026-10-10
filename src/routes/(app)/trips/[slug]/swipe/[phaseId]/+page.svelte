@@ -5,7 +5,8 @@
 	import { type VoteValue } from '$lib/collaboration/voting';
 	import SwipeDeck from '$lib/collaboration/components/swipe/SwipeDeck.svelte';
 	import { VOTE_META } from '$lib/collaboration/components/swipe/vote-meta';
-	import TypeIcon from '$lib/ui/TypeIcon.svelte';
+	import Hero from '$lib/itinerary/components/Hero.svelte';
+	import { formatTimeText } from '$lib/shell/format';
 	import Button from '$lib/ui/Button.svelte';
 	import { toast } from '$lib/shell/stores/toast';
 
@@ -103,7 +104,6 @@
 				members={data.members}
 				title="Swipe-Quiz"
 				subtitle={data.phase.name}
-				detailLayout={isWide ? 'modal' : 'sheet'}
 				autoFocus={isWide}
 				showKeys={isWide}
 				onvote={persistVote}
@@ -111,80 +111,23 @@
 				onclose={() => goto(phasesHref)}
 			>
 				{#snippet face(card)}
-					<div class="flex items-start gap-3">
-						<TypeIcon type={card.type} size={40} />
-						<div class="min-w-0 flex-1">
-							<h2 class="font-display text-ink text-lg leading-tight font-semibold">{card.title}</h2>
-							<div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px]">
-								<span
-									class="inline-flex items-center rounded-full border px-2 py-px font-semibold {card.status ===
-									'planned'
-										? 'border-moss/30 text-moss bg-moss-tint'
-										: 'border-line text-ink-muted bg-surface-2'}"
-								>
-									{card.status === 'planned' ? 'Planned' : 'Idea'}
-								</span>
-								<span class="text-ink-muted">
-									{data.dayLabel[card.day] ?? 'Unscheduled'}
-								</span>
-							</div>
-						</div>
-					</div>
-					<div class="text-ink-soft mt-3 space-y-1 text-[13px]">
-						{#if card.location_name}
-							<div class="flex items-center gap-1.5">
-								<span aria-hidden="true" class="text-ink-muted">⌖</span>
-								{card.location_name}
-							</div>
-						{/if}
-						<div class="flex items-center gap-3">
-							<span class="font-mono">{costLabel(card.cost_estimate_usd)}</span>
-							{#if data.initialByUser[card.created_by]}
-								<span class="text-ink-muted">Added by {data.initialByUser[card.created_by]}</span>
-							{/if}
-						</div>
-					</div>
-				{/snippet}
-
-				{#snippet detail(card, helpers)}
-					<div class="space-y-4">
-						<div class="flex items-start gap-3">
-							<TypeIcon type={card.type} size={44} />
-							<div>
-								<h2 class="font-display text-ink text-xl font-semibold">{card.title}</h2>
-								<p class="text-ink-muted text-xs">
-									{data.phase.name} · {data.dayLabel[card.day] ?? 'Unscheduled'}
-								</p>
-							</div>
-						</div>
+					<Hero
+						bare
+						item={{ ...card, location_address: '', booked: false }}
+						placeLink={false}
+						showGoing={false}
+						placeExtra={costLabel(card.cost_estimate_usd)}
+						timeText={card.day && data.dayDate[card.day]
+							? formatTimeText(card, { date: data.dayDate[card.day] })
+							: 'Unplanned'}
+					>
 						{#if card.description}
 							<p class="text-ink-soft text-sm leading-relaxed">{card.description}</p>
 						{/if}
-						<dl class="text-ink-soft grid grid-cols-2 gap-3 text-[13px]">
-							<div>
-								<dt class="text-ink-muted text-[11px] uppercase">Where</dt>
-								<dd>{card.location_name || '—'}</dd>
-							</div>
-							<div>
-								<dt class="text-ink-muted text-[11px] uppercase">Cost</dt>
-								<dd class="font-mono">{costLabel(card.cost_estimate_usd)}</dd>
-							</div>
-						</dl>
-						<div class="border-line flex flex-wrap gap-2 border-t pt-3">
-							{#each ['love', 'like', 'flexible', 'dislike'] as const as v (v)}
-								<button
-									type="button"
-									onclick={() => helpers.vote(v)}
-									class="inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold {VOTE_META[
-										v
-									].btn}"
-								>
-									<span aria-hidden="true">{VOTE_META[v].glyph}</span>
-									{VOTE_META[v].label}
-								</button>
-							{/each}
-						</div>
-					</div>
+						{#if data.nameByUser[card.created_by]}
+							<p class="text-ink-muted text-[13px]">Added by {data.nameByUser[card.created_by]}</p>
+						{/if}
+					</Hero>
 				{/snippet}
 
 				{#snippet complete({ spread, rated })}

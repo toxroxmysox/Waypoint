@@ -448,17 +448,17 @@
 							<!-- footer: peek + details (vote cards only — prompts own their UI) -->
 							{#if !isPrompt}
 							<div
-								class="border-line mt-4 flex min-h-[30px] items-center gap-2.5 border-t border-dashed pt-3.5"
+								class="border-line mt-4 flex min-h-[30px] items-center justify-center gap-2.5 border-t pt-3.5"
 							>
 								{#if peek}
 									{#if (othersByCard[card.id] ?? []).length}
 										<VoteStacks votes={othersByCard[card.id]} {members} size={20} />
 									{:else}
-										<span class="text-ink-muted font-display text-[11.5px] italic">no votes yet</span>
+										<span class="text-ink-muted font-display text-[13px] italic">no votes yet</span>
 									{/if}
 								{:else}
-									<span class="text-ink-muted inline-flex items-center gap-1.5 text-[11.5px]">
-										<span aria-hidden="true">⊘</span> Others' votes hidden
+									<span class="text-ink-muted inline-flex items-center gap-1.5 text-center text-[13px]">
+										<span aria-hidden="true">⊘</span> Others' votes hidden until you vote
 									</span>
 								{/if}
 								{#if detail}
