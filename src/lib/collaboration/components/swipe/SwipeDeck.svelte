@@ -300,7 +300,7 @@
 	class="relative flex min-h-0 flex-1 flex-col outline-none"
 >
 	<!-- header -->
-	<div class="flex-none px-3.5 pt-3 pb-2">
+	<div class="flex-none px-3.5 pt-[calc(0.75rem+var(--edge-top))] pb-2">
 		<div class="flex items-center gap-2">
 			<button
 				type="button"

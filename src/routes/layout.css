@@ -103,6 +103,36 @@
 	--z-index-overlay:  60;
 }
 
+/*
+ * #501 — iOS 26+ draws a Liquid Glass blur over roughly the top 40pt of an
+ * INSTALLED web app. It is system chrome above the web view: no CSS or meta tag
+ * turns it off, and it stays with status-bar-style `default`. So keep content out
+ * of it: `--edge-top` is the clearance (iOS standalone, portrait only; 0 elsewhere),
+ * `.edge-top-band` paints it solid so scrolled content never shows through, and
+ * sticky headers pin below it.
+ */
+:root {
+	--edge-top: 0px;
+}
+@media (display-mode: standalone) and (orientation: portrait) {
+	@supports (-webkit-touch-callout: none) {
+		:root {
+			--edge-top: 0px;
+		}
+	}
+}
+.edge-top-band {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: var(--edge-top);
+	background: var(--color-paper);
+	/* Over sticky headers + the bottom nav's layer, under sheets and overlays. */
+	z-index: calc(var(--z-index-nav) + 5);
+	pointer-events: none;
+}
+
 /* Page baseline. Paper background, ink text, Inter UI. */
 html {
 	touch-action: manipulation;
