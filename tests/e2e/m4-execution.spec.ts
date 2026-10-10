@@ -40,6 +40,9 @@ test.describe('M4 Execution', () => {
 				await page.waitForURL('**/items/**');
 
 				// #442: a planned item carries the quiet "Your vote" row in Details.
+				// #439: in Trip Mode Details is the collapsed "Plan details"; open it.
+				const planDetails = page.getByTestId('plan-details').filter({ visible: true }).first();
+				if (await planDetails.isVisible()) await planDetails.locator('summary').click();
 				await expect(page.getByTestId('item-your-vote').filter({ visible: true }).first()).toBeVisible();
 			}
 		}
