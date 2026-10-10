@@ -1,43 +1,62 @@
 <script lang="ts">
-	import { page } from '$app/state';
-	import { withOrigin } from '$lib/shell/back-nav';
 	// #245 Door 1 — the inline "ideas for now" strip. Surfaces the CURRENT PHASE's
 	// parked ideas (the per-phase parking zone, #87) at a free-time / nothing-else
-	// Focus, vote-score ordered, so a fallen-through evening finds a replacement
-	// without leaving Trip Mode. #246 reuses this verbatim at a just-skipped gap.
+	// Focus so a fallen-through evening finds a replacement without leaving Trip
+	// Mode. #246 reuses this verbatim at a just-skipped gap.
 	//
-	// Roles (SPEC §4): the strip + read-only vote stacks render for EVERYONE;
-	// one-tap Promote shows only for owner/co_owner (`canPromote`) — travelers
-	// advocate via their votes (cast on item detail), viewers are inert. Voting is
-	// NOT cast here: the strip is a glance + commit affordance, not a vote surface.
+	// #432 (spec: "Trip mode's Ideas for now", approved 2026-10-06): the same grouped
+	// idea cards as the day page's Parking Lot — type headings (Lodging · Flights ·
+	// Transportation · Activities · Meals · Notes), `IdeaCard` with tap-to-vote pills,
+	// sorted by the weighted vote score inside each group. Not forked: this reuses
+	// `ideaGroups`, `IdeaGroupHeading` and `IdeaCard`.
+	//
+	// Roles (SPEC §4): the strip renders for EVERYONE; travelers and owners cast
+	// votes on the pills, viewers see counts only (`canVote`). "Do this" (Light
+	// Replanning, one-tap Promote) stays the primary action and shows only for
+	// owner/co_owner (`canPromote`).
 	import { enhance } from '$app/forms';
 	import type { Item, Vote } from '$lib/types';
 	import type { MemberWithAvatar } from '$lib/collaboration/member-avatar';
-	import TypeIcon from '$lib/ui/TypeIcon.svelte';
-	import VoteStacks from '$lib/collaboration/components/VoteStacks.svelte';
-	import VoteSentimentPill from '$lib/collaboration/components/VoteSentimentPill.svelte';
+	import IdeaCard from '$lib/itinerary/components/IdeaCard.svelte';
+	import IdeaGroupHeading from '$lib/itinerary/components/IdeaGroupHeading.svelte';
+	import { ideaGroups, ideaScores } from '$lib/itinerary/idea-groups';
 
 	let {
 		ideas = [],
 		members = [],
 		slug = '',
 		canPromote = false,
+		myMemberId = '',
+		canVote = false,
 		heading = 'Ideas for now',
 		subheading = 'Backup plans from this part of the trip'
 	}: {
-		/** Current-phase parked ideas, vote-score ordered (loader-supplied). */
+		/** Current-phase parked ideas (loader-supplied). */
 		ideas?: { item: Item; score: number; votes: Vote[] }[];
-		/** Trip members (with resolved avatars) for the read-only vote stacks. */
+		/** Trip members (with resolved avatars) for the vote tooltips + assignee bubbles. */
 		members?: MemberWithAvatar[];
 		slug?: string;
-		/** True for owner/co_owner — shows the one-tap Promote affordance. */
+		/** True for owner/co_owner — shows the one-tap "Do this" affordance. */
 		canPromote?: boolean;
+		/** The viewer's trip_members.id (their vote pill is filled). */
+		myMemberId?: string;
+		/** False for viewers: the pills show counts only. */
+		canVote?: boolean;
 		heading?: string;
 		subheading?: string;
 	} = $props();
 
 	// A pending promote keyed by item id → disables just that row's button.
 	let promoting = $state<string | null>(null);
+
+	const votesById = $derived(Object.fromEntries(ideas.map((i) => [i.item.id, i.votes])));
+	const groups = $derived(
+		ideaGroups(
+			ideas.map((i) => i.item),
+			(it) => it.type,
+			ideaScores(votesById)
+		)
+	);
 </script>
 
 {#if ideas.length > 0}
@@ -47,36 +66,20 @@
 			<p class="text-ink-muted text-xs">{subheading}</p>
 		</div>
 
-		<ul class="space-y-2">
-			{#each ideas as { item, votes } (item.id)}
-				<li class="border-line bg-paper rounded-lg border">
-					<div class="flex items-start gap-3 px-3 py-2.5">
-						<a
-							href={withOrigin(`/trips/${slug}/items/${item.id}`, page.url.pathname)}
-							class="flex min-w-0 flex-1 items-start gap-3"
-						>
-							<TypeIcon type={item.type} sub={item.subtype} size={20} />
+		<div class="space-y-3">
+			{#each groups as group (group.type)}
+				<section class="space-y-1.5" aria-label={group.label}>
+					<IdeaGroupHeading type={group.type} />
+					{#each group.items as item (item.id)}
+						<div class="flex items-center gap-2">
 							<div class="min-w-0 flex-1">
-								<p class="text-ink truncate text-sm font-medium" title={item.title}>{item.title}</p>
-								{#if item.location_name}
-									<p class="text-ink-muted mt-0.5 truncate text-[11px]">{item.location_name}</p>
-								{/if}
-								{#if votes.length}
-									<div class="mt-1.5">
-										<VoteStacks {votes} {members} size={18} />
-									</div>
-								{/if}
+								<IdeaCard {item} tripSlug={slug} votes={votesById[item.id] ?? []} {members} {myMemberId} {canVote} />
 							</div>
-						</a>
-
-						<div class="flex shrink-0 flex-col items-end gap-2">
-							{#if votes.length}
-								<VoteSentimentPill {votes} />
-							{/if}
 							{#if canPromote}
 								<form
 									method="POST"
 									action="?/promoteIdea"
+									class="shrink-0"
 									use:enhance={() => {
 										promoting = item.id;
 										return async ({ update }) => {
@@ -91,16 +94,16 @@
 									<button
 										type="submit"
 										disabled={promoting === item.id}
-										class="bg-clay text-paper hover:bg-clay/90 active:bg-clay/90 rounded-md px-3 py-1.5 text-xs font-semibold whitespace-nowrap disabled:opacity-50"
+										class="bg-clay text-paper hover:bg-clay/90 active:bg-clay/90 min-h-[44px] min-w-[44px] rounded-md px-3 text-xs font-semibold whitespace-nowrap disabled:opacity-50"
 									>
 										{promoting === item.id ? 'Adding…' : 'Do this'}
 									</button>
 								</form>
 							{/if}
 						</div>
-					</div>
-				</li>
+					{/each}
+				</section>
 			{/each}
-		</ul>
+		</div>
 	</section>
 {/if}

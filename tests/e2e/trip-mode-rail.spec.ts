@@ -11,7 +11,8 @@ const BASE = E2E_BASE;
 const SLUG = `e2e-rail-${Date.now().toString(36)}`;
 
 const card = (page: Page, title: string) =>
-	page.locator('.no-callout').filter({ hasText: title }).filter({ visible: true }).first();
+	// #432: idea cards in the Ideas for now strip are `.no-callout` too; exclude them.
+	page.locator('.no-callout:not(section[aria-label="Ideas for now"] .no-callout)').filter({ hasText: title }).filter({ visible: true }).first();
 
 test.describe('Trip Mode rail lists (#429)', () => {
 	test.skip(!process.env.E2E_TEST_EMAIL, 'Set E2E_TEST_EMAIL to run E2E tests');

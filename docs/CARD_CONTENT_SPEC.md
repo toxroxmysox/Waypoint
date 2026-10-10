@@ -141,6 +141,17 @@ Surfaces: the day page's Parking Lot (phone and tablet), the desktop Ideas panel
 | Primary action | The owner's pull-up chevron on the day page (44px hit area), as built. A traveler's action stays deferred to #401. | `pullToPlan` |
 | Drag | Grip handles retired. Touch: long-press (250ms) anywhere on the card; mouse: immediate. Dropping on the day plans the idea. Dragging among ideas changes nothing (the order is the vote order): the zone snaps back, no write. Phase Detail has no drag (no day to drop on). The desktop Ideas panel is inert until #445. | `DragDropTimeline`, `ParkingLotSection` |
 
+### 2e. Ideas for now (Trip Mode) — NEW by #432 (card system, D3 amended)
+
+Surface: Now's `IdeasStrip` (free-time / nothing-else Focus, and "Replace it" after a Skip). Approved by Scott 2026-10-06.
+
+| Part | Rule | Source |
+|---|---|---|
+| Content | The current phase's unplanned ideas, grouped and sorted exactly as 2d: type headings in the fixed order, weighted vote score desc inside a group, ties by `sort_order`. | `ideaGroups`, `IdeaGroupHeading` |
+| Card | The 2d `IdeaCard` as-is: no icon, `place · cost` sub-line, the four tap-to-vote pills (viewers see counts only), assignee bubbles. The old read-only vote stacks and sentiment pill are gone. | `IdeaCard`, `VotePills` |
+| Primary action | `Do this` (Light Replanning, one-tap promote), owner / co_owner only, beside the card, 44px hit area, clay. Travelers and viewers see no button; travelers advocate with the pills. | `?/promoteIdea` |
+| Voting | Writes through the item page's `?/vote` / `?/unvote` (same as 2d). The Now load supplies `myMemberId` and `canVote` (`role != viewer`). | `now/+page.server.ts` |
+
 ### 2b. Now — the Hero (mid-event Focus) — added by #428 (card system, D10/D11)
 
 One component, `Hero.svelte`, built here and reused by the item page header (#438) and the Swipe-Quiz face (#443). On Now it renders one Hero per ongoing item (several Heroes: #430, below).

@@ -114,6 +114,9 @@ test.describe('Trip Mode Door 1 — ideas for now (#245)', () => {
 		}
 		await expect(strip).toBeVisible({ timeout: 7000 });
 		await expect(strip.getByText(IDEA_TITLE)).toBeVisible();
+		// #432: grouped idea cards with tap-to-vote pills (heading + all four pills).
+		await expect(strip.locator('[data-idea-heading]').first()).toBeVisible();
+		await expect(strip.getByRole('button', { name: /^Love/ }).first()).toBeVisible();
 
 		// --- One-tap promote ("Do this") → the idea moves onto today. ---
 		await strip.getByRole('button', { name: 'Do this' }).first().click();
