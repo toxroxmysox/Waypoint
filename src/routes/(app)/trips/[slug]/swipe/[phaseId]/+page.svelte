@@ -113,7 +113,7 @@
 				{#snippet face(card)}
 					<Hero
 						bare
-						item={{ ...card, location_address: '' }}
+						item={{ ...card, location_address: '', booked: false }}
 						placeLink={false}
 						showGoing={false}
 						placeExtra={costLabel(card.cost_estimate_usd)}
