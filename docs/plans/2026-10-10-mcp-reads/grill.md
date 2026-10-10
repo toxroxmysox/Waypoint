@@ -7,7 +7,7 @@ ADR: [ADR-0024](../../adr/0024-agent-access-posture.md) (amends ADR-0017). Gloss
 Looking things up in Waypoint from a phone means tapping through trip → phase → day → item. Questions like "what hotel did we stay at in Lucerne?", "when's our flight tomorrow?", "who owes whom?" or "what's still unbooked?" are faster to ask than to navigate, especially across past trips. Scott and Abby both use the Claude phone app already.
 
 ## Intent & Success Criteria
-From the Claude app on a phone, with no computer, a member asks about any of their trips (current or historical) and gets a correct answer faster than opening Waypoint. AI reads and transcribes; it never plans.
+From the Claude app on a phone, with no computer, a member asks about any of their trips (current or historical) and gets a correct answer faster than opening Waypoint. The AI helps the member who asked: it answers from Waypoint data and may advise (timing, what fits together), but the decisions stay with the members.
 
 Success, observable:
 - Scott adds the connector once on claude.ai, logs in with his email code, and the connector works from the Claude iPhone app.
@@ -57,7 +57,7 @@ Success, observable:
 - **Server-computed answers:** money balances, audit gaps and trip-local times are computed by Waypoint's existing modules, not left to the model.
 - **Presentation:** results render as Waypoint-style cards via MCP Apps if the Claude iPhone app renders them; otherwise as formatted text cards (type emoji, bold title, time/place lines). Card-like, not an exact replica.
 - **Connections UI:** "Connected apps" section in account settings: list of the user's connections, Disconnect each (revokes tokens immediately).
-- **Instructions:** the MCP server's `instructions` field and tool descriptions carry the posture (answer from Waypoint data; never plan the trip), so every user gets them without setup.
+- **Instructions:** the MCP server's `instructions` field carries the posture as a principle, not prohibitions: ground answers in Waypoint data, help the user, offer advice (better timing, what fits where) as suggestions they decide on. Every user gets it without setup. *(Revised 2026-10-10 after the spike: Scott wants advice allowed; "never plan" absolutes dropped.)*
 - **Spike first:** on Scott's Mac dev copy behind a temporary `cloudflared` URL, live app untouched. Must prove: email-code login in Claude's in-app browser on iPhone; the token endpoint vs SvelteKit's CSRF origin check; Cloudflare bot protection not blocking; refresh; whether MCP Apps cards render on iPhone. **If phone login fails: stop and rethink with Scott**, no automatic fallback.
 
 ## Testing Decisions

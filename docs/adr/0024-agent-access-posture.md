@@ -16,7 +16,7 @@ A [[Connection]] is personal. The user logs in with their own email code; the AI
 *Amends ADR-0017 §2* (default off, per-feature toggles). Why: the connector transcribes what the user already decided, it does not author the trip, so opt-out is enough; and a per-feature matrix has no meaning for a general assistant.
 
 ### 3. What the AI may write
-AI may **record a decision the user explicitly states** — including booked, paid, done — and never infers or initiates one. *Amends ADR-0017 §1.3* ("AI never marks a booking"). The generate line is unchanged: no AI-authored itineraries, no AI choosing which ideas to promote or filling free days, no AI votes.
+AI may **record a decision the user explicitly states** — including booked, paid, done — and never infers or initiates one. *Amends ADR-0017 §1.3* ("AI never marks a booking"). The generate line is unchanged: no AI-authored itineraries, no AI choosing which ideas to promote or filling free days, no AI votes. That line governs what the AI **writes**. In conversation it may advise (better timing, what fits together, what's missing) as suggestions the user decides on (Scott, 2026-10-10).
 
 ### 4. Confirmation is in chat
 Writes are two-step: the AI shows a preview of the change in Waypoint's visual language (the item as a card, the changed field highlighted — not a code diff), the user says yes in chat, then it commits. The chat yes **is** the human confirmation ADR-0017 requires; there is no draft queue or confirm tap in Waypoint. Backstops: an audit log of AI writes with Recent AI changes → Revert, a server kill switch, no delete tools.
