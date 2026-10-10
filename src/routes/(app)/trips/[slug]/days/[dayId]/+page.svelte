@@ -161,7 +161,7 @@
 		tripSlug={data.trip.slug}
 		dayId={data.day.id}
 	>
-		{#snippet children({ timelineItems, pullUp, onTimelineConsider, onTimelineFinalize, parkingZones })}
+		{#snippet children({ timelineItems, pullUp, onTimelineConsider, onTimelineFinalize, parkingZones, planDrop })}
 			<!-- Items -->
 			<section class="space-y-1.5">
 				<SectionH>
@@ -185,6 +185,7 @@
 					members={data.members}
 					onConsider={onTimelineConsider}
 					onFinalize={onTimelineFinalize}
+					{planDrop}
 				/>
 			</section>
 

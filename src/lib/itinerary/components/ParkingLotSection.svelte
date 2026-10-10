@@ -120,7 +120,7 @@
 			     announcements. -->
 			<div
 				animate:flip={{ duration: FLIP_MS }}
-				class={collapsed ? 'no-callout h-0 w-0 shrink-0 basis-0 overflow-hidden' : 'no-callout group'}
+				class={collapsed ? 'no-callout h-0 w-0 shrink-0 basis-0 overflow-hidden' : 'no-callout group transition-transform hover:-translate-y-px'}
 				aria-hidden={collapsed}
 				aria-label={collapsed ? undefined : item.title}
 			>

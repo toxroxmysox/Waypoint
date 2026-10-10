@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Day } from '$lib/types';
 	import { todayTreatment, type DayCardSummary } from '$lib/itinerary/day-card';
+	import { dayHeadline } from '$lib/itinerary/drag-to-plan';
 	import Card from '$lib/ui/Card.svelte';
 	import MonoTypeIcon from '$lib/ui/MonoTypeIcon.svelte';
 	import { dayCardMetric } from '$lib/shell/stores/day-card-metric';
@@ -40,16 +41,7 @@
 	// the meta row below (itemCount is the sole fullness signal), so the lead
 	// tells you something that row can't. "Nothing planned yet" is reserved for
 	// days that really are empty.
-	const restCount = $derived(summary.itemCount - 1);
-	const headline = $derived(
-		day.notes?.trim()
-			? day.notes.trim()
-			: summary.leadTitle
-				? restCount > 0
-					? `${summary.leadTitle} + ${restCount} more`
-					: summary.leadTitle
-				: 'Nothing planned yet'
-	);
+	const headline = $derived(dayHeadline(day, summary));
 	const isEmpty = $derived(!day.notes?.trim() && !summary.leadTitle);
 
 	const budgetLabel = $derived(

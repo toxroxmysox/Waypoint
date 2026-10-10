@@ -4,6 +4,7 @@ import type { Day, Item, Vote, TripMember } from '$lib/types';
 import { phasesForDay } from '$lib/itinerary/phases';
 import { rebalanceDayOrder, GAP } from '$lib/itinerary/sort-order';
 import { spanningItemsForDate } from '$lib/itinerary/multi-day';
+import { summarizeDays } from '$lib/itinerary/day-card';
 import { withAvatarUrls } from '$lib/collaboration/member-avatar';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
@@ -81,7 +82,12 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		for (const d of docs) if (dayItemIds.has(d.item)) docCountByItem[d.item] = (docCountByItem[d.item] ?? 0) + 1;
 	}
 
-	return { day, dayItems: items, dayPhases, votesByItem, docCountByItem, members: withAvatarUrls(locals.pb, members), parkingLotItems, spanningItems, allDays: days };
+	// #445 — the desktop rail's Up next rows (title, count, to-book) ride merged page
+	// data under the overview's own key. One trip-wide items read, as the overview does.
+	const tripItems = await locals.pb.collection('items').getFullList<Item>({ filter: `trip = "${trip.id}"` });
+	const daySummaries = summarizeDays(tripItems, days as Day[]);
+
+	return { day, daySummaries, dayItems: items, dayPhases, votesByItem, docCountByItem, members: withAvatarUrls(locals.pb, members), parkingLotItems, spanningItems, allDays: days };
 };
 
 export const actions: Actions = {
