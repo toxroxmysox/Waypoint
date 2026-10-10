@@ -1,4 +1,5 @@
 import type { Item } from '$lib/types';
+import { isSpanning } from './spanning';
 
 // #245 Door 1 — the boundary-day core. A calendar day can belong to ≥2 phases
 // (a travel-transition day). To scope the "ideas for now" strip to the CURRENT
@@ -24,9 +25,7 @@ function parseDateTime(dt: string): Date {
 	return new Date(dt.replace(' ', 'T'));
 }
 
-function isMultiDay(i: Item): boolean {
-	return !!i.end_date && i.end_date.trim() !== '';
-}
+const isMultiDay = isSpanning; // #498 — flights with an end_date stay discrete
 
 function isTransit(i: Item): boolean {
 	return TRANSIT_TYPES.has(i.type);

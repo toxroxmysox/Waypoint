@@ -702,3 +702,32 @@ describe('getNowFeed — buckets by time shape (#431, #392)', () => {
 		});
 	});
 });
+
+// #498 — a red-eye flight carries an end_date (lands tomorrow) but is one timed
+// item: it is a Coming up row, then the ongoing Hero, never dropped as a Span.
+describe('getNowFeed — overnight flight stays discrete (#498)', () => {
+	const redEye = makeItem({
+		id: 'redeye',
+		type: 'flight',
+		start_time: '2026-10-15 22:40:00.000Z',
+		end_time: '2026-10-16 06:15:00.000Z',
+		end_date: '2026-10-16 00:00:00.000Z'
+	});
+
+	it('is a Coming up row before departure', () => {
+		const feed = getNowFeed([redEye], new Date('2026-10-15T18:00:00Z'), true);
+		expect(feed.restItems.map((i) => i.id)).toEqual(['redeye']);
+	});
+
+	it('is the ongoing Hero once it has departed', () => {
+		const feed = getNowFeed([redEye], new Date('2026-10-15T23:30:00Z'), true);
+		expect(feed.focus.kind).toBe('mid-event');
+		if (feed.focus.kind === 'mid-event') expect(feed.focus.currentItem.id).toBe('redeye');
+	});
+
+	it('lodging with an end_date is still a Span (not bucketed)', () => {
+		const hotel = makeItem({ id: 'hotel', type: 'lodging', start_time: '2026-10-15 15:00:00.000Z', end_date: '2026-10-18 00:00:00.000Z' });
+		const feed = getNowFeed([hotel], new Date('2026-10-15T18:00:00Z'), true);
+		expect([...feed.pastItems, ...feed.restItems].map((i) => i.id)).toEqual([]);
+	});
+});
