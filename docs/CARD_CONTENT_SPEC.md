@@ -151,7 +151,7 @@ Surface: Now's `IdeasStrip` (free-time / nothing-else Focus, and "Replace it" af
 |---|---|---|
 | Content | The current phase's unplanned ideas, grouped and sorted exactly as 2d: type headings in the fixed order, weighted vote score desc inside a group, ties by `sort_order`. | `ideaGroups`, `IdeaGroupHeading` |
 | Card | The 2d `IdeaCard` as-is: no icon, `place · cost` sub-line, the four tap-to-vote pills (viewers see counts only), assignee bubbles. The old read-only vote stacks and sentiment pill are gone. | `IdeaCard`, `VotePills` |
-| Primary action | `Do this` (Light Replanning, one-tap promote), owner / co_owner only, beside the card, 44px hit area, clay. Travelers and viewers see no button; travelers advocate with the pills. | `?/promoteIdea` |
+| Primary action | `Do this` (Light Replanning, one-tap promote), owner / co_owner only, beside the card, 44px hit area, a quiet outlined pill (same style as Closeout's Done / Swap / Skip; Scott 2026-10-10, was clay). Travelers and viewers see no button; travelers advocate with the pills. | `?/promoteIdea` |
 | Voting | Writes through the item page's `?/vote` / `?/unvote` (same as 2d). The Now load supplies `myMemberId` and `canVote` (`role != viewer`). | `now/+page.server.ts` |
 
 ### 2f. Now on desktop — the context rail — NEW by #446 (card system, D13; stories 80, 82, 84)
