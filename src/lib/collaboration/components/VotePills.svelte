@@ -35,6 +35,7 @@
 		voteAction,
 		unvoteAction,
 		labels = false,
+		extraFields = {},
 		class: klass = ''
 	}: {
 		votes?: DisplayVote[];
@@ -50,6 +51,9 @@
 		unvoteAction: string;
 		/** Show the word beside the glyph (item page, #442: room to spare). Cards stay glyph + count. */
 		labels?: boolean;
+		/** Extra hidden fields posted with every vote form (#444: a pending Suggestion
+		 *  passes its `suggestion_id`; the item page's actions need none). */
+		extraFields?: Record<string, string>;
 		class?: string;
 	} = $props();
 
@@ -130,6 +134,9 @@
 				use:enhance={voteEnhance(pill.value)}
 				class="contents"
 			>
+				{#each Object.entries(extraFields) as [name, value] (name)}
+					<input type="hidden" {name} {value} />
+				{/each}
 				{#if selected}
 					<input type="hidden" name="vote_id" value={myServerVote?.id} />
 				{:else}
