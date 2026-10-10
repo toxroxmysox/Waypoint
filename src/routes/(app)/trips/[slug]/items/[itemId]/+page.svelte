@@ -3,7 +3,7 @@
 	import { enhance } from '$app/forms';
 	import { itemMenuEntries } from '$lib/itinerary/item-actions';
 	import { getFieldConfig } from '$lib/itinerary/item-fields';
-	import { addLine, detailsRows, goingView, itemTimeText, itemTypeLine, newestFirst } from '$lib/itinerary/item-page';
+	import { addLine, bookingControls, detailsRows, goingView, itemTimeText, itemTypeLine, newestFirst } from '$lib/itinerary/item-page';
 	import { applyGoing } from '$lib/itinerary/assignment';
 	import { invalidateAll } from '$app/navigation';
 	import { needsBooking } from '$lib/itinerary/booking-projection';
@@ -16,6 +16,7 @@
 	import { page } from '$app/state';
 	import Hero from '$lib/itinerary/components/Hero.svelte';
 	import GoingAnswer from '$lib/itinerary/components/GoingAnswer.svelte';
+	import MarkBookedSheet from '$lib/itinerary/components/MarkBookedSheet.svelte';
 
 	import VoteButtons from '$lib/collaboration/components/VoteButtons.svelte';
 	import ItemActionsMenu from '$lib/itinerary/components/ItemActionsMenu.svelte';
@@ -104,6 +105,9 @@
 			goingPending = false;
 		}
 	}
+	// #441 — Book ↗ and Mark booked, beside the To book chip, for those who may edit.
+	const booking = $derived(bookingControls({ item: data.item, canEdit: can.canEdit }));
+	let markBookedOpen = $state(false);
 	// Empty Documents / Checklist shrink to one line; tapping + Document opens the section.
 	let docsOpen = $state(false);
 	const adds = $derived(
@@ -139,6 +143,30 @@
 		assignOpen = true;
 	}
 </script>
+
+{#snippet bookingActions()}
+	<span class="pointer-events-auto relative z-10 inline-flex flex-wrap items-center gap-x-1" data-testid="hero-booking-actions">
+		{#if booking.bookHref}
+			<a
+				href={booking.bookHref}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="text-ink hover:bg-surface-2 active:bg-surface-2 inline-flex min-h-11 items-center rounded-md px-3 text-sm font-semibold"
+				data-testid="book-link"
+			>
+				Book ↗<span class="sr-only"> (opens in a new tab)</span>
+			</a>
+		{/if}
+		<button
+			type="button"
+			onclick={() => (markBookedOpen = true)}
+			class="text-ink hover:bg-surface-2 active:bg-surface-2 inline-flex min-h-11 items-center rounded-md px-3 text-sm font-semibold"
+			data-testid="mark-booked-open"
+		>
+			Mark booked
+		</button>
+	</span>
+{/snippet}
 
 {#snippet goingAnswer()}
 	<GoingAnswer line={going.line} mine={going.mine} pending={goingPending} failed={goingFailed} onanswer={answerGoing} />
@@ -186,6 +214,7 @@
 				done={data.item.status === 'done'}
 				needsBooking={needsBooking(data.item)}
 				goingControl={going.canAnswer ? goingAnswer : undefined}
+				bookingActions={booking.show ? bookingActions : undefined}
 			/>
 
 			{#if can.canVote}
@@ -429,6 +458,15 @@
 		</div>
 	</div>
 </main>
+
+{#if booking.show}
+	<MarkBookedSheet
+		bind:open={markBookedOpen}
+		{itemUrl}
+		title={data.item.title}
+		error={form?.bookError}
+	/>
+{/if}
 
 <ItemActionSheets
 	bind:moveOpen={moveSheetOpen}
