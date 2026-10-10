@@ -6,6 +6,7 @@
 	import type { Item, TripMember } from '$lib/types';
 	import { buildTimelineFlat } from '$lib/itinerary/timeline';
 	import { freeTimeGaps, overlapPairs } from '$lib/itinerary/card-anatomy';
+	import { planDropLabels } from '$lib/itinerary/drag-to-plan';
 	import ItemCard from './ItemCard.svelte';
 	import TimeSlotDivider from './TimeSlotDivider.svelte';
 	import FreeTimeLabel from './FreeTimeLabel.svelte';
@@ -17,7 +18,8 @@
 		docCountByItem = {},
 		members = [],
 		onConsider = () => {},
-		onFinalize = () => {}
+		onFinalize = () => {},
+		planDrop = false
 	}: {
 		items: Item[];
 		tripSlug: string;
@@ -27,6 +29,8 @@
 		members?: TripMember[];
 		onConsider?: (e: CustomEvent<DndEvent<Item>>) => void;
 		onFinalize?: (e: CustomEvent<DndEvent<Item>>) => void;
+		/** An idea this day accepts is being dragged: highlight the timeline as a drop target (#445). */
+		planDrop?: boolean;
 	} = $props();
 
 	// Per-item slot label, keyed for O(1) lookup. `items` already arrives in
@@ -34,6 +38,7 @@
 	const flatById = $derived(new Map(buildTimelineFlat(items).map((e) => [e.item.id, e])));
 	const overlaps = $derived(overlapPairs(items));
 	const gaps = $derived(freeTimeGaps(items));
+	const dropLabels = $derived(planDropLabels(items));
 	const FLIP_MS = 150;
 
 	// #353: hold this long before a press becomes a drag (Scott, 2026-09-17).
@@ -48,10 +53,24 @@
      item wrapper (svelte-dnd-action maps `node.children` 1:1 onto `items`); the
      slot divider and free-time label live INSIDE the wrapper of the item that
      follows them. -->
+<!-- #445: while an idea this day accepts is in flight the timeline takes the planning
+     accent (outline + tint) and a corner badge; the badge is absolutely placed so
+     nothing shifts under the drag. Each free gap spells out what it offers. -->
 <div class="relative">
+{#if planDrop}
+	<span
+		class="text-paper absolute -top-2.5 left-3 z-10 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+		style="background-color: var(--color-accent)"
+		data-drop-prompt
+	>
+		Drop to plan
+	</span>
+{/if}
 <section
 	data-day-timeline
-	class="space-y-2 {items.length === 0 ? 'min-h-[8.5rem]' : 'min-h-[3rem]'}"
+	data-plan-drop={planDrop || undefined}
+	class="space-y-2 rounded-lg {items.length === 0 ? 'min-h-[8.5rem]' : 'min-h-[3rem]'} transition-[outline-color,background-color] duration-150"
+	style={planDrop ? 'outline: 2px dashed var(--color-accent); outline-offset: 2px; background-color: var(--color-accent-tint)' : ''}
 	use:dndzone={{ items, dragDisabled: false, type: 'itinerary-item', flipDurationMs: FLIP_MS, dropTargetStyle: {}, useCursorForDetection: true, delayTouchStart: LONG_PRESS_MS }}
 	onconsider={onConsider}
 	onfinalize={onFinalize}
@@ -69,7 +88,7 @@
 				<TimeSlotDivider label={meta.slotLabel} />
 			{/if}
 			{#if gap}
-				<FreeTimeLabel {gap} />
+				<FreeTimeLabel {gap} dropLabel={planDrop ? dropLabels.get(item.id) : undefined} />
 			{/if}
 			<ItemCard {item} {tripSlug} {members} overlap={overlaps.get(item.id)} docCount={docCountByItem[item.id] ?? 0} />
 		</div>

@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { onMount } from 'svelte';
+	import { dayRail } from '$lib/itinerary/day-rail.svelte';
+	import { canPlanOnDay } from '$lib/itinerary/drag-to-plan';
 	import { TRIGGERS, type DndEvent } from 'svelte-dnd-action';
 	import type { Snippet } from 'svelte';
 	import type { Item } from '$lib/types';
@@ -51,6 +54,8 @@
 					onTimelineFinalize: (e: CustomEvent<DndEvent<Item>>) => void;
 					/** One drop zone per phase — the day page renders a divider for each. */
 					parkingZones: ParkingZone[];
+					/** An idea that this day accepts is in flight: the timeline offers itself as a drop target (#445). */
+					planDrop: boolean;
 				}
 			]
 		>;
@@ -120,9 +125,19 @@
 	// A drag (any zone, any input) starts the strip growing; finalize or a keyboard
 	// stop ends it.
 	function trackDrag(info: DndEvent<Item>['info']) {
-		if (info.trigger === TRIGGERS.DRAG_STARTED) dragActive = true;
-		else if (info.trigger === TRIGGERS.DRAG_STOPPED) dragActive = false;
+		if (info.trigger === TRIGGERS.DRAG_STARTED) {
+			dragActive = true;
+			const idea = parkingByPhase.flatMap((z) => z.items).find((i) => i.id === info.id);
+			draggingIdeaPhase = idea ? idea.phase : null;
+		} else if (info.trigger === TRIGGERS.DRAG_STOPPED) {
+			dragActive = false;
+			draggingIdeaPhase = null;
+		}
 	}
+
+	// #445: phase of the idea being dragged (null when a day item, or nothing, is).
+	let draggingIdeaPhase = $state<string | null>(null);
+	const planDrop = $derived(draggingIdeaPhase !== null && canPlanOnDay(draggingIdeaPhase, dayPhaseIds));
 
 	function onTimelineConsider(e: CustomEvent<DndEvent<Item>>) {
 		timelineItems = e.detail.items;
@@ -164,6 +179,7 @@
 			}
 		}
 		dragActive = false;
+		draggingIdeaPhase = null;
 	}
 
 	function onParkingConsider(phaseId: string, e: CustomEvent<DndEvent<Item>>) {
@@ -210,6 +226,7 @@
 			}
 		}
 		dragActive = false;
+		draggingIdeaPhase = null;
 	}
 
 	const parkingZones = $derived<ParkingZone[]>(
@@ -221,6 +238,17 @@
 			onFinalize: (e: CustomEvent<DndEvent<Item>>) => onParkingFinalize(zone.phaseId, e)
 		}))
 	);
+
+	// #445: the desktop context rail hosts the day's ideas as a drag source. Only the
+	// instance in the desktop tree publishes (AppShell renders the page twice).
+	onMount(() => {
+		if (!reorderForm?.closest('[data-shell="desktop"]')) return;
+		const mine = () => ({ zones: parkingZones, pullUp });
+		dayRail.get = mine;
+		return () => {
+			if (dayRail.get === mine) dayRail.get = null;
+		};
+	});
 </script>
 
 <!-- Hidden forms for the existing server actions. enhance() invalidates the load
@@ -245,5 +273,6 @@
 	pullUp,
 	onTimelineConsider,
 	onTimelineFinalize,
-	parkingZones
+	parkingZones,
+	planDrop
 })}

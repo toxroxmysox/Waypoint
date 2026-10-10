@@ -179,6 +179,18 @@ Surface: at >= 1280px (`lg-desktop`, where the right-hand `ContextRail` exists) 
 | Rail: replaced | The generic Today and Up next blocks do not show on Now (today is the column). |
 | Cards | Same layout at any width (story 80); rail cards are the same components, no desktop variant. Hover affordances, if any, never hide something unavailable on touch (story 84). |
 
+### 2g. Day page on desktop — the context rail and mouse drag-to-plan — NEW by #445 (card system, D13; stories 26-30, 80, 81, 83, 84)
+
+At >=1280px (`lg-desktop`, where the rail exists) the day page keeps its phone layout in the content column; the rail adds two things. Below 1280 nothing changes (the Parking Lot divider stays in the column).
+
+| Block | Content | Rule |
+|---|---|---|
+| Up next | Mini day cards, the next five days: date, **day title** (notes, else first item `+ N more`, else `Nothing planned yet`; the overview day card's headline), `N items`, gold `N to book` | `N to book` is the #426 chip (screen readers hear "needs booking"), shown only when `needsBookingCount > 0`. Each card is a link, 44px+, and lifts on hover. Fed by `daySummaries` (the day load adds it). Pure: `dayHeadline`, `upNextRow` (`drag-to-plan.ts`) |
+| Ideas | The day's phase ideas, grouped by type (2d), vote pills (#425). A boundary day lists one block per phase, named | The same drag source as the phone zone: **mouse drags at once (no long press)**, touch keeps its long-press from the title row. Dragging among ideas changes nothing. Dropping a planned item here unschedules it. Cards lift on hover |
+| Drop targets | While an idea this day accepts is in flight: the timeline takes the planning accent (dashed outline, tint) and a `Drop to plan` badge; each free-time gap says `Drop to plan · 2h free · 4:30p to 6:30p` | Valid = the idea's phase is one of the day's phases (`canPlanOnDay`, over `resolveDrop`). The badge is absolutely placed (nothing shifts under the drag). Gap = `freeTimeGaps` (>= 60 min, #422), keyed by the item that closes it (`planDropLabels`) |
+
+Nothing exists only on hover. The keyboard path is "Add to a day" (#442). The rail lives outside the page, so `DragDropTimeline` publishes its parking zones through `day-rail.svelte.ts` (desktop tree only; AppShell renders the page twice).
+
 ### 2b. Now — the Hero (mid-event Focus) — added by #428 (card system, D10/D11)
 
 One component, `Hero.svelte`, built here and reused by the item page header (#438) and the Swipe-Quiz face (#443). On Now it renders one Hero per ongoing item (several Heroes: #430, below).

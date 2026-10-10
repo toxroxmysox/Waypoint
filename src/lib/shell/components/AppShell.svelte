@@ -107,6 +107,7 @@
 	<!-- Desktop: side rail + content + context rail -->
 	<div
 		class="hidden md-desktop:block"
+		data-shell="desktop"
 		style="--color-accent: {mode === 'trip' ? 'var(--color-clay)' : 'var(--color-moss)'}; --color-accent-tint: {mode === 'trip' ? 'var(--color-clay-tint)' : 'var(--color-moss-tint)'}"
 	>
 		<SideRail
