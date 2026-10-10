@@ -32,7 +32,9 @@ onRecordUpdateRequest((e) => {
 		'archive_enabled',
 		'archive_show_budget',
 		'public_share_token',
-		'auto_approve_suggestions'
+		'auto_approve_suggestions',
+		// #502 / ADR-0024 §2 — AI Access is an owner/co_owner switch.
+		'ai_access'
 	];
 
 	let protectedChanged = false;
@@ -107,6 +109,16 @@ onRecordDeleteRequest((e) => {
 		throw new ForbiddenError('Only an owner or co-owner can delete the trip');
 	}
 
+	e.next();
+}, 'trips');
+
+// #502 / ADR-0024 §2 — every new trip starts with AI Access ON. A PB bool has
+// no default (it reads false), so set it here. Model-level onRecordCreate, not
+// the request hook: it also runs for server-side saves (dev fixtures, any future
+// hook that creates trips). Clone and import start on too; an owner turns it off
+// in settings afterwards.
+onRecordCreate((e) => {
+	e.record.set('ai_access', true);
 	e.next();
 }, 'trips');
 

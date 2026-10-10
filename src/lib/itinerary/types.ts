@@ -18,6 +18,8 @@ export interface Trip extends RecordModel {
 	archive_show_budget: boolean;
 	public_share_token: string;
 	auto_approve_suggestions: boolean;
+	/** #502 / ADR-0024 — may members' connected AI read this trip. Default true. */
+	ai_access: boolean;
 	created_by: string;
 	archived: boolean;
 }

@@ -17,6 +17,7 @@ export const actions: Actions = {
 		const timezone = data.get('timezone')?.toString() || '';
 		const locationSummary = data.get('location_summary')?.toString().trim() || '';
 		const autoApproveSuggestions = data.get('auto_approve_suggestions') === 'on';
+		const aiAccess = data.get('ai_access') === 'on';
 
 		// #375 — `field` names the control the client should focus; it never
 		// changes what is validated, only where the failure is reported.
@@ -61,7 +62,8 @@ export const actions: Actions = {
 				end_date: endDate ? endDate + ' 00:00:00.000Z' : '',
 				timezone,
 				location_summary: locationSummary,
-				auto_approve_suggestions: autoApproveSuggestions
+				auto_approve_suggestions: autoApproveSuggestions,
+				ai_access: aiAccess
 			});
 
 			return { success: true };
