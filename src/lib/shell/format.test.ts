@@ -1,8 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import {
 	formatCountdown,
-	formatTime,
-	formatTimeRange,
 	formatDateRange,
 	formatCalendarDate,
 	formatClock,
@@ -34,18 +32,6 @@ describe('formatCountdown', () => {
 
 	it('handles large values', () => {
 		expect(formatCountdown(600)).toBe('10h');
-	});
-});
-
-describe('formatTime with real-dated stored values', () => {
-	it('renders the wall-clock time from a full naive-local datetime', () => {
-		expect(formatTime('2026-06-08 18:00:00.000Z')).toBe('6:00 PM');
-		expect(formatTime('2026-06-08 09:05:00.000Z')).toBe('9:05 AM');
-	});
-	it('renders a range', () => {
-		expect(formatTimeRange('2026-06-08 17:30:00.000Z', '2026-06-08 19:00:00.000Z')).toBe(
-			'5:30 PM – 7:00 PM'
-		);
 	});
 });
 

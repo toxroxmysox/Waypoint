@@ -58,6 +58,8 @@
 		/** Where each form posts on the host page. */
 		actions?: { approve: string; reject: string; vote: string; unvote: string };
 	} = $props();
+	// Per-instance id: AppShell renders the page twice (mobile + desktop trees).
+	const uid = $props.id();
 
 	const payload = $derived(suggestion.payload ?? {});
 	const title = $derived((payload.title as string) || 'Untitled idea');
@@ -172,11 +174,11 @@
 					class="space-y-2"
 				>
 					<input type="hidden" name="suggestion_id" value={suggestion.id} />
-					<label class="text-ink-soft block text-xs font-medium" for="reject-note-{suggestion.id}">
+					<label class="text-ink-soft block text-xs font-medium" for="{uid}-reject-note">
 						Reason for rejecting (required)
 					</label>
 					<input
-						id="reject-note-{suggestion.id}"
+						id="{uid}-reject-note"
 						name="review_note"
 						type="text"
 						required

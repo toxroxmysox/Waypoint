@@ -162,9 +162,11 @@ async function expectStayedAfterSkip(page: Page, itemPath: string) {
 	});
 	await page.waitForLoadState('networkidle');
 	expect(new URL(page.url()).pathname).toBe(itemPath);
-	// The item is an idea again, so the menu no longer offers Skip… (Move and Delete stay).
+	// The item is an idea again: the body offers "Add to a day", so the menu drops its
+	// duplicate Move (#500) and Skip…; Delete stays.
+	await expect(page.getByTestId('add-to-day').filter({ visible: true })).toBeVisible();
 	await openMenu(page);
-	await expect(menuItem(page, MOVE)).toHaveCount(1);
+	await expect(menuItem(page, MOVE)).toHaveCount(0);
 	await expect(menuItem(page, SKIP)).toHaveCount(0);
 	await page.keyboard.press('Escape');
 }
