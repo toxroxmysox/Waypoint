@@ -12,7 +12,7 @@
 	//
 	// Roles (SPEC §4): the strip renders for EVERYONE; travelers and owners cast
 	// votes on the pills, viewers see counts only (`canVote`). "Do this" (Light
-	// Replanning, one-tap Promote) stays the primary action and shows only for
+	// Replanning, one-tap Promote) is a quiet outlined pill (Scott, 2026-10-10) and shows only for
 	// owner/co_owner (`canPromote`).
 	import { enhance } from '$app/forms';
 	import type { Item, Vote } from '$lib/types';
@@ -94,7 +94,7 @@
 									<button
 										type="submit"
 										disabled={promoting === item.id}
-										class="bg-clay text-paper hover:bg-clay/90 active:bg-clay/90 min-h-[44px] min-w-[44px] rounded-md px-3 text-xs font-semibold whitespace-nowrap disabled:opacity-50"
+										class="border-line bg-surface text-ink hover:bg-surface-2 active:bg-surface-2 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border px-4 text-xs font-semibold whitespace-nowrap disabled:opacity-40"
 									>
 										{promoting === item.id ? 'Adding…' : 'Do this'}
 									</button>
