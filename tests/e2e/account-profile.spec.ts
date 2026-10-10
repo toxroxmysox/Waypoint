@@ -18,7 +18,7 @@ test.describe('Account / Profile (#104)', () => {
 	});
 
 	test('reachable from the /trips home header', async ({ page }) => {
-		await page.goto(`${BASE}/trips`);
+		await page.goto(`${BASE}/trips`, { waitUntil: 'networkidle' });
 		const link = page.locator('a[href="/account"]').first();
 		await expect(link).toBeVisible();
 		await link.click();
@@ -27,7 +27,7 @@ test.describe('Account / Profile (#104)', () => {
 	});
 
 	test('display name edits and persists', async ({ page }) => {
-		await page.goto(`${BASE}/account`);
+		await page.goto(`${BASE}/account`, { waitUntil: 'networkidle' });
 		await page.locator('#name').fill('Renamed Tester');
 		await page.getByRole('button', { name: 'Save', exact: true }).click();
 		await expect(page.getByText('Name saved')).toBeVisible();
@@ -37,7 +37,7 @@ test.describe('Account / Profile (#104)', () => {
 	});
 
 	test('avatar uploads through the cropper, renders, and removes', async ({ page }) => {
-		await page.goto(`${BASE}/account`);
+		await page.goto(`${BASE}/account`, { waitUntil: 'networkidle' });
 
 		// Picking a file opens the crop sheet (progressive enhancement).
 		await page.setInputFiles('input[type=file][name="avatar"]', {
@@ -63,7 +63,7 @@ test.describe('Account / Profile (#104)', () => {
 
 	test('mobile responsive at 375px', async ({ page }) => {
 		await page.setViewportSize({ width: 375, height: 812 });
-		await page.goto(`${BASE}/account`);
+		await page.goto(`${BASE}/account`, { waitUntil: 'networkidle' });
 		const main = page.locator('main').first();
 		const box = await main.boundingBox();
 		expect(box).toBeTruthy();

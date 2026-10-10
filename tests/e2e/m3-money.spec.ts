@@ -57,6 +57,8 @@ async function setupFixture(email: string): Promise<void> {
 }
 
 test.describe('M3 Money', () => {
+	// Later tests read the expense the add-expense test creates: run in order (#384).
+	test.describe.configure({ mode: 'serial' });
 	test.skip(!process.env.E2E_TEST_EMAIL, 'Set E2E_TEST_EMAIL to run E2E tests');
 
 	const tripSlug = FIXTURE_SLUG;
@@ -69,7 +71,7 @@ test.describe('M3 Money', () => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 
 		try {
-			await page.goto(`${BASE}/trips/${tripSlug}/expenses`);
+			await page.goto(`${BASE}/trips/${tripSlug}/expenses`, { waitUntil: 'networkidle' });
 			// Dual-tree layout → scope content/form locators to the visible subtree.
 			await expect(page.getByText(/no expenses yet/i).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
 			await expect(page.getByRole('button', { name: /add expense/i }).filter({ visible: true }).first()).toBeVisible();
@@ -113,7 +115,7 @@ test.describe('M3 Money', () => {
 		try {
 			// Mobile-first bottom-sheet flow at the standard 375px width.
 			await page.setViewportSize({ width: 375, height: 812 });
-			await page.goto(`${BASE}/trips/${tripSlug}/expenses`);
+			await page.goto(`${BASE}/trips/${tripSlug}/expenses`, { waitUntil: 'networkidle' });
 
 			// Open the Add Expense sheet via FAB.
 			await page.getByRole('button', { name: /add expense/i }).filter({ visible: true }).first().click();
@@ -164,7 +166,7 @@ test.describe('M3 Money', () => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 
 		try {
-			await page.goto(`${BASE}/trips/${tripSlug}/budget`);
+			await page.goto(`${BASE}/trips/${tripSlug}/budget`, { waitUntil: 'networkidle' });
 
 			// Category labels visible
 			await expect(page.getByText('Lodging').filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
@@ -192,7 +194,7 @@ test.describe('M3 Money', () => {
 		try {
 			// Mobile-first flow (settle-up bottom sheet); 375px, see add-expense test.
 			await page.setViewportSize({ width: 375, height: 812 });
-			await page.goto(`${BASE}/trips/${tripSlug}/expenses`);
+			await page.goto(`${BASE}/trips/${tripSlug}/expenses`, { waitUntil: 'networkidle' });
 
 			// After adding an expense in a prior test, either settle up button or
 			// "all squared up" banner should be visible (depends on split config).
@@ -224,7 +226,7 @@ test.describe('M3 Money', () => {
 
 		try {
 			await page.setViewportSize({ width: 375, height: 812 });
-			await page.goto(`${BASE}/trips/${tripSlug}/expenses`);
+			await page.goto(`${BASE}/trips/${tripSlug}/expenses`, { waitUntil: 'networkidle' });
 			// Wait for page to load — either expenses exist or the empty state shows
 			await expect(
 				page
@@ -247,7 +249,7 @@ test.describe('M3 Money', () => {
 
 		try {
 			await page.setViewportSize({ width: 375, height: 812 });
-			await page.goto(`${BASE}/trips/${tripSlug}/budget`);
+			await page.goto(`${BASE}/trips/${tripSlug}/budget`, { waitUntil: 'networkidle' });
 			await expect(page.getByText('Lodging').filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
 
 			const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
