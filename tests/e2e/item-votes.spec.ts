@@ -134,8 +134,12 @@ test.describe('Votes on the item page (#442)', () => {
 			await expect(row).toContainText('Your vote');
 			await expect(row).toContainText('None yet');
 			await row.getByRole('button', { name: 'change' }).click();
+			// The pill is optimistic: wait for the action's response before reloading,
+			// or the reload can abort the POST and the vote never lands.
+			const saved = page.waitForResponse((r) => r.request().method() === 'POST' && r.url().includes('/items/'));
 			await row.locator('[data-vote="like"]').click();
 			await expect(row).toContainText('Like');
+			await saved;
 			await page.reload();
 			await page.waitForLoadState('networkidle');
 			await expect(vis(page, '[data-testid="item-your-vote"]').first()).toContainText('Like');
