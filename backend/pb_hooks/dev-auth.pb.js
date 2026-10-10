@@ -1215,6 +1215,9 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 		formingSlug = fslug;
 	}
 
+	// #439: ids of the `now` seed's items, returned as `nowItems` ({ live, later }) so verify:visual can open their item pages.
+	const nowItems = {};
+
 	// Optional { now: 'hero' | 'free' | 'rail' | 'multi' | 'buckets' | 'deadline' } (#428; 'multi' = #430; 'buckets', 'deadline' = #431): items pinned to the REAL clock on today's
 	// day (days[1]; the trip is UTC, so UTC wall clock = trip-local), so Now has a live
 	// state to photograph. 'hero': a dinner that began 65 min ago and ends in 55, with
@@ -1272,8 +1275,11 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 				location_name: 'The Immigrant Restaurant',
 				location_address: '1 Main St, Kohler, WI 53044',
 				booked: true,
+				cost_estimate_usd: 240,
+				reservation_url: 'https://www.opentable.com/the-immigrant',
 				assigned_to: [ownerMember.id, kim, dev]
 			});
+			nowItems.live = dinner.id;
 			const docsCol = e.app.findCollectionByNameOrId('documents');
 			const codes = [['Confirmation', 'IMM-48213'], ['Door PIN', '7731']];
 			for (let c = 0; c < codes.length; c++) {
@@ -1286,7 +1292,7 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 				doc.set('code_value', codes[c][1]);
 				e.app.save(doc);
 			}
-			mk({ title: 'Night walk', type: 'activity', start_time: wall(nowMs + 120 * min), sort_order: 51 });
+			nowItems.later = mk({ title: 'Night walk', type: 'activity', start_time: wall(nowMs + 120 * min), sort_order: 51 }).id;
 		} else if (mode === 'multi') {
 			// #430: several Heroes. 'Beach volleyball' (not the viewer's; Kim + Dev) began
 			// EARLIEST, so plain start order would put it first. 'Dinner at The Immigrant'
@@ -1353,7 +1359,7 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 		}
 	}
 
-	return e.json(200, { tripId: trip.id, slug: slug, phaseId: phaseId, goalId: goalId, formingSlug: formingSlug, days: summary });
+	return e.json(200, { tripId: trip.id, slug: slug, phaseId: phaseId, goalId: goalId, formingSlug: formingSlug, nowItems: nowItems, days: summary });
 });
 
 // ---------------------------------------------------------------------------

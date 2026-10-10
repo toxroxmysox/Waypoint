@@ -9,6 +9,7 @@ import { computeMovePatch } from '$lib/itinerary/move-item';
 import { paidSummaryForItem } from '$lib/money/linked-expenses';
 import { itemPermissions, ITEM_ACTION_ERRORS } from '$lib/itinerary/item-actions';
 import { needsBooking } from '$lib/itinerary/booking-projection';
+import { tripNow, tripTz } from '$lib/shell/trip-time';
 import { parseMarkBooked, markBookedDestination } from '$lib/itinerary/item-page';
 
 const BOOK_ERROR = "Couldn't mark this booked. Reload the page and try again.";
@@ -121,7 +122,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	// prefilled add); ≥1 → "Paid $X" (summed) with a link-out. `booked` is orthogonal.
 	const paidSummary = paidSummaryForItem(linkedExpenses, item.id);
 
-	return { item, checklist, tasks, members: withAvatarUrls(locals.pb, members), comments, votes, myVote, documents, itemDay: day, itemPhase: phase, linkedExpenseCount: linkedExpenses.length, linkedGoals, paidSummary, permissions };
+	return { item, checklist, tasks, members: withAvatarUrls(locals.pb, members), comments, votes, myVote, documents, itemDay: day, itemPhase: phase, linkedExpenseCount: linkedExpenses.length, linkedGoals, paidSummary, permissions, now: tripNow(tripTz(trip)).toISOString() };
 };
 
 async function getMembership(locals: App.Locals, tripId: string): Promise<TripMember> {

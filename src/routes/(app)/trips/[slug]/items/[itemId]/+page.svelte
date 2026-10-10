@@ -3,7 +3,7 @@
 	import { enhance } from '$app/forms';
 	import { itemMenuEntries } from '$lib/itinerary/item-actions';
 	import { getFieldConfig } from '$lib/itinerary/item-fields';
-	import { addLine, bookingControls, detailsRows, goingView, itemTimeText, itemTypeLine, newestFirst, votesView } from '$lib/itinerary/item-page';
+	import { addLine, bookingControls, detailsRows, goingView, itemTimeText, itemTypeLine, newestFirst, votesView, tripModeView } from '$lib/itinerary/item-page';
 	import { applyGoing } from '$lib/itinerary/assignment';
 	import { invalidateAll } from '$app/navigation';
 	import { needsBooking } from '$lib/itinerary/booking-projection';
@@ -14,6 +14,8 @@
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import { titleCase } from '$lib/shell/format';
 	import { page } from '$app/state';
+	import { untrack, onMount } from 'svelte';
+	import { useChromeMode } from '$lib/shell/chrome-mode';
 	import Hero from '$lib/itinerary/components/Hero.svelte';
 	import GoingAnswer from '$lib/itinerary/components/GoingAnswer.svelte';
 	import MarkBookedSheet from '$lib/itinerary/components/MarkBookedSheet.svelte';
@@ -31,6 +33,8 @@
 	import type { Comment, Task } from '$lib/types';
 
 	let { data, form } = $props();
+	// #439 — Trip Mode is the chrome mode (date-active, honouring the mode pill), as Skip reads it.
+	const chromeMode = useChromeMode();
 
 	// #416 — every control below renders only for roles the server accepts it
 	// from (itemPermissions, computed in the loader). #437 reuses the same set.
@@ -58,7 +62,29 @@
 	const heroDocs = $derived(
 		data.documents.map((d) => ({ id: d.id, label: documentLabel(d.caption, d.file), href: d.file_href }))
 	);
-	const rows = $derived(
+	// #439 — Trip Mode: trip-local "now", re-anchored to the server on reload and ticked
+	// every 30s (the Now page's pattern) so the NOW line counts down and appears at the start.
+	let now = $state(new Date(untrack(() => data.now)));
+	let clockBase = { server: new Date(untrack(() => data.now)).getTime(), at: Date.now() };
+	$effect(() => {
+		clockBase = { server: new Date(data.now).getTime(), at: Date.now() };
+		now = new Date(data.now);
+	});
+	onMount(() => {
+		const id = setInterval(() => (now = new Date(clockBase.server + (Date.now() - clockBase.at))), 30_000);
+		return () => clearInterval(id);
+	});
+	const tm = $derived(
+		tripModeView({
+			tripMode: chromeMode() === 'trip',
+			item: data.item,
+			dayDate: data.itemDay?.date,
+			now,
+			paid: data.paidSummary,
+			canLogPayment: can.canLogPayment
+		})
+	);
+	const allRows = $derived(
 		detailsRows({
 			item: data.item,
 			phaseName: data.itemPhase?.name,
@@ -68,6 +94,8 @@
 			expensesHref
 		})
 	);
+	// Log payment under the Hero replaces the Details row, never duplicates it.
+	const rows = $derived(tm.logPaymentUnderHero ? allRows.filter((r) => r.key !== 'payment') : allRows);
 	// #440 — "Are you going?". The answer is written by the caller's own endpoint
 	// (self-only server-side); the Hero flips at once from a local mirror (applyGoing),
 	// snaps back if the write fails, and the loader's value takes over after invalidate.
@@ -181,6 +209,67 @@
 	</span>
 {/snippet}
 
+{#snippet detailsBody()}
+	<dl class="divide-line mt-1 divide-y" data-testid="item-details">
+		{#each rows as row (row.key)}
+			{#if row.href}
+				<a
+					href={row.href}
+					target={row.external ? '_blank' : undefined}
+					rel={row.external ? 'noopener noreferrer' : undefined}
+					class="hover:bg-surface-2 active:bg-surface-2 flex min-h-11 items-center justify-between gap-3 py-2"
+					data-detail={row.key}
+				>
+					<dt class="text-ink-muted shrink-0 text-xs font-semibold tracking-wide uppercase">{row.label}</dt>
+					<dd class="text-ink flex min-w-0 items-center gap-2 text-sm font-medium">
+						<span class="truncate">{row.value}</span>
+						{#if row.hint}<span class="text-ink-muted shrink-0 text-xs font-normal">{row.hint}</span>{/if}
+						<span class="text-ink-muted shrink-0" aria-hidden="true">{row.external ? '↗' : '›'}</span>
+					</dd>
+				</a>
+			{:else}
+				<div class="flex min-h-11 items-center justify-between gap-3 py-2" data-detail={row.key}>
+					<dt class="text-ink-muted shrink-0 text-xs font-semibold tracking-wide uppercase">{row.label}</dt>
+					<dd class="text-ink min-w-0 text-sm font-medium">{row.value}</dd>
+				</div>
+			{/if}
+		{/each}
+	</dl>
+	{#if votesFace.face === 'row'}
+		<div class="border-line border-t" data-testid="item-your-vote">
+			<div class="flex min-h-11 items-center justify-between gap-3 py-2">
+				<dt class="text-ink-muted shrink-0 text-xs font-semibold tracking-wide uppercase">Your vote</dt>
+				<dd class="text-ink flex min-w-0 items-center gap-2 text-sm font-medium">
+					<span>{votesFace.rowText}</span>
+					<span class="text-ink-muted" aria-hidden="true">·</span>
+					<button
+						type="button"
+						onclick={() => (voteRowOpen = !voteRowOpen)}
+						aria-expanded={voteRowOpen}
+						class="text-ink-soft hover:text-ink active:text-ink min-h-11 px-1 text-sm font-semibold underline"
+						data-testid="your-vote-change"
+					>
+						change
+					</button>
+				</dd>
+			</div>
+			{#if voteRowOpen}
+				<div class="pb-2">
+					<VotePills
+						labels
+						votes={data.votes}
+						members={data.members}
+						myMemberId={data.membership.id}
+						canVote={can.canVote}
+						voteAction={voteActions.vote}
+						unvoteAction={voteActions.unvote}
+					/>
+				</div>
+			{/if}
+		</div>
+	{/if}
+{/snippet}
+
 {#snippet goingAnswer()}
 	<GoingAnswer line={going.line} mine={going.mine} pending={goingPending} failed={goingFailed} onanswer={answerGoing} />
 {/snippet}
@@ -222,6 +311,7 @@
 				members={data.members}
 				{typeLine}
 				{timeText}
+				status={tm.live}
 				codes={data.item.confirmation_codes ?? []}
 				docs={heroDocs}
 				done={data.item.status === 'done'}
@@ -229,6 +319,16 @@
 				goingControl={going.canAnswer && votesFace.showGoing ? goingAnswer : undefined}
 				bookingActions={booking.show ? bookingActions : undefined}
 			/>
+
+			{#if tm.logPaymentUnderHero}
+				<a
+					href={payHref}
+					class="border-line bg-surface text-ink hover:bg-surface-2 active:bg-surface-2 flex min-h-11 items-center justify-center rounded-lg border px-4 text-sm font-semibold"
+					data-testid="log-payment-hero"
+				>
+					Log payment
+				</a>
+			{/if}
 
 			{#if votesFace.face === 'pills'}
 				<section class="space-y-2 px-1" data-testid="item-votes" aria-labelledby="item-votes-h">
@@ -265,67 +365,21 @@
 			     estimate (ADR-0014): 0 linked expenses -> "Log payment"; >=1 -> "Paid $X". -->
 			{#if rows.length > 0 || votesFace.face === 'row'}
 				<Card>
-					<div class="p-4 pb-2">
-						<SectionH>Details</SectionH>
-						<dl class="divide-line mt-1 divide-y" data-testid="item-details">
-							{#each rows as row (row.key)}
-								{#if row.href}
-									<a
-										href={row.href}
-										target={row.external ? '_blank' : undefined}
-										rel={row.external ? 'noopener noreferrer' : undefined}
-										class="hover:bg-surface-2 active:bg-surface-2 flex min-h-11 items-center justify-between gap-3 py-2"
-										data-detail={row.key}
-									>
-										<dt class="text-ink-muted shrink-0 text-xs font-semibold tracking-wide uppercase">{row.label}</dt>
-										<dd class="text-ink flex min-w-0 items-center gap-2 text-sm font-medium">
-											<span class="truncate">{row.value}</span>
-											{#if row.hint}<span class="text-ink-muted shrink-0 text-xs font-normal">{row.hint}</span>{/if}
-											<span class="text-ink-muted shrink-0" aria-hidden="true">{row.external ? '↗' : '›'}</span>
-										</dd>
-									</a>
-								{:else}
-									<div class="flex min-h-11 items-center justify-between gap-3 py-2" data-detail={row.key}>
-										<dt class="text-ink-muted shrink-0 text-xs font-semibold tracking-wide uppercase">{row.label}</dt>
-										<dd class="text-ink min-w-0 text-sm font-medium">{row.value}</dd>
-									</div>
-								{/if}
-							{/each}
-						</dl>
-						{#if votesFace.face === 'row'}
-							<div class="border-line border-t" data-testid="item-your-vote">
-								<div class="flex min-h-11 items-center justify-between gap-3 py-2">
-									<dt class="text-ink-muted shrink-0 text-xs font-semibold tracking-wide uppercase">Your vote</dt>
-									<dd class="text-ink flex min-w-0 items-center gap-2 text-sm font-medium">
-										<span>{votesFace.rowText}</span>
-										<span class="text-ink-muted" aria-hidden="true">·</span>
-										<button
-											type="button"
-											onclick={() => (voteRowOpen = !voteRowOpen)}
-											aria-expanded={voteRowOpen}
-											class="text-ink-soft hover:text-ink active:text-ink min-h-11 px-1 text-sm font-semibold underline"
-											data-testid="your-vote-change"
-										>
-											change
-										</button>
-									</dd>
-								</div>
-								{#if voteRowOpen}
-									<div class="pb-2">
-										<VotePills
-											labels
-											votes={data.votes}
-											members={data.members}
-											myMemberId={data.membership.id}
-											canVote={can.canVote}
-											voteAction={voteActions.vote}
-											unvoteAction={voteActions.unvote}
-										/>
-									</div>
-								{/if}
-							</div>
-						{/if}
-					</div>
+					{#if tm.planDetails}
+						<!-- #439 — Trip Mode: planning facts fold away; Log payment is under the Hero. -->
+						<details class="group p-4 pb-2" data-testid="plan-details">
+							<summary class="text-ink-muted hover:text-ink flex min-h-11 cursor-pointer list-none items-center justify-between text-xs font-semibold tracking-wide uppercase [&::-webkit-details-marker]:hidden">
+								Plan details
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transition-transform group-open:rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+							</summary>
+							{@render detailsBody()}
+						</details>
+					{:else}
+						<div class="p-4 pb-2">
+							<SectionH>Details</SectionH>
+							{@render detailsBody()}
+						</div>
+					{/if}
 				</Card>
 			{/if}
 

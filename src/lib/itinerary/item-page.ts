@@ -4,7 +4,7 @@ import { getFieldConfig } from '$lib/itinerary/item-fields';
 import { rowSub, type RowItemFields } from '$lib/itinerary/row';
 import { titleCase } from '$lib/shell/format';
 import { canSelfAssign, goingStateOf, type GoingState } from '$lib/itinerary/assignment';
-import { goingPeople, type GoingPerson } from '$lib/trip-mode/hero';
+import { goingPeople, heroStatus, type GoingPerson, type HeroStatus } from '$lib/trip-mode/hero';
 import { needsBooking } from '$lib/itinerary/booking-projection';
 import { logPaymentHref, type PrefillItem } from '$lib/money/expense-prefill';
 import type { Item, TripMember } from '$lib/types';
@@ -204,5 +204,38 @@ export function votesView(p: {
 		showAddToDay: idea && p.canMove,
 		showGoing: !idea,
 		rowText: p.myVote ? (labels[p.myVote.value] ?? p.myVote.value) : 'None yet'
+	};
+}
+
+/**
+ * #439 — the item page in Trip Mode (D12; stories 61, 72). `live` is the Hero's
+ * `NOW · until …` line, from the same `heroStatus` Now uses (one derivation). An item has
+ * `started` once its start has passed; an untimed or end-only one, once its day is today
+ * or earlier; an idea or an item with neither never has. Log payment moves under the
+ * Hero once the item has started and nothing is logged; Details becomes Plan details.
+ * Planning Mode: all off.
+ */
+export function tripModeView(p: {
+	tripMode: boolean;
+	item: { status: string; start_time?: string; end_time?: string };
+	dayDate: string | undefined;
+	/** Trip-local "now" (UTC fields = the trip's wall clock). */
+	now: Date;
+	paid: { isPaid: boolean };
+	canLogPayment: boolean;
+}): { live: HeroStatus | null; started: boolean; logPaymentUnderHero: boolean; planDetails: boolean } {
+	if (!p.tripMode) return { live: null, started: false, logPaymentUnderHero: false, planDetails: false };
+	const idea = p.item.status === 'unplanned';
+	const start = p.item.start_time ? new Date(p.item.start_time.replace(' ', 'T')).getTime() : NaN;
+	let started: boolean;
+	if (idea) started = false;
+	else if (!Number.isNaN(start)) started = p.now.getTime() >= start;
+	else started = !!p.dayDate && p.dayDate.substring(0, 10) <= p.now.toISOString().substring(0, 10);
+	const live = started && p.item.status !== 'done' ? heroStatus(p.item, p.now) : null;
+	return {
+		live,
+		started,
+		logPaymentUnderHero: started && !p.paid.isPaid && p.canLogPayment,
+		planDetails: true
 	};
 }
