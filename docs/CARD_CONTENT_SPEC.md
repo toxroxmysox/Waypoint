@@ -152,6 +152,18 @@ Surface: Now's `IdeasStrip` (free-time / nothing-else Focus, and "Replace it" af
 | Primary action | `Do this` (Light Replanning, one-tap promote), owner / co_owner only, beside the card, 44px hit area, clay. Travelers and viewers see no button; travelers advocate with the pills. | `?/promoteIdea` |
 | Voting | Writes through the item page's `?/vote` / `?/unvote` (same as 2d). The Now load supplies `myMemberId` and `canVote` (`role != viewer`). | `now/+page.server.ts` |
 
+### 2f. Now on desktop — the context rail — NEW by #446 (card system, D13; stories 80, 82, 84)
+
+Surface: at >= 1280px (`lg-desktop`, where the right-hand `ContextRail` exists) on `/trips/{slug}/now`. Approved by Scott 2026-10-06. Below 1280px and on phones nothing moves.
+
+| Part | Rule |
+|---|---|
+| Content column | Stays on today: Hero / free-time, Coming up, memories, checklists. The in-column Ideas strip and tomorrow preview are hidden with CSS (`lg-desktop:hidden`). |
+| Rail: Ideas for now | The 2e `IdeasStrip`, unchanged (grouped `IdeaCard`s, vote pills, `Do this`). Shown whenever the current phase has ideas: the rail is ambient reference, so the phone's free-time / nothing-else / just-skipped gating does not apply. After a Skip the heading reads `Replace it` (shared `nowRail.skipped`). |
+| Rail: tomorrow | The 4b tomorrow preview (`TomorrowPreview`, shared with the page): date heading, `Next 3 days` link, up to 3 Rows, `+n more`. |
+| Rail: replaced | The generic Today and Up next blocks do not show on Now (today is the column). |
+| Cards | Same layout at any width (story 80); rail cards are the same components, no desktop variant. Hover affordances, if any, never hide something unavailable on touch (story 84). |
+
 ### 2b. Now — the Hero (mid-event Focus) — added by #428 (card system, D10/D11)
 
 One component, `Hero.svelte`, built here and reused by the item page header (#438) and the Swipe-Quiz face (#443). On Now it renders one Hero per ongoing item (several Heroes: #430, below).
