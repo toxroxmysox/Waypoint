@@ -87,8 +87,10 @@ Rules paid for in real failures (distilled from the shelved `pm-hub` skill):
 - **A PR adds a dependency → `pnpm install`** before judging `pnpm check` failures.
 - **Real or dogfood data (:8090, prod) is a hard stop.** Dry-run, eyeball every match, surface it to Scott. No confidence level overrides this.
 - **Merging and pushing (incl. to `main`) after Claude-side review needs no sign-off. Deploying happens only on Scott's word** (Scott, 2026-10-07).
-- **v3.0 in flight:** ticket branches start from `origin/release/3.0` and merge back into it, not `main`. Desktop worktrees base off `main`, so check out from `release/3.0` first.
+- **Release branches** (v3.0 pattern, shipped 2026-10-10): ticket branches start from `origin/release/<x>` and merge back into it, not `main`; desktop worktrees base off `main`, so check out the release branch first.
 - **Evidence rule:** every working/broken/true claim states how it was verified. Unverified → label it "inference".
+- **E2E: `goto` then click a client-side control → `waitUntil: 'networkidle'`.** A click before hydration silently does nothing. That was most of v3.0's "flake" (about 12 specs fixed). A spec whose tests share data runs `test.describe.configure({ mode: 'serial' })`.
+- **Parallel tickets: run a fresh-eyes cross-ticket review before the release PR, and do Scott's visual sweep per wave, not at the end.** v3.0's per-ticket reviews missed six integration bugs that one final review caught. Scott's sweep caught UX calls (where Ideas for now sits, how heavy buttons are) that no spec did.
 - **Two strikes → step back.** Same error survives two fixes → stop patching, reassess the approach, check `.wolf/` cerebrum + buglog (if present) before a third attempt.
 
 ---

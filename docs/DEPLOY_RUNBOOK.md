@@ -56,18 +56,22 @@ curl -s -X POST http://localhost:8090/api/backups \
 ```
 (`<SHA>` → the short commit. Backups live at `data/backups/` on the box.)
 
-## 2. Ship the source (atomic swap; never clobbers data/ or .env)
+## 1b. Count, and dry-run any data migration (before shipping)
+
+Record row counts for every collection via the admin API (same TOKEN trick as step 1), and save them to a file. For each **data** migration in `git diff --name-only <deployed> <SHA> -- backend/pb_migrations`, run its own filter read-only against live, so you know the exact number of rows it will rewrite. (Example, v3.0.0: `0073` predicted 10 notification bodies; the boot log said `rewrote 10 notification bodies, 0 tombstone names`.) After the deploy, diff the counts. The only differences allowed are the ones you predicted.
+
+## 2. Ship the source (additive swap; never clobbers data/ or .env)
+
+Extract into a fresh dir, check it, then swap with two `mv`s. Nothing is deleted. (The `rm -rf` one-liner is refused by the permission classifier, and the old trees are cheap to keep.)
 
 ```bash
-git archive --format=tar "$SHA" | ssh vandenwarsen@100.82.71.103 '
-cd /volume1/docker/stacks/waypoint &&
-rm -rf repo_new && mkdir repo_new && tar -xf - -C repo_new &&
-echo "extracted $(find repo_new -type f | wc -l) files" &&
-ls repo_new/backend/pb_migrations/ | tail -3 &&
-rm -rf repo_old && mv repo repo_old && mv repo_new repo &&
-echo SWAPPED'
+git archive --format=tar "$SHA" | ssh vandenwarsen@100.82.71.103 "
+cd /volume1/docker/stacks/waypoint && mkdir repo_incoming_$SHORT && tar -xf - -C repo_incoming_$SHORT &&
+echo remote files: \$(find repo_incoming_$SHORT -type f | wc -l) && ls repo_incoming_$SHORT/backend/pb_migrations | tail -8"
+git ls-tree -r --name-only "$SHA" | wc -l        # must equal the remote file count
+ssh vandenwarsen@100.82.71.103 "cd /volume1/docker/stacks/waypoint && mv repo repo_prev_<oldsha> && mv repo_incoming_$SHORT repo"
 ```
-`repo_old` is kept as a same-host rollback of the source.
+`repo_prev_<oldsha>` is the same-host rollback of the source. Also copy the backup zip out of `data/` (`predeploy_copies/`). The NAS has no `unzip`; check the zip with `python3 -c "import zipfile; print(zipfile.ZipFile('<zip>').testzip())"` (`None` = intact).
 
 ## 3. Rebuild + restart
 
@@ -96,6 +100,7 @@ docker logs waypoint 2>&1 | grep -iE "migrat|smtp\.pb|ratelimit\.pb|error|panic|
 curl -sS -I https://app.vandenwarsen.com/ | grep -iE 'HTTP/|content-type-options|frame-options|strict-transport|referrer-policy|permissions-policy'
 # Want 200/303 + nosniff, X-Frame DENY, HSTS, Referrer-Policy, Permissions-Policy.
 ```
+`curl -s https://app.vandenwarsen.com/_app/version.json` must report the new version, which proves the build without logging in.
 Then load `https://app.vandenwarsen.com` and **send yourself an OTP** to confirm end-to-end login. The Profile page footer must read `Waypoint {version}` (anything else means a stale build or a cached shell).
 
 ## 4b. Tag the release (only after verify passes)
@@ -113,7 +118,7 @@ ssh vandenwarsen@100.82.71.103 '
 cd /volume1/docker/stacks/waypoint &&
 # restore the pre-deploy DB+storage from the backup zip, then the prior source, then rebuild:
 # (PB restore: Admin UI → Settings → Backups → Restore "predeploy_<SHA>.zip", OR the restore API)
-rm -rf repo_broken && mv repo repo_broken && mv repo_old repo &&
+mv repo repo_broken && mv repo_prev_<oldsha> repo &&
 docker compose up -d --build'
 ```
 The migration is append-only + idempotent, so a forward re-deploy is usually safer than a restore;
