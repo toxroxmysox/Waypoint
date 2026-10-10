@@ -827,7 +827,9 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 	const dayMs = 24 * 60 * 60 * 1000;
 	const todayIso = new Date().toISOString().substring(0, 10);
 	const start = new Date(todayIso + 'T00:00:00.000Z');
-	start.setUTCDate(start.getUTCDate() - 1);
+	// Optional { past: true } (#458/#434): the whole window ends 5 days ago, so the trip is
+	// in `wrap-up` and /closeout is reachable. Off by default (today stays inside the window).
+	start.setUTCDate(start.getUTCDate() - (info.body && info.body['past'] ? 10 : 1));
 	const end = new Date(start.getTime() + 5 * dayMs);
 	const pbDay = (d) => d.toISOString().substring(0, 10) + ' 00:00:00.000Z';
 
@@ -1137,6 +1139,81 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 		mkSpan('Hertz rental car', 'transportation', 'car', 1, 4, '10:00', '12:00', 'MKE airport');
 	}
 
+	// Optional { rows2: true } (#434): fixtures for Rows part 2. Two code documents on the day-1
+	// tee time and the day-3 lodging (Trip Documents' code Rows), and one goal linking a
+	// planned item (Kayak, day 3 = tomorrow when not `past`), a timed planned item and an idea
+	// (needs { ideas: true } for the idea; planned-only otherwise). Off by default.
+	let goalId = '';
+	let formingSlug = '';
+	if (info.body && info.body['rows2']) {
+		const docsCol = e.app.findCollectionByNameOrId('documents');
+		const byTitle = (t) =>
+			e.app.findFirstRecordByFilter('items', 'trip = {:tripId} && title = {:t}', {
+				tripId: trip.id,
+				t: t
+			});
+		const mkCode = (itemTitle, label, value) => {
+			const doc = new Record(docsCol);
+			doc.set('trip', trip.id);
+			doc.set('item', byTitle(itemTitle).id);
+			doc.set('uploaded_by', ownerMember.id);
+			doc.set('kind', 'code');
+			doc.set('code_label', label);
+			doc.set('code_value', value);
+			e.app.save(doc);
+		};
+		mkCode('American Club check-in', 'Conf #', 'KLR-48291');
+		mkCode('American Club check-in', 'PIN', '4242');
+		mkCode('Blackwolf Run tee time', 'Booking', 'BW-7731-A');
+		const goalsCol = e.app.findCollectionByNameOrId('trip_goals');
+		const goal = new Record(goalsCol);
+		goal.set('trip', trip.id);
+		goal.set('title', 'Play a great golf course');
+		goal.set('created_by', ownerMember.id);
+		goal.set('manual_status', 'unplanned');
+		const linked = [byTitle('Blackwolf Run tee time').id, byTitle('Kayak the Sheboygan').id];
+		try {
+			linked.push(byTitle('Whistling Straits tour').id);
+		} catch (_) {}
+		goal.set('items', linked);
+		e.app.save(goal);
+		goalId = goal.id;
+
+		// A second, DATELESS (forming) trip with a few ideas, for the forming home's idea Rows
+		// and the scenario picks (the pitch page is forming-only).
+		const fslug = slug + '-forming';
+		try {
+			const old = e.app.findFirstRecordByFilter('trips', 'slug = {:s}', { s: fslug });
+			if (old) e.app.delete(old);
+		} catch (_) {}
+		const ft = new Record(tripsCol);
+		ft.set('slug', fslug);
+		ft.set('title', 'Forming Trip');
+		ft.set('timezone', 'UTC');
+		ft.set('created_by', user.id);
+		e.app.save(ft);
+		const fOwner = e.app.findFirstRecordByFilter('trip_members', 'trip = {:t} && user = {:u}', {
+			t: ft.id,
+			u: user.id
+		});
+		const fIdeas = [
+			{ title: 'Doi Suthep sunrise', type: 'activity', location_name: 'Chiang Mai' },
+			{ title: 'Street-food crawl', type: 'meal', location_name: 'Old City' },
+			{ title: 'Riverside guesthouse', type: 'lodging', location_name: 'Pai' },
+			{ title: 'Check the visa rules', type: 'note' }
+		];
+		for (let k = 0; k < fIdeas.length; k++) {
+			const r = new Record(itemsCol);
+			r.set('trip', ft.id);
+			r.set('status', 'unplanned');
+			r.set('sort_order', k);
+			r.set('created_by', fOwner.id);
+			for (const f in fIdeas[k]) r.set(f, fIdeas[k][f]);
+			e.app.save(r);
+		}
+		formingSlug = fslug;
+	}
+
 	// Optional { now: 'hero' | 'free' | 'rail' | 'multi' | 'buckets' | 'deadline' } (#428; 'multi' = #430; 'buckets', 'deadline' = #431): items pinned to the REAL clock on today's
 	// day (days[1]; the trip is UTC, so UTC wall clock = trip-local), so Now has a live
 	// state to photograph. 'hero': a dinner that began 65 min ago and ends in 55, with
@@ -1272,7 +1349,7 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 		}
 	}
 
-	return e.json(200, { tripId: trip.id, slug: slug, phaseId: phaseId, days: summary });
+	return e.json(200, { tripId: trip.id, slug: slug, phaseId: phaseId, goalId: goalId, formingSlug: formingSlug, days: summary });
 });
 
 // ---------------------------------------------------------------------------
