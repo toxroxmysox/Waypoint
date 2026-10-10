@@ -53,6 +53,29 @@ routerAdd('POST', '/api/suggestions/create', (e) => {
 	const isPrivileged = callerRole === 'owner' || callerRole === 'co_owner';
 	const autoApprove = isPrivileged || (callerRole === 'traveler' && autoApproveFlag);
 
+	// #496 — day/phase/assignee ids must belong to THIS trip, or an approved
+	// item points into another trip. Drop foreign ids. Inlined (sandbox).
+	if (payload.day) {
+		try {
+			if (e.app.findRecordById('days', '' + payload.day).getString('trip') !== '' + tripId) payload.day = '';
+		} catch (_) { payload.day = ''; }
+	}
+	if (payload.phase) {
+		try {
+			if (e.app.findRecordById('phases', '' + payload.phase).getString('trip') !== '' + tripId) payload.phase = '';
+		} catch (_) { payload.phase = ''; }
+	}
+	if (Array.isArray(payload.assigned_to)) {
+		const keepAssigned = [];
+		for (let i = 0; i < payload.assigned_to.length; i++) {
+			try {
+				const m = e.app.findRecordById('trip_members', '' + payload.assigned_to[i]);
+				if (m.getString('trip') === '' + tripId && !m.getString('removed_at')) keepAssigned.push(m.id);
+			} catch (_) {}
+		}
+		payload.assigned_to = keepAssigned;
+	}
+
 	const suggestionsCol = e.app.findCollectionByNameOrId('suggestions');
 	const suggestion = new Record(suggestionsCol);
 	suggestion.set('trip', tripId);
@@ -354,6 +377,29 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 			payload.not_going = rawPayload.not_going;
 		}
 
+		// #496 — day/phase/assignee ids must belong to THIS trip, or an approved
+		// item points into another trip. Drop foreign ids. Inlined (sandbox).
+		if (payload.day) {
+			try {
+				if (e.app.findRecordById('days', '' + payload.day).getString('trip') !== '' + tripId) payload.day = '';
+			} catch (_) { payload.day = ''; }
+		}
+		if (payload.phase) {
+			try {
+				if (e.app.findRecordById('phases', '' + payload.phase).getString('trip') !== '' + tripId) payload.phase = '';
+			} catch (_) { payload.phase = ''; }
+		}
+		if (Array.isArray(payload.assigned_to)) {
+			const keepAssigned = [];
+			for (let i = 0; i < payload.assigned_to.length; i++) {
+				try {
+					const m = e.app.findRecordById('trip_members', '' + payload.assigned_to[i]);
+					if (m.getString('trip') === '' + tripId && !m.getString('removed_at')) keepAssigned.push(m.id);
+				} catch (_) {}
+			}
+			payload.assigned_to = keepAssigned;
+		}
+
 		// #196 — never approve an item into phase-less limbo. When the (possibly
 		// owner-edited) payload omits a phase and there's no day, fall back to the
 		// trip's first phase (by order) so the unplanned item is renderable in a
@@ -591,6 +637,29 @@ routerAdd('POST', '/api/suggestions/update', (e) => {
 	}
 	if (!Array.isArray(newPayload.not_going) && stored && Array.isArray(stored.not_going)) {
 		newPayload.not_going = stored.not_going;
+	}
+
+	// #496 — day/phase/assignee ids must belong to THIS trip, or an approved
+	// item points into another trip. Drop foreign ids. Inlined (sandbox).
+	if (newPayload.day) {
+		try {
+			if (e.app.findRecordById('days', '' + newPayload.day).getString('trip') !== '' + tripId) newPayload.day = '';
+		} catch (_) { newPayload.day = ''; }
+	}
+	if (newPayload.phase) {
+		try {
+			if (e.app.findRecordById('phases', '' + newPayload.phase).getString('trip') !== '' + tripId) newPayload.phase = '';
+		} catch (_) { newPayload.phase = ''; }
+	}
+	if (Array.isArray(newPayload.assigned_to)) {
+		const keepAssigned = [];
+		for (let i = 0; i < newPayload.assigned_to.length; i++) {
+			try {
+				const m = e.app.findRecordById('trip_members', '' + newPayload.assigned_to[i]);
+				if (m.getString('trip') === '' + tripId && !m.getString('removed_at')) keepAssigned.push(m.id);
+			} catch (_) {}
+		}
+		newPayload.assigned_to = keepAssigned;
 	}
 
 	suggestion.set('payload', newPayload);
