@@ -61,7 +61,7 @@ test.describe('Trip Mode Door 2 — skip → parking lot + ideas strip (#246)', 
 		await page.waitForURL(`${BASE_URL}/trips/${tripSlug}`, { timeout: 10000 });
 
 		// --- Park a backup idea in the phase (the replacement candidate). ---
-		await page.goto(`${BASE_URL}/trips/${tripSlug}/phases`);
+		await page.goto(`${BASE_URL}/trips/${tripSlug}/phases`, { waitUntil: 'networkidle' });
 		const phaseLink = page.locator(`a[href^="/trips/${tripSlug}/phases/"]:visible`).first();
 		await expect(phaseLink).toBeVisible({ timeout: 5000 });
 		const phaseHref = await phaseLink.getAttribute('href');
@@ -79,7 +79,7 @@ test.describe('Trip Mode Door 2 — skip → parking lot + ideas strip (#246)', 
 
 		// --- Add a PLANNED item onto TODAY (the skip target). Reached via Now's
 		//     Add sheet → "Add item to today" → the item form, day preselected. ---
-		await page.goto(`${BASE_URL}/trips/${tripSlug}/now`);
+		await page.goto(`${BASE_URL}/trips/${tripSlug}/now`, { waitUntil: 'networkidle' });
 		await page.waitForURL('**/now');
 		await page.locator('.md-desktop\\:hidden button[aria-label="Add"]').click();
 		await page.getByText('Add item to today').click();
@@ -128,7 +128,7 @@ test.describe('Trip Mode Door 2 — skip → parking lot + ideas strip (#246)', 
 		await expect(strip.getByText(PLANNED_TITLE)).toBeVisible();
 
 		// --- Reversible: the skipped item is back in the phase parking lot. ---
-		await page.goto(`${BASE_URL}${phaseHref}`);
+		await page.goto(`${BASE_URL}${phaseHref}`, { waitUntil: 'networkidle' });
 		await expect(page.locator(':visible', { hasText: PLANNED_TITLE }).first()).toBeVisible({
 			timeout: 5000
 		});

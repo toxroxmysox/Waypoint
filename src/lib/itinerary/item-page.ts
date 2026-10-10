@@ -231,7 +231,11 @@ export function tripModeView(p: {
 	if (idea) started = false;
 	else if (!Number.isNaN(start)) started = p.now.getTime() >= start;
 	else started = !!p.dayDate && p.dayDate.substring(0, 10) <= p.now.toISOString().substring(0, 10);
-	const live = started && p.item.status !== 'done' ? heroStatus(p.item, p.now) : null;
+	// A start-only item has no end to count to; Now keeps it "now" only on its own day
+	// (until the next start), so a past day's start-only item is never live here.
+	const startOnlyPastDay =
+		!p.item.end_time && !!p.item.start_time && p.item.start_time.substring(0, 10) < p.now.toISOString().substring(0, 10);
+	const live = started && p.item.status !== 'done' && !startOnlyPastDay ? heroStatus(p.item, p.now) : null;
 	return {
 		live,
 		started,

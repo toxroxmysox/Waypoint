@@ -521,7 +521,7 @@ export const actions: Actions = {
 		const { code, logPayment } = parseMarkBooked(await request.formData());
 
 		try {
-			await locals.pb.collection('items').update(item.id, { booked: true, booked_by: membership.id });
+			// Code first: if it fails the item is still unbooked, so a retry works.
 			if (code) {
 				await locals.pb.collection('documents').create({
 					trip: item.trip,
@@ -531,6 +531,7 @@ export const actions: Actions = {
 					code_value: code
 				});
 			}
+			await locals.pb.collection('items').update(item.id, { booked: true, booked_by: membership.id });
 		} catch (err: unknown) {
 			return failBooked(failStatus(err));
 		}

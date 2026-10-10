@@ -86,7 +86,7 @@ test.describe('#249 approve ghost → real item', () => {
 		//    scoped to this phase (a Ghost Card).
 		const traveler = await devLogin(browser, EMAILS.traveler);
 		try {
-			await traveler.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/items/new?phase=${ids.phaseId}`);
+			await traveler.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/items/new?phase=${ids.phaseId}`, { waitUntil: 'networkidle' });
 			// input[name="title"]:visible — the title input has a duplicate id across the
 			// dual tree (#56), so getByLabel fills the hidden tree; scope to the visible one.
 			const titleField = traveler.page.locator('input[name="title"]:visible').first();
@@ -108,7 +108,7 @@ test.describe('#249 approve ghost → real item', () => {
 		//    co_owner (a 2nd member, not the author) votes it.
 		const coOwner = await devLogin(browser, EMAILS.co_owner);
 		try {
-			await coOwner.page.goto(phaseUrl);
+			await coOwner.page.goto(phaseUrl, { waitUntil: 'networkidle' });
 			const ghost = coOwner.page
 				.locator('[aria-label="Pending idea: ' + ideaTitle + '"]')
 				.filter({ visible: true })
@@ -131,7 +131,7 @@ test.describe('#249 approve ghost → real item', () => {
 		const owner = await devLogin(browser, EMAILS.owner);
 		let realItemId = '';
 		try {
-			await owner.page.goto(phaseUrl);
+			await owner.page.goto(phaseUrl, { waitUntil: 'networkidle' });
 			const ghost = owner.page
 				.locator('[aria-label="Pending idea: ' + ideaTitle + '"]')
 				.filter({ visible: true })
@@ -236,7 +236,7 @@ test.describe('#249 approve ghost → real item', () => {
 		const owner = await devLogin(browser, EMAILS.owner);
 		try {
 			const inbox = `${BASE}/trips/${FIXTURE_SLUG}/inbox`;
-			await owner.page.goto(inbox);
+			await owner.page.goto(inbox, { waitUntil: 'networkidle' });
 			const card = owner.page
 				.locator('[aria-label="Pending idea: ' + title + '"]')
 				.filter({ visible: true })

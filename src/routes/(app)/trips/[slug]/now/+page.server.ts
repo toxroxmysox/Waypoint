@@ -1,3 +1,4 @@
+import { orderDayItems } from '$lib/itinerary/timeline';
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Trip, Day, Item, Checklist, Task, TripMember, Vote, Document } from '$lib/types';
@@ -45,11 +46,15 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
 	const tomorrowStr = tomorrow.toISOString().split('T')[0];
 	const tomorrowDay = days.find((d: Day) => d.date.split(/[T ]/)[0] === tomorrowStr) ?? null;
+	// Day-page order (timed by time, untimed woven in by sort_order): a PB sort on
+	// start_time would put every untimed item first, and the preview shows only 3.
 	const tomorrowItems = tomorrowDay
-		? await locals.pb.collection('items').getFullList<Item>({
-				filter: `day = "${tomorrowDay.id}" && end_date = ""`,
-				sort: 'start_time,sort_order'
-			})
+		? orderDayItems(
+				await locals.pb.collection('items').getFullList<Item>({
+					filter: `day = "${tomorrowDay.id}" && end_date = ""`,
+					sort: 'sort_order'
+				})
+			)
 		: [];
 
 	// Spanning multi-day items (lodging, rental car) that cover today: they start

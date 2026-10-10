@@ -99,7 +99,7 @@ test.describe('#250 reject ghost → note + archive', () => {
 		// Owner rejects the ghost in place — a note is required.
 		const owner = await devLogin(browser, EMAILS.owner);
 		try {
-			await owner.page.goto(phaseUrl);
+			await owner.page.goto(phaseUrl, { waitUntil: 'networkidle' });
 			const ghost = owner.page
 				.locator('[aria-label="Pending idea: ' + ideaTitle + '"]')
 				.filter({ visible: true })
@@ -174,7 +174,7 @@ test.describe('#250 reject ghost → note + archive', () => {
 
 		const owner = await devLogin(browser, EMAILS.owner);
 		try {
-			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/items/new?suggestion=${suggestion_id}`);
+			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/items/new?suggestion=${suggestion_id}`, { waitUntil: 'networkidle' });
 			await owner.page
 				.getByRole('button', { name: /^reject$/i })
 				.filter({ visible: true })

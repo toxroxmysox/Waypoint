@@ -304,8 +304,8 @@
 		<div class="min-w-0 space-y-4" data-testid="item-col-main">
 			<!-- #438 — the Hero is the header: icon + title, type in words, the place (opens Maps),
 			     the time, codes, documents, status, Going. Planning Mode: not live, no accent.
-			     Slots left for the next tickets: Hero `children` (#441 Book / Mark booked),
-			     `hero-going` (#440, mounted below), the votes block below (#442). -->
+			     Book / Mark booked ride the `bookingActions` slot (#441); Going is mounted
+			     below (#440); votes follow the Hero (#442). -->
 			<Hero
 				item={heroItem}
 				members={data.members}

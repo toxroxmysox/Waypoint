@@ -281,6 +281,19 @@ describe('tripModeView (#439): the item page in Trip Mode', () => {
 		paid: { isPaid: false },
 		canLogPayment: true
 	};
+	it('a start-only item from a past day is not live (no NOW · since forever)', () => {
+		const v = tripModeView({
+			...base,
+			item: { status: 'planned', start_time: '2026-10-05 19:00:00.000Z' },
+			dayDate: '2026-10-05 00:00:00.000Z'
+		});
+		expect(v.live).toBeNull();
+		expect(v.started).toBe(true);
+	});
+	it('a start-only item that started today is live', () => {
+		const v = tripModeView({ ...base, item: { status: 'planned', start_time: '2026-10-06 18:30:00.000Z' } });
+		expect(v.live).toEqual({ label: 'NOW', text: 'since 6:30p' });
+	});
 	it('ongoing: NOW line from heroStatus, started, Log payment under the Hero', () => {
 		const v = tripModeView(base);
 		expect(v.live).toEqual({ label: 'NOW', text: 'until 8:00p · 1h left' });
