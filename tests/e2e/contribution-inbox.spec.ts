@@ -59,7 +59,7 @@ test.describe('#251 Inbox tabs + vote tallies', () => {
 		await setupFixture();
 	});
 
-	test('owner sees Pending/Approved/Rejected tabs; pending suggestion shows a vote tally', async ({
+	test('owner sees Pending/Approved/Rejected tabs; pending suggestion shows its vote pills', async ({
 		browser
 	}) => {
 		const owner = await devLogin(browser, EMAILS.owner);
@@ -87,10 +87,14 @@ test.describe('#251 Inbox tabs + vote tallies', () => {
 				owner.page.getByRole('tab', { name: /pending/i }).filter({ visible: true }).first()
 			).toContainText(/\(([3-9]|\d{2,})\)/);
 
-			// At least one vote tally is visible on the Pending tab (the voted ghost).
+			// #444 — the Pending tab shows tap-to-vote pills, not a tally line: the voted
+			// ghost's Like pill counts the traveler's one vote.
 			await expect(
-				owner.page.getByLabel(/\d+ votes?/).filter({ visible: true }).first()
-			).toBeVisible();
+				owner.page
+					.locator('[aria-label="Pending idea: Owner ghost (voted)"]')
+					.filter({ visible: true })
+					.locator('[data-vote="like"]')
+			).toHaveAttribute('aria-label', /^Like, 1/);
 
 			// Switching tabs renders the other panels without error.
 			await owner.page.getByRole('tab', { name: /approved/i }).filter({ visible: true }).first().click();
