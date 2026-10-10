@@ -1,5 +1,48 @@
 import { describe, it, expect } from 'vitest';
-import { itemTypeLine, itemTimeText, detailsRows, addLine, newestFirst, hostLabel, goingView, bookingControls, parseMarkBooked, markBookedDestination } from './item-page';
+import { itemTypeLine, itemTimeText, detailsRows, addLine, newestFirst, hostLabel, goingView, bookingControls, parseMarkBooked, markBookedDestination, votesView } from './item-page';
+
+describe('votesView (#442): where votes show on the item page', () => {
+	const base = { canVote: true, canMove: true, myVote: null as { value: string } | null };
+	it('idea (no day): pills + who voted, Add to a day for planners, no Going', () => {
+		const v = votesView({ ...base, item: { status: 'unplanned' } });
+		expect(v.face).toBe('pills');
+		expect(v.showAddToDay).toBe(true);
+		expect(v.showGoing).toBe(false);
+	});
+	it('idea: Add to a day only for those who can move; viewers still see pills', () => {
+		const v = votesView({ ...base, canVote: false, canMove: false, item: { status: 'unplanned' } });
+		expect(v.face).toBe('pills');
+		expect(v.showAddToDay).toBe(false);
+	});
+	it('unplanned with a day is still an idea: pills', () => {
+		const v = votesView({ ...base, item: { status: 'unplanned', day: 'd1' } as any });
+		expect(v.face).toBe('pills');
+		expect(v.showAddToDay).toBe(true);
+	});
+	it('considered with no day is not an idea: the quiet row, no Add to a day', () => {
+		const v = votesView({ ...base, item: { status: 'considered' } });
+		expect(v.face).toBe('row');
+		expect(v.showAddToDay).toBe(false);
+		expect(v.showGoing).toBe(true);
+	});
+	it('done with no day: the quiet row', () => {
+		expect(votesView({ ...base, item: { status: 'done' } }).face).toBe('row');
+	});
+	it('planned item: quiet row only, Going stays', () => {
+		const v = votesView({ ...base, item: { status: 'planned' } });
+		expect(v.face).toBe('row');
+		expect(v.showAddToDay).toBe(false);
+		expect(v.showGoing).toBe(true);
+		expect(v.rowText).toBe('None yet');
+	});
+	it('planned item: row names my vote', () => {
+		expect(votesView({ ...base, myVote: { value: 'love' }, item: { status: 'planned' } }).rowText).toBe('Love');
+		expect(votesView({ ...base, myVote: { value: 'dislike' }, item: { status: 'planned' } }).rowText).toBe('Pass');
+	});
+	it('planned item, viewer: no row', () => {
+		expect(votesView({ ...base, canVote: false, item: { status: 'planned' } }).face).toBe('none');
+	});
+});
 
 describe('goingView (#440): the Hero Going row', () => {
 	const members = [
