@@ -76,10 +76,21 @@
 </section>
 
 {#if items.length === 0}
-	<a
-		href={withOrigin(`/trips/${tripSlug}/items/new?day=${dayId}`, page.url.pathname)}
-		class="border-line text-ink-muted hover:border-ink-muted active:border-ink-muted hover:text-ink-soft active:text-ink-soft mt-2 block rounded-lg border border-dashed px-3 py-2 text-xs"
+	<!-- #427 empty day (story 35): suggest the next step instead of a blank. The
+	     panel sits beside the dndzone, whose min-height stays the drop target. -->
+	<div
+		class="border-line mt-2 flex flex-col items-center gap-3 rounded-lg border border-dashed px-4 py-5 text-center"
+		data-day-empty
 	>
-		Empty. Tap to add one — or drag an idea here.
-	</a>
+		<p class="text-ink-muted text-sm">
+			<span class="text-ink-soft font-medium">Nothing planned</span>
+			<span aria-hidden="true"> · </span>Add something, or drag an idea here.
+		</p>
+		<a
+			href={withOrigin(`/trips/${tripSlug}/items/new?day=${dayId}`, page.url.pathname)}
+			class="border-line text-ink-soft hover:border-ink-muted active:border-ink-muted inline-flex min-h-[44px] items-center rounded-lg border bg-white px-4 text-sm font-medium"
+		>
+			+ Add item
+		</a>
+	</div>
 {/if}
