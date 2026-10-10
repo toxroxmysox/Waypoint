@@ -3,6 +3,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import BottomSheet from '$lib/ui/BottomSheet.svelte';
 	import Button from '$lib/ui/Button.svelte';
+	import { bookingWords, type BookingWords } from '$lib/itinerary/booking-projection';
 
 	// #441 — Mark booked (spec stories 64, 65). An optional confirmation code and a
 	// "Log what I paid next" box. Save writes `booked`; when ticked, the server action
@@ -13,16 +14,21 @@
 		open = $bindable(false),
 		itemUrl,
 		title,
+		words = bookingWords(undefined),
 		error = ''
 	}: {
 		open: boolean;
 		/** `/trips/<slug>/items/<id>` — the action posts here. */
 		itemUrl: string;
 		title: string;
+		/** `Mark booked` / `Mark reserved` (#462). */
+		words?: BookingWords;
 		/** A no-JS post that came back with an error. */
 		error?: string;
 	} = $props();
 
+	// Per-instance id: the item page renders twice (mobile + desktop trees).
+	const uid = $props.id();
 	let saving = $state(false);
 	let failed = $state('');
 	$effect(() => {
@@ -30,7 +36,7 @@
 	});
 </script>
 
-<BottomSheet bind:open title="Mark booked">
+<BottomSheet bind:open title={words.mark}>
 	<form
 		method="POST"
 		action="{itemUrl}?/markBooked"
@@ -40,7 +46,7 @@
 			return async ({ result, update }) => {
 				saving = false;
 				if (result.type === 'failure' || result.type === 'error') {
-					failed = (result.type === 'failure' && (result.data as { bookError?: string })?.bookError) || "Couldn't mark this booked. Try again.";
+					failed = (result.type === 'failure' && (result.data as { bookError?: string })?.bookError) || `Couldn't mark this ${words.done.toLowerCase()}. Try again.`;
 					return;
 				}
 				open = false;
@@ -55,11 +61,11 @@
 		<p class="text-ink-soft text-sm">{title}</p>
 
 		<div>
-			<label for="mark-booked-code" class="text-ink-soft mb-1 block text-sm font-medium">
+			<label for="{uid}-code" class="text-ink-soft mb-1 block text-sm font-medium">
 				Confirmation code <span class="text-ink-muted font-normal">(optional)</span>
 			</label>
 			<input
-				id="mark-booked-code"
+				id="{uid}-code"
 				name="code"
 				type="text"
 				autocomplete="off"

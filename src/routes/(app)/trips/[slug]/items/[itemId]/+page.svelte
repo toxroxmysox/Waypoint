@@ -6,7 +6,7 @@
 	import { addLine, bookingControls, detailsRows, goingView, itemTimeText, itemTypeLine, newestFirst, votesView, tripModeView } from '$lib/itinerary/item-page';
 	import { applyGoing } from '$lib/itinerary/assignment';
 	import { invalidateAll } from '$app/navigation';
-	import { needsBooking } from '$lib/itinerary/booking-projection';
+	import { bookingWords, needsBooking } from '$lib/itinerary/booking-projection';
 	import { documentLabel } from '$lib/documents/files';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
@@ -149,6 +149,8 @@
 	// shows "Add to a day" in the body, so the menu drops its duplicate Move (#500).
 	const menuEntries = $derived(itemMenuEntries({ ...can, canMove: can.canMove && !votesFace.showAddToDay }));
 	let voteRowOpen = $state(false);
+	// #462 — a meal is reserved: "Reserve ↗" / "Mark reserved".
+	const bookWords = $derived(bookingWords(data.item.type));
 	const votersByValue = $derived(
 		votePills(data.votes, data.membership.id, (id) => memberDisplayName(data.members.find((m) => m.id === id)))
 			.filter((p) => p.count > 0)
@@ -204,7 +206,7 @@
 				class="text-ink hover:bg-surface-2 active:bg-surface-2 inline-flex min-h-11 items-center rounded-md px-3 text-sm font-semibold"
 				data-testid="book-link"
 			>
-				Book ↗<span class="sr-only"> (opens in a new tab)</span>
+				{bookWords.book} ↗<span class="sr-only"> (opens in a new tab)</span>
 			</a>
 		{/if}
 		<button
@@ -213,7 +215,7 @@
 			class="text-ink hover:bg-surface-2 active:bg-surface-2 inline-flex min-h-11 items-center rounded-md px-3 text-sm font-semibold"
 			data-testid="mark-booked-open"
 		>
-			Mark booked
+			{bookWords.mark}
 		</button>
 	</span>
 {/snippet}
@@ -600,6 +602,7 @@
 		bind:open={markBookedOpen}
 		{itemUrl}
 		title={data.item.title}
+		words={bookWords}
 		error={form?.bookError}
 	/>
 {/if}

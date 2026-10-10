@@ -59,11 +59,11 @@ test.describe('Book and Mark booked (#441)', () => {
 	let dayDate = '';
 	const ids: Record<string, string> = {};
 
-	async function makeItem(key: string, title: string) {
+	async function makeItem(key: string, title: string, type = 'lodging') {
 		const it = await pb(ownerToken, 'POST', '/api/collections/items/records', {
 			trip: tripId,
 			day: dayId,
-			type: 'lodging',
+			type,
 			title,
 			start_time: `${dayDate} 15:00:00.000Z`,
 			status: 'planned',
@@ -91,6 +91,7 @@ test.describe('Book and Mark booked (#441)', () => {
 		dayDate = day.date.split(' ')[0];
 		await makeItem('pay', 'Harbor Hotel');
 		await makeItem('plain', 'Beach Cabin');
+		await makeItem('meal', 'Harbor Oysters', 'meal');
 	});
 
 	test('Mark booked with a code, then the prefilled Add expense', async ({ browser }) => {
@@ -149,6 +150,26 @@ test.describe('Book and Mark booked (#441)', () => {
 			await vis(page, '[data-testid="mark-booked-form"]').first().getByRole('button', { name: 'Save' }).click();
 			await expect(vis(page, '[data-testid="hero-booked"]').first()).toBeVisible({ timeout: 10000 });
 			expect(page.url()).toContain(`/items/${ids.plain}`);
+		} finally {
+			await ctx.close();
+		}
+	});
+
+	test('a meal reads as a reservation (#462)', async ({ browser }) => {
+		const { ctx, page } = await devLogin(browser, EMAILS.owner);
+		try {
+			await page.goto(`${BASE}/trips/${SLUG}/items/${ids.meal}`);
+			await expect(page.getByRole('heading', { name: 'Harbor Oysters' }).filter({ visible: true }).first()).toBeVisible({
+				timeout: 10000
+			});
+			await page.waitForLoadState('networkidle');
+			await expect(vis(page, '[data-needs-booking]').first()).toContainText('To reserve');
+			const actions = vis(page, '[data-testid="hero-booking-actions"]').first();
+			await expect(actions.getByRole('link', { name: /Reserve ↗/ })).toBeVisible();
+			await actions.getByRole('button', { name: 'Mark reserved' }).click();
+			await expect(page.getByRole('heading', { name: 'Mark reserved' }).filter({ visible: true })).toBeVisible();
+			await vis(page, '[data-testid="mark-booked-form"]').first().getByRole('button', { name: 'Save' }).click();
+			await expect(vis(page, '[data-testid="hero-booked"]').first()).toContainText('Reserved', { timeout: 10000 });
 		} finally {
 			await ctx.close();
 		}

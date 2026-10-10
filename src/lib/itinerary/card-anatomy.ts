@@ -2,6 +2,7 @@
 // (#420; spec §Timeline Rail geometry, §Card anatomy, §Overlap, §Going,
 // §Accessibility; CARD_SYSTEM D2/D8/D9/D10). No DOM, no I/O: layout itself is
 // proven by `pnpm verify:visual`, these are the rules it renders.
+import { bookingWords } from './booking-projection';
 import { formatClock, formatCountdown } from '$lib/shell/format';
 import { timeShape, type TimeFields, type TimeShape } from '$lib/itinerary/timeline';
 import type { ItemType } from '$lib/itinerary/types';
@@ -144,8 +145,11 @@ export function stripEntries(p: {
 	booked: boolean;
 	codes?: { label?: string; value?: string }[];
 	docCount: number;
+	/** The item's type: a meal reads "To reserve" / "Reserved" (#462). */
+	type?: string;
 }): StripEntry[] {
 	const out: StripEntry[] = [];
+	const words = bookingWords(p.type);
 	const overlap = p.mode === 'planning' ? p.overlap : undefined;
 	if (overlap)
 		out.push({
@@ -156,12 +160,12 @@ export function stripEntries(p: {
 			tone: overlap.shared ? 'red' : 'ink'
 		});
 	if (p.needsBooking)
-		out.push({ key: 'needs', kind: 'needs-booking', text: 'To book', label: 'Needs booking', tone: 'gold' });
+		out.push({ key: 'needs', kind: 'needs-booking', text: words.chip, label: words.needs, tone: 'gold' });
 	else if (p.booked) {
 		const code = p.mode === 'trip' ? stripCode(p.codes) : null;
 		if (code)
 			out.push({ key: 'code', kind: 'code', text: code.text, label: code.label, tone: 'ink', copy: code.value });
-		else out.push({ key: 'booked', kind: 'booked', text: 'Booked', label: 'Booked', tone: 'quiet' });
+		else out.push({ key: 'booked', kind: 'booked', text: words.done, label: words.done, tone: 'quiet' });
 	}
 	if (p.docCount > 0)
 		out.push({
@@ -350,7 +354,11 @@ export function cardAccessibleName(p: {
 		p.item.title,
 		p.item.type,
 		p.overlapWith ? `overlaps ${p.overlapWith}` : '',
-		p.needsBooking ? 'needs booking' : p.booked ? 'booked' : ''
+		p.needsBooking
+			? bookingWords(p.item.type).needs.toLowerCase()
+			: p.booked
+				? bookingWords(p.item.type).done.toLowerCase()
+				: ''
 	]
 		.filter(Boolean)
 		.join(', ');
