@@ -4,7 +4,6 @@
 	import type { Phase, Day } from '$lib/types';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
-	import Pill from '$lib/ui/Pill.svelte';
 	import Button from '$lib/ui/Button.svelte';
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import SubTabs from '$lib/ui/SubTabs.svelte';
@@ -23,7 +22,6 @@
 	import RecordView from '$lib/portability/components/RecordView.svelte';
 	import ScenarioBoard from '$lib/ideation/components/ScenarioBoard.svelte';
 	import { goto } from '$app/navigation';
-	import { titleCase } from '$lib/shell/format';
 	import { isTripActive } from '$lib/trip-mode/activation';
 	import { untrack } from 'svelte';
 	import { tripToday, tripTz } from '$lib/shell/trip-time';
@@ -393,9 +391,6 @@
 				</button>
 			</div>
 			<div class="flex flex-col items-end gap-2">
-				<Pill variant={data.membership.role === 'owner' ? 'ink' : 'default'} size="sm">
-					{titleCase(data.membership.role)}
-				</Pill>
 				{#if tripActive}
 					<a
 						href="/trips/{data.trip.slug}/now"
@@ -412,37 +407,6 @@
 		</div>
 	</Card>
 
-	{#if data.keyItems?.length}
-		<!-- #200 — findability lens: flights & stays, the two most-hunted item types,
-		     reachable from the trip home without opening each day. Not a full search. -->
-		<section class="space-y-1.5">
-			<div class="text-ink-muted flex items-center gap-1.5 px-0.5 text-[9.5px] font-bold tracking-[0.14em] uppercase">
-				Flights &amp; stays
-			</div>
-			<Card>
-				<div class="px-4" data-key-items>
-					{#each data.keyItems as it, i (it.id)}
-						{#snippet subline()}
-							{#if it.flight}<FlightSubLine sub={it.flight} />{/if}
-						{/snippet}
-						{#snippet chip()}
-							<NeedsBookingChip />
-						{/snippet}
-						<Row
-							type={it.type}
-							subtype={it.subtype}
-							title={it.title}
-							sub={it.sub}
-							subline={it.flight ? subline : undefined}
-							href={withOrigin(`/trips/${data.trip.slug}/items/${it.id}`, page.url.pathname)}
-							trailing={rowTrailing({ chip: it.needsBooking ? 'needs-booking' : undefined }) === 'chip' ? chip : undefined}
-							divider={i < data.keyItems.length - 1}
-						/>
-					{/each}
-				</div>
-			</Card>
-		</section>
-	{/if}
 	{/if}
 
 	{#if !isClosed && !isForming}
@@ -652,6 +616,39 @@
 					/>
 				{/each}
 			</div>
+		</section>
+	{/if}
+
+	<!-- Scott 2026-10-10: Flights & stays sit BELOW the itinerary (header → welcome → itinerary → flights & stays). -->
+	{#if data.keyItems?.length && !isForming && !(isClosed && data.record && data.share) && !isWrapUp}
+		<!-- #200 — findability lens: flights & stays, the two most-hunted item types,
+		     reachable from the trip home without opening each day. Not a full search. -->
+		<section class="space-y-1.5">
+			<div class="text-ink-muted flex items-center gap-1.5 px-0.5 text-[9.5px] font-bold tracking-[0.14em] uppercase">
+				Flights &amp; stays
+			</div>
+			<Card>
+				<div class="px-4" data-key-items>
+					{#each data.keyItems as it, i (it.id)}
+						{#snippet subline()}
+							{#if it.flight}<FlightSubLine sub={it.flight} />{/if}
+						{/snippet}
+						{#snippet chip()}
+							<NeedsBookingChip />
+						{/snippet}
+						<Row
+							type={it.type}
+							subtype={it.subtype}
+							title={it.title}
+							sub={it.sub}
+							subline={it.flight ? subline : undefined}
+							href={withOrigin(`/trips/${data.trip.slug}/items/${it.id}`, page.url.pathname)}
+							trailing={rowTrailing({ chip: it.needsBooking ? 'needs-booking' : undefined }) === 'chip' ? chip : undefined}
+							divider={i < data.keyItems.length - 1}
+						/>
+					{/each}
+				</div>
+			</Card>
 		</section>
 	{/if}
 	{/if}

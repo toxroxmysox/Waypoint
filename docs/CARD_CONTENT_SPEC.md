@@ -167,6 +167,8 @@ Surface: Now's `IdeasStrip` (free-time / nothing-else Focus, and "Replace it" af
 | Primary action | `Do this` (Light Replanning, one-tap promote), owner / co_owner only, beside the card, 44px hit area, a quiet outlined pill (same style as Closeout's Done / Swap / Skip; Scott 2026-10-10, was clay). Travelers and viewers see no button; travelers advocate with the pills. | `?/promoteIdea` |
 | Voting | Writes through the item page's `?/vote` / `?/unvote` (same as 2d). The Now load supplies `myMemberId` and `canVote` (`role != viewer`). | `now/+page.server.ts` |
 
+
+**Placement (Scott, 2026-10-10):** on phone Now the strip sits **below Coming up** (today's timeline), as a collapsed tap-to-expand row: `Ideas for now · {n}`, with the subline `Pick something to do in your free time`. After a Skip (Door 2) it starts expanded. The desktop rail (2f) is unchanged. The free-time label on the rail is **centred**, like the Morning, Afternoon and Evening dividers.
 ### 2f. Now on desktop — the context rail — NEW by #446 (card system, D13; stories 80, 82, 84)
 
 Surface: at >= 1280px (`lg-desktop`, where the right-hand `ContextRail` exists) on `/trips/{slug}/now`. Approved by Scott 2026-10-06. Below 1280px and on phones nothing moves.
@@ -311,6 +313,8 @@ One two-line Row for every list. Component `Row` (`src/lib/ui/Row.svelte`); deri
 | Sub-line, flight | departure date · `dep → arr` · route | `Thu Oct 1 · 2:05p → 4:20p · MKE → DEN`. Route = airport codes in the labels, else the labels. A later-day arrival reads `6:10a +1`; a clock-less red-eye shows the arrival date. **Overflow:** parts drop in this order: arrival time, departure time, date. The route never drops (CSS truncates it last). Measured with the real font (`FlightSubLine`). |
 | Trailing slot (one value) | `rowTrailing`: chip > cost > people > chevron | Booking list: moss `Booked` chip once checked, else chevron. Flights list: passenger bubbles (max 3, then `+n`), else chevron. Money Still planned: `$cost` (mono). Overview Flights & stays: gold `To book` chip (`NeedsBookingChip`, the #420 / #426 chip) when `needsBooking()`, else chevron. |
 | Tap target | the whole body | One link to the item, at least 44px tall. |
+
+**Placement (Scott, 2026-10-10):** the overview reads trip header → welcome card → Itinerary (phases and days) → Flights & stays, so Flights & stays sits below the itinerary. The trip header no longer shows the viewer's role pill.
 
 Flights & stays on the overview now sorts by date (undated last, then start time) and reads from a small flights-and-lodging query so the main items fetch stays light. 
 

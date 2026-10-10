@@ -291,27 +291,6 @@
 		</Card>
 	{/if}
 
-	<!-- #245 Door 1 / #246 Door 2 — "ideas for now": the current phase's parked
-	     ideas, shown at a free-time / nothing-else Focus (Door 1) OR after a
-	     just-skipped slot (Door 2 — accepting one promotes it into the gap). Same
-	     component, two triggers. Self-hides when the phase has no ideas. -->
-	<!-- #446: at >=1280px the context rail holds this strip; the column stays on today. -->
-	{#if doorOpen || justSkipped}
-		<div class="lg-desktop:hidden">
-		<IdeasStrip
-			ideas={data.ideas}
-			members={data.members}
-			slug={data.trip.slug}
-			canPromote={data.canPromote}
-			myMemberId={data.myMemberId}
-			canVote={data.canVote}
-			heading={justSkipped && !doorOpen ? 'Replace it' : 'Ideas for now'}
-			subheading={justSkipped && !doorOpen
-				? 'Pick a backup from this part of the trip'
-				: 'Backup plans from this part of the trip'}
-		/>
-		</div>
-	{/if}
 
 	<!-- Weight 3: the rest at NORMAL weight (overrides #154's muted later-today
 	     tier). Forward timed items woven with all untimed items. Full cards. -->
@@ -342,6 +321,32 @@
 				/>
 			{/each}
 		</section>
+	{/if}
+
+	<!-- Scott 2026-10-10: below today's timeline, collapsed (expanded after a Skip),
+	     so the next thing in the day is never below a scroll of ideas. -->
+	<!-- #245 Door 1 / #246 Door 2 — "ideas for now": the current phase's parked
+	     ideas, shown at a free-time / nothing-else Focus (Door 1) OR after a
+	     just-skipped slot (Door 2 — accepting one promotes it into the gap). Same
+	     component, two triggers. Self-hides when the phase has no ideas. -->
+	<!-- #446: at >=1280px the context rail holds this strip; the column stays on today. -->
+	{#if doorOpen || justSkipped}
+		<div class="lg-desktop:hidden">
+		<IdeasStrip
+			ideas={data.ideas}
+			members={data.members}
+			slug={data.trip.slug}
+			canPromote={data.canPromote}
+			myMemberId={data.myMemberId}
+			canVote={data.canVote}
+			heading={justSkipped && !doorOpen ? 'Replace it' : 'Ideas for now'}
+			subheading={justSkipped && !doorOpen
+				? 'Pick a backup from this part of the trip'
+				: 'Pick something to do in your free time'}
+			collapsible
+			open={justSkipped}
+		/>
+		</div>
 	{/if}
 
 	<!-- #269 — today's memories from ALL travelers as small cards (the Trip Mode

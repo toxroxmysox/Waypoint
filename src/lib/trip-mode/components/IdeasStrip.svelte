@@ -29,7 +29,9 @@
 		myMemberId = '',
 		canVote = false,
 		heading = 'Ideas for now',
-		subheading = 'Backup plans from this part of the trip'
+		subheading = 'Backup plans from this part of the trip',
+		collapsible = false,
+		open = false
 	}: {
 		/** Current-phase parked ideas (loader-supplied). */
 		ideas?: { item: Item; score: number; votes: Vote[] }[];
@@ -44,6 +46,11 @@
 		canVote?: boolean;
 		heading?: string;
 		subheading?: string;
+		/** Phone Now (Scott 2026-10-10): a tap-to-expand row under today's timeline,
+		 *  so the next thing in the day is never below a scroll of ideas. */
+		collapsible?: boolean;
+		/** Starts expanded (Door 2: a just-skipped slot to refill). */
+		open?: boolean;
 	} = $props();
 
 	// A pending promote keyed by item id → disables just that row's button.
@@ -61,11 +68,31 @@
 
 {#if ideas.length > 0}
 	<section class="space-y-2" aria-label="Ideas for now">
-		<div class="px-1">
-			<p class="text-ink-soft text-sm font-semibold">{heading}</p>
-			<p class="text-ink-muted text-xs">{subheading}</p>
-		</div>
+		{#if collapsible}
+			<details class="group" {open}>
+				<summary
+					class="border-line bg-surface flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-lg border px-4 py-2.5 [&::-webkit-details-marker]:hidden"
+					data-ideas-toggle
+				>
+					<span>
+						<span class="text-ink-soft block text-sm font-semibold">{heading} · <span class="font-mono">{ideas.length}</span></span>
+						<span class="text-ink-muted block text-xs">{subheading}</span>
+					</span>
+					<svg class="text-ink-muted shrink-0 transition-transform group-open:rotate-180" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg>
+				</summary>
+				<div class="mt-3">{@render body()}</div>
+			</details>
+		{:else}
+			<div class="px-1">
+				<p class="text-ink-soft text-sm font-semibold">{heading}</p>
+				<p class="text-ink-muted text-xs">{subheading}</p>
+			</div>
+			{@render body()}
+		{/if}
+	</section>
+{/if}
 
+{#snippet body()}
 		<div class="space-y-3">
 			{#each groups as group (group.type)}
 				<section class="space-y-1.5" aria-label={group.label}>
@@ -105,5 +132,4 @@
 				</section>
 			{/each}
 		</div>
-	</section>
-{/if}
+{/snippet}
