@@ -240,7 +240,7 @@ Field visibility is driven by `getFieldConfig(type).visibility` (`item-fields.ts
 
 - **Cost section:** **one input — "Cost"** (writes `cost_estimate_usd`). Drop the "Actual" input.
 - **Booking section:** `requires_booking` ("Needs a reservation"), `booked`, `reservation_url`, `free_cancellation`. **No `booked_by`, no `paid_by`.**
-- **Flight:** `FlightLookup` autofills `title/description/times/end_date/location_name` **and** (⚠️ to wire) `start_tz`/`end_tz` — persisted, never shown.
+- **Flight:** `FlightLookup` autofills `title/flight_number/description/times/end_date/location_name` **and** (⚠️ to wire) `start_tz`/`end_tz` — persisted, never shown.
 - **Status:** edit UI exposes **Planned / Done** only. `unplanned`/`considered` are system/closeout-driven — do not add them to the dropdown.
 - **assigned_to:** shown only when trip has >1 member. **goals:** "Addresses goal(s)" multi-select.
 
@@ -260,7 +260,14 @@ One two-line Row for every list. Component `Row` (`src/lib/ui/Row.svelte`); deri
 | Trailing slot (one value) | `rowTrailing`: chip > cost > people > chevron | Booking list: moss `Booked` chip once checked, else chevron. Flights list: passenger bubbles (max 3, then `+n`), else chevron. Money Still planned: `$cost` (mono). Overview Flights & stays: gold `To book` chip (`NeedsBookingChip`, the #420 / #426 chip) when `needsBooking()`, else chevron. |
 | Tap target | the whole body | One link to the item, at least 44px tall. |
 
-Flights & stays on the overview now sorts by date (undated last, then start time) and reads from a small flights-and-lodging query so the main items fetch stays light. The flight title and `UA 1234 · MKE → DEN` place line are #435.
+Flights & stays on the overview now sorts by date (undated last, then start time) and reads from a small flights-and-lodging query so the main items fetch stays light. 
+
+#### Flight title and place line — NEW by #435 (card system, D2; supersedes the AC wording per #463)
+
+- **Stored number:** `items.flight_number` (text, flight-only, migration 0075). The flight lookup writes it, formatted `UA 1234`.
+- **Default title** (written by the lookup; the field stays editable): `{number} to {arrival city}`, e.g. `UA 1234 to Denver`. No city known: the airport code (`UA 1234 to DEN`). No number: `Flight to {city|code}`. Derivation: `flightTitle` in `src/lib/itinerary/flight-place.ts`.
+- **Place line** (Card meta and the Row sub-line's route part): `MKE → DEN`. The number leads (`NK 345 · MKE → DEN`) only when a number is stored and the title does not already contain it (spaces/case ignored), so new flights print it once and existing flights keep it. Derivation: `flightPlaceLine`.
+- Existing flights keep their titles; none are migrated.
 
 ## Cut list (do not render; schema columns retained per append-only rule)
 
