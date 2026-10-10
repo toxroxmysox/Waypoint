@@ -259,6 +259,8 @@
 						dndEnabled={true}
 						dragActive={zone.dragActive}
 						pullUp={railZones.pullUp}
+						dragDisabled={railZones.dragDisabled}
+						canPullUp={railZones.canPullUp}
 						onConsider={zone.onConsider}
 						onFinalize={zone.onFinalize}
 					/>

@@ -16,6 +16,7 @@
 	import { ideaScores } from '$lib/itinerary/idea-groups';
 	import ParkingDivider from '$lib/itinerary/components/ParkingDivider.svelte';
 	import DragDropTimeline from '$lib/itinerary/components/DragDropTimeline.svelte';
+	import { itemPermissions } from '$lib/itinerary/item-actions';
 	import SpanBand from '$lib/itinerary/components/SpanBand.svelte';
 	import ServerErrorAlert from '$lib/ui/ServerErrorAlert.svelte';
 
@@ -160,8 +161,10 @@
 		scoreById={ideaScores(data.votesByItem)}
 		tripSlug={data.trip.slug}
 		dayId={data.day.id}
+		canArrange={data.membership.role === 'owner' || data.membership.role === 'co_owner'}
+		canPullUp={(i) => itemPermissions(data.membership, i).canMove}
 	>
-		{#snippet children({ timelineItems, pullUp, onTimelineConsider, onTimelineFinalize, parkingZones, planDrop })}
+		{#snippet children({ timelineItems, pullUp, onTimelineConsider, onTimelineFinalize, parkingZones, planDrop, dragDisabled, canPullUp })}
 			<!-- Items -->
 			<section class="space-y-1.5">
 				<SectionH>
@@ -186,6 +189,7 @@
 					onConsider={onTimelineConsider}
 					onFinalize={onTimelineFinalize}
 					{planDrop}
+					{dragDisabled}
 				/>
 			</section>
 
@@ -206,6 +210,8 @@
 						myMemberId={data.membership.id}
 						canVote={data.membership.role !== 'viewer'}
 						dragActive={zone.dragActive}
+						{dragDisabled}
+						{canPullUp}
 						{pullUp}
 						onConsider={zone.onConsider}
 						onFinalize={zone.onFinalize}

@@ -23,6 +23,8 @@
 		dndEnabled = false,
 		collapsed = false,
 		dragActive = false,
+		dragDisabled = false,
+		canPullUp = () => true,
 		pullUp = () => {},
 		onConsider = () => {},
 		onFinalize = () => {}
@@ -45,6 +47,10 @@
 		collapsed?: boolean;
 		/** A drag is in flight anywhere on the day: the collapsed strip grows so the drop target is easy to hit (#294). */
 		dragActive?: boolean;
+		/** #499 — the viewer can't rearrange the day: cards render but don't drag. */
+		dragDisabled?: boolean;
+		/** #499 — whether this idea shows the pull-up chevron (the viewer may move it). */
+		canPullUp?: (item: Item) => boolean;
 		/** Tap-to-plan from the pull-up chevron (appends the idea to the day). */
 		pullUp?: (itemId: string) => void;
 		onConsider?: (e: CustomEvent<DndEvent<Item>>) => void;
@@ -92,7 +98,7 @@
 		data-parking-zone
 		use:dndzone={{
 			items,
-			dragDisabled: false,
+			dragDisabled,
 			type: 'itinerary-item',
 			flipDurationMs: FLIP_MS,
 			dropTargetStyle: {},
@@ -133,6 +139,7 @@
 							<IdeaCard {item} {tripSlug} votes={votesByItem[item.id] ?? []} {members} {myMemberId} {canVote} />
 						</div>
 						<!-- Pull-up: the owner's one primary action on the card (tap to plan). -->
+						{#if canPullUp(item)}
 						<button
 							type="button"
 							class="text-ink-muted hover:text-ink-soft active:text-ink-soft flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center"
@@ -143,6 +150,7 @@
 								<polyline points="18 15 12 9 6 15" />
 							</svg>
 						</button>
+						{/if}
 					</div>
 				{/if}
 			</div>
@@ -168,11 +176,13 @@
 					<div class="min-w-0 flex-1">
 						<IdeaCard {item} {tripSlug} votes={votesByItem[item.id] ?? []} {members} {myMemberId} {canVote} />
 					</div>
-					<div class="text-ink-muted flex shrink-0 items-center px-1" aria-label="Pull up to plan">
-						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-							<polyline points="18 15 12 9 6 15" />
-						</svg>
-					</div>
+					{#if canPullUp(item)}
+						<div class="text-ink-muted flex shrink-0 items-center px-1" aria-label="Pull up to plan">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<polyline points="18 15 12 9 6 15" />
+							</svg>
+						</div>
+					{/if}
 				</div>
 			</div>
 		{/each}

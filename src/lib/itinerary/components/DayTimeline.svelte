@@ -19,7 +19,8 @@
 		members = [],
 		onConsider = () => {},
 		onFinalize = () => {},
-		planDrop = false
+		planDrop = false,
+		dragDisabled = false
 	}: {
 		items: Item[];
 		tripSlug: string;
@@ -31,6 +32,8 @@
 		onFinalize?: (e: CustomEvent<DndEvent<Item>>) => void;
 		/** An idea this day accepts is being dragged: highlight the timeline as a drop target (#445). */
 		planDrop?: boolean;
+		/** #499 — the viewer can't rearrange the day (server refuses the rebalance). */
+		dragDisabled?: boolean;
 	} = $props();
 
 	// Per-item slot label, keyed for O(1) lookup. `items` already arrives in
@@ -71,7 +74,7 @@
 	data-plan-drop={planDrop || undefined}
 	class="space-y-2 rounded-lg {items.length === 0 ? 'min-h-[8.5rem]' : 'min-h-[3rem]'} transition-[outline-color,background-color] duration-150"
 	style={planDrop ? 'outline: 2px dashed var(--color-accent); outline-offset: 2px; background-color: var(--color-accent-tint)' : ''}
-	use:dndzone={{ items, dragDisabled: false, type: 'itinerary-item', flipDurationMs: FLIP_MS, dropTargetStyle: {}, useCursorForDetection: true, delayTouchStart: LONG_PRESS_MS }}
+	use:dndzone={{ items, dragDisabled, type: 'itinerary-item', flipDurationMs: FLIP_MS, dropTargetStyle: {}, useCursorForDetection: true, delayTouchStart: LONG_PRESS_MS }}
 	onconsider={onConsider}
 	onfinalize={onFinalize}
 >

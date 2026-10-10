@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import type { SubmitFunction } from '@sveltejs/kit';
+	import { toast } from '$lib/shell/stores/toast';
 	import { onMount } from 'svelte';
 	import { dayRail } from '$lib/itinerary/day-rail.svelte';
 	import { canPlanOnDay } from '$lib/itinerary/drag-to-plan';
@@ -35,6 +37,8 @@
 		scoreById = {},
 		tripSlug,
 		dayId,
+		canArrange = true,
+		canPullUp = () => true,
 		children
 	}: {
 		dayItems: Item[];
@@ -45,6 +49,14 @@
 		scoreById?: Record<string, number>;
 		tripSlug: string;
 		dayId: string;
+		/**
+		 * #499 — may the viewer rearrange the day? A drag rebalances EVERY day item's
+		 * sort_order, which items.pb.js only allows an owner/co_owner. False disables
+		 * drag on the timeline and the parking zones.
+		 */
+		canArrange?: boolean;
+		/** #499 — per idea: may the viewer tap-to-plan it (itemPermissions.canMove)? */
+		canPullUp?: (item: Item) => boolean;
 		children: Snippet<
 			[
 				{
@@ -56,6 +68,9 @@
 					parkingZones: ParkingZone[];
 					/** An idea that this day accepts is in flight: the timeline offers itself as a drop target (#445). */
 					planDrop: boolean;
+					/** #499 — the viewer can't rearrange: render cards, but no drag. */
+					dragDisabled: boolean;
+					canPullUp: (item: Item) => boolean;
 				}
 			]
 		>;
@@ -78,6 +93,19 @@
 		for (const zone of parkingByPhase) next[zone.phaseId] = ideaOrder(zone.items);
 		parkingItemsByPhase = next;
 	});
+
+	// #499 — a refused move used to leave the card where it was dropped, silently,
+	// until reload: enhance doesn't invalidate on failure. Snap back and say so.
+	const revertOnFailure: SubmitFunction = () => {
+		return async ({ result, update }) => {
+			if (result.type === 'failure' || result.type === 'error') {
+				reseed();
+				toast.show("Couldn't move that. Reload the page and try again.", 'error');
+				return;
+			}
+			await update();
+		};
+	};
 
 	// Re-seed both surfaces to server truth (used for snapback / reject reverts).
 	// queued so it wins the race against the other zone's finalize handler.
@@ -243,7 +271,7 @@
 	// instance in the desktop tree publishes (AppShell renders the page twice).
 	onMount(() => {
 		if (!reorderForm?.closest('[data-shell="desktop"]')) return;
-		const mine = () => ({ zones: parkingZones, pullUp });
+		const mine = () => ({ zones: parkingZones, pullUp, dragDisabled: !canArrange, canPullUp });
 		dayRail.get = mine;
 		return () => {
 			if (dayRail.get === mine) dayRail.get = null;
@@ -256,15 +284,15 @@
 <!-- reorder/pullToPlan rebalance the WHOLE day to the resulting display order
      (#237) — `order` is the comma-joined item ids; an empty `order` on pull means
      tap-to-plan (append to the tail). -->
-<form bind:this={reorderForm} method="POST" action="?/reorder" use:enhance class="hidden">
+<form bind:this={reorderForm} method="POST" action="?/reorder" use:enhance={revertOnFailure} class="hidden">
 	<input type="hidden" name="item_id" value={formItemId} />
 	<input type="hidden" name="order" value={formOrder} />
 </form>
-<form bind:this={pullForm} method="POST" action="?/pullToPlan" use:enhance class="hidden">
+<form bind:this={pullForm} method="POST" action="?/pullToPlan" use:enhance={revertOnFailure} class="hidden">
 	<input type="hidden" name="item_id" value={formItemId} />
 	<input type="hidden" name="order" value={formOrder} />
 </form>
-<form bind:this={pushForm} method="POST" action="?/pushToParking" use:enhance class="hidden">
+<form bind:this={pushForm} method="POST" action="?/pushToParking" use:enhance={revertOnFailure} class="hidden">
 	<input type="hidden" name="item_id" value={formItemId} />
 </form>
 
@@ -274,5 +302,7 @@
 	onTimelineConsider,
 	onTimelineFinalize,
 	parkingZones,
-	planDrop
+	planDrop,
+	dragDisabled: !canArrange,
+	canPullUp
 })}

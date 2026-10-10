@@ -17,6 +17,9 @@ export interface RailZone {
 export interface DayRailBundle {
 	zones: RailZone[];
 	pullUp: (itemId: string) => void;
+	/** #499 — the viewer can't rearrange the day. */
+	dragDisabled: boolean;
+	canPullUp: (item: Item) => boolean;
 }
 
 export const dayRail = $state<{ get: (() => DayRailBundle) | null }>({ get: null });
