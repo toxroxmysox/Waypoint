@@ -24,7 +24,7 @@ PROCESS (svw; load each skill by name with the Skill tool)
 - svw:verification-before-completion before you report done.
 
 ENV (a fresh worktree has nothing)
-- `pnpm install --ignore-scripts && pnpm exec svelte-kit sync`. Bare `pnpm install` runs the `prepare` script's `playwright install` (every browser), and parallel worktrees race it into a hang. Browsers are installed once, centrally, by the PM.
+- `pnpm install`. It no longer downloads browsers (#457). Browsers are installed once, centrally, by the PM (`pnpm exec playwright install chromium`).
 - Copy .env.local from the main checkout WITHOUT the mail keys: `grep -vE '^(RESEND_|SMTP_)' <main>/.env.local > .env.local` (gitignored — never commit it). The real file holds a live Resend key; harnesses source it and would send real email.
 - Copy `backend/pocketbase` in from the main checkout — **the binary is gitignored, so NO worktree ever has it**, and without it every PB-backed check (e2e, `verify:visual`, the probe) dies with `pocketbase exited (1)` after a 45s timeout that looks like a port problem. Bit wave 3.
 - Copy `.wolf/` in for cerebrum context: `cp -r <main-checkout>/.wolf .wolf` — without it you're blind to the Do-Not-Repeat scars (gitignored, absent from worktrees). Your `.wolf` edits are throwaway; the PM writes canonical `.wolf` at integration.
