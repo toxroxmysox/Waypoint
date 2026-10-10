@@ -725,6 +725,13 @@ describe('getNowFeed — overnight flight stays discrete (#498)', () => {
 		if (feed.focus.kind === 'mid-event') expect(feed.focus.currentItem.id).toBe('redeye');
 	});
 
+	it('the day it lands: Hero while in the air, Earlier today after landing', () => {
+		const mid = getNowFeed([redEye], new Date('2026-10-16T03:00:00Z'), true);
+		expect(mid.focus.kind).toBe('mid-event');
+		const after = getNowFeed([redEye], new Date('2026-10-16T09:00:00Z'), true);
+		expect(after.pastItems.map((i) => i.id)).toEqual(['redeye']);
+	});
+
 	it('lodging with an end_date is still a Span (not bucketed)', () => {
 		const hotel = makeItem({ id: 'hotel', type: 'lodging', start_time: '2026-10-15 15:00:00.000Z', end_date: '2026-10-18 00:00:00.000Z' });
 		const feed = getNowFeed([hotel], new Date('2026-10-15T18:00:00Z'), true);

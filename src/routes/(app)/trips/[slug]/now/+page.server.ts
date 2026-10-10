@@ -36,7 +36,9 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	// side via `getNowFeed`; the loader just supplies the full set.
 	const todayItems = today
 		? await locals.pb.collection('items').getFullList<Item>({
-				filter: `day = "${today.id}" && ${DISCRETE_FILTER}`,
+				// #498 — plus a red-eye that departed on an earlier day and lands today:
+				// it is discrete now, so it is on no day's list but its departure day's.
+				filter: `(day = "${today.id}" && ${DISCRETE_FILTER}) || (trip = "${trip.id}" && type = "flight" && day != "${today.id}" && end_date >= "${todayStr} 00:00:00" && end_date <= "${todayStr} 23:59:59")`,
 				sort: 'start_time,sort_order'
 			})
 		: [];
