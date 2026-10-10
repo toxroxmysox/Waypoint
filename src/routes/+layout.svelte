@@ -104,6 +104,7 @@
 
 <A2HSBanner />
 
+<div class="edge-top-band" aria-hidden="true"></div>
 {@render children()}
 
 <Toast />

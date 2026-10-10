@@ -88,7 +88,7 @@
 {:else}
 	<!-- Mobile: content + bottom nav -->
 	<div
-		class="md-desktop:hidden"
+		class="md-desktop:hidden pt-[var(--edge-top)]"
 		style="--color-accent: {mode === 'trip' ? 'var(--color-clay)' : 'var(--color-moss)'}; --color-accent-tint: {mode === 'trip' ? 'var(--color-clay-tint)' : 'var(--color-moss-tint)'}"
 	>
 		<!-- Automatic offline banner (#255): self-hides when online; prominent at the
@@ -106,7 +106,7 @@
 
 	<!-- Desktop: side rail + content + context rail -->
 	<div
-		class="hidden md-desktop:block"
+		class="hidden md-desktop:block pt-[var(--edge-top)]"
 		data-shell="desktop"
 		style="--color-accent: {mode === 'trip' ? 'var(--color-clay)' : 'var(--color-moss)'}; --color-accent-tint: {mode === 'trip' ? 'var(--color-clay-tint)' : 'var(--color-moss-tint)'}"
 	>
