@@ -1215,6 +1215,45 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 		formingSlug = fslug;
 	}
 
+	// Optional { suggestions: true } (#444): three pending Suggestions in the first phase
+	// (two authors, with place + cost, one with votes) for the pending idea card on Phase
+	// Detail and the Inbox. Off by default: the fullness matrix is untouched.
+	if (info.body && info.body['suggestions'] && phaseId) {
+		const tripMembersCol = e.app.findCollectionByNameOrId('trip_members');
+		const mkMember = (name) => {
+			const m = new Record(tripMembersCol);
+			m.set('trip', trip.id);
+			m.set('role', 'traveler');
+			m.set('placeholder_name', name);
+			m.set('display_name', name);
+			e.app.save(m);
+			return m.id;
+		};
+		const sJess = mkMember('Jess');
+		const sSam = mkMember('Sam');
+		const sugCol = e.app.findCollectionByNameOrId('suggestions');
+		const sugVotesCol = e.app.findCollectionByNameOrId('suggestion_votes');
+		const mkSug = (author, payload, votes) => {
+			const sg = new Record(sugCol);
+			sg.set('trip', trip.id);
+			sg.set('author', author);
+			sg.set('target_type', 'new_item');
+			sg.set('payload', Object.assign({ phase: phaseId }, payload));
+			sg.set('status', 'pending');
+			e.app.save(sg);
+			for (const v of votes) {
+				const sv = new Record(sugVotesCol);
+				sv.set('suggestion', sg.id);
+				sv.set('member', v[0]);
+				sv.set('value', v[1]);
+				e.app.save(sv);
+			}
+		};
+		mkSug(sJess, { title: 'Rooftop ramen night', type: 'meal', location_name: 'Menya Rui', cost_estimate_usd: 28 }, [[sSam, 'love']]);
+		mkSug(sSam, { title: 'Sunrise dune hike', type: 'activity', location_name: 'Kohler-Andrae State Park' }, [[sJess, 'like'], [ownerMember.id, 'flexible']]);
+		mkSug(sJess, { title: 'Shuttle to the course', type: 'transportation', cost_estimate_usd: 15 }, []);
+	}
+
 	// #439: ids of the `now` seed's items, returned as `nowItems` ({ live, later }) so verify:visual can open their item pages.
 	const nowItems = {};
 

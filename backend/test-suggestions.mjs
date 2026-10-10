@@ -391,6 +391,85 @@ console.log('\n14. #402 not going on approval (author-only, exclusive)');
 	}
 }
 
+// ─── 15. #444 — Save: update a pending suggestion's payload, status unchanged ───
+// POST /api/suggestions/update: owner/co_owner only; pending only; replaces the
+// payload; the author's not going survives an edit that omits it.
+
+console.log('\n15. #444 update (Save keeps it pending)');
+{
+	const sameIds = (a, b) => Array.isArray(a) && a.length === b.length && a.every((x) => b.includes(x));
+	const mk = async (title, extra = {}) => {
+		const c = await api('POST', '/api/suggestions/create', {
+			trip_id: tripId,
+			payload: { ...samplePayload, title, ...extra }
+		}, tokens.traveler);
+		return c.json?.suggestion_id || '';
+	};
+	const read = async (id) => {
+		const r = await api('GET', `/api/suggestions/list?trip_id=${tripId}`, null, tokens.owner);
+		return (r.json?.items || []).find((s) => s.id === id);
+	};
+
+	const sid = await mk('Save me (#444)', { not_going: [memberIds.traveler] });
+	const edited = { ...samplePayload, title: 'Saved by owner (#444)', description: 'Edited' };
+
+	for (const role of ['traveler', 'viewer', 'non_member']) {
+		const r = await api('POST', '/api/suggestions/update', { suggestion_id: sid, payload: edited }, tokens[role]);
+		r.status === 403 ? pass(`${role} cannot update a suggestion (403)`) : fail(`${role} cannot update`, `${r.status} ${JSON.stringify(r.json)}`);
+	}
+	const anon = await api('POST', '/api/suggestions/update', { suggestion_id: sid, payload: edited });
+	anon.status === 401 ? pass('unauthenticated update -> 401') : fail('unauthenticated update', `${anon.status}`);
+	const untouched = await read(sid);
+	untouched?.payload?.title === 'Save me (#444)' ? pass('refused updates left the payload untouched') : fail('payload untouched after refused updates', JSON.stringify(untouched?.payload));
+
+	const bad = await api('POST', '/api/suggestions/update', { suggestion_id: sid, payload: { ...edited, title: '  ' } }, tokens.owner);
+	bad.status === 400 ? pass('update with blank title -> 400') : fail('blank title', `${bad.status}`);
+	const noId = await api('POST', '/api/suggestions/update', { payload: edited }, tokens.owner);
+	noId.status === 400 ? pass('update without suggestion_id -> 400') : fail('missing id', `${noId.status}`);
+
+	const ok = await api('POST', '/api/suggestions/update', { suggestion_id: sid, payload: edited }, tokens.owner);
+	const after = await read(sid);
+	ok.status === 200 && after?.status === 'pending' && after?.payload?.title === 'Saved by owner (#444)'
+		? pass('owner Save -> 200, payload replaced, still pending')
+		: fail('owner Save', `${ok.status} ${JSON.stringify(ok.json)} ${JSON.stringify(after)}`);
+	sameIds(after?.payload?.not_going, [memberIds.traveler])
+		? pass('Save keeps the author\'s not going when the edit omits it')
+		: fail('Save keeps not_going', JSON.stringify(after?.payload?.not_going));
+	!after?.reviewed_at
+		? pass('Save does not stamp reviewed_at') : fail('Save stamped reviewed_at', after?.reviewed_at);
+
+	const co = await api('POST', '/api/suggestions/update', { suggestion_id: sid, payload: { ...edited, title: 'Saved by co-owner (#444)' } }, tokens.co_owner);
+	co.status === 200 ? pass('co_owner Save -> 200') : fail('co_owner Save', `${co.status} ${JSON.stringify(co.json)}`);
+
+	// Approve after Save: the saved edit is what lands, with the author's not going.
+	const ap = await api('POST', '/api/suggestions/review', { suggestion_id: sid, action: 'approve' }, tokens.owner);
+	if (ap.json?.item_id) {
+		const it = (await api('GET', `/api/collections/items/records/${ap.json.item_id}`, null, tokens.owner)).json || {};
+		it.title === 'Saved by co-owner (#444)' && sameIds(it.not_going, [memberIds.traveler])
+			? pass('approve after Save -> the saved edit lands, author not going kept')
+			: fail('approve after Save', `title=${it.title} not_going=${JSON.stringify(it.not_going)}`);
+	} else {
+		fail('approve after Save', `${ap.status} ${JSON.stringify(ap.json)}`);
+	}
+
+	const late = await api('POST', '/api/suggestions/update', { suggestion_id: sid, payload: edited }, tokens.owner);
+	late.status === 400 ? pass('update of a non-pending suggestion -> 400') : fail('update non-pending', `${late.status}`);
+
+	// Carried from #402: Edit & Approve (edited payload without not_going) must not
+	// drop the author's three-state Going answer.
+	const eid = await mk('Edit approve keeps not going (#444)', { not_going: [memberIds.traveler] });
+	const noNg = { ...samplePayload, title: 'Edited, no not_going (#444)' };
+	const ea = await api('POST', '/api/suggestions/review', { suggestion_id: eid, action: 'approve', payload: noNg }, tokens.owner);
+	if (ea.json?.item_id) {
+		const it = (await api('GET', `/api/collections/items/records/${ea.json.item_id}`, null, tokens.owner)).json || {};
+		sameIds(it.not_going, [memberIds.traveler])
+			? pass('Edit & Approve keeps the author\'s not going (payload omitted it)')
+			: fail('Edit & Approve keeps not_going', JSON.stringify(it.not_going));
+	} else {
+		fail('Edit & Approve keeps not_going', `${ea.status} ${JSON.stringify(ea.json)}`);
+	}
+}
+
 // ─── summary ─────────────────────────────────────────────────────────────────
 
 console.log(`\n${'─'.repeat(50)}`);

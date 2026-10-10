@@ -45,7 +45,7 @@
 					<IdeaCard item={card.item} {tripSlug} votes={card.votes} {members} {myMemberId} canVote={canVoteGhosts} />
 				{:else}
 					<!-- #248 — a pending suggestion: dotted, votable, in its type group. -->
-					<GhostCard {card} {members} {myMemberId} canVote={canVoteGhosts} canReview={canReviewGhosts} />
+					<GhostCard suggestion={card.suggestion} votes={card.votes} {members} {myMemberId} canVote={canVoteGhosts} canReview={canReviewGhosts} />
 				{/if}
 			{/each}
 		</section>

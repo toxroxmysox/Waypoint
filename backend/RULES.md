@@ -80,7 +80,7 @@ The current baseline lets any member do anything. SPEC §3 carves out role-speci
 | items.create direct | ✓ | ✓ | — (suggests instead) | — |
 | items.update / delete | ✓ | ✓ | — | — |
 | suggestions.create (target_type=new_item) | ✓ auto-approve | ✓ auto-approve | ✓ queued unless trip.auto_approve_suggestions | — |
-| suggestions.update (approve/reject) | ✓ | ✓ | — | — |
+| suggestions.update (approve/reject; Save via `/api/suggestions/update`, #444, pending only) | ✓ | ✓ | — | — |
 | suggestions.create (target_type=comment) | ✓ | ✓ | ✓ | ✓ |
 | checklist_items.update (check/uncheck) | ✓ | ✓ | ✓ | — |
 

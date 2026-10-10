@@ -156,4 +156,49 @@ test.describe('#250 reject ghost → note + archive', () => {
 			false
 		);
 	});
+	// #444 — Reject from the Suggestion's edit view keeps the one-line note rule.
+	test('edit view: Reject needs a note, then archives the suggestion', async ({ browser }) => {
+		const title = `Reject from edit ${Date.now()}`;
+		const note = 'Not this trip';
+		const travelerToken = await token(EMAILS.traveler);
+		const createRes = await fetch(`${PB_BASE}/api/suggestions/create`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${travelerToken}` },
+			body: JSON.stringify({
+				trip_id: ids.tripId,
+				payload: { title, type: 'activity', phase: ids.phaseId }
+			})
+		});
+		expect(createRes.ok).toBeTruthy();
+		const { suggestion_id } = (await createRes.json()) as { suggestion_id: string };
+
+		const owner = await devLogin(browser, EMAILS.owner);
+		try {
+			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/items/new?suggestion=${suggestion_id}`);
+			await owner.page
+				.getByRole('button', { name: /^reject$/i })
+				.filter({ visible: true })
+				.first()
+				.click();
+			const confirm = owner.page
+				.getByRole('button', { name: /confirm reject/i })
+				.filter({ visible: true })
+				.first();
+			await expect(confirm).toBeDisabled();
+			await owner.page.locator('input[name="review_note"]:visible').first().fill(note);
+			await expect(confirm).toBeEnabled();
+			await confirm.click();
+			await owner.page.waitForURL(/\/inbox$/, { timeout: 10000 });
+		} finally {
+			await owner.ctx.close();
+		}
+
+		const ownerToken = await token(EMAILS.owner);
+		const res = await fetch(
+			`${PB_BASE}/api/suggestions/list?trip_id=${ids.tripId}&status=rejected`,
+			{ headers: { Authorization: `Bearer ${ownerToken}` } }
+		);
+		const rejected = ((await res.json()) as { items: Array<{ id: string; review_note: string }> }).items;
+		expect(rejected.find((s) => s.id === suggestion_id)?.review_note).toBe(note);
+	});
 });

@@ -1,6 +1,7 @@
 import { fail, error } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Suggestion, SuggestionVote } from '$lib/types';
+import type { Suggestion, SuggestionVote, TripMember } from '$lib/types';
+import { withAvatarUrls } from '$lib/collaboration/member-avatar';
 import type { DisplayVote } from '$lib/collaboration/voting';
 
 const PB_BASE = process.env.PUBLIC_PB_URL || 'http://127.0.0.1:8090';
@@ -61,12 +62,26 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 			// Non-fatal — tallies just render empty.
 		}
 	}
+	// #444 — the pending idea card shows tap-to-vote pills; they need the roster
+	// (names in the tooltip) and the viewer's own member id.
+	let members: TripMember[] = [];
+	try {
+		members = await locals.pb.collection('trip_members').getFullList<TripMember>({
+			filter: `trip = "${trip.id}" && removed_at = ""`,
+			expand: 'user'
+		});
+	} catch (_) {
+		// Non-fatal — pills render without names.
+	}
+
 	const attach = (list: Suggestion[]): InboxSuggestion[] =>
 		list.map((s) => ({ ...s, votes: votesBySuggestion[s.id] ?? [] }));
 
 	return {
 		trip,
 		membership,
+		members: withAvatarUrls(locals.pb, members),
+		myMemberId: membership.id,
 		pending: attach(pending),
 		approved: attach(approved),
 		rejected: attach(rejected)
@@ -74,6 +89,58 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 };
 
 export const actions: Actions = {
+	// #444 — vote on a pending idea card in the Inbox (same writes as Phase
+	// Detail's voteGhost/unvoteGhost: a suggestion_votes row; PB rules (0049) keep
+	// it member-only, non-viewer, and never on your own suggestion).
+	voteGhost: async ({ request, params, locals }) => {
+		const trip = await locals.pb
+			.collection('trips')
+			.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+		const data = await request.formData();
+		const suggestionId = data.get('suggestion_id')?.toString();
+		const value = data.get('value')?.toString();
+		if (!suggestionId) return fail(400, { error: 'Missing suggestion.' });
+		if (!value || !['love', 'like', 'flexible', 'dislike'].includes(value)) {
+			return fail(400, { error: 'Invalid vote.' });
+		}
+		let membership: TripMember;
+		try {
+			membership = await locals.pb
+				.collection('trip_members')
+				.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`);
+		} catch {
+			return fail(403, { error: 'Not a member of this trip.' });
+		}
+		try {
+			const existing = await locals.pb.collection('suggestion_votes').getFullList({
+				filter: `suggestion = "${suggestionId}" && member = "${membership.id}"`,
+				fields: 'id'
+			});
+			if (existing.length > 0) {
+				await locals.pb.collection('suggestion_votes').update(existing[0].id, { value });
+			} else {
+				await locals.pb
+					.collection('suggestion_votes')
+					.create({ suggestion: suggestionId, member: membership.id, value });
+			}
+			return { success: true };
+		} catch (err: unknown) {
+			return fail(500, { error: err instanceof Error ? err.message : 'Failed to vote.' });
+		}
+	},
+
+	unvoteGhost: async ({ request, locals }) => {
+		const data = await request.formData();
+		const voteId = data.get('vote_id')?.toString();
+		if (!voteId) return fail(400, { error: 'Missing vote.' });
+		try {
+			await locals.pb.collection('suggestion_votes').delete(voteId);
+			return { success: true };
+		} catch (err: unknown) {
+			return fail(500, { error: err instanceof Error ? err.message : 'Failed to clear vote.' });
+		}
+	},
+
 	// #250 — reject requires a one-line note (no one-tap reject). The note is
 	// stored on the suggestion and carried in the suggestion_rejected notice; the
 	// server re-validates, but we guard here to surface a clean in-context error.

@@ -141,6 +141,19 @@ Surfaces: the day page's Parking Lot (phone and tablet), the desktop Ideas panel
 | Primary action | The owner's pull-up chevron on the day page (44px hit area), as built. A traveler's action stays deferred to #401. | `pullToPlan` |
 | Drag | Grip handles retired. Touch: long-press (250ms) anywhere on the card; mouse: immediate. Dropping on the day plans the idea. Dragging among ideas changes nothing (the order is the vote order): the zone snaps back, no write. Phase Detail has no drag (no day to drop on). The desktop Ideas panel is inert until #445. | `DragDropTimeline`, `ParkingLotSection` |
 
+### 2f. The pending idea card (Ghost Cards and Suggestions) — NEW by #444 (card system, D2/D11)
+
+Surfaces: Phase Detail's parking list (a Ghost Card, tray Approve / Reject) and the Inbox Pending tab (tray Approve / Edit / Reject). One component, `GhostCard`.
+
+| Part | Rule | Source |
+|---|---|---|
+| Shell | The 2d idea card, **dashed border**. Not a link: a pending idea has no item page. | `GhostCard`, `Card` |
+| Chip | Gold `Pending` (open loop; gold-deep on gold-tint). **No role badge**: `Suggested by Jess` is the attribution line. | `Pill variant="pending"` |
+| Lines | `title`; `place · cost` (as 2d, from the payload); `Suggested by <name>`. | `ideaSub` |
+| Votes | The 2d tap-to-vote pills, posting to the host page's `?/voteGhost` / `?/unvoteGhost` (with `suggestion_id`). The suggestion's author and viewers see counts only. The Inbox's old tally line stays only on the Approved / Rejected tabs. | `VotePills` |
+| Tray | Owner / co_owner only; every control a 44px box. **Approve** promotes it to an item (author-attributed, votes carried). **Edit** (Inbox only) opens the edit view. **Reject** opens a one-line note (required), then `Confirm reject`. | `?/approve`, `?/reject` |
+| Edit view | `items/new?suggestion=<id>`. Bar actions: **Reject** (note required) / **Save** / **Approve**. **Save** stores the edits through `POST /api/suggestions/update`, leaves the Suggestion pending, stays on the page and toasts `Saved. Still pending.` Approve lands the saved edit. The author's `not_going` survives Save and Edit & Approve when the form omits it. | `items/new`, `suggestions.pb.js` |
+
 ### 2e. Ideas for now (Trip Mode) — NEW by #432 (card system, D3 amended)
 
 Surface: Now's `IdeasStrip` (free-time / nothing-else Focus, and "Replace it" after a Skip). Approved by Scott 2026-10-06.
