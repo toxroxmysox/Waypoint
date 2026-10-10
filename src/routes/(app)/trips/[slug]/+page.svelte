@@ -19,7 +19,6 @@
 	import NeedsBookingChip from '$lib/ui/NeedsBookingChip.svelte';
 	import FlightSubLine from '$lib/itinerary/components/FlightSubLine.svelte';
 	import { rowTrailing } from '$lib/itinerary/row';
-	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import WrapUpBanner from '$lib/trip-mode/components/WrapUpBanner.svelte';
 	import RecordView from '$lib/portability/components/RecordView.svelte';
 	import ScenarioBoard from '$lib/ideation/components/ScenarioBoard.svelte';
@@ -298,15 +297,16 @@
 				</button>
 			</div>
 			{#if data.formingIdeas.length > 0}
-				<div class="grid gap-1.5">
-					{#each data.formingIdeas as idea (idea.id)}
-						<a
+				<div>
+					{#each data.formingIdeas as idea, i (idea.id)}
+						<Row
+							type={idea.type}
+							subtype={idea.subtype}
+							title={idea.title}
+							sub={idea.place}
 							href={withOrigin(`/trips/${data.trip.slug}/items/${idea.id}`, page.url.pathname)}
-							class="border-line bg-surface hover:bg-surface-2 active:bg-surface-2 flex items-center gap-2.5 rounded-lg border px-3 py-2"
-						>
-							<TypeIcon type={idea.type} size={20} />
-							<span class="text-ink truncate text-sm">{idea.title}</span>
-						</a>
+							divider={i < data.formingIdeas.length - 1}
+						/>
 					{/each}
 				</div>
 			{:else}

@@ -20,7 +20,7 @@
 //      route at each width into .visual/ (gitignored).
 //   5. Kills everything. /tmp/pb67 is disposable, so there is nothing to clean.
 //
-// Route tokens: {slug} {tripId} {phase1} {day1}..{day6} (day ids, 1-indexed).
+// Route tokens: {slug} {tripId} {phase1} {goalId} {formingSlug} {day1}..{day6} (day ids, 1-indexed).
 // Flags: --widths 375,768  --viewport (no full-page)  --out DIR  --keep
 //        --click SELECTOR (repeatable: click the first VISIBLE match before the shot,
 //        e.g. to open a menu; a `scroll:SELECTOR` entry scrolls it to the top instead)  --tag NAME (suffix on the filenames)
@@ -247,6 +247,8 @@ const resolve = (route) =>
 		.replaceAll('{slug}', seed.slug)
 		.replaceAll('{tripId}', seed.tripId)
 		.replaceAll('{phase1}', seed.phaseId ?? '{phase1}')
+		.replaceAll('{goalId}', seed.goalId ?? '{goalId}')
+		.replaceAll('{formingSlug}', seed.formingSlug ?? '{formingSlug}')
 		.replace(/\{day(\d+)\}/g, (m, n) => seed.days[Number(n) - 1]?.id ?? m);
 
 // Clear only OUR artifacts. `rmSync(outDir, {recursive:true})` would let a

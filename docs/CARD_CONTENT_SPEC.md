@@ -262,6 +262,21 @@ One two-line Row for every list. Component `Row` (`src/lib/ui/Row.svelte`); deri
 
 Flights & stays on the overview now sorts by date (undated last, then start time) and reads from a small flights-and-lodging query so the main items fetch stays light. The flight title and `UA 1234 · MKE → DEN` place line are #435.
 
+### 4b. Rows, part 2 — codes, linked items, tomorrow, forming ideas, scenario picks, Closeout — NEW by #434 (card system, D11)
+
+The same `Row` (`src/lib/ui/Row.svelte`), extended with three optional slots: `action` (a control outside the body link, 44px), `below` (content under the body, indented to the title), `onselect` + `selected` (the body is a toggle button with a check in the trailing slot).
+
+| Surface | Sub-line | Trailing / controls |
+|---|---|---|
+| Trip Documents, Confirmation codes | `LABEL  VALUE`, value in mono, ink (no gold). One Row per code; the title is the item and links to it. | chevron + `CodeCopyButton` (`action`, 44px, toast `Code copied`). Plain heading, no tinted disc. |
+| A Trip Goal, **Linked items** | `linkedItemSub`: status in words, then where. `Idea · Phase 1`, `Planned · Thu Oct 1 · 6:30p`, `Done · Thu Oct 1`, `Considered · Phase 1`. A planned or done item with a day reads date and time; others read the phase. | chevron; owner-side `Unlink` X (`action`, 44px). No coloured pills (the goal's own status block is unchanged). |
+| Now, tomorrow's preview | `rowSub` with no date (the heading is the day): `6:30p · Place`. | chevron. Up to 3, then `+n more`. |
+| Forming trip home, Ideas (E7) | place (`location_name`) | chevron |
+| Scenario pitch, Anchor ideas (E8) | place | `onselect`: a ring that fills ink with a check when picked; `aria-pressed`; hidden `keystone` inputs unchanged. |
+| Closeout (G1) | `rowSub` with no date: `9:00a–11:30a · Place` | `below`: three identical bordered ink pills, **Done**, **Swap**, **Skip** (44px). Multi-day items keep `Mon Oct 1 → Wed Oct 3 · adjust` above the pills. Resolved: pills drop, the row fades, a neutral `Done` / `Skipped` sits trailing. Swap swaps the pills for the inline quick-add. |
+
+Dev seed: `seed-visual-trip` takes `{ rows2: true }` (code documents, a linked goal, a second dateless `<slug>-forming` trip) and `{ past: true }` (window ends 5 days ago, so `/closeout` is reachable). Route tokens `{goalId}` and `{formingSlug}`.
+
 ## Cut list (do not render; schema columns retained per append-only rule)
 
 - `paid_by` — Expense concept, not an item concept.

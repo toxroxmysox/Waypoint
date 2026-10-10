@@ -108,7 +108,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		const [ideas, board, availabilitySummary] = await Promise.all([
 			locals.pb.collection('items').getFullList<Item>({
 				filter: `trip = "${trip.id}"`,
-				fields: 'id,type,title,status',
+				fields: 'id,type,subtype,title,status,location_name',
 				sort: '-created'
 			}),
 			// #337 — the scenario board IS the forming home. Load candidate scenarios +
@@ -126,7 +126,13 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 			// The onboarding welcome card is a planning-Overview surface; the forming
 			// home carries its own guidance copy instead.
 			showWelcome: false,
-			formingIdeas: ideas.map((i) => ({ id: i.id, type: i.type, title: i.title })),
+			formingIdeas: ideas.map((i) => ({
+				id: i.id,
+				type: i.type,
+				subtype: i.subtype ?? '',
+				title: i.title,
+				place: i.location_name ?? ''
+			})),
 			// #337 scenario board.
 			board,
 			// #271 availability poll summary (forming-home entry card).
@@ -215,7 +221,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 			// (null when the trip has no decision; the section renders nothing).
 			recordDecision,
 			// Forming-only keys, absent here (shape consistency — see forming branch).
-			formingIdeas: [] as { id: string; type: ItemType; title: string }[],
+			formingIdeas: [] as { id: string; type: ItemType; subtype: string; title: string; place: string }[],
 			board: undefined as ScenarioBoardData | undefined,
 			availabilitySummary: undefined as AvailabilitySummary | undefined,
 			canPitch: false,
@@ -331,7 +337,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		canManage: false,
 		recordDecision: null as RecordDecision,
 		// Forming-only keys, absent here (shape consistency — see forming branch).
-		formingIdeas: [] as { id: string; type: ItemType; title: string }[],
+		formingIdeas: [] as { id: string; type: ItemType; subtype: string; title: string; place: string }[],
 		board: undefined as ScenarioBoardData | undefined,
 		availabilitySummary: undefined as AvailabilitySummary | undefined,
 		canPitch: false,
