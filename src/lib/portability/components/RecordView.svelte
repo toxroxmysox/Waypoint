@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { formatCalendarDate } from '$lib/shell/format';
 	import ArchiveDaySection from '$lib/portability/components/ArchiveDaySection.svelte';
 	import ShareAffordance from '$lib/portability/components/ShareAffordance.svelte';
 	import ConsideredRows from '$lib/portability/components/ConsideredRows.svelte';
@@ -65,11 +66,10 @@
 
 	const dateRange = $derived.by(() => {
 		const fmt = (d: string) =>
-			new Date(d.replace(' ', 'T')).toLocaleDateString('en-US', {
+			formatCalendarDate(d, {
 				month: 'short',
 				day: 'numeric',
-				year: 'numeric',
-				timeZone: 'UTC'
+				year: 'numeric'
 			});
 		return `${fmt(record.trip.start_date)} – ${fmt(record.trip.end_date)}`;
 	});

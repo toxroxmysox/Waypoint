@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { formatCalendarDate } from '$lib/shell/format';
 	import { page } from '$app/state';
 	import type { Trip, Phase, Day, Item, Vote, TripMember } from '$lib/types';
 	import { getActiveSection, formatTripDate } from '$lib/shell/trip-nav';
@@ -206,7 +207,7 @@
 					>
 						<div class="w-9 shrink-0 text-center">
 							<div class="text-ink-muted text-[10px] font-bold uppercase">
-								{new Date(day.date.split(/[T ]/)[0] + 'T00:00:00Z').toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })}
+								{formatCalendarDate(day.date, { weekday: 'short' })}
 							</div>
 							<div class="text-ink font-mono text-base leading-none font-semibold">
 								{new Date(day.date.split(/[T ]/)[0] + 'T00:00:00Z').getUTCDate()}

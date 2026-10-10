@@ -1,3 +1,4 @@
+import { formatCalendarDate } from '$lib/shell/format';
 import { page } from '$app/state';
 
 export type TripSection = 'itinerary' | 'money' | 'members' | 'documents' | 'more';
@@ -12,14 +13,8 @@ export function getActiveSection(pathname: string): TripSection {
 }
 
 export function formatTripDate(dateStr: string, format: 'short' | 'full' = 'short'): string {
-	const d = new Date(dateStr.split(/[T ]/)[0] + 'T00:00:00Z');
 	if (format === 'full') {
-		return d.toLocaleDateString('en-US', {
-			weekday: 'short',
-			month: 'short',
-			day: 'numeric',
-			timeZone: 'UTC'
-		});
+		return formatCalendarDate(dateStr, { weekday: 'short', month: 'short', day: 'numeric' });
 	}
-	return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+	return formatCalendarDate(dateStr, { month: 'short', day: 'numeric' });
 }

@@ -10,7 +10,7 @@
 	import FAB from '$lib/shell/components/FAB.svelte';
 	import IdeaCaptureSheet from '$lib/itinerary/components/IdeaCaptureSheet.svelte';
 	import { toast } from '$lib/shell/stores/toast';
-	import { titleCase } from '$lib/shell/format';
+	import { titleCase, formatCalendarDate } from '$lib/shell/format';
 	import { tripToday, tripTz } from '$lib/shell/trip-time';
 	import { page } from '$app/state';
 	import { afterNavigate, replaceState } from '$app/navigation';
@@ -125,17 +125,15 @@
 			</Button>
 		</div>
 		<p class="text-ink-muted font-mono mt-2.5 text-[11.5px]">
-			{new Date(data.phase.start_date.replace(' ', 'T')).toLocaleDateString('en-US', {
+			{formatCalendarDate(data.phase.start_date, {
 				month: 'short',
-				day: 'numeric',
-				timeZone: 'UTC'
+				day: 'numeric'
 			})}
 			–
-			{new Date(data.phase.end_date.replace(' ', 'T')).toLocaleDateString('en-US', {
+			{formatCalendarDate(data.phase.end_date, {
 				month: 'short',
 				day: 'numeric',
-				year: 'numeric',
-				timeZone: 'UTC'
+				year: 'numeric'
 			})}
 			<span class="text-line">·</span>
 			{daysNightsLabel(data.phase.start_date, data.phase.end_date)}

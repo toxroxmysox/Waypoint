@@ -7,7 +7,7 @@
 	import Pill from '$lib/ui/Pill.svelte';
 	import PlacesAutocomplete from '$lib/itinerary/components/PlacesAutocomplete.svelte';
 	import FlightLookup from '$lib/itinerary/components/FlightLookup.svelte';
-	import { titleCase } from '$lib/shell/format';
+	import { titleCase, formatCalendarDate } from '$lib/shell/format';
 	import { untrack } from 'svelte';
 	import { memberDisplayName } from '$lib/itinerary/member-name';
 	import type { ItemFormMode, ItemFormData, ItemFormContext } from './ItemFormFields';
@@ -278,11 +278,10 @@
 						<option value="">Unscheduled</option>
 						{#each context.days as d}
 							<option value={d.id}>
-								{new Date(d.date.replace(' ', 'T')).toLocaleDateString('en-US', {
+								{formatCalendarDate(d.date, {
 									weekday: 'short',
 									month: 'short',
-									day: 'numeric',
-									timeZone: 'UTC'
+									day: 'numeric'
 								})}
 							</option>
 						{/each}

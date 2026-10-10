@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { formatCalendarDate } from '$lib/shell/format';
 	// Now's next-day preview (#434): tomorrow's date heading + "Next 3 days" link, up to
 	// three Rows (`rowSub` with no date, since the heading is the day), then `+n more`.
 	// Shared by the Now page's content column and the desktop context rail (#446).
@@ -21,11 +22,10 @@
 	} = $props();
 
 	const label = $derived(
-		new Date(date.replace(' ', 'T')).toLocaleDateString('en-US', {
+		formatCalendarDate(date, {
 			weekday: 'long',
 			month: 'short',
-			day: 'numeric',
-			timeZone: 'UTC'
+			day: 'numeric'
 		})
 	);
 	const shown = $derived(items.slice(0, 3));

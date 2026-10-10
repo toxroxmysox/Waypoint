@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { formatCalendarDate } from '$lib/shell/format';
 	import { withOrigin } from '$lib/shell/back-nav';
 	import { page } from '$app/state';
 	import { enhance } from '$app/forms';
@@ -40,11 +41,10 @@
 		const day = data.days.find((d) => d.id === item.day);
 		if (day) {
 			parts.push(
-				new Date(day.date.replace(' ', 'T')).toLocaleDateString('en-US', {
+				formatCalendarDate(day.date, {
 					weekday: 'short',
 					month: 'short',
-					day: 'numeric',
-					timeZone: 'UTC'
+					day: 'numeric'
 				})
 			);
 		}

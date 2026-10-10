@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { formatCalendarDate } from '$lib/shell/format';
 	import { enhance } from '$app/forms';
 	import { otpAutoSubmit } from '$lib/shell/actions/otp-auto-submit';
 	import { invalidateAll } from '$app/navigation';
@@ -27,12 +28,10 @@
 	// "Jun 1 – 3, 2026" style range from two PB date strings (UTC, date-only).
 	function fmtDates(start: string, end: string): string {
 		if (!start) return '';
-		const s = new Date(start);
-		const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', timeZone: 'UTC' };
-		const sLabel = s.toLocaleDateString('en-US', opts);
-		if (!end) return `${sLabel}, ${s.getUTCFullYear()}`;
-		const e = new Date(end);
-		const eLabel = e.toLocaleDateString('en-US', { ...opts, year: 'numeric', timeZone: 'UTC' });
+		const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+		const sLabel = formatCalendarDate(start, opts);
+		if (!end) return `${sLabel}, ${formatCalendarDate(start, { year: 'numeric' })}`;
+		const eLabel = formatCalendarDate(end, { ...opts, year: 'numeric' });
 		return `${sLabel} – ${eLabel}`;
 	}
 	const dateRange = $derived(fmtDates(data.startDate ?? '', data.endDate ?? ''));

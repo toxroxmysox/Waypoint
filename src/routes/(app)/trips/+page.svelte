@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { formatCalendarDate } from '$lib/shell/format';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
@@ -81,11 +82,9 @@
 	}
 
 	function formatDateRange(start: string, end: string): string {
-		const s = new Date(start.replace(' ', 'T'));
-		const e = new Date(end.replace(' ', 'T'));
-		const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', timeZone: 'UTC' };
-		const startStr = s.toLocaleDateString('en-US', opts);
-		const endStr = e.toLocaleDateString('en-US', { ...opts, year: 'numeric' });
+		const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+		const startStr = formatCalendarDate(start, opts);
+		const endStr = formatCalendarDate(end, { ...opts, year: 'numeric' });
 		return `${startStr} – ${endStr}`;
 	}
 

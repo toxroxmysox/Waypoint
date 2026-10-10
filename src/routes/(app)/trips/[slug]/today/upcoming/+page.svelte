@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { formatCalendarDate } from '$lib/shell/format';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import SubTabs from '$lib/ui/SubTabs.svelte';
 	import ItemCard from '$lib/itinerary/components/ItemCard.svelte';
@@ -24,11 +25,10 @@
 	const tripMode = $derived(getTripModeState(data.items, data.days, now));
 
 	function dayLabel(dateStr: string): string {
-		return new Date(dateStr.replace(' ', 'T')).toLocaleDateString('en-US', {
+		return formatCalendarDate(dateStr, {
 			weekday: 'long',
 			month: 'short',
-			day: 'numeric',
-			timeZone: 'UTC'
+			day: 'numeric'
 		});
 	}
 </script>
