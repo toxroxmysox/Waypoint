@@ -2,6 +2,8 @@
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import SubTabs from '$lib/ui/SubTabs.svelte';
 	import ItemCard from '$lib/itinerary/components/ItemCard.svelte';
+	import FreeTimeLabel from '$lib/itinerary/components/FreeTimeLabel.svelte';
+	import { freeTimeGaps } from '$lib/itinerary/card-anatomy';
 	import Card from '$lib/ui/Card.svelte';
 	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
 	import { getTripModeState } from '$lib/trip-mode/trip-mode';
@@ -60,6 +62,7 @@
 		</Card>
 	{:else}
 		{#each tripMode.timeline.upcomingDays as group}
+			{@const gaps = freeTimeGaps(group.items)}
 			<section class="space-y-2">
 				<h2 class="font-display text-ink text-lg font-semibold">{dayLabel(group.day.date)}</h2>
 				{#if group.items.length === 0}
@@ -68,6 +71,9 @@
 					<!-- #429: the day page's rail + Card in Trip Mode: no cost, no overlap, no accent. -->
 					<div class="space-y-2">
 						{#each group.items as item (item.id)}
+							{#if gaps.get(item.id)}
+								<FreeTimeLabel gap={gaps.get(item.id)!} />
+							{/if}
 							<ItemCard
 								{item}
 								tripSlug={data.trip.slug}

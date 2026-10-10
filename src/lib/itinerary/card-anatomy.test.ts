@@ -5,6 +5,7 @@ import {
 	fitStrip,
 	freeTimeGaps,
 	freeTimeLabel,
+	freeTimeSpoken,
 	goingBubbles,
 	overlapPairs,
 	railSegments,
@@ -148,6 +149,29 @@ describe('freeTimeGaps', () => {
 		expect(freeTimeGaps([d, b]).get('b')?.minutes).toBe(60);
 		const c = mk({ id: 'c', start_time: t('16:59') });
 		expect(freeTimeGaps([d, c]).size).toBe(0);
+	});
+	it('speaks the gap and rejects 59 minutes', () => {
+		const a = mk({ id: 'a', start_time: t('15:00'), end_time: t('16:30') });
+		const b = mk({ id: 'b', start_time: t('18:30') });
+		expect(freeTimeSpoken(freeTimeGaps([a, b]).get('b')!)).toBe('Free, 4:30p to 6:30p');
+		const c = mk({ id: 'c', start_time: t('17:29') });
+		expect(freeTimeGaps([a, c]).size).toBe(0);
+	});
+	it('untimed items between do not break a gap; the latest end across an overlap wins', () => {
+		const a = mk({ id: 'a', start_time: t('10:00'), end_time: t('14:00') });
+		const u = mk({ id: 'u' });
+		const b = mk({ id: 'b', start_time: t('11:00'), end_time: t('12:00') });
+		const c = mk({ id: 'c', start_time: t('16:00'), end_time: t('17:00') });
+		const g = freeTimeGaps([a, u, b, c]);
+		expect(g.get('c')).toMatchObject({ minutes: 120, from: '2:00p', to: '4:00p' });
+		expect(g.size).toBe(1);
+	});
+	it('a start-only item resets the known end: range, start-only, range opens only its own non-gap', () => {
+		const a = mk({ id: 'a', start_time: t('09:00'), end_time: t('10:00') });
+		const s = mk({ id: 's', start_time: t('12:00') });
+		const c = mk({ id: 'c', start_time: t('18:00'), end_time: t('19:00') });
+		const g = freeTimeGaps([a, s, c]);
+		expect([...g.keys()]).toEqual(['s']);
 	});
 	it('a start-only item opens no gap', () => {
 		const a = mk({ id: 'a', start_time: t('09:00') });

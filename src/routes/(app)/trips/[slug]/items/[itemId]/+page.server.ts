@@ -8,6 +8,10 @@ import { memberAvatarUrl, withAvatarUrls } from '$lib/collaboration/member-avata
 import { computeMovePatch } from '$lib/itinerary/move-item';
 import { paidSummaryForItem } from '$lib/money/linked-expenses';
 import { itemPermissions, ITEM_ACTION_ERRORS } from '$lib/itinerary/item-actions';
+import { needsBooking } from '$lib/itinerary/booking-projection';
+import { parseMarkBooked, markBookedDestination } from '$lib/itinerary/item-page';
+
+const BOOK_ERROR = "Couldn't mark this booked. Reload the page and try again.";
 
 // A failed PB call's status when it is an HTTP error, else 500.
 function failStatus(err: unknown): number {
@@ -497,6 +501,44 @@ export const actions: Actions = {
 	// day — the same `canSkip` the page gates the control with (#416). Reuses
 	// computeMovePatch. Where the page goes afterwards is the client's call
 	// (skipDestination: Now in Trip Mode, stay in Planning Mode).
+	// #441 — Mark booked. Writes `booked` (+ who) and an optional confirmation code
+	// (a `kind: 'code'` Document, ADR-0016). It never touches expenses: booked and paid
+	// are separate facts (ADR-0014). Ticked "log what I paid next" redirects to the
+	// existing prefilled Add expense; the redirect is thrown outside the try.
+	markBooked: async ({ request, params, locals }) => {
+		const failBooked = (status: number) => fail(status, { bookError: BOOK_ERROR });
+		let item: Item;
+		try {
+			item = await locals.pb.collection('items').getOne<Item>(params.itemId);
+		} catch (err: unknown) {
+			return failBooked(failStatus(err));
+		}
+		const membership = await getMembership(locals, item.trip).catch(() => null);
+		if (!membership || !itemPermissions(membership, item).canEdit || !needsBooking(item)) {
+			return failBooked(403);
+		}
+		const { code, logPayment } = parseMarkBooked(await request.formData());
+
+		try {
+			await locals.pb.collection('items').update(item.id, { booked: true, booked_by: membership.id });
+			if (code) {
+				await locals.pb.collection('documents').create({
+					trip: item.trip,
+					item: item.id,
+					kind: 'code',
+					code_label: 'Confirmation',
+					code_value: code
+				});
+			}
+		} catch (err: unknown) {
+			return failBooked(failStatus(err));
+		}
+
+		const to = markBookedDestination(params.slug, item, logPayment);
+		if (to) redirect(303, to);
+		return { booked: true };
+	},
+
 	skipItem: async ({ params, locals }) => {
 		let item: Item;
 		try {

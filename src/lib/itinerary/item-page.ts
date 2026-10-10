@@ -5,7 +5,9 @@ import { rowSub, type RowItemFields } from '$lib/itinerary/row';
 import { titleCase } from '$lib/shell/format';
 import { canSelfAssign, goingStateOf, type GoingState } from '$lib/itinerary/assignment';
 import { goingPeople, type GoingPerson } from '$lib/trip-mode/hero';
-import type { TripMember } from '$lib/types';
+import { needsBooking } from '$lib/itinerary/booking-projection';
+import { logPaymentHref, type PrefillItem } from '$lib/money/expense-prefill';
+import type { Item, TripMember } from '$lib/types';
 import type { ItemType } from '$lib/itinerary/types';
 
 /** `Meal · Dinner`: the type and subtype in words. A subtype of "other" adds nothing and drops. */
@@ -148,4 +150,35 @@ export function newestFirst<T extends { created: string }>(comments: T[]): T[] {
 		.map((c, i) => ({ c, i, t: stamp(c.created) }))
 		.sort((a, b) => (b.t - a.t) || a.i - b.i)
 		.map((x) => x.c);
+}
+
+/**
+ * #441 — the Hero's `Book ↗ · Mark booked` pair. Shown to those who may edit the
+ * item (the same set `items.pb.js` accepts a `booked` write from) while it still
+ * needs booking. `bookHref` is the booking link when it is a web URL, else ''.
+ */
+export function bookingControls(p: {
+	item: Pick<Item, 'status' | 'requires_booking' | 'booked' | 'reservation_url'>;
+	canEdit: boolean;
+}): { show: boolean; bookHref: string } {
+	const show = p.canEdit && needsBooking(p.item);
+	const url = (p.item.reservation_url ?? '').trim();
+	return { show, bookHref: show && /^https?:\/\//i.test(url) ? url : '' };
+}
+
+/** The Mark booked sheet's fields: an optional code and the "log what I paid next" box. */
+export function parseMarkBooked(fd: FormData): { code: string; logPayment: boolean } {
+	return {
+		code: fd.get('code')?.toString().trim() ?? '',
+		logPayment: fd.get('log_payment') === 'on'
+	};
+}
+
+/**
+ * Where Mark booked goes after saving. Ticked: the existing Add expense, prefilled
+ * (amount from the estimate; payer and split are the form's own defaults). Unticked:
+ * null, stay put. Booked and paid are separate facts (ADR-0014): this only navigates.
+ */
+export function markBookedDestination(slug: string, item: PrefillItem, logPayment: boolean): string | null {
+	return logPayment ? logPaymentHref(slug, item) : null;
 }

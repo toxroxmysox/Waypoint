@@ -1221,7 +1221,8 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 	// ongoing, one item starting in 90 min. 'rail' (#429): the 'hero' state plus the
 	// lists around it: three Earlier today items (one booked with a code),
 	// Coming up (booked with two codes, an overlapping pair, booked without a code,
-	// one untimed) and one booked-with-code item on tomorrow's day for Next 3 days.
+	// one untimed) and one booked-with-code item on tomorrow's day for Next 3 days. #422: a >= 60 min gap
+	// inside Coming up (cruise/tasting end, then tacos) and one after tomorrow's breakfast.
 	// Default off: the fullness matrix is unchanged.
 	if (info.body && info.body['now'] && days.length >= 2) {
 		const mode = info.body['now'];
@@ -1339,12 +1340,14 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 			const cruise = mk({ title: 'Sunset cruise', type: 'activity', start_time: wall(nowMs + 150 * min), end_time: wall(nowMs + 240 * min), location_name: 'Harbor Dock 4', booked: true, assigned_to: [ownerMember.id, kim], sort_order: 52 });
 			addCodes(cruise, [['Confirmation', 'SUN-5521'], ['Boarding group', 'B12']]);
 			mk({ title: 'Wine tasting', type: 'activity', start_time: wall(nowMs + 180 * min), end_time: wall(nowMs + 230 * min), location_name: 'Kohler Wine Bar', assigned_to: [ownerMember.id, dev], sort_order: 53 });
-			mk({ title: 'Fireside tacos', type: 'meal', start_time: wall(nowMs + 270 * min), end_time: wall(nowMs + 330 * min), location_name: 'The Cabin Fire Pit', booked: true, sort_order: 54 });
+			mk({ title: 'Fireside tacos', type: 'meal', start_time: wall(nowMs + 330 * min), end_time: wall(nowMs + 390 * min), location_name: 'The Cabin Fire Pit', booked: true, sort_order: 54 });
 			mk({ title: 'Stargazing', type: 'activity', sort_order: 99 });
 			// Next 3 days: tomorrow carries a booked item with a code.
 			if (days.length >= 3) {
 				const tmr = mk({ title: 'Breakfast at Sip Coffeehouse', type: 'meal', day: days[2].id, start_time: days[2].getString('date').substring(0, 10) + ' 09:00:00.000Z', end_time: days[2].getString('date').substring(0, 10) + ' 10:00:00.000Z', location_name: 'Sip Coffeehouse', booked: true });
 				addCodes(tmr, [['Reservation', 'SIP-7742']]);
+				// #422: a gap after the breakfast's end (10:00 to 1:00p) for the free-time label.
+				mk({ title: 'Lunch at the brewery', type: 'meal', day: days[2].id, start_time: days[2].getString('date').substring(0, 10) + ' 13:00:00.000Z', end_time: days[2].getString('date').substring(0, 10) + ' 14:00:00.000Z', location_name: 'Lakefront Brewery' });
 			}
 		}
 	}

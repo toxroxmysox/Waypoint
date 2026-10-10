@@ -21,6 +21,8 @@
 	import Row from '$lib/ui/Row.svelte';
 	import { rowSub } from '$lib/itinerary/row';
 	import Hero from '$lib/itinerary/components/Hero.svelte';
+	import FreeTimeLabel from '$lib/itinerary/components/FreeTimeLabel.svelte';
+	import { freeTimeGaps } from '$lib/itinerary/card-anatomy';
 	import ItemActionsMenu from '$lib/itinerary/components/ItemActionsMenu.svelte';
 	import ItemActionSheets from '$lib/itinerary/components/ItemActionSheets.svelte';
 	import { itemMenuEntries, itemPermissions } from '$lib/itinerary/item-actions';
@@ -68,6 +70,8 @@
 	const focus = $derived(nowFeed.focus);
 	const pastItems = $derived(nowFeed.pastItems);
 	const restItems = $derived(nowFeed.restItems);
+	// #422: free-time labels within Coming up (display order; never spans lists).
+	const restGaps = $derived(freeTimeGaps(restItems));
 
 	// #245 Door 1 — the ideas strip opens proactively at the two states where the
 	// need arises: free time (countdown to the next thing) and nothing-else-planned.
@@ -319,6 +323,7 @@
 			<NowDivider label="Coming up" />
 			{#each restItems as item (item.id)}
 				{@const entries = skipEntries(item)}
+				{@const gap = restGaps.get(item.id)}
 				{#snippet cardMenu()}
 					<ItemActionsMenu
 						{entries}
@@ -327,6 +332,9 @@
 						}}
 					/>
 				{/snippet}
+				{#if gap}
+					<FreeTimeLabel {gap} />
+				{/if}
 				<ItemCard
 					{item}
 					tripSlug={data.trip.slug}
