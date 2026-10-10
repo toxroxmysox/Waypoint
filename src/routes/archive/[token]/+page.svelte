@@ -1,15 +1,10 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import ArchiveDaySection from '$lib/portability/components/ArchiveDaySection.svelte';
-	import TypeIcon from '$lib/ui/TypeIcon.svelte';
-	import { formatCalendarDate, titleCase } from '$lib/shell/format';
-	import type { PageData } from './$types';
-
+	import ConsideredRows from '$lib/portability/components/ConsideredRows.svelte';
+	import { formatCalendarDate } from '$lib/shell/format';
+	
 	let { data } = $props();
-
-	// Element type of the published archive's considered-items list (the loader
-	// returns a union: the published view vs. the pre-publish pending object).
-	type ArchiveItem = Extract<PageData, { consideredItems: unknown[] }>['consideredItems'][number];
 
 	// Pre-publish window: token is valid but the story isn't live yet (#171).
 	const pending = $derived('pending' in data ? data : null);
@@ -24,17 +19,6 @@
 		const fmt = (d: string) =>
 			formatCalendarDate(d, { month: 'long', day: 'numeric', year: 'numeric' });
 		return `${fmt(data.trip.start_date)} – ${fmt(data.trip.end_date)}`;
-	});
-
-	const consideredByType = $derived.by(() => {
-		const grouped = new Map<string, ArchiveItem[]>();
-		if ('pending' in data) return grouped;
-		for (const item of data.consideredItems) {
-			const type = item.type || 'activity';
-			if (!grouped.has(type)) grouped.set(type, []);
-			grouped.get(type)!.push(item);
-		}
-		return grouped;
 	});
 
 	let showConsidered = $state(false);
@@ -164,25 +148,8 @@
 			</button>
 
 			{#if showConsidered}
-				<div class="mt-4 space-y-4">
-					{#each [...consideredByType.entries()] as [type, items] (type)}
-						<div class="bg-surface border-border rounded-xl border p-4">
-							<h4 class="text-ink mb-3 text-sm font-semibold">{titleCase(type)}s</h4>
-							<ul class="space-y-2">
-								{#each items as item (item.id)}
-									<li class="flex items-start gap-2">
-										<TypeIcon type={item.type} size={20} />
-										<div class="min-w-0">
-											<p class="text-ink text-sm">{item.title}</p>
-											{#if item.location_name}
-												<p class="text-ink-muted text-xs">{item.location_name}</p>
-											{/if}
-										</div>
-									</li>
-								{/each}
-							</ul>
-						</div>
-					{/each}
+				<div class="mt-3">
+					<ConsideredRows items={data.consideredItems} phases={data.phases} />
 				</div>
 			{/if}
 		</div>

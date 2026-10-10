@@ -336,6 +336,27 @@ The same `Row` (`src/lib/ui/Row.svelte`), extended with three optional slots: `a
 
 Dev seed: `seed-visual-trip` takes `{ rows2: true }` (code documents, a linked goal, a second dateless `<slug>-forming` trip) and `{ past: true }` (window ends 5 days ago, so `/closeout` is reachable). Route tokens `{goalId}` and `{formingSlug}`.
 
+### 4d. The record on the rail — NEW by #436 (card system, D2; stories 57, 58)
+
+Surfaces: the closed trip's Record view (`/trips/[slug]`) and the public archive (`/archive/[token]`), which share `ArchiveDaySection` and `ConsideredRows` (G2, G3).
+
+**What we did.** Each day (heading `formatCalendarDate`, UTC, #393) lays its done items on the day page's Timeline Rail, read-only, in the day page's order (`orderDayItems`).
+
+| Slot | Rule |
+|---|---|
+| Component | `RecordCard` (`src/lib/portability/components/RecordCard.svelte`): `RailStack` + `Card`, geometry from `RAIL`. Derivations in `recordCardFields` (`record-card.ts`). |
+| Rail | Time, icon, time, as on the day page (not `past`, no overlap red). The rail owns time; the card prints none. |
+| Title | `title`, ink, two lines max. |
+| Meta | `cardMeta` (place; a flight's `MKE → DEN`). A note has no meta (its description is the body). A multi-day item (`end_date` after its day) keeps its start on the rail, drops the later-day end, and ends its meta `through Sat Oct 3`. |
+| Body | the FULL `description`, line breaks kept, ink-soft. A flight's description is its arrival label and is not printed as prose. |
+| Not shown | link (archive rows go nowhere), cost, strip, Going, outcome stamp (everything here is done). |
+
+`buildArchiveView` now also carries `end_date` and `sort_order` (display-only).
+
+**What we considered.** `ConsideredRows`: the disclosure stays; open, the items are `Row`s (4a) grouped by type under `IdeaGroupHeading` in the Parking Lot's order (`ideaGroups`, 2d). Sub-line from `rowContent` (flights fit via `FlightSubLine`), place falling back to the phase name. No link, no chevron, no stamp.
+
+Dev seed: `seed-visual-trip` takes `{ record: true }` (done items with descriptions, a flight, a note, a two-night stay, six considered items, trip archived with a share token); combine with `{ past: true }`: `VISUAL_SEED='{"past":true,"record":true}' pnpm verify:visual '/trips/{slug}'`.
+
 ### 4c. Swipe-Quiz face — NEW by #443 (card system, D11; closes #405)
 
 The face is the shared `Hero` (`bare`: the deck already supplies the card), details shown, so a member votes without opening anything. Route `/trips/{slug}/swipe/{phaseId}`.
