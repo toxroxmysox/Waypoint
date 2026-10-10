@@ -103,6 +103,53 @@ test.describe('#251 Inbox tabs + vote tallies', () => {
 		}
 	});
 
+	// #444 — the pending idea card: dashed, gold Pending chip, vote pills, a tray of
+	// Approve / Edit / Reject, and NO role badge ("Suggested by" already says who).
+	test('Pending tab shows the pending idea card: chip, vote pills, Approve / Edit / Reject, no role badge', async ({
+		browser
+	}) => {
+		const owner = await devLogin(browser, EMAILS.owner);
+		try {
+			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/inbox`);
+			const card = owner.page
+				.locator('[aria-label^="Pending idea:"]')
+				.filter({ visible: true })
+				.first();
+			await expect(card).toBeVisible({ timeout: 10000 });
+
+			await expect(card.getByText('Pending', { exact: true })).toBeVisible();
+			await expect(card.getByText(/^suggested by /i)).toBeVisible();
+			// Four always-on vote pills.
+			await expect(card.locator('[data-vote]')).toHaveCount(4);
+			// The tray: Approve / Edit / Reject.
+			await expect(card.getByRole('button', { name: /^approve$/i })).toBeVisible();
+			await expect(card.getByRole('link', { name: /^edit$/i })).toBeVisible();
+			await expect(card.getByRole('button', { name: /^reject$/i })).toBeVisible();
+			// No role badge.
+			await expect(card.getByText(/^(owner|co.?owner|traveler|viewer)$/i)).toHaveCount(0);
+		} finally {
+			await owner.ctx.close();
+		}
+	});
+
+	test('a member can vote a pending idea from the Inbox (tap-to-vote pills)', async ({ browser }) => {
+		const owner = await devLogin(browser, EMAILS.owner);
+		try {
+			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/inbox`);
+			// "Neutral ghost" is the viewer's, with zero seeded votes: the owner may vote it.
+			const votable = owner.page
+				.locator('[aria-label="Pending idea: Neutral ghost"]')
+				.filter({ visible: true })
+				.first();
+			await expect(votable).toBeVisible({ timeout: 10000 });
+			const like = votable.locator('button[data-vote="like"]');
+			await like.click();
+			await expect(like).toHaveAttribute('aria-pressed', 'true', { timeout: 10000 });
+		} finally {
+			await owner.ctx.close();
+		}
+	});
+
 	test('Inbox stays owner/co_owner-only: traveler gets 403', async ({ browser }) => {
 		const traveler = await devLogin(browser, EMAILS.traveler);
 		try {

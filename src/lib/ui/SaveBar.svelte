@@ -1,11 +1,18 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import Button from '$lib/ui/Button.svelte';
 
 	// Shared anchored Save bar for the item create/edit forms (#344/#345).
 	// Extracted from items/new + items/[itemId]/edit, which carried byte-identical
 	// copies of this markup, focus logic, and CSS — a divergence trap (#344 was a
 	// bug that had to be fixed in two places).
-	let { loading = false, label }: { loading?: boolean; label: string } = $props();
+	// #444: `children` swaps the single button for a row of actions (the Suggestion
+	// edit view's Reject / Save / Approve). Same anchored bar, same keyboard rules.
+	let {
+		loading = false,
+		label,
+		children
+	}: { loading?: boolean; label: string; children?: Snippet } = $props();
 
 	// #236: the sticky bar collapses its BottomNav-clearance when a soft keyboard is
 	// open (BottomNav unmounts on focus, so the fixed 5rem clearance would leave the
@@ -47,9 +54,13 @@
 	class="save-bar fixed inset-x-0 bottom-0 z-sticky mx-auto w-full max-w-lg md-desktop:max-w-2xl md-desktop:left-[72px] lg-desktop:left-[240px] lg-desktop:right-[320px] bg-paper px-4"
 	class:save-bar--keyboard={inputFocused}
 >
-	<Button type="submit" disabled={loading} {loading} variant="moss" size="lg" class="w-full">
-		{label}
-	</Button>
+	{#if children}
+		{@render children()}
+	{:else}
+		<Button type="submit" disabled={loading} {loading} variant="moss" size="lg" class="w-full">
+			{label}
+		</Button>
+	{/if}
 </div>
 
 <style>
