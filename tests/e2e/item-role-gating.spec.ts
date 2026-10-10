@@ -120,7 +120,8 @@ const visible = (page: Page) => ({
 	addDocument: page.getByRole('button', { name: '+ Document', exact: true }).filter({ visible: true }),
 	upload: page.getByRole('button', { name: 'Upload', exact: true }).filter({ visible: true }),
 	addChecklist: page.getByRole('button', { name: '+ Checklist', exact: true }).filter({ visible: true }),
-	votes: page.getByRole('group', { name: 'Vote on this item' }).filter({ visible: true })
+	/** #442: a planned item carries the quiet "Your vote" row. */
+	votes: page.getByTestId('item-your-vote').filter({ visible: true })
 });
 
 const MOVE = 'Move to another day';
