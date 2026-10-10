@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { itemTypeLine, itemTimeText, detailsRows, addLine, newestFirst, hostLabel, goingView } from './item-page';
+import { itemTypeLine, itemTimeText, detailsRows, addLine, newestFirst, hostLabel, goingView, bookingControls, parseMarkBooked, markBookedDestination } from './item-page';
 
 describe('goingView (#440): the Hero Going row', () => {
 	const members = [
@@ -172,5 +172,56 @@ describe('newestFirst', () => {
 		const input = [c('a', '2026-10-01 10:00:00.000Z'), c('b', '2026-10-01 10:00:00.000Z')];
 		expect(newestFirst(input).map((x) => x.id)).toEqual(['a', 'b']);
 		expect(input.map((x) => x.id)).toEqual(['a', 'b']);
+	});
+});
+
+describe('bookingControls (#441): Book / Mark booked', () => {
+	const open = { status: 'planned', requires_booking: true, booked: false, reservation_url: 'https://opentable.com/x' } as any;
+	it('shows for an editor on an item that needs booking, with the link', () => {
+		expect(bookingControls({ item: open, canEdit: true })).toEqual({ show: true, bookHref: 'https://opentable.com/x' });
+	});
+	it('hidden for roles that cannot edit', () => {
+		expect(bookingControls({ item: open, canEdit: false }).show).toBe(false);
+	});
+	it('hidden once booked or when booking is not required', () => {
+		expect(bookingControls({ item: { ...open, booked: true }, canEdit: true }).show).toBe(false);
+		expect(bookingControls({ item: { ...open, requires_booking: false }, canEdit: true }).show).toBe(false);
+	});
+	it('no link: Mark booked still shows, Book does not', () => {
+		expect(bookingControls({ item: { ...open, reservation_url: '' }, canEdit: true })).toEqual({ show: true, bookHref: '' });
+	});
+	it('only http(s) links become Book', () => {
+		expect(bookingControls({ item: { ...open, reservation_url: 'javascript:alert(1)' }, canEdit: true }).bookHref).toBe('');
+	});
+});
+
+describe('parseMarkBooked (#441)', () => {
+	it('trims the code; checkbox on = log payment', () => {
+		const fd = new FormData();
+		fd.set('code', '  ABC123 ');
+		fd.set('log_payment', 'on');
+		expect(parseMarkBooked(fd)).toEqual({ code: 'ABC123', logPayment: true });
+	});
+	it('defaults: no code, no payment', () => {
+		expect(parseMarkBooked(new FormData())).toEqual({ code: '', logPayment: false });
+	});
+});
+
+describe('markBookedDestination (#441)', () => {
+	const item = { id: 'i1', title: 'Hotel', cost_estimate_usd: 240 };
+	it('unticked: stay on the item page (null)', () => {
+		expect(markBookedDestination('t', item, false)).toBeNull();
+	});
+	it('ticked: the existing Add expense, prefilled from the estimate', () => {
+		const href = markBookedDestination('t', item, true)!;
+		expect(href.startsWith('/trips/t/expenses?')).toBe(true);
+		const sp = new URL(href, 'http://x').searchParams;
+		expect(sp.get('action')).toBe('add');
+		expect(sp.get('amount')).toBe('240');
+		expect(sp.get('linked_item')).toBe('i1');
+	});
+	it('no estimate: amount left blank', () => {
+		const sp = new URL(markBookedDestination('t', { id: 'i1', title: 'H' }, true)!, 'http://x').searchParams;
+		expect(sp.has('amount')).toBe(false);
 	});
 });

@@ -51,6 +51,7 @@
 		placeLink = true,
 		showGoing = true,
 		goingControl,
+		bookingActions,
 		menu,
 		children
 	}: {
@@ -77,6 +78,8 @@
 		showGoing?: boolean;
 		/** Above the Going names (item page, #440): the viewer's own "Are you going?" control. */
 		goingControl?: Snippet;
+		/** Beside the `To book` chip (item page, #441): `Book ↗` and `Mark booked`, for those who may edit. */
+		bookingActions?: Snippet;
 		/** Top-right slot: the `⋯` menu. */
 		menu?: Snippet;
 		/** After the Going row. */
@@ -185,6 +188,7 @@
 			<div class="flex flex-wrap items-center gap-x-4 gap-y-2">
 				{#if needsBooking && !item.booked}
 					<NeedsBookingChip />
+					{#if bookingActions}{@render bookingActions()}{/if}
 				{/if}
 				{#if done}
 					<span class="text-ink-soft inline-flex items-center gap-1 text-sm font-medium" data-testid="hero-done">
