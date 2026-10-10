@@ -102,7 +102,10 @@
 <a href="#main-content" class="skip-link">Skip to content</a>
 <div class="sr-only" aria-live="polite" aria-atomic="true">{routeAnnouncement}</div>
 
-<A2HSBanner />
+<!-- #502: not on /oauth/* — it showed inside Claude's sign-in sheet. -->
+{#if !pageState.url.pathname.startsWith('/oauth')}
+	<A2HSBanner />
+{/if}
 
 <div class="edge-top-band" aria-hidden="true"></div>
 {@render children()}

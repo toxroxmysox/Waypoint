@@ -53,6 +53,10 @@ fi
 # playwright.config.ts) won't override an already-set process env, so this wins
 # over the :8090 in .env.local for both the app build and the dev-fixture calls.
 export PUBLIC_PB_URL="$PB_URL"
+# #502 — the MCP server mints user-scoped PB tokens as superuser; this is the
+# superuser e2e-clean-pb.sh upserts on the disposable PB.
+export PB_ADMIN_EMAIL=admin@e2e.test
+export PB_ADMIN_PASSWORD=e2eAdminPass123
 
 cd "$ROOT"
 # Not `exec`: that would discard the EXIT trap and orphan the PB on every run.

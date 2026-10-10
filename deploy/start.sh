@@ -19,7 +19,7 @@ sleep 2
 # Start SvelteKit on :3000
 export PORT=3000
 export HOST=0.0.0.0
-node /app/build/index.js &
+node /app/deploy/server.mjs &
 
 SK_PID=$!
 
