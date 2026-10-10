@@ -184,18 +184,20 @@ export function markBookedDestination(slug: string, item: PrefillItem, logPaymen
 }
 
 /**
- * #442 — where votes show (D3/D12). An idea (no day) gets the four pills with who
+ * #442 — where votes show (D3/D12). An idea (`status = unplanned`) gets the four pills with who
  * voted what, and "Add to a day" for those who can plan; a planned item gets one
  * quiet "Your vote" row in Details (viewers: nothing). Votes and Going never share
  * a face: Going's question is for planned items only.
  */
 export function votesView(p: {
-	item: { day?: string };
+	item: { status: string };
 	canVote: boolean;
 	canMove: boolean;
 	myVote: { value: string } | null;
 }): { face: 'pills' | 'row' | 'none'; showAddToDay: boolean; showGoing: boolean; rowText: string } {
-	const idea = !p.item.day;
+	// An idea is status = unplanned (CONTEXT.md), whether or not it has a day. Considered,
+	// planned and done items get the quiet row (considered: ruled, same as planned).
+	const idea = p.item.status === 'unplanned';
 	const labels: Record<string, string> = { love: 'Love', like: 'Like', flexible: 'Flexible', dislike: 'Pass' };
 	return {
 		face: idea ? 'pills' : p.canVote ? 'row' : 'none',

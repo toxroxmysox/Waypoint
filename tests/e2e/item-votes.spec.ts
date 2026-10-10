@@ -82,7 +82,7 @@ test.describe('Votes on the item page (#442)', () => {
 			...(phase ? { phase: phase.id } : {}),
 			type: 'activity',
 			title: 'Kayak trip',
-			status: 'planned'
+			status: 'unplanned'
 		});
 		ideaId = idea.id;
 		const planned = await pb(owner.token, 'POST', '/api/collections/items/records', {
