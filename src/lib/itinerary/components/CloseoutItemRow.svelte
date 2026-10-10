@@ -1,9 +1,13 @@
 <script lang="ts">
+	// A Closeout item as a Row (#434; spec §Row, CARD_SYSTEM D11). Done, Swap and Skip are
+	// three IDENTICAL bordered pills under the sub-line, inside the row, each a 44px
+	// hit area: none reads as the default. The multi-day date adjust is kept as built.
 	import { enhance } from '$app/forms';
-	import TypeIcon from '$lib/ui/TypeIcon.svelte';
+	import Row from '$lib/ui/Row.svelte';
 	import InlineQuickAdd from '$lib/itinerary/components/InlineQuickAdd.svelte';
-	import { formatTime, formatDateRange } from '$lib/shell/format';
+	import { formatDateRange } from '$lib/shell/format';
 	import { itemDateRange } from '$lib/itinerary/multi-day';
+	import { rowSub } from '$lib/itinerary/row';
 	import type { Item, Day } from '$lib/types';
 
 	let {
@@ -33,108 +37,55 @@
 	const isReplacing = $derived(localState === 'replacing');
 	const isResolved = $derived(isDone || isSkipped);
 	const range = $derived(itemDateRange(item, days));
+
+	// Same pill for all three: bordered, ink, 44px tall.
+	const pill =
+		'border-line bg-surface text-ink hover:bg-surface-2 active:bg-surface-2 inline-flex min-h-11 items-center justify-center rounded-full border px-5 text-xs font-semibold disabled:opacity-40';
 </script>
 
-<div class="border-border border-b last:border-b-0">
-	<div
-		class="flex items-center gap-3 px-3 py-3 transition-opacity"
-		class:opacity-50={isResolved}
-	>
-		<TypeIcon type={item.type} size={28} />
+{#snippet trailing()}
+	<span class="text-ink-muted text-xs font-medium">{isSkipped ? 'Skipped' : 'Done'}</span>
+{/snippet}
 
-		<div class="min-w-0 flex-1">
-			<p class="text-ink text-sm font-medium" class:line-through={isSkipped}>
-				{item.title}
-			</p>
-			{#if item.start_time}
-				<p class="text-ink-muted text-xs">{formatTime(item.start_time)}</p>
-			{/if}
-			{#if range}
-				<button
-					type="button"
-					onclick={() => (editingEnd = !editingEnd)}
-					class="text-ink-muted text-xs hover:underline active:underline"
-				>
-					{formatDateRange(range.start, range.end)} · adjust
-				</button>
-				{#if editingEnd}
-					<form
-						method="POST"
-						action="?/trimEnd"
-						use:enhance={() => {
-							return async ({ result, update }) => {
-								if (result.type === 'success') editingEnd = false;
-								await update();
-							};
-						}}
-						class="mt-1 flex items-center gap-1"
-					>
-						<input type="hidden" name="item_id" value={item.id} />
-						<input
-							type="date"
-							name="end_date"
-							value={range.end}
-							min={range.start}
-							max={tripEndDate || undefined}
-							class="border-line bg-surface text-ink rounded border px-1.5 py-1 text-xs"
-						/>
-						<button type="submit" class="text-sky text-xs font-medium">Save</button>
-					</form>
-				{/if}
-			{/if}
-		</div>
-
-		{#if !isResolved && !isReplacing}
-			<div class="flex shrink-0 gap-1">
+{#snippet pills()}
+	{#if range}
+		<div class="mb-1">
+			<button
+				type="button"
+				onclick={() => (editingEnd = !editingEnd)}
+				class="text-ink-muted inline-flex min-h-11 items-center text-xs hover:underline active:underline"
+			>
+				{formatDateRange(range.start, range.end)} · adjust
+			</button>
+			{#if editingEnd}
 				<form
 					method="POST"
-					action="?/markDone"
+					action="?/trimEnd"
 					use:enhance={() => {
-						submitting = true;
-						return async ({ result }) => {
-							submitting = false;
-							if (result.type === 'success') localState = 'done';
+						return async ({ result, update }) => {
+							if (result.type === 'success') editingEnd = false;
+							await update();
 						};
 					}}
+					class="flex items-center gap-1"
 				>
 					<input type="hidden" name="item_id" value={item.id} />
-					<button
-						type="submit"
-						disabled={submitting}
-						class="rounded-md bg-green-50 px-2.5 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 active:bg-green-100"
-						title="Done as planned"
-					>
-						Done
-					</button>
+					<input
+						type="date"
+						name="end_date"
+						value={range.end}
+						min={range.start}
+						max={tripEndDate || undefined}
+						class="border-line bg-surface text-ink rounded border px-1.5 py-1 text-xs"
+					/>
+					<button type="submit" class="text-sky inline-flex min-h-11 items-center px-2 text-xs font-medium">Save</button>
 				</form>
-
-				<button
-					type="button"
-					onclick={() => (localState = 'replacing')}
-					class="rounded-md bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 active:bg-amber-100"
-					title="Did something else"
-				>
-					Swap
-				</button>
-
-				<button
-					type="button"
-					onclick={() => (localState = 'skipped')}
-					class="text-ink-muted rounded-md px-2.5 py-1.5 text-xs hover:bg-gray-100 active:bg-gray-100"
-					title="Skip — leave as planned"
-				>
-					Skip
-				</button>
-			</div>
-		{:else if isDone}
-			<span class="text-xs font-medium text-green-600">Done</span>
-		{:else if isSkipped}
-			<span class="text-ink-muted text-xs">Skipped</span>
-		{/if}
-	</div>
+			{/if}
+		</div>
+	{/if}
 
 	{#if isReplacing}
-		<div class="px-3 pb-3">
+		<div class="pr-3">
 			<InlineQuickAdd
 				{tripId}
 				{dayId}
@@ -144,5 +95,36 @@
 				onCancel={() => (localState = 'pending')}
 			/>
 		</div>
+	{:else if !isResolved}
+		<div class="flex flex-wrap gap-2">
+			<form
+				method="POST"
+				action="?/markDone"
+				use:enhance={() => {
+					submitting = true;
+					return async ({ result }) => {
+						submitting = false;
+						if (result.type === 'success') localState = 'done';
+					};
+				}}
+			>
+				<input type="hidden" name="item_id" value={item.id} />
+				<button type="submit" disabled={submitting} class={pill} title="Done as planned">Done</button>
+			</form>
+			<button type="button" onclick={() => (localState = 'replacing')} class={pill} title="Did something else">Swap</button>
+			<button type="button" onclick={() => (localState = 'skipped')} class={pill} title="Skip — leave as planned">Skip</button>
+		</div>
 	{/if}
-</div>
+{/snippet}
+
+<Row
+	type={item.type}
+	subtype={item.subtype}
+	title={item.title}
+	sub={rowSub(item)}
+	trailing={isResolved ? trailing : undefined}
+	strike={isSkipped}
+	dim={isResolved}
+	below={isResolved && !range ? undefined : pills}
+	class="px-3 last:border-b-0"
+/>

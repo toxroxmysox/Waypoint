@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rowSub, flightSub, fitFlightSub, rowTrailing, flightRoute, rowContent, keyItemRows } from './row';
+import { linkedItemSub, rowSub, flightSub, fitFlightSub, rowTrailing, flightRoute, rowContent, keyItemRows } from './row';
 
 const est = (s: string) => s.length * 7; // 7px per char, deterministic
 
@@ -172,5 +172,30 @@ describe('rowContent: one call per item', () => {
 	it('other types give plain text and no flight parts', () => {
 		const r = rowContent({ type: 'meal', location_name: 'Cafe' }, { dayDate: '2026-10-01' });
 		expect(r).toEqual({ sub: 'Thu Oct 1 · Cafe', flight: null });
+	});
+});
+
+describe('linkedItemSub: a goal linked item, status in words (#434)', () => {
+	it('an idea reads its status and phase', () => {
+		expect(linkedItemSub({ type: 'meal', status: 'unplanned' }, { phaseName: 'Phase 1' })).toBe('Idea · Phase 1');
+	});
+	it('a planned item reads its date and time', () => {
+		expect(
+			linkedItemSub(
+				{ type: 'meal', status: 'planned', start_time: '2026-10-01 18:30:00.000Z' },
+				{ dayDate: '2026-10-01 00:00:00.000Z', phaseName: 'Phase 1' }
+			)
+		).toBe('Planned · Thu Oct 1 · 6:30p');
+	});
+	it('planned and untimed: the date alone; planned with no day: the phase', () => {
+		expect(linkedItemSub({ type: 'meal', status: 'planned' }, { dayDate: '2026-10-01' })).toBe('Planned · Thu Oct 1');
+		expect(linkedItemSub({ type: 'meal', status: 'planned' }, { phaseName: 'Phase 1' })).toBe('Planned · Phase 1');
+	});
+	it('done and considered use their own words', () => {
+		expect(linkedItemSub({ type: 'meal', status: 'done' }, { dayDate: '2026-10-01' })).toBe('Done · Thu Oct 1');
+		expect(linkedItemSub({ type: 'meal', status: 'considered' }, { phaseName: 'Phase 1' })).toBe('Considered · Phase 1');
+	});
+	it('just the status when nothing else is known', () => {
+		expect(linkedItemSub({ type: 'meal', status: 'unplanned' })).toBe('Idea');
 	});
 });

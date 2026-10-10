@@ -18,12 +18,14 @@
 	import MemorySheet from '$lib/memory/components/MemorySheet.svelte';
 	import MemoryCard from '$lib/memory/components/MemoryCard.svelte';
 	import { getNowFeed } from '$lib/trip-mode/now-state';
+	import Row from '$lib/ui/Row.svelte';
+	import { rowSub } from '$lib/itinerary/row';
 	import Hero from '$lib/itinerary/components/Hero.svelte';
 	import ItemActionsMenu from '$lib/itinerary/components/ItemActionsMenu.svelte';
 	import ItemActionSheets from '$lib/itinerary/components/ItemActionSheets.svelte';
 	import { itemMenuEntries, itemPermissions } from '$lib/itinerary/item-actions';
 	import { heroStatus } from '$lib/trip-mode/hero';
-	import { formatCountdown, formatTime } from '$lib/shell/format';
+	import { formatCountdown } from '$lib/shell/format';
 	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
 	import type { Item } from '$lib/types';
 	import { page } from '$app/state';
@@ -390,12 +392,16 @@
 				{dayLabel(data.tomorrowDate)}
 			</SectionH>
 			{#if data.tomorrowItems.length > 0}
-				<div class="mt-2 space-y-1">
-					{#each data.tomorrowItems.slice(0, 3) as item (item.id)}
-						<a href={withOrigin(`/trips/${data.trip.slug}/items/${item.id}`, page.url.pathname)} class="border-line hover:border-ink-muted active:border-ink-muted flex items-center gap-2 rounded-lg border px-3 py-2">
-							<span class="font-mono text-ink-muted text-xs">{item.start_time ? formatTime(item.start_time) : '—'}</span>
-							<span class="text-ink text-sm truncate">{item.title}</span>
-						</a>
+				<div class="mt-1">
+					{#each data.tomorrowItems.slice(0, 3) as item, i (item.id)}
+						<Row
+							type={item.type}
+							subtype={item.subtype}
+							title={item.title}
+							sub={rowSub(item)}
+							href={withOrigin(`/trips/${data.trip.slug}/items/${item.id}`, page.url.pathname)}
+							divider={i < Math.min(3, data.tomorrowItems.length) - 1}
+						/>
 					{/each}
 					{#if data.tomorrowItems.length > 3}
 						<p class="text-ink-muted text-center text-xs">+{data.tomorrowItems.length - 3} more</p>

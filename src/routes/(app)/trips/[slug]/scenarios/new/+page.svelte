@@ -4,7 +4,7 @@
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
 	import Button from '$lib/ui/Button.svelte';
-	import TypeIcon from '$lib/ui/TypeIcon.svelte';
+	import Row from '$lib/ui/Row.svelte';
 	import SketchEditor from '$lib/ideation/components/SketchEditor.svelte';
 	import { untrack } from 'svelte';
 	import { revealServerError, errorField } from '$lib/shell/actions/validate-form';
@@ -141,19 +141,17 @@
 				<p class="text-ink-soft text-xs font-semibold">Anchor ideas</p>
 				<p class="text-ink-muted mt-0.5 text-[11px]">The must-dos that make this pitch worth it.</p>
 				{#if data.ideas.length > 0}
-					<div class="mt-2 flex flex-wrap gap-1.5" data-testid="keystone-picker">
-						{#each data.ideas as idea (idea.id)}
-							{@const on = selectedKeystones.has(idea.id)}
-							<button
-								type="button"
-								onclick={() => toggleKeystone(idea.id)}
-								aria-pressed={on}
-								class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] transition-colors
-									{on ? 'bg-moss text-paper border-moss' : 'border-line text-ink-soft hover:border-moss/40 active:border-moss/40'}"
-							>
-								<TypeIcon type={idea.type} size={13} />
-								{idea.title}
-							</button>
+					<div class="mt-1" data-testid="keystone-picker">
+						{#each data.ideas as idea, i (idea.id)}
+							<Row
+								type={idea.type}
+								subtype={idea.subtype}
+								title={idea.title}
+								sub={idea.place}
+								selected={selectedKeystones.has(idea.id)}
+								onselect={() => toggleKeystone(idea.id)}
+								divider={i < data.ideas.length - 1}
+							/>
 						{/each}
 					</div>
 				{/if}

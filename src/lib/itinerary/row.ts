@@ -7,7 +7,7 @@ import { estimateTextWidth } from '$lib/itinerary/card-anatomy';
 import type { TimeFields } from '$lib/itinerary/timeline';
 import { needsBooking } from '$lib/itinerary/booking-projection';
 import type { Day, Item } from '$lib/types';
-import type { ItemType } from '$lib/itinerary/types';
+import type { ItemStatus, ItemType } from '$lib/itinerary/types';
 import { arrivalKey, arrivalLabel, departureKey, type FlightItemInput } from '$lib/itinerary/flights-lineup';
 
 const SEP = ' · ';
@@ -199,4 +199,30 @@ export function keyItemRows(items: KeyItem[], days: Pick<Day, 'id' | 'date'>[]):
 			...rowContent(i, { dayDate }),
 			needsBooking: needsBooking(i)
 		}));
+}
+
+// --- A Trip Goal linked items (#434) ----------------------------------------
+const STATUS_WORD: Record<ItemStatus, string> = {
+	unplanned: 'Idea',
+	planned: 'Planned',
+	done: 'Done',
+	considered: 'Considered'
+};
+
+/**
+ * The sub-line of a goal linked-item Row: the status in words, then where it
+ * sits. A planned or done item with a day reads its date and time
+ * (`Planned · Thu Oct 1 · 6:30p`); anything else reads its phase
+ * (`Idea · Phase 1`). Parts are omitted when unknown.
+ */
+export function linkedItemSub(
+	item: RowItemFields & { status: ItemStatus },
+	ctx: { dayDate?: string; phaseName?: string } = {}
+): string {
+	const dayDate = dateOnly(ctx.dayDate);
+	const where =
+		dayDate && (item.status === 'planned' || item.status === 'done')
+			? formatTimeText(item, { date: dayDate })
+			: ctx.phaseName?.trim() || '';
+	return [STATUS_WORD[item.status], where].filter(Boolean).join(SEP);
 }
