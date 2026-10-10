@@ -3,6 +3,9 @@
 	import type { Trip, Phase, Day, Item, Vote, TripMember } from '$lib/types';
 	import { getActiveSection, formatTripDate } from '$lib/shell/trip-nav';
 	import { tripToday, tripTz } from '$lib/shell/trip-time';
+	import IdeasStrip from '$lib/trip-mode/components/IdeasStrip.svelte';
+	import TomorrowPreview from '$lib/trip-mode/components/TomorrowPreview.svelte';
+	import { nowRail } from '$lib/trip-mode/now-rail.svelte';
 	import ParkingLotSection from '$lib/itinerary/components/ParkingLotSection.svelte';
 
 	let {
@@ -18,6 +21,15 @@
 	} = $props();
 
 	let activeContext = $derived(getActiveSection(page.url.pathname));
+
+	// #446 — on Now the rail holds Ideas for now + tomorrow's Rows (the column stays on
+	// today). Sourced from the Now load via merged page data.
+	const isNowPage = $derived(/\/trips\/[^/]+\/now\/?$/.test(page.url.pathname));
+	const nowIdeas = $derived(
+		(page.data.ideas as { item: Item; score: number; votes: Vote[] }[] | undefined) ?? []
+	);
+	const nowTomorrowDate = $derived((page.data.tomorrowDate as string | null | undefined) ?? null);
+	const nowTomorrowItems = $derived((page.data.tomorrowItems as Item[] | undefined) ?? []);
 
 	const isDayPage = $derived(page.url.pathname.includes('/days/'));
 
@@ -109,7 +121,30 @@
 	{/if}
 
 	<!-- Route-specific content -->
-	{#if activeContext === 'itinerary'}
+	{#if isNowPage}
+		{#if nowIdeas.length > 0}
+			<div class="px-5 py-4">
+				<IdeasStrip
+					ideas={nowIdeas}
+					members={railMembers}
+					{slug}
+					canPromote={(page.data.canPromote as boolean | undefined) ?? false}
+					myMemberId={railMembership?.id ?? ''}
+					canVote={(page.data.canVote as boolean | undefined) ?? false}
+					heading={nowRail.skipped ? 'Replace it' : 'Ideas for now'}
+					subheading={nowRail.skipped
+						? 'Pick a backup from this part of the trip'
+						: 'Backup plans from this part of the trip'}
+				/>
+			</div>
+		{/if}
+		{#if nowTomorrowDate}
+			<div class="border-line border-t px-5 py-4">
+				<TomorrowPreview {slug} date={nowTomorrowDate} items={nowTomorrowItems} />
+			</div>
+		{/if}
+
+	{:else if activeContext === 'itinerary'}
 		<!-- Day at a glance -->
 		{#if todayDay}
 			{@const todayPhases = phasesForDay(todayDay)}

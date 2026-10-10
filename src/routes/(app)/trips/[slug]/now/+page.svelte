@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { withOrigin } from '$lib/shell/back-nav';
 	// Merged Now view (#244). Now absorbed Today: one weighted whole-day glance with
 	// exactly THREE visual weights, top → bottom — faded past (peek, revealed by
 	// scrolling up; the page auto-scrolls to the Focus on open so the past sits
@@ -18,8 +17,8 @@
 	import MemorySheet from '$lib/memory/components/MemorySheet.svelte';
 	import MemoryCard from '$lib/memory/components/MemoryCard.svelte';
 	import { getNowFeed } from '$lib/trip-mode/now-state';
-	import Row from '$lib/ui/Row.svelte';
-	import { rowSub } from '$lib/itinerary/row';
+	import TomorrowPreview from '$lib/trip-mode/components/TomorrowPreview.svelte';
+	import { nowRail } from '$lib/trip-mode/now-rail.svelte';
 	import Hero from '$lib/itinerary/components/Hero.svelte';
 	import FreeTimeLabel from '$lib/itinerary/components/FreeTimeLabel.svelte';
 	import { freeTimeGaps } from '$lib/itinerary/card-anatomy';
@@ -84,6 +83,8 @@
 	// for the session after a skip even if a later item keeps the Focus engaged —
 	// the strip renders below the rest list as the "replace what you skipped" rail.
 	let justSkipped = $state(false);
+	// The rail (outside this page) reads the same flag; clear it when Now unmounts.
+	onMount(() => () => (nowRail.skipped = false));
 
 	// #437's menu + sheet serve two doors on this page: the Hero's `⋯` (#428) and each
 	// Coming up card's `⋯` (#429). Entries come from the item permissions (Skip for
@@ -98,15 +99,6 @@
 	function askSkip(item: Item) {
 		skipTarget = item;
 		skipOpen = true;
-	}
-
-	function dayLabel(dateStr: string): string {
-		return new Date(dateStr.replace(' ', 'T')).toLocaleDateString('en-US', {
-			weekday: 'long',
-			month: 'short',
-			day: 'numeric',
-			timeZone: 'UTC'
-		});
 	}
 
 	// #269 Trip Memory — the one composer, opened from three doors on this page:
@@ -303,7 +295,9 @@
 	     ideas, shown at a free-time / nothing-else Focus (Door 1) OR after a
 	     just-skipped slot (Door 2 — accepting one promotes it into the gap). Same
 	     component, two triggers. Self-hides when the phase has no ideas. -->
+	<!-- #446: at >=1280px the context rail holds this strip; the column stays on today. -->
 	{#if doorOpen || justSkipped}
+		<div class="lg-desktop:hidden">
 		<IdeasStrip
 			ideas={data.ideas}
 			members={data.members}
@@ -316,6 +310,7 @@
 				? 'Pick a backup from this part of the trip'
 				: 'Backup plans from this part of the trip'}
 		/>
+		</div>
 	{/if}
 
 	<!-- Weight 3: the rest at NORMAL weight (overrides #154's muted later-today
@@ -392,34 +387,11 @@
 		</section>
 	{/if}
 
-	<!-- Divider → next-day preview + link to the "Next 3 days" sub-tab. -->
+	<!-- Divider → next-day preview + link to the "Next 3 days" sub-tab. At >=1280px the
+	     context rail holds it (#446). -->
 	{#if data.tomorrowDate}
-		<div class="border-line border-t pt-4">
-			<SectionH>
-				{#snippet right()}
-					<a href="/trips/{data.trip.slug}/today/upcoming" class="text-ink-muted hover:text-ink-soft active:text-ink-soft text-xs">Next 3 days</a>
-				{/snippet}
-				{dayLabel(data.tomorrowDate)}
-			</SectionH>
-			{#if data.tomorrowItems.length > 0}
-				<div class="mt-1">
-					{#each data.tomorrowItems.slice(0, 3) as item, i (item.id)}
-						<Row
-							type={item.type}
-							subtype={item.subtype}
-							title={item.title}
-							sub={rowSub(item)}
-							href={withOrigin(`/trips/${data.trip.slug}/items/${item.id}`, page.url.pathname)}
-							divider={i < Math.min(3, data.tomorrowItems.length) - 1}
-						/>
-					{/each}
-					{#if data.tomorrowItems.length > 3}
-						<p class="text-ink-muted text-center text-xs">+{data.tomorrowItems.length - 3} more</p>
-					{/if}
-				</div>
-			{:else}
-				<p class="text-ink-muted mt-2 text-xs">Nothing scheduled.</p>
-			{/if}
+		<div class="border-line border-t pt-4 lg-desktop:hidden">
+			<TomorrowPreview slug={data.trip.slug} date={data.tomorrowDate} items={data.tomorrowItems} />
 		</div>
 	{/if}
 
@@ -473,7 +445,10 @@
 			slug={data.trip.slug}
 			itemId={skipTarget.id}
 			typeLabel={skipTarget.type}
-			onskipped={() => (justSkipped = true)}
+			onskipped={() => {
+				justSkipped = true;
+				nowRail.skipped = true;
+			}}
 		/>
 	{/key}
 {/if}
