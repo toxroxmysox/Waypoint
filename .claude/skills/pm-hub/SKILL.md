@@ -30,11 +30,21 @@ intake → grill → contract → slice → dispatch → integrate → verify �
 
 Ceremony per issue type: `docs/agents/triage-labels.md`. Grill-vs-slice, HITL-vs-AFK, firing order, wave sizing: [references/decision-frameworks.md](references/decision-frameworks.md).
 
+## With svw (from 2026-10-06)
+
+svw (`svw:workflow`) is the process inside each ticket. pm-hub sits on top and owns what svw doesn't: waves, the integration branch, merge order, migration numbers, deploy, the board. New efforts are decided with `svw:grill-with-docs` / `svw:wayfinder`, which replace this loop's grill → contract → slice.
+
+- **Per ticket, by label:** bug → `svw:diagnosing-bugs`. Enhancement, refactor or feature slice → `svw:writing-plans` (plan at `docs/plans/<effort>/<N>-<slug>.md`) → `svw:executing-plans`. Trivial → just do it. All use `svw:test-driven-development` and end with `svw:verification-before-completion`, then a PR (`svw:pr` body) against the integration branch.
+- **TDD scope:** red-green on derivations, hooks/rules (harnesses) and the critical-path E2E the spec names. Pure layout is proven by `pnpm verify:visual` screenshots, never by markup tests (CLAUDE.md Testing). That rule is Scott's answer to TDD's "ask your human partner" exception.
+- **The hub reviews; Scott doesn't** ("I don't review code", 2026-10-06). Implementers never dispatch reviewers. When one reports, dispatch svw's code reviewer (spec fidelity + standards) and intent reviewer (runs it, walks the ticket's stories) in parallel. Send the findings back to the same agent (SendMessage) as one fix pass, each fix red→green. Only a MAJOR DEPARTURE (a story unmet, an ADR contradicted, scope added or dropped) goes to Scott.
+- **`svw:finishing-a-development-branch`'s menu is pre-answered:** a PR into the integration branch, merged by the hub after review. Merging to `main` and deploying stay on Scott's word.
+- **Intent sources** for every plan and reviewer: the effort's spec in `docs/plans/<effort>/`, its decision log, `CONTEXT.md`, the ADRs it cites, and any content contract (`docs/CARD_CONTENT_SPEC.md`).
+
 ## Boundary
 
-**You own:** the dev pipeline end-to-end; board mechanics (file / close / slice / label) derived from locked contracts or observable state; small direct edits during integration — dispatching a session for a 5-line fix is ceremony.
+**You own:** the dev pipeline end-to-end; board mechanics (close / label) derived from locked contracts or observable state; small direct edits during integration — dispatching a session for a 5-line fix is ceremony.
 
-**You originate scope:** propose net-new issues from what you see in code and dogfood — but **confirm with Scott before dispatching net-new scope**. Filing an issue to capture a finding isn't scope; file freely.
+**You originate scope:** propose net-new work from what you see in code and dogfood, and **confirm with Scott before dispatching it**. Issues are input only (Scott's rule): never create them. Record findings in `handoff-pm-hub.md` for Scott to file.
 
 **Escalate only:** product / design / infra (DNS, certs, accounts) — decisions needing his intent, not his engineering.
 
@@ -42,7 +52,7 @@ Ceremony per issue type: `docs/agents/triage-labels.md`. Grill-vs-slice, HITL-vs
 
 ## Dispatch (hybrid)
 
-- **AFK, small/medium slice** → spawn a background agent in an isolated worktree yourself. No ferrying, no handoff file, **no PR** — the agent **commits each issue separately** to its worktree branch and you integrate from those commits (`git log <base>..<branch>` → cherry-pick). Per-issue commits are the recovery unit: host-sleep or agent-death mid-run loses only *uncommitted* stragglers (2026-06-14 overnight stall ate 3 agents; all committed issues survived). Copy `.wolf/` into each worktree (`cp -r <main>/.wolf .wolf`) — agents are otherwise blind to the Do-Not-Repeat scars (gitignored, absent from worktrees); the PM does the canonical `.wolf` writes at integration.
+- **AFK, small/medium slice** → spawn a background agent in an isolated worktree yourself. No ferrying, no handoff file, **no PR** unless the ticket names an integration branch to PR against (3.0 does) — the agent **commits each issue separately** to its worktree branch and you integrate from those commits (`git log <base>..<branch>` → cherry-pick). Per-issue commits are the recovery unit: host-sleep or agent-death mid-run loses only *uncommitted* stragglers (2026-06-14 overnight stall ate 3 agents; all committed issues survived). Copy `.wolf/` into each worktree (`cp -r <main>/.wolf .wolf`) — agents are otherwise blind to the Do-Not-Repeat scars (gitignored, absent from worktrees); the PM does the canonical `.wolf` writes at integration.
 - **HITL, feature-sized, or migration-heavy** → write a starter prompt for a Desktop session Scott fires.
 
 Both briefs come from one template: [references/starter-prompt.md](references/starter-prompt.md). Pre-split migration-number ranges across concurrent backend work, and give every concurrent worktree its own `E2E_SLOT` (1, 2, … — 0 is the main checkout) so they can all verify (#384).

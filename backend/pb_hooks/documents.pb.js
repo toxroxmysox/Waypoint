@@ -33,7 +33,7 @@ onRecordCreateRequest((e) => {
 	}
 
 	// Viewers are read-only (PRD — viewers view + download, never upload).
-	if (callerMember.get('role') === 'viewer') {
+	if (callerMember.getString('role') === 'viewer') {
 		throw new ForbiddenError('Viewers cannot upload documents');
 	}
 
@@ -117,7 +117,7 @@ onRecordDeleteRequest((e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 
-	const callerRole = callerMember.get('role');
+	const callerRole = callerMember.getString('role');
 	const isUploader = callerMember.id === uploadedById;
 	const isPrivileged = callerRole === 'owner' || callerRole === 'co_owner';
 

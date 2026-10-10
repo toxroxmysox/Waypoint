@@ -7,7 +7,8 @@ export interface TripMember extends RecordModel {
 	trip: string;
 	user: string;
 	placeholder_name: string;
-	placeholder_email: string;
+	/** #450: HIDDEN field (0074) — never present on a REST read. Owners/co-owners get it from GET /api/members/placeholder-emails. */
+	placeholder_email?: string;
 	display_name: string;
 	role: MemberRole;
 	joined_at: string;

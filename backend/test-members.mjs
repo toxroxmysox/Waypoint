@@ -373,10 +373,27 @@ if (raceFxRes.status !== 200) {
 }
 const raceTripId = raceFxRes.json.tripId;
 
+// #450: placeholder_email is a HIDDEN field (0074) — a member token can't even
+// FILTER on it — so the durable DB-count checks read as superuser.
+let suToken = null;
+async function superuser() {
+	if (suToken) return suToken;
+	const res = await fetch(`${BASE}/api/collections/_superusers/auth-with-password`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({
+			identity: process.env.PB_SUPERUSER_EMAIL || 'admin@e2e.test',
+			password: process.env.PB_SUPERUSER_PASSWORD || 'e2eAdminPass123'
+		})
+	});
+	suToken = (await res.json())?.token ?? null;
+	return suToken;
+}
+
 async function countActive(filter) {
 	const res = await fetch(
 		`${BASE}/api/collections/trip_members/records?perPage=200&filter=${encodeURIComponent(filter)}`,
-		{ headers: { Authorization: 'Bearer ' + tokens.owner } }
+		{ headers: { Authorization: 'Bearer ' + (await superuser()) } }
 	);
 	const json = await res.json();
 	return Array.isArray(json?.items) ? json.items.length : -1;

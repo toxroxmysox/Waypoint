@@ -7,6 +7,18 @@ import { isFileDocument, codesForItem } from '$lib/documents/codes';
 import { memberAvatarUrl, withAvatarUrls } from '$lib/collaboration/member-avatar';
 import { computeMovePatch } from '$lib/itinerary/move-item';
 import { paidSummaryForItem } from '$lib/money/linked-expenses';
+import { itemPermissions, ITEM_ACTION_ERRORS } from '$lib/itinerary/item-actions';
+import { needsBooking } from '$lib/itinerary/booking-projection';
+import { tripNow, tripTz } from '$lib/shell/trip-time';
+import { parseMarkBooked, markBookedDestination } from '$lib/itinerary/item-page';
+
+const BOOK_ERROR = "Couldn't mark this booked. Reload the page and try again.";
+
+// A failed PB call's status when it is an HTTP error, else 500.
+function failStatus(err: unknown): number {
+	const status = (err as { status?: number } | null)?.status;
+	return typeof status === 'number' && status >= 400 && status < 600 ? status : 500;
+}
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, membership, phases, days } = await parent();
@@ -99,22 +111,18 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 
 	const myVote = votes.find((v) => v.member === membership.id) ?? null;
 
-	// #219 — who may edit this item directly: owner/co_owner, OR the member who
-	// created it (created_by holds a trip_members.id). Mirrors the items.pb.js
-	// update gate so the Edit affordance never shows when the submit would 403.
-	const canEdit =
-		membership.role === 'owner' ||
-		membership.role === 'co_owner' ||
-		(!!item.created_by && item.created_by === membership.id);
+	// #416 — every control on this page is gated by one permission set that
+	// mirrors the server gates (items.pb.js, documents/checklists/tasks hooks,
+	// votes.createRule, the skipItem action), so nothing renders that would 403.
+	// Covers #219's creator edit and #229's paid-moment (non-viewer, not a note).
+	const permissions = itemPermissions(membership, item);
 
 	// #229 / ADR-0014 — the paid-moment affordance. "Paid" is DERIVED: paid IFF ≥1 linked
 	// expense (no `paid` flag, no migration). 0 linked → "Log payment" (opens #228's
-	// prefilled add); ≥1 → "Paid $X" (summed) with a link-out. Shown on every Item Type
-	// except `note`, open to any non-viewer. `booked` is orthogonal and never consulted.
+	// prefilled add); ≥1 → "Paid $X" (summed) with a link-out. `booked` is orthogonal.
 	const paidSummary = paidSummaryForItem(linkedExpenses, item.id);
-	const canLogPayment = membership.role !== 'viewer' && item.type !== 'note';
 
-	return { item, checklist, tasks, members: withAvatarUrls(locals.pb, members), comments, votes, myVote, documents, itemDay: day, itemPhase: phase, linkedExpenseCount: linkedExpenses.length, linkedGoals, canEdit, paidSummary, canLogPayment };
+	return { item, checklist, tasks, members: withAvatarUrls(locals.pb, members), comments, votes, myVote, documents, itemDay: day, itemPhase: phase, linkedExpenseCount: linkedExpenses.length, linkedGoals, paidSummary, permissions, now: tripNow(tripTz(trip)).toISOString() };
 };
 
 async function getMembership(locals: App.Locals, tripId: string): Promise<TripMember> {
@@ -163,8 +171,9 @@ export const actions: Actions = {
 			redirect(303, `/trips/${params.slug}`);
 		} catch (err: unknown) {
 			if (isRedirect(err)) throw err;
-			const message = err instanceof Error ? err.message : 'Failed to delete item.';
-			return fail(500, { error: message });
+			// #416 — a refused delete (items.pb.js: owner/co_owner only) used to
+			// render nothing. The page shows this in the Delete panel.
+			return fail(failStatus(err), { deleteError: ITEM_ACTION_ERRORS.delete });
 		}
 	},
 
@@ -480,25 +489,73 @@ export const actions: Actions = {
 
 			return { success: true };
 		} catch (err: unknown) {
-			const message = err instanceof Error ? err.message : 'Failed to move item.';
-			return fail(500, { error: message });
+			// #416 — a refused move (items.pb.js update gate) used to render nothing.
+			// MoveItemSheet stays open and shows the error.
+			return fail(failStatus(err), { moveError: ITEM_ACTION_ERRORS.move });
 		}
 	},
 
 	// #246 Door 2 — skip from item detail (the second entry point; the Today card's
 	// overflow is the first). Same semantics as the Now route's skipItem: clear day
 	// → unplanned, strip time, keep phase → returns to the parking lot, reversible,
-	// never `considered`. Owner/co_owner only (SPEC §4). Reuses computeMovePatch.
+	// never `considered`. Owner/co_owner only (SPEC §4), and only a planned item on a
+	// day — the same `canSkip` the page gates the control with (#416). Reuses
+	// computeMovePatch. Where the page goes afterwards is the client's call
+	// (skipDestination: Now in Trip Mode, stay in Planning Mode).
+	// #441 — Mark booked. Writes `booked` (+ who) and an optional confirmation code
+	// (a `kind: 'code'` Document, ADR-0016). It never touches expenses: booked and paid
+	// are separate facts (ADR-0014). Ticked "log what I paid next" redirects to the
+	// existing prefilled Add expense; the redirect is thrown outside the try.
+	markBooked: async ({ request, params, locals }) => {
+		const failBooked = (status: number) => fail(status, { bookError: BOOK_ERROR });
+		let item: Item;
+		try {
+			item = await locals.pb.collection('items').getOne<Item>(params.itemId);
+		} catch (err: unknown) {
+			return failBooked(failStatus(err));
+		}
+		const membership = await getMembership(locals, item.trip).catch(() => null);
+		if (!membership || !itemPermissions(membership, item).canEdit || !needsBooking(item)) {
+			return failBooked(403);
+		}
+		const { code, logPayment } = parseMarkBooked(await request.formData());
+
+		try {
+			// Code first: if it fails the item is still unbooked, so a retry works.
+			if (code) {
+				await locals.pb.collection('documents').create({
+					trip: item.trip,
+					item: item.id,
+					kind: 'code',
+					code_label: 'Confirmation',
+					code_value: code
+				});
+			}
+			await locals.pb.collection('items').update(item.id, { booked: true, booked_by: membership.id });
+		} catch (err: unknown) {
+			return failBooked(failStatus(err));
+		}
+
+		const to = markBookedDestination(params.slug, item, logPayment);
+		if (to) redirect(303, to);
+		return { booked: true };
+	},
+
 	skipItem: async ({ params, locals }) => {
-		const item = await locals.pb.collection('items').getOne<Item>(params.itemId);
+		let item: Item;
+		try {
+			item = await locals.pb.collection('items').getOne<Item>(params.itemId);
+		} catch (err: unknown) {
+			return fail(failStatus(err), { skipError: ITEM_ACTION_ERRORS.skip });
+		}
 		const membership = await locals.pb
 			.collection('trip_members')
 			.getFirstListItem<TripMember>(
 				`trip = "${item.trip}" && user = "${locals.user!.id}" && removed_at = ""`
 			)
 			.catch(() => null);
-		if (!membership || (membership.role !== 'owner' && membership.role !== 'co_owner')) {
-			return fail(403, { error: 'Only the trip owner or a co-owner can skip an item.' });
+		if (!membership || !itemPermissions(membership, item).canSkip) {
+			return fail(403, { skipError: ITEM_ACTION_ERRORS.skip });
 		}
 
 		try {
@@ -517,12 +574,7 @@ export const actions: Actions = {
 			await locals.pb.collection('items').update(params.itemId, patch);
 			return { success: true };
 		} catch (err: unknown) {
-			const e = err as { status?: number };
-			if (e?.status === 403) {
-				return fail(403, { error: 'Only the trip owner or a co-owner can skip an item.' });
-			}
-			const message = err instanceof Error ? err.message : 'Failed to skip item.';
-			return fail(500, { error: message });
+			return fail(failStatus(err), { skipError: ITEM_ACTION_ERRORS.skip });
 		}
 	}
 };

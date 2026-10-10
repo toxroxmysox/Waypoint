@@ -172,6 +172,28 @@ test.describe('Trip import round-trip (#410)', () => {
 			expect(items).toHaveLength(srcItems.length);
 			expect(items.map((i) => i.title).sort()).toEqual(srcItems.map((i) => i.title).sort());
 			expect(items.every((i) => i.phase)).toBe(true);
+			// #450: compare each item's day + phase with its source, not just "has a phase".
+			// Tuples [title, day date, phase name], sorted (titles may repeat).
+			const srcPhaseName = new Map(
+				(await list('phases', `trip = "${tripId}"`, token)).map((p) => [p.id, String(p.name)])
+			);
+			const srcDayDate = new Map(srcDays.map((d) => [d.id, day(d.date)]));
+			const newPhaseName = new Map(phases.map((p) => [p.id, String(p.name)]));
+			const newDayDate = new Map(days.map((d) => [d.id, day(d.date)]));
+			const tuple = (
+				i: Rec,
+				phaseName: Map<string, string>,
+				dayDate: Map<string, string>
+			): string =>
+				JSON.stringify([
+					i.title,
+					i.day ? dayDate.get(String(i.day)) : '',
+					phaseName.get(String(i.phase)),
+					i.status
+				]);
+			expect(items.map((i) => tuple(i, newPhaseName, newDayDate)).sort()).toEqual(
+				srcItems.map((i) => tuple(i, srcPhaseName, srcDayDate)).sort()
+			);
 			const codes = await list('documents', `trip = "${newId}" && kind = "code"`, token);
 			expect(codes.map((c) => c.code_value)).toEqual(['RT-410']);
 		} finally {

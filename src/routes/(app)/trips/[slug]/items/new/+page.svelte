@@ -4,6 +4,8 @@
 	import ServerErrorAlert from '$lib/ui/ServerErrorAlert.svelte';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import SaveBar from '$lib/ui/SaveBar.svelte';
+	import Button from '$lib/ui/Button.svelte';
+	import { toast } from '$lib/shell/stores/toast';
 	import UnsavedChangesGuard from '$lib/ui/UnsavedChangesGuard.svelte';
 	import ItemForm from '$lib/itinerary/components/ItemForm.svelte';
 	import type { ItemFormData } from '$lib/itinerary/components/ItemFormFields';
@@ -31,6 +33,11 @@
 	let submitting = $state(false);
 	let loading = $state(false);
 
+	// #444 — Suggestion edit view: Reject (needs a one-line note) / Save (stays
+	// pending) / Approve. `intent` rides on the submitter button.
+	let rejectOpen = $state(false);
+	let rejectNote = $state('');
+
 	let submitAsSuggestion = $derived(data.submitAsSuggestion ?? false);
 	let prefill = $derived(data.prefill ?? null);
 	let suggestionId = $derived((prefill as Record<string, unknown> | null)?._suggestion_id as string ?? '');
@@ -40,7 +47,7 @@
 	let buttonLabel = $derived(
 		loading
 			? (submitAsSuggestion ? 'Submitting…' : suggestionId ? 'Approving…' : 'Creating…')
-			: (submitAsSuggestion ? 'Submit suggestion' : suggestionId ? 'Approve with edits' : 'Create item')
+			: (submitAsSuggestion ? 'Submit suggestion' : suggestionId ? 'Approve' : 'Create item')
 	);
 
 	// #367 — the navigation guard and its beforeunload twin now live in
@@ -100,7 +107,7 @@
 	{#if suggestionId && prefillAuthorName}
 		<div class="border-moss/30 bg-moss-tint text-moss rounded-md border p-3 text-sm">
 			Proposed by <strong>{prefillAuthorName}</strong>{#if prefillDayLabel}
-				for <strong>{prefillDayLabel}</strong>{/if}. Edit as needed, then approve.
+				for <strong>{prefillDayLabel}</strong>{/if}. Edit as needed, then Save (it stays pending) or Approve.
 		</div>
 	{/if}
 
@@ -114,6 +121,16 @@
 				if (result.type === 'failure') {
 					loading = false;
 					submitting = false;
+				}
+				if (result.type === 'success' && (result.data as { saved?: boolean } | undefined)?.saved) {
+					// #444 — Save keeps the Suggestion pending and keeps us here: no
+					// form reset (it would wipe what was just typed), dirty clears.
+					loading = false;
+					submitting = false;
+					dirty = false;
+					toast.show('Saved. Still pending.');
+					await update({ reset: false });
+					return;
 				}
 				await update();
 			};
@@ -141,7 +158,48 @@
 			typeEditable={true}
 		/>
 
-		<SaveBar {loading} label={buttonLabel} />
+		{#if suggestionId}
+			<SaveBar {loading} label={buttonLabel}>
+				<div class="space-y-2">
+					{#if rejectOpen}
+						<!-- Reject keeps its one-line note rule. -->
+						<label for="reject-note-edit" class="text-ink-soft block text-xs font-medium">
+							Reason for rejecting (required)
+						</label>
+						<input
+							id="reject-note-edit"
+							name="review_note"
+							type="text"
+							bind:value={rejectNote}
+							placeholder="Why isn’t this a fit?"
+							class="border-line bg-surface text-ink block min-h-[44px] w-full rounded-md border px-3 text-sm"
+						/>
+						<div class="flex gap-2">
+							<Button type="button" variant="ghost" size="lg" class="flex-1" disabled={loading} onclick={() => { rejectOpen = false; rejectNote = ''; }}>
+								Cancel
+							</Button>
+							<Button type="submit" name="intent" value="reject" variant="outline" size="lg" class="flex-1" disabled={loading || !rejectNote.trim()}>
+								Confirm reject
+							</Button>
+						</div>
+					{:else}
+						<div class="flex gap-2">
+							<Button type="button" variant="ghost" size="lg" class="flex-1" disabled={loading} onclick={() => (rejectOpen = true)}>
+								Reject
+							</Button>
+							<Button type="submit" name="intent" value="save" variant="outline" size="lg" class="flex-1" disabled={loading}>
+								Save
+							</Button>
+							<Button type="submit" name="intent" value="approve" variant="moss" size="lg" class="flex-1" disabled={loading} {loading}>
+								{buttonLabel}
+							</Button>
+						</div>
+					{/if}
+				</div>
+			</SaveBar>
+		{:else}
+			<SaveBar {loading} label={buttonLabel} />
+		{/if}
 	</form>
 	<div class="save-bar-spacer" aria-hidden="true"></div>
 </main>

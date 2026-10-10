@@ -55,7 +55,7 @@ test.describe('Inline item checklist (#48 primitive · #55 ledger)', () => {
 		// The trip layout is a dual tree (mobile + desktop, one CSS-hidden), so scope
 		// every control to the visible subtree to avoid strict-mode violations.
 		// No checklist yet → the attach affordance is offered.
-		const addChecklist = page.getByRole('button', { name: 'Add checklist' }).filter({ visible: true }).first();
+		const addChecklist = page.getByRole('button', { name: '+ Checklist', exact: true }).filter({ visible: true }).first();
 		await expect(addChecklist).toBeVisible();
 		await addChecklist.click();
 
@@ -70,8 +70,13 @@ test.describe('Inline item checklist (#48 primitive · #55 ledger)', () => {
 		await page.getByRole('button', { name: 'Check task' }).filter({ visible: true }).first().click();
 		await expect(page.getByRole('button', { name: 'Uncheck task' }).filter({ visible: true }).first()).toBeVisible();
 
-		// Assign via the ⋯ overflow → member sheet → Done.
+		// Assign via the ⋯ overflow → member sheet → Done. Opened while the
+		// check-off may still be saving: its form success runs invalidateAll(),
+		// which resets page.state in place — BottomSheet must not read that as a
+		// back press and close itself (it did, deterministically, from 2026-10-02).
 		await page.getByRole('button', { name: 'Assign or remove task' }).filter({ visible: true }).first().click();
+		await expect(page.getByRole('heading', { name: 'Assign a member' })).toBeVisible();
+		await page.waitForLoadState('networkidle');
 		await expect(page.getByRole('heading', { name: 'Assign a member' })).toBeVisible();
 		await page.getByRole('radio').filter({ visible: true }).first().click();
 		await page.getByRole('button', { name: 'Done' }).filter({ visible: true }).first().click();

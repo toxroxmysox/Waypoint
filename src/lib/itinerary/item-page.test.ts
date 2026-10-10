@@ -1,0 +1,350 @@
+import { describe, it, expect } from 'vitest';
+import { itemTypeLine, itemTimeText, detailsRows, addLine, newestFirst, hostLabel, goingView, bookingControls, parseMarkBooked, markBookedDestination, votesView, tripModeView } from './item-page';
+
+describe('votesView (#442): where votes show on the item page', () => {
+	const base = { canVote: true, canMove: true, myVote: null as { value: string } | null };
+	it('idea (no day): pills + who voted, Add to a day for planners, no Going', () => {
+		const v = votesView({ ...base, item: { status: 'unplanned' } });
+		expect(v.face).toBe('pills');
+		expect(v.showAddToDay).toBe(true);
+		expect(v.showGoing).toBe(false);
+	});
+	it('idea: Add to a day only for those who can move; viewers still see pills', () => {
+		const v = votesView({ ...base, canVote: false, canMove: false, item: { status: 'unplanned' } });
+		expect(v.face).toBe('pills');
+		expect(v.showAddToDay).toBe(false);
+	});
+	it('unplanned with a day is still an idea: pills', () => {
+		const v = votesView({ ...base, item: { status: 'unplanned', day: 'd1' } as any });
+		expect(v.face).toBe('pills');
+		expect(v.showAddToDay).toBe(true);
+	});
+	it('considered with no day is not an idea: the quiet row, no Add to a day', () => {
+		const v = votesView({ ...base, item: { status: 'considered' } });
+		expect(v.face).toBe('row');
+		expect(v.showAddToDay).toBe(false);
+		expect(v.showGoing).toBe(true);
+	});
+	it('done with no day: the quiet row', () => {
+		expect(votesView({ ...base, item: { status: 'done' } }).face).toBe('row');
+	});
+	it('planned item: quiet row only, Going stays', () => {
+		const v = votesView({ ...base, item: { status: 'planned' } });
+		expect(v.face).toBe('row');
+		expect(v.showAddToDay).toBe(false);
+		expect(v.showGoing).toBe(true);
+		expect(v.rowText).toBe('None yet');
+	});
+	it('planned item: row names my vote', () => {
+		expect(votesView({ ...base, myVote: { value: 'love' }, item: { status: 'planned' } }).rowText).toBe('Love');
+		expect(votesView({ ...base, myVote: { value: 'dislike' }, item: { status: 'planned' } }).rowText).toBe('Pass');
+	});
+	it('planned item, viewer: no row', () => {
+		expect(votesView({ ...base, canVote: false, item: { status: 'planned' } }).face).toBe('none');
+	});
+});
+
+describe('goingView (#440): the Hero Going row', () => {
+	const members = [
+		{ id: 'm1', display_name: 'Ana', role: 'owner' },
+		{ id: 'm2', display_name: 'Ben', role: 'traveler' },
+		{ id: 'm3', display_name: 'Cy', role: 'viewer' }
+	] as any[];
+	const base = { members, myMemberId: 'm1', role: 'owner' as const };
+	it('unanswered: asks "Are you going?"', () => {
+		const v = goingView({ ...base, item: { assigned_to: [], not_going: [] } });
+		expect(v.mine).toBe('no_answer');
+		expect(v.line).toBe('Are you going?');
+		expect(v.canAnswer).toBe(true);
+	});
+	it('answered going', () => {
+		const v = goingView({ ...base, item: { assigned_to: ['m1'], not_going: [] } });
+		expect(v.mine).toBe('going');
+		expect(v.line).toBe("You're going");
+	});
+	it('answered not going', () => {
+		const v = goingView({ ...base, item: { assigned_to: [], not_going: ['m1'] } });
+		expect(v.mine).toBe('not_going');
+		expect(v.line).toBe("You're not going");
+	});
+	it('people: going before struck not-going; no-answer members absent', () => {
+		const v = goingView({ ...base, item: { assigned_to: ['m2'], not_going: ['m1'] } });
+		expect(v.people.map((p) => [p.name, p.notGoing])).toEqual([
+			['Ben', false],
+			['Ana', true]
+		]);
+	});
+	it('viewers get no controls and no prompt, but still see people', () => {
+		const v = goingView({ ...base, myMemberId: 'm3', role: 'viewer', item: { assigned_to: ['m1'], not_going: [] } });
+		expect(v.canAnswer).toBe(false);
+		expect(v.line).toBe('');
+		expect(v.people).toHaveLength(1);
+	});
+	it('no membership id: no controls', () => {
+		expect(goingView({ ...base, myMemberId: '', item: {} }).canAnswer).toBe(false);
+	});
+	it('solo trip (one active member): no controls', () => {
+		expect(goingView({ ...base, members: [members[0]], item: {} }).canAnswer).toBe(false);
+	});
+});
+
+describe('itemTypeLine: type and subtype in words', () => {
+	it('joins the type label and the subtype', () => {
+		expect(itemTypeLine('meal', 'dinner')).toBe('Meal · Dinner');
+		expect(itemTypeLine('lodging', 'airbnb')).toBe('Lodging · Airbnb');
+	});
+	it('type alone when there is no subtype, or it is "other"', () => {
+		expect(itemTypeLine('flight', '')).toBe('Flight');
+		expect(itemTypeLine('activity', undefined)).toBe('Activity');
+		expect(itemTypeLine('activity', 'other')).toBe('Activity');
+	});
+});
+
+describe('itemTimeText: the Hero time line', () => {
+	it('date leads, then the text grammar', () => {
+		expect(
+			itemTimeText({ type: 'meal', start_time: '2026-10-01 18:30:00.000Z', end_time: '' }, '2026-10-01 00:00:00.000Z')
+		).toBe('Thu Oct 1 · 6:30p');
+	});
+	it('multi-day: range and nights', () => {
+		expect(itemTimeText({ type: 'lodging', end_date: '2026-10-03', start_time: '', end_time: '' }, '2026-10-01')).toBe(
+			'Thu Oct 1–Sat Oct 3 · 2 nights'
+		);
+	});
+	it('no day (an idea) and no clock: empty', () => {
+		expect(itemTimeText({ type: 'meal', start_time: '', end_time: '' }, '')).toBe('');
+	});
+	it('never includes the place', () => {
+		expect(
+			itemTimeText({ type: 'meal', start_time: '', end_time: '', location_name: 'Cafe' } as never, '2026-10-01')
+		).toBe('Thu Oct 1');
+	});
+});
+
+const base = {
+	item: { cost_estimate_usd: 0, reservation_url: '', free_cancellation: false },
+	phaseName: '',
+	paid: { isPaid: false, total: 0, count: 0 },
+	canLogPayment: true,
+	payHref: '/pay',
+	expensesHref: '/exp'
+};
+
+describe('detailsRows', () => {
+	it('is empty for a bare item a viewer sees', () => {
+		expect(detailsRows({ ...base, canLogPayment: false })).toEqual([]);
+	});
+	it('Log payment is its own row even with NO estimate', () => {
+		const rows = detailsRows(base);
+		expect(rows).toHaveLength(1);
+		expect(rows[0]).toMatchObject({ key: 'payment', value: 'Log payment', href: '/pay' });
+	});
+	it('Paid $X replaces Log payment, with the expenses link, independent of the estimate', () => {
+		const rows = detailsRows({ ...base, paid: { isPaid: true, total: 85.5, count: 2 } });
+		expect(rows).toHaveLength(1);
+		expect(rows[0]).toMatchObject({ key: 'payment', value: 'Paid $85.50', href: '/exp', hint: '2 expenses' });
+		expect(detailsRows({ ...base, paid: { isPaid: true, total: 10, count: 1 } })[0].hint).toBe('1 expense');
+	});
+	it('paid shows even to a role that cannot log payment', () => {
+		const rows = detailsRows({ ...base, canLogPayment: false, paid: { isPaid: true, total: 10, count: 1 } });
+		expect(rows.map((r) => r.key)).toEqual(['payment']);
+	});
+	it('estimate, payment, booking, cancellation, phase in that order', () => {
+		const rows = detailsRows({
+			...base,
+			item: { cost_estimate_usd: 240, reservation_url: 'https://www.opentable.com/r/x', free_cancellation: true },
+			phaseName: 'Milwaukee'
+		});
+		expect(rows.map((r) => r.key)).toEqual(['cost', 'payment', 'booking', 'cancellation', 'phase']);
+		expect(rows[0]).toMatchObject({ label: 'Estimate', value: '$240.00' });
+		expect(rows[2]).toMatchObject({
+			label: 'Booking',
+			value: 'opentable.com',
+			href: 'https://www.opentable.com/r/x',
+			external: true
+		});
+		expect(rows[3]).toMatchObject({ label: 'Cancellation', value: 'Free cancellation' });
+		expect(rows[4]).toMatchObject({ label: 'Phase', value: 'Milwaukee' });
+	});
+	it('a zero estimate has no row', () => {
+		expect(detailsRows(base).some((r) => r.key === 'cost')).toBe(false);
+	});
+});
+
+describe('hostLabel', () => {
+	it('strips scheme and www; falls back to the raw string', () => {
+		expect(hostLabel('https://www.opentable.com/r/x')).toBe('opentable.com');
+		expect(hostLabel('not a url')).toBe('not a url');
+	});
+});
+
+describe('addLine: the one-line add for empty sections', () => {
+	const p = { docCount: 0, hasChecklist: false, canUpload: true, canEditChecklist: true, docsOpen: false };
+	it('both empty: + Document and + Checklist', () => {
+		expect(addLine(p)).toEqual(['document', 'checklist']);
+	});
+	it('documents present: only + Checklist', () => {
+		expect(addLine({ ...p, docCount: 2 })).toEqual(['checklist']);
+	});
+	it('checklist present: only + Document', () => {
+		expect(addLine({ ...p, hasChecklist: true })).toEqual(['document']);
+	});
+	it('docs opened by the tap: the line drops + Document', () => {
+		expect(addLine({ ...p, docsOpen: true })).toEqual(['checklist']);
+	});
+	it('viewers get no line at all', () => {
+		expect(addLine({ ...p, canUpload: false, canEditChecklist: false })).toEqual([]);
+	});
+	it('per-permission', () => {
+		expect(addLine({ ...p, canUpload: false })).toEqual(['checklist']);
+		expect(addLine({ ...p, canEditChecklist: false })).toEqual(['document']);
+	});
+});
+
+describe('newestFirst', () => {
+	const c = (id: string, created: string) => ({ id, created });
+	it('sorts by created descending across PB and ISO formats', () => {
+		const out = newestFirst([
+			c('old', '2026-10-01 10:00:00.000Z'),
+			c('opt', '2026-10-02T09:00:00.000Z'),
+			c('mid', '2026-10-01 12:00:00.000Z')
+		]);
+		expect(out.map((x) => x.id)).toEqual(['opt', 'mid', 'old']);
+	});
+	it('does not mutate and is stable on ties', () => {
+		const input = [c('a', '2026-10-01 10:00:00.000Z'), c('b', '2026-10-01 10:00:00.000Z')];
+		expect(newestFirst(input).map((x) => x.id)).toEqual(['a', 'b']);
+		expect(input.map((x) => x.id)).toEqual(['a', 'b']);
+	});
+});
+
+describe('bookingControls (#441): Book / Mark booked', () => {
+	const open = { status: 'planned', requires_booking: true, booked: false, reservation_url: 'https://opentable.com/x' } as any;
+	it('shows for an editor on an item that needs booking, with the link', () => {
+		expect(bookingControls({ item: open, canEdit: true })).toEqual({ show: true, bookHref: 'https://opentable.com/x' });
+	});
+	it('hidden for roles that cannot edit', () => {
+		expect(bookingControls({ item: open, canEdit: false }).show).toBe(false);
+	});
+	it('hidden once booked or when booking is not required', () => {
+		expect(bookingControls({ item: { ...open, booked: true }, canEdit: true }).show).toBe(false);
+		expect(bookingControls({ item: { ...open, requires_booking: false }, canEdit: true }).show).toBe(false);
+	});
+	it('no link: Mark booked still shows, Book does not', () => {
+		expect(bookingControls({ item: { ...open, reservation_url: '' }, canEdit: true })).toEqual({ show: true, bookHref: '' });
+	});
+	it('only http(s) links become Book', () => {
+		expect(bookingControls({ item: { ...open, reservation_url: 'javascript:alert(1)' }, canEdit: true }).bookHref).toBe('');
+	});
+});
+
+describe('parseMarkBooked (#441)', () => {
+	it('trims the code; checkbox on = log payment', () => {
+		const fd = new FormData();
+		fd.set('code', '  ABC123 ');
+		fd.set('log_payment', 'on');
+		expect(parseMarkBooked(fd)).toEqual({ code: 'ABC123', logPayment: true });
+	});
+	it('defaults: no code, no payment', () => {
+		expect(parseMarkBooked(new FormData())).toEqual({ code: '', logPayment: false });
+	});
+});
+
+describe('markBookedDestination (#441)', () => {
+	const item = { id: 'i1', title: 'Hotel', cost_estimate_usd: 240 };
+	it('unticked: stay on the item page (null)', () => {
+		expect(markBookedDestination('t', item, false)).toBeNull();
+	});
+	it('ticked: the existing Add expense, prefilled from the estimate', () => {
+		const href = markBookedDestination('t', item, true)!;
+		expect(href.startsWith('/trips/t/expenses?')).toBe(true);
+		const sp = new URL(href, 'http://x').searchParams;
+		expect(sp.get('action')).toBe('add');
+		expect(sp.get('amount')).toBe('240');
+		expect(sp.get('linked_item')).toBe('i1');
+	});
+	it('no estimate: amount left blank', () => {
+		const sp = new URL(markBookedDestination('t', { id: 'i1', title: 'H' }, true)!, 'http://x').searchParams;
+		expect(sp.has('amount')).toBe(false);
+	});
+});
+
+describe('tripModeView (#439): the item page in Trip Mode', () => {
+	// Trip-local "now" is a Date whose UTC fields are the wall clock.
+	const now = new Date('2026-10-06T19:00:00.000Z');
+	type I = { status: string; start_time?: string; end_time?: string };
+	const base = {
+		tripMode: true,
+		item: { status: 'planned', start_time: '2026-10-06 18:00:00.000Z', end_time: '2026-10-06 20:00:00.000Z' } as I,
+		dayDate: '2026-10-06 00:00:00.000Z' as string | undefined,
+		now,
+		paid: { isPaid: false },
+		canLogPayment: true
+	};
+	it('a start-only item from a past day is not live (no NOW · since forever)', () => {
+		const v = tripModeView({
+			...base,
+			item: { status: 'planned', start_time: '2026-10-05 19:00:00.000Z' },
+			dayDate: '2026-10-05 00:00:00.000Z'
+		});
+		expect(v.live).toBeNull();
+		expect(v.started).toBe(true);
+	});
+	it('a start-only item that started today is live', () => {
+		const v = tripModeView({ ...base, item: { status: 'planned', start_time: '2026-10-06 18:30:00.000Z' } });
+		expect(v.live).toEqual({ label: 'NOW', text: 'since 6:30p' });
+	});
+	it('ongoing: NOW line from heroStatus, started, Log payment under the Hero', () => {
+		const v = tripModeView(base);
+		expect(v.live).toEqual({ label: 'NOW', text: 'until 8:00p · 1h left' });
+		expect(v.started).toBe(true);
+		expect(v.logPaymentUnderHero).toBe(true);
+		expect(v.planDetails).toBe(true);
+	});
+	it('Planning Mode: nothing changes', () => {
+		expect(tripModeView({ ...base, tripMode: false })).toEqual({ live: null, started: false, logPaymentUnderHero: false, planDetails: false });
+	});
+	it('not started yet: not live, no Log payment under the Hero, still Plan details', () => {
+		const v = tripModeView({ ...base, item: { status: 'planned', start_time: '2026-10-06 21:00:00.000Z' } });
+		expect(v.live).toBeNull();
+		expect(v.started).toBe(false);
+		expect(v.logPaymentUnderHero).toBe(false);
+		expect(v.planDetails).toBe(true);
+	});
+	it('ended: started, not live; Log payment still offered while nothing is logged', () => {
+		const v = tripModeView({ ...base, item: { status: 'planned', start_time: '2026-10-06 15:00:00.000Z', end_time: '2026-10-06 16:00:00.000Z' } });
+		expect(v.live).toBeNull();
+		expect(v.started).toBe(true);
+		expect(v.logPaymentUnderHero).toBe(true);
+	});
+	it('start-only item is live as `since`', () => {
+		expect(tripModeView({ ...base, item: { status: 'planned', start_time: '2026-10-06 18:30:00.000Z' } }).live).toEqual({ label: 'NOW', text: 'since 6:30p' });
+	});
+	it('already logged: no Log payment under the Hero', () => {
+		expect(tripModeView({ ...base, paid: { isPaid: true } }).logPaymentUnderHero).toBe(false);
+	});
+	it('cannot log payment (viewer, note): never under the Hero', () => {
+		expect(tripModeView({ ...base, canLogPayment: false }).logPaymentUnderHero).toBe(false);
+	});
+	it('untimed item: started once its day is today or earlier; never live', () => {
+		const untimed: I = { status: 'planned' };
+		expect(tripModeView({ ...base, item: untimed }).started).toBe(true);
+		expect(tripModeView({ ...base, item: untimed }).live).toBeNull();
+		expect(tripModeView({ ...base, item: untimed, dayDate: '2026-10-05 00:00:00.000Z' }).started).toBe(true);
+		expect(tripModeView({ ...base, item: untimed, dayDate: '2026-10-07 00:00:00.000Z' }).started).toBe(false);
+	});
+	it('an idea (unplanned) has not started and is never live', () => {
+		const v = tripModeView({ ...base, item: { status: 'unplanned', start_time: '2026-10-06 18:00:00.000Z' }, dayDate: undefined });
+		expect(v.started).toBe(false);
+		expect(v.live).toBeNull();
+		expect(v.logPaymentUnderHero).toBe(false);
+	});
+	it('done: started, not live', () => {
+		const v = tripModeView({ ...base, item: { ...base.item, status: 'done' } });
+		expect(v.started).toBe(true);
+		expect(v.live).toBeNull();
+	});
+	it('no start_time and no day: not started', () => {
+		expect(tripModeView({ ...base, item: { status: 'planned' }, dayDate: undefined }).started).toBe(false);
+	});
+});

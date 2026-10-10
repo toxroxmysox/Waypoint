@@ -61,7 +61,7 @@ test.describe('Trip Mode Door 2 — skip → parking lot + ideas strip (#246)', 
 		await page.waitForURL(`${BASE_URL}/trips/${tripSlug}`, { timeout: 10000 });
 
 		// --- Park a backup idea in the phase (the replacement candidate). ---
-		await page.goto(`${BASE_URL}/trips/${tripSlug}/phases`);
+		await page.goto(`${BASE_URL}/trips/${tripSlug}/phases`, { waitUntil: 'networkidle' });
 		const phaseLink = page.locator(`a[href^="/trips/${tripSlug}/phases/"]:visible`).first();
 		await expect(phaseLink).toBeVisible({ timeout: 5000 });
 		const phaseHref = await phaseLink.getAttribute('href');
@@ -79,7 +79,7 @@ test.describe('Trip Mode Door 2 — skip → parking lot + ideas strip (#246)', 
 
 		// --- Add a PLANNED item onto TODAY (the skip target). Reached via Now's
 		//     Add sheet → "Add item to today" → the item form, day preselected. ---
-		await page.goto(`${BASE_URL}/trips/${tripSlug}/now`);
+		await page.goto(`${BASE_URL}/trips/${tripSlug}/now`, { waitUntil: 'networkidle' });
 		await page.waitForURL('**/now');
 		await page.locator('.md-desktop\\:hidden button[aria-label="Add"]').click();
 		await page.getByText('Add item to today').click();
@@ -100,21 +100,23 @@ test.describe('Trip Mode Door 2 — skip → parking lot + ideas strip (#246)', 
 		// --- Skip it via the card overflow → confirm in the little menu. ---
 		// The overflow button sits inside the planned item's card (visible tree).
 		const card = page
-			.locator('.relative.rounded-xl', { hasText: PLANNED_TITLE })
+			.locator('.no-callout:not(section[aria-label="Ideas for now"] .no-callout)', { hasText: PLANNED_TITLE })
 			.filter({ visible: true })
 			.first();
 		await card.getByRole('button', { name: 'Item actions' }).click();
 		await card.getByRole('menuitem', { name: /Skip/ }).click();
+		// #437's menu opens the Skip sheet; confirm there.
+		await page.getByRole('button', { name: 'Skip', exact: true }).filter({ visible: true }).click();
 
 		// After the skip the planned item is GONE from the "Coming up" rest list — it's
-		// unplanned now. Scope the negative to the rest-list CARD (TripModeCard's
-		// `.relative.rounded-xl` container), NOT the whole page: skip returns the item to
+		// unplanned now. Scope the negative to the rest-list CARD (the rail ItemCard's
+		// `.no-callout` container), NOT the whole page: skip returns the item to
 		// THIS phase's parking lot, so it correctly REAPPEARS in the ideas strip below as a
-		// re-promotable backup (an <a> inside an <li>, not a card). A page-wide
+		// re-promotable backup (#432: now an idea card, so the `.no-callout` locator excludes the strip). A page-wide
 		// link-count-0 would falsely catch that legitimate strip occurrence.
 		await expect(
 			page
-				.locator('.relative.rounded-xl', { hasText: PLANNED_TITLE })
+				.locator('.no-callout:not(section[aria-label="Ideas for now"] .no-callout)', { hasText: PLANNED_TITLE })
 				.filter({ visible: true })
 		).toHaveCount(0, { timeout: 7000 });
 
@@ -126,7 +128,7 @@ test.describe('Trip Mode Door 2 — skip → parking lot + ideas strip (#246)', 
 		await expect(strip.getByText(PLANNED_TITLE)).toBeVisible();
 
 		// --- Reversible: the skipped item is back in the phase parking lot. ---
-		await page.goto(`${BASE_URL}${phaseHref}`);
+		await page.goto(`${BASE_URL}${phaseHref}`, { waitUntil: 'networkidle' });
 		await expect(page.locator(':visible', { hasText: PLANNED_TITLE }).first()).toBeVisible({
 			timeout: 5000
 		});

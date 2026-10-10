@@ -79,11 +79,63 @@ routerAdd('GET', '/api/members/my-claims', (e) => {
 			trip_slug: trip.get('slug'),
 			trip_title: trip.get('title'),
 			placeholder_name: row.get('placeholder_name') || '',
-			role: row.get('role')
+			role: row.getString('role')
 		});
 	}
 
 	return e.json(200, { claims: claims });
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/members/placeholder-emails?trip_id=ID   (#450)
+// trip_members.placeholder_email is a HIDDEN field (migration 0074): no REST read
+// returns it. Owners and co-owners — who add/chase placeholders — read the
+// addresses here, in admin context. Everyone else gets 403 (a traveler or viewer
+// has no use for another person's invite address).
+// Returns { emails: { <memberId>: <email> } } for the trip's ACTIVE placeholders
+// that have an address.
+// ---------------------------------------------------------------------------
+routerAdd('GET', '/api/members/placeholder-emails', (e) => {
+	const authRecord = e.auth;
+	if (!authRecord) throw new UnauthorizedError('Authentication required');
+
+	const query = e.requestInfo().query || {};
+	const tripId = '' + (Array.isArray(query['trip_id']) ? query['trip_id'][0] : query['trip_id'] || '');
+	if (!tripId) throw new BadRequestError('trip_id is required');
+
+	let callerMember;
+	try {
+		callerMember = e.app.findFirstRecordByFilter(
+			'trip_members',
+			'trip = {:tripId} && user = {:uid} && removed_at = ""',
+			{ tripId: tripId, uid: authRecord.id }
+		);
+	} catch (_) {
+		throw new ForbiddenError('You are not a member of this trip');
+	}
+	const callerRole = callerMember.getString('role');
+	if (callerRole !== 'owner' && callerRole !== 'co_owner') {
+		throw new ForbiddenError('Only an owner or co-owner can see placeholder emails');
+	}
+
+	let rows = [];
+	try {
+		rows = e.app.findRecordsByFilter(
+			'trip_members',
+			'trip = {:tripId} && user = "" && placeholder_email != "" && removed_at = ""',
+			'',
+			0,
+			0,
+			{ tripId: tripId }
+		);
+	} catch (_) {
+		rows = [];
+	}
+	const emails = {};
+	for (const row of rows) {
+		emails[row.id] = row.getString('placeholder_email');
+	}
+	return e.json(200, { emails: emails });
 });
 
 // ---------------------------------------------------------------------------
@@ -229,7 +281,7 @@ routerAdd('POST', '/api/members/add-placeholder', (e) => {
 			throw new ForbiddenError('You are not a member of this trip');
 		}
 
-		const callerRole = callerMember.get('role');
+		const callerRole = callerMember.getString('role');
 
 		// Viewer cannot add members.
 		if (callerRole === 'viewer') {
@@ -361,12 +413,12 @@ routerAdd('POST', '/api/members/promote', (e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 
-	const callerRole = callerMember.get('role');
+	const callerRole = callerMember.getString('role');
 	if (callerRole !== 'owner' && callerRole !== 'co_owner') {
 		throw new ForbiddenError('Only owners and co-owners can promote members');
 	}
 
-	if (target.get('role') !== 'traveler') {
+	if (target.getString('role') !== 'traveler') {
 		throw new BadRequestError('Only travelers can be promoted to co-owner');
 	}
 
@@ -469,6 +521,11 @@ routerAdd('GET', '/api/members/can-purge', (e) => {
 	// items.assigned_to is multi (~).
 	try {
 		e.app.findFirstRecordByFilter('items', 'assigned_to ~ {:mid}', { mid: memberId });
+		return e.json(200, { ok: true, member_id: memberId, zero_ref: false });
+	} catch (_) {}
+	// #402 — items.not_going, the multi twin of assigned_to (~).
+	try {
+		e.app.findFirstRecordByFilter('items', 'not_going ~ {:mid}', { mid: memberId });
 		return e.json(200, { ok: true, member_id: memberId, zero_ref: false });
 	} catch (_) {}
 
@@ -617,6 +674,8 @@ routerAdd('POST', '/api/members/remove', (e) => {
 		['items', 'paid_by', 'block'],
 		['items', 'booked_by', 'block'],
 		['items', 'assigned_to', 'block_multi'],
+		// #402 (migration 0071) — not going, the twin of assigned_to.
+		['items', 'not_going', 'block_multi'],
 		['tasks', 'assignee', 'block'],
 		// memories (#269, migration 0058) — required + no cascade (block). A
 		// departed member's memories survive on the tombstone; they are NEVER
@@ -683,14 +742,14 @@ routerAdd('POST', '/api/members/remove', (e) => {
 		} catch (_) {
 			throw new ForbiddenError('You are not a member of this trip');
 		}
-		const callerRole = callerMember.get('role');
+		const callerRole = callerMember.getString('role');
 		if (callerRole !== 'owner' && callerRole !== 'co_owner') {
 			throw new ForbiddenError('Only owners and co-owners can remove members');
 		}
 	}
 
 	// Cannot remove the sole (active) owner.
-	if (target.get('role') === 'owner') {
+	if (target.getString('role') === 'owner') {
 		let ownerCount = 0;
 		try {
 			const owners = e.app.findRecordsByFilter(
@@ -777,7 +836,10 @@ routerAdd('POST', '/api/members/remove', (e) => {
 	};
 	// Rewrite a multi-relation field (items.assigned_to): drop the departed id,
 	// add `toId` when non-empty (deduped).
-	const rewriteMulti = (col, field, toId) => {
+	// #402 — `otherField` names an EXCLUSIVE twin list (assigned_to ↔ not_going):
+	// `toId` is not added when the record's twin already holds it, so the target's
+	// OWN answer (going / not going) always wins over the one they inherit.
+	const rewriteMulti = (col, field, toId, otherField) => {
 		let rows = [];
 		try {
 			rows = e.app.findRecordsByFilter(col, field + ' ~ {:mid}', '', 0, 0, { mid: target.id });
@@ -790,7 +852,14 @@ routerAdd('POST', '/api/members/remove', (e) => {
 			for (const id of cur) {
 				if (id !== target.id) next.push(id);
 			}
-			if (toId && next.indexOf(toId) === -1) next.push(toId);
+			let toIdAnsweredOther = false;
+			if (toId && otherField) {
+				const twin = r.get(otherField) || [];
+				for (let i = 0; i < twin.length; i++) {
+					if ('' + twin[i] === toId) toIdAnsweredOther = true;
+				}
+			}
+			if (toId && !toIdAnsweredOther && next.indexOf(toId) === -1) next.push(toId);
 			r.set(field, next);
 			try {
 				e.app.save(r);
@@ -905,7 +974,8 @@ routerAdd('POST', '/api/members/remove', (e) => {
 		rewriteSingle('items', 'created_by', reassignTo);
 		rewriteSingle('items', 'paid_by', reassignTo);
 		rewriteSingle('items', 'booked_by', reassignTo);
-		rewriteMulti('items', 'assigned_to', reassignTo);
+		rewriteMulti('items', 'assigned_to', reassignTo, 'not_going');
+		rewriteMulti('items', 'not_going', reassignTo, 'assigned_to'); // #402
 		rewriteSingle('tasks', 'assignee', reassignTo);
 		// memories are NOT reassigned (#269): a memory is personal expression, and
 		// rewriting author would collide with the target's own (day, author) row
@@ -923,6 +993,7 @@ routerAdd('POST', '/api/members/remove', (e) => {
 		rewriteSingle('items', 'paid_by', '');
 		rewriteSingle('items', 'booked_by', '');
 		rewriteMulti('items', 'assigned_to', '');
+		rewriteMulti('items', 'not_going', ''); // #402
 		rewriteSingle('tasks', 'assignee', '');
 	}
 	// disposition === 'keep': children keep pointing at the tombstone — nothing to do.

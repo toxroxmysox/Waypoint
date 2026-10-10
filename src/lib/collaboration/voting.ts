@@ -65,3 +65,64 @@ export function sortByVoteScore<T extends { id: string; sort_order: number }>(
 		return diff !== 0 ? diff : a.sort_order - b.sort_order;
 	});
 }
+
+// ---------------------------------------------------------------------------
+// #425 — tap-to-vote pills (card system D3). Pure model behind VotePills.svelte:
+// all four pills always, per-sentiment counts, my own pill marked, voter names
+// for the desktop tooltip. Target-agnostic (item / suggestion votes).
+// ---------------------------------------------------------------------------
+
+/** UI label per sentiment. The id stays `dislike`; it surfaces as "Pass". */
+export const VOTE_LABELS: Record<VoteValue, string> = {
+	love: 'Love',
+	like: 'Like',
+	flexible: 'Flexible',
+	dislike: 'Pass'
+};
+
+export const VOTE_GLYPHS: Record<VoteValue, string> = { love: '♥', like: '+', flexible: '~', dislike: '–' };
+
+export interface VotePill {
+	value: VoteValue;
+	label: string;
+	glyph: string;
+	count: number;
+	mine: boolean;
+	/** Voter names for the tooltip; my own is "You", listed first. */
+	names: string[];
+}
+
+/** The four pills for a target's votes, in display order. `nameOf` resolves a member id. */
+export function votePills(
+	votes: DisplayVote[],
+	myMemberId: string,
+	nameOf: (memberId: string) => string
+): VotePill[] {
+	const grouped = groupVotesByOption(votes);
+	return VOTE_OPTIONS.map((value) => {
+		const mine = !!myMemberId && grouped[value].some((v) => v.member === myMemberId);
+		const others = grouped[value].filter((v) => v.member !== myMemberId).map((v) => nameOf(v.member));
+		return {
+			value,
+			label: VOTE_LABELS[value],
+			glyph: VOTE_GLYPHS[value],
+			count: grouped[value].length,
+			mine,
+			names: mine ? ['You', ...others] : others
+		};
+	});
+}
+
+/** The pill group's accessible name: "2 love, 1 pass, your vote love". */
+export function votePillsLabel(pills: VotePill[]): string {
+	const parts = pills.filter((p) => p.count > 0).map((p) => `${p.count} ${p.label.toLowerCase()}`);
+	const mine = pills.find((p) => p.mine);
+	if (mine) parts.push(`your vote ${mine.label.toLowerCase()}`);
+	return parts.length ? parts.join(', ') : 'no votes';
+}
+
+/** Votes with my vote set to `value` (null clears it). Optimistic render + toggle result. */
+export function withMyVote(votes: DisplayVote[], myMemberId: string, value: VoteValue | null): DisplayVote[] {
+	const rest = votes.filter((v) => v.member !== myMemberId);
+	return value === null ? rest : [...rest, { id: `optimistic-${myMemberId}`, member: myMemberId, value }];
+}

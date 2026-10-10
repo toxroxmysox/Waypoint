@@ -49,6 +49,14 @@ describe('buildArchiveView (#53 — Public Archive excludes checklists)', () => 
 		expect(serialized).not.toContain('secret');
 	});
 
+	it('carries the display-only order and span the record lays out (#436)', () => {
+		const v = buildArchiveView(makeTrip(), [] as Phase[], [] as Day[], [
+			makeItem({ sort_order: 3, end_date: '2026-06-03 00:00:00.000Z' })
+		]);
+		expect(v.doneItems[0].sort_order).toBe(3);
+		expect(v.doneItems[0].end_date).toBe('2026-06-03 00:00:00.000Z');
+	});
+
 	it('does not leak the share token', () => {
 		expect(view.trip).not.toHaveProperty('public_share_token');
 	});

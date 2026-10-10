@@ -1,200 +1,154 @@
 <script lang="ts">
-	// #248 / PRD #202 — a pending [[Suggestion]] rendered as a [[Ghost Card]] in a
-	// parking lot. Dotted border + "Pending" badge mark it as a proposal, not a
-	// settled plan. A shared, surface-agnostic card so a ghost reads identically on
-	// every parking-lot surface — the dotted treatment lives here, in rendering, not
-	// in the data (parking-lot-cards.ts). Wired into Phase Detail (the canonical
-	// parking-lot home) in Slice 1; reuse this verbatim for the day-view zones.
+	// The pending idea card (#444; spec §Suggestions, D2/D11): a pending
+	// [[Suggestion]] rendered like an idea card (title, `place · cost`, the four
+	// tap-to-vote pills) but dashed, with a gold `Pending` chip and a tray of
+	// review actions. NO role badge: "Suggested by Jess" already says who.
 	//
-	// Visible to ALL members; voting reuses the target-agnostic voting.ts
-	// scoring/avatar-stack logic (VoteStacks + VoteSentimentPill, identical to item
-	// cards). Cast buttons appear only for a non-viewer who is NOT the author —
-	// authorship is the implicit endorsement, and viewers are read-only-but-can-see
-	// (the card + its vote stack still render for them).
+	// One component, two hosts:
+	//   - Phase Detail's parking list (`review="ghost"`): tray = Approve / Reject.
+	//   - The Inbox Pending tab (`review="inbox"`): tray = Approve / Edit / Reject.
+	// The host says where the forms post (`actions`), because the two pages own
+	// their own form actions. Not a link: a pending idea has no item page yet.
+	//
+	// Visible to ALL members. Pills are tappable for a non-viewer who is NOT the
+	// author (authorship is the implicit endorsement); everyone else sees counts.
+	// The tray is owner / co_owner only (`canReview`).
 	import { enhance } from '$app/forms';
-	import type { GhostCard } from '$lib/itinerary/parking-lot-cards';
-	import type { MemberWithAvatar } from '$lib/collaboration/member-avatar';
-	import { VOTE_OPTIONS, type VoteValue } from '$lib/collaboration/voting';
-	import TypeIcon from '$lib/ui/TypeIcon.svelte';
-	import { optimisticSubmit, nextVote } from '$lib/ui/optimistic-submit';
-	import VoteStacks from '$lib/collaboration/components/VoteStacks.svelte';
-	import VoteSentimentPill from '$lib/collaboration/components/VoteSentimentPill.svelte';
-	import type { ItemType } from '$lib/itinerary/types';
+	import { withOrigin } from '$lib/shell/back-nav';
+	import { page } from '$app/state';
+	import { toast } from '$lib/shell/stores/toast';
+	import type { Suggestion } from '$lib/collaboration/types';
+	import type { TripMember } from '$lib/types';
+	import type { DisplayVote } from '$lib/collaboration/voting';
+	import Card from '$lib/ui/Card.svelte';
+	import Pill from '$lib/ui/Pill.svelte';
+	import VotePills from '$lib/collaboration/components/VotePills.svelte';
+	import { ideaSub } from '$lib/itinerary/idea-groups';
 
 	let {
-		card,
+		suggestion,
+		votes = [],
 		members = [],
 		myMemberId = '',
 		canVote = false,
-		canReview = false
+		canReview = false,
+		review = 'ghost',
+		tripSlug = '',
+		actions = {
+			approve: '?/approveGhost',
+			reject: '?/rejectGhost',
+			vote: '?/voteGhost',
+			unvote: '?/unvoteGhost'
+		}
 	}: {
-		card: GhostCard;
-		/** Trip members (with resolved avatars) for the vote stack. */
-		members?: MemberWithAvatar[];
-		/** The viewer's trip_members.id — used to find their own vote + author check. */
+		suggestion: Suggestion;
+		/** Votes on the suggestion (`suggestion_votes`). */
+		votes?: DisplayVote[];
+		members?: TripMember[];
+		/** The viewer's trip_members.id: author check + their own pill. */
 		myMemberId?: string;
 		/** False for viewers (read-only). The author can never vote regardless. */
 		canVote?: boolean;
-		/** #249/#250 — owner/co_owner only. Adds in-place approve + reject (with a
-		 *  required note) on the ghost. Posts to the surface's approveGhost/rejectGhost
-		 *  form actions; on success the ghost promotes (approve) or leaves (reject). */
+		/** Owner / co_owner only: shows the tray. */
 		canReview?: boolean;
+		/** Which tray: `ghost` = Approve / Reject; `inbox` = Approve / Edit / Reject. */
+		review?: 'ghost' | 'inbox';
+		/** Needed for the Edit link (`review="inbox"`). */
+		tripSlug?: string;
+		/** Where each form posts on the host page. */
+		actions?: { approve: string; reject: string; vote: string; unvote: string };
 	} = $props();
 
-	const payload = $derived(card.suggestion.payload ?? {});
+	const payload = $derived(suggestion.payload ?? {});
 	const title = $derived((payload.title as string) || 'Untitled idea');
-	const type = $derived(((payload.type as ItemType) || 'activity') as ItemType);
-	const subtype = $derived((payload.subtype as string) || '');
-	const authorName = $derived(card.suggestion.author_name || 'A member');
+	const authorName = $derived(suggestion.author_name || 'A member');
+	const sub = $derived(
+		ideaSub({
+			type: (payload.type as string) || 'activity',
+			location_name: (payload.location_name as string) || '',
+			description: (payload.description as string) || '',
+			cost_estimate_usd: Number(payload.cost_estimate_usd) || 0
+		})
+	);
 
-	// Authorship is the implicit endorsement — the author never votes their own.
-	const isAuthor = $derived(!!myMemberId && card.suggestion.author_id === myMemberId);
+	const isAuthor = $derived(!!myMemberId && suggestion.author_id === myMemberId);
 	const showVoteButtons = $derived(canVote && !isAuthor);
 
-	// The viewer's own vote on this ghost (if any) → toggles to "unvote".
-	const myVote = $derived(card.votes.find((v) => v.member === myMemberId) ?? null);
-
-	const OPTION_META: Record<VoteValue, { label: string; glyph: string; active: string }> = {
-		love: { label: 'Love', glyph: '♥', active: 'bg-moss text-paper border-moss' },
-		like: { label: 'Like', glyph: '+', active: 'bg-moss/15 text-moss border-moss/40' },
-		flexible: { label: 'Flexible', glyph: '~', active: 'bg-line/60 text-ink border-line' },
-		dislike: { label: 'Pass', glyph: '–', active: 'bg-clay/15 text-clay border-clay/40' }
-	};
-
-	// #364 — optimistic vote (same shape as VoteButtons). `override` (undefined =
-	// trust server) holds the tapped value only while the submit is in flight.
-	let override = $state<VoteValue | null | undefined>(undefined);
-	let voteInflight = false;
-	const serverVote = $derived((myVote?.value as VoteValue | undefined) ?? null);
-	const shownVote = $derived(override === undefined ? serverVote : override);
-
-	function voteEnhance(option: VoteValue) {
-		return optimisticSubmit({
-			busy: () => voteInflight,
-			apply: () => {
-				voteInflight = true;
-				override = nextVote(shownVote, option);
-			},
-			settle: () => {
-				voteInflight = false;
-				override = undefined;
-			},
-			errorMessage: 'Vote did not save — check your connection.'
-		});
-	}
-
-	// #249/#250 — owner review affordance state (in-place approve / reject-with-note).
 	let reviewing = $state(false); // approve in flight
 	let rejectOpen = $state(false); // note field expanded
 	let rejectNote = $state('');
 	let rejectSubmitting = $state(false);
+
+	const TRAY_BTN =
+		'inline-flex min-h-[44px] items-center justify-center rounded-full border px-4 text-sm font-semibold transition-colors disabled:opacity-50';
 </script>
 
-<!-- Dotted border + recessed paper tint = "pending", distinct from a solid idea
-     card. Not a link: a ghost has no item page yet (it's a view over a suggestion). -->
-<div
-	class="border-line bg-paper/60 rounded-lg border border-dashed"
-	aria-label="Pending idea: {title}"
->
-	<div class="flex items-start gap-3 px-3 py-2.5">
-		<TypeIcon {type} sub={subtype} size={18} />
-		<div class="min-w-0 flex-1">
-			<div class="flex items-center gap-2">
-				<p class="text-ink truncate text-sm" title={title}>{title}</p>
-				<span
-					class="border-line text-ink-muted shrink-0 rounded-full border border-dashed px-1.5 py-0.5 text-[10px] font-medium tracking-wide uppercase"
-				>
-					Pending
-				</span>
-			</div>
-			<p class="text-ink-muted mt-0.5 text-[11px]">Suggested by {authorName}</p>
-
-			{#if card.votes.length}
-				<div class="mt-2">
-					<VoteStacks votes={card.votes} {members} size={18} />
-				</div>
-			{/if}
+<!-- Dashed border = "pending", distinct from a solid idea card. -->
+<div aria-label="Pending idea: {title}" role="group">
+<Card class="border-dashed">
+	<div class="px-3 py-2">
+		<div class="flex items-start justify-between gap-2">
+			<p class="text-ink min-w-0 truncate text-sm font-semibold" title={title}>{title}</p>
+			<Pill variant="pending" size="sm">Pending</Pill>
 		</div>
-		{#if card.votes.length}
-			<div class="shrink-0 pt-0.5">
-				<VoteSentimentPill votes={card.votes} />
-			</div>
+		{#if sub}
+			<p class="text-ink-muted mt-0.5 truncate text-xs" data-idea-sub>{sub}</p>
 		{/if}
+		<p class="text-ink-muted mt-0.5 text-xs">Suggested by {authorName}</p>
+		<div class="mt-1.5 w-fit">
+			<VotePills
+				{votes}
+				{members}
+				{myMemberId}
+				canVote={showVoteButtons}
+				voteAction={actions.vote}
+				unvoteAction={actions.unvote}
+				extraFields={{ suggestion_id: suggestion.id }}
+			/>
+		</div>
 	</div>
 
-	{#if showVoteButtons}
-		<!-- Cast / change / clear a vote on this ghost. Posts to the surface's
-		     voteGhost/unvoteGhost form actions (progressive enhancement), writing a
-		     suggestion_votes row. Hidden for viewers (read-only) and the author. -->
-		<div
-			class="border-line/70 flex flex-wrap items-center gap-1.5 border-t border-dashed px-3 py-2"
-			role="group"
-			aria-label="Vote on this pending idea"
-		>
-			{#each VOTE_OPTIONS as option (option)}
-				<!-- Form posts against SERVER state; rendering follows the optimistic value. -->
-				{@const selected = serverVote === option}
-				{@const shown = shownVote === option}
-				<form
-					method="POST"
-					action="?/{selected ? 'unvoteGhost' : 'voteGhost'}"
-					use:enhance={voteEnhance(option)}
-				>
-					<input type="hidden" name="suggestion_id" value={card.suggestion.id} />
-					{#if selected}
-						<input type="hidden" name="vote_id" value={myVote?.id} />
-					{:else}
-						<input type="hidden" name="value" value={option} />
-					{/if}
-					<button
-						type="submit"
-						aria-pressed={shown}
-						class="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors
-							{shown
-							? OPTION_META[option].active
-							: 'border-line text-ink-muted hover:border-moss/40 active:border-moss/40 hover:text-moss active:text-moss'}"
-					>
-						<span aria-hidden="true">{OPTION_META[option].glyph}</span>
-						<span>{OPTION_META[option].label}</span>
-					</button>
-				</form>
-			{/each}
-		</div>
-	{/if}
-
 	{#if canReview}
-		<!-- #249/#250 — owner/co_owner review. Approve promotes the ghost in place
-		     (→ real item, author-attributed, votes carried). Reject demands a note
-		     and removes it from every member's parking lot. Same endpoint as the
-		     Inbox. Hidden from travelers/viewers. -->
-		<div class="border-line/70 border-t border-dashed px-3 py-2 space-y-2">
+		<!-- The tray (#444). Approve promotes the suggestion to a real item (author-
+		     attributed, votes carried). Reject demands a one-line note. Edit opens the
+		     edit view (Reject / Save / Approve). -->
+		<div class="border-line/70 space-y-2 border-t border-dashed px-3 py-2">
 			{#if !rejectOpen}
-				<div class="flex items-center gap-2" role="group" aria-label="Review this pending idea">
+				<div class="flex flex-wrap items-center gap-2" role="group" aria-label="Review this pending idea">
 					<form
 						method="POST"
-						action="?/approveGhost"
+						action={actions.approve}
 						use:enhance={() => {
 							reviewing = true;
-							return async ({ update }) => {
+							return async ({ update, result }) => {
 								reviewing = false;
+								if (result.type === 'success') toast.show('Suggestion approved');
 								await update();
 							};
 						}}
 					>
-						<input type="hidden" name="suggestion_id" value={card.suggestion.id} />
+						<input type="hidden" name="suggestion_id" value={suggestion.id} />
 						<button
 							type="submit"
 							disabled={reviewing}
-							class="bg-moss text-paper border-moss inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50"
+							class="{TRAY_BTN} bg-moss text-paper border-moss"
 						>
 							{reviewing ? 'Approving…' : 'Approve'}
 						</button>
 					</form>
+					{#if review === 'inbox'}
+						<a
+							href={withOrigin(`/trips/${tripSlug}/items/new?suggestion=${suggestion.id}`, page.url.pathname)}
+							class="{TRAY_BTN} border-line text-ink-soft hover:bg-surface-2 active:bg-surface-2"
+						>
+							Edit
+						</a>
+					{/if}
 					<button
 						type="button"
 						onclick={() => (rejectOpen = true)}
 						disabled={reviewing}
-						class="border-line text-ink-muted hover:border-clay/40 active:border-clay/40 hover:text-clay active:text-clay inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50"
+						class="{TRAY_BTN} border-line text-ink-muted hover:border-clay/40 active:border-clay/40 hover:text-clay active:text-clay"
 					>
 						Reject
 					</button>
@@ -202,7 +156,7 @@
 			{:else}
 				<form
 					method="POST"
-					action="?/rejectGhost"
+					action={actions.reject}
 					use:enhance={() => {
 						rejectSubmitting = true;
 						return async ({ result, update }) => {
@@ -210,30 +164,31 @@
 							if (result.type === 'success') {
 								rejectOpen = false;
 								rejectNote = '';
+								toast.show('Suggestion rejected');
 							}
 							await update();
 						};
 					}}
 					class="space-y-2"
 				>
-					<input type="hidden" name="suggestion_id" value={card.suggestion.id} />
-					<label class="text-ink-soft block text-[11px] font-medium" for="reject-note-{card.suggestion.id}">
+					<input type="hidden" name="suggestion_id" value={suggestion.id} />
+					<label class="text-ink-soft block text-xs font-medium" for="reject-note-{suggestion.id}">
 						Reason for rejecting (required)
 					</label>
 					<input
-						id="reject-note-{card.suggestion.id}"
+						id="reject-note-{suggestion.id}"
 						name="review_note"
 						type="text"
 						required
 						bind:value={rejectNote}
 						placeholder="Why isn’t this a fit?"
-						class="border-line bg-surface text-ink block w-full rounded-md border px-2.5 py-1.5 text-sm"
+						class="border-line bg-surface text-ink block min-h-[44px] w-full rounded-md border px-3 text-sm"
 					/>
 					<div class="flex items-center gap-2">
 						<button
 							type="submit"
 							disabled={rejectSubmitting || !rejectNote.trim()}
-							class="bg-clay text-paper border-clay inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50"
+							class="{TRAY_BTN} bg-clay text-paper border-clay"
 						>
 							{rejectSubmitting ? 'Rejecting…' : 'Confirm reject'}
 						</button>
@@ -241,7 +196,7 @@
 							type="button"
 							onclick={() => { rejectOpen = false; rejectNote = ''; }}
 							disabled={rejectSubmitting}
-							class="text-ink-muted hover:text-ink-soft active:text-ink-soft inline-flex items-center px-2 py-1 text-xs font-semibold disabled:opacity-50"
+							class="text-ink-muted hover:text-ink-soft active:text-ink-soft inline-flex min-h-[44px] items-center px-3 text-sm font-semibold disabled:opacity-50"
 						>
 							Cancel
 						</button>
@@ -250,4 +205,5 @@
 			{/if}
 		</div>
 	{/if}
+</Card>
 </div>

@@ -58,7 +58,7 @@ function toMinute(datetime: string): string {
 // Departure date-time for display + sort: prefer the stored `start_time`
 // datetime; fall back to the resolved owning-day calendar date when the flight
 // has a day but no time. '' when truly unscheduled.
-function departureKey(item: FlightItemInput): string {
+export function departureKey(item: FlightItemInput): string {
 	if (item.start_time) return toMinute(item.start_time);
 	if (item.dayDate) return item.dayDate.split(/[T ]/)[0];
 	return '';
@@ -67,7 +67,7 @@ function departureKey(item: FlightItemInput): string {
 // Arrival date-time for display + sort: prefer `end_time`; if there's only a
 // red-eye `end_date` (arrival on a later calendar day, no clock time), fall back
 // to that bare date so the row still shows where it lands. '' otherwise.
-function arrivalKey(item: FlightItemInput): string {
+export function arrivalKey(item: FlightItemInput): string {
 	if (item.end_time) return toMinute(item.end_time);
 	if (item.end_date) return item.end_date.split(/[T ]/)[0];
 	return '';
@@ -75,7 +75,7 @@ function arrivalKey(item: FlightItemInput): string {
 
 // Strip the leading "→ " arrow the lookup prepends to the arrival label so the
 // route can render its own route arrow. Tolerant of a missing prefix.
-function arrivalLabel(description: string): string {
+export function arrivalLabel(description: string): string {
 	return description.replace(/^→\s*/, '').trim();
 }
 

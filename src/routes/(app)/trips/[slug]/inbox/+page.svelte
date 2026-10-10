@@ -1,25 +1,14 @@
 <script lang="ts">
-	import { withOrigin } from '$lib/shell/back-nav';
-	import { page } from '$app/state';
-	import { enhance } from '$app/forms';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
-	import Button from '$lib/ui/Button.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
+	import GhostCard from '$lib/itinerary/components/GhostCard.svelte';
 	import type { Suggestion } from '$lib/types';
 	import type { InboxSuggestion } from './+page.server';
 	import { titleCase } from '$lib/shell/format';
-	import { toast } from '$lib/shell/stores/toast';
 	import { tallyVotes, type VoteValue } from '$lib/collaboration/voting';
 
 	let { data, form } = $props();
-
-	let rejecting = $state<string | null>(null);
-	let approving = $state<string | null>(null);
-	// #250 — reject demands a one-line note. Track which card's note field is open
-	// and its text, keyed by suggestion id.
-	let rejectOpenId = $state<string | null>(null);
-	let rejectNote = $state('');
 
 	// #251 — Pending / Approved / Rejected tabs.
 	type TabId = 'pending' | 'approved' | 'rejected';
@@ -35,9 +24,10 @@
 
 	const rejectForm = $derived((form?.reject ?? null) as { success?: boolean; error?: string } | null);
 	const approveForm = $derived((form?.approve ?? null) as { success?: boolean; error?: string } | null);
-	const actionError = $derived(rejectForm?.error ?? approveForm?.error ?? '');
+	const actionError = $derived(rejectForm?.error ?? approveForm?.error ?? (form?.error as string | undefined) ?? '');
 
-	// #251 — per-option vote glyphs for the compact tally.
+	// #251 — per-option vote glyphs for the compact tally (Approved / Rejected tabs;
+	// the Pending tab uses the tap-to-vote pills on the pending idea card, #444).
 	const TALLY_GLYPH: Record<VoteValue, string> = { love: '♥', like: '+', flexible: '~', dislike: '–' };
 
 	function payloadSummary(s: Suggestion): string {
@@ -95,168 +85,70 @@
 			</Card>
 		{:else}
 			{#each tabItems as s (s.id)}
-				{@const tally = tallyVotes(s.votes)}
-				<Card>
-					<div class="p-4 space-y-3">
-						<div class="flex items-start justify-between gap-2">
-							<div class="min-w-0">
-								<p class="text-ink text-sm font-semibold truncate">{s.payload?.title ?? '(no title)'}</p>
-								<p class="text-ink-muted text-xs">{payloadSummary(s)}</p>
-							</div>
-							{#if activeTab === 'approved'}
-								<Pill variant="booked" size="sm">Approved</Pill>
-							{:else if activeTab === 'rejected'}
-								<Pill variant="default" size="sm">Rejected</Pill>
-							{:else}
-								<Pill variant="default" size="sm">{titleCase(s.author_role)}</Pill>
-							{/if}
-						</div>
-
-						<div class="flex flex-wrap items-center justify-between gap-2">
-							<div class="text-ink-muted text-xs">
-								Suggested by <span class="text-ink-soft font-medium">{s.author_name || 'Unknown'}</span>
-								{#if s.created} · {formatDate(s.created)}{/if}
-							</div>
-							<!-- #251 — vote tally on every tab. Compact per-option counts; total
-							     in the aria label. Shows "No votes" when none were cast. -->
-							{#if tally.total > 0}
-								<div
-									class="text-ink-soft flex items-center gap-2 text-xs"
-									aria-label="{tally.total} {tally.total === 1 ? 'vote' : 'votes'}"
-								>
-									{#each ['love', 'like', 'flexible', 'dislike'] as const as opt}
-										{#if tally.counts[opt] > 0}
-											<span class="inline-flex items-center gap-0.5 tabular-nums">
-												<span aria-hidden="true">{TALLY_GLYPH[opt]}</span>{tally.counts[opt]}
-											</span>
-										{/if}
-									{/each}
+				{#if activeTab === 'pending'}
+					<!-- #444 — the pending idea card: dashed, gold Pending chip, vote pills, and
+					     the Approve / Edit / Reject tray. No role badge. -->
+					<GhostCard
+						suggestion={s}
+						votes={s.votes}
+						members={data.members}
+						myMemberId={data.myMemberId}
+						canVote
+						canReview
+						review="inbox"
+						tripSlug={data.trip.slug}
+						actions={{ approve: '?/approve', reject: '?/reject', vote: '?/voteGhost', unvote: '?/unvoteGhost' }}
+					/>
+				{:else}
+					{@const tally = tallyVotes(s.votes)}
+					<Card>
+						<div class="p-4 space-y-3">
+							<div class="flex items-start justify-between gap-2">
+								<div class="min-w-0">
+									<p class="text-ink text-sm font-semibold truncate">{s.payload?.title ?? '(no title)'}</p>
+									<p class="text-ink-muted text-xs">{payloadSummary(s)}</p>
 								</div>
-							{:else}
-								<span class="text-ink-muted text-xs">No votes</span>
+								{#if activeTab === 'approved'}
+									<Pill variant="booked" size="sm">Approved</Pill>
+								{:else}
+									<Pill variant="default" size="sm">Rejected</Pill>
+								{/if}
+							</div>
+
+							<div class="flex flex-wrap items-center justify-between gap-2">
+								<div class="text-ink-muted text-xs">
+									Suggested by <span class="text-ink-soft font-medium">{s.author_name || 'Unknown'}</span>
+									{#if s.created} · {formatDate(s.created)}{/if}
+								</div>
+								<!-- #251 — vote tally on the history tabs. Compact per-option counts;
+								     total in the aria label. "No votes" when none were cast. -->
+								{#if tally.total > 0}
+									<div
+										class="text-ink-soft flex items-center gap-2 text-xs"
+										aria-label="{tally.total} {tally.total === 1 ? 'vote' : 'votes'}"
+									>
+										{#each ['love', 'like', 'flexible', 'dislike'] as const as opt}
+											{#if tally.counts[opt] > 0}
+												<span class="inline-flex items-center gap-0.5 tabular-nums">
+													<span aria-hidden="true">{TALLY_GLYPH[opt]}</span>{tally.counts[opt]}
+												</span>
+											{/if}
+										{/each}
+									</div>
+								{:else}
+									<span class="text-ink-muted text-xs">No votes</span>
+								{/if}
+							</div>
+
+							{#if activeTab === 'rejected' && s.review_note}
+								<!-- #250 — the reviewer's note, retained on the Rejected tab. -->
+								<div class="border-clay/30 bg-clay/5 text-ink-soft rounded-md border p-2.5 text-xs">
+									<span class="text-ink-muted">Note:</span> {s.review_note}
+								</div>
 							{/if}
 						</div>
-
-						{#if activeTab === 'rejected' && s.review_note}
-							<!-- #250 — the reviewer's note, retained on the Rejected tab. -->
-							<div class="border-clay/30 bg-clay/5 text-ink-soft rounded-md border p-2.5 text-xs">
-								<span class="text-ink-muted">Note:</span> {s.review_note}
-							</div>
-						{/if}
-
-						{#if activeTab === 'pending'}
-							<div class="bg-surface-2 rounded-md p-3 space-y-1 text-xs">
-								{#if s.payload?.description}
-									<p class="text-ink-soft">{s.payload.description}</p>
-								{/if}
-								{#if s.payload?.location_name}
-									<p class="text-ink-muted">{s.payload.location_name}</p>
-								{/if}
-								{#if s.payload?.start_time || s.payload?.end_time}
-									<p class="text-ink-muted">
-										{s.payload?.start_time ?? ''}{s.payload?.start_time && s.payload?.end_time ? ' – ' : ''}{s.payload?.end_time ?? ''}
-									</p>
-								{/if}
-								{#if s.payload?.cost_estimate_usd}
-									<p class="text-ink-muted">~${s.payload.cost_estimate_usd} estimated</p>
-								{/if}
-							</div>
-
-							<div class="flex gap-2">
-								<form
-									method="POST"
-									action="?/approve"
-									use:enhance={() => {
-										approving = s.id;
-										return async ({ update, result }) => {
-											approving = null;
-											if (result.type === 'success') toast.show('Suggestion approved');
-											await update();
-										};
-									}}
-								>
-									<input type="hidden" name="suggestion_id" value={s.id} />
-									<Button
-										type="submit"
-										variant="moss"
-										size="sm"
-										disabled={approving === s.id || rejecting === s.id}
-									>
-										{approving === s.id ? 'Approving…' : 'Approve'}
-									</Button>
-								</form>
-
-								<a
-									href={withOrigin(`/trips/${data.trip.slug}/items/new?suggestion=${s.id}`, page.url.pathname)}
-									class="border-line text-ink-soft hover:bg-surface-2 active:bg-surface-2 inline-flex items-center rounded-md border px-3 py-1.5 text-sm font-semibold"
-								>
-									Edit &amp; Approve
-								</a>
-
-								{#if rejectOpenId !== s.id}
-									<Button
-										type="button"
-										variant="ghost"
-										size="sm"
-										disabled={approving === s.id || rejecting === s.id}
-										onclick={() => { rejectOpenId = s.id; rejectNote = ''; }}
-									>
-										Reject
-									</Button>
-								{/if}
-							</div>
-
-							{#if rejectOpenId === s.id}
-								<!-- #250 — reject requires a one-line note (no one-tap reject). -->
-								<form
-									method="POST"
-									action="?/reject"
-									use:enhance={() => {
-										rejecting = s.id;
-										return async ({ update, result }) => {
-											rejecting = null;
-											if (result.type === 'success') {
-												rejectOpenId = null;
-												rejectNote = '';
-												toast.show('Suggestion rejected');
-											}
-											await update();
-										};
-									}}
-									class="space-y-2"
-								>
-									<input type="hidden" name="suggestion_id" value={s.id} />
-									<label for="reject-note-{s.id}" class="text-ink-soft block text-xs font-medium">
-										Reason for rejecting (required)
-									</label>
-									<input
-										id="reject-note-{s.id}"
-										name="review_note"
-										type="text"
-										required
-										bind:value={rejectNote}
-										placeholder="Why isn’t this a fit?"
-										class="border-line bg-surface text-ink block w-full rounded-md border px-3 py-2 text-sm"
-									/>
-									<div class="flex items-center gap-2">
-										<Button type="submit" variant="outline" size="sm" disabled={rejecting === s.id || !rejectNote.trim()}>
-											{rejecting === s.id ? 'Rejecting…' : 'Confirm reject'}
-										</Button>
-										<Button
-											type="button"
-											variant="ghost"
-											size="sm"
-											disabled={rejecting === s.id}
-											onclick={() => { rejectOpenId = null; rejectNote = ''; }}
-										>
-											Cancel
-										</Button>
-									</div>
-								</form>
-							{/if}
-						{/if}
-					</div>
-				</Card>
+					</Card>
+				{/if}
 			{/each}
 		{/if}
 	</section>

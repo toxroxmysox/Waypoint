@@ -1,8 +1,7 @@
 <script lang="ts">
 	import ArchiveDaySection from '$lib/portability/components/ArchiveDaySection.svelte';
 	import ShareAffordance from '$lib/portability/components/ShareAffordance.svelte';
-	import TypeIcon from '$lib/ui/TypeIcon.svelte';
-	import { titleCase } from '$lib/shell/format';
+	import ConsideredRows from '$lib/portability/components/ConsideredRows.svelte';
 	import type { buildArchiveView } from '$lib/portability/archive-view';
 	import type { PublishStatus } from '$lib/portability/archive-visibility';
 
@@ -73,16 +72,6 @@
 				timeZone: 'UTC'
 			});
 		return `${fmt(record.trip.start_date)} – ${fmt(record.trip.end_date)}`;
-	});
-
-	const consideredByType = $derived.by(() => {
-		const grouped = new Map<string, RecordData['consideredItems']>();
-		for (const item of record.consideredItems) {
-			const type = item.type || 'activity';
-			if (!grouped.has(type)) grouped.set(type, []);
-			grouped.get(type)!.push(item);
-		}
-		return grouped;
 	});
 
 	let showConsidered = $state(false);
@@ -192,25 +181,8 @@
 				What we considered ({record.consideredItems.length})
 			</button>
 			{#if showConsidered}
-				<div class="mt-4 space-y-4">
-					{#each [...consideredByType.entries()] as [type, items] (type)}
-						<div class="bg-surface border-border rounded-xl border p-4">
-							<h4 class="text-ink mb-3 text-sm font-semibold">{titleCase(type)}s</h4>
-							<ul class="space-y-2">
-								{#each items as item (item.id)}
-									<li class="flex items-start gap-2">
-										<TypeIcon type={item.type} size={20} />
-										<div class="min-w-0">
-											<p class="text-ink text-sm">{item.title}</p>
-											{#if item.location_name}
-												<p class="text-ink-muted text-xs">{item.location_name}</p>
-											{/if}
-										</div>
-									</li>
-								{/each}
-							</ul>
-						</div>
-					{/each}
+				<div class="mt-3">
+					<ConsideredRows items={record.consideredItems} phases={record.phases} />
 				</div>
 			{/if}
 		</div>

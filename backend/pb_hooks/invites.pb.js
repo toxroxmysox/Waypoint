@@ -1,10 +1,12 @@
 /// <reference path="../pb_data/types.d.ts" />
-// M2b — invite endpoints + email send. Three router endpoints + one
-// after-create hook:
+// M2b — invite endpoints + email send. Router endpoints + one after-create hook:
 //   POST /api/invites/create  — auth, creates pending_invites (server fills
 //                                code/expires_at/invited_by)
 //   POST /api/invites/lookup  — anon, returns minimal invite metadata by code
 //   POST /api/invites/accept  — auth, creates trip_member + deletes invite
+//   GET  /api/invites/my-pending, POST /api/invites/decline — the invitee's
+//                                side, listed on /trips (#397)
+//   GET  /api/invites/co-travelers, POST /api/invites/create-for-user — #352
 //   onRecordAfterCreateSuccess('pending_invites') — sends Resend email
 //
 // PB 0.27 runs each callback in an isolated sandbox — outer-file helpers are
@@ -118,6 +120,9 @@ routerAdd('POST', '/api/invites/create', (e) => {
 	invite.set('invited_by', requesterMember.id);
 	invite.set('code', code);
 	invite.set('expires_at', expiresAt);
+	// #449 — the inviter typed this address, so the pending list may show it
+	// back to them. Picker invites are 'picked' and never do.
+	invite.set('origin', 'typed');
 
 	try {
 		e.app.save(invite);
@@ -279,6 +284,11 @@ routerAdd('POST', '/api/invites/accept', (e) => {
 	}
 
 	const tripId = invite.getString('trip');
+	// Returned with every outcome so callers can redirect without a second read.
+	let tripSlug = '';
+	try {
+		tripSlug = e.app.findRecordById('trips', tripId).getString('slug');
+	} catch (_) {}
 
 	// Already-member short-circuit: delete the stale invite, return existing
 	// member id. Keeps the accept link idempotent.
@@ -300,6 +310,7 @@ routerAdd('POST', '/api/invites/accept', (e) => {
 		}
 		return e.json(200, {
 			trip_id: tripId,
+			trip_slug: tripSlug,
 			member_id: existingMember.id,
 			already_member: true
 		});
@@ -344,6 +355,7 @@ routerAdd('POST', '/api/invites/accept', (e) => {
 		e.app.delete(invite);
 		return e.json(200, {
 			trip_id: tripId,
+			trip_slug: tripSlug,
 			member_id: target.id,
 			already_member: false
 		});
@@ -392,6 +404,7 @@ routerAdd('POST', '/api/invites/accept', (e) => {
 
 	return e.json(200, {
 		trip_id: tripId,
+		trip_slug: tripSlug,
 		member_id: member.id,
 		already_member: false
 	});
@@ -516,8 +529,20 @@ onRecordAfterCreateSuccess((e) => {
 		'Accept the invite:\n' +
 		acceptUrl +
 		'\n\n' +
+		'Already using Waypoint? Just open the app — the invite is waiting on your trips list.\n\n' +
 		'This link expires in 7 days. If you did not expect this email, you can ignore it.\n\n' +
 		'— Waypoint';
+
+	// Trip titles and member names are user-controlled: escape them for the
+	// HTML part, or any member could inject markup/links into a Waypoint-sent
+	// email to an address of their choosing (#397 review).
+	const esc = (v) =>
+		String(v)
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#39;');
 
 	// Plaintext-first per M2_STATUS.md; one-line HTML wrap so clients that
 	// strip text/plain still render something readable.
@@ -525,11 +550,11 @@ onRecordAfterCreateSuccess((e) => {
 		'<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.5; color: #1a1a1a;">' +
 		'<p>Hi,</p>' +
 		'<p><strong>' +
-		inviterName +
+		esc(inviterName) +
 		'</strong> invited you to join &ldquo;' +
-		tripTitle +
+		esc(tripTitle) +
 		'&rdquo; on Waypoint as a <strong>' +
-		role.replace('_', '-') +
+		esc(role.replace('_', '-')) +
 		'</strong>.</p>' +
 		'<p><a href="' +
 		acceptUrl +
@@ -537,6 +562,7 @@ onRecordAfterCreateSuccess((e) => {
 		'<p style="color: #666; font-size: 14px;">Or paste this link into your browser:<br><code>' +
 		acceptUrl +
 		'</code></p>' +
+		'<p style="color: #666; font-size: 14px;">Already using Waypoint? Just open the app &mdash; the invite is waiting on your trips list.</p>' +
 		'<p style="color: #666; font-size: 14px;">This link expires in 7 days. If you did not expect this email, you can ignore it.</p>' +
 		'<p style="color: #666; font-size: 14px;">&mdash; Waypoint</p>' +
 		'</div>';
@@ -574,9 +600,14 @@ onRecordAfterCreateSuccess((e) => {
 
 // ---------------------------------------------------------------------------
 // GET /api/invites/my-pending
-// Returns pending invites for the authenticated user's email so the post-login
-// /claim interstitial can redirect them back to the invite page.
+// Pending, unexpired invites for the authenticated user's email. Feeds the
+// Invitations section on /trips and its avatar badge (#397).
 // Admin context so it can read pending_invites regardless of trip membership.
+// Returns { invites: [{ code, trip_title, inviter_name, role, needs_choice }] }
+// — needs_choice: the trip has unclaimed name-only
+// placeholders, so accepting goes through /invite/<code> where the invitee
+// can say "I'm Abby" instead of becoming a duplicate member. Names only,
+// never an address (#352 rule).
 // ---------------------------------------------------------------------------
 routerAdd('GET', '/api/invites/my-pending', (e) => {
 	const auth = e.auth;
@@ -589,8 +620,8 @@ routerAdd('GET', '/api/invites/my-pending', (e) => {
 	try {
 		rows = e.app.findRecordsByFilter(
 			'pending_invites',
-			'email = {:email}',
-			'',
+			'email = {:email} && expires_at > @now',
+			'-expires_at',
 			0,
 			0,
 			{ email: email }
@@ -599,15 +630,89 @@ routerAdd('GET', '/api/invites/my-pending', (e) => {
 		return e.json(200, { invites: [] });
 	}
 
-	const now = new Date();
 	const invites = [];
 	for (const row of rows) {
-		const expiresAt = row.get('expires_at');
-		if (expiresAt && new Date(expiresAt) < now) continue;
-		invites.push({ code: row.get('code') });
+		const tripId = row.getString('trip');
+
+		// Already on the trip (e.g. added another way): the invite is stale.
+		try {
+			e.app.findFirstRecordByFilter(
+				'trip_members',
+				'trip = {:t} && user = {:u} && removed_at = ""',
+				{ t: tripId, u: auth.id }
+			);
+			continue;
+		} catch (_) {}
+
+		let tripTitle = '';
+		try {
+			tripTitle = e.app.findRecordById('trips', tripId).getString('title');
+		} catch (_) {
+			continue; // trip gone
+		}
+
+		let inviterName = '';
+		try {
+			const inviter = e.app.findRecordById('trip_members', row.getString('invited_by'));
+			inviterName = inviter.getString('display_name');
+			if (!inviterName && inviter.getString('user')) {
+				inviterName = e.app.findRecordById('users', inviter.getString('user')).getString('name');
+			}
+		} catch (_) {}
+
+		let needsChoice = false;
+		try {
+			needsChoice =
+				e.app.findRecordsByFilter(
+					'trip_members',
+					'trip = {:t} && user = "" && placeholder_email = "" && removed_at = ""',
+					'',
+					1,
+					0,
+					{ t: tripId }
+				).length > 0;
+		} catch (_) {}
+
+		invites.push({
+			code: row.getString('code'),
+			trip_title: tripTitle,
+			inviter_name: inviterName || 'Someone',
+			role: row.getString('role'),
+			needs_choice: needsChoice
+		});
 	}
 
 	return e.json(200, { invites: invites });
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/invites/decline  { code }
+// #397 — the invitee declines from the Invitations section on /trips. Decline
+// DELETES the invite (Scott, 2026-10-02): no declined state, no notification.
+// Only the invited address may decline it; the revoke gating hook
+// (onRecordDeleteRequest) is for trip members and doesn't apply to e.app.delete.
+// ---------------------------------------------------------------------------
+routerAdd('POST', '/api/invites/decline', (e) => {
+	const auth = e.auth;
+	if (!auth) throw new UnauthorizedError('Authentication required');
+
+	const body = e.requestInfo().body || {};
+	const code = String(body['code'] || '');
+	if (!code) throw new BadRequestError('Missing code');
+
+	let invite;
+	try {
+		invite = e.app.findFirstRecordByFilter('pending_invites', 'code = {:code}', { code: code });
+	} catch (_) {
+		throw new NotFoundError('Invite not found');
+	}
+
+	const inviteEmail = invite.getString('email').trim().toLowerCase();
+	const authEmail = String(auth.email() || '').trim().toLowerCase();
+	if (inviteEmail !== authEmail) throw new ForbiddenError('This invite is not yours to decline');
+
+	e.app.delete(invite);
+	return e.json(200, { declined: true });
 });
 
 // ---------------------------------------------------------------------------
@@ -631,12 +736,9 @@ routerAdd('GET', '/api/invites/my-pending', (e) => {
 // GET /api/invites/co-travelers?trip_id=ID
 // Auth + trip membership + non-viewer required (same authority as inviting).
 // Returns:
-//   { co_travelers: [{ user_id, name, avatar }], pending_names: { <inviteId>: name } }
-// `pending_names` exists so the members page can label a pending invite for a
-// co-traveler by NAME instead of rendering their address — a picker-created
-// invite must not leak the email back through the Pending list. It only ever
-// names people the requester can already see (shared-trip co-travellers), so it
-// discloses nothing new.
+//   { co_travelers: [{ user_id, name, avatar }] }
+// (#450: `pending_names` was removed — its only consumer moved to
+// GET /api/invites/pending in #409.)
 routerAdd('GET', '/api/invites/co-travelers', (e) => {
 	const auth = e.auth;
 	if (!auth) throw new UnauthorizedError('Authentication required');
@@ -741,8 +843,7 @@ routerAdd('GET', '/api/invites/co-travelers', (e) => {
 	const alreadyMember = {};
 	for (const m of currentMembers) alreadyMember[m.getString('user')] = true;
 
-	// 4. Exclude anyone with an open invite on this trip, and build the
-	//    id → name map the members page uses to mask those invites' addresses.
+	// 4. Exclude anyone with an open invite on this trip.
 	let invites = [];
 	try {
 		invites = e.app.findRecordsByFilter(
@@ -757,17 +858,10 @@ routerAdd('GET', '/api/invites/co-travelers', (e) => {
 		invites = [];
 	}
 	const invitedEmails = {};
-	const pendingNames = {};
 	for (const inv of invites) {
 		const invEmail = inv.getString('email').trim().toLowerCase();
 		if (!invEmail) continue;
 		invitedEmails[invEmail] = true;
-		for (const c of pool) {
-			if (c.email && c.email === invEmail) {
-				pendingNames[inv.id] = c.name;
-				break;
-			}
-		}
 	}
 
 	const out = [];
@@ -779,7 +873,7 @@ routerAdd('GET', '/api/invites/co-travelers', (e) => {
 	}
 	out.sort((a, b) => (a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1));
 
-	return e.json(200, { co_travelers: out.slice(0, 60), pending_names: pendingNames });
+	return e.json(200, { co_travelers: out.slice(0, 60) });
 });
 
 // ---------------------------------------------------------------------------
@@ -790,8 +884,13 @@ routerAdd('GET', '/api/invites/co-travelers', (e) => {
 // the label, which never carries an address the caller didn't already know:
 //   1. invitee is a co-traveler of the caller → their NAME (the #352 rule —
 //      a picker-created invite must not round-trip the address);
-//   2. else the caller is the inviter → the address they typed themselves;
-//   3. else → masked (`j•••@gmail.com`).
+//   2. else the caller is the inviter AND typed the address (origin 'typed',
+//      #449) → that address;
+//   3. else the caller is the inviter of a PICKER invite (origin 'picked') →
+//      the name captured when they picked (picked_name). A picked invitee who
+//      has since left every shared trip used to fall into 2 and leak (#449);
+//   4. else → masked (`j•••@gmail.com`). Pre-0072 rows (origin '') land here
+//      for everyone: how they were created is unknown, so never the address.
 // Never returns `email` or `code`.
 // Returns { invites: [{ id, role, invited_by, expires_at, label }] }, newest first.
 // ---------------------------------------------------------------------------
@@ -879,11 +978,16 @@ routerAdd('GET', '/api/invites/pending', (e) => {
 	const out = [];
 	for (const inv of invites) {
 		const addr = inv.getString('email').trim().toLowerCase();
+		const origin = inv.getString('origin'); // #449: 'typed' | 'picked' | '' (pre-0072)
+		const isInviter = inv.getString('invited_by') === callerMember.id;
+		const pickedName = inv.getString('picked_name').trim();
 		let label;
 		if (addr && coTravelerName[addr]) {
 			label = coTravelerName[addr];
-		} else if (inv.getString('invited_by') === callerMember.id) {
+		} else if (isInviter && origin === 'typed') {
 			label = addr;
+		} else if (isInviter && origin === 'picked' && pickedName) {
+			label = pickedName;
 		} else {
 			const at = addr.indexOf('@');
 			label = at > 0 ? addr.charAt(0) + '•••' + addr.substring(at) : 'Invited guest';
@@ -956,6 +1060,7 @@ routerAdd('POST', '/api/invites/create-for-user', (e) => {
 	// crafted user id would invite a stranger — and reveal, by success/failure,
 	// that their account exists.
 	let shared = false;
+	let sharedNickname = ''; // #449 — the target's display_name on that shared trip
 	let myMemberships = [];
 	try {
 		myMemberships = e.app.findRecordsByFilter(
@@ -973,12 +1078,13 @@ routerAdd('POST', '/api/invites/create-for-user', (e) => {
 		const sharedTripId = mine.getString('trip');
 		if (!sharedTripId) continue;
 		try {
-			e.app.findFirstRecordByFilter(
+			const theirs = e.app.findFirstRecordByFilter(
 				'trip_members',
 				'trip = {:tripId} && user = {:userId} && removed_at = ""',
 				{ tripId: sharedTripId, userId: userId }
 			);
 			shared = true;
+			sharedNickname = theirs.getString('display_name').trim();
 			break;
 		} catch (_) {
 			// not on that trip; keep looking
@@ -1031,6 +1137,12 @@ routerAdd('POST', '/api/invites/create-for-user', (e) => {
 	invite.set('invited_by', requesterMember.id);
 	invite.set('code', code);
 	invite.set('expires_at', expiresAt);
+	// #449 — picked by name: the pending list must never show this address, not
+	// even to the inviter. Capture the name they picked (same chain as the
+	// co-travelers pool, minus its 'Traveler' filler) so the label outlives the
+	// pair sharing a trip; empty → the list masks it.
+	invite.set('origin', 'picked');
+	invite.set('picked_name', (target.getString('name').trim() || sharedNickname).substring(0, 200));
 
 	try {
 		e.app.save(invite);

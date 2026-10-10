@@ -18,18 +18,47 @@ function parseTime(dt: string): Date {
 	return new Date(dt.replace(' ', 'T'));
 }
 
+/** The two anchor-time fields every time-shape question reads. */
+export interface TimeFields {
+	start_time?: string;
+	end_time?: string;
+}
+
+/**
+ * An item's time shape (#419, spec §Time grammar). Untimed: no anchor time.
+ * Start-only: a start and no end. Range: both. End-only: an end and no start
+ * (a deadline, #346).
+ */
+export type TimeShape = 'untimed' | 'start-only' | 'range' | 'end-only';
+
+/**
+ * Classify an item by its anchor times. The ONE classification behind the
+ * Timeline Rail (which edge each time sits on), the text forms (`6:30p`,
+ * `10:00a–12:00p`, `by 4:30p`) and the Now feed's buckets (#431 adopts it).
+ * An empty string counts as absent. `end_date` is ignored: a Multi-day Item's
+ * day-by-day wording is the Span's own (#423).
+ */
+export function timeShape(item: TimeFields): TimeShape {
+	const start = !!item.start_time;
+	const end = !!item.end_time;
+	if (start && end) return 'range';
+	if (start) return 'start-only';
+	if (end) return 'end-only';
+	return 'untimed';
+}
+
 /**
  * An item's effective anchor time (#346): its start_time if timed, else its
  * end_time — an end-only item is a deadline ("back by 6"), anchored AT its end.
  * '' when neither is set (a flowing, sort_order-woven item).
  */
-export function itemAnchorTime(item: { start_time?: string; end_time?: string }): string {
+export function itemAnchorTime(item: TimeFields): string {
 	return item.start_time || item.end_time || '';
 }
 
-/** Whether an item joins the timed spine — true when it has a start OR an end (#346). */
-export function isAnchored(item: { start_time?: string; end_time?: string }): boolean {
-	return !!(item.start_time || item.end_time);
+/** Whether an item joins the timed spine — any time shape but untimed (#346, #419). */
+export function isAnchored(item: TimeFields): boolean {
+	return timeShape(item) !== 'untimed';
 }
 
 function getTimeSlot(dt: string): 'morning' | 'afternoon' | 'evening' {

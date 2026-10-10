@@ -7,6 +7,7 @@ import { syncGoalLinks } from '$lib/itinerary/goal-links';
 import type { Document } from '$lib/types';
 import { codesForItem } from '$lib/documents/codes';
 import { reconcileItemCodes } from '$lib/documents/reconcile-codes';
+import { itemPermissions, ITEM_ACTION_ERRORS } from '$lib/itinerary/item-actions';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, membership, phases, days } = await parent();
@@ -26,12 +27,10 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	// member who created this item (created_by holds a trip_members.id). Matches
 	// the items.pb.js update hook so a traveler can reach + submit edits to their
 	// OWN item, but a direct nav to another member's item returns 403 here rather
-	// than rendering a form whose submit would 403.
-	const canEdit =
-		membership.role === 'owner' ||
-		membership.role === 'co_owner' ||
-		(!!item.created_by && item.created_by === membership.id);
-	if (!canEdit) {
+	// than rendering a form whose submit would 403. Same rule as the detail page's
+	// Edit link (#416 — itemPermissions).
+	const permissions = itemPermissions(membership, item);
+	if (!permissions.canEdit) {
 		error(403, 'Only an owner, co-owner, or the item’s creator can edit this item.');
 	}
 
@@ -71,7 +70,10 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		phases,
 		days,
 		tripStartDate: String(trip.start_date || '').split(/[T ]/)[0],
-		tripEndDate: String(trip.end_date || '').split(/[T ]/)[0]
+		tripEndDate: String(trip.end_date || '').split(/[T ]/)[0],
+		// #416 — a traveler-creator may edit but not delete (items.pb.js delete:
+		// owner/co_owner only), so the Delete panel is gated separately.
+		canDelete: permissions.canDelete
 	};
 };
 
@@ -106,6 +108,7 @@ export const actions: Actions = {
 		// non-flight items stay untouched.
 		const startTzRaw = data.get('start_tz')?.toString() || '';
 		const endTzRaw = data.get('end_tz')?.toString() || '';
+		const flightNumberRaw = data.get('flight_number')?.toString() || '';
 		const booked = data.get('booked') === 'on';
 		const requiresBooking = data.get('requires_booking') === 'on';
 		const reservationUrl = data.get('reservation_url')?.toString() || '';
@@ -206,6 +209,7 @@ export const actions: Actions = {
 				end_date: endDate ? `${endDate} 00:00:00.000Z` : '',
 				start_tz: resolvedType === 'flight' ? startTzRaw : '',
 				end_tz: resolvedType === 'flight' ? endTzRaw : '',
+				flight_number: resolvedType === 'flight' ? flightNumberRaw : '',
 				booked,
 				requires_booking: requiresBooking,
 				// #268 / ADR-0016 — codes no longer persist on the item; they reconcile
@@ -246,8 +250,11 @@ export const actions: Actions = {
 			redirect(303, `/trips/${params.slug}`);
 		} catch (err: unknown) {
 			if (isRedirect(err)) throw err;
-			const message = err instanceof Error ? err.message : 'Failed to delete item.';
-			return fail(500, { error: message });
+			// #416 — generic and in the Delete panel, not raw PB text in the page alert.
+			const status = (err as { status?: number } | null)?.status;
+			return fail(typeof status === 'number' && status >= 400 && status < 600 ? status : 500, {
+				deleteError: ITEM_ACTION_ERRORS.delete
+			});
 		}
 	}
 };

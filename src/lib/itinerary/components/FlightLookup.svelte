@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Button from '$lib/ui/Button.svelte';
 	import { untrack } from 'svelte';
+	import { flightTitle, formatFlightNumber } from '$lib/itinerary/flight-place';
 
 	let {
 		onSelect,
@@ -12,6 +13,7 @@
 	}: {
 		onSelect: (flight: {
 			title: string;
+			flight_number: string;
 			start_time: string;
 			end_time: string;
 			end_date: string;
@@ -56,7 +58,13 @@
 			const endDate = arrDate && depDate && arrDate > depDate ? arrDate : '';
 
 			onSelect({
-				title: `${flight.airline?.name ?? ''} ${flightNumber}`.trim(),
+				// #435 / #463 — `UA 1234 to Denver`; the number is stored for the place line.
+				title: flightTitle({
+					number: flightNumber,
+					city: flight.arrival?.airport?.municipalityName ?? '',
+					code: flight.arrival?.airport?.iata ?? ''
+				}),
+				flight_number: formatFlightNumber(flightNumber),
 				start_time:
 					flight.departure?.scheduledTime?.local?.split('T')[1]?.slice(0, 5) ?? '',
 				end_time:

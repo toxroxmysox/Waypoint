@@ -1,7 +1,9 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import type { Day, Item, Document } from '$lib/types';
+import type { Day, Item, Document, TripMember } from '$lib/types';
 import { attachCodesToItems } from '$lib/documents/codes';
+import { docCountsForItems } from '$lib/documents/doc-counts';
+import { withAvatarUrls } from '$lib/collaboration/member-avatar';
 import { tripNow, tripTz } from '$lib/shell/trip-time';
 import { isTripActive } from '$lib/trip-mode/activation';
 
@@ -29,7 +31,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 			})
 		: [];
 
-	// #268 / ADR-0016 — the TripModeCard renders `item.confirmation_codes`, which now
+	// #268 / ADR-0016 — the Trip Mode card renders `item.confirmation_codes`, which now
 	// live as `kind: 'code'` Documents. Re-source them onto the cards.
 	if (items.length > 0) {
 		const codeDocs = await locals.pb.collection('documents').getFullList<Document>({
@@ -39,5 +41,18 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		attachCodesToItems(items, codeDocs);
 	}
 
-	return { items, now: now.toISOString() };
+	// #429 — the rail Card needs the roster (Going bubbles) and the documents count.
+	const [members, docCountByItem] = await Promise.all([
+		locals.pb.collection('trip_members').getFullList<TripMember>({
+			filter: `trip = "${trip.id}" && removed_at = ""`,
+			expand: 'user'
+		}),
+		docCountsForItems(
+			locals.pb,
+			trip.id,
+			items.map((i) => i.id)
+		)
+	]);
+
+	return { items, members: withAvatarUrls(locals.pb, members), docCountByItem, now: now.toISOString() };
 };

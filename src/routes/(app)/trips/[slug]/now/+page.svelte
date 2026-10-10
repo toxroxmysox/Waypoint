@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { withOrigin } from '$lib/shell/back-nav';
 	// Merged Now view (#244). Now absorbed Today: one weighted whole-day glance with
 	// exactly THREE visual weights, top → bottom — faded past (peek, revealed by
 	// scrolling up; the page auto-scrolls to the Focus on open so the past sits
@@ -9,19 +8,27 @@
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import SubTabs from '$lib/ui/SubTabs.svelte';
 	import Card from '$lib/ui/Card.svelte';
-	import Pill from '$lib/ui/Pill.svelte';
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import NowDivider from '$lib/trip-mode/components/NowDivider.svelte';
-	import TripModeCard from '$lib/trip-mode/components/TripModeCard.svelte';
-	import MemberContactStrip from '$lib/trip-mode/components/MemberContactStrip.svelte';
-	import MultiDayBanner from '$lib/itinerary/components/MultiDayBanner.svelte';
+	import ItemCard from '$lib/itinerary/components/ItemCard.svelte';
+	import SpanBand from '$lib/itinerary/components/SpanBand.svelte';
 	import TaskRow from '$lib/itinerary/components/TaskRow.svelte';
 	import IdeasStrip from '$lib/trip-mode/components/IdeasStrip.svelte';
 	import MemorySheet from '$lib/memory/components/MemorySheet.svelte';
 	import MemoryCard from '$lib/memory/components/MemoryCard.svelte';
 	import { getNowFeed } from '$lib/trip-mode/now-state';
-	import { formatCountdown, formatTime } from '$lib/shell/format';
+	import TomorrowPreview from '$lib/trip-mode/components/TomorrowPreview.svelte';
+	import { nowRail } from '$lib/trip-mode/now-rail.svelte';
+	import Hero from '$lib/itinerary/components/Hero.svelte';
+	import FreeTimeLabel from '$lib/itinerary/components/FreeTimeLabel.svelte';
+	import { freeTimeGaps } from '$lib/itinerary/card-anatomy';
+	import ItemActionsMenu from '$lib/itinerary/components/ItemActionsMenu.svelte';
+	import ItemActionSheets from '$lib/itinerary/components/ItemActionSheets.svelte';
+	import { itemMenuEntries, itemPermissions } from '$lib/itinerary/item-actions';
+	import { heroStatus } from '$lib/trip-mode/hero';
+	import { formatCountdown } from '$lib/shell/format';
 	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
+	import type { Item } from '$lib/types';
 	import { page } from '$app/state';
 	import { untrack, tick, onMount } from 'svelte';
 
@@ -38,21 +45,32 @@
 	});
 
 	const nowIso = untrack(() => data.now);
-	const now = new Date(nowIso);
 	const todayStr = nowIso.split('T')[0];
+	// Trip-local "now" (UTC fields = the trip's wall clock). Ticks every 30s so the
+	// Hero's "55m left" counts down and the Focus hands over when the item ends.
+	let now = $state(new Date(nowIso));
+	let clockBase = { server: new Date(nowIso).getTime(), at: Date.now() };
+	// A reload (e.g. after Skip) brings a fresh server "now": re-anchor to it.
+	$effect(() => {
+		clockBase = { server: new Date(data.now).getTime(), at: Date.now() };
+		now = new Date(data.now);
+	});
+	onMount(() => {
+		const id = setInterval(
+			() => (now = new Date(clockBase.server + (Date.now() - clockBase.at))),
+			30_000
+		);
+		return () => clearInterval(id);
+	});
 
 	// The merged feed: faded past / Focus / normal rest (timed + untimed woven).
 	// Named nowFeed (not `feed`/`state`) to avoid shadowing the $state rune.
-	const nowFeed = $derived(getNowFeed(data.todayItems, now, data.hasToday));
+	const nowFeed = $derived(getNowFeed(data.todayItems, now, data.hasToday, data.membership?.id ?? ''));
 	const focus = $derived(nowFeed.focus);
 	const pastItems = $derived(nowFeed.pastItems);
 	const restItems = $derived(nowFeed.restItems);
-
-	// "Up next" highlight keys off the Focus's actual next TIMED item, not a
-	// positional index — an untimed idea can sort ahead of the next timed thing in
-	// the woven rest, and it isn't the "next" anything. In mid-event the ongoing
-	// item is the Focus, so nothing in the rest is "up next".
-	const nextItemId = $derived(focus.kind === 'free-time' ? focus.nextItem.id : null);
+	// #422: free-time labels within Coming up (display order; never spans lists).
+	const restGaps = $derived(freeTimeGaps(restItems));
 
 	// #245 Door 1 — the ideas strip opens proactively at the two states where the
 	// need arises: free time (countdown to the next thing) and nothing-else-planned.
@@ -65,14 +83,22 @@
 	// for the session after a skip even if a later item keeps the Focus engaged —
 	// the strip renders below the rest list as the "replace what you skipped" rail.
 	let justSkipped = $state(false);
+	// The rail (outside this page) reads the same flag; clear it when Now unmounts.
+	onMount(() => () => (nowRail.skipped = false));
 
-	function dayLabel(dateStr: string): string {
-		return new Date(dateStr.replace(' ', 'T')).toLocaleDateString('en-US', {
-			weekday: 'long',
-			month: 'short',
-			day: 'numeric',
-			timeZone: 'UTC'
-		});
+	// #437's menu + sheet serve two doors on this page: the Hero's `⋯` (#428) and each
+	// Coming up card's `⋯` (#429). Entries come from the item permissions (Skip for
+	// owner/co_owner of a planned, dated item); Move and Delete stay on the item
+	// page, so they are masked off here. ONE Skip sheet, pointed at `skipTarget`.
+	function skipEntries(item: Item) {
+		const perms = data.membership ? itemPermissions(data.membership, item) : null;
+		return perms ? itemMenuEntries({ canMove: false, canSkip: perms.canSkip, canDelete: false }) : [];
+	}
+	let skipTarget = $state<Item | null>(null);
+	let skipOpen = $state(false);
+	function askSkip(item: Item) {
+		skipTarget = item;
+		skipOpen = true;
 	}
 
 	// #269 Trip Memory — the one composer, opened from three doors on this page:
@@ -104,8 +130,8 @@
 	);
 
 	// Auto-scroll to the Focus on open (the contract's anchor). This naturally
-	// pushes the faded past above the fold → "reveal on scroll-up". Mirrors
-	// TodayTimeline's onMount scroll. No-op on SSR / when there's no past to hide.
+	// pushes the faded past above the fold → "reveal on scroll-up". No-op on
+	// SSR / when there's no past to hide.
 	onMount(() => {
 		// Add-sheet door: /now?capture=memory opens the composer directly.
 		if (page.url.searchParams.get('capture') === 'memory' && canCapture) {
@@ -140,30 +166,32 @@
 	{#if data.multiDayItems.length > 0}
 		<div class="space-y-2">
 			{#each data.multiDayItems as item (item.id)}
-				<MultiDayBanner
+				<SpanBand
 					{item}
 					days={data.days}
 					dayDate={todayStr}
 					tripSlug={data.trip.slug}
-					ongoing={true}
 				/>
 			{/each}
 		</div>
 	{/if}
 
-	<!-- Weight 1: faded past (peek above the Focus; auto-scroll lands on the Focus
-	     so these need a scroll-up to reach). Hidden entirely when nothing's behind. -->
+	<!-- Weight 1: Earlier today (#429): the same rail + Card as Coming up, muted (no
+	     white fill, ink-muted text, lighter rule, outlined node), still tappable.
+	     Peeks above the Focus; the auto-scroll lands on the Focus, so these need a
+	     scroll-up to reach. Hidden entirely when nothing's behind. -->
 	{#if pastItems.length > 0}
-		<section class="space-y-1 opacity-55">
-			<p class="text-ink-muted text-[11px] font-medium uppercase tracking-wide">Earlier today</p>
+		<section class="space-y-2" aria-label="Earlier today">
+			<NowDivider label="Earlier today" />
 			{#each pastItems as item (item.id)}
-				<a
-					href={withOrigin(`/trips/${data.trip.slug}/items/${item.id}`, page.url.pathname)}
-					class="hover:bg-surface-2 active:bg-surface-2 flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors"
-				>
-					<span class="font-mono text-ink-muted w-16 shrink-0 text-xs">{formatTime(item.start_time)}</span>
-					<span class="text-ink-soft truncate text-sm">{item.title}</span>
-				</a>
+				<ItemCard
+					{item}
+					tripSlug={data.trip.slug}
+					members={data.members}
+					mode="trip"
+					muted
+					docCount={data.docCountByItem[item.id] ?? 0}
+				/>
 			{/each}
 		</section>
 	{/if}
@@ -171,26 +199,41 @@
 	<!-- Weight 2: Focus — the live state, front-and-centre, full detail. Auto-scroll target. -->
 	<div id="now-focus" class="scroll-mt-[110px]">
 		{#if focus.kind === 'mid-event'}
-			<section class="space-y-2">
-				<div class="flex items-center justify-between">
-					<Pill variant="trip" size="sm">Right now</Pill>
-					<p class="text-ink-muted text-xs">{formatCountdown(focus.minutesRemaining)} remaining</p>
-				</div>
-				<TripModeCard
-					item={focus.currentItem}
-					slug={data.trip.slug}
-					canSkip={data.canPromote}
-					onSkipped={() => (justSkipped = true)}
-				/>
-			</section>
+			<!-- #430: a Hero for every ongoing item (the viewer's first, then by start). Stacking
+			     already says "at the same time", so no conflict is shown between them. -->
+			<div class="space-y-3" data-testid="now-heroes">
+				{#each focus.heroes as hero (hero.id)}
+					{@const heroEntries = skipEntries(hero)}
+					<Hero
+						item={hero}
+						members={data.members}
+						status={heroStatus(hero, now)}
+						codes={hero.confirmation_codes ?? []}
+						href={`/trips/${data.trip.slug}/items/${hero.id}`}
+					>
+						{#snippet menu()}
+							<ItemActionsMenu
+								entries={heroEntries}
+								onselect={(id) => {
+									if (id === 'skip') askSkip(hero);
+								}}
+							/>
+						{/snippet}
+					</Hero>
+				{/each}
+			</div>
 		{:else if focus.kind === 'free-time'}
 			<Card>
-				<div class="p-6 text-center">
-					<p class="text-ink-muted text-xs font-medium uppercase tracking-wide">Free time</p>
-					<p class="text-ink font-display mt-2 text-3xl font-semibold">
+				<!-- #431: centred. FREE TIME, a large countdown to the next timed start or
+				     deadline, `until {title}`. No second line (the rail's free-time label says it). -->
+				<div class="p-6 text-center" data-testid="free-time">
+					<p class="text-ink-muted text-xs font-semibold uppercase tracking-wide">Free time</p>
+					<p class="text-ink font-display mt-2 text-5xl leading-none font-semibold" data-testid="free-time-countdown">
 						{formatCountdown(focus.minutesUntilNext)}
 					</p>
-					<p class="text-ink-muted mt-1 text-sm">until next activity</p>
+					<p class="text-ink-soft mt-3 text-base break-words" data-testid="free-time-until">
+						until {focus.nextItem.title}
+					</p>
 				</div>
 			</Card>
 		{:else if focus.kind === 'wrapped-summary'}
@@ -248,38 +291,62 @@
 		</Card>
 	{/if}
 
+
+	<!-- Weight 3: the rest at NORMAL weight (overrides #154's muted later-today
+	     tier). Forward timed items woven with all untimed items. Full cards. -->
+	{#if restItems.length > 0}
+		<section class="space-y-2" aria-label="Coming up">
+			<NowDivider label="Coming up" />
+			{#each restItems as item (item.id)}
+				{@const entries = skipEntries(item)}
+				{@const gap = restGaps.get(item.id)}
+				{#snippet cardMenu()}
+					<ItemActionsMenu
+						{entries}
+						onselect={(id) => {
+							if (id === 'skip') askSkip(item);
+						}}
+					/>
+				{/snippet}
+				{#if gap}
+					<FreeTimeLabel {gap} />
+				{/if}
+				<ItemCard
+					{item}
+					tripSlug={data.trip.slug}
+					members={data.members}
+					mode="trip"
+					docCount={data.docCountByItem[item.id] ?? 0}
+					menu={entries.length > 0 ? cardMenu : undefined}
+				/>
+			{/each}
+		</section>
+	{/if}
+
+	<!-- Scott 2026-10-10: below today's timeline, collapsed (expanded after a Skip),
+	     so the next thing in the day is never below a scroll of ideas. -->
 	<!-- #245 Door 1 / #246 Door 2 — "ideas for now": the current phase's parked
 	     ideas, shown at a free-time / nothing-else Focus (Door 1) OR after a
 	     just-skipped slot (Door 2 — accepting one promotes it into the gap). Same
 	     component, two triggers. Self-hides when the phase has no ideas. -->
+	<!-- #446: at >=1280px the context rail holds this strip; the column stays on today. -->
 	{#if doorOpen || justSkipped}
+		<div class="lg-desktop:hidden">
 		<IdeasStrip
 			ideas={data.ideas}
 			members={data.members}
 			slug={data.trip.slug}
 			canPromote={data.canPromote}
+			myMemberId={data.myMemberId}
+			canVote={data.canVote}
 			heading={justSkipped && !doorOpen ? 'Replace it' : 'Ideas for now'}
 			subheading={justSkipped && !doorOpen
 				? 'Pick a backup from this part of the trip'
-				: 'Backup plans from this part of the trip'}
+				: 'Pick something to do in your free time'}
+			collapsible
+			open={justSkipped}
 		/>
-	{/if}
-
-	<!-- Weight 3: the rest at NORMAL weight (overrides #154's muted later-today
-	     tier). Forward timed items woven with all untimed items. Full cards. -->
-	{#if restItems.length > 0}
-		<section class="space-y-2">
-			<NowDivider label="Coming up" />
-			{#each restItems as item (item.id)}
-				<TripModeCard
-					{item}
-					slug={data.trip.slug}
-					isNext={item.id === nextItemId}
-					canSkip={data.canPromote}
-					onSkipped={() => (justSkipped = true)}
-				/>
-			{/each}
-		</section>
+		</div>
 	{/if}
 
 	<!-- #269 — today's memories from ALL travelers as small cards (the Trip Mode
@@ -325,30 +392,11 @@
 		</section>
 	{/if}
 
-	<!-- Divider → next-day preview + link to the "Next 3 days" sub-tab. -->
+	<!-- Divider → next-day preview + link to the "Next 3 days" sub-tab. At >=1280px the
+	     context rail holds it (#446). -->
 	{#if data.tomorrowDate}
-		<div class="border-line border-t pt-4">
-			<SectionH>
-				{#snippet right()}
-					<a href="/trips/{data.trip.slug}/today/upcoming" class="text-ink-muted hover:text-ink-soft active:text-ink-soft text-xs">Next 3 days</a>
-				{/snippet}
-				{dayLabel(data.tomorrowDate)}
-			</SectionH>
-			{#if data.tomorrowItems.length > 0}
-				<div class="mt-2 space-y-1">
-					{#each data.tomorrowItems.slice(0, 3) as item (item.id)}
-						<a href={withOrigin(`/trips/${data.trip.slug}/items/${item.id}`, page.url.pathname)} class="border-line hover:border-ink-muted active:border-ink-muted flex items-center gap-2 rounded-lg border px-3 py-2">
-							<span class="font-mono text-ink-muted text-xs">{item.start_time ? formatTime(item.start_time) : '—'}</span>
-							<span class="text-ink text-sm truncate">{item.title}</span>
-						</a>
-					{/each}
-					{#if data.tomorrowItems.length > 3}
-						<p class="text-ink-muted text-center text-xs">+{data.tomorrowItems.length - 3} more</p>
-					{/if}
-				</div>
-			{:else}
-				<p class="text-ink-muted mt-2 text-xs">Nothing scheduled.</p>
-			{/if}
+		<div class="border-line border-t pt-4 lg-desktop:hidden">
+			<TomorrowPreview slug={data.trip.slug} date={data.tomorrowDate} items={data.tomorrowItems} />
 		</div>
 	{/if}
 
@@ -386,10 +434,29 @@
 			{/each}
 		</div>
 	{/if}
-
-	<!-- #244: Members left the Trip nav — surface tap-to-contact a fellow traveller here. -->
-	<MemberContactStrip members={data.members} selfUserId={data.membership.user} />
 </main>
+
+<!-- The Skip sheet behind every `⋯` on this page (Hero #428, Coming up cards #429).
+     Outside <main> so no ancestor is a containing block for its fixed positioning.
+     Now IS the Skip destination, so it refreshes in place and opens the ideas strip
+     (Door 2) via onskipped. -->
+{#if skipTarget}
+	{#key skipTarget.id}
+		<ItemActionSheets
+			bind:skipOpen
+			canMove={false}
+			canSkip={true}
+			canDelete={false}
+			slug={data.trip.slug}
+			itemId={skipTarget.id}
+			typeLabel={skipTarget.type}
+			onskipped={() => {
+				justSkipped = true;
+				nowRail.skipped = true;
+			}}
+		/>
+	{/key}
+{/if}
 
 <!-- #269 — the one memory composer (photo slot + 280-char thought). -->
 {#if canCapture && data.todayDayId}

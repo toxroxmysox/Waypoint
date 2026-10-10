@@ -86,7 +86,7 @@ test.describe('#249 approve ghost → real item', () => {
 		//    scoped to this phase (a Ghost Card).
 		const traveler = await devLogin(browser, EMAILS.traveler);
 		try {
-			await traveler.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/items/new?phase=${ids.phaseId}`);
+			await traveler.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/items/new?phase=${ids.phaseId}`, { waitUntil: 'networkidle' });
 			// input[name="title"]:visible — the title input has a duplicate id across the
 			// dual tree (#56), so getByLabel fills the hidden tree; scope to the visible one.
 			const titleField = traveler.page.locator('input[name="title"]:visible').first();
@@ -108,7 +108,7 @@ test.describe('#249 approve ghost → real item', () => {
 		//    co_owner (a 2nd member, not the author) votes it.
 		const coOwner = await devLogin(browser, EMAILS.co_owner);
 		try {
-			await coOwner.page.goto(phaseUrl);
+			await coOwner.page.goto(phaseUrl, { waitUntil: 'networkidle' });
 			const ghost = coOwner.page
 				.locator('[aria-label="Pending idea: ' + ideaTitle + '"]')
 				.filter({ visible: true })
@@ -131,7 +131,7 @@ test.describe('#249 approve ghost → real item', () => {
 		const owner = await devLogin(browser, EMAILS.owner);
 		let realItemId = '';
 		try {
-			await owner.page.goto(phaseUrl);
+			await owner.page.goto(phaseUrl, { waitUntil: 'networkidle' });
 			const ghost = owner.page
 				.locator('[aria-label="Pending idea: ' + ideaTitle + '"]')
 				.filter({ visible: true })
@@ -199,5 +199,84 @@ test.describe('#249 approve ghost → real item', () => {
 		});
 		const notifs = (await notifRes.json()) as { items: Array<{ type: string; body: string }> };
 		expect(notifs.items.some((n) => n.type === 'suggestion_approved')).toBe(true);
+	});
+	// #444 — Edit opens the Suggestion's edit view (Reject / Save / Approve). Save
+	// keeps the edits and leaves it pending; Approve then lands the SAVED edit with
+	// the author's not going (carried from #402).
+	test('Inbox Edit -> Save keeps it pending -> Approve lands the saved edit', async ({ browser }) => {
+		const stamp = Date.now();
+		const title = `Edit me ${stamp}`;
+		const savedTitle = `Edited ${stamp}`;
+		const travelerToken = await token(EMAILS.traveler);
+		const created = await fetch(`${PB_BASE}/api/suggestions/create`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${travelerToken}` },
+			body: JSON.stringify({
+				trip_id: ids.tripId,
+				payload: {
+					title,
+					type: 'activity',
+					phase: ids.phaseId,
+					not_going: [ids.memberIds.traveler]
+				}
+			})
+		});
+		expect(created.ok).toBeTruthy();
+		const { suggestion_id } = (await created.json()) as { suggestion_id: string };
+
+		const ownerToken = await token(EMAILS.owner);
+		const listPending = async () => {
+			const r = await fetch(
+				`${PB_BASE}/api/suggestions/list?trip_id=${ids.tripId}&status=pending`,
+				{ headers: { Authorization: `Bearer ${ownerToken}` } }
+			);
+			return ((await r.json()) as { items: Array<{ id: string; payload: { title: string } }> }).items;
+		};
+
+		const owner = await devLogin(browser, EMAILS.owner);
+		try {
+			const inbox = `${BASE}/trips/${FIXTURE_SLUG}/inbox`;
+			await owner.page.goto(inbox, { waitUntil: 'networkidle' });
+			const card = owner.page
+				.locator('[aria-label="Pending idea: ' + title + '"]')
+				.filter({ visible: true })
+				.first();
+			await expect(card).toBeVisible({ timeout: 10000 });
+			await card.getByRole('link', { name: /^edit$/i }).click();
+			await owner.page.waitForURL(/items\/new\?.*suggestion=/, { timeout: 10000 });
+
+			// The edit view's three actions.
+			const vis = (name: RegExp) =>
+				owner.page.getByRole('button', { name }).filter({ visible: true }).first();
+			await expect(vis(/^reject$/i)).toBeVisible();
+			await expect(vis(/^save$/i)).toBeVisible();
+			await expect(vis(/^approve$/i)).toBeVisible();
+
+			await owner.page.locator('input[name="title"]:visible').first().fill(savedTitle);
+			await vis(/^save$/i).click();
+			await expect(
+				owner.page.getByText('Saved. Still pending.').filter({ visible: true }).first()
+			).toBeVisible({ timeout: 10000 });
+
+			// Still pending, with the saved title (ground truth from the endpoint).
+			const after = (await listPending()).find((s) => s.id === suggestion_id);
+			expect(after?.payload.title).toBe(savedTitle);
+
+			// Approve from the same edit view -> back to the Inbox, the item exists.
+			await vis(/^approve$/i).click();
+			await owner.page.waitForURL(/\/inbox$/, { timeout: 10000 });
+			expect((await listPending()).some((s) => s.id === suggestion_id)).toBe(false);
+		} finally {
+			await owner.ctx.close();
+		}
+
+		const itemsRes = await fetch(
+			`${PB_BASE}/api/collections/items/records?filter=${encodeURIComponent(`title = "${savedTitle}"`)}`,
+			{ headers: { Authorization: `Bearer ${ownerToken}` } }
+		);
+		const found = ((await itemsRes.json()) as { items: Array<{ not_going: string[] }> }).items;
+		expect(found.length).toBe(1);
+		// Carried from #402: Edit & Approve keeps the author's not going.
+		expect(found[0].not_going).toEqual([ids.memberIds.traveler]);
 	});
 });

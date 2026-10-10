@@ -32,3 +32,19 @@ Item-card avatars denote **assignees** (`assigned_to`) on every item-card surfac
 ## Amendment (2026-07-10, #350)
 
 The card vote pill's **single-glyph count** (`VoteCountPill`, a thumbs-up + total) miscommunicated a mixed tally as unanimous approval — a lone "3" read as "3 approvals" regardless of whether those were loves or passes. **The pill now shows per-sentiment glyph+count groups** (`VoteSentimentPill`), non-zero only, using the same vocabulary as `VoteStacks` — ♥ love / + like / ~ flexible / – pass. A card with one love reads `♥ 1`, not a thumbs-up. This **amends, not reverses, the decision above**: votes stay *off* the card avatars (avatars still mean assignees), and no numeric weighted score is ever shown. Component renamed `VoteCountPill.svelte` → `VoteSentimentPill.svelte`.
+
+## Amendment (2026-10-03, card system D3 + D4 — Scott)
+
+Two clarifications from the card-system redesign (`docs/CARD_SYSTEM.md`, decisions D3 and D4):
+
+1. **The avatars mean "who's going", nothing more (D4).** The people in `assigned_to` are the ones going on or doing the item. They are not the ones who book it, pay for it, or are responsible for it. The original wording ("doing / responsible for") is narrowed to participation. The avatar slot keeps its single meaning and is shown on planning day cards and trip-mode cards.
+2. **Votes leave the day page (D3).** This ADR moved votes to a per-sentiment count pill on parking-lot *and planned* cards. Votes now show only where ideas are weighed and moved: the phase planning context (the phase's parking lot), pending suggestions, and the swipe deck. Planned cards and the day page's parking lot show no votes. Item detail keeps the who-voted-what stacks. Whether trip mode's "Ideas for now" strip keeps votes is still open.
+
+The core decision stands: **card avatars mean assignment, never votes.**
+
+## Amendment (2026-10-06, card system D3 amendment, D6 and D10 — Scott)
+
+1. **Unplanned ideas show votes again, in a new form (D3 amended).** This corrects point 2 above. On the day page's parking lot, the desktop Ideas panel, the phase's parking lot, [[Ghost Card]]s and pending suggestions, an **unplanned** idea shows **tap-to-vote pills** under its sub-line: Love, Like, Flexible and Pass, each with its count, the viewer's own vote filled, tap to toggle. Ideas sort by the weighted score within each type group. **Planned cards still show no votes.** A planned item's detail page shows one quiet "Your vote" row.
+2. **How the avatars look (D6, D10).** Going members show as **neutral initials bubbles** (the coloured avatar fallback is retired). A member who said **not going** shows as a struck-through bubble after the going ones, with no grey or opacity (stored in `items.not_going`, #402). No answer is not shown.
+
+The core decision still stands: the avatar slot means who's going; votes are a separate control.

@@ -21,7 +21,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 	// Existing forming ideas (unplanned items) for the keystone picker.
 	const ideas = await locals.pb.collection('items').getFullList<Item>({
 		filter: `trip = "${trip.id}"`,
-		fields: 'id,title,type',
+		fields: 'id,title,type,subtype,location_name',
 		sort: '-created'
 	});
 
@@ -61,7 +61,13 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 
 	return {
 		trip: { id: trip.id, slug: trip.slug, title: trip.title },
-		ideas: ideas.map((i) => ({ id: i.id, title: i.title, type: i.type })),
+		ideas: ideas.map((i) => ({
+			id: i.id,
+			title: i.title,
+			type: i.type,
+			subtype: i.subtype ?? '',
+			place: i.location_name ?? ''
+		})),
 		fork
 	};
 };

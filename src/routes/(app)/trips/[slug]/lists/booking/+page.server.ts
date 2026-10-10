@@ -1,25 +1,13 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Item, Phase, Day, TripMember } from '$lib/types';
+import { rowContent } from '$lib/itinerary/row';
 
 // Booking Smart List (ADR-0003 / PRD §4): a derived, read-only lens — never a
 // stored checklist. Rows are projected from Items (planned + requires_booking +
 // !booked). Checking a row writes booked=true to the source Item, dropping it
 // from the projection. Mirrors the `needsBooking` predicate (unit-tested).
 
-function shortDate(d: string): string {
-	const iso = d.replace(' ', 'T');
-	const date = new Date(iso);
-	if (isNaN(date.getTime())) return '';
-	return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
-}
-
-function nightsBetween(startDay: string, endDate: string): number {
-	const s = new Date(startDay.replace(' ', 'T').split('T')[0]);
-	const e = new Date(endDate.replace(' ', 'T').split('T')[0]);
-	const n = Math.round((e.getTime() - s.getTime()) / 86_400_000);
-	return n > 0 ? n : 0;
-}
 
 export const load: PageServerLoad = async ({ parent, locals }) => {
 	const { trip, phases, days } = await parent();
@@ -35,25 +23,17 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 			: '';
 		const dayDate = item.day ? (days.find((d: Day) => d.id === item.day)?.date ?? '') : '';
 
-		// meta = place · date(range · N nights)
-		const parts: string[] = [];
-		if (item.location_name || phaseName) parts.push(item.location_name || phaseName);
-		if (dayDate) {
-			const start = shortDate(dayDate);
-			if (item.end_date) {
-				const nights = nightsBetween(dayDate, item.end_date);
-				parts.push(`${start}–${shortDate(item.end_date)}${nights ? ` · ${nights} night${nights === 1 ? '' : 's'}` : ''}`);
-			} else {
-				parts.push(start);
-			}
-		}
+		// The Row's sub-line (#433): date · time · place in the text grammar; a
+		// flight also hands over its parts so the Row can fit them to its width.
+		const { sub, flight } = rowContent(item, { dayDate, phaseName });
 
 		return {
 			id: item.id,
 			type: item.type,
 			subtype: item.subtype,
 			title: item.title,
-			meta: parts.join(' · ')
+			sub,
+			flight
 		};
 	});
 

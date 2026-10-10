@@ -69,22 +69,15 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const byId = new Map(items.map((i) => [i.id, i]));
 	const cards = queue.map((c) => byId.get(c.id)!).filter(Boolean);
 
-	// Day labels for the card ("Day 3 · Wed" or null). Days are trip-ordered.
-	const sortedDays = (days as Day[]).slice().sort((a, b) => a.date.localeCompare(b.date));
-	const dayLabel: Record<string, string> = {};
-	sortedDays.forEach((d, n) => {
-		const wd = new Date(d.date.replace(' ', 'T')).toLocaleDateString('en-US', {
-			weekday: 'short',
-			timeZone: 'UTC'
-		});
-		dayLabel[d.id] = `Day ${n + 1} · ${wd}`;
-	});
+	// Day id -> calendar date, for the face's date line (formatTimeText).
+	const dayDate: Record<string, string> = {};
+	for (const d of days as Day[]) dayDate[d.id] = d.date;
 
-	// created_by (user id) → member initial, for "added by".
-	const initialByUser: Record<string, string> = {};
+	// created_by (user id) -> member name, for "Added by Kim".
+	const nameByUser: Record<string, string> = {};
 	for (const m of members) {
-		const name = m.display_name || m.placeholder_name || '?';
-		if (m.user) initialByUser[m.user] = name.slice(0, 1).toUpperCase();
+		const name = m.display_name || m.placeholder_name;
+		if (m.user && name) nameByUser[m.user] = name;
 	}
 
 	const nextPhase = nextPhaseId
@@ -97,8 +90,8 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		cards,
 		votesByItem,
 		members: withAvatarUrls(locals.pb, members),
-		dayLabel,
-		initialByUser,
+		dayDate,
+		nameByUser,
 		nextPhase,
 		// Phase Detail is the parking-lot home (#86 retired the trip-wide page);
 		// the button label says "phase parking lot", so point at this phase.

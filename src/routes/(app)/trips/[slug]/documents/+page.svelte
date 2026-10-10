@@ -6,7 +6,8 @@
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import FAB from '$lib/shell/components/FAB.svelte';
 	import DocumentRow from '$lib/documents/components/DocumentRow.svelte';
-	import CodeChip from '$lib/documents/components/CodeChip.svelte';
+	import CodeCopyButton from '$lib/documents/components/CodeCopyButton.svelte';
+	import Row from '$lib/ui/Row.svelte';
 	import DocumentLightbox from '$lib/documents/components/DocumentLightbox.svelte';
 	import DocumentAddSheet from '$lib/documents/components/DocumentAddSheet.svelte';
 	import { groupDocuments } from '$lib/documents/grouping';
@@ -100,36 +101,28 @@
 			     tap the item to edit. -->
 			{#if itemCodes.length > 0}
 				<section>
-					<div class="mb-3 flex items-center gap-2.5">
-						<span class="bg-gold-tint text-gold flex h-7 w-7 items-center justify-center rounded-full">
-							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-								<circle cx="7.5" cy="15.5" r="5.5" />
-								<path d="m21 2-9.6 9.6" />
-								<path d="m15.5 7.5 3 3L22 7l-3-3" />
-							</svg>
-						</span>
+					<!-- #434 — plain heading, Rows, no gold: a code is settled, not an open loop. -->
+					<div class="mb-1 flex items-center gap-2.5">
 						<h2 class="text-ink text-sm font-semibold">Confirmation codes</h2>
-						<span class="text-ink-muted font-mono text-xs tabular-nums">{itemCodes.length}</span>
+						<span class="text-ink-muted font-mono text-xs tabular-nums">{itemCodes.reduce((n, e) => n + e.codes.length, 0)}</span>
 						<span class="bg-line h-px flex-1"></span>
 					</div>
-					<div class="space-y-2">
+					<div>
 						{#each itemCodes as entry (entry.item_id)}
-							<div class="border-line bg-surface rounded-lg border p-3">
-								<a
+							{#each entry.codes as code}
+								<Row
+									type={entry.item_type}
+									title={entry.item_title}
 									href={withOrigin(`/trips/${data.trip.slug}/items/${entry.item_id}`, page.url.pathname)}
-									class="text-ink hover:text-moss active:text-moss mb-2 flex items-center gap-2 text-sm font-medium"
 								>
-									<TypeIcon type={entry.item_type} size={22} />
-									<span class="truncate">{entry.item_title}</span>
-								</a>
-								<!-- #268 slice 2b — each code is a distinct copyable chip, not a
-								     file card. Tap to copy the value (toast confirms). No attribution. -->
-								<div class="flex flex-wrap gap-2">
-									{#each entry.codes as code}
-										<CodeChip {code} />
-									{/each}
-								</div>
-							</div>
+									{#snippet subline()}
+										{#if code.label}<span class="mr-1.5 text-[11px] font-semibold tracking-wide uppercase">{code.label}</span>{/if}<span class="text-ink font-mono text-sm font-semibold">{code.value}</span>
+									{/snippet}
+									{#snippet action()}
+										<CodeCopyButton {code} />
+									{/snippet}
+								</Row>
+							{/each}
 						{/each}
 					</div>
 				</section>

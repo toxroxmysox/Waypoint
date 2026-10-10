@@ -184,6 +184,7 @@ export const actions: Actions = {
 		// (hidden inputs render flight-only); non-flight items stay untouched.
 		const startTz = type === 'flight' ? data.get('start_tz')?.toString() || '' : '';
 		const endTz = type === 'flight' ? data.get('end_tz')?.toString() || '' : '';
+		const flightNumber = type === 'flight' ? data.get('flight_number')?.toString() || '' : '';
 		const booked = data.get('booked') === 'on';
 		const requiresBooking = data.get('requires_booking') === 'on';
 		const reservationUrl = data.get('reservation_url')?.toString() || '';
@@ -191,6 +192,32 @@ export const actions: Actions = {
 		const costEstimate = parseFloat(data.get('cost_estimate_usd')?.toString() || '0') || 0;
 		const parentItem = data.get('parent_item')?.toString() || '';
 		const suggestionId = data.get('suggestion_id')?.toString() || '';
+		// #444 — the Suggestion edit view's three actions: Reject / Save / Approve.
+		// Approve is the default (no intent). Save and Reject set `intent`.
+		const intent = suggestionId ? data.get('intent')?.toString() || '' : '';
+
+		if (intent === 'reject') {
+			// Reject keeps its one-line note rule; the server re-validates.
+			const reviewNote = data.get('review_note')?.toString().trim() || '';
+			if (!reviewNote) return fail(400, { error: 'A note is required to reject.', field: 'review_note' });
+			try {
+				const res = await fetch(`${PB_BASE}/api/suggestions/review`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${locals.pb.authStore.token}`
+					},
+					body: JSON.stringify({ suggestion_id: suggestionId, action: 'reject', review_note: reviewNote })
+				});
+				if (!res.ok) {
+					const err = await res.json().catch(() => ({}));
+					return fail(res.status, { error: (err as { message?: string }).message || 'Failed to reject.' });
+				}
+			} catch (err: unknown) {
+				return fail(500, { error: err instanceof Error ? err.message : 'Failed to reject suggestion.' });
+			}
+			redirect(303, `/trips/${params.slug}/inbox`);
+		}
 
 		// Parse confirmation codes from repeated fields
 		const codeLabels = data.getAll('confirmation_code_label');
@@ -274,6 +301,7 @@ export const actions: Actions = {
 			end_date: endDate ? `${endDate} 00:00:00.000Z` : '',
 			start_tz: startTz,
 			end_tz: endTz,
+			flight_number: flightNumber,
 			booked,
 			requires_booking: requiresBooking,
 			confirmation_codes: confirmationCodes,
@@ -285,6 +313,28 @@ export const actions: Actions = {
 		};
 
 		const token = locals.pb.authStore.token;
+
+		// #444 — Save: store the edits, leave the Suggestion pending (owner / co-owner
+		// only, enforced by /api/suggestions/update). Stays on the edit view.
+		if (suggestionId && intent === 'save') {
+			try {
+				const res = await fetch(`${PB_BASE}/api/suggestions/update`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${token}`
+					},
+					body: JSON.stringify({ suggestion_id: suggestionId, payload })
+				});
+				if (!res.ok) {
+					const err = await res.json().catch(() => ({}));
+					return fail(res.status, { error: (err as { message?: string }).message || 'Failed to save.' });
+				}
+			} catch (err: unknown) {
+				return fail(500, { error: err instanceof Error ? err.message : 'Failed to save suggestion.' });
+			}
+			return { saved: true };
+		}
 
 		// Edit-and-approve path: owner approving a suggestion with possible edits.
 		if (suggestionId) {

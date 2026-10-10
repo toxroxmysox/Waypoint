@@ -15,3 +15,7 @@ export function e2eBase(): string {
 
 /** For specs: worker processes inherit the env the config resolved. */
 export const E2E_BASE = e2eBase();
+
+/** The PB the app under test talks to. e2e-isolated.sh exports PUBLIC_PB_URL
+ *  per slot; the fallback is the shared dev PB that `pnpm test:e2e` targets. */
+export const E2E_PB_BASE = process.env.PUBLIC_PB_URL ?? 'http://127.0.0.1:8090';

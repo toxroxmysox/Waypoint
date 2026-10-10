@@ -1,7 +1,9 @@
+import { orderDayItems } from '$lib/itinerary/timeline';
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Trip, Day, Item, Checklist, Task, TripMember, Vote, Document } from '$lib/types';
 import { attachCodesToItems } from '$lib/documents/codes';
+import { docCountsForItems } from '$lib/documents/doc-counts';
 import { tripNow, tripTz } from '$lib/shell/trip-time';
 import { isTripActive } from '$lib/trip-mode/activation';
 import { fetchManualChecklists } from '$lib/itinerary/checklist-loaders';
@@ -13,6 +15,7 @@ import { promotePlacement } from '$lib/trip-mode/promote';
 import { scoreVotes, sortByVoteScore } from '$lib/collaboration/voting';
 import { handleSaveMemory } from '$lib/memory/save-memory.server';
 import type { Memory } from '$lib/memory/types';
+import { sortSpans } from '$lib/itinerary/multi-day';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, membership, phases, days } = await parent();
@@ -43,11 +46,15 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
 	const tomorrowStr = tomorrow.toISOString().split('T')[0];
 	const tomorrowDay = days.find((d: Day) => d.date.split(/[T ]/)[0] === tomorrowStr) ?? null;
+	// Day-page order (timed by time, untimed woven in by sort_order): a PB sort on
+	// start_time would put every untimed item first, and the preview shows only 3.
 	const tomorrowItems = tomorrowDay
-		? await locals.pb.collection('items').getFullList<Item>({
-				filter: `day = "${tomorrowDay.id}" && end_date = ""`,
-				sort: 'start_time,sort_order'
-			})
+		? orderDayItems(
+				await locals.pb.collection('items').getFullList<Item>({
+					filter: `day = "${tomorrowDay.id}" && end_date = ""`,
+					sort: 'sort_order'
+				})
+			)
 		: [];
 
 	// Spanning multi-day items (lodging, rental car) that cover today: they start
@@ -66,8 +73,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 			: [];
 
 	// Roster + votes for the merged Now cards (#244, mirroring Today): card avatars
-	// denote assignees, votes show as a per-sentiment pill (#350). Roster also carries email for the
-	// member-contact strip (#244: members left the nav — surface tap-to-contact here).
+	// denote assignees, votes show as a per-sentiment pill (#350).
 	const itemIds = [...todayItems, ...multiDayItems].map((i) => i.id);
 	const [votes, members] = await Promise.all([
 		itemIds.length > 0
@@ -83,7 +89,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const votesByItem: Record<string, Vote[]> = {};
 	for (const v of votes) (votesByItem[v.item] ??= []).push(v);
 
-	// #268 / ADR-0016 — the TripModeCard renders `item.confirmation_codes`, but codes
+	// #268 / ADR-0016 — the Trip Mode card renders `item.confirmation_codes`, but codes
 	// now live as `kind: 'code'` Documents (the legacy json field is inert). Re-source
 	// them onto today's + tomorrow's cards (oldest-first → creation order).
 	const codeDocs = await locals.pb.collection('documents').getFullList<Document>({
@@ -92,6 +98,13 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	});
 	attachCodesToItems(todayItems, codeDocs);
 	attachCodesToItems(tomorrowItems, codeDocs);
+
+	// #429 — the Card strip's documents count for today's rail cards.
+	const docCountByItem = await docCountsForItems(
+		locals.pb,
+		trip.id,
+		todayItems.map((i) => i.id)
+	);
 
 	// Trip Mode checklists (#52): read + check-off in place (Slice B). Trip/phase-
 	// scoped manual lists only; item-scoped lists stay on their Item.
@@ -168,9 +181,10 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		todayItems,
 		tomorrowItems,
 		tomorrowDate: tomorrowDay?.date ?? null,
-		multiDayItems,
+		multiDayItems: sortSpans(multiDayItems, days as Day[]),
 		checklists,
 		votesByItem,
+		docCountByItem,
 		members: withAvatarUrls(locals.pb, members),
 		hasToday: today !== null,
 		todayDayId: today?.id ?? null,
@@ -182,7 +196,10 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		// #245 Door 1 — current-phase ideas strip (vote-score ordered) + the promote gate.
 		ideas,
 		currentPhaseId: derivedPhaseId,
-		canPromote
+		canPromote,
+		// #432 — the idea cards' vote pills: the viewer's member id + whether they may vote.
+		myMemberId: membership.id,
+		canVote: membership.role !== 'viewer'
 	};
 };
 

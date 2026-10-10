@@ -47,7 +47,7 @@ test.describe('Closeout leaves checklists untouched (#53)', () => {
 		await page.getByRole('link', { name: 'Campsite' }).filter({ visible: true }).first().click();
 		await page.waitForURL(/\/items\/[a-z0-9]+(?:\?|$)/); // #361: item links carry ?from=
 		const itemUrl = page.url();
-		await page.getByRole('button', { name: 'Add checklist' }).filter({ visible: true }).first().click();
+		await page.getByRole('button', { name: '+ Checklist', exact: true }).filter({ visible: true }).first().click();
 		const addRow = page.getByPlaceholder('Add an item').filter({ visible: true }).first();
 		await addRow.fill('Tent');
 		await addRow.press('Enter');

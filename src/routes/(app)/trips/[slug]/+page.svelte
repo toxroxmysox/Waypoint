@@ -4,7 +4,6 @@
 	import type { Phase, Day } from '$lib/types';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
-	import Pill from '$lib/ui/Pill.svelte';
 	import Button from '$lib/ui/Button.svelte';
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import SubTabs from '$lib/ui/SubTabs.svelte';
@@ -15,14 +14,17 @@
 	import MiniListCard from '$lib/itinerary/components/MiniListCard.svelte';
 	import DayCard from '$lib/itinerary/components/DayCard.svelte';
 	import DayMetricToggle from '$lib/itinerary/components/DayMetricToggle.svelte';
-	import TypeIcon from '$lib/ui/TypeIcon.svelte';
+	import Row from '$lib/ui/Row.svelte';
+	import NeedsBookingChip from '$lib/ui/NeedsBookingChip.svelte';
+	import FlightSubLine from '$lib/itinerary/components/FlightSubLine.svelte';
+	import { rowTrailing } from '$lib/itinerary/row';
 	import WrapUpBanner from '$lib/trip-mode/components/WrapUpBanner.svelte';
 	import RecordView from '$lib/portability/components/RecordView.svelte';
 	import ScenarioBoard from '$lib/ideation/components/ScenarioBoard.svelte';
 	import { goto } from '$app/navigation';
-	import { titleCase } from '$lib/shell/format';
 	import { isTripActive } from '$lib/trip-mode/activation';
 	import { untrack } from 'svelte';
+	import { tripToday, tripTz } from '$lib/shell/trip-time';
 	import { enhance } from '$app/forms';
 	import type { Notification } from '$lib/types';
 
@@ -87,7 +89,8 @@
 	}
 
 	let firstDayId = $derived(data.days[0]?.id);
-	let today = new Date().toISOString().split('T')[0];
+	// Trip-local calendar date (the trip's timezone), not the viewer's UTC clock (#426).
+	const today = $derived(tripToday(tripTz(data.trip)));
 
 	// Empty-trip state (#111/ES-1, absorbed by #274). Keyed on user CONTENT = ITEMS.
 	// The old ES-1 also required `phases.length === 0`, but #217 auto-seeds a default
@@ -292,15 +295,16 @@
 				</button>
 			</div>
 			{#if data.formingIdeas.length > 0}
-				<div class="grid gap-1.5">
-					{#each data.formingIdeas as idea (idea.id)}
-						<a
+				<div>
+					{#each data.formingIdeas as idea, i (idea.id)}
+						<Row
+							type={idea.type}
+							subtype={idea.subtype}
+							title={idea.title}
+							sub={idea.place}
 							href={withOrigin(`/trips/${data.trip.slug}/items/${idea.id}`, page.url.pathname)}
-							class="border-line bg-surface hover:bg-surface-2 active:bg-surface-2 flex items-center gap-2.5 rounded-lg border px-3 py-2"
-						>
-							<TypeIcon type={idea.type} size={20} />
-							<span class="text-ink truncate text-sm">{idea.title}</span>
-						</a>
+							divider={i < data.formingIdeas.length - 1}
+						/>
 					{/each}
 				</div>
 			{:else}
@@ -387,9 +391,6 @@
 				</button>
 			</div>
 			<div class="flex flex-col items-end gap-2">
-				<Pill variant={data.membership.role === 'owner' ? 'ink' : 'default'} size="sm">
-					{titleCase(data.membership.role)}
-				</Pill>
 				{#if tripActive}
 					<a
 						href="/trips/{data.trip.slug}/now"
@@ -406,26 +407,6 @@
 		</div>
 	</Card>
 
-	{#if data.keyItems?.length}
-		<!-- #200 — findability lens: flights & stays, the two most-hunted item types,
-		     reachable from the trip home without opening each day. Not a full search. -->
-		<section class="space-y-1.5">
-			<div class="text-ink-muted flex items-center gap-1.5 px-0.5 text-[9.5px] font-bold tracking-[0.14em] uppercase">
-				Flights &amp; stays
-			</div>
-			<div class="grid gap-1.5">
-				{#each data.keyItems as it (it.id)}
-					<a
-						href={withOrigin(`/trips/${data.trip.slug}/items/${it.id}`, page.url.pathname)}
-						class="border-line bg-surface hover:bg-surface-2 active:bg-surface-2 flex items-center gap-2.5 rounded-lg border px-3 py-2"
-					>
-						<TypeIcon type={it.type} size={20} />
-						<span class="text-ink truncate text-sm">{it.title}</span>
-					</a>
-				{/each}
-			</div>
-		</section>
-	{/if}
 	{/if}
 
 	{#if !isClosed && !isForming}
@@ -635,6 +616,39 @@
 					/>
 				{/each}
 			</div>
+		</section>
+	{/if}
+
+	<!-- Scott 2026-10-10: Flights & stays sit BELOW the itinerary (header → welcome → itinerary → flights & stays). -->
+	{#if data.keyItems?.length && !isForming && !(isClosed && data.record && data.share) && !isWrapUp}
+		<!-- #200 — findability lens: flights & stays, the two most-hunted item types,
+		     reachable from the trip home without opening each day. Not a full search. -->
+		<section class="space-y-1.5">
+			<div class="text-ink-muted flex items-center gap-1.5 px-0.5 text-[9.5px] font-bold tracking-[0.14em] uppercase">
+				Flights &amp; stays
+			</div>
+			<Card>
+				<div class="px-4" data-key-items>
+					{#each data.keyItems as it, i (it.id)}
+						{#snippet subline()}
+							{#if it.flight}<FlightSubLine sub={it.flight} />{/if}
+						{/snippet}
+						{#snippet chip()}
+							<NeedsBookingChip />
+						{/snippet}
+						<Row
+							type={it.type}
+							subtype={it.subtype}
+							title={it.title}
+							sub={it.sub}
+							subline={it.flight ? subline : undefined}
+							href={withOrigin(`/trips/${data.trip.slug}/items/${it.id}`, page.url.pathname)}
+							trailing={rowTrailing({ chip: it.needsBooking ? 'needs-booking' : undefined }) === 'chip' ? chip : undefined}
+							divider={i < data.keyItems.length - 1}
+						/>
+					{/each}
+				</div>
+			</Card>
 		</section>
 	{/if}
 	{/if}

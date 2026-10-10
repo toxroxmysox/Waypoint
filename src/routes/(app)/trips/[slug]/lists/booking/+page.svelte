@@ -45,7 +45,8 @@
 							type={row.type}
 							subtype={row.subtype}
 							title={row.title}
-							meta={row.meta}
+							sub={row.sub}
+							flight={row.flight}
 							href={withOrigin(`/trips/${data.trip.slug}/items/${row.id}`, page.url.pathname)}
 							bookAction="?/book"
 							pending={booking.has(row.id)}

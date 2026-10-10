@@ -1,4 +1,5 @@
-import type { PageServerLoad } from './$types';
+import { fail, redirect, isRedirect } from '@sveltejs/kit';
+import type { Actions, PageServerLoad } from './$types';
 import type { Trip, TripMember } from '$lib/types';
 import { tripToday, tripTz } from '$lib/shell/trip-time';
 import { pbFileUrl } from '$lib/shell/pb-file-url';
@@ -67,21 +68,32 @@ export const load: PageServerLoad = async ({ locals, fetch }) => {
 	// trips list (one throwing query 500s the whole page; see cerebrum).
 	let pendingClaims = 0;
 	let firstClaimTitle = '';
-	try {
-		const token = locals.pb.authStore.token;
-		const res = await fetch(`${PUBLIC_PB_URL}/api/members/my-claims`, {
-			headers: { Authorization: `Bearer ${token}` }
-		});
-		if (res.ok) {
-			const { claims } = (await res.json()) as {
-				claims: { trip_title?: string }[];
-			};
-			pendingClaims = claims?.length ?? 0;
-			firstClaimTitle = claims?.[0]?.trip_title ?? '';
-		}
-	} catch {
-		// Swallow — the claims card just won't render.
-	}
+	let invitations: PendingInvitation[] = [];
+	// #397 — invites waiting for this user's email, accepted right here instead
+	// of via each email link (every link opened in a fresh browser context costs
+	// a new one-time code). Both lookups are best-effort and run in parallel.
+	await Promise.all([
+		(async () => {
+			try {
+				const token = locals.pb.authStore.token;
+				const res = await fetch(`${PUBLIC_PB_URL}/api/members/my-claims`, {
+					headers: { Authorization: `Bearer ${token}` }
+				});
+				if (res.ok) {
+					const { claims } = (await res.json()) as {
+						claims: { trip_title?: string }[];
+					};
+					pendingClaims = claims?.length ?? 0;
+					firstClaimTitle = claims?.[0]?.trip_title ?? '';
+				}
+			} catch {
+				// Swallow — the claims card just won't render.
+			}
+		})(),
+		(async () => {
+			invitations = await myInvitations(locals.pb);
+		})()
+	]);
 
 	return {
 		active,
@@ -91,6 +103,67 @@ export const load: PageServerLoad = async ({ locals, fetch }) => {
 		profileName: u.name,
 		avatarUrl,
 		pendingClaims,
-		firstClaimTitle
+		firstClaimTitle,
+		invitations
 	};
+};
+
+export interface PendingInvitation {
+	code: string;
+	trip_title: string;
+	inviter_name: string;
+	role: string;
+	/** The trip has unclaimed placeholders → accept on /invite/<code>, where the
+	 *  invitee can claim one instead of joining as a duplicate. */
+	needs_choice: boolean;
+}
+
+async function myInvitations(pb: App.Locals['pb']): Promise<PendingInvitation[]> {
+	try {
+		return (await pb.send<{ invites: PendingInvitation[] }>('/api/invites/my-pending', {})).invites;
+	} catch {
+		return []; // the section just won't render
+	}
+}
+
+function errorMessage(err: unknown, fallback: string): string {
+	const msg = (err as { response?: { message?: string } })?.response?.message;
+	return typeof msg === 'string' && msg ? msg : fallback;
+}
+
+export const actions: Actions = {
+	// #397 — accept in place: the user is already signed in, so no code.
+	acceptInvite: async ({ request, locals }) => {
+		const code = (await request.formData()).get('code')?.toString() ?? '';
+		if (!code) return fail(400, { error: 'Missing invite.', code });
+		// Re-check at accept time, not just when the list loaded: if the trip has
+		// gained an unclaimed placeholder (or the POST was hand-made), accepting
+		// in place would make a duplicate member — send them to the invite page,
+		// where they can claim it (they're signed in, so still no code).
+		const current = (await myInvitations(locals.pb)).find((i) => i.code === code);
+		if (!current) return fail(400, { error: 'That invite is no longer available.', code });
+		if (current.needs_choice) redirect(303, `/invite/${code}`);
+		try {
+			const res = await locals.pb.send<{ trip_id: string; trip_slug?: string }>('/api/invites/accept', {
+				method: 'POST',
+				body: { code }
+			});
+			redirect(303, res.trip_slug ? `/trips/${res.trip_slug}` : '/trips');
+		} catch (err) {
+			if (isRedirect(err)) throw err;
+			return fail(400, { error: errorMessage(err, 'Couldn’t accept that invite.'), code });
+		}
+	},
+
+	// Decline deletes the invite (Scott, 2026-10-02) — no declined state.
+	declineInvite: async ({ request, locals }) => {
+		const code = (await request.formData()).get('code')?.toString() ?? '';
+		if (!code) return fail(400, { error: 'Missing invite.', code });
+		try {
+			await locals.pb.send('/api/invites/decline', { method: 'POST', body: { code } });
+			return { declined: code };
+		} catch (err) {
+			return fail(400, { error: errorMessage(err, 'Couldn’t decline that invite.'), code });
+		}
+	}
 };

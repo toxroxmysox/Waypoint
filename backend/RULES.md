@@ -2,7 +2,7 @@
 
 Source of truth for who can do what against the API. Generated and verified by `backend/test-rules.mjs`. Update this file when rules change; the harness will fail if the documented intent diverges from observed behavior.
 
-Last reviewed: 2026-06-09 (#103 / ADR-0006 — `users.viewRule` loosened from self-only to co-traveler so members read each other's name + avatar; `listRule` stays self-only, `emailVisibility` off). Prior: #70 — documents collection added to the harness.
+Last reviewed: 2026-10-07 (#450 — `trip_members` update guard is a field allowlist, `display_name` own-row only, `placeholder_email` hidden + owner/co_owner route; hooks read roles with `getString`). Prior: #449 invite origin + stored-email scrub (0072/0073); #409 `pending_invites` list/view → superuser (0070); #408 `trip_members` field guard; #407 `trips` delete gate; #103 / ADR-0006 `users.viewRule` co-traveler.
 
 ---
 
@@ -31,7 +31,7 @@ Role-agnostic. Any member of a trip can do anything to that trip's data; non-mem
 |---|---|---|---|---|---|
 | `users` | self only | **co-traveler** (name+avatar) | null (OTP hook) | self only | null (no API) |
 | `trips` | member | member | authed | member + hook (protected fields owner/co_owner, #280) | member + hook (owner/co_owner, #407) |
-| `trip_members` | member of trip | member of trip | null (hooks/admin) | member of trip + hook (field allowlist, #279/#408) | member of trip + hook (#279) |
+| `trip_members` | member of trip | member of trip | null (hooks/admin) | member of trip + hook (field allowlist {role, display_name, digest_opt_out}, #279/#408/#450); `placeholder_email` hidden field (0074, #450) | member of trip + hook (#279) |
 | `phases` | member of trip | member of trip | member + hook (owner/co_owner, #175) | member + hook (owner/co_owner, #175) | member + hook (owner/co_owner, #175) |
 | `days` | member of trip | member of trip | null (hooks) | member of trip | null (hooks) |
 | `items` | member of trip | member of trip | member + hook (owner/co_owner, #175) | member + hook (owner/co_owner, #175) | member + hook (owner/co_owner, #175) |
@@ -46,6 +46,7 @@ Role-agnostic. Any member of a trip can do anything to that trip's data; non-mem
 - `days.create` — generated automatically by trips after-create / after-update hooks based on the trip's date range. Users never create days directly.
 - `days.delete` — same: pruning happens inside the trips after-update hook when the date range shrinks.
 - `pending_invites.create` — invite creation goes through `POST /api/invites/create`, which validates the inviter's role per SPEC §3 (travelers can only invite traveler/viewer; viewers cannot invite at all) and generates `code` + `expires_at` server-side. Direct API POST would let any member set arbitrary codes / lifetimes / inviter ids.
+- `pending_invites.list` / `pending_invites.view` (#409, migration 0070) — rows carry the invitee's `email` and the live invite `code`. Under the old member rule any member token (viewers included) could read every invitee's address and a working join code straight off REST. Members now read `GET /api/invites/pending?trip_id=`, which returns a per-invite label (never `email` or `code`). Everything else that reads the collection runs in admin context. The #449 `origin` / `picked_name` columns (0072) are read only by that route.
 - `pending_invites.update` — invites are immutable. To change a role or extend expiry, revoke and re-invite. Keeps the audit trail honest.
 
 **Identity expressions used in 0014 (+ 0043):**
@@ -79,7 +80,7 @@ The current baseline lets any member do anything. SPEC §3 carves out role-speci
 | items.create direct | ✓ | ✓ | — (suggests instead) | — |
 | items.update / delete | ✓ | ✓ | — | — |
 | suggestions.create (target_type=new_item) | ✓ auto-approve | ✓ auto-approve | ✓ queued unless trip.auto_approve_suggestions | — |
-| suggestions.update (approve/reject) | ✓ | ✓ | — | — |
+| suggestions.update (approve/reject; Save via `/api/suggestions/update`, #444, pending only) | ✓ | ✓ | — | — |
 | suggestions.create (target_type=comment) | ✓ | ✓ | ✓ | ✓ |
 | checklist_items.update (check/uncheck) | ✓ | ✓ | ✓ | — |
 
@@ -137,6 +138,25 @@ Lands the long-documented "Target rules per SPEC §3" matrix for `items` and `ph
 - **rules stay `MEMBER_VIA_TRIP`** — the role gate is enforced in `items.pb.js` (create/update/delete) and the extended `phases.pb.js` (create/update/delete, registered *before* the existing day-rebucket hooks so a denied write throws before any `e.next()` and never rebuckets). The rule can't carry the role: for **update/delete** the acting caller isn't the author, and correlating the caller's role needs `trip.trip_members_via_trip.role ?= "owner"` alongside `...user ?= auth`, where the two `?=` can match *different* member rows (the multi-relation aliasing gotcha). For **items.create** `created_by` is single-relation, but the **import** and **closeout** flows create items without setting `created_by`, so a `created_by.role` create rule would 403 those owner-only flows — rejected. **phases** has no `created_by` field at all. Each hook resolves the caller's *actual* `trip_members` row and rejects any role but owner/co_owner.
 - **items.create — travelers suggest, they don't create.** The `items/new` action routes every traveler through `/api/suggestions/create` (admin context, bypasses the gate): auto-approved when `trip.auto_approve_suggestions` is on (item created immediately), queued otherwise. SPEC §4 "Add/edit/delete items: traveler suggest only*" — the asterisk = auto-approvable. Owner/co_owner keep the direct-create path.
 - **owner/co_owner flows unchanged** — all existing item/phase create/edit/reorder/delete/book paths pass the hook (caller is owner/co_owner). Harness: `items` + `phases` create/update/delete cells flip to `OWNER_COOWNER_ONLY` (traveler + viewer now deny; the fixture item/phase is owner-authored, so traveler/viewer mutating it deny on the caller's role). UI affordance-hiding for travelers/viewers on day-view/phase/item surfaces is a separate follow-up; this issue is the server-side enforcement.
+
+## Going: self-assign and Not going (#226 / #402)
+
+Three-state Going (CARD_SYSTEM D6): a member is **going** (in `items.assigned_to`), **not going** (in `items.not_going`, migration 0071) or has **no answer** (in neither). Rules stay `MEMBER_VIA_TRIP`; everything is in `items.pb.js`, because "only your own id" is a diff against the stored record, which a rule can't express.
+
+| Change | Owner | Co-Owner | Traveler | Viewer |
+|---|:---:|:---:|:---:|:---:|
+| own going (`assigned_to`) | ✓ | ✓ | ✓ (#226 exception) | — |
+| someone else's going | ✓ | ✓ | — | — |
+| own not going (`not_going`) | ✓ | ✓ | ✓ | — |
+| someone else's not going (set or clear) | — | — | — | — |
+
+- **Not going is self-only for every role** (update request hook, checked *before* the owner and #219 creator bypasses): the `not_going` delta must be empty or exactly the caller's own member id. On create, `not_going` may hold only the caller's id. Viewers can't answer at all.
+- **Traveler exception (#226, extended):** a traveler may update an item they didn't create iff no locked field changed and the union of the `assigned_to` and `not_going` deltas is exactly their own id (so going ↔ not going in one write is allowed).
+- **Exclusive lists (model hooks `onRecordCreate` / `onRecordUpdate`):** they run on every save, REST and internal `e.app.save` alike. A member found in both lists after a change: newly added to `not_going` but not newly going → removed from `assigned_to`; anything else (newly going, both at once, a new record) → removed from `not_going` (going wins). So an owner assigning someone going clears that member's not going. **Intended (Scott, 2026-10-07):** the owner can override a member's "not going", and the item form's assignment does so, knowing the owner can't see who said not going and that a stale form can clear it too.
+- **Endpoint:** `POST /api/items/:id/assign-self { state: going | not_going | no_answer }` writes only the caller's id with relation modifiers (`assigned_to+`, `not_going-` …), through the caller's own auth, so these hooks still apply. An empty body is the legacy "+ Me" toggle (going ↔ no answer); a JSON body that isn't an object is a 400. Re-sending your current state returns it with no write (PB refuses a traveler's no-change update). PB `err.status` passes through. Not concurrency-safe: the modifiers apply to the record as loaded, so two answers within a few ms can lose one (accepted).
+- **Departure (`/api/members/remove`):** `items.not_going` is `block_multi` like `assigned_to` (keep → stays on the tombstone and blocks purge; `can-purge` probes it). Reassign moves the departed's answer to the target unless the target already answered the other way (their own answer wins); cascade clears it.
+- **Suggestion approval:** the new item gets the payload's `assigned_to` and, of its `not_going`, only the author's own id.
+- Harness: `test-rules.mjs` `#402` block (role × own/other × going/not going/no answer, exclusivity, guards, departure) and `test-suggestions.mjs` §14.
 
 ## Documents (#70)
 
@@ -202,9 +222,13 @@ Three REST holes closed after the 2026-10-05 agent-access audit:
   `trip`, `user`, `placeholder_name`, `placeholder_email`, `claimable_by`,
   `removed_at`, `soft_token`, `joined_at` are never writable over REST (claim /
   remove / accept / join run as admin-context saves, which skip request hooks).
-  `display_name`: own row, or any row for owner/co_owner. `digest_opt_out`: own
-  row only. `role`: owner/co_owner (#279). A no-op PATCH passes. Superusers pass.
+  `display_name`: own row, or any row for owner/co_owner (**own row only since
+  #450**, see below). `digest_opt_out`: own row only. `role`: owner/co_owner
+  (#279). A no-op PATCH passes. Superusers pass.
   Before: a traveler could point the owner row's `user` at a second account.
+  **#450:** the guard is now a true ALLOWLIST: it iterates the collection's live
+  field list and rejects any changed field outside `{role, display_name,
+  digest_opt_out}`, so a field added later is locked by default.
 - **`pending_invites` read (#409, migration 0070)** — list/view are superuser-only:
   rows carry the invitee's `email` and the live `code`. Members read
   `GET /api/invites/pending?trip_id=` (`invites.pb.js`), which returns
@@ -214,6 +238,64 @@ Three REST holes closed after the 2026-10-05 agent-access audit:
 
 Harness: `test-rules.mjs` matrix (`trips.delete`, `trip_members.update`,
 `pending_invites.list/view`) + the `#408` / `#409` / `trips.delete_superuser` novel cases.
+
+## trip_members hardening (#450, migration 0074)
+
+- **Update allowlist** — see #408 above. Proven by a probe: the harness adds a
+  throwaway text field to `trip_members` as superuser and shows owner and viewer
+  PATCHes of it 403 (superuser still passes), then removes the field. Every role
+  (owner, co_owner, traveler, viewer) is also tried against `user` and `trip` on
+  another member's row (all 403).
+- **`display_name` is own-row only.** #415 had let owner/co_owner rename any
+  member; no screen used it and it was never asked for. The matrix `trip_members.update`
+  target is the owner's row, so only the owner (self) passes. Owner/co_owner
+  renaming someone else is a denied novel case (`rename_other_owner`,
+  `rename_other_coowner`). Traveler and viewer renaming themselves stay allowed.
+- **`placeholder_email` is a hidden field (0074).** PB rules can't hide one field
+  per role, so the field is `hidden`: no list/view/expand response carries it for
+  any non-superuser, and a member token can't filter on it either. Owner and
+  co_owner read it through `GET /api/members/placeholder-emails?trip_id=`
+  (`members.pb.js`, admin context) → `{emails: {<memberId>: <email>}}` for the
+  trip's active placeholders; traveler, viewer and non-member get 403. Hooks that
+  filter on the field run in admin context and are unaffected. Writes stay
+  locked: a member PATCH of it is dropped (200 no-op) and the stored value is
+  unchanged (`owner_rewrite_placeholder_email`).
+- **Roles in hooks** are read with `getString('role')` everywhere (goja reads
+  some field types back as objects; one idiom, no surprises).
+- **`/api/invites/co-travelers`** no longer returns `pending_names` (its consumer
+  moved to `/api/invites/pending` in #409).
+
+## Invite origin + stored-email scrub (#449, migrations 0072 / 0073)
+
+Supersedes the #409 label rule above: "the caller's own invite" no longer gets
+the address unless the caller typed it.
+
+- **`pending_invites.origin` + `picked_name` (0072)** — `origin` is `typed`
+  (`POST /api/invites/create`) or `picked` (`POST /api/invites/create-for-user`);
+  `''` on rows written before 0072. `picked_name` is the name the inviter picked
+  (account name, else the shared-trip nickname), captured at creation; empty for
+  typed invites. Both are written only by those two routes (createRule/updateRule
+  stay `null`) and read only by `GET /api/invites/pending` — list/view stay
+  superuser-only (0070), and the route never returns either field.
+- **`GET /api/invites/pending` label**, first match wins:
+  1. invitee is the caller's current co-traveler → their name (#352);
+  2. caller is the inviter and `origin = typed` → the address they typed;
+  3. caller is the inviter and `origin = picked` → `picked_name` (if non-empty);
+  4. otherwise → masked (`j•••@domain`). Pre-0072 rows (`origin = ''`) land here
+     for everyone, the inviter included: how they were made is unknown.
+  Before: a picked invitee who left every trip shared with the inviter dropped
+  out of 1 and fell into "inviter → address", revealing an email the inviter was
+  never shown.
+- **0073 — one-time scrub** of addresses stored by pre-#415 fallbacks:
+  `member_joined` notification bodies (or any body ending " joined the trip")
+  → `Someone joined the trip`; tombstoned (`removed_at` set) `trip_members.display_name`
+  → `Former member`. Only rows containing `@`; idempotent; never throws (logs
+  the row id and skips). Other notification bodies and live member rows are out
+  of scope (people's own typed text / live data).
+
+Harness: `test-invites.mjs` `[#449 …]` section (picker repro: pick → leave →
+pending list) and `test-scrub.mjs` (`bash scripts/backend-harnesses.sh scrub`:
+seeds below 0073, boots PB with it, asserts acceptance + controls + a no-op re-run).
 
 ## Shared join links (#118 / #152)
 

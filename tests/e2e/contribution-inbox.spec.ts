@@ -59,7 +59,7 @@ test.describe('#251 Inbox tabs + vote tallies', () => {
 		await setupFixture();
 	});
 
-	test('owner sees Pending/Approved/Rejected tabs; pending suggestion shows a vote tally', async ({
+	test('owner sees Pending/Approved/Rejected tabs; pending suggestion shows its vote pills', async ({
 		browser
 	}) => {
 		const owner = await devLogin(browser, EMAILS.owner);
@@ -87,10 +87,14 @@ test.describe('#251 Inbox tabs + vote tallies', () => {
 				owner.page.getByRole('tab', { name: /pending/i }).filter({ visible: true }).first()
 			).toContainText(/\(([3-9]|\d{2,})\)/);
 
-			// At least one vote tally is visible on the Pending tab (the voted ghost).
+			// #444 — the Pending tab shows tap-to-vote pills, not a tally line: the voted
+			// ghost's Like pill counts the traveler's one vote.
 			await expect(
-				owner.page.getByLabel(/\d+ votes?/).filter({ visible: true }).first()
-			).toBeVisible();
+				owner.page
+					.locator('[aria-label="Pending idea: Owner ghost (voted)"]')
+					.filter({ visible: true })
+					.locator('[data-vote="like"]')
+			).toHaveAttribute('aria-label', /^Like, 1/);
 
 			// Switching tabs renders the other panels without error.
 			await owner.page.getByRole('tab', { name: /approved/i }).filter({ visible: true }).first().click();
@@ -98,6 +102,53 @@ test.describe('#251 Inbox tabs + vote tallies', () => {
 			// Back to Pending — the voted card is visible again.
 			await owner.page.getByRole('tab', { name: /pending/i }).filter({ visible: true }).first().click();
 			await expect(votedCard).toBeVisible();
+		} finally {
+			await owner.ctx.close();
+		}
+	});
+
+	// #444 — the pending idea card: dashed, gold Pending chip, vote pills, a tray of
+	// Approve / Edit / Reject, and NO role badge ("Suggested by" already says who).
+	test('Pending tab shows the pending idea card: chip, vote pills, Approve / Edit / Reject, no role badge', async ({
+		browser
+	}) => {
+		const owner = await devLogin(browser, EMAILS.owner);
+		try {
+			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/inbox`);
+			const card = owner.page
+				.locator('[aria-label^="Pending idea:"]')
+				.filter({ visible: true })
+				.first();
+			await expect(card).toBeVisible({ timeout: 10000 });
+
+			await expect(card.getByText('Pending', { exact: true })).toBeVisible();
+			await expect(card.getByText(/^suggested by /i)).toBeVisible();
+			// Four always-on vote pills.
+			await expect(card.locator('[data-vote]')).toHaveCount(4);
+			// The tray: Approve / Edit / Reject.
+			await expect(card.getByRole('button', { name: /^approve$/i })).toBeVisible();
+			await expect(card.getByRole('link', { name: /^edit$/i })).toBeVisible();
+			await expect(card.getByRole('button', { name: /^reject$/i })).toBeVisible();
+			// No role badge.
+			await expect(card.getByText(/^(owner|co.?owner|traveler|viewer)$/i)).toHaveCount(0);
+		} finally {
+			await owner.ctx.close();
+		}
+	});
+
+	test('a member can vote a pending idea from the Inbox (tap-to-vote pills)', async ({ browser }) => {
+		const owner = await devLogin(browser, EMAILS.owner);
+		try {
+			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/inbox`);
+			// "Neutral ghost" is the viewer's, with zero seeded votes: the owner may vote it.
+			const votable = owner.page
+				.locator('[aria-label="Pending idea: Neutral ghost"]')
+				.filter({ visible: true })
+				.first();
+			await expect(votable).toBeVisible({ timeout: 10000 });
+			const like = votable.locator('button[data-vote="like"]');
+			await like.click();
+			await expect(like).toHaveAttribute('aria-pressed', 'true', { timeout: 10000 });
 		} finally {
 			await owner.ctx.close();
 		}

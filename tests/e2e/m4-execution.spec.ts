@@ -39,10 +39,11 @@ test.describe('M4 Execution', () => {
 				await itemLink.click();
 				await page.waitForURL('**/items/**');
 
-				// Vote control is a group of weighted option buttons (#30); assert the group.
-				await expect(
-					page.getByRole('group', { name: 'Vote on this item' }).filter({ visible: true }).first()
-				).toBeVisible();
+				// #442: a planned item carries the quiet "Your vote" row in Details.
+				// #439: in Trip Mode Details is the collapsed "Plan details"; open it.
+				const planDetails = page.getByTestId('plan-details').filter({ visible: true }).first();
+				if (await planDetails.isVisible()) await planDetails.locator('summary').click();
+				await expect(page.getByTestId('item-your-vote').filter({ visible: true }).first()).toBeVisible();
 			}
 		}
 	});

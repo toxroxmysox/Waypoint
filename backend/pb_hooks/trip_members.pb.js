@@ -13,9 +13,9 @@
 //
 // This file adds the request-hook gate (mirrors items.pb.js / budgets.pb.js):
 //   - update: a `role` change is owner/co_owner only. #408 narrowed the rest to
-//     a field allowlist: `display_name` (own row, or any row for owner/co_owner)
-//     and `digest_opt_out` (own row only). Identity/lifecycle fields — trip, user,
-//     placeholder_*, claimable_by, removed_at, soft_token, joined_at — are never
+//     a field allowlist (#450: enforced against the collection's live field list):
+//     `display_name` and `digest_opt_out`, both own row only. Identity/lifecycle
+//     fields — trip, user, placeholder_*, claimable_by, removed_at, soft_token, joined_at — are never
 //     writable over REST; their legitimate flows (claim, remove, invite accept,
 //     join) run as admin-context saves in members.pb.js / invites.pb.js / join.pb.js,
 //     which don't fire request hooks. Before #408 any member could PATCH the
@@ -51,20 +51,20 @@ onRecordUpdateRequest((e) => {
 	const original = e.record.original();
 	const changed = (f) => e.record.getString(f) !== original.getString(f);
 
-	// Identity + lifecycle fields: server flows only, never REST.
-	const locked = [
-		'trip',
-		'user',
-		'placeholder_name',
-		'placeholder_email',
-		'claimable_by',
-		'removed_at',
-		'soft_token',
-		'joined_at'
-	];
-	for (let i = 0; i < locked.length; i++) {
-		if (changed(locked[i])) {
-			throw new ForbiddenError('`' + locked[i] + '` can’t be changed directly');
+	// ALLOWLIST (#450): only {role, display_name, digest_opt_out} may change over
+	// REST. Every other field — present or added to the collection later — is
+	// rejected. The identity/lifecycle fields (trip, user, placeholder_*,
+	// claimable_by, removed_at, soft_token, joined_at) have legitimate flows, but
+	// those run as admin-context saves (members/invites/join.pb.js) that don't
+	// fire request hooks. Iterate the collection's CURRENT field list so a future
+	// field is locked by default (a denylist would leave it writable by any member).
+	const allowed = ['role', 'display_name', 'digest_opt_out'];
+	const fieldNames = e.record.collection().fields.fieldNames();
+	for (let i = 0; i < fieldNames.length; i++) {
+		const f = '' + fieldNames[i];
+		if (allowed.indexOf(f) !== -1) continue;
+		if (changed(f)) {
+			throw new ForbiddenError('`' + f + '` can’t be changed directly');
 		}
 	}
 
@@ -89,7 +89,7 @@ onRecordUpdateRequest((e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 
-	const callerRole = '' + callerMember.get('role');
+	const callerRole = callerMember.getString('role');
 	const isPrivileged = callerRole === 'owner' || callerRole === 'co_owner';
 	const isSelf = original.getString('user') === authId;
 
@@ -99,8 +99,9 @@ onRecordUpdateRequest((e) => {
 	if (roleChanged && !isPrivileged) {
 		throw new ForbiddenError('Only an owner or co-owner can change a member’s role');
 	}
-	// Display name: your own, or anyone's if you run the trip.
-	if (nameChanged && !isSelf && !isPrivileged) {
+	// Display name: your own row only (#450 — #415's owner/co_owner rename-any
+	// path was removed; no screen used it).
+	if (nameChanged && !isSelf) {
 		throw new ForbiddenError('You can only change your own display name');
 	}
 	// Digest opt-out is a personal preference: own row only.
@@ -139,7 +140,7 @@ onRecordDeleteRequest((e) => {
 	}
 
 	if (!isSelfLeave) {
-		const callerRole = callerMember.get('role');
+		const callerRole = callerMember.getString('role');
 		if (callerRole !== 'owner' && callerRole !== 'co_owner') {
 			throw new ForbiddenError('Only an owner or co-owner can remove another member');
 		}
@@ -147,7 +148,7 @@ onRecordDeleteRequest((e) => {
 
 	// The sole ACTIVE owner can never be removed (incl. by themselves) — the trip
 	// would be left ownerless. Mirrors the /api/members/remove sole-owner cap.
-	if (e.record.get('role') === 'owner') {
+	if (e.record.getString('role') === 'owner') {
 		let ownerCount = 0;
 		try {
 			const owners = e.app.findRecordsByFilter(

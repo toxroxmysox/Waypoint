@@ -28,7 +28,7 @@
 		onEdit?: () => void;
 	} = $props();
 
-	// Same fallback chain as MemberContactStrip — memberships created by the
+	// Same fallback chain as memberDisplayName — memberships created by the
 	// join/claim flows may carry only the expanded user's name.
 	type MemberRow = MemberWithAvatar & { expand?: { user?: User } };
 	const name = $derived.by(() => {

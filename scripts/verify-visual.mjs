@@ -20,8 +20,10 @@
 //      route at each width into .visual/ (gitignored).
 //   5. Kills everything. /tmp/pb67 is disposable, so there is nothing to clean.
 //
-// Route tokens: {slug} {tripId} {day1}..{day6} (day ids, 1-indexed).
+// Route tokens: {slug} {tripId} {phase1} {goalId} {formingSlug} {day1}..{day6} (day ids, 1-indexed), {item1} {item2} (the `now` seed: ongoing dinner, later night walk; needs VISUAL_SEED='{"now":"hero"}').
 // Flags: --widths 375,768  --viewport (no full-page)  --out DIR  --keep
+//        --click SELECTOR (repeatable: click the first VISIBLE match before the shot,
+//        e.g. to open a menu; a `scroll:SELECTOR` entry scrolls it to the top instead)  --tag NAME (suffix on the filenames)
 //        --timeout SECONDS.  VISUAL_DEBUG=1 surfaces PB/vite stderr.
 //
 // Shots are full-page by default, which means position:fixed chrome (BottomNav,
@@ -120,6 +122,8 @@ let outDir = path.join(ROOT, '.visual');
 let budgetMs = 240_000;
 let keep = false;
 let fullPage = true;
+const clicks = [];
+let tag = '';
 
 // Flags taking a value read argv[++i]; `value()` turns a missing one into the
 // usage error rather than an undefined that blows up three lines later.
@@ -134,6 +138,8 @@ for (let i = 0; i < argv.length; i++) {
 	else if (a === '--out') outDir = path.resolve(ROOT, value(++i, a));
 	else if (a === '--timeout') budgetMs = Number(value(++i, a)) * 1000;
 	else if (a === '--keep') keep = true;
+	else if (a === '--click') clicks.push(value(++i, a));
+	else if (a === '--tag') tag = value(++i, a);
 	else if (a === '--viewport') fullPage = false;
 	else if (a.startsWith('-')) fail(`unknown flag: ${a}`);
 	else routes.push(a);
@@ -204,7 +210,8 @@ console.log('→ seeding populated trip');
 const seedRes = await fetch(`${PB_URL}/api/dev/seed-visual-trip`, {
 	method: 'POST',
 	headers: { 'Content-Type': 'application/json' },
-	body: '{}'
+	// VISUAL_SEED='{"stay":true}' opts into extra seed fixtures (#426 stay, #420 rich).
+	body: process.env.VISUAL_SEED || '{}'
 });
 if (!seedRes.ok) fail(`seed-visual-trip failed (${seedRes.status}): ${await seedRes.text()}`);
 const seed = await seedRes.json();
@@ -239,6 +246,11 @@ const resolve = (route) =>
 	route
 		.replaceAll('{slug}', seed.slug)
 		.replaceAll('{tripId}', seed.tripId)
+		.replaceAll('{phase1}', seed.phaseId ?? '{phase1}')
+		.replaceAll('{goalId}', seed.goalId ?? '{goalId}')
+		.replaceAll('{formingSlug}', seed.formingSlug ?? '{formingSlug}')
+		.replaceAll('{item1}', seed.nowItems?.live ?? '{item1}')
+		.replaceAll('{item2}', seed.nowItems?.later ?? '{item2}')
 		.replace(/\{day(\d+)\}/g, (m, n) => seed.days[Number(n) - 1]?.id ?? m);
 
 // Clear only OUR artifacts. `rmSync(outDir, {recursive:true})` would let a
@@ -284,7 +296,19 @@ for (const width of widths) {
 		// Name from the UNRESOLVED route: record ids are regenerated on every
 		// run, so resolved names would never diff against the previous run's.
 		// Braces are stripped — they're shell brace-expansion in zsh/bash.
-		const stem = route.replace(/^\//, '').replace(/[^a-zA-Z0-9-]+/g, '_') || 'root';
+		const stem = (route.replace(/^\//, '').replace(/[^a-zA-Z0-9-]+/g, '_') || 'root') + (tag ? `-${tag}` : '');
+		for (const sel of clicks) {
+			if (sel.startsWith('scroll:')) {
+				await page
+					.locator(sel.slice(7))
+					.filter({ visible: true })
+					.first()
+					.evaluate((el) => el.scrollIntoView({ block: 'start' }));
+			} else {
+				await page.locator(sel).filter({ visible: true }).first().click();
+			}
+			await page.waitForTimeout(300);
+		}
 		const file = path.join(outDir, `${stem}@${width}.png`);
 		await page.screenshot({ path: file, fullPage: fullPage });
 		shots.push({ file, status: res?.status() ?? 0, url });

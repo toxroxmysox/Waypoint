@@ -101,7 +101,7 @@ async function waitForSheetAtRest(page: Page): Promise<number> {
 
 /** Open the Add Expense sheet. Scoped `:visible` — AppShell dual-renders. */
 async function openAddExpense(page: Page): Promise<number> {
-	await page.goto(`${BASE}/trips/${FIXTURE_SLUG}/expenses`);
+	await page.goto(`${BASE}/trips/${FIXTURE_SLUG}/expenses`, { waitUntil: 'networkidle' }); // FAB is client-side
 	await page.locator('[aria-label="Add expense"]:visible').first().click();
 	return waitForSheetAtRest(page);
 }

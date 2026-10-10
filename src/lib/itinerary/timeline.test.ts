@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { buildTimeline, buildTimelineFlat, itemAnchorTime, isAnchored } from './timeline';
-import type { TimelineEntry, TimelineItemEntry } from './timeline';
+import { buildTimeline, buildTimelineFlat, itemAnchorTime, isAnchored, timeShape } from './timeline';
+import type { TimelineEntry, TimelineItemEntry, TimeShape } from './timeline';
 import type { Item } from '$lib/types';
 import type { RecordModel } from 'pocketbase';
 
@@ -258,5 +258,42 @@ describe('itemAnchorTime / isAnchored (#346)', () => {
 
 	it('isAnchored is false for a fully untimed item', () => {
 		expect(isAnchored({ start_time: '', end_time: '' })).toBe(false);
+	});
+});
+
+describe('timeShape — one classifier for the rail, the text forms and the Now feed (#419)', () => {
+	const RANGE = { start_time: '2026-10-01 18:30:00.000Z', end_time: '2026-10-01 20:30:00.000Z' };
+	const START_ONLY = { start_time: '2026-10-01 21:30:00.000Z', end_time: '' };
+	const END_ONLY = { start_time: '', end_time: '2026-10-01 16:30:00.000Z' };
+	const UNTIMED = { start_time: '', end_time: '' };
+
+	it('a start and an end is a range', () => {
+		expect(timeShape(RANGE)).toBe('range');
+	});
+
+	it('a start with no end is start-only', () => {
+		expect(timeShape(START_ONLY)).toBe('start-only');
+	});
+
+	it('an end with no start is end-only (a deadline)', () => {
+		expect(timeShape(END_ONLY)).toBe('end-only');
+	});
+
+	it('no start and no end is untimed, whether the fields are empty or absent', () => {
+		expect(timeShape(UNTIMED)).toBe('untimed');
+		expect(timeShape({})).toBe('untimed');
+	});
+
+	it('isAnchored agrees: every shape but untimed joins the timed spine', () => {
+		const cases: Array<[typeof RANGE, TimeShape, boolean]> = [
+			[RANGE, 'range', true],
+			[START_ONLY, 'start-only', true],
+			[END_ONLY, 'end-only', true],
+			[UNTIMED, 'untimed', false]
+		];
+		for (const [item, shape, anchored] of cases) {
+			expect(timeShape(item)).toBe(shape);
+			expect(isAnchored(item)).toBe(anchored);
+		}
 	});
 });

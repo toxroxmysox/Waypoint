@@ -4,6 +4,7 @@ import type { Item, ItemType, Day, Phase, Expense, Settlement, TripMember, Vote 
 import { fetchManualChecklists, rollupChecklists } from '$lib/itinerary/checklist-loaders';
 import { firstVotablePhase } from '$lib/collaboration/swipe-deck';
 import { summarizeDays } from '$lib/itinerary/day-card';
+import { keyItemRows, type KeyItemRow } from '$lib/itinerary/row';
 import { getTripLifecycle } from '$lib/trip-mode/trip-lifecycle';
 import { simplifyDebts } from '$lib/money/debt-simplify';
 import { buildArchiveView } from '$lib/portability/archive-view';
@@ -107,7 +108,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		const [ideas, board, availabilitySummary] = await Promise.all([
 			locals.pb.collection('items').getFullList<Item>({
 				filter: `trip = "${trip.id}"`,
-				fields: 'id,type,title,status',
+				fields: 'id,type,subtype,title,status,location_name',
 				sort: '-created'
 			}),
 			// #337 — the scenario board IS the forming home. Load candidate scenarios +
@@ -125,7 +126,13 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 			// The onboarding welcome card is a planning-Overview surface; the forming
 			// home carries its own guidance copy instead.
 			showWelcome: false,
-			formingIdeas: ideas.map((i) => ({ id: i.id, type: i.type, title: i.title })),
+			formingIdeas: ideas.map((i) => ({
+				id: i.id,
+				type: i.type,
+				subtype: i.subtype ?? '',
+				title: i.title,
+				place: i.location_name ?? ''
+			})),
 			// #337 scenario board.
 			board,
 			// #271 availability poll summary (forming-home entry card).
@@ -137,7 +144,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 			wrapUp: { balanceOwed: false },
 			lists: [] as ReturnType<typeof rollupChecklists>,
 			daySummaries: {} as ReturnType<typeof summarizeDays>,
-			keyItems: [] as { id: string; type: ItemType; title: string }[],
+			keyItems: [] as KeyItemRow[],
 			totalItems: ideas.length,
 			record: undefined as ReturnType<typeof buildArchiveView> | undefined,
 			share: undefined as ClosedShare | undefined,
@@ -214,7 +221,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 			// (null when the trip has no decision; the section renders nothing).
 			recordDecision,
 			// Forming-only keys, absent here (shape consistency — see forming branch).
-			formingIdeas: [] as { id: string; type: ItemType; title: string }[],
+			formingIdeas: [] as { id: string; type: ItemType; subtype: string; title: string; place: string }[],
 			board: undefined as ScenarioBoardData | undefined,
 			availabilitySummary: undefined as AvailabilitySummary | undefined,
 			canPitch: false,
@@ -240,18 +247,28 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 			wrapUp: { balanceOwed: false },
 			lists: [] as ReturnType<typeof rollupChecklists>,
 			daySummaries: {} as ReturnType<typeof summarizeDays>,
-			keyItems: [] as { id: string; type: ItemType; title: string }[],
+			keyItems: [] as KeyItemRow[],
 			// First-run hero (#111/ES-1) keys the empty state on CONTENT, never day count
 			// (days always exist on a real trip). A closed trip is never "fresh".
 			totalItems: recordItems.length
 		};
 	}
 
-	const [{ checklists, tasks }, items] = await Promise.all([
+	const [{ checklists, tasks }, items, keyItemsRaw] = await Promise.all([
 		fetchManualChecklists(locals.pb, trip.id),
 		locals.pb.collection('items').getFullList<Item>({
 			filter: `trip = "${trip.id}"`,
 			fields: 'id,phase,day,end_date,type,title,status,booked,requires_booking,cost_estimate_usd'
+		}),
+		// #200/#433 — flights + lodging only, with the fields their Row sub-line reads
+		// (kept off the main fetch so every item doesn't carry its description).
+		locals.pb.collection('items').getFullList<Item>({
+			filter: `trip = "${trip.id}" && (type = "flight" || type = "lodging")`,
+			// Same collection + method as the fetch above, run concurrently: without a
+			// null key the JS SDK auto-cancels one of the two.
+			requestKey: null,
+			fields:
+				'id,day,end_date,type,subtype,title,status,booked,requires_booking,start_time,end_time,location_name,description,flight_number'
 		})
 	]);
 
@@ -307,9 +324,9 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		daySummaries: summarizeDays(items, days as Day[]),
 		// #200 — light findability lens: surface flights + lodging on the Overview so
 		// a member finds the flight/hotel without opening days one by one. Not search.
-		keyItems: items
-			.filter((i) => i.type === 'flight' || i.type === 'lodging')
-			.map((i) => ({ id: i.id, type: i.type, title: i.title })),
+		// #433 — each is a Row: date · time · place (a flight's parts fit to the width),
+		// in date order, with `Needs booking` as the trailing chip when it applies.
+		keyItems: keyItemRows(keyItemsRaw, days as Day[]),
 		// First-run hero (#111/ES-1): the empty state is keyed on CONTENT — zero items AND
 		// zero phases — not day count (the PB hook auto-creates day rows, so days are always
 		// > 0 on a real trip and can never gate a first-run state). Reuses the items fetch above.
@@ -320,7 +337,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		canManage: false,
 		recordDecision: null as RecordDecision,
 		// Forming-only keys, absent here (shape consistency — see forming branch).
-		formingIdeas: [] as { id: string; type: ItemType; title: string }[],
+		formingIdeas: [] as { id: string; type: ItemType; subtype: string; title: string; place: string }[],
 		board: undefined as ScenarioBoardData | undefined,
 		availabilitySummary: undefined as AvailabilitySummary | undefined,
 		canPitch: false,

@@ -36,7 +36,7 @@ routerAdd('POST', '/api/suggestions/create', (e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 
-	const callerRole = callerMember.get('role');
+	const callerRole = callerMember.getString('role');
 	if (callerRole === 'viewer') {
 		throw new ForbiddenError('Viewers cannot submit suggestions');
 	}
@@ -113,6 +113,16 @@ routerAdd('POST', '/api/suggestions/create', (e) => {
 		item.set('cost_estimate_usd', Number(payload.cost_estimate_usd) || 0);
 		item.set('cost_actual_usd', Number(payload.cost_actual_usd) || 0);
 		item.set('assigned_to', Array.isArray(payload.assigned_to) ? payload.assigned_to : []);
+		// #402 — not going is carried like assigned_to, but it is self-only: keep
+		// only the author's (the caller's) own answer. items.pb.js keeps the two
+		// lists exclusive on save.
+		let authorNotGoing = false;
+		if (Array.isArray(payload.not_going)) {
+			for (let i = 0; i < payload.not_going.length; i++) {
+				if ('' + payload.not_going[i] === '' + callerMember.id) authorNotGoing = true;
+			}
+		}
+		item.set('not_going', authorNotGoing ? [callerMember.id] : []);
 		// #268 / ADR-0016 — codes persist as `kind: 'code'` Documents, not on the
 		// item. Leave the legacy json field inert; create code docs below.
 		item.set('sort_order', 0);
@@ -186,7 +196,7 @@ routerAdd('GET', '/api/suggestions/list', (e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 
-	const callerRole = callerMember.get('role');
+	const callerRole = callerMember.getString('role');
 	const isPrivileged = callerRole === 'owner' || callerRole === 'co_owner';
 
 	// Build filter.
@@ -214,7 +224,7 @@ routerAdd('GET', '/api/suggestions/list', (e) => {
 		try {
 			const authorMember = e.app.findRecordById('trip_members', r.get('author'));
 			authorName = authorMember.get('display_name') || authorMember.get('placeholder_name') || '';
-			authorRole = authorMember.get('role');
+			authorRole = authorMember.getString('role');
 		} catch (_) {}
 
 		return {
@@ -281,7 +291,7 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 		throw new ForbiddenError('You are not a member of this trip');
 	}
 
-	const callerRole = callerMember.get('role');
+	const callerRole = callerMember.getString('role');
 	if (callerRole !== 'owner' && callerRole !== 'co_owner') {
 		throw new ForbiddenError('Only owners and co-owners can review suggestions');
 	}
@@ -336,6 +346,13 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 			try { rawPayload = JSON.parse(rawPayload); } catch (_) { rawPayload = {}; }
 		}
 		const payload = modifiedPayload || rawPayload;
+		// #444 (carried from #402) — the Edit form has no Going control, so an edited
+		// payload arrives without `not_going` and the author's answer was dropped on
+		// Edit & Approve. When the edit omits the key, fall back to the stored one.
+		// (A key that is present, even empty, is the owner's explicit say.)
+		if (modifiedPayload && !Array.isArray(modifiedPayload.not_going) && rawPayload && Array.isArray(rawPayload.not_going)) {
+			payload.not_going = rawPayload.not_going;
+		}
 
 		// #196 — never approve an item into phase-less limbo. When the (possibly
 		// owner-edited) payload omits a phase and there's no day, fall back to the
@@ -377,6 +394,16 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 		item.set('cost_estimate_usd', Number(payload.cost_estimate_usd) || 0);
 		item.set('cost_actual_usd', Number(payload.cost_actual_usd) || 0);
 		item.set('assigned_to', Array.isArray(payload.assigned_to) ? payload.assigned_to : []);
+		// #402 — not going is carried like assigned_to, but it is self-only: keep
+		// only the suggestion AUTHOR's own answer (never the reviewer's edit of
+		// someone else's). items.pb.js keeps the two lists exclusive on save.
+		let authorNotGoing = false;
+		if (authorMemberId && Array.isArray(payload.not_going)) {
+			for (let i = 0; i < payload.not_going.length; i++) {
+				if ('' + payload.not_going[i] === '' + authorMemberId) authorNotGoing = true;
+			}
+		}
+		item.set('not_going', authorNotGoing ? [authorMemberId] : []);
 		// #268 / ADR-0016 — codes persist as `kind: 'code'` Documents, not on the
 		// item. Leave the legacy json field inert; create code docs below.
 		item.set('sort_order', 0);
@@ -497,6 +524,79 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 	} catch (_) {}
 
 	return e.json(200, { ok: true, status: suggestion.get('status'), item_id: itemId });
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/suggestions/update   (#444 — Save in the Suggestion edit view)
+// Body: { suggestion_id, payload }
+// Replaces a PENDING suggestion's payload; status stays pending, nothing is
+// reviewed, nobody is notified. Auth: owner/co_owner only (matches review).
+// ---------------------------------------------------------------------------
+routerAdd('POST', '/api/suggestions/update', (e) => {
+	const authRecord = e.auth;
+	if (!authRecord) {
+		throw new UnauthorizedError('Authentication required');
+	}
+
+	const info = e.requestInfo();
+	const suggestionId = (info.body && info.body['suggestion_id']) || '';
+	const newPayload = (info.body && info.body['payload']) || null;
+
+	if (!suggestionId) throw new BadRequestError('suggestion_id is required');
+	if (!newPayload || typeof newPayload !== 'object' || Array.isArray(newPayload)) {
+		throw new BadRequestError('payload is required and must be an object');
+	}
+	if (!newPayload.title || !String(newPayload.title).trim()) {
+		throw new BadRequestError('payload.title is required');
+	}
+
+	let suggestion;
+	try {
+		suggestion = e.app.findRecordById('suggestions', suggestionId);
+	} catch (_) {
+		throw new NotFoundError('Suggestion not found');
+	}
+
+	// Role gate FIRST: a non-reviewer learns nothing about the suggestion's state.
+	const tripId = suggestion.get('trip');
+	let callerMember;
+	try {
+		callerMember = e.app.findFirstRecordByFilter(
+			'trip_members',
+			'trip = {:tripId} && user = {:uid}',
+			{ tripId: tripId, uid: authRecord.id }
+		);
+	} catch (_) {
+		throw new ForbiddenError('You are not a member of this trip');
+	}
+	const callerRole = callerMember.getString('role');
+	if (callerRole !== 'owner' && callerRole !== 'co_owner') {
+		throw new ForbiddenError('Only owners and co-owners can edit suggestions');
+	}
+
+	if (suggestion.get('target_type') !== 'new_item') {
+		throw new BadRequestError('Only item suggestions can be edited');
+	}
+	if (suggestion.get('status') !== 'pending') {
+		throw new BadRequestError('Only pending suggestions can be edited');
+	}
+
+	// The edit form has no Going control, so keep the author's stored not_going
+	// when the new payload omits it (same rule as Edit & Approve).
+	let stored = suggestion.get('payload');
+	if (Array.isArray(stored)) {
+		try { stored = JSON.parse(String.fromCharCode.apply(null, stored)); } catch (_) { stored = {}; }
+	} else if (typeof stored === 'string') {
+		try { stored = JSON.parse(stored); } catch (_) { stored = {}; }
+	}
+	if (!Array.isArray(newPayload.not_going) && stored && Array.isArray(stored.not_going)) {
+		newPayload.not_going = stored.not_going;
+	}
+
+	suggestion.set('payload', newPayload);
+	e.app.save(suggestion);
+
+	return e.json(200, { ok: true, suggestion_id: suggestion.id, status: suggestion.get('status') });
 });
 
 // ---------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 <script lang="ts">
-	import TypeIcon from '$lib/ui/TypeIcon.svelte';
-	import { formatTime } from '$lib/shell/format';
+	import RecordCard from './RecordCard.svelte';
+	import { orderDayItems } from '$lib/itinerary/timeline';
+	import { formatCalendarDate } from '$lib/shell/format';
 	import type { Day, Phase, ItemType } from '$lib/types';
 
 	type SanitizedItem = {
@@ -15,6 +16,7 @@
 		location_address: string;
 		start_time: string | null;
 		end_time: string | null;
+		end_date?: string;
 		status: string;
 		sort_order?: number;
 	};
@@ -32,11 +34,7 @@
 	const phaseMap = $derived(new Map(phases.map((p) => [p.id, p])));
 
 	const dayDate = $derived(
-		new Date(day.date.replace(' ', 'T')).toLocaleDateString('en-US', {
-			weekday: 'long',
-			month: 'long',
-			day: 'numeric'
-		})
+		formatCalendarDate(day.date, { weekday: 'long', month: 'long', day: 'numeric' })
 	);
 
 	const dayPhase = $derived.by(() => {
@@ -44,7 +42,10 @@
 		return phaseMap.get(day.phases[0]) || null;
 	});
 
-	const sortedItems = $derived([...items].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)));
+	// The day page's order: timed items by time, untimed woven in by sort_order.
+	const sortedItems = $derived(
+		orderDayItems(items.map((i) => ({ ...i, start_time: i.start_time ?? '', end_time: i.end_time ?? '', sort_order: i.sort_order ?? 0 })))
+	);
 </script>
 
 <section class="bg-surface border-border overflow-hidden rounded-xl border shadow-sm">
@@ -65,24 +66,11 @@
 	{#if items.length === 0}
 		<p class="text-ink-muted px-4 py-4 text-center text-sm">Rest day</p>
 	{:else}
-		{#each sortedItems as item (item.id)}
-			<div class="flex items-start gap-3 border-b border-border/30 px-4 py-3 last:border-b-0">
-				<TypeIcon type={item.type} size={24} />
-				<div class="min-w-0 flex-1">
-					<p class="text-ink text-sm font-medium">{item.title}</p>
-					{#if item.location_name}
-						<p class="text-ink-muted text-xs">{item.location_name}</p>
-					{/if}
-					{#if item.start_time}
-						<p class="text-ink-muted text-xs">
-							{formatTime(item.start_time)}{#if item.end_time} – {formatTime(item.end_time)}{/if}
-						</p>
-					{/if}
-					{#if item.description}
-						<p class="text-ink-muted mt-1 text-xs">{item.description}</p>
-					{/if}
-				</div>
-			</div>
-		{/each}
+		<!-- #436: the day on the same rail as the day page, read-only. -->
+		<div class="space-y-2 p-3">
+			{#each sortedItems as item (item.id)}
+				<RecordCard {item} dayDate={day.date} />
+			{/each}
+		</div>
 	{/if}
 </section>

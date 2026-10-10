@@ -1,6 +1,6 @@
 import type { ItemType, ConfirmationCode, Day, Phase, TripMember } from '$lib/types';
 
-export type ItemFormMode = 'create' | 'edit' | 'view';
+export type ItemFormMode = 'create' | 'edit';
 
 // #78 — a goal this item can be linked to (the "Addresses goal(s)" multi-select).
 // The link is stored goal-side; the form just collects the selected goal ids.
@@ -23,6 +23,8 @@ export interface ItemFormData {
 	// rendered or manually edited. Threaded through submission via hidden inputs.
 	start_tz: string;
 	end_tz: string;
+	// #435 — flight-only; written by FlightLookup, carried by a hidden input.
+	flight_number: string;
 	location_name: string;
 	location_address: string;
 	location_coords: unknown;

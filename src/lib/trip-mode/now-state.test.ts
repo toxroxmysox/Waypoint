@@ -70,15 +70,39 @@ describe('getNowViewState — Focus + forward list (#153)', () => {
 			}
 		});
 
-		it('picks the ongoing item with the latest end_time when several overlap', () => {
+		it('#430: every ongoing item is a Hero (no longer only the one that ends last)', () => {
 			const items = [
 				makeItem({ id: 'a', start_time: '2026-10-15 12:00:00.000Z', end_time: '2026-10-15 14:00:00.000Z' }),
 				makeItem({ id: 'b', start_time: '2026-10-15 13:00:00.000Z', end_time: '2026-10-15 15:00:00.000Z' })
 			];
 			const state = getNowViewState(items, new Date('2026-10-15T13:30:00Z'), true);
+			expect(state.focus.kind).toBe('mid-event');
 			if (state.focus.kind === 'mid-event') {
-				expect(state.focus.currentItem.id).toBe('b');
+				expect(state.focus.heroes.map((i) => i.id)).toEqual(['a', 'b']);
+				expect(state.focus.currentItem.id).toBe('a');
 			}
+		});
+
+		it('#430: the viewer\'s items lead, then everyone else\'s, each group by start time', () => {
+			const items = [
+				makeItem({ id: 'other-early', start_time: '2026-10-15 09:00:00.000Z', end_time: '2026-10-15 15:00:00.000Z', assigned_to: ['m2'] }),
+				makeItem({ id: 'mine-late', start_time: '2026-10-15 12:30:00.000Z', end_time: '2026-10-15 15:00:00.000Z', assigned_to: ['m2', 'me'] }),
+				makeItem({ id: 'nobody', start_time: '2026-10-15 11:00:00.000Z', end_time: '2026-10-15 15:00:00.000Z' }),
+				makeItem({ id: 'mine-early', start_time: '2026-10-15 10:00:00.000Z', end_time: '2026-10-15 15:00:00.000Z', assigned_to: ['me'] })
+			];
+			const state = getNowViewState(items, new Date('2026-10-15T13:00:00Z'), true, 'me');
+			if (state.focus.kind !== 'mid-event') throw new Error('expected mid-event');
+			expect(state.focus.heroes.map((i) => i.id)).toEqual(['mine-early', 'mine-late', 'other-early', 'nobody']);
+		});
+
+		it('#430: without a viewer id the order is plain start time', () => {
+			const items = [
+				makeItem({ id: 'b', start_time: '2026-10-15 12:30:00.000Z', end_time: '2026-10-15 15:00:00.000Z', assigned_to: ['me'] }),
+				makeItem({ id: 'a', start_time: '2026-10-15 12:00:00.000Z', end_time: '2026-10-15 15:00:00.000Z' })
+			];
+			const state = getNowViewState(items, new Date('2026-10-15T13:00:00Z'), true);
+			if (state.focus.kind !== 'mid-event') throw new Error('expected mid-event');
+			expect(state.focus.heroes.map((i) => i.id)).toEqual(['a', 'b']);
 		});
 
 		it('forward list during mid-event holds only items after now, not the ongoing focus item', () => {
@@ -359,6 +383,28 @@ describe('getNowFeed — merged Now: faded past / Focus / normal rest (#244)', (
 		expect(feed.restItems.map((i) => i.id)).toEqual(['dinner']);
 	});
 
+	it('#429: the Earlier today / Coming up split follows the TRIP clock, not the server clock', () => {
+		// 2026-10-15 21:30 UTC is 17:30 in New York (EDT) and 06:30 next day in Tokyo.
+		const instant = new Date('2026-10-15T21:30:00Z');
+		const items = [
+			makeItem({ id: 'lunch', start_time: '2026-10-15 12:00:00.000Z', end_time: '2026-10-15 13:30:00.000Z' }),
+			makeItem({ id: 'dinner', start_time: '2026-10-15 19:00:00.000Z', end_time: '2026-10-15 21:00:00.000Z' })
+		];
+		const ny = getNowFeed(items, tripNow('America/New_York', instant), true);
+		expect(ny.pastItems.map((i) => i.id)).toEqual(['lunch']);
+		expect(ny.restItems.map((i) => i.id)).toEqual(['dinner']);
+		const tokyo = getNowFeed(items, tripNow('Asia/Tokyo', instant), true);
+		expect(tokyo.pastItems.map((i) => i.id)).toEqual(['lunch', 'dinner']);
+		expect(tokyo.restItems).toEqual([]);
+	});
+
+	it('#429: an item that ends exactly now is Earlier today, never in both lists', () => {
+		const items = [makeItem({ id: 'brunch', start_time: '2026-10-15 12:00:00.000Z', end_time: '2026-10-15 13:00:00.000Z' })];
+		const feed = getNowFeed(items, NOW, true);
+		expect(feed.pastItems.map((i) => i.id)).toEqual(['brunch']);
+		expect(feed.restItems).toEqual([]);
+	});
+
 	it('the ongoing Focus item never double-renders in the rest (mid-event)', () => {
 		const items = [
 			makeItem({ id: 'museum', start_time: '2026-10-15 12:00:00.000Z', end_time: '2026-10-15 14:00:00.000Z' }),
@@ -416,5 +462,243 @@ describe('getNowFeed — merged Now: faded past / Focus / normal rest (#244)', (
 		expect(feed.pastItems.some((i) => i.id === 'hotel')).toBe(false);
 		expect(feed.restItems.some((i) => i.id === 'hotel')).toBe(false);
 		expect(feed.restItems.map((i) => i.id)).toEqual(['dinner']);
+	});
+});
+
+describe('getNowFeed — several Heroes (#430)', () => {
+	const NOW = new Date('2026-10-15T13:00:00Z');
+	const ongoing = (id: string, start: string, extra: Partial<Item> = {}) =>
+		makeItem({ id, start_time: `2026-10-15 ${start}:00.000Z`, end_time: '2026-10-15 15:00:00.000Z', ...extra });
+
+	it('three ongoing items: all are Heroes, mine first, none repeated in the rest', () => {
+		const items = [
+			ongoing('theirs', '11:00', { assigned_to: ['m2'] }),
+			ongoing('mine', '12:00', { assigned_to: ['me'] }),
+			ongoing('also-theirs', '12:30'),
+			makeItem({ id: 'dinner', start_time: '2026-10-15 19:00:00.000Z', end_time: '2026-10-15 21:00:00.000Z' })
+		];
+		const feed = getNowFeed(items, NOW, true, 'me');
+		if (feed.focus.kind !== 'mid-event') throw new Error('expected mid-event');
+		expect(feed.focus.heroes.map((i) => i.id)).toEqual(['mine', 'theirs', 'also-theirs']);
+		expect(feed.restItems.map((i) => i.id)).toEqual(['dinner']);
+		expect(feed.pastItems).toEqual([]);
+	});
+
+	it('a Multi-day Item is never a Hero, even alongside timed ongoing items', () => {
+		const items = [
+			ongoing('lunch', '12:00'),
+			makeItem({ id: 'hotel', start_time: '2026-10-14 15:00:00.000Z', end_time: '2026-10-18 11:00:00.000Z', end_date: '2026-10-18', assigned_to: ['me'] })
+		];
+		const feed = getNowFeed(items, NOW, true, 'me');
+		if (feed.focus.kind !== 'mid-event') throw new Error('expected mid-event');
+		expect(feed.focus.heroes.map((i) => i.id)).toEqual(['lunch']);
+		expect(feed.restItems.some((i) => i.id === 'hotel')).toBe(false);
+	});
+
+	it('a Multi-day Item alone is not mid-event', () => {
+		const items = [
+			makeItem({ id: 'hotel', start_time: '2026-10-14 15:00:00.000Z', end_time: '2026-10-18 11:00:00.000Z', end_date: '2026-10-18', assigned_to: ['me'] })
+		];
+		expect(getNowFeed(items, NOW, true, 'me').focus.kind).not.toBe('mid-event');
+	});
+
+	it('the free-time card shows only when nothing is ongoing for anyone', () => {
+		const later = makeItem({ id: 'dinner', start_time: '2026-10-15 19:00:00.000Z', end_time: '2026-10-15 21:00:00.000Z' });
+		expect(getNowFeed([later], NOW, true, 'me').focus.kind).toBe('free-time');
+		// someone else's item is ongoing -> their Hero shows, not free time
+		const theirs = ongoing('theirs', '12:00', { assigned_to: ['m2'] });
+		expect(getNowFeed([later, theirs], NOW, true, 'me').focus.kind).toBe('mid-event');
+	});
+
+	it('an ended item is not a Hero; a start-equal item is', () => {
+		const items = [
+			makeItem({ id: 'ended', start_time: '2026-10-15 11:00:00.000Z', end_time: '2026-10-15 13:00:00.000Z' }),
+			ongoing('starting', '13:00')
+		];
+		const feed = getNowFeed(items, NOW, true);
+		if (feed.focus.kind !== 'mid-event') throw new Error('expected mid-event');
+		expect(feed.focus.heroes.map((i) => i.id)).toEqual(['starting']);
+		expect(feed.pastItems.map((i) => i.id)).toEqual(['ended']);
+	});
+});
+
+// #431 / #392: every item lands in exactly ONE bucket, by time shape.
+describe('getNowFeed — buckets by time shape (#431, #392)', () => {
+	const T = (hm: string) => `2026-10-15 ${hm}:00.000Z`;
+	const at = (hm: string) => new Date(`2026-10-15T${hm}:00Z`);
+	const startOnly = (id: string, start: string, extra: Partial<Item> = {}) =>
+		makeItem({ id, start_time: T(start), ...extra });
+	const range = (id: string, start: string, end: string, extra: Partial<Item> = {}) =>
+		makeItem({ id, start_time: T(start), end_time: T(end), ...extra });
+	const deadline = (id: string, end: string, extra: Partial<Item> = {}) =>
+		makeItem({ id, end_time: T(end), ...extra });
+	const untimed = (id: string, extra: Partial<Item> = {}) => makeItem({ id, ...extra });
+	const multiDay = () =>
+		makeItem({ id: 'hotel', start_time: '2026-10-14 15:00:00.000Z', end_time: '2026-10-18 11:00:00.000Z', end_date: '2026-10-18' });
+
+	/** Where an item landed: 'earlier' | 'hero' | 'coming' | 'none'. Fails on duplicates. */
+	function bucket(items: Item[], now: Date, id: string, viewer = '') {
+		const feed = getNowFeed(items, now, true, viewer);
+		const heroes = feed.focus.kind === 'mid-event' ? feed.focus.heroes : [];
+		const hits = [
+			...feed.pastItems.filter((i) => i.id === id).map(() => 'earlier'),
+			...heroes.filter((i) => i.id === id).map(() => 'hero'),
+			...feed.restItems.filter((i) => i.id === id).map(() => 'coming')
+		];
+		expect(hits.length, `${id} in ${hits.join('+') || 'no bucket'}`).toBeLessThanOrEqual(1);
+		return hits[0] ?? 'none';
+	}
+
+	describe('range', () => {
+		const items = [range('r', '12:00', '14:00')];
+		it('before / during / after / at end', () => {
+			expect(bucket(items, at('11:59'), 'r')).toBe('coming');
+			expect(bucket(items, at('12:00'), 'r')).toBe('hero');
+			expect(bucket(items, at('13:59'), 'r')).toBe('hero');
+			expect(bucket(items, at('14:00'), 'r')).toBe('earlier');
+		});
+	});
+
+	describe('end-only (deadline)', () => {
+		const items = [deadline('d', '16:30')];
+		it('Coming up until its time passes, then Earlier today only (#392: no longer twice)', () => {
+			expect(bucket(items, at('16:05'), 'd')).toBe('coming');
+			expect(bucket(items, at('16:29'), 'd')).toBe('coming');
+			expect(bucket(items, at('16:30'), 'd')).toBe('earlier');
+			expect(bucket(items, at('17:15'), 'd')).toBe('earlier');
+		});
+		it('is never a Hero', () => {
+			expect(getNowFeed(items, at('16:00'), true).focus.kind).not.toBe('mid-event');
+		});
+	});
+
+	describe('start-only', () => {
+		it('Coming up before its start', () => {
+			expect(bucket([startOnly('l', '13:00')], at('12:59'), 'l')).toBe('coming');
+		});
+		it('a Hero from its start (#392: no longer vanishes), with nothing later', () => {
+			const items = [startOnly('l', '13:00')];
+			expect(bucket(items, at('13:00'), 'l')).toBe('hero');
+			expect(bucket(items, at('17:15'), 'l')).toBe('hero');
+		});
+		it('stays a Hero while the next timed item is still ahead', () => {
+			const items = [startOnly('l', '13:00'), range('d', '18:30', '20:00')];
+			expect(bucket(items, at('18:29'), 'l')).toBe('hero');
+			expect(bucket(items, at('18:29'), 'd')).toBe('coming');
+		});
+		it('moves to Earlier today when the next timed item starts', () => {
+			const items = [startOnly('l', '13:00'), range('d', '18:30', '20:00')];
+			expect(bucket(items, at('18:30'), 'l')).toBe('earlier');
+			expect(bucket(items, at('18:30'), 'd')).toBe('hero');
+		});
+		it('a later start-only item also ends it', () => {
+			const items = [startOnly('l', '13:00'), startOnly('m', '15:00')];
+			expect(bucket(items, at('15:00'), 'l')).toBe('earlier');
+			expect(bucket(items, at('15:00'), 'm')).toBe('hero');
+		});
+		it('a deadline is not a "timed start": it does not end a start-only Hero', () => {
+			const items = [startOnly('l', '13:00'), deadline('d', '16:30')];
+			expect(bucket(items, at('15:00'), 'l')).toBe('hero');
+			expect(bucket(items, at('17:00'), 'l')).toBe('hero');
+			expect(bucket(items, at('17:00'), 'd')).toBe('earlier');
+		});
+		it('an untimed item does not end it', () => {
+			const items = [startOnly('l', '13:00'), untimed('u')];
+			expect(bucket(items, at('17:00'), 'l')).toBe('hero');
+			expect(bucket(items, at('17:00'), 'u')).toBe('coming');
+		});
+		it('a multi-day item does not end it', () => {
+			const items = [startOnly('l', '13:00'), multiDay()];
+			expect(bucket(items, at('17:00'), 'l')).toBe('hero');
+		});
+		it('a range that started BEFORE it does not end it; both are Heroes', () => {
+			const items = [range('r', '12:00', '15:00'), startOnly('l', '13:00')];
+			expect(bucket(items, at('14:00'), 'l')).toBe('hero');
+			expect(bucket(items, at('14:00'), 'r')).toBe('hero');
+		});
+		it('two start-only items sharing a start are both Heroes', () => {
+			const items = [startOnly('a', '13:00'), startOnly('b', '13:00')];
+			expect(bucket(items, at('14:00'), 'a')).toBe('hero');
+			expect(bucket(items, at('14:00'), 'b')).toBe('hero');
+		});
+		it('a later range that already ended still ends it (Earlier today, not a Hero)', () => {
+			const items = [startOnly('l', '13:00'), range('r', '14:00', '15:00')];
+			expect(bucket(items, at('16:00'), 'l')).toBe('earlier');
+			expect(bucket(items, at('16:00'), 'r')).toBe('earlier');
+		});
+		it('mid-event with a start-only Hero has no remaining time', () => {
+			const feed = getNowFeed([startOnly('l', '13:00')], at('14:00'), true);
+			if (feed.focus.kind !== 'mid-event') throw new Error('expected mid-event');
+			expect(feed.focus.currentItem.id).toBe('l');
+			expect(feed.focus.minutesRemaining).toBeNull();
+		});
+		it('a start-only Hero is mine-first ordered like any other', () => {
+			const items = [startOnly('theirs', '12:00'), startOnly('mine', '12:00', { assigned_to: ['me'] })];
+			const feed = getNowFeed(items, at('13:00'), true, 'me');
+			if (feed.focus.kind !== 'mid-event') throw new Error('expected mid-event');
+			expect(feed.focus.heroes.map((i) => i.id)).toEqual(['mine', 'theirs']);
+		});
+	});
+
+	describe('untimed + multi-day', () => {
+		it('untimed is Coming up at any hour, never Earlier today', () => {
+			const items = [untimed('u')];
+			expect(bucket(items, at('06:00'), 'u')).toBe('coming');
+			expect(bucket(items, at('23:00'), 'u')).toBe('coming');
+		});
+		it('multi-day lands in no bucket (it is a banner)', () => {
+			expect(bucket([multiDay()], at('13:00'), 'hotel')).toBe('none');
+		});
+	});
+
+	it('invariant: a full day, at every half hour, never puts an item in two buckets', () => {
+		const items = [
+			range('r', '09:00', '10:30'),
+			startOnly('s1', '11:00'),
+			deadline('d1', '12:00'),
+			startOnly('s2', '13:00'),
+			range('r2', '15:00', '16:00'),
+			deadline('d2', '17:30'),
+			untimed('u'),
+			multiDay()
+		];
+		for (let h = 6; h < 24; h++) {
+			for (const m of ['00', '30']) {
+				const now = at(`${String(h).padStart(2, '0')}:${m}`);
+				for (const it of items) bucket(items, now, it.id);
+			}
+		}
+	});
+
+	describe('countdown target includes deadlines', () => {
+		it('#392: deadline 25m away beats a later dinner', () => {
+			const items = [deadline('clubs', '16:30', { title: 'Return rental clubs' }), range('dinner', '18:30', '20:00')];
+			const view = getNowViewState(items, at('16:05'), true);
+			if (view.focus.kind !== 'free-time') throw new Error('expected free-time');
+			expect(view.focus.nextItem.id).toBe('clubs');
+			expect(view.focus.minutesUntilNext).toBe(25);
+			expect(view.forwardItems.map((i) => i.id)).toEqual(['clubs', 'dinner']);
+		});
+		it('after the deadline passes the target is the next start', () => {
+			const items = [deadline('clubs', '16:30'), range('dinner', '18:30', '20:00')];
+			const view = getNowViewState(items, at('16:31'), true);
+			if (view.focus.kind !== 'free-time') throw new Error('expected free-time');
+			expect(view.focus.nextItem.id).toBe('dinner');
+			expect(view.focus.minutesUntilNext).toBe(119);
+		});
+		it('an earlier start beats a later deadline', () => {
+			const items = [deadline('late', '18:00'), range('tour', '16:00', '17:00')];
+			const view = getNowViewState(items, at('15:00'), true);
+			if (view.focus.kind !== 'free-time') throw new Error('expected free-time');
+			expect(view.focus.nextItem.id).toBe('tour');
+		});
+		it('a lone deadline is a countdown target, not "nothing else planned"', () => {
+			const view = getNowViewState([deadline('clubs', '16:30')], at('16:00'), true);
+			expect(view.focus.kind).toBe('free-time');
+		});
+		it('no free-time while a start-only Hero is ongoing', () => {
+			const items = [startOnly('l', '13:00'), deadline('d', '16:30')];
+			expect(getNowViewState(items, at('15:00'), true).focus.kind).toBe('mid-event');
+		});
 	});
 });

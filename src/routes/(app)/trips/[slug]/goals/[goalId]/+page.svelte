@@ -7,6 +7,8 @@
 	import Button from '$lib/ui/Button.svelte';
 	import Avatar from '$lib/ui/Avatar.svelte';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
+	import Row from '$lib/ui/Row.svelte';
+	import { linkedItemSub } from '$lib/itinerary/row';
 	import BottomSheet from '$lib/ui/BottomSheet.svelte';
 	import { memberDisplayName, memberInitial } from '$lib/itinerary/member-name';
 	import type { GoalStatus, Item } from '$lib/types';
@@ -101,46 +103,45 @@
 	<!-- #77 slot: "What the group thinks" goal-vote results panel mounts here,
 	     between the status block and the plans list (V4 PRD firm order). -->
 
-	<!-- Items addressing it — the traceability list. -->
+	<!-- Linked items — the traceability list. -->
 	<section>
 		<h2 class="text-moss mb-2 px-0.5 text-[11px] font-bold tracking-[0.2em] uppercase">
-			Items addressing it
+			Linked items
 		</h2>
 		{#if linkedCount > 0}
 			<Card>
-				{#each data.linkedItems as item, i (item.id)}
-					{@const im = STATUS_META[item.status]}
-					<div
-						class="flex items-center gap-3 px-[15px] py-[13px] {i < linkedCount - 1
-							? 'border-line border-b'
-							: ''}"
-					>
-						<TypeIcon type={item.type} size={28} />
-						<a href={withOrigin(`/trips/${data.trip.slug}/items/${item.id}`, page.url.pathname)} class="min-w-0 flex-1">
-							<div class="text-ink truncate text-[14.5px] font-semibold">{item.title}</div>
-							<div class="text-ink-muted mt-0.5 text-[11px]">{itemContext(item)}</div>
-						</a>
-						<span
-							class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10.5px] font-semibold tracking-wide uppercase {im.pill}"
+				<div class="px-[15px]">
+					{#each data.linkedItems as item, i (item.id)}
+						<Row
+							type={item.type}
+							subtype={item.subtype}
+							title={item.title}
+							sub={linkedItemSub(item, {
+								dayDate: data.days.find((d) => d.id === item.day)?.date,
+								phaseName: data.phases.find((p) => p.id === item.phase)?.name
+							})}
+							href={withOrigin(`/trips/${data.trip.slug}/items/${item.id}`, page.url.pathname)}
+							divider={i < linkedCount - 1}
 						>
-							{im.label}
-						</span>
-						{#if data.canEdit}
-							<form method="POST" action="?/unlink" use:enhance class="shrink-0">
-								<input type="hidden" name="item_id" value={item.id} />
-								<button
-									type="submit"
-									aria-label="Unlink {item.title}"
-									class="hit-44 text-ink-muted hover:text-error active:text-error p-1"
-								>
-									<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-										<path d="M6 18L18 6M6 6l12 12" />
-									</svg>
-								</button>
-							</form>
-						{/if}
-					</div>
-				{/each}
+							{#snippet action()}
+								{#if data.canEdit}
+									<form method="POST" action="?/unlink" use:enhance class="-mr-3 flex shrink-0 items-center">
+										<input type="hidden" name="item_id" value={item.id} />
+										<button
+											type="submit"
+											aria-label="Unlink {item.title}"
+											class="text-ink-muted hover:text-error active:text-error flex h-11 w-11 items-center justify-center"
+										>
+											<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+												<path d="M6 18L18 6M6 6l12 12" />
+											</svg>
+										</button>
+									</form>
+								{/if}
+							{/snippet}
+						</Row>
+					{/each}
+				</div>
 			</Card>
 		{:else}
 			<div

@@ -278,11 +278,12 @@ const EXPECT = {
 		delete: OWNER_COOWNER_ONLY
 	},
 	// trip_members (#279 — AUTHZ-1):
-	//   update: the matrix PATCHes the OWNER row's display_name. Since #408 a
-	//           display_name edit is own-row, or any row for owner/co_owner — so
-	//           owner (self) + co_owner pass, traveler/viewer deny. `role` changes
-	//           are owner/co_owner only (#279); identity/lifecycle fields are
-	//           locked for everyone (#408 novel cases below).
+	//   update: the matrix PATCHes the OWNER row's display_name. Since #450 a
+	//           display_name edit is own-row ONLY (#415's owner/co_owner rename-any
+	//           path was removed) — so the owner (self) passes and co_owner/traveler/
+	//           viewer deny. `role` changes are owner/co_owner only (#279); every
+	//           field outside {role, display_name, digest_opt_out} is rejected for
+	//           everyone (#408 + #450 allowlist; novel cases below).
 	//   delete: owner/co_owner only. The matrix deletes the childless `spare`
 	//           placeholder (user=""), so it's never a self-leave for any role;
 	//           trip_members.pb.js requires owner/co_owner to delete someone else's
@@ -292,7 +293,7 @@ const EXPECT = {
 		list: ALLOW_MEMBERS_DENY_NONMEMBER,
 		view: ALLOW_MEMBERS_DENY_NONMEMBER,
 		create: DENY_ALL,
-		update: OWNER_COOWNER_ONLY,
+		update: SELF_ONLY,
 		delete: OWNER_COOWNER_ONLY
 	},
 	// phases (#175):
@@ -1202,6 +1203,262 @@ function printCreatorEditReport() {
 	}
 }
 
+// ═══ #402 — Not going (three-state Going) ══════════════════════════════════
+// items.not_going (migration 0071) sits beside assigned_to. items.pb.js:
+//   - Not going is SELF-ONLY for every role (owners included); viewers can't
+//     answer (request hooks);
+//   - a member is in at most one of the two lists — setting one clears the other
+//     (model hooks, so internal saves are covered too); going wins a tie.
+// Every case mints its own owner-authored item on one fixture, then seeds
+// answers with each member's OWN token. `other` = whose answer a role tries to
+// change. Writes use PB's relation modifiers ('field+' / 'field-'), the same
+// shape the self-assign endpoint sends.
+const NOT_GOING_OPS = [
+	'ng_self',
+	'ng_other',
+	'going_self',
+	'going_other',
+	'no_answer_self',
+	'no_answer_other',
+	'exclusive_going_to_ng',
+	'exclusive_ng_to_going',
+	'exclusive_swap_one_patch',
+	'exclusive_both_at_once',
+	'exclusive_owner_assigns_ng_member',
+	'ng_with_other_field',
+	'creator_ng_other',
+	'create_ng_other',
+	'create_ng_self'
+];
+
+async function ngFreshItem(tokens, fixture, extra = {}) {
+	const made = await pbRequest('POST', '/api/collections/items/records', {
+		token: tokens.owner,
+		body: { trip: fixture.tripId, type: 'activity', title: 'Not going harness item (#402)', ...extra }
+	});
+	return made.data?.id;
+}
+
+function ngPatch(token, itemId, body) {
+	return pbRequest('PATCH', `/api/collections/items/records/${itemId}`, { token, body });
+}
+
+async function ngRead(tokens, itemId) {
+	const r = await pbRequest('GET', `/api/collections/items/records/${itemId}`, { token: tokens.owner });
+	return { going: r.data?.assigned_to || [], notGoing: r.data?.not_going || [], status: r.status };
+}
+
+// 'yes' iff the write succeeded AND the stored lists say `member` is in exactly `state`.
+async function ngStateCell(tokens, itemId, write, member, state) {
+	const s = await ngRead(tokens, itemId);
+	const inGoing = s.going.includes(member);
+	const inNot = s.notGoing.includes(member);
+	const ok =
+		write.status >= 200 &&
+		write.status < 300 &&
+		(state === 'going' ? inGoing && !inNot : state === 'not_going' ? inNot && !inGoing : !inGoing && !inNot);
+	return ok ? 'yes' : `no(going=${JSON.stringify(s.going)} not_going=${JSON.stringify(s.notGoing)})`;
+}
+
+async function runNotGoingNovelCases(tokens) {
+	const fixture = await setupFixture();
+	const m = fixture.memberIds;
+	const OTHER = { owner: 'traveler', co_owner: 'traveler', traveler: 'co_owner', viewer: 'traveler' };
+	const ANSWERS = new Set(['owner', 'co_owner', 'traveler']); // viewers can't answer
+	const MAY_SET_OTHERS_GOING = new Set(['owner', 'co_owner']);
+
+	// --- Role matrix: own answer vs someone else's, for all three states.
+	for (const role of ['owner', 'co_owner', 'traveler', 'viewer']) {
+		const own = m[role];
+		const otherRole = OTHER[role];
+		const other = m[otherRole];
+		let id;
+		let r;
+
+		id = await ngFreshItem(tokens, fixture);
+		r = await ngPatch(tokens[role], id, { 'not_going+': own });
+		recordResult('items', 'ng_self', role, ANSWERS.has(role) ? 'allow' : 'deny', classifyWrite(r.status), r.status);
+
+		id = await ngFreshItem(tokens, fixture);
+		r = await ngPatch(tokens[role], id, { 'not_going+': other });
+		recordResult('items', 'ng_other', role, 'deny', classifyWrite(r.status), r.status);
+
+		id = await ngFreshItem(tokens, fixture);
+		r = await ngPatch(tokens[role], id, { 'assigned_to+': own });
+		recordResult('items', 'going_self', role, ANSWERS.has(role) ? 'allow' : 'deny', classifyWrite(r.status), r.status);
+
+		id = await ngFreshItem(tokens, fixture);
+		r = await ngPatch(tokens[role], id, { 'assigned_to+': other });
+		recordResult('items', 'going_other', role, MAY_SET_OTHERS_GOING.has(role) ? 'allow' : 'deny', classifyWrite(r.status), r.status);
+
+		// No answer = clear your own not going (seeded by you; a viewer has none).
+		id = await ngFreshItem(tokens, fixture);
+		if (ANSWERS.has(role)) await ngPatch(tokens[role], id, { 'not_going+': own });
+		r = await ngPatch(tokens[role], id, { 'not_going-': own });
+		recordResult('items', 'no_answer_self', role, ANSWERS.has(role) ? 'allow' : 'deny', classifyWrite(r.status), r.status);
+
+		// Clearing SOMEONE ELSE's not going is never allowed (self-only, owners too).
+		id = await ngFreshItem(tokens, fixture);
+		await ngPatch(tokens[otherRole], id, { 'not_going+': other });
+		r = await ngPatch(tokens[role], id, { 'not_going-': other });
+		recordResult('items', 'no_answer_other', role, 'deny', classifyWrite(r.status), r.status);
+	}
+
+	// Non-member: not on the trip at all.
+	let id = await ngFreshItem(tokens, fixture);
+	let r = await ngPatch(tokens.non_member, id, { 'not_going+': m.traveler });
+	recordResult('items', 'ng_self', 'non_member', 'deny', classifyWrite(r.status), r.status);
+
+	// --- Exclusivity: setting one clears the other.
+	const t = m.traveler;
+
+	id = await ngFreshItem(tokens, fixture);
+	await ngPatch(tokens.traveler, id, { 'assigned_to+': t });
+	r = await ngPatch(tokens.traveler, id, { 'not_going+': t }); // going → not going, assigned_to untouched
+	recordResult('items', 'exclusive_going_to_ng', 'traveler', 'yes', await ngStateCell(tokens, id, r, t, 'not_going'), r.status);
+
+	id = await ngFreshItem(tokens, fixture);
+	await ngPatch(tokens.traveler, id, { 'not_going+': t });
+	r = await ngPatch(tokens.traveler, id, { 'assigned_to+': t }); // not going → going, not_going untouched
+	recordResult('items', 'exclusive_ng_to_going', 'traveler', 'yes', await ngStateCell(tokens, id, r, t, 'going'), r.status);
+
+	id = await ngFreshItem(tokens, fixture);
+	await ngPatch(tokens.traveler, id, { 'assigned_to+': t });
+	r = await ngPatch(tokens.traveler, id, { assigned_to: [], not_going: [t] }); // both lists, one PATCH
+	recordResult('items', 'exclusive_swap_one_patch', 'traveler', 'yes', await ngStateCell(tokens, id, r, t, 'not_going'), r.status);
+
+	id = await ngFreshItem(tokens, fixture);
+	r = await ngPatch(tokens.traveler, id, { assigned_to: [t], not_going: [t] }); // contradictory → going wins
+	recordResult('items', 'exclusive_both_at_once', 'traveler', 'yes', await ngStateCell(tokens, id, r, t, 'going'), r.status);
+
+	id = await ngFreshItem(tokens, fixture);
+	await ngPatch(tokens.traveler, id, { 'not_going+': t });
+	r = await ngPatch(tokens.owner, id, { 'assigned_to+': t }); // owner's deliberate assignment clears it
+	recordResult('items', 'exclusive_owner_assigns_ng_member', 'owner', 'yes', await ngStateCell(tokens, id, r, t, 'going'), r.status);
+
+	// --- Guards.
+	id = await ngFreshItem(tokens, fixture);
+	r = await ngPatch(tokens.traveler, id, { 'not_going+': t, title: 'Sneaky edit (#402)' });
+	recordResult('items', 'ng_with_other_field', 'traveler', 'deny', classifyWrite(r.status), r.status);
+
+	// The #219 creator exception (full edit of your own item) does not extend to
+	// someone else's not going.
+	id = await ngFreshItem(tokens, fixture, { created_by: t });
+	r = await ngPatch(tokens.traveler, id, { 'not_going+': m.co_owner });
+	recordResult('items', 'creator_ng_other', 'traveler', 'deny', classifyWrite(r.status), r.status);
+
+	r = await pbRequest('POST', '/api/collections/items/records', {
+		token: tokens.owner,
+		body: { trip: fixture.tripId, type: 'activity', title: 'Create with other not going (#402)', not_going: [t] }
+	});
+	recordResult('items', 'create_ng_other', 'owner', 'deny', classifyWrite(r.status), r.status);
+
+	r = await pbRequest('POST', '/api/collections/items/records', {
+		token: tokens.owner,
+		body: { trip: fixture.tripId, type: 'activity', title: 'Create with own not going (#402)', not_going: [m.owner] }
+	});
+	recordResult('items', 'create_ng_self', 'owner', 'allow', classifyWrite(r.status), r.status);
+}
+
+// #402 — departure clean-up treats not_going the way it treats assigned_to
+// (members.pb.js /api/members/remove + /api/members/can-purge):
+//   keep     → the tombstone stays in not_going, and that reference blocks purge;
+//   reassign → the departed's answer moves to the target, but the target's OWN
+//              answer always wins over an inherited one (lists stay exclusive);
+//   cascade  → the departed's not going is cleared.
+const NOT_GOING_DEPARTURE_OPS = [
+	'ng_purge_control',
+	'ng_canpurge_blocks',
+	'ng_remove_tombstones',
+	'ng_kept_on_tombstone',
+	'reassign_moves_ng',
+	'reassign_own_answer_wins_going',
+	'reassign_own_answer_wins_ng',
+	'cascade_clears_ng'
+];
+
+function ngListsAre(s, going, notGoing) {
+	const same = (a, b) => a.length === b.length && a.every((x) => b.includes(x));
+	return same(s.going, going) && same(s.notGoing, notGoing)
+		? 'yes'
+		: `no(going=${JSON.stringify(s.going)} not_going=${JSON.stringify(s.notGoing)})`;
+}
+
+async function runNotGoingDepartureCases(tokens) {
+	// --- keep: not going alone is a reference → tombstone, never purge.
+	// Only the childless `spare` placeholder is zero-ref in the fixture (every
+	// user-backed member receives fixture notifications). A placeholder can't
+	// answer, so the traveler's not going is REASSIGNED onto the spare; the
+	// traveler first deletes the goal they authored so the reassign hands the
+	// spare nothing else. The spare's only reference is then not_going.
+	let fixture = await setupFixture();
+	let m = fixture.memberIds;
+	await pbRequest('DELETE', `/api/collections/trip_goals/records/${fixture.goalId}`, { token: tokens.traveler });
+	const probe = () =>
+		pbRequest('GET', `/api/members/can-purge?member_id=${m.spare}`, { token: tokens.owner });
+	let p = await probe();
+	recordResult('trip_members', 'ng_purge_control', 'owner', 'yes', p.data?.zero_ref === true ? 'yes' : `no(${JSON.stringify(p.data)})`, p.status);
+
+	await ngPatch(tokens.traveler, fixture.itemId, { 'not_going+': m.traveler });
+	await pbRequest('POST', '/api/members/remove', {
+		token: tokens.owner,
+		body: { member_id: m.traveler, disposition: 'reassign', reassign_to: m.spare }
+	});
+	p = await probe();
+	recordResult('trip_members', 'ng_canpurge_blocks', 'owner', 'yes', p.data?.zero_ref === false ? 'yes' : `no(${JSON.stringify(p.data)})`, p.status);
+
+	const rmKeep = await pbRequest('POST', '/api/members/remove', {
+		token: tokens.owner,
+		body: { member_id: m.spare }
+	});
+	recordResult('trip_members', 'ng_remove_tombstones', 'owner', 'yes', rmKeep.status === 200 && rmKeep.data?.deleted === false ? 'yes' : `no(${JSON.stringify(rmKeep.data)})`, rmKeep.status);
+	let s = await ngRead(tokens, fixture.itemId);
+	recordResult('items', 'ng_kept_on_tombstone', 'owner', 'yes', s.notGoing.includes(m.spare) ? 'yes' : `no(${JSON.stringify(s.notGoing)})`, s.status);
+
+	// --- reassign the traveler's answers to the co_owner.
+	fixture = await setupFixture();
+	m = fixture.memberIds;
+	const a = await ngFreshItem(tokens, fixture); // traveler not going; co_owner no answer
+	await ngPatch(tokens.traveler, a, { 'not_going+': m.traveler });
+	const b = await ngFreshItem(tokens, fixture); // traveler not going; co_owner going
+	await ngPatch(tokens.traveler, b, { 'not_going+': m.traveler });
+	await ngPatch(tokens.co_owner, b, { 'assigned_to+': m.co_owner });
+	const c = await ngFreshItem(tokens, fixture); // traveler going; co_owner not going
+	await ngPatch(tokens.traveler, c, { 'assigned_to+': m.traveler });
+	await ngPatch(tokens.co_owner, c, { 'not_going+': m.co_owner });
+
+	const rmReassign = await pbRequest('POST', '/api/members/remove', {
+		token: tokens.owner,
+		body: { member_id: m.traveler, disposition: 'reassign', reassign_to: m.co_owner }
+	});
+	s = await ngRead(tokens, a);
+	recordResult('items', 'reassign_moves_ng', 'owner', 'yes', ngListsAre(s, [], [m.co_owner]), rmReassign.status);
+	s = await ngRead(tokens, b);
+	recordResult('items', 'reassign_own_answer_wins_going', 'owner', 'yes', ngListsAre(s, [m.co_owner], []), rmReassign.status);
+	s = await ngRead(tokens, c);
+	recordResult('items', 'reassign_own_answer_wins_ng', 'owner', 'yes', ngListsAre(s, [], [m.co_owner]), rmReassign.status);
+
+	// --- cascade clears the departed's not going.
+	fixture = await setupFixture();
+	m = fixture.memberIds;
+	await ngPatch(tokens.traveler, fixture.itemId, { 'not_going+': m.traveler });
+	const rmCascade = await pbRequest('POST', '/api/members/remove', {
+		token: tokens.owner,
+		body: { member_id: m.traveler, disposition: 'cascade' }
+	});
+	s = await ngRead(tokens, fixture.itemId);
+	recordResult('items', 'cascade_clears_ng', 'owner', 'yes', ngListsAre(s, [], []), rmCascade.status);
+}
+
+function printNotGoingReport() {
+	console.log('\n[#402 not going — self-only for every role, viewers can\'t answer, going/not going exclusive, departure clean-up]');
+	for (const r of results.filter((x) => NOT_GOING_OPS.includes(x.op) || NOT_GOING_DEPARTURE_OPS.includes(x.op))) {
+		const mark = r.passed ? 'PASS' : 'FAIL';
+		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+	}
+}
+// ═══ end #402 ═══════════════════════════════════════════════════════════════
+
 // #103 / ADR-0006 — co-traveler cross-read of the `users` row. The fixed
 // (collection, op, role) matrix proves co_owner/traveler/viewer can *view* the
 // owner's row and non_member can't, but it only inspects HTTP status. These
@@ -1489,6 +1746,8 @@ const CANONICAL_MEMBER_RELATIONS = new Set([
 	'items.paid_by',
 	'items.booked_by',
 	'items.assigned_to',
+	// #402 (migration 0071) — not going, the twin of assigned_to (block_multi).
+	'items.not_going',
 	'tasks.assignee',
 	'checklist_items.checked_by',
 	'notifications.recipient',
@@ -1705,7 +1964,30 @@ const MEMBER_FIELD_GATE_OPS = [
 	'rename_other_owner',
 	'own_digest_opt_out',
 	'other_digest_opt_out_owner',
-	'superuser_edit'
+	'superuser_edit',
+	// #450
+	'rename_other_coowner',
+	'hijack_user_owner',
+	'hijack_user_co_owner',
+	'hijack_user_traveler',
+	'hijack_user_viewer',
+	'move_trip_owner',
+	'move_trip_co_owner',
+	'move_trip_traveler',
+	'move_trip_viewer',
+	'allowlist_unknown_field_owner',
+	'allowlist_unknown_field_viewer',
+	'allowlist_unknown_field_superuser',
+	'placeholder_email_hidden_owner',
+	'placeholder_email_hidden_co_owner',
+	'placeholder_email_hidden_traveler',
+	'placeholder_email_hidden_viewer',
+	'placeholder_email_route_owner',
+	'placeholder_email_route_co_owner',
+	'placeholder_email_route_traveler',
+	'placeholder_email_route_viewer',
+	'placeholder_email_route_non_member',
+	'placeholder_email_route_values'
 ];
 
 async function runMemberFieldGateNovelCases(tokens) {
@@ -1735,13 +2017,21 @@ async function runMemberFieldGateNovelCases(tokens) {
 		await pbRequest('DELETE', `/api/collections/trips/records/${other.data.id}`, { token: tokens.non_member });
 	}
 
-	// 3. Even an owner can't rewrite a locked field directly → deny.
+	// 3. Even an owner can't rewrite a locked field directly → the stored value
+	//    never changes. placeholder_email is HIDDEN (0074), and PB drops writes to a
+	//    hidden field from non-superusers, so the PATCH may be a 200 no-op rather
+	//    than a 403; what matters is the stored address (read as superuser).
 	fixture = await setupFixture();
 	const pe = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.spare}`, {
 		token: tokens.owner,
 		body: { placeholder_email: 'someone-else@e2e.test' }
 	});
-	recordResult('trip_members', 'owner_rewrite_placeholder_email', 'owner', 'deny', classifyWrite(pe.status), pe.status);
+	const peSu = await superuserToken();
+	const peAfter = peSu
+		? await pbRequest('GET', `/api/collections/trip_members/records/${fixture.memberIds.spare}`, { token: peSu })
+		: { data: null };
+	const peUnchanged = peAfter.data?.placeholder_email === 'spare-450@e2e.test';
+	recordResult('trip_members', 'owner_rewrite_placeholder_email', 'owner', 'deny', peUnchanged ? 'deny' : `changed(${peAfter.data?.placeholder_email},${pe.status})`, pe.status);
 
 	// 4. Traveler renames ANOTHER member → deny.
 	fixture = await setupFixture();
@@ -1751,13 +2041,19 @@ async function runMemberFieldGateNovelCases(tokens) {
 	});
 	recordResult('trip_members', 'rename_other_traveler', 'traveler', 'deny', classifyWrite(tRename.status), tRename.status);
 
-	// 5. Owner renames another member → allow (roster management).
+	// 5. Owner renames another member → deny (#450: display_name is own-row only;
+	//    #415 had added an owner/co_owner rename-any path nobody asked for).
 	fixture = await setupFixture();
 	const oRename = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.traveler}`, {
 		token: tokens.owner,
 		body: { display_name: 'Renamed by owner' }
 	});
-	recordResult('trip_members', 'rename_other_owner', 'owner', 'allow', classifyWrite(oRename.status), oRename.status);
+	recordResult('trip_members', 'rename_other_owner', 'owner', 'deny', classifyWrite(oRename.status), oRename.status);
+	const coRename = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.traveler}`, {
+		token: tokens.co_owner,
+		body: { display_name: 'Renamed by co-owner' }
+	});
+	recordResult('trip_members', 'rename_other_coowner', 'co_owner', 'deny', classifyWrite(coRename.status), coRename.status);
 
 	// 6. Traveler flips their own digest_opt_out (the settings toggle) → allow.
 	fixture = await setupFixture();
@@ -1785,6 +2081,90 @@ async function runMemberFieldGateNovelCases(tokens) {
 			})
 		: { status: 0 };
 	recordResult('trip_members', 'superuser_edit', 'superuser', 'allow', classifyWrite(suEdit.status), suEdit.status);
+
+	// --- #450: every role vs the locked identity fields -----------------------
+	// Before #450 only a traveler was tried. Each role PATCHes `user` and `trip`
+	// on ANOTHER member's row; all deny (403 from the hook, not a 4xx from
+	// validation). Deny cases don't mutate, so one fixture serves all.
+	fixture = await setupFixture();
+	const otherTrip = await pbRequest('POST', '/api/collections/trips/records', {
+		token: tokens.non_member,
+		body: { slug: 'e2e-rules-other450-' + Date.now(), title: 'Other trip', created_by: fixture.userIds.non_member }
+	});
+	const targetFor = { owner: 'traveler', co_owner: 'owner', traveler: 'owner', viewer: 'owner' };
+	for (const role of ['owner', 'co_owner', 'traveler', 'viewer']) {
+		const rowId = fixture.memberIds[targetFor[role]];
+		const u = await pbRequest('PATCH', `/api/collections/trip_members/records/${rowId}`, {
+			token: tokens[role],
+			body: { user: fixture.userIds.non_member }
+		});
+		recordResult('trip_members', `hijack_user_${role}`, role, 'deny', u.status === 403 ? 'deny' : `status_${u.status}`, u.status);
+		const t = otherTrip.data?.id
+			? await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds[role]}`, {
+					token: tokens[role],
+					body: { trip: otherTrip.data.id }
+				})
+			: { status: 0 };
+		recordResult('trip_members', `move_trip_${role}`, role, 'deny', t.status === 403 ? 'deny' : `status_${t.status}`, t.status);
+	}
+	if (otherTrip.data?.id) {
+		await pbRequest('DELETE', `/api/collections/trips/records/${otherTrip.data.id}`, { token: tokens.non_member });
+	}
+
+	// --- #450: the guard is an ALLOWLIST ---------------------------------------
+	// A field added to trip_members later must NOT be writable by members. Prove
+	// it by adding a throwaway text field as superuser and PATCHing it per role.
+	{
+		const su = await superuserToken();
+		const colRes = su
+			? await pbRequest('GET', '/api/collections/trip_members', { token: su })
+			: { status: 0, data: null };
+		const probeName = 'zz_probe_450';
+		let added = false;
+		if (colRes.status === 200) {
+			const fields = colRes.data.fields.concat([{ type: 'text', name: probeName }]);
+			const up = await pbRequest('PATCH', '/api/collections/trip_members', { token: su, body: { fields } });
+			added = up.status === 200;
+		}
+		fixture = await setupFixture();
+		const row = fixture.memberIds.traveler;
+		const asOwner = added
+			? await pbRequest('PATCH', `/api/collections/trip_members/records/${row}`, { token: tokens.owner, body: { [probeName]: 'x' } })
+			: { status: 0 };
+		recordResult('trip_members', 'allowlist_unknown_field_owner', 'owner', 'deny', asOwner.status === 403 ? 'deny' : `status_${asOwner.status}`, asOwner.status);
+		const asViewerSelf = added
+			? await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.viewer}`, { token: tokens.viewer, body: { [probeName]: 'x' } })
+			: { status: 0 };
+		recordResult('trip_members', 'allowlist_unknown_field_viewer', 'viewer', 'deny', asViewerSelf.status === 403 ? 'deny' : `status_${asViewerSelf.status}`, asViewerSelf.status);
+		const asSu = added
+			? await pbRequest('PATCH', `/api/collections/trip_members/records/${row}`, { token: su, body: { [probeName]: 'x' } })
+			: { status: 0 };
+		recordResult('trip_members', 'allowlist_unknown_field_superuser', 'superuser', 'allow', classifyWrite(asSu.status), asSu.status);
+		if (added) {
+			const cur = await pbRequest('GET', '/api/collections/trip_members', { token: su });
+			const fields = cur.data.fields.filter((f) => f.name !== probeName);
+			await pbRequest('PATCH', '/api/collections/trip_members', { token: su, body: { fields } });
+		}
+	}
+
+	// --- #450: placeholder_email is hidden over REST; owner/co_owner read it via a route
+	fixture = await setupFixture();
+	for (const role of ['owner', 'co_owner', 'traveler', 'viewer']) {
+		const g = await pbRequest('GET', `/api/collections/trip_members/records/${fixture.memberIds.spare}`, { token: tokens[role] });
+		const leaked = g.status === 200 && 'placeholder_email' in (g.data || {});
+		const list = await pbRequest('GET', `/api/collections/trip_members/records?perPage=200&filter=${filterQuery(fixture.tripId, '')}`, { token: tokens[role] });
+		const leakedList = (list.data?.items || []).some((r) => 'placeholder_email' in r);
+		recordResult('trip_members', `placeholder_email_hidden_${role}`, role, 'yes', g.status === 200 && !leaked && !leakedList ? 'yes' : `no(view=${g.status},leaked=${leaked},list=${leakedList})`, g.status);
+	}
+	const routeExpect = { owner: 200, co_owner: 200, traveler: 403, viewer: 403, non_member: 403 };
+	for (const role of ['owner', 'co_owner', 'traveler', 'viewer', 'non_member']) {
+		const r = await pbRequest('GET', `/api/members/placeholder-emails?trip_id=${fixture.tripId}`, { token: tokens[role] });
+		const leaked = JSON.stringify(r.data || {}).includes('@e2e.test');
+		const ok = r.status === routeExpect[role] && (routeExpect[role] === 200 || !leaked);
+		recordResult('trip_members', `placeholder_email_route_${role}`, role, 'yes', ok ? 'yes' : `no(status=${r.status})`, r.status);
+	}
+	const vals = await pbRequest('GET', `/api/members/placeholder-emails?trip_id=${fixture.tripId}`, { token: tokens.owner });
+	recordResult('trip_members', 'placeholder_email_route_values', 'owner', 'yes', vals.data?.emails?.[fixture.memberIds.spare] === 'spare-450@e2e.test' ? 'yes' : `no(${JSON.stringify(vals.data)})`, vals.status);
 }
 
 function printMemberFieldGateReport() {
@@ -2671,6 +3051,10 @@ async function main() {
 	console.log('#219 cases: creator-edit exception (member edits their own item; cannot delete it)');
 	await runCreatorEditNovelCases(tokens);
 
+	console.log('#402 cases: not going (self-only, viewers can\'t answer, going/not going exclusive)');
+	await runNotGoingNovelCases(tokens);
+	await runNotGoingDepartureCases(tokens);
+
 	console.log('#217 cases: last-phase delete block (deny removing the only phase)');
 	await runLastPhaseDeleteCases(tokens);
 
@@ -2696,6 +3080,7 @@ async function main() {
 	printJoinLinkReport();
 	printSelfAssignReport();
 	printCreatorEditReport();
+	printNotGoingReport(); // #402
 	printLastPhaseDeleteReport();
 	printMemoriesReport();
 	printScenarioChampionReport();

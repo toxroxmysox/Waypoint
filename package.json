@@ -1,7 +1,7 @@
 {
   "name": "waypoint",
   "private": true,
-  "version": "0.0.1",
+  "version": "3.0.0",
   "type": "module",
   "packageManager": "pnpm@10.33.0",
   "scripts": {
@@ -26,7 +26,8 @@
     "test:suggestions": "node backend/test-suggestions.mjs",
     "test:money": "node backend/test-money.mjs",
     "test:tripnames": "node backend/test-tripnames.mjs",
-    "test:timestamps": "node backend/test-timestamps.mjs"
+    "test:timestamps": "node backend/test-timestamps.mjs",
+    "test:invitations": "node backend/test-invitations.mjs"
   },
   "devDependencies": {
     "@eslint/compat": "^2.0.4",

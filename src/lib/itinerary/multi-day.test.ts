@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toDateOnly, isMultiDay, itemDateRange, spanningItemsForDate, nightInfo } from './multi-day';
+import { toDateOnly, isMultiDay, itemDateRange, spanningItemsForDate, nightInfo, sortSpans } from './multi-day';
 import type { Item, Day } from '$lib/types';
 
 const days = [
@@ -56,6 +56,21 @@ describe('spanningItemsForDate', () => {
 	});
 	it('ignores non-multi-day items', () => {
 		expect(spanningItemsForDate([hotel({ end_date: '' })], days, '2026-06-18')).toHaveLength(0);
+	});	it('orders bands chronologically, whatever order the query returned', () => {
+		const later = hotel({ id: 'later', day: 'd9', title: 'B&B' });
+		const earlier = hotel({ id: 'earlier', day: 'd8', title: 'Rental car' });
+		const ids = (xs: Item[]) => xs.map((i) => i.id);
+		expect(ids(spanningItemsForDate([later, earlier], days, '2026-06-20'))).toEqual(['earlier', 'later']);
+	});
+});
+
+describe('sortSpans', () => {
+	it('earliest start first, then start time, then title', () => {
+		const a = hotel({ id: 'a', day: 'd9', title: 'A' });
+		const b = hotel({ id: 'b', day: 'd8', title: 'Z', start_time: '2026-06-18 15:00:00.000Z' });
+		const c = hotel({ id: 'c', day: 'd8', title: 'Y', start_time: '2026-06-18 10:00:00.000Z' });
+		const d = hotel({ id: 'd', day: 'd8', title: 'X', start_time: '2026-06-18 10:00:00.000Z' });
+		expect(sortSpans([a, b, c, d], days).map((i) => i.id)).toEqual(['d', 'c', 'b', 'a']);
 	});
 });
 

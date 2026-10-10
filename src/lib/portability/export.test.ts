@@ -495,7 +495,8 @@ describe('buildPublicTripExport (#208 — PII-stripped archive export)', () => {
 			[],
 			[]
 		);
-		const json = JSON.stringify(pub);
+		// exported_at is the wall clock; its digits could match a probe (e.g. '950' ms).
+		const json = JSON.stringify({ ...pub, exported_at: '' });
 		expect(json).not.toContain('ABC123'); // confirmation code value
 		expect(json).not.toContain('hotel.example'); // reservation url
 		expect(json).not.toContain('mem1'); // booked_by / assigned_to / paid_by ids

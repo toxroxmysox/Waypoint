@@ -59,7 +59,7 @@ test.describe('Notification bell order (#390)', () => {
 
 		await page.goto(`${BASE}/api/dev/login?email=${encodeURIComponent(EMAILS.owner)}`);
 		await page.waitForURL(`${BASE}/trips`, { timeout: 15000 });
-		await page.goto(`${BASE}/trips/${SLUG}`);
+		await page.goto(`${BASE}/trips/${SLUG}`, { waitUntil: 'networkidle' }); // bell opens client-side
 		await page.locator('button[aria-label*="otification"]:visible').first().click();
 		const shown = page.getByText(/^bell-order-\d$/).filter({ visible: true });
 		await expect(shown).toHaveCount(BODIES.length);

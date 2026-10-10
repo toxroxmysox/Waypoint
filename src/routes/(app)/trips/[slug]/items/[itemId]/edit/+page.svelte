@@ -9,6 +9,7 @@
 	import ItemForm from '$lib/itinerary/components/ItemForm.svelte';
 	import type { ItemFormData } from '$lib/itinerary/components/ItemFormFields';
 	import { untrack } from 'svelte';
+	import { ITEM_ACTION_ERRORS } from '$lib/itinerary/item-actions';
 
 	let { data, form } = $props();
 
@@ -17,6 +18,7 @@
 	let loading = $state(false);
 	let deleting = $state(false);
 	let confirmDelete = $state(false);
+	let deleteError = $state('');
 
 	// #367 — the navigation guard and its beforeunload twin now live in
 	// UnsavedChangesGuard (rendered at the bottom of this page), which replaces
@@ -38,6 +40,7 @@
 		// #130 — preserve stored flight tz across edits (never shown).
 		start_tz: data.item.start_tz ?? '',
 		end_tz: data.item.end_tz ?? '',
+		flight_number: data.item.flight_number ?? '',
 		location_name: data.item.location_name ?? '',
 		location_address: data.item.location_address ?? '',
 		location_coords: data.item.location_coords ?? null,
@@ -105,46 +108,59 @@
 		<SaveBar {loading} label={loading ? 'Saving…' : 'Save changes'} />
 	</form>
 
-	<div class="border-error/30 rounded-lg border p-4">
-		<h3 class="text-error text-sm font-semibold">Delete item</h3>
-		{#if !confirmDelete}
-			<button
-				type="button"
-				onclick={() => (confirmDelete = true)}
-				class="hit-44 border-error/40 text-error hover:bg-error/10 active:bg-error/10 mt-2 rounded-md border px-3 py-1.5 text-sm font-semibold"
-			>
-				Delete
-			</button>
-		{:else}
-			<form
-				method="POST"
-				action="?/delete"
-				use:enhance={() => {
-					deleting = true;
-					return async ({ update }) => {
-						deleting = false;
-						await update();
-					};
-				}}
-				class="mt-2 flex items-center gap-2"
-			>
-				<button
-					type="submit"
-					disabled={deleting}
-					class="hit-44 bg-error text-paper hover:bg-error/90 active:bg-error/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-40"
-				>
-					{deleting ? 'Deleting…' : 'Confirm delete'}
-				</button>
+	{#if data.canDelete}
+		<div class="border-error/30 rounded-lg border p-4">
+			<h3 class="text-error text-sm font-semibold">Delete item</h3>
+			{#if !confirmDelete}
 				<button
 					type="button"
-					onclick={() => (confirmDelete = false)}
-					class="hit-44 text-ink-muted hover:text-ink-soft active:text-ink-soft text-sm"
+					onclick={() => (confirmDelete = true)}
+					class="hit-44 border-error/40 text-error hover:bg-error/10 active:bg-error/10 mt-2 rounded-md border px-3 py-1.5 text-sm font-semibold"
 				>
-					Cancel
+					Delete
 				</button>
-			</form>
-		{/if}
-	</div>
+			{:else}
+				<form
+					method="POST"
+					action="?/delete"
+					use:enhance={() => {
+						deleting = true;
+						deleteError = '';
+						return async ({ result, update }) => {
+							if (result.type === 'redirect' || result.type === 'success') {
+								await update();
+							} else {
+								deleteError = ITEM_ACTION_ERRORS.delete;
+							}
+							deleting = false;
+						};
+					}}
+					class="mt-2 flex items-center gap-2"
+				>
+					<button
+						type="submit"
+						disabled={deleting}
+						class="hit-44 bg-error text-paper hover:bg-error/90 active:bg-error/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-40"
+					>
+						{deleting ? 'Deleting…' : 'Confirm delete'}
+					</button>
+					<button
+						type="button"
+						onclick={() => {
+							confirmDelete = false;
+							deleteError = '';
+						}}
+						class="hit-44 text-ink-muted hover:text-ink-soft active:text-ink-soft text-sm"
+					>
+						Cancel
+					</button>
+				</form>
+			{/if}
+			{#if deleteError || form?.deleteError}
+				<p role="alert" class="text-error mt-2 text-sm">{deleteError || form?.deleteError}</p>
+			{/if}
+		</div>
+	{/if}
 	<div class="save-bar-spacer" aria-hidden="true"></div>
 </main>
 

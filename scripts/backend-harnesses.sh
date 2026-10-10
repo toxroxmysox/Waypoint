@@ -34,7 +34,11 @@ PORT="${PB_PORT:-$((8097 + SLOT))}"
 DIR="${PB_DIR:-/tmp/pb-harness-slot${SLOT}}"
 PB_URL="http://127.0.0.1:${PORT}"
 
-ALL=(rules members invites suggestions money tripnames timestamps)
+ALL=(rules members invites suggestions money tripnames timestamps invitations scrub)
+# Harnesses that boot their OWN PocketBase (on this slot's port + dir) because
+# they must seed data BEFORE a migration runs — the runner's PB is already fully
+# migrated. #449: test-scrub.mjs proves migration 0073 the way the deploy runs it.
+SELF_MANAGED=" scrub "
 SELECTED=("$@")
 [ ${#SELECTED[@]} -eq 0 ] && SELECTED=("${ALL[@]}")
 
@@ -77,6 +81,8 @@ start_pb() {
 	# The dev-fixture routes (auth-bypass, rules-fixture) are gated on
 	# WAYPOINT_DEV_MODE + the E2E_TEST_EMAILS whitelist, both of which live in
 	# .env.local. --hooksWatch=false so PB never restarts mid-run (#67 scar).
+	# --automigrate=false: test-rules' allowlist probe edits the schema as superuser;
+	# with automigrate on, PB writes that edit into backend/pb_migrations (#450 scar).
 	set -a
 	# shellcheck disable=SC1091
 	[ -f "$ROOT/.env.local" ] && source "$ROOT/.env.local"
@@ -87,6 +93,7 @@ start_pb() {
 		--migrationsDir "$ROOT/backend/pb_migrations" \
 		--hooksDir "$ROOT/backend/pb_hooks" \
 		--hooksWatch=false \
+		--automigrate=false \
 		--http 127.0.0.1:"$PORT" >"$DIR.log" 2>&1 &
 	PB_PID=$!
 
@@ -112,6 +119,15 @@ for name in "${SELECTED[@]}"; do
 
 	echo ""
 	echo "──────── $name ────────"
+	if [[ "$SELF_MANAGED" == *" $name "* ]]; then
+		stop_pb
+		if PB_BIN="$PB" PB_PORT="$PORT" PB_DIR="$DIR" node "$script"; then
+			PASSED+=("$name")
+		else
+			FAILED+=("$name")
+		fi
+		continue
+	fi
 	if ! start_pb; then
 		FAILED+=("$name (PB failed to start)")
 		continue

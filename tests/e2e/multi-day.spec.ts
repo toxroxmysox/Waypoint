@@ -58,18 +58,18 @@ test.describe('Multi-day items', () => {
 		await page.locator('button[type="submit"]:visible').first().click();
 
 		// Back on the start day view: banner shows the hotel + check-in label.
-		// (#222 renamed the banner class bg-clay → bg-accent, mode-driven accent.)
+		// (#423: the solid accent banner is now the neutral Span band.)
 		await page.waitForURL(new RegExp(startDayHref!.replace(/\//g, '\\/')), { timeout: 10000 });
-		const startBanner = page.locator('a.bg-accent:visible').first();
+		const startBanner = page.locator('[data-span-band]:visible').first();
 		await expect(startBanner).toContainText('Test Hotel');
-		await expect(startBanner).toContainText(/Check in/i);
+		await expect(startBanner).toContainText(/Check-in/i);
 
 		// --- Walk to the next day (a middle day, inside [today, +3]) via DayNav ---
 		await page.locator('a[aria-label^="Next day:"]:visible').first().click();
 		await page.waitForURL(new RegExp(`/trips/${tripSlug}/days/`));
 		// Banner re-renders here with "night X of N" — proof it spans, not a timeline card.
-		const midBanner = page.locator('a.bg-accent:visible').first();
+		const midBanner = page.locator('[data-span-band]:visible').first();
 		await expect(midBanner).toContainText('Test Hotel', { timeout: 5000 });
-		await expect(midBanner).toContainText(/night \d+ of \d+/i);
+		await expect(midBanner).toContainText(/Night \d+ of \d+/i);
 	});
 });

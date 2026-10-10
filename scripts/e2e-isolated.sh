@@ -55,4 +55,5 @@ fi
 export PUBLIC_PB_URL="$PB_URL"
 
 cd "$ROOT"
-exec pnpm exec playwright test "$@"
+# Not `exec`: that would discard the EXIT trap and orphan the PB on every run.
+pnpm exec playwright test "$@"
