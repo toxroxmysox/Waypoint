@@ -84,7 +84,7 @@
 	>
 		<p class="text-ink-muted text-sm">
 			<span class="text-ink-soft font-medium">Nothing planned</span>
-			<span aria-hidden="true"> · </span>Add something, or drag an idea here.
+			<span aria-hidden="true">&nbsp;·&nbsp;</span>Add something, or drag an idea here.
 		</p>
 		<a
 			href={withOrigin(`/trips/${tripSlug}/items/new?day=${dayId}`, page.url.pathname)}
