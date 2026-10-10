@@ -100,7 +100,7 @@ test.describe('Trip Mode Door 2 — skip → parking lot + ideas strip (#246)', 
 		// --- Skip it via the card overflow → confirm in the little menu. ---
 		// The overflow button sits inside the planned item's card (visible tree).
 		const card = page
-			.locator('.no-callout', { hasText: PLANNED_TITLE })
+			.locator('.no-callout:not(section[aria-label="Ideas for now"] .no-callout)', { hasText: PLANNED_TITLE })
 			.filter({ visible: true })
 			.first();
 		await card.getByRole('button', { name: 'Item actions' }).click();
@@ -112,11 +112,11 @@ test.describe('Trip Mode Door 2 — skip → parking lot + ideas strip (#246)', 
 		// unplanned now. Scope the negative to the rest-list CARD (the rail ItemCard's
 		// `.no-callout` container), NOT the whole page: skip returns the item to
 		// THIS phase's parking lot, so it correctly REAPPEARS in the ideas strip below as a
-		// re-promotable backup (an <a> inside an <li>, not a card). A page-wide
+		// re-promotable backup (#432: now an idea card, so the `.no-callout` locator excludes the strip). A page-wide
 		// link-count-0 would falsely catch that legitimate strip occurrence.
 		await expect(
 			page
-				.locator('.no-callout', { hasText: PLANNED_TITLE })
+				.locator('.no-callout:not(section[aria-label="Ideas for now"] .no-callout)', { hasText: PLANNED_TITLE })
 				.filter({ visible: true })
 		).toHaveCount(0, { timeout: 7000 });
 
