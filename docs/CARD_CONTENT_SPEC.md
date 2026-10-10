@@ -284,6 +284,21 @@ The same `Row` (`src/lib/ui/Row.svelte`), extended with three optional slots: `a
 
 Dev seed: `seed-visual-trip` takes `{ rows2: true }` (code documents, a linked goal, a second dateless `<slug>-forming` trip) and `{ past: true }` (window ends 5 days ago, so `/closeout` is reachable). Route tokens `{goalId}` and `{formingSlug}`.
 
+### 4c. Swipe-Quiz face — NEW by #443 (card system, D11; closes #405)
+
+The face is the shared `Hero` (`bare`: the deck already supplies the card), details shown, so a member votes without opening anything. Route `/trips/{slug}/swipe/{phaseId}`.
+
+| Line | Content |
+|---|---|
+| Title | 40px type icon beside a Fraunces title. No `Planned` / `Idea` pill, no "not on a day yet". |
+| Place · cost | `Place · $40` (`Place · Free` at 0). No address, no Maps link (the gestures own the card). Cost alone when there is no place. |
+| When | `formatTimeText` with the day's date (`Thu Oct 1 · 6:30p`, or the date alone when untimed); `Unplanned` when the item has no day. |
+| Description | Plain text, when present. |
+| Added by | `Added by Kim` (member name), on its own line, when known. |
+| Footer (deck) | A divider, then centred `Others' votes hidden until you vote` (Peek swaps in the voter stack). **No Details tap.** |
+
+Planned items stay in the deck. The old Details sheet/modal is gone: its content is on the face. The deck footer wording is shared with the goals-capture deck.
+
 ## Cut list (do not render; schema columns retained per append-only rule)
 
 - `paid_by` — Expense concept, not an item concept.

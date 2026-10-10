@@ -50,6 +50,8 @@
 		href = '',
 		placeLink = true,
 		showGoing = true,
+		placeExtra = '',
+		bare = false,
 		goingControl,
 		bookingActions,
 		menu,
@@ -76,6 +78,10 @@
 		/** The place line opens Maps. Off for the swipe face, whose gestures own the card. */
 		placeLink?: boolean;
 		showGoing?: boolean;
+		/** Joined to the place line with ` · ` (the swipe face's cost); stands alone with no place. */
+		placeExtra?: string;
+		/** Drops the card chrome (surface, border, shadow, padding) when the caller already supplies the card (swipe face). */
+		bare?: boolean;
 		/** Above the Going names (item page, #440): the viewer's own "Are you going?" control. */
 		goingControl?: Snippet;
 		/** Beside the `To book` chip (item page, #441): `Book ↗` and `Mark booked`, for those who may edit. */
@@ -91,12 +97,12 @@
 	const goers = $derived(people.filter((p) => !p.notGoing));
 	const passers = $derived(people.filter((p) => p.notGoing));
 	const maps = $derived(placeLink ? mapsUrl(item) : '');
-	const hasPlace = $derived(!!(item.location_name || item.location_address));
+	const hasPlace = $derived(!!(item.location_name || item.location_address || placeExtra));
 	const memberOf = (id: string) => members.find((m) => m.id === id);
 </script>
 
 <article
-	class="bg-surface relative rounded-xl border p-4 {live ? 'shadow-card-strong' : 'border-line shadow-card'}"
+	class="relative {bare ? '' : 'bg-surface rounded-xl border p-4'} {live ? 'shadow-card-strong' : bare ? '' : 'border-line shadow-card'}"
 	style={live ? 'border-color:var(--color-accent);border-width:2px;' : ''}
 	data-hero
 	data-live={live ? 'true' : 'false'}
@@ -144,7 +150,11 @@
 				</a>
 			{:else}
 				<div data-testid="hero-place">
-					{#if item.location_name}<p class="text-ink text-base font-medium">{item.location_name}</p>{/if}
+					{#if item.location_name || placeExtra}
+						<p class="text-ink text-base font-medium">
+							{item.location_name}{#if placeExtra}<span class="text-ink-soft font-normal">{item.location_name ? ' · ' : ''}{placeExtra}</span>{/if}
+						</p>
+					{/if}
 					{#if item.location_address}<p class="text-ink-soft text-sm">{item.location_address}</p>{/if}
 				</div>
 			{/if}
