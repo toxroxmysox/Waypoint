@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { itemTypeLine, itemTimeText, detailsRows, addLine, newestFirst, hostLabel, goingView, bookingControls, parseMarkBooked, markBookedDestination, votesView } from './item-page';
+import { itemTypeLine, itemTimeText, detailsRows, addLine, newestFirst, hostLabel, goingView, bookingControls, parseMarkBooked, markBookedDestination, votesView, tripModeView } from './item-page';
 
 describe('votesView (#442): where votes show on the item page', () => {
 	const base = { canVote: true, canMove: true, myVote: null as { value: string } | null };
@@ -266,5 +266,72 @@ describe('markBookedDestination (#441)', () => {
 	it('no estimate: amount left blank', () => {
 		const sp = new URL(markBookedDestination('t', { id: 'i1', title: 'H' }, true)!, 'http://x').searchParams;
 		expect(sp.has('amount')).toBe(false);
+	});
+});
+
+describe('tripModeView (#439): the item page in Trip Mode', () => {
+	// Trip-local "now" is a Date whose UTC fields are the wall clock.
+	const now = new Date('2026-10-06T19:00:00.000Z');
+	type I = { status: string; start_time?: string; end_time?: string };
+	const base = {
+		tripMode: true,
+		item: { status: 'planned', start_time: '2026-10-06 18:00:00.000Z', end_time: '2026-10-06 20:00:00.000Z' } as I,
+		dayDate: '2026-10-06 00:00:00.000Z' as string | undefined,
+		now,
+		paid: { isPaid: false },
+		canLogPayment: true
+	};
+	it('ongoing: NOW line from heroStatus, started, Log payment under the Hero', () => {
+		const v = tripModeView(base);
+		expect(v.live).toEqual({ label: 'NOW', text: 'until 8:00p · 1h left' });
+		expect(v.started).toBe(true);
+		expect(v.logPaymentUnderHero).toBe(true);
+		expect(v.planDetails).toBe(true);
+	});
+	it('Planning Mode: nothing changes', () => {
+		expect(tripModeView({ ...base, tripMode: false })).toEqual({ live: null, started: false, logPaymentUnderHero: false, planDetails: false });
+	});
+	it('not started yet: not live, no Log payment under the Hero, still Plan details', () => {
+		const v = tripModeView({ ...base, item: { status: 'planned', start_time: '2026-10-06 21:00:00.000Z' } });
+		expect(v.live).toBeNull();
+		expect(v.started).toBe(false);
+		expect(v.logPaymentUnderHero).toBe(false);
+		expect(v.planDetails).toBe(true);
+	});
+	it('ended: started, not live; Log payment still offered while nothing is logged', () => {
+		const v = tripModeView({ ...base, item: { status: 'planned', start_time: '2026-10-06 15:00:00.000Z', end_time: '2026-10-06 16:00:00.000Z' } });
+		expect(v.live).toBeNull();
+		expect(v.started).toBe(true);
+		expect(v.logPaymentUnderHero).toBe(true);
+	});
+	it('start-only item is live as `since`', () => {
+		expect(tripModeView({ ...base, item: { status: 'planned', start_time: '2026-10-06 18:30:00.000Z' } }).live).toEqual({ label: 'NOW', text: 'since 6:30p' });
+	});
+	it('already logged: no Log payment under the Hero', () => {
+		expect(tripModeView({ ...base, paid: { isPaid: true } }).logPaymentUnderHero).toBe(false);
+	});
+	it('cannot log payment (viewer, note): never under the Hero', () => {
+		expect(tripModeView({ ...base, canLogPayment: false }).logPaymentUnderHero).toBe(false);
+	});
+	it('untimed item: started once its day is today or earlier; never live', () => {
+		const untimed: I = { status: 'planned' };
+		expect(tripModeView({ ...base, item: untimed }).started).toBe(true);
+		expect(tripModeView({ ...base, item: untimed }).live).toBeNull();
+		expect(tripModeView({ ...base, item: untimed, dayDate: '2026-10-05 00:00:00.000Z' }).started).toBe(true);
+		expect(tripModeView({ ...base, item: untimed, dayDate: '2026-10-07 00:00:00.000Z' }).started).toBe(false);
+	});
+	it('an idea (unplanned) has not started and is never live', () => {
+		const v = tripModeView({ ...base, item: { status: 'unplanned', start_time: '2026-10-06 18:00:00.000Z' }, dayDate: undefined });
+		expect(v.started).toBe(false);
+		expect(v.live).toBeNull();
+		expect(v.logPaymentUnderHero).toBe(false);
+	});
+	it('done: started, not live', () => {
+		const v = tripModeView({ ...base, item: { ...base.item, status: 'done' } });
+		expect(v.started).toBe(true);
+		expect(v.live).toBeNull();
+	});
+	it('no start_time and no day: not started', () => {
+		expect(tripModeView({ ...base, item: { status: 'planned' }, dayDate: undefined }).started).toBe(false);
 	});
 });
