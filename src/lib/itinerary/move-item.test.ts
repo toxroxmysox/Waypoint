@@ -20,7 +20,11 @@ describe('computeMovePatch — day set', () => {
 	});
 
 	it('considered is preserved (closeout-terminal) when moved to a day', () => {
-		const patch = computeMovePatch({ currentStatus: 'considered', newDay: 'day1', newPhase: 'ph1' });
+		const patch = computeMovePatch({
+			currentStatus: 'considered',
+			newDay: 'day1',
+			newPhase: 'ph1'
+		});
 		expect(patch.status).toBe('considered');
 		expect(patch.day).toBe('day1');
 	});
@@ -93,5 +97,59 @@ describe('computeMovePatch — invariant: status and day never contradict', () =
 		expect(patch.day).toBe('');
 		expect(patch.phase).toBe('');
 		expect(patch.status).toBe('unplanned');
+	});
+});
+
+// #497 — a day set on a timed item re-anchors its times to the new day's date.
+describe('computeMovePatch — re-anchors timed items', () => {
+	const times = {
+		start_time: '2026-06-10 22:40:00.000Z',
+		end_time: '2026-06-11 06:15:00.000Z',
+		end_date: '2026-06-11 00:00:00.000Z'
+	};
+
+	it('shifts start, end and end_date by the day delta, keeping clocks', () => {
+		const patch = computeMovePatch({
+			currentStatus: 'planned',
+			newDay: 'day3',
+			newPhase: 'ph1',
+			newDayDate: '2026-06-12 00:00:00.000Z',
+			times
+		});
+		expect(patch.start_time).toBe('2026-06-12 22:40:00.000Z');
+		expect(patch.end_time).toBe('2026-06-13 06:15:00.000Z');
+		expect(patch.end_date).toBe('2026-06-13 00:00:00.000Z');
+	});
+
+	it('shifts backwards across a month boundary', () => {
+		const patch = computeMovePatch({
+			currentStatus: 'planned',
+			newDay: 'd',
+			newPhase: '',
+			newDayDate: '2026-05-31',
+			times: { start_time: '2026-06-02 09:00:00.000Z', end_time: '', end_date: '' }
+		});
+		expect(patch.start_time).toBe('2026-05-31 09:00:00.000Z');
+		expect(patch.end_time).toBe('');
+		expect(patch.end_date).toBe('');
+	});
+
+	it('same date or untimed → no time fields in the patch', () => {
+		const same = computeMovePatch({
+			currentStatus: 'planned',
+			newDay: 'd',
+			newPhase: '',
+			newDayDate: '2026-06-10',
+			times
+		});
+		expect(same).not.toHaveProperty('start_time');
+		const untimed = computeMovePatch({
+			currentStatus: 'unplanned',
+			newDay: 'd',
+			newPhase: '',
+			newDayDate: '2026-06-12',
+			times: { start_time: '', end_time: '', end_date: '' }
+		});
+		expect(untimed).not.toHaveProperty('start_time');
 	});
 });

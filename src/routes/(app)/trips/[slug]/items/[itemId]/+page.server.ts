@@ -1,6 +1,6 @@
 import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Item, Checklist, Task, TripMember, Vote, Comment, Document, Expense, TripGoal } from '$lib/types';
+import type { Item, Day, Checklist, Task, TripMember, Vote, Comment, Document, Expense, TripGoal } from '$lib/types';
 import { VOTE_OPTIONS, type VoteValue } from '$lib/collaboration/voting';
 import { toDocumentView } from '$lib/documents/view';
 import { isFileDocument, codesForItem } from '$lib/documents/codes';
@@ -467,10 +467,16 @@ export const actions: Actions = {
 			// by a pure, unit-tested function (move-item.ts) from the item's current
 			// status, mirroring the day view's pullToPlan/pushToParking invariant.
 			const item = await locals.pb.collection('items').getOne<Item>(params.itemId);
+			// #497 — the target day's date re-anchors a timed item's times.
+			const newDayDate = newDay
+				? (await locals.pb.collection('days').getOne<Day>(newDay, { fields: 'date' })).date
+				: '';
 			const patch = computeMovePatch({
 				currentStatus: item.status,
 				newDay,
-				newPhase
+				newPhase,
+				newDayDate,
+				times: { start_time: item.start_time, end_time: item.end_time, end_date: item.end_date }
 			});
 
 			// #196 invariant carried into the move: an unplanned item must keep a
