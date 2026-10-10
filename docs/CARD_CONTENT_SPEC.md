@@ -90,6 +90,8 @@ Components: `ItemCard` (head / meta / strip), `RailStack` (the rail's per-card s
 | Free time | gap of ≥ 60 min from a known end (end or deadline) to the next timed start | `2h free · 4:30p to 6:30p`, text only; spoken "Free, 4:30p to 6:30p". |
 | Accessible name | time + title + type + state | e.g. "6:30 to 8:30 PM, Dinner at The Immigrant, meal, needs booking". On the card's link; the drag wrapper keeps `aria-label={title}`. |
 
+**Empty day (#427, story 35).** A day with no items shows a dashed panel under the Items header: "Nothing planned yet · Add something, or drag an idea here." laid over the empty dndzone (a drop on the panel plans the idea; click-through except the button) and a `+ Add item` button (links to `items/new?day=`, 44px hit area). Matches the overview card's empty hint ("Nothing planned yet" + "Add something, or drag an idea here", section 1). Component `DayTimeline` (`data-day-empty`).
+
 ### 2. Itinerary timeline card (+ parking-lot card) — AS BUILT before #420 (superseded for the day timeline by 2a)
 
 Timeline membership = `dayItems` (`day = X && end_date = ""`), ordered by `buildTimeline()` (anchored by time, untimed by `sort_order`). Dayparts (Morning/Afternoon/Evening dividers) live **here**, from `start_time` (`timeline.ts`) — not on the day card.

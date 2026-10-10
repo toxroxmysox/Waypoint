@@ -48,9 +48,10 @@
      item wrapper (svelte-dnd-action maps `node.children` 1:1 onto `items`); the
      slot divider and free-time label live INSIDE the wrapper of the item that
      follows them. -->
+<div class="relative">
 <section
 	data-day-timeline
-	class="min-h-[3rem] space-y-2"
+	class="space-y-2 {items.length === 0 ? 'min-h-[8.5rem]' : 'min-h-[3rem]'}"
 	use:dndzone={{ items, dragDisabled: false, type: 'itinerary-item', flipDurationMs: FLIP_MS, dropTargetStyle: {}, useCursorForDetection: true, delayTouchStart: LONG_PRESS_MS }}
 	onconsider={onConsider}
 	onfinalize={onFinalize}
@@ -74,12 +75,24 @@
 		</div>
 	{/each}
 </section>
-
 {#if items.length === 0}
-	<a
-		href={withOrigin(`/trips/${tripSlug}/items/new?day=${dayId}`, page.url.pathname)}
-		class="border-line text-ink-muted hover:border-ink-muted active:border-ink-muted hover:text-ink-soft active:text-ink-soft mt-2 block rounded-lg border border-dashed px-3 py-2 text-xs"
+	<!-- #427 empty day (story 35). The panel IS the dndzone's footprint: it is laid
+	     over the (empty) zone, click-through except the button, so a drop onto the
+	     panel lands in the zone and plans the idea. (svelte-dnd-action maps zone
+	     children 1:1 onto items, so the panel can't live inside the zone.) -->
+	<div
+		class="border-line pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed px-4 text-center"
+		data-day-empty
 	>
-		Empty. Tap to add one — or drag an idea here.
-	</a>
+		<p class="text-ink-muted text-sm">
+			<span class="text-ink-soft font-medium">Nothing planned yet</span> · Add something, or drag an idea here.
+		</p>
+		<a
+			href={withOrigin(`/trips/${tripSlug}/items/new?day=${dayId}`, page.url.pathname)}
+			class="border-line text-ink-soft hover:border-ink-muted active:border-ink-muted pointer-events-auto inline-flex min-h-[44px] items-center rounded-lg border bg-white px-4 text-sm font-medium"
+		>
+			+ Add item
+		</a>
+	</div>
 {/if}
+</div>
