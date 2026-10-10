@@ -470,6 +470,59 @@ console.log('\n15. #444 update (Save keeps it pending)');
 	}
 }
 
+// ─── #496: foreign day/phase/assignee ids are dropped ────────────────────────
+{
+	console.log('\n#496 — payload ids from another trip');
+	const own = fixtureRes.json;
+	const other = await api('POST', '/api/dev/rules-fixture', { emails: EMAILS, slug: 'e2e-rules-test-sugg-foreign' }, tokens.owner);
+	const foreign = other.json || {};
+	if (!foreign.dayId || !foreign.phaseId || !foreign.memberIds) {
+		fail('foreign fixture', `${other.status} ${JSON.stringify(other.json)}`);
+	} else {
+		const getItem = async (id) => (await api('GET', `/api/collections/items/records/${id}`, null, tokens.owner)).json || {};
+		const foreignIds = {
+			day: foreign.dayId,
+			phase: foreign.phaseId,
+			assigned_to: [foreign.memberIds.traveler, memberIds.traveler]
+		};
+
+		// create (owner → auto-approve): foreign ids never reach the item.
+		const c = await api('POST', '/api/suggestions/create', { trip_id: tripId, payload: { ...samplePayload, title: 'Foreign ids create (#496)', ...foreignIds } }, tokens.owner);
+		const ci = c.json?.item_id ? await getItem(c.json.item_id) : null;
+		ci && ci.day === '' && ci.phase !== foreign.phaseId && JSON.stringify(ci.assigned_to) === JSON.stringify([memberIds.traveler])
+			? pass('auto-approved create drops foreign day/phase/assignee')
+			: fail('create drops foreign ids', `${c.status} day=${ci?.day} phase=${ci?.phase} assigned=${JSON.stringify(ci?.assigned_to)}`);
+
+		// review: Edit & Approve with foreign ids.
+		const t = await api('POST', '/api/suggestions/create', { trip_id: tripId, payload: { ...samplePayload, title: 'Foreign ids review (#496)' } }, tokens.traveler);
+		const sid = t.json?.suggestion_id;
+		const ap = await api('POST', '/api/suggestions/review', { suggestion_id: sid, action: 'approve', payload: { ...samplePayload, title: 'Foreign ids review (#496)', ...foreignIds } }, tokens.owner);
+		const ai = ap.json?.item_id ? await getItem(ap.json.item_id) : null;
+		ai && ai.day === '' && ai.phase !== foreign.phaseId && JSON.stringify(ai.assigned_to) === JSON.stringify([memberIds.traveler])
+			? pass('approve drops foreign day/phase/assignee')
+			: fail('approve drops foreign ids', `${ap.status} day=${ai?.day} phase=${ai?.phase} assigned=${JSON.stringify(ai?.assigned_to)}`);
+
+		// own-trip ids survive.
+		const ok = await api('POST', '/api/suggestions/create', { trip_id: tripId, payload: { ...samplePayload, title: 'Own ids (#496)', day: own.dayId, phase: own.phaseId } }, tokens.owner);
+		const oi = ok.json?.item_id ? await getItem(ok.json.item_id) : null;
+		oi && oi.day === own.dayId && oi.phase === own.phaseId
+			? pass('own-trip day/phase kept')
+			: fail('own-trip ids kept', `day=${oi?.day} phase=${oi?.phase}`);
+
+		// update: the stored payload is scrubbed.
+		const u = await api('POST', '/api/suggestions/create', { trip_id: tripId, payload: { ...samplePayload, title: 'Foreign ids update (#496)' } }, tokens.traveler);
+		const uid = u.json?.suggestion_id;
+		await api('POST', '/api/suggestions/update', { suggestion_id: uid, payload: { ...samplePayload, title: 'Foreign ids update (#496)', ...foreignIds } }, tokens.owner);
+		const lst = await api('GET', `/api/suggestions/list?trip_id=${tripId}`, null, tokens.owner);
+		const stored = (lst.json?.items || []).find((x) => x.id === uid);
+		let sp = stored?.payload;
+		if (typeof sp === 'string') sp = JSON.parse(sp);
+		sp && !sp.day && !sp.phase && JSON.stringify(sp.assigned_to) === JSON.stringify([memberIds.traveler])
+			? pass('update scrubs foreign ids from the stored payload')
+			: fail('update scrubs foreign ids', JSON.stringify(sp));
+	}
+}
+
 // ─── summary ─────────────────────────────────────────────────────────────────
 
 console.log(`\n${'─'.repeat(50)}`);

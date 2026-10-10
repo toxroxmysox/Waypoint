@@ -16,6 +16,7 @@ import { scoreVotes, sortByVoteScore } from '$lib/collaboration/voting';
 import { handleSaveMemory } from '$lib/memory/save-memory.server';
 import type { Memory } from '$lib/memory/types';
 import { sortSpans } from '$lib/itinerary/multi-day';
+import { DISCRETE_FILTER, SPANNING_FILTER } from '$lib/trip-mode/spanning';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, membership, phases, days } = await parent();
@@ -35,7 +36,9 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	// side via `getNowFeed`; the loader just supplies the full set.
 	const todayItems = today
 		? await locals.pb.collection('items').getFullList<Item>({
-				filter: `day = "${today.id}" && end_date = ""`,
+				// #498 — plus a red-eye that departed on an earlier day and lands today:
+				// it is discrete now, so it is on no day's list but its departure day's.
+				filter: `(day = "${today.id}" && ${DISCRETE_FILTER}) || (trip = "${trip.id}" && type = "flight" && day != "${today.id}" && end_date >= "${todayStr} 00:00:00" && end_date <= "${todayStr} 23:59:59")`,
 				sort: 'start_time,sort_order'
 			})
 		: [];
@@ -51,7 +54,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const tomorrowItems = tomorrowDay
 		? orderDayItems(
 				await locals.pb.collection('items').getFullList<Item>({
-					filter: `day = "${tomorrowDay.id}" && end_date = ""`,
+					filter: `day = "${tomorrowDay.id}" && ${DISCRETE_FILTER}`,
 					sort: 'sort_order'
 				})
 			)
@@ -67,7 +70,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const multiDayItems =
 		startedByTodayIds.length > 0
 			? await locals.pb.collection('items').getFullList<Item>({
-					filter: `(${startedByTodayIds.map((id) => `day = "${id}"`).join(' || ')}) && end_date != "" && end_date >= "${todayStr}"`,
+					filter: `(${startedByTodayIds.map((id) => `day = "${id}"`).join(' || ')}) && ${SPANNING_FILTER} && end_date >= "${todayStr}"`,
 					sort: 'start_time'
 				})
 			: [];
@@ -125,7 +128,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		// Forward (later-day) discrete items power the cross-day transition rule
 		// (a late-night arrival's destination may be tomorrow). Earliest-first.
 		const forwardItems = await locals.pb.collection('items').getFullList<Item>({
-			filter: `trip = "${trip.id}" && day != "${today.id}" && day != "" && start_time > "${todayStr}" && end_date = ""`,
+			filter: `trip = "${trip.id}" && day != "${today.id}" && day != "" && start_time > "${todayStr}" && ${DISCRETE_FILTER}`,
 			sort: 'start_time'
 		});
 
@@ -292,7 +295,7 @@ export const actions: Actions = {
 
 			// Today's discrete items (timed + the just-attached idea) → placement.
 			const dayItems = await locals.pb.collection('items').getFullList<Item>({
-				filter: `day = "${today.id}" && end_date = ""`,
+				filter: `day = "${today.id}" && ${DISCRETE_FILTER}`,
 				sort: 'start_time,sort_order'
 			});
 			const promoted = dayItems.find((i) => i.id === itemId) ?? { ...item, ...patch };

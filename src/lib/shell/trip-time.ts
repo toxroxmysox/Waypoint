@@ -64,3 +64,23 @@ export function combineDateTime(dayDate: string, time: string): string {
 	const date = dayDate.split(/[T ]/)[0];
 	return `${date} ${time}:00.000Z`;
 }
+
+/**
+ * Shift a stored naive-local value (`YYYY-MM-DD HH:MM:SS.sssZ`) by whole days,
+ * keeping its clock. '' stays ''. #497 — clone and move re-anchor timed items
+ * with this so Now's absolute-instant comparisons see the new date.
+ */
+export function shiftStoredDays(value: string, days: number): string {
+	if (!value || !days) return value;
+	const d = new Date(value.replace(' ', 'T'));
+	if (Number.isNaN(d.getTime())) return value;
+	d.setUTCDate(d.getUTCDate() + days);
+	return d.toISOString().replace('T', ' ');
+}
+
+/** Whole days from date `a` to date `b` (date parts of stored values). */
+export function daysBetween(a: string, b: string): number {
+	const da = Date.parse(a.split(/[T ]/)[0] + 'T00:00:00.000Z');
+	const db = Date.parse(b.split(/[T ]/)[0] + 'T00:00:00.000Z');
+	return Math.round((db - da) / 86_400_000);
+}

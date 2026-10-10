@@ -7,6 +7,27 @@ import { spanningItemsForDate } from '$lib/itinerary/multi-day';
 import { summarizeDays } from '$lib/itinerary/day-card';
 import { withAvatarUrls } from '$lib/collaboration/member-avatar';
 
+// A failed PB call's status when it is an HTTP error, else 500 (#499: a refused
+// move is a 403, not a 500).
+function failStatus(err: unknown): number {
+	const status = (err as { status?: number } | null)?.status;
+	return typeof status === 'number' && status >= 400 && status < 600 ? status : 500;
+}
+
+// #499 — reorder and drag-to-plan rebalance EVERY item on the day, and items.pb.js
+// lets only an owner/co_owner write another member's sort_order. Gate up front.
+async function canArrangeDay(locals: App.Locals, dayId: string): Promise<boolean> {
+	try {
+		const day = await locals.pb.collection('days').getOne<Day>(dayId, { fields: 'trip' });
+		const member = await locals.pb
+			.collection('trip_members')
+			.getFirstListItem<TripMember>(`trip = "${day.trip}" && user = "${locals.user!.id}" && removed_at = ""`);
+		return member.role === 'owner' || member.role === 'co_owner';
+	} catch {
+		return false;
+	}
+}
+
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, phases, days } = await parent();
 
@@ -110,6 +131,7 @@ export const actions: Actions = {
 		const orderRaw = data.get('order')?.toString();
 
 		if (!itemId) return fail(400, { error: 'Missing item ID.' });
+		if (!(await canArrangeDay(locals, params.dayId))) return fail(403, { error: 'Not allowed.' });
 
 		// #237: an untimed item must be able to land anywhere — between or below
 		// timed items — and stick. A single midpoint sort_order can't encode that
@@ -145,7 +167,7 @@ export const actions: Actions = {
 			return { success: true };
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : 'Failed to reorder.';
-			return fail(500, { error: message });
+			return fail(failStatus(err), { error: message });
 		}
 	},
 
@@ -159,6 +181,9 @@ export const actions: Actions = {
 		// the pulled item sticks where it landed — including between/below timed items
 		// (#237), the same whole-day rebalance the timeline reorder uses.
 		const orderRaw = data.get('order')?.toString();
+		// A drag carries an order (whole-day rebalance): owner/co_owner only. Tap-to-
+		// plan writes just this item, so items.pb.js decides (creator or privileged).
+		if (orderRaw && !(await canArrangeDay(locals, params.dayId))) return fail(403, { error: 'Not allowed.' });
 
 		try {
 			if (!orderRaw) {
@@ -205,7 +230,7 @@ export const actions: Actions = {
 			return { success: true };
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : 'Failed to add item to day.';
-			return fail(500, { error: message });
+			return fail(failStatus(err), { error: message });
 		}
 	},
 
@@ -227,7 +252,7 @@ export const actions: Actions = {
 			return { success: true };
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : 'Failed to remove item from day.';
-			return fail(500, { error: message });
+			return fail(failStatus(err), { error: message });
 		}
 	}
 };

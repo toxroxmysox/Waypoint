@@ -1,6 +1,7 @@
 import type { Item } from '$lib/types';
 import type { NowViewState, NowFeed } from './types';
 import { orderDayItems, timeShape, itemAnchorTime, isAnchored } from '$lib/itinerary/timeline';
+import { isSpanning } from './spanning';
 
 /**
  * Evening cutoff (trip-local hour). It does NOT hide upcoming items — it ONLY
@@ -22,9 +23,7 @@ function parseDateTime(dt: string): Date {
  * `end_time` hijacks the current-item choice (#82) and drives a trip-length
  * countdown (#83) — nor a forward-list row.
  */
-function isMultiDay(i: Item): boolean {
-	return !!i.end_date && i.end_date.trim() !== '';
-}
+const isMultiDay = isSpanning; // #498 — flights with an end_date stay discrete
 
 const ms = (dt: string) => parseDateTime(dt).getTime();
 

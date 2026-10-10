@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { tripNow, tripToday, tripTz, combineDateTime, isValidTimeZone } from './trip-time';
+import {
+	tripNow,
+	tripToday,
+	tripTz,
+	combineDateTime,
+	isValidTimeZone,
+	shiftStoredDays,
+	daysBetween
+} from './trip-time';
 
 describe('tripTz', () => {
 	it('returns the trip timezone when set', () => {
@@ -68,5 +76,26 @@ describe('combineDateTime', () => {
 	it('returns empty string when either part is missing', () => {
 		expect(combineDateTime('', '18:00')).toBe('');
 		expect(combineDateTime('2026-06-08', '')).toBe('');
+	});
+});
+
+// #497 — the clone shift: times move by whole days and keep their clocks.
+describe('shiftStoredDays', () => {
+	it('shifts a timed value across a year, keeping the clock', () => {
+		expect(shiftStoredDays('2025-06-10 22:40:00.000Z', 365)).toBe('2026-06-10 22:40:00.000Z');
+	});
+	it('handles negative shifts and leap days', () => {
+		expect(shiftStoredDays('2024-03-01 08:00:00.000Z', -1)).toBe('2024-02-29 08:00:00.000Z');
+	});
+	it("'' and a zero shift pass through", () => {
+		expect(shiftStoredDays('', 5)).toBe('');
+		expect(shiftStoredDays('2026-01-01 10:00:00.000Z', 0)).toBe('2026-01-01 10:00:00.000Z');
+	});
+});
+
+describe('daysBetween', () => {
+	it('counts whole days between date parts', () => {
+		expect(daysBetween('2026-06-10 22:40:00.000Z', '2026-06-12 00:00:00.000Z')).toBe(2);
+		expect(daysBetween('2026-06-02', '2026-05-31')).toBe(-2);
 	});
 });

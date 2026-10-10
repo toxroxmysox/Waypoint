@@ -44,13 +44,8 @@
 		runKey += 1;
 	}
 
-	// Pending unflushed input → goals (comma/newline separated → "Add N & continue").
-	const pendingGoals = $derived(
-		promptInput
-			.split(/[,\n]/)
-			.map((s) => s.trim())
-			.filter(Boolean)
-	);
+	// Pending unflushed input → one goal. Commas stay in the title (#404).
+	const pendingGoals = $derived(promptInput.trim() ? [promptInput.trim()] : []);
 
 	// ── background persistence forms ──────────────────────────────────────
 	let addGoalForm = $state<HTMLFormElement | null>(null);

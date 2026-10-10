@@ -13,6 +13,8 @@
 		myMemberId = '',
 		canVote = false,
 		dragActive = false,
+		dragDisabled = false,
+		canPullUp = () => true,
 		pullUp = () => {},
 		onConsider = () => {},
 		onFinalize = () => {}
@@ -27,6 +29,8 @@
 		myMemberId?: string;
 		canVote?: boolean;
 		dragActive?: boolean;
+		dragDisabled?: boolean;
+		canPullUp?: (item: Item) => boolean;
 		pullUp?: (itemId: string) => void;
 		onConsider?: (e: CustomEvent<DndEvent<Item>>) => void;
 		onFinalize?: (e: CustomEvent<DndEvent<Item>>) => void;
@@ -95,6 +99,8 @@
 		dndEnabled={true}
 		collapsed={!expanded}
 		{dragActive}
+		{dragDisabled}
+		{canPullUp}
 		{pullUp}
 		{onConsider}
 		{onFinalize}

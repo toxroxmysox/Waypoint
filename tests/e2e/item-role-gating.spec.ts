@@ -441,7 +441,7 @@ test.describe('#416 item detail role gating', () => {
 			// Switch to Planning Mode, then drill to the other item in-app (the mode
 			// is in-memory, so this must be client-side navigation) → Skip → stay.
 			await page
-				.getByRole('button', { name: 'Planning Mode' })
+				.getByRole('button', { name: 'To Planning Mode' })
 				.filter({ visible: true })
 				.first()
 				.click();
@@ -459,7 +459,7 @@ test.describe('#416 item detail role gating', () => {
 				.click();
 			await page.waitForURL(new RegExp(`/items/${plannedItem}`), { timeout: 10000 });
 			await expect(
-				page.getByRole('button', { name: 'Trip Mode' }).filter({ visible: true }).first()
+				page.getByRole('button', { name: 'To Trip Mode' }).filter({ visible: true }).first()
 			).toBeVisible();
 
 			await skipViaMenu(page);

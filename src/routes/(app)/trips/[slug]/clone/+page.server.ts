@@ -4,6 +4,7 @@ import type { Phase, Day, Item } from '$lib/types';
 import { cloneChecklistPayloads } from '$lib/itinerary/clone-checklists';
 import { fetchManualChecklists } from '$lib/itinerary/checklist-loaders';
 import { cloneItemPlacement } from '$lib/itinerary/clone-items';
+import { shiftStoredDays } from '$lib/shell/trip-time';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
 	const { trip, membership, phases } = await parent();
@@ -49,6 +50,7 @@ export const actions: Actions = {
 		);
 		const targetStart = new Date(startDate + 'T00:00:00.000Z');
 		const offsetMs = targetStart.getTime() - sourceStart.getTime();
+		const offsetDays = Math.round(offsetMs / 86_400_000);
 
 		function shiftDate(dateStr: string): string {
 			const raw = dateStr.split(/[T ]/)[0];
@@ -171,7 +173,9 @@ export const actions: Actions = {
 				});
 				const membership = await locals.pb
 					.collection('trip_members')
-					.getFirstListItem(`trip = "${newTrip.id}" && user = "${locals.user!.id}" && removed_at = ""`);
+					.getFirstListItem(
+						`trip = "${newTrip.id}" && user = "${locals.user!.id}" && removed_at = ""`
+					);
 
 				for (const item of sourceItems) {
 					if (!includeItemTypes.includes(item.type)) continue;
@@ -200,8 +204,9 @@ export const actions: Actions = {
 						location_address: item.location_address,
 						location_coords: item.location_coords,
 						google_place_id: item.google_place_id,
-						start_time: isParked ? '' : item.start_time,
-						end_time: isParked ? '' : item.end_time,
+						// #497 — times shift with the days, or Now sees last year's dates.
+						start_time: isParked ? '' : shiftStoredDays(item.start_time, offsetDays),
+						end_time: isParked ? '' : shiftStoredDays(item.end_time, offsetDays),
 						end_date: !isParked && item.end_date ? shiftDate(item.end_date) : '',
 						status: placement.status,
 						booked: false,
