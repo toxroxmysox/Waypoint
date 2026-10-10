@@ -184,6 +184,7 @@ export const actions: Actions = {
 		// (hidden inputs render flight-only); non-flight items stay untouched.
 		const startTz = type === 'flight' ? data.get('start_tz')?.toString() || '' : '';
 		const endTz = type === 'flight' ? data.get('end_tz')?.toString() || '' : '';
+		const flightNumber = type === 'flight' ? data.get('flight_number')?.toString() || '' : '';
 		const booked = data.get('booked') === 'on';
 		const requiresBooking = data.get('requires_booking') === 'on';
 		const reservationUrl = data.get('reservation_url')?.toString() || '';
@@ -274,6 +275,7 @@ export const actions: Actions = {
 			end_date: endDate ? `${endDate} 00:00:00.000Z` : '',
 			start_tz: startTz,
 			end_tz: endTz,
+			flight_number: flightNumber,
 			booked,
 			requires_booking: requiresBooking,
 			confirmation_codes: confirmationCodes,

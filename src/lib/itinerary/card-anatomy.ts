@@ -5,6 +5,7 @@
 import { formatClock, formatCountdown } from '$lib/shell/format';
 import { timeShape, type TimeFields, type TimeShape } from '$lib/itinerary/timeline';
 import type { ItemType } from '$lib/itinerary/types';
+import { flightPlaceLine } from '$lib/itinerary/flight-place';
 
 /** The fields these derivations read; any Item satisfies it. */
 export interface CardItemFields extends TimeFields {
@@ -180,14 +181,17 @@ const AIRPORT = /\(([A-Z0-9]{3,4})\)/;
  * departure label and the description's arrival label); a note's first description
  * line. '' when the item has none.
  */
-export function cardMeta(item: Pick<CardItemFields, 'type' | 'location_name' | 'description'>): string {
+export function cardMeta(
+	item: Pick<CardItemFields, 'type' | 'location_name' | 'description'> & { title?: string; flight_number?: string }
+): string {
 	if (item.type === 'note') {
 		return (item.description ?? '').split('\n').find((l) => l.trim())?.trim() ?? '';
 	}
 	if (item.type === 'flight') {
 		const from = AIRPORT.exec(item.location_name ?? '')?.[1];
 		const to = AIRPORT.exec(item.description ?? '')?.[1];
-		if (from && to) return `${from} → ${to}`;
+		if (from && to)
+			return flightPlaceLine({ title: item.title ?? '', flight_number: item.flight_number, route: `${from} → ${to}` });
 	}
 	return item.location_name?.trim() ?? '';
 }

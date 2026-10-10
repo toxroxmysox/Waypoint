@@ -108,6 +108,7 @@ export const actions: Actions = {
 		// non-flight items stay untouched.
 		const startTzRaw = data.get('start_tz')?.toString() || '';
 		const endTzRaw = data.get('end_tz')?.toString() || '';
+		const flightNumberRaw = data.get('flight_number')?.toString() || '';
 		const booked = data.get('booked') === 'on';
 		const requiresBooking = data.get('requires_booking') === 'on';
 		const reservationUrl = data.get('reservation_url')?.toString() || '';
@@ -208,6 +209,7 @@ export const actions: Actions = {
 				end_date: endDate ? `${endDate} 00:00:00.000Z` : '',
 				start_tz: resolvedType === 'flight' ? startTzRaw : '',
 				end_tz: resolvedType === 'flight' ? endTzRaw : '',
+				flight_number: resolvedType === 'flight' ? flightNumberRaw : '',
 				booked,
 				requires_booking: requiresBooking,
 				// #268 / ADR-0016 — codes no longer persist on the item; they reconcile

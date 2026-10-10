@@ -9,6 +9,7 @@ import { needsBooking } from '$lib/itinerary/booking-projection';
 import type { Day, Item } from '$lib/types';
 import type { ItemType } from '$lib/itinerary/types';
 import { arrivalKey, arrivalLabel, departureKey, type FlightItemInput } from '$lib/itinerary/flights-lineup';
+import { flightPlaceLine } from '$lib/itinerary/flight-place';
 
 const SEP = ' · ';
 const dateOnly = (s: string | undefined) => (s ?? '').split(/[T ]/)[0];
@@ -134,7 +135,7 @@ export function rowTrailing(input: { chip?: string; cost?: number; people?: numb
 
 // --- One call per item ------------------------------------------------------
 /** The fields `rowContent` reads; any Item satisfies it. */
-export type RowContentItem = RowItemFields & { description?: string };
+export type RowContentItem = RowItemFields & { description?: string; title?: string; flight_number?: string };
 
 /**
  * What a Row shows under the title: a flight's four parts (the Row fits them to
@@ -153,7 +154,12 @@ export function rowContent(
 		from: item.location_name ?? '',
 		to: arrivalLabel(item.description ?? '')
 	});
-	return { sub: fitFlightSub(flight, Number.POSITIVE_INFINITY).text, flight };
+	// #435 — the number leads the route only for flights whose title lacks it.
+	const placed = {
+		...flight,
+		route: flightPlaceLine({ title: item.title ?? '', flight_number: item.flight_number, route: flight.route })
+	};
+	return { sub: fitFlightSub(placed, Number.POSITIVE_INFINITY).text, flight: placed };
 }
 
 // --- The overview's Flights & stays ------------------------------------------

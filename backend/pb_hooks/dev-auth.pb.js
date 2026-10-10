@@ -1054,7 +1054,8 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 		};
 		fl(1, { title: 'UA 1234', start_time: on(1, '14:05'), end_time: on(1, '16:20'), location_name: 'Milwaukee Mitchell Intl (MKE)', description: '→ Denver Intl (DEN)', assigned_to: [ownerMember.id, kev] });
 		fl(3, { title: 'DL 482 overnight', start_time: on(3, '22:40'), end_time: on(4, '06:10'), location_name: 'Denver Intl (DEN)', description: '→ Atlanta Hartsfield-Jackson (ATL)', assigned_to: [ownerMember.id, kev, jess] });
-		fl(5, { title: 'Spirit to the coast', start_time: on(5, '11:15'), end_time: on(5, '19:50'), location_name: 'Milwaukee Mitchell International', description: '→ Fort Lauderdale Hollywood International' });
+		fl(2, { title: 'AA 88 to Denver', flight_number: 'AA 88', start_time: on(2, '08:30'), end_time: on(2, '10:05'), location_name: 'Milwaukee Mitchell Intl (MKE)', description: '→ Denver Intl (DEN)' });
+		fl(5, { flight_number: 'NK 345', title: 'Spirit to the coast', start_time: on(5, '11:15'), end_time: on(5, '19:50'), location_name: 'Milwaukee Mitchell International', description: '→ Fort Lauderdale Hollywood International' });
 	}
 
 	// Optional { ideas: true } (#424): unplanned ideas across five type groups in the

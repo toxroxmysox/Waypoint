@@ -127,6 +127,7 @@ export function buildTripExport(
 				end_time: item.end_time || null,
 				start_tz: item.start_tz || '',
 				end_tz: item.end_tz || '',
+				flight_number: item.flight_number || '',
 				end_date: item.end_date || null,
 				status: item.status,
 				booked: item.booked,

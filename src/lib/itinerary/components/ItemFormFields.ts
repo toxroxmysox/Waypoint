@@ -23,6 +23,8 @@ export interface ItemFormData {
 	// rendered or manually edited. Threaded through submission via hidden inputs.
 	start_tz: string;
 	end_tz: string;
+	// #435 — flight-only; written by FlightLookup, carried by a hidden input.
+	flight_number: string;
 	location_name: string;
 	location_address: string;
 	location_coords: unknown;

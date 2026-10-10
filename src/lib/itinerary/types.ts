@@ -63,6 +63,8 @@ export interface Item extends RecordModel {
 	end_time: string;
 	start_tz: string;
 	end_tz: string;
+	/** #435 — flight-only: `UA 1234`, written by the flight lookup. '' elsewhere. */
+	flight_number?: string;
 	end_date: string;
 	status: ItemStatus;
 	booked: boolean;

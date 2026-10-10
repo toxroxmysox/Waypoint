@@ -40,6 +40,7 @@
 		// #130 — preserve stored flight tz across edits (never shown).
 		start_tz: data.item.start_tz ?? '',
 		end_tz: data.item.end_tz ?? '',
+		flight_number: data.item.flight_number ?? '',
 		location_name: data.item.location_name ?? '',
 		location_address: data.item.location_address ?? '',
 		location_coords: data.item.location_coords ?? null,

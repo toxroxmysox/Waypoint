@@ -51,6 +51,7 @@
 	// hidden inputs (flight-only); set by FlightLookup, preserved on edit.
 	let startTzValue = $state(untrack(() => initialData.start_tz));
 	let endTzValue = $state(untrack(() => initialData.end_tz));
+	let flightNumberValue = $state(untrack(() => initialData.flight_number));
 	let selectedDay = $state(
 		untrack(() => (mode === 'create' ? (context.preselectedDay ?? '') : initialData.day))
 	);
@@ -91,6 +92,7 @@
 
 	function handleFlightSelect(flight: {
 		title: string;
+		flight_number: string;
 		start_time: string;
 		end_time: string;
 		end_date: string;
@@ -100,6 +102,7 @@
 		description: string;
 	}) {
 		titleValue = flight.title;
+		flightNumberValue = flight.flight_number;
 		descriptionValue = flight.description;
 		startTimeValue = flight.start_time;
 		endTimeValue = flight.end_time;
@@ -214,6 +217,7 @@
 					<!-- #130 — flight tz: stored-not-shown. No visible field; carried for persistence only. -->
 					<input type="hidden" name="start_tz" value={startTzValue} />
 					<input type="hidden" name="end_tz" value={endTzValue} />
+					<input type="hidden" name="flight_number" value={flightNumberValue} />
 				</div>
 			{/if}
 
