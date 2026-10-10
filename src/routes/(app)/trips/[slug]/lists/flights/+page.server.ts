@@ -1,3 +1,4 @@
+import { flightPlaceLine } from '$lib/itinerary/flight-place';
 import type { PageServerLoad } from './$types';
 import type { Item, Day, TripMember } from '$lib/types';
 import { flightsLineup, type FlightItemInput } from '$lib/itinerary/flights-lineup';
@@ -38,10 +39,12 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 	// The Row's flight sub-line parts (#433): date · departure → arrival · route. The
 	// Row fits them to its width, arrival time dropping first (keeps the projection
 	// pure and the component dumb).
-	const rows = lineup.map((r) => ({
-		...r,
-		sub: flightSub({ departure: r.departure, arrival: r.arrival, from: r.from, to: r.to })
-	}));
+	// #435 — the place line: the stored number leads the route only when the title lacks it.
+	const rows = lineup.map((r) => {
+		const sub = flightSub({ departure: r.departure, arrival: r.arrival, from: r.from, to: r.to });
+		const flight_number = items.find((i) => i.id === r.id)?.flight_number;
+		return { ...r, sub: { ...sub, route: flightPlaceLine({ title: r.title, flight_number, route: sub.route }) } };
+	});
 
 	return { rows };
 };
