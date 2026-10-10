@@ -309,6 +309,8 @@
 			members={data.members}
 			slug={data.trip.slug}
 			canPromote={data.canPromote}
+			myMemberId={data.myMemberId}
+			canVote={data.canVote}
 			heading={justSkipped && !doorOpen ? 'Replace it' : 'Ideas for now'}
 			subheading={justSkipped && !doorOpen
 				? 'Pick a backup from this part of the trip'

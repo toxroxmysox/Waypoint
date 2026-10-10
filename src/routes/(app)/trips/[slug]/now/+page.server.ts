@@ -191,7 +191,10 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		// #245 Door 1 — current-phase ideas strip (vote-score ordered) + the promote gate.
 		ideas,
 		currentPhaseId: derivedPhaseId,
-		canPromote
+		canPromote,
+		// #432 — the idea cards' vote pills: the viewer's member id + whether they may vote.
+		myMemberId: membership.id,
+		canVote: membership.role !== 'viewer'
 	};
 };
 
