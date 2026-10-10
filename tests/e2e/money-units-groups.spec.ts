@@ -75,7 +75,7 @@ test.describe('#332 Money Units — Groups sub-tab', () => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 		try {
 			await page.setViewportSize({ width: 375, height: 812 });
-			await page.goto(GROUPS);
+			await page.goto(GROUPS, { waitUntil: 'networkidle' }); // 'New group' opens a client-side sheet
 			await expect(page.getByText(/no groups yet/i).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
 			// The three money sub-tabs are all present.
 			for (const label of ['Expenses', 'Budget', 'Groups']) {
@@ -95,7 +95,7 @@ test.describe('#332 Money Units — Groups sub-tab', () => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 		try {
 			await page.setViewportSize({ width: 375, height: 812 });
-			await page.goto(GROUPS);
+			await page.goto(GROUPS, { waitUntil: 'networkidle' }); // 'New group' opens a client-side sheet
 			await expect(page.getByText(/no groups yet/i).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
 
 			// Create.
@@ -124,7 +124,7 @@ test.describe('#332 Money Units — Groups sub-tab', () => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 		try {
 			await page.setViewportSize({ width: 375, height: 812 });
-			await page.goto(GROUPS);
+			await page.goto(GROUPS, { waitUntil: 'networkidle' }); // 'New group' opens a client-side sheet
 			await expect(page.getByText(/no groups yet/i).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
 
 			await createUnit(page);
