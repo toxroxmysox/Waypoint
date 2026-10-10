@@ -1254,6 +1254,53 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 		mkSug(sJess, { title: 'Shuttle to the course', type: 'transportation', cost_estimate_usd: 15 }, []);
 	}
 
+	// Optional { record: true } (#436): the trip as a CLOSED record. Every day item becomes `done`
+	// (a few get full multi-line descriptions, day 0 gains a flight, day 2 a note and its
+	// lodging a two-night span), considered items of several types are added, and the trip is
+	// archived with a share token, so `/trips/{slug}` renders the Record view and the public
+	// archive resolves. Combine with { past: true }. Off by default.
+	if (info.body && info.body['record']) {
+		const descs = {
+			'Blackwolf Run tee time': 'Front nine on the River course, then the turn at the halfway house.\nKev owes everyone a beer after the 7th.',
+			'Lunch at The Horse & Plow': 'Split the burger flight; the cheese curds were the best part of the day.',
+			'American Club check-in': 'Room overlooks the courtyard. Late checkout was approved at the desk.'
+		};
+		const mkRec = (dayIdx, f) => {
+			const rec = new Record(itemsCol);
+			rec.set('trip', trip.id);
+			if (phaseId) rec.set('phase', phaseId);
+			if (dayIdx >= 0) rec.set('day', days[dayIdx].id);
+			for (const k of Object.keys(f)) rec.set(k, f[k]);
+			rec.set('created_by', ownerMember.id);
+			e.app.save(rec);
+		};
+		const on = (idx, clock) => days[idx].getString('date').substring(0, 10) + ' ' + clock + ':00.000Z';
+		const planned = e.app.findRecordsByFilter('items', 'trip = {:tripId}', '+sort_order', 0, 0, { tripId: trip.id });
+		for (let k = 0; k < planned.length; k++) {
+			const it = planned[k];
+			it.set('status', 'done');
+			if (descs[it.getString('title')]) it.set('description', descs[it.getString('title')]);
+			if (it.getString('title') === 'American Club check-in') {
+				it.set('end_date', days[3].getString('date').substring(0, 10) + ' 00:00:00.000Z');
+				it.set('location_name', 'Kohler, WI');
+			}
+			e.app.save(it);
+		}
+		mkRec(0, { title: 'Flight to Denver', type: 'flight', status: 'done', sort_order: 9, start_time: on(0, '07:00'), end_time: on(0, '09:15'), location_name: 'Milwaukee (MKE)', description: '→ Denver (DEN)' });
+		mkRec(2, { title: 'Bring cash for the tip jar', type: 'note', status: 'done', sort_order: 9, description: 'Bring cash for the tip jar and the ski lift.\nSecond line.' });
+		mkRec(-1, { title: 'Inn on Woodlake', type: 'lodging', status: 'considered', sort_order: 0, location_name: 'Kohler, WI', description: 'Cheaper, but no pool.' });
+		mkRec(-1, { title: 'Delta to Chicago', type: 'flight', status: 'considered', sort_order: 1, start_time: on(0, '06:10'), end_time: on(0, '07:40'), location_name: 'Milwaukee (MKE)', description: '→ Chicago (ORD)' });
+		mkRec(-1, { title: 'Sheboygan brewery tour', type: 'activity', status: 'considered', sort_order: 2, location_name: 'Sheboygan, WI' });
+		mkRec(-1, { title: 'Blue Harbor spa day', type: 'activity', status: 'considered', sort_order: 3, location_name: 'Blue Harbor Resort' });
+		mkRec(-1, { title: 'Dinner at The Immigrant', type: 'meal', status: 'considered', sort_order: 4, location_name: 'The American Club' });
+		mkRec(-1, { title: 'Rent bikes for Sunday', type: 'note', status: 'considered', sort_order: 5, description: 'Rent bikes for Sunday morning.' });
+		trip.set('archived', true);
+		trip.set('archive_enabled', true);
+		trip.set('archive_publish_at', pbDay(new Date(Date.now() - dayMs)));
+		trip.set('public_share_token', 'recordseedtoken' + Math.floor(Math.random() * 1e9).toString(16));
+		e.app.save(trip);
+	}
+
 	// #439: ids of the `now` seed's items, returned as `nowItems` ({ live, later }) so verify:visual can open their item pages.
 	const nowItems = {};
 

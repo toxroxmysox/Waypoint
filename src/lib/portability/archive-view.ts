@@ -44,6 +44,11 @@ export function buildArchiveView(
 		location_address: item.location_address,
 		start_time: item.start_time,
 		end_time: item.end_time,
+		// #436: display-only. The record lays a day out in the day page's order
+		// (`orderDayItems` weaves untimed items by sort_order) and a multi-day item
+		// reads `through …`.
+		end_date: item.end_date,
+		sort_order: item.sort_order,
 		status: item.status
 	}));
 
