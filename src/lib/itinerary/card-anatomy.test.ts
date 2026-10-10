@@ -65,6 +65,9 @@ describe('cardMeta', () => {
 	it("uses location, a flight route, a note's first line", () => {
 		expect(cardMeta({ type: 'meal', location_name: 'The Immigrant' })).toBe('The Immigrant');
 		expect(cardMeta({ type: 'flight', location_name: 'Milwaukee (MKE)', description: '→ Denver (DEN)' })).toBe('MKE → DEN');
+		const f = { type: 'flight' as const, location_name: 'Milwaukee (MKE)', description: '→ Denver (DEN)' };
+		expect(cardMeta({ ...f, title: 'UA 1234 to Denver', flight_number: 'UA 1234' })).toBe('MKE → DEN');
+		expect(cardMeta({ ...f, title: 'Spirit to the coast', flight_number: 'NK 345' })).toBe('NK 345 · MKE → DEN');
 		expect(cardMeta({ type: 'note', location_name: 'x', description: '\nBring cash\nmore' })).toBe('Bring cash');
 		expect(cardMeta({ type: 'activity' })).toBe('');
 	});

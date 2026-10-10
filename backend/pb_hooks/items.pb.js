@@ -164,7 +164,7 @@ onRecordUpdateRequest((e) => {
 	const lockedFields = [
 		'trip', 'phase', 'day', 'type', 'subtype', 'title', 'description',
 		'location_name', 'location_address', 'location_coords', 'google_place_id',
-		'start_time', 'end_time', 'start_tz', 'end_tz', 'end_date', 'status',
+		'start_time', 'end_time', 'start_tz', 'end_tz', 'flight_number', 'end_date', 'status',
 		'booked', 'booked_by', 'paid_by', 'confirmation_codes', 'reservation_url',
 		'free_cancellation', 'cost_estimate_usd', 'cost_actual_usd', 'sort_order',
 		'parent_item', 'requires_booking', 'created_by'

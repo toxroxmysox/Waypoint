@@ -150,6 +150,19 @@ describe('keyItemRows: the overview Flights & stays list', () => {
 	});
 });
 
+describe('rowContent: flight place line (#435)', () => {
+	const base = { type: 'flight' as const, location_name: 'Milwaukee (MKE)', description: '→ Denver (DEN)' };
+	it('new flight: number is in the title, route alone', () => {
+		const r = rowContent({ ...base, title: 'UA 1234 to Denver', flight_number: 'UA 1234' }, { dayDate: '2026-10-01' });
+		expect(r.flight?.route).toBe('MKE → DEN');
+		expect(r.sub).toBe('Thu Oct 1 · MKE → DEN');
+	});
+	it('legacy flight with a stored number keeps it', () => {
+		const r = rowContent({ ...base, title: 'Spirit', flight_number: 'NK 345' }, { dayDate: '2026-10-01' });
+		expect(r.flight?.route).toBe('NK 345 · MKE → DEN');
+	});
+});
+
 describe('rowContent: one call per item', () => {
 	it('a flight yields its parts and the full text', () => {
 		const r = rowContent(
