@@ -85,7 +85,8 @@ test.describe('M3 Money', () => {
 			// Add-expense is a mobile-first FAB + bottom-sheet flow; exercise it at the
 			// project's standard 375px mobile width.
 			await page.setViewportSize({ width: 375, height: 812 });
-			await page.goto(`${BASE}/trips/${tripSlug}/expenses`);
+			// networkidle: the FAB's handler is client-side; a pre-hydration click does nothing.
+			await page.goto(`${BASE}/trips/${tripSlug}/expenses`, { waitUntil: 'networkidle' });
 
 			// Open Add Expense sheet via FAB
 			await page.getByRole('button', { name: /add expense/i }).filter({ visible: true }).first().click();
