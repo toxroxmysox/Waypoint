@@ -29,6 +29,7 @@
 		phases = [] as Phase[],
 		currentDay = '',
 		currentPhase = '',
+		moveTitle = 'Move Item',
 		form = null,
 		onskipped
 	}: {
@@ -47,6 +48,8 @@
 		phases?: Phase[];
 		currentDay?: string;
 		currentPhase?: string;
+		/** #442 — "Add to a day" on an idea opens this same sheet under that name. */
+		moveTitle?: string;
 		/** The page's `form` result — covers a no-JS post that came back with an error. */
 		form?: { skipError?: string; deleteError?: string } | null;
 		/** A host that is itself the Skip destination (Now's Hero, #428) refreshes in place
@@ -78,6 +81,7 @@
 		{currentDay}
 		{currentPhase}
 		actionUrl={itemUrl}
+		title={moveTitle}
 	/>
 {/if}
 

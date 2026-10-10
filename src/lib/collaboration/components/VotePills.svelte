@@ -34,6 +34,7 @@
 		canVote = false,
 		voteAction,
 		unvoteAction,
+		labels = false,
 		class: klass = ''
 	}: {
 		votes?: DisplayVote[];
@@ -47,6 +48,8 @@
 		voteAction: string;
 		/** Full form-action URL that clears it (`vote_id`), e.g. `…?/unvote`. */
 		unvoteAction: string;
+		/** Show the word beside the glyph (item page, #442: room to spare). Cards stay glyph + count. */
+		labels?: boolean;
 		class?: string;
 	} = $props();
 
@@ -112,7 +115,7 @@
 
 <div
 	use:noDrag
-	class="relative flex w-fit items-center {klass}"
+	class="relative flex w-fit flex-wrap items-center {klass}"
 	role="group"
 	aria-label={groupLabel}
 	data-vote-pills
@@ -176,6 +179,7 @@
 		aria-hidden="true"
 	>
 		<span>{pill.glyph}</span>
+		{#if labels}<span>{pill.label}</span>{/if}
 		<span>{pill.count}</span>
 	</span>
 {/snippet}

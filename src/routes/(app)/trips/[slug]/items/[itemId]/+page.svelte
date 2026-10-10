@@ -3,7 +3,7 @@
 	import { enhance } from '$app/forms';
 	import { itemMenuEntries } from '$lib/itinerary/item-actions';
 	import { getFieldConfig } from '$lib/itinerary/item-fields';
-	import { addLine, bookingControls, detailsRows, goingView, itemTimeText, itemTypeLine, newestFirst } from '$lib/itinerary/item-page';
+	import { addLine, bookingControls, detailsRows, goingView, itemTimeText, itemTypeLine, newestFirst, votesView } from '$lib/itinerary/item-page';
 	import { applyGoing } from '$lib/itinerary/assignment';
 	import { invalidateAll } from '$app/navigation';
 	import { needsBooking } from '$lib/itinerary/booking-projection';
@@ -18,7 +18,9 @@
 	import GoingAnswer from '$lib/itinerary/components/GoingAnswer.svelte';
 	import MarkBookedSheet from '$lib/itinerary/components/MarkBookedSheet.svelte';
 
-	import VoteButtons from '$lib/collaboration/components/VoteButtons.svelte';
+	import { votePills } from '$lib/collaboration/voting';
+	import { memberDisplayName } from '$lib/itinerary/member-name';
+	import VotePills from '$lib/collaboration/components/VotePills.svelte';
 	import ItemActionsMenu from '$lib/itinerary/components/ItemActionsMenu.svelte';
 	import ItemActionSheets from '$lib/itinerary/components/ItemActionSheets.svelte';
 	import ChecklistBody from '$lib/itinerary/components/ChecklistBody.svelte';
@@ -105,6 +107,17 @@
 			goingPending = false;
 		}
 	}
+	// #442 — votes: pills on an idea, one quiet row on a planned item; never with Going.
+	const votesFace = $derived(
+		votesView({ item: data.item, canVote: can.canVote, canMove: can.canMove, myVote: data.myVote })
+	);
+	let voteRowOpen = $state(false);
+	const votersByValue = $derived(
+		votePills(data.votes, data.membership.id, (id) => memberDisplayName(data.members.find((m) => m.id === id)))
+			.filter((p) => p.count > 0)
+			.map((p) => ({ value: p.value, label: p.label, names: p.names }))
+	);
+	const voteActions = $derived({ vote: `${itemUrl}?/vote`, unvote: `${itemUrl}?/unvote` });
 	// #441 — Book ↗ and Mark booked, beside the To book chip, for those who may edit.
 	const booking = $derived(bookingControls({ item: data.item, canEdit: can.canEdit }));
 	let markBookedOpen = $state(false);
@@ -213,14 +226,35 @@
 				docs={heroDocs}
 				done={data.item.status === 'done'}
 				needsBooking={needsBooking(data.item)}
-				goingControl={going.canAnswer ? goingAnswer : undefined}
+				goingControl={going.canAnswer && votesFace.showGoing ? goingAnswer : undefined}
 				bookingActions={booking.show ? bookingActions : undefined}
 			/>
 
-			{#if can.canVote}
-				<div class="px-1" data-testid="item-votes">
-					<VoteButtons myVote={data.myVote} {itemUrl} />
-				</div>
+			{#if votesFace.face === 'pills'}
+				<section class="space-y-2 px-1" data-testid="item-votes" aria-labelledby="item-votes-h">
+					<h2 id="item-votes-h" class="font-display text-ink text-base font-semibold">What do you think?</h2>
+					<VotePills
+						labels
+						votes={data.votes}
+						members={data.members}
+						myMemberId={data.membership.id}
+						canVote={can.canVote}
+						voteAction={voteActions.vote}
+						unvoteAction={voteActions.unvote}
+					/>
+					{#if data.votes.length > 0}
+						<ul class="text-ink-soft space-y-0.5 text-sm" data-testid="item-voters">
+							{#each votersByValue as g (g.value)}
+								<li><span class="text-ink font-semibold">{g.label}</span> · {g.names.join(', ')}</li>
+							{/each}
+						</ul>
+					{/if}
+					{#if votesFace.showAddToDay}
+						<div data-testid="add-to-day">
+							<Button variant="moss" size="md" class="w-full" onclick={() => (moveSheetOpen = true)}>Add to a day</Button>
+						</div>
+					{/if}
+				</section>
 			{/if}
 
 			{#if data.item.description}
@@ -229,7 +263,7 @@
 
 			<!-- One Details card (D12). The payment row is its own row and never depends on the
 			     estimate (ADR-0014): 0 linked expenses -> "Log payment"; >=1 -> "Paid $X". -->
-			{#if rows.length > 0}
+			{#if rows.length > 0 || votesFace.face === 'row'}
 				<Card>
 					<div class="p-4 pb-2">
 						<SectionH>Details</SectionH>
@@ -258,6 +292,39 @@
 								{/if}
 							{/each}
 						</dl>
+						{#if votesFace.face === 'row'}
+							<div class="border-line border-t" data-testid="item-your-vote">
+								<div class="flex min-h-11 items-center justify-between gap-3 py-2">
+									<dt class="text-ink-muted shrink-0 text-xs font-semibold tracking-wide uppercase">Your vote</dt>
+									<dd class="text-ink flex min-w-0 items-center gap-2 text-sm font-medium">
+										<span>{votesFace.rowText}</span>
+										<span class="text-ink-muted" aria-hidden="true">·</span>
+										<button
+											type="button"
+											onclick={() => (voteRowOpen = !voteRowOpen)}
+											aria-expanded={voteRowOpen}
+											class="text-ink-soft hover:text-ink active:text-ink min-h-11 px-1 text-sm font-semibold underline"
+											data-testid="your-vote-change"
+										>
+											change
+										</button>
+									</dd>
+								</div>
+								{#if voteRowOpen}
+									<div class="pb-2">
+										<VotePills
+											labels
+											votes={data.votes}
+											members={data.members}
+											myMemberId={data.membership.id}
+											canVote={can.canVote}
+											voteAction={voteActions.vote}
+											unvoteAction={voteActions.unvote}
+										/>
+									</div>
+								{/if}
+							</div>
+						{/if}
 					</div>
 				</Card>
 			{/if}
@@ -478,6 +545,7 @@
 	slug={data.trip.slug}
 	itemId={data.item.id}
 	{typeLabel}
+	moveTitle={votesFace.showAddToDay ? 'Add to a day' : 'Move Item'}
 	{docCount}
 	days={data.days}
 	phases={data.phases}

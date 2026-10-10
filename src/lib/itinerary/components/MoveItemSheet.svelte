@@ -12,7 +12,8 @@
 		phases = [] as Phase[],
 		currentDay = '',
 		currentPhase = '',
-		actionUrl = ''
+		actionUrl = '',
+		title = 'Move Item'
 	}: {
 		open?: boolean;
 		days?: Day[];
@@ -20,6 +21,7 @@
 		currentDay?: string;
 		currentPhase?: string;
 		actionUrl?: string;
+		title?: string;
 	} = $props();
 
 	let selectedDay = $state(untrack(() => currentDay));
@@ -52,7 +54,7 @@
 	});
 </script>
 
-<BottomSheet bind:open title="Move Item">
+<BottomSheet bind:open {title}>
 	<form
 		method="POST"
 		action="{actionUrl}?/moveItem"
