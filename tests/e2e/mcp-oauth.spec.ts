@@ -186,3 +186,31 @@ test('token endpoint ignores the web session cookie', async () => {
 	expect(res.status).toBe(400);
 	expect(res.json.error).toBe('invalid_grant');
 });
+
+test('a second post of the code form after sign-in lands on the same callback, not "expired"', async () => {
+	// Auto-submit at 6 digits, iOS code autofill and a tap on Connect can all post.
+	const { challenge } = pkcePair();
+	const page = await fetch(
+		authorizeUrl({
+			response_type: 'code',
+			client_id: CLIENT_ID,
+			redirect_uri: REDIRECT_URI,
+			state: 'twice',
+			code_challenge: challenge,
+			code_challenge_method: 'S256'
+		})
+	);
+	const req = reqIdFrom(await page.text());
+	const first = await fetch(`${BASE}/oauth/authorize/dev?req=${encodeURIComponent(req)}&email=${encodeURIComponent('rules-owner@e2e.test')}`, {
+		redirect: 'manual'
+	});
+	expect(first.status).toBe(303);
+	const again = await fetch(`${BASE}/oauth/authorize?/verifyOTP`, {
+		method: 'POST',
+		redirect: 'manual',
+		headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'text/html', origin: BASE },
+		body: new URLSearchParams({ req, otpId: 'x', email: 'rules-owner@e2e.test', code: '123456' }).toString()
+	});
+	expect(again.status).toBe(303);
+	expect(again.headers.get('location')).toBe(first.headers.get('location'));
+});
