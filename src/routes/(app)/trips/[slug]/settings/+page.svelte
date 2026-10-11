@@ -126,6 +126,19 @@
 				</div>
 			</label>
 
+			<label class="flex items-center gap-3">
+				<input
+					type="checkbox"
+					name="ai_access"
+					checked={data.trip.ai_access}
+					class="border-line h-4 w-4 rounded"
+				/>
+				<div>
+					<span class="text-ink block text-sm font-medium">AI Access</span>
+					<span class="text-ink-muted block text-xs">Lets members' connected AI assistants (like Claude) read this trip. Turning it off hides everything but the trip's name and dates.</span>
+				</div>
+			</label>
+
 			<Button type="submit" disabled={loading} loading={loading} variant="moss" size="md" class="w-full">
 				{loading ? 'Saving…' : 'Save changes'}
 			</Button>

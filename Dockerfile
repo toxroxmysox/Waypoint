@@ -50,6 +50,7 @@ COPY --from=builder /app/node_modules /app/node_modules
 
 # Copy deploy files
 COPY deploy/start.sh /app/start.sh
+COPY deploy/server.mjs deploy/token-origin.mjs /app/deploy/
 COPY deploy/Caddyfile /etc/caddy/Caddyfile
 RUN chmod +x /app/start.sh
 

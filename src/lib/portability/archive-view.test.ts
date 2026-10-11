@@ -9,7 +9,7 @@ function makeTrip(): Trip {
 		timezone: 'UTC', location_summary: '', countries: [], cover_image: '', photo_album_url: '',
 		archive_enabled: true, archive_publish_after_days: 7, archive_publish_at: '',
 		archive_show_budget: false, public_share_token: 'tok',
-		auto_approve_suggestions: true, created_by: 'u', archived: true
+		auto_approve_suggestions: true, ai_access: true, created_by: 'u', archived: true
 	} as Trip;
 }
 
