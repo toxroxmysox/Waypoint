@@ -243,3 +243,32 @@ test.describe('commit_changes', () => {
 		expect(restaurant.day).toBe('');
 	});
 });
+
+test.describe('revert_change', () => {
+	test('the traveler cannot undo the owner\'s change', async () => {
+		const [row] = (await myAiChanges(MCP_EMAILS.owner)).filter((x) => x.quote === QUOTE);
+		const r = await callTool(tokens.traveler, 'revert_change', { change_id: row.id });
+		expect(r.isError).toBe(true);
+		const owner = await pbAs(MCP_EMAILS.owner);
+		expect((await owner('GET', `/api/collections/items/records/${seed.items.untimedMeal}`)).json.title).toBe(RENAME);
+	});
+
+	test('"undo that" restores the rename by id and marks the change undone; twice says Already undone', async () => {
+		const [row] = (await myAiChanges(MCP_EMAILS.owner)).filter((x) => x.quote === QUOTE);
+		const r = await callTool(tokens.owner, 'revert_change', { change_id: row.id });
+		expect(r.isError, r.text).toBeFalsy();
+		const owner = await pbAs(MCP_EMAILS.owner);
+		expect((await owner('GET', `/api/collections/items/records/${seed.items.untimedMeal}`)).json.title).toBe('Picnic lunch');
+		const [after] = (await myAiChanges(MCP_EMAILS.owner)).filter((x) => x.quote === QUOTE);
+		expect(after.reverted_at).toBeTruthy();
+		expect((await callTool(tokens.owner, 'revert_change', { change_id: row.id })).text).toContain('Already undone');
+	});
+
+	test('with no id it undoes my latest change: the traveler\'s pending suggestion is withdrawn', async () => {
+		const r = await callTool(tokens.traveler, 'revert_change', {});
+		expect(r.isError, r.text).toBeFalsy();
+		const owner = await pbAs(MCP_EMAILS.owner);
+		const sug = await owner('GET', `/api/suggestions/list?trip_id=${seed.tripIds.current}&status=pending`);
+		expect(JSON.stringify(sug.json)).not.toContain(`Cooking class ${seed.suffix}`);
+	});
+});

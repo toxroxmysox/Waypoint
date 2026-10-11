@@ -41,7 +41,9 @@ function argsFor(name: string, trip: string): { args: Record<string, unknown>; s
 			mutates: true
 		},
 		// No real proposal: refused ("expired"), and the refusal must leak nothing.
-		commit_changes: { args: { proposal_id: 'no-such-proposal' }, scoped: false, errors: true }
+		commit_changes: { args: { proposal_id: 'no-such-proposal' }, scoped: false, errors: true },
+		// A bogus id, never "latest": parallel specs share these users, and a sweep must not undo their changes.
+		revert_change: { args: { change_id: 'nosuchchange123' }, scoped: false, errors: true }
 	};
 	const row = table[name];
 	if (!row) throw new Error(`mcp-isolation: no sweep args for new tool "${name}"`);

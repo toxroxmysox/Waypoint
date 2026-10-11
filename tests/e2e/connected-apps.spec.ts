@@ -73,3 +73,43 @@ test("another user can't see or delete my connection", async () => {
 	});
 	expect(del.status).toBe(404);
 });
+
+// #503 — Recent AI changes: the member's AI Changes from the last 30 days,
+// collapsed inside Connected apps, each revertible.
+test('Recent AI changes lists a change with its words and time, and Revert undoes it', async ({ browser }) => {
+	const { access } = await connect(OWNER);
+	const t = await pbToken(OWNER);
+	const trips = await fetch(`${E2E_PB_BASE}/api/collections/trips/records?filter=${encodeURIComponent('title = "E2E connected apps"')}`, {
+		headers: { Authorization: t }
+	}).then((r) => r.json());
+	const trip = trips.items[0];
+	const quote = `rename it ${Date.now().toString(36)}`;
+	const call = async (name: string, args: Record<string, unknown>) =>
+		(await rpc(access, 'tools/call', { name, arguments: args })).json.result;
+	const p = await call('propose_changes', {
+		trip: trip.id,
+		quote,
+		ops: [{ action: 'update', collection: 'trips', id: trip.id, data: { location_summary: 'Douro valley' } }]
+	});
+	expect(p.isError, JSON.stringify(p)).toBeFalsy();
+	expect((await call('commit_changes', { proposal_id: p.structuredContent.proposal.id })).isError).toBeFalsy();
+
+	const ctx = await browser.newContext({ viewport: { width: 375, height: 812 } });
+	const page = await ctx.newPage();
+	await page.goto(`${BASE}/api/dev/login?email=${encodeURIComponent(OWNER)}`);
+	await page.waitForURL(/\/(trips|claim)/);
+	await page.goto(`${BASE}/account`, { waitUntil: 'networkidle' });
+
+	const recent = page.locator('details', { hasText: 'Recent AI changes' }).filter({ visible: true });
+	await expect(recent).toBeVisible();
+	await expect(recent).not.toHaveAttribute('open', '');
+	await recent.locator('summary').click();
+	const row = recent.locator('li', { hasText: quote });
+	await expect(row).toBeVisible();
+	await expect(row).toContainText(/\d{1,2}:\d{2} (am|pm)/);
+	await row.getByRole('button', { name: 'Revert' }).click();
+	await expect(row).toContainText('Undone');
+	const after = await fetch(`${E2E_PB_BASE}/api/collections/trips/records/${trip.id}`, { headers: { Authorization: t } }).then((r) => r.json());
+	expect(after.location_summary).toBe('');
+	await ctx.close();
+});
