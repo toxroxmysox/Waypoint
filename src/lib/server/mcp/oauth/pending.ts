@@ -38,7 +38,20 @@ const g = globalThis as unknown as {
 };
 const s = (g.__waypointOAuth ??= { pending: new Map(), codes: new Map() });
 
+const MAX_PENDING = 500;
+
+/** Drop expired requests and codes; past the cap, the oldest pending go first. */
+function sweep(now = Date.now()) {
+	for (const [id, p] of s.pending) if (now - p.created > PENDING_TTL_MS) s.pending.delete(id);
+	for (const [k, c] of s.codes) if (c.expires < now) s.codes.delete(k);
+	for (const id of s.pending.keys()) {
+		if (s.pending.size < MAX_PENDING) break;
+		s.pending.delete(id);
+	}
+}
+
 export function createPending(p: Omit<PendingAuth, 'id' | 'created'>): PendingAuth {
+	sweep();
 	const pending: PendingAuth = { ...p, id: randomToken(), created: Date.now() };
 	s.pending.set(pending.id, pending);
 	return pending;
@@ -55,6 +68,7 @@ export function getPending(id: string): PendingAuth | undefined {
 
 export function issueCode(pending: PendingAuth, userId: string): string {
 	s.pending.delete(pending.id);
+	sweep();
 	const code = randomToken();
 	s.codes.set(sha256Hex(code), {
 		userId,

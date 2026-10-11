@@ -3,7 +3,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpContext } from './context';
 import { CARD_HTML } from './card-html';
-import { UI_MIME, UI_URI, uiMeta } from './present';
+import { scrub, UI_MIME, UI_URI, uiMeta } from './present';
 import { TOOLS } from './tools';
 
 export const INSTRUCTIONS =
@@ -34,7 +34,7 @@ export function buildServer(ctx: McpContext): McpServer {
 				try {
 					return await tool.run(ctx, args);
 				} catch (err) {
-					return { content: [{ type: 'text' as const, text: (err as Error).message || 'Something went wrong.' }], isError: true };
+					return { content: [{ type: 'text' as const, text: scrub((err as Error).message || 'Something went wrong.') }], isError: true };
 				}
 			}
 		);

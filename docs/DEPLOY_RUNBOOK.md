@@ -101,9 +101,10 @@ curl -sS -I https://app.vandenwarsen.com/ | grep -iE 'HTTP/|content-type-options
 # Want 200/303 + nosniff, X-Frame DENY, HSTS, Referrer-Policy, Permissions-Policy.
 
 # MCP connector (v3.1+): token endpoint through the tunnel, metadata, auth gate.
-curl -s -XPOST https://app.vandenwarsen.com/oauth/token -d grant_type=refresh_token
-# Want {"error":"invalid_grant",...} JSON. A 403 = the token-origin shim isn't running
-# (start.sh must launch deploy/server.mjs); an HTML page = a Cloudflare challenge.
+curl -s -XPOST https://app.vandenwarsen.com/oauth/token -d grant_type=refresh_token -d refresh_token=x
+# Want {"error":"invalid_grant",...} JSON: that path looks the token up as the PB superuser, so it
+# also proves PB_ADMIN_* match a prod superuser (bad creds → 500). A 403 = the token-origin shim
+# isn't running (start.sh must launch deploy/server.mjs); an HTML page = a Cloudflare challenge.
 curl -s https://app.vandenwarsen.com/.well-known/oauth-authorization-server | grep -o '"client_id_metadata_document_supported":true'
 curl -s -o /dev/null -w '%{http_code}\n' -XPOST https://app.vandenwarsen.com/mcp   # want 401
 ```
