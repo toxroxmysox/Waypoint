@@ -60,6 +60,10 @@ curl -s -X POST http://localhost:8090/api/backups \
 
 Record row counts for every collection via the admin API (same TOKEN trick as step 1), and save them to a file. For each **data** migration in `git diff --name-only <deployed> <SHA> -- backend/pb_migrations`, run its own filter read-only against live, so you know the exact number of rows it will rewrite. (Example, v3.0.0: `0073` predicted 10 notification bodies; the boot log said `rewrote 10 notification bodies, 0 tombstone names`.) After the deploy, diff the counts. The only differences allowed are the ones you predicted.
 
+**v3.2 (#503/#411) — duplicate phase starts.** #411's tiling hooks assume no two phases of a trip share a `start_date` (review M2). Before shipping v3.2, dry-run on live (admin API, read-only): list phases sorted by `trip,start_date` and look for any trip with two rows on the same day. Expect 0. Anything else is a hard stop: surface the trips to Scott; fix by hand, never by script.
+
+**v3.2 — `MCP_WRITES`.** AI writes (propose/commit/revert) are on unless `waypoint.env` sets `MCP_WRITES=off`, which removes the write tools from every connection. Flipping it needs a container restart (step 3). Default: leave it unset (on).
+
 ## 2. Ship the source (additive swap; never clobbers data/ or .env)
 
 Extract into a fresh dir, check it, then swap with two `mv`s. Nothing is deleted. (The `rm -rf` one-liner is refused by the permission classifier, and the old trees are cheap to keep.)

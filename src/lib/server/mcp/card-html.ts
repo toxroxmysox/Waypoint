@@ -76,7 +76,7 @@ h2{font:600 13px/1.2 system-ui;letter-spacing:.04em;text-transform:uppercase;col
     else if(m.method==='ui/notifications/host-context-changed') theme(m.params);
     else if(m.method==='ui/resource-teardown' && m.id!=null) send({id:m.id,result:{}});
   });
-  request('ui/initialize',{appInfo:{name:'waypoint-cards',version:'3.1.0'},appCapabilities:{},protocolVersion:'2026-01-26'})
+  request('ui/initialize',{appInfo:{name:'waypoint-cards',version:'3.2.0'},appCapabilities:{},protocolVersion:'2026-01-26'})
     .then(function(res){ canCall=!!(res&&res.hostCapabilities&&res.hostCapabilities.serverTools); theme(res&&res.hostContext); send({method:'ui/notifications/initialized',params:{}}); size(); });
 })();
 </script></body></html>`;

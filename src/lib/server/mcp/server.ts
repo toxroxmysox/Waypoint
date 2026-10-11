@@ -25,7 +25,7 @@ export const WRITE_INSTRUCTIONS =
 export function buildServer(ctx: McpContext): McpServer {
 	const writes = writesEnabled(env);
 	const server = new McpServer(
-		{ name: 'waypoint', version: '3.1.0' },
+		{ name: 'waypoint', version: '3.2.0' },
 		{ instructions: writes ? `${INSTRUCTIONS} ${WRITE_INSTRUCTIONS}` : INSTRUCTIONS }
 	);
 
