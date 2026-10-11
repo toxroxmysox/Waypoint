@@ -39,6 +39,8 @@ Role-agnostic. Any member of a trip can do anything to that trip's data; non-mem
 | `checklist_items` | member of item.trip | member of item.trip | member of item.trip | member of item.trip | member of item.trip |
 | `pending_invites` | null (superuser; members read `GET /api/invites/pending`, #409) | null (superuser, #409) | null (endpoint) | null (immutable) | member of trip + hook (SPEC §3) |
 
+**Hidden fields (#411, `secrets.pb.js` `onRecordEnrich`, covers expanded relations):** `trip_members.soft_token` from every non-superuser; `join_tokens.token` and `trips.public_share_token` from viewers (and anyone without an active membership). Output only: filters on them still work.
+
 **Reasoning for each `null`:**
 
 - `users.create` — user records are created by the OTP hook (`auth.pb.js`) or the dev bypass, both running in admin context. Direct API signup would skip OTP verification.
