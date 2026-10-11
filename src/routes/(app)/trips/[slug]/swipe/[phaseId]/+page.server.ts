@@ -1,3 +1,4 @@
+import { memberDisplayName } from '$lib/itinerary/member-name';
 import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Item, Phase, Day, Vote, TripMember } from '$lib/types';
@@ -73,11 +74,12 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const dayDate: Record<string, string> = {};
 	for (const d of days as Day[]) dayDate[d.id] = d.date;
 
-	// created_by (user id) -> member name, for "Added by Kim".
-	const nameByUser: Record<string, string> = {};
+	// created_by (a trip_members id) -> member name, for "Added by Kim". Keyed by
+	// user id before #406, which never matched, so the line never showed.
+	const nameByMember: Record<string, string> = {};
 	for (const m of members) {
-		const name = m.display_name || m.placeholder_name;
-		if (m.user && name) nameByUser[m.user] = name;
+		const name = memberDisplayName(m);
+		if (name !== 'Unknown') nameByMember[m.id] = name;
 	}
 
 	const nextPhase = nextPhaseId
@@ -91,7 +93,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		votesByItem,
 		members: withAvatarUrls(locals.pb, members),
 		dayDate,
-		nameByUser,
+		nameByMember,
 		nextPhase,
 		// Phase Detail is the parking-lot home (#86 retired the trip-wide page);
 		// the button label says "phase parking lot", so point at this phase.

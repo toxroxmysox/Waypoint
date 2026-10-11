@@ -24,6 +24,7 @@
 	import Pill from '$lib/ui/Pill.svelte';
 	import VotePills from '$lib/collaboration/components/VotePills.svelte';
 	import { ideaSub } from '$lib/itinerary/idea-groups';
+	import WhatIsLink from '$lib/ui/WhatIsLink.svelte';
 
 	let {
 		suggestion,
@@ -34,6 +35,7 @@
 		canReview = false,
 		review = 'ghost',
 		tripSlug = '',
+		place = '',
 		actions = {
 			approve: '?/approveGhost',
 			reject: '?/rejectGhost',
@@ -55,6 +57,8 @@
 		review?: 'ghost' | 'inbox';
 		/** Needed for the Edit link (`review="inbox"`). */
 		tripSlug?: string;
+		/** The trip's place, for the "What is this?" search (#406). */
+		place?: string;
 		/** Where each form posts on the host page. */
 		actions?: { approve: string; reject: string; vote: string; unvote: string };
 	} = $props();
@@ -97,6 +101,9 @@
 			<p class="text-ink-muted mt-0.5 truncate text-xs" data-idea-sub>{sub}</p>
 		{/if}
 		<p class="text-ink-muted mt-0.5 text-xs">Suggested by {authorName}</p>
+		{#if !isAuthor}
+			<WhatIsLink {title} {place} />
+		{/if}
 		<div class="mt-1.5 w-fit">
 			<VotePills
 				{votes}

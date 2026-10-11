@@ -326,6 +326,7 @@
 						myMemberId={data.myMemberId}
 						canVoteGhosts={canVoteGhosts}
 						canReviewGhosts={canReviewGhosts}
+						place={data.trip.location_summary}
 					/>
 				{/if}
 

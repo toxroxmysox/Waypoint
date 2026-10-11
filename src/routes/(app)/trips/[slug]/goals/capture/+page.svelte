@@ -6,6 +6,7 @@
 	import SwipeDeck from '$lib/collaboration/components/swipe/SwipeDeck.svelte';
 	import Avatar from '$lib/ui/Avatar.svelte';
 	import Button from '$lib/ui/Button.svelte';
+	import WhatIsLink from '$lib/ui/WhatIsLink.svelte';
 	import { memberDisplayName, memberInitial } from '$lib/itinerary/member-name';
 	import { toast } from '$lib/shell/stores/toast';
 	import type { WizardCard } from './+page.server';
@@ -240,6 +241,8 @@
 								<Avatar img={authorImg} initial={memberInitial(author)} alt={memberDisplayName(author)} size={22} />
 								<span>Added by {memberDisplayName(author)}</span>
 							</div>
+							<!-- Reaction cards are always someone else's goal. -->
+							<WhatIsLink title={card.goal.title} place={data.trip.location_summary} class="mt-1" />
 						</div>
 					{/if}
 				{/snippet}

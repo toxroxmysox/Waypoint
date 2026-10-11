@@ -28,6 +28,7 @@
 	import ChecklistBody from '$lib/itinerary/components/ChecklistBody.svelte';
 	import AssignMemberSheet from '$lib/itinerary/components/AssignMemberSheet.svelte';
 	import Avatar from '$lib/ui/Avatar.svelte';
+	import WhatIsLink from '$lib/ui/WhatIsLink.svelte';
 	import DocumentSection from '$lib/documents/components/DocumentSection.svelte';
 	import { logPaymentHref } from '$lib/money/expense-prefill';
 	import type { Comment, Task } from '$lib/types';
@@ -348,6 +349,10 @@
 			{#if votesFace.face === 'pills'}
 				<section class="space-y-2 px-1" data-testid="item-votes" aria-labelledby="{uid}-votes-h">
 					<h2 id="{uid}-votes-h" class="font-display text-ink text-base font-semibold">What do you think?</h2>
+					<!-- #406 — someone else's idea: a quick web search for what it is. -->
+					{#if data.item.created_by !== data.membership.id}
+						<WhatIsLink title={data.item.title} place={data.trip.location_summary} />
+					{/if}
 					<VotePills
 						labels
 						votes={data.votes}
