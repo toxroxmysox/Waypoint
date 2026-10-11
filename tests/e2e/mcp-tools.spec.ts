@@ -213,3 +213,34 @@ test.describe('get_item', () => {
 		expect(r.text).toContain('Port cellar tour');
 	});
 });
+
+test.describe('get_money', () => {
+	test('balances and who owes whom, computed by Waypoint', async () => {
+		const r = await callTool(tokens.owner, 'get_money', { trip: seed.trips.current });
+		// $90 dinner split owner + Abby ($45 each), Abby paid back $15 → Abby owes $30.
+		expect(r.text).toMatch(/Abby[^\n]*owes[^\n]*\$30/);
+		expect(r.text).toContain('$90');
+		expect(r.text).toMatch(/food[^\n]*\$90/i);
+	});
+
+	test('a viewer sees the same figures', async () => {
+		const o = await callTool(tokens.owner, 'get_money', { trip: seed.trips.current });
+		const v = await callTool(tokens.viewer, 'get_money', { trip: seed.trips.current });
+		const strip = (cards: { title: string; lines: string[] }[]) => cards.filter((c) => c.title !== 'Your share');
+		expect(strip(v.structured.cards)).toEqual(strip(o.structured.cards));
+	});
+});
+
+test.describe('audit_trip', () => {
+	test('lists what is missing on the current trip', async () => {
+		const r = await callTool(tokens.owner, 'audit_trip', { trip: seed.trips.current });
+		const t = r.text;
+		expect(t).toContain('Train to Coimbra');
+		expect(t).toContain('TP 456 home');
+		expect(t).not.toMatch(/no confirmation code[^\n]*TP 123/);
+		expect(t).toMatch(/Port cellar tour[^\n]*River cruise|River cruise[^\n]*Port cellar tour/);
+		expect(t).toContain('Surf lesson in Matosinhos');
+		expect(t).toContain('Adapter for');
+		expect(t).not.toContain('Passports');
+	});
+});

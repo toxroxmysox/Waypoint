@@ -1,11 +1,11 @@
 import { z } from 'zod';
 import type { GoalStatus, Item, ItemStatus, Phase, TripGoal, TripMember, Vote } from '$lib/types';
 import { formatDayDate } from '$lib/shell/format';
-import { itemDateRange, toDateOnly } from '$lib/itinerary/multi-day';
 import { deriveGoalStatus } from '$lib/itinerary/goal-status';
 import { scoreVotes, sortByVoteScore, tallyVotes } from '$lib/collaboration/voting';
 import { resolveTrip } from '../context';
 import { loadTripDays, loadTripItems } from '../day-data';
+import { lodgingForNight, nightsOf } from '../audit';
 import { offTrip, result, stripHtml, tripDates, ymd, EMOJI, type Card } from '../present';
 import type { ToolDef } from './types';
 
@@ -61,16 +61,8 @@ export const getTrip: ToolDef = {
 			lines: [[p.location, p.country_code].filter(Boolean).join(', '), tripDates(p)].filter(Boolean)
 		}));
 
-		// A night = every trip day but the last. Lodging covers night d when its
-		// range is [start, end) around d, or (single-night) it sits on day d.
-		const dayDate = new Map(days.map((d) => [d.id, toDateOnly(d.date)]));
-		const lodging = items.filter((i) => i.type === 'lodging' && i.day);
-		for (const d of days.slice(0, -1)) {
-			const date = toDateOnly(d.date);
-			const here = lodging.filter((l) => {
-				const r = itemDateRange(l, days);
-				return r ? r.start <= date && date < r.end : dayDate.get(l.day) === date;
-			});
+		for (const date of nightsOf(days)) {
+			const here = lodgingForNight(items, days, date);
 			cards.push({
 				emoji: '🌙',
 				title: formatDayDate(date),
