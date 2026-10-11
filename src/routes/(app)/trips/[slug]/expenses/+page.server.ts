@@ -60,6 +60,10 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		expenses,
 		settlements,
 		members,
+		// #506 — viewers aren't on the trip for money: the payer + split pickers
+		// (and the "Whole group" preset) only ever offer non-viewers. `members`
+		// stays complete for name lookups on older expenses and settle-up.
+		splitMembers: members.filter((m) => m.role !== 'viewer'),
 		items,
 		budget,
 		spentByCategory,

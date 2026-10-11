@@ -227,6 +227,17 @@ async function main() {
     r = await req('PATCH', `/api/collections/expenses/records/${sameTripExpense}`, { token: tokens.owner, body: { paid_by: foreignMember } });
     check('X6 expenses.update paid_by to a foreign member -> 400', is400(r, M), show(r));
 
+    // #506 — viewers are never a payer or part of a split.
+    const V = "Viewers can't pay for or share an expense.";
+    r = await expense({ split_data: { members: [memberIds.owner, memberIds.viewer] } });
+    check('V1 expenses equal split with a viewer -> 400', is400(r, V), show(r));
+    r = await expense({ split_mode: 'by_amount', split_data: { amounts: { [memberIds.owner]: 10, [memberIds.viewer]: 10 } } });
+    check('V2 expenses by_amount split with a viewer -> 400', is400(r, V), show(r));
+    r = await expense({ paid_by: memberIds.viewer });
+    check('V3 expenses.paid_by viewer -> 400', is400(r, V), show(r));
+    r = await req('PATCH', `/api/collections/expenses/records/${sameTripExpense}`, { token: tokens.owner, body: { amount_usd: 30 } });
+    check('V4 expenses.update leaving split untouched -> 200', r.status === 200, show(r));
+
     r = await req('POST', '/api/collections/settlements/records', { token: tokens.owner, body: {
       trip: tripId, from_member: memberIds.owner, to_member: foreignMember, amount_usd: 5, date: today
     }});
