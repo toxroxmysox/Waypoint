@@ -34,7 +34,9 @@ onRecordUpdateRequest((e) => {
 		'public_share_token',
 		'auto_approve_suggestions',
 		// #502 / ADR-0024 §2 — AI Access is an owner/co_owner switch.
-		'ai_access'
+		'ai_access',
+		// #503 / ADR-0025 §6 — so is AI can make changes.
+		'ai_write'
 	];
 
 	let protectedChanged = false;
@@ -119,6 +121,8 @@ onRecordDeleteRequest((e) => {
 // in settings afterwards.
 onRecordCreate((e) => {
 	e.record.set('ai_access', true);
+	// #503 / ADR-0025 §6 — AI can make changes starts ON too.
+	e.record.set('ai_write', true);
 	e.next();
 }, 'trips');
 

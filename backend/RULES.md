@@ -30,7 +30,7 @@ Role-agnostic. Any member of a trip can do anything to that trip's data; non-mem
 | Collection | list | view | create | update | delete |
 |---|---|---|---|---|---|
 | `users` | self only | **co-traveler** (name+avatar) | null (OTP hook) | self only | null (no API) |
-| `trips` | member | member | authed | member + hook (protected fields owner/co_owner, #280) | member + hook (owner/co_owner, #407) |
+| `trips` | member | member | authed | member + hook (protected fields owner/co_owner, #280; incl. `ai_access` #502 and `ai_write` #503, both default true on create) | member + hook (owner/co_owner, #407) |
 | `trip_members` | member of trip | member of trip | null (hooks/admin) | member of trip + hook (field allowlist {role, display_name, digest_opt_out}, #279/#408/#450); `placeholder_email` hidden field (0074, #450) | member of trip + hook (#279) |
 | `phases` | member of trip | member of trip | member + hook (owner/co_owner, #175; start must tile, #411) | member + hook (owner/co_owner, #175; start move bounded, `end_date`/`order` derived, #411) | member + hook (owner/co_owner, #175; never the last; retile after, #411) |
 | `days` | member of trip | member of trip | null (hooks) | member + hook (viewers denied; travelers `notes` only; owner/co_owner `notes` + `phases`, #411) | null (hooks) |
@@ -38,6 +38,7 @@ Role-agnostic. Any member of a trip can do anything to that trip's data; non-mem
 | `items` | member of trip | member of trip | member + hook (owner/co_owner, #175) | member + hook (owner/co_owner, #175) | member + hook (owner/co_owner, #175) |
 | `checklist_items` | member of item.trip | member of item.trip | member of item.trip | member of item.trip | member of item.trip |
 | `pending_invites` | null (superuser; members read `GET /api/invites/pending`, #409) | null (superuser, #409) | null (endpoint) | null (immutable) | member of trip + hook (SPEC §3) |
+| `ai_changes` (#503) | author only | author only | null (server) | null (server) | null (server) |
 
 **Hidden fields (#411, `secrets.pb.js` `onRecordEnrich`, covers expanded relations):** `trip_members.soft_token` from every non-superuser; `join_tokens.token` and `trips.public_share_token` from viewers (and anyone without an active membership). Output only: filters on them still work.
 
@@ -50,6 +51,7 @@ Role-agnostic. Any member of a trip can do anything to that trip's data; non-mem
 - `days.delete` — same: pruning happens inside the trips after-update hook when the date range shrinks.
 - `pending_invites.create` — invite creation goes through `POST /api/invites/create`, which validates the inviter's role per SPEC §3 (travelers can only invite traveler/viewer; viewers cannot invite at all) and generates `code` + `expires_at` server-side. Direct API POST would let any member set arbitrary codes / lifetimes / inviter ids.
 - `pending_invites.list` / `pending_invites.view` (#409, migration 0070) — rows carry the invitee's `email` and the live invite `code`. Under the old member rule any member token (viewers included) could read every invitee's address and a working join code straight off REST. Members now read `GET /api/invites/pending?trip_id=`, which returns a per-invite label (never `email` or `code`). Everything else that reads the collection runs in admin context. The #449 `origin` / `picked_name` columns (0072) are read only by that route.
+- `ai_changes.create/update/delete` (#503, 0081) — an AI Change is the server's audit of a committed proposal (the user's words + before → after). Only the MCP write layer writes it, as superuser; a member must not forge, edit or erase their own audit. Revert sets `reverted_at` server-side too.
 - `pending_invites.update` — invites are immutable. To change a role or extend expiry, revoke and re-invite. Keeps the audit trail honest.
 
 **Identity expressions used in 0014 (+ 0043):**
