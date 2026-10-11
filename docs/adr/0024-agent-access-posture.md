@@ -1,6 +1,6 @@
 # ADR-0024: A connected AI acts as the user, under a per-trip AI Access switch (default on); writes are chat-confirmed transcriptions
 
-**Status:** Accepted (Scott, 2026-10-10)
+**Status:** Accepted (Scott, 2026-10-10); §2–4 amended by ADR-0025
 **Date:** 2026-10-10
 **Deciders:** Scott
 **Amends:** ADR-0017 (AI assist posture)
