@@ -595,7 +595,8 @@ function createBody(collection, role, fixture) {
 			return {
 				trip: fixture.tripId,
 				name: `Harness phase ${role} ${stamp}`,
-				start_date: '2026-06-01 00:00:00.000Z',
+				// #411: a new phase must split the trip strictly inside it (06-01..03).
+				start_date: '2026-06-02 00:00:00.000Z',
 				end_date: '2026-06-02 00:00:00.000Z',
 				order: 99
 			};
@@ -823,6 +824,10 @@ async function runCreatePhase(tokens, fixture) {
 				: { token: tokens[role], body: createBody(col, role, fixture) };
 			const r = await pbRequest('POST', `/api/collections/${col}/records`, opts);
 			recordResult(col, 'create', role, EXPECT[col].create[role], classifyWrite(r.status), r.status);
+			// #411: the 3-day fixture has one free phase start (06-02); free it for the next role.
+			if (col === 'phases' && r.status === 200) {
+				await pbRequest('DELETE', `/api/collections/phases/records/${r.data.id}`, { token: tokens.owner });
+			}
 		}
 		const anonOpts = multipart
 			? { form: documentsCreateForm(fixture) }

@@ -6,7 +6,6 @@ import {
 	planImportPhases,
 	resolveImportItemStatus
 } from '$lib/portability/import';
-import { applyRetile } from '$lib/itinerary/phase-tiling.server';
 import type { Day, Phase } from '$lib/types';
 
 export const load: PageServerLoad = async () => {
@@ -104,10 +103,8 @@ export const actions: Actions = {
 					phaseMap.set(phase.name, created.id);
 				}
 			}
-			await applyRetile(locals.pb, trip.id, tripEnd);
-
-			// Days: reuse the hook-seeded day for each date (phases were bucketed by
-			// the phases hooks during retile); carry the imported notes onto it.
+			// Days: reuse the hook-seeded day for each date (the phases hooks retiled
+			// and re-bucketed on every phase write, #411); carry the imported notes onto it.
 			const seededDays = await locals.pb.collection('days').getFullList<Day>({
 				filter: `trip = "${trip.id}"`,
 				sort: 'date'

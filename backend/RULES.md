@@ -32,7 +32,7 @@ Role-agnostic. Any member of a trip can do anything to that trip's data; non-mem
 | `users` | self only | **co-traveler** (name+avatar) | null (OTP hook) | self only | null (no API) |
 | `trips` | member | member | authed | member + hook (protected fields owner/co_owner, #280) | member + hook (owner/co_owner, #407) |
 | `trip_members` | member of trip | member of trip | null (hooks/admin) | member of trip + hook (field allowlist {role, display_name, digest_opt_out}, #279/#408/#450); `placeholder_email` hidden field (0074, #450) | member of trip + hook (#279) |
-| `phases` | member of trip | member of trip | member + hook (owner/co_owner, #175) | member + hook (owner/co_owner, #175) | member + hook (owner/co_owner, #175) |
+| `phases` | member of trip | member of trip | member + hook (owner/co_owner, #175; start must tile, #411) | member + hook (owner/co_owner, #175; start move bounded, `end_date`/`order` derived, #411) | member + hook (owner/co_owner, #175; never the last; retile after, #411) |
 | `days` | member of trip | member of trip | null (hooks) | member + hook (viewers denied; travelers `notes` only; owner/co_owner `notes` + `phases`, #411) | null (hooks) |
 | `notifications` | recipient | recipient | null (hooks) | recipient + hook (`read_at` only, #411) | null |
 | `items` | member of trip | member of trip | member + hook (owner/co_owner, #175) | member + hook (owner/co_owner, #175) | member + hook (owner/co_owner, #175) |

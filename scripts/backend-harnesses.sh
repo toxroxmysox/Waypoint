@@ -34,7 +34,7 @@ PORT="${PB_PORT:-$((8097 + SLOT))}"
 DIR="${PB_DIR:-/tmp/pb-harness-slot${SLOT}}"
 PB_URL="http://127.0.0.1:${PORT}"
 
-ALL=(rules members invites suggestions money tripnames timestamps invitations scrub items secrets)
+ALL=(rules members invites suggestions money tripnames timestamps invitations scrub items secrets tiling)
 # Harnesses that boot their OWN PocketBase (on this slot's port + dir) because
 # they must seed data BEFORE a migration runs — the runner's PB is already fully
 # migrated. #449: test-scrub.mjs proves migration 0073 the way the deploy runs it.

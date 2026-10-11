@@ -5,6 +5,7 @@ import { cloneChecklistPayloads } from '$lib/itinerary/clone-checklists';
 import { fetchManualChecklists } from '$lib/itinerary/checklist-loaders';
 import { cloneItemPlacement } from '$lib/itinerary/clone-items';
 import { shiftStoredDays } from '$lib/shell/trip-time';
+import { planImportPhases } from '$lib/portability/import';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
 	const { trip, membership, phases } = await parent();
@@ -99,17 +100,49 @@ export const actions: Actions = {
 					filter: `trip = "${sourceTripRecord.id}"`,
 					sort: 'order'
 				});
-				for (const phase of sourcePhases) {
-					const newPhase = await locals.pb.collection('phases').create({
-						trip: newTrip.id,
-						name: phase.name,
-						location: phase.location,
-						country_code: phase.country_code,
-						start_date: shiftDate(phase.start_date),
-						end_date: shiftDate(phase.end_date),
-						order: phase.order
-					});
-					phaseIdMap.set(phase.id, newPhase.id);
+				// Phases tile the trip (ADR-0021) and PB enforces it (#411): the trips
+				// create hook already seeded Phase 1 at the trip start, so the first
+				// source phase retargets it, the rest are created by shifted start, and a
+				// start that can't tile in the new range (a shorter clone) folds into the
+				// phase covering that day. Same plan as import.
+				const seeded = await locals.pb.collection('phases').getFullList<Phase>({
+					filter: `trip = "${newTrip.id}"`,
+					sort: 'order'
+				});
+				const firstPhaseId = seeded[0].id;
+				const shifted = sourcePhases.map((p) => ({
+					name: p.name,
+					location: p.location || '',
+					country_code: p.country_code || '',
+					start_date: shiftDate(p.start_date),
+					end_date: shiftDate(p.end_date),
+					order: p.order
+				}));
+				const sourceIdOf = new Map(shifted.map((p, i) => [p, sourcePhases[i].id]));
+				const idByStart = new Map<string, string>([[startDate, firstPhaseId]]);
+				for (const step of planImportPhases(shifted, startDate, endDate)) {
+					const sourceId = sourceIdOf.get(step.phase)!;
+					const fields = {
+						name: step.phase.name,
+						location: step.phase.location,
+						country_code: step.phase.country_code
+					};
+					if (step.action === 'first') {
+						await locals.pb.collection('phases').update(firstPhaseId, fields);
+						phaseIdMap.set(sourceId, firstPhaseId);
+					} else if (step.action === 'fold') {
+						phaseIdMap.set(sourceId, idByStart.get(step.intoStart!) ?? firstPhaseId);
+					} else {
+						const created = await locals.pb.collection('phases').create({
+							trip: newTrip.id,
+							...fields,
+							start_date: step.start + ' 00:00:00.000Z',
+							end_date: endDate + ' 00:00:00.000Z',
+							order: 0
+						});
+						idByStart.set(step.start, created.id);
+						phaseIdMap.set(sourceId, created.id);
+					}
 				}
 			}
 

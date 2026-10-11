@@ -6,7 +6,6 @@ import { summarizeDays } from '$lib/itinerary/day-card';
 import { withAvatarUrls } from '$lib/collaboration/member-avatar';
 import { parkingLotCards } from '$lib/itinerary/parking-lot-cards';
 import { retilePhases, validateMovePhaseStart, toDay } from '$lib/itinerary/phase-tiling';
-import { applyRetile } from '$lib/itinerary/phase-tiling.server';
 
 // #249/#250 — ghost approve/reject reuse the same /api/suggestions/review hook
 // endpoint the Inbox uses (server-side: owner gate + author attribution + vote
@@ -150,7 +149,7 @@ export const actions: Actions = {
 
 		// Boundary model (ADR-0021): editing a phase moves its start boundary.
 		// validateMovePhaseStart keeps it strictly between its neighbours (and pins
-		// the first phase to the trip start); applyRetile then recomputes the ends.
+		// the first phase to the trip start); phases.pb.js re-validates and retiles (#411).
 		const all = await locals.pb.collection('phases').getFullList({
 			filter: `trip = "${trip.id}"`,
 			fields: 'id,start_date,end_date,order'
@@ -166,7 +165,6 @@ export const actions: Actions = {
 				country_code: countryCode,
 				start_date: toDay(startDate) + ' 00:00:00.000Z'
 			});
-			await applyRetile(locals.pb, trip.id, tripEnd);
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : 'Failed to update phase.';
 			return fail(500, { error: message });

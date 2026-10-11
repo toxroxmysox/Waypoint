@@ -529,6 +529,60 @@ onRecordUpdateRequest((e) => {
 		}
 	}
 
+	// --- #411: retile the phases to the new dates (ADR-0021) BEFORE the day
+	// work below. Phases that no longer fit are merged, as deleting a phase on
+	// the phases page does: every phase that starts on/before the new trip start
+	// except the last of them merges into it (it becomes the first, pinned to
+	// the trip start); every later phase that starts on/after the new trip end
+	// merges into its predecessor. A merged phase's items and checklists are
+	// re-homed to the phase it merges into before it's deleted (checklists
+	// cascade-delete with their phase). Then: ends = next start, last ends at
+	// the trip end, order = position. Admin saves: no request hooks fire.
+	{
+		const tStart = newStartDate.substring(0, 10);
+		const tEnd = newEndDate.substring(0, 10);
+		let found = [];
+		try {
+			found = e.app.findRecordsByFilter('phases', 'trip = {:t}', '', 0, 0, { t: e.record.id });
+		} catch (_) {}
+		const ps = [];
+		for (const p of found) ps.push(p);
+		const startOf = (p) => p.getString('start_date').substring(0, 10);
+		ps.sort((a, b) => (startOf(a) < startOf(b) ? -1 : startOf(a) > startOf(b) ? 1 : 0));
+		let firstIdx = 0;
+		for (let i = 0; i < ps.length; i++) if (startOf(ps[i]) <= tStart) firstIdx = i;
+		const kept = [];
+		const merges = [];
+		for (let i = 0; i < ps.length; i++) {
+			if (i < firstIdx) merges.push([ps[i], ps[firstIdx]]);
+			else if (i > firstIdx && startOf(ps[i]) >= tEnd) merges.push([ps[i], kept[kept.length - 1]]);
+			else kept.push(ps[i]);
+		}
+		for (const [from, into] of merges) {
+			for (const col of ['items', 'checklists']) {
+				let rows = [];
+				try {
+					rows = e.app.findRecordsByFilter(col, 'phase = {:p}', '', 0, 0, { p: from.id });
+				} catch (_) {}
+				for (const row of rows) {
+					row.set('phase', into.id);
+					e.app.save(row);
+				}
+			}
+			e.app.delete(from);
+		}
+		for (let i = 0; i < kept.length; i++) {
+			const p = kept[i];
+			const start = i === 0 ? tStart : startOf(p);
+			const end = i < kept.length - 1 ? startOf(kept[i + 1]) : tEnd;
+			if (startOf(p) === start && p.getString('end_date').substring(0, 10) === end && p.getInt('order') === i) continue;
+			p.set('start_date', start + ' 00:00:00.000Z');
+			p.set('end_date', end + ' 00:00:00.000Z');
+			p.set('order', i);
+			e.app.save(p);
+		}
+	}
+
 	const daysCollection = e.app.findCollectionByNameOrId('days');
 
 	const existingDays = e.app.findRecordsByFilter(
@@ -584,6 +638,25 @@ onRecordUpdateRequest((e) => {
 		}
 		if (matched.length > 0) day.set('phases', matched);
 		e.app.save(day);
+	}
+
+	// #411: the retile above moved phase ranges, so re-bucket the days that stay.
+	for (const [dateStr, day] of Object.entries(existingByDate)) {
+		if (!neededDates[dateStr]) continue;
+		const matched = [];
+		for (const phase of phases) {
+			const pStart = phase.getString('start_date');
+			const pEnd = phase.getString('end_date');
+			if (!pStart || !pEnd) continue;
+			if (dateStr >= pStart.substring(0, 10) && dateStr <= pEnd.substring(0, 10)) matched.push(phase.id);
+		}
+		const cur = [];
+		const raw = day.get('phases');
+		if (raw) for (let i = 0; i < raw.length; i++) cur.push('' + raw[i]);
+		if (cur.slice().sort().join(',') !== matched.slice().sort().join(',')) {
+			day.set('phases', matched);
+			e.app.save(day);
+		}
 	}
 
 	// Remove days outside the new range; unlink their items first so items
