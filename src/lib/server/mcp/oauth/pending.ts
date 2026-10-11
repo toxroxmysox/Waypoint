@@ -30,13 +30,20 @@ export interface CodeRecord {
 }
 
 const PENDING_TTL_MS = 15 * 60_000;
+const DONE_TTL_MS = 2 * 60_000;
 const CODE_TTL_MS = 5 * 60_000;
 
 // globalThis-anchored so Vite HMR in dev doesn't drop in-flight logins.
 const g = globalThis as unknown as {
-	__waypointOAuth?: { pending: Map<string, PendingAuth>; codes: Map<string, CodeRecord> };
+	__waypointOAuth?: {
+		pending: Map<string, PendingAuth>;
+		codes: Map<string, CodeRecord>;
+		// Optional: a process upgraded in place (dev HMR) has the older shape.
+		done?: Map<string, { url: string; expires: number }>;
+	};
 };
-const s = (g.__waypointOAuth ??= { pending: new Map(), codes: new Map() });
+const s = (g.__waypointOAuth ??= { pending: new Map(), codes: new Map(), done: new Map() });
+const done = (s.done ??= new Map());
 
 const MAX_PENDING = 500;
 
@@ -44,6 +51,7 @@ const MAX_PENDING = 500;
 function sweep(now = Date.now()) {
 	for (const [id, p] of s.pending) if (now - p.created > PENDING_TTL_MS) s.pending.delete(id);
 	for (const [k, c] of s.codes) if (c.expires < now) s.codes.delete(k);
+	for (const [k, d] of done) if (d.expires < now) done.delete(k);
 	for (const id of s.pending.keys()) {
 		if (s.pending.size < MAX_PENDING) break;
 		s.pending.delete(id);
@@ -87,4 +95,19 @@ export function takeCode(code: string): CodeRecord | undefined {
 	s.codes.delete(key);
 	if (!rec || rec.expires < Date.now()) return undefined;
 	return rec;
+}
+
+/**
+ * A finished request's redirect, kept briefly. The code form can post twice
+ * (6-digit auto-submit, iOS code autofill, a tap on Connect); the repeat must
+ * land on the same callback, not on "link expired" over a sign-in that worked.
+ */
+export function rememberCompleted(reqId: string, url: string): void {
+	done.set(reqId, { url, expires: Date.now() + DONE_TTL_MS });
+}
+
+export function completedRedirect(reqId: string): string | undefined {
+	const d = done.get(reqId);
+	if (!d || d.expires < Date.now()) return undefined;
+	return d.url;
 }
