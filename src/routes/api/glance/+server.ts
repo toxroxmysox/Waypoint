@@ -14,8 +14,9 @@ export const GET: RequestHandler = async ({ request }) => {
 	}
 	const emails = (env.WAYPOINT_GLANCE_EMAILS ?? '').split(',').map((e) => e.trim()).filter(Boolean);
 	const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Detroit' }).format(new Date());
-	const empty = () => json(computeGlance([], new Map(), today), { headers: NO_STORE });
-	if (!emails.length) return empty();
+	// Misconfigured people = error, never a confident wrong number.
+	const misconfigured = () => json({ error: 'glance misconfigured' }, { status: 503, headers: NO_STORE });
+	if (!emails.length) return misconfigured();
 
 	const pb = await adminPb();
 	const users = await pb.collection('users').getFullList({
@@ -23,7 +24,7 @@ export const GET: RequestHandler = async ({ request }) => {
 		fields: 'id',
 		requestKey: null
 	});
-	if (!users.length) return empty();
+	if (users.length !== emails.length) return misconfigured();
 	const members = await pb.collection('trip_members').getFullList({
 		filter: `(${users.map((u) => `user = "${u.id}"`).join(' || ')}) && role != "viewer"`,
 		fields: 'trip',

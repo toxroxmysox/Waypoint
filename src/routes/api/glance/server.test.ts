@@ -42,6 +42,7 @@ beforeEach(() => {
 	vi.useFakeTimers();
 	vi.setSystemTime(new Date('2026-10-11T16:00:00Z'));
 	envMock.WAYPOINT_GLANCE_TOKEN = 'tok';
+	envMock.WAYPOINT_GLANCE_EMAILS = 'scott@x.com, abby@x.com';
 	state.users = [{ id: 'u1', email: 'scott@x.com' }, { id: 'u2', email: 'abby@x.com' }];
 	state.members = [];
 	state.trips = {};
@@ -83,5 +84,22 @@ describe('GET /api/glance', () => {
 		expect(await (await call('Bearer tok')).json()).toMatchObject({ trips: 1, days: 2 });
 		state.trips.gone = { status: 503 };
 		await expect(call('Bearer tok')).rejects.toMatchObject({ status: 503 });
+	});
+
+	it('503 + no-store when emails unset/empty (token still checked first)', async () => {
+		envMock.WAYPOINT_GLANCE_EMAILS = undefined;
+		const r = await call('Bearer tok');
+		expect(r.status).toBe(503);
+		expect(r.headers.get('cache-control')).toBe('no-store');
+		expect(await r.json()).toEqual({ error: 'glance misconfigured' });
+		expect((await call()).status).toBe(401);
+	});
+
+	it('503 when a configured email matches no user', async () => {
+		state.users = [{ id: 'u1', email: 'scott@x.com' }];
+		const r = await call('Bearer tok');
+		expect(r.status).toBe(503);
+		expect(r.headers.get('cache-control')).toBe('no-store');
+		expect(await r.json()).toEqual({ error: 'glance misconfigured' });
 	});
 });
