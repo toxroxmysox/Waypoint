@@ -97,12 +97,22 @@ export function renderDigestEmail(opts: {
 	const many = opts.sections.length > 1;
 	// #522 — reminders alone (no changes anywhere) read as "coming up", not "changed".
 	const anyChanges = opts.sections.some((s) => hasChanges(s.diff));
-	const verb = anyChanges ? 'What changed on ' : 'Coming up on ';
+	// A lone closeout nudge is about a finished trip: "Wrapping up", not "Coming up".
+	const onlyCloseout =
+		!anyChanges &&
+		!many &&
+		!!opts.sections[0].reminders &&
+		opts.sections[0].reminders.closeout &&
+		opts.sections[0].reminders.booking.length === 0 &&
+		!opts.sections[0].reminders.brief;
+	const verb = anyChanges ? 'What changed on ' : onlyCloseout ? 'Wrapping up ' : 'Coming up on ';
 	let subject = many ? verb + opts.sections.length + ' of your trips' : verb + opts.sections[0].tripTitle;
 	if (opts.testLabel) subject = '[Waypoint digest test] ' + subject;
 
 	const greeting = opts.recipientName ? 'Hi ' + opts.recipientName + ',' : 'Hi,';
-	const intro = !anyChanges
+	const intro = onlyCloseout
+		? 'Time to wrap up ' + opts.sections[0].tripTitle + '.'
+		: !anyChanges
 		? many
 			? 'Here’s what’s coming up on your trips.'
 			: 'Here’s what’s coming up on ' + opts.sections[0].tripTitle + '.'
@@ -152,11 +162,13 @@ export function renderDigestEmail(opts: {
 	if (opts.sections.length === 1) {
 		const url = base + '/trips/' + opts.sections[0].tripSlug + '/settings';
 		textParts.push('Prefer not to get these? Turn off digest emails in trip settings:', url);
+		textParts.push('Or for all your trips in your profile: ' + base + '/account');
 	} else {
 		textParts.push('Prefer not to get these? Turn off digest emails in each trip’s settings:');
 		for (const s of opts.sections) {
 			textParts.push('  ' + s.tripTitle + ': ' + base + '/trips/' + s.tripSlug + '/settings');
 		}
+		textParts.push('Or for all your trips in your profile: ' + base + '/account');
 	}
 
 	htmlParts.push('<p style="margin-top: 20px;">&mdash; Waypoint</p>');
@@ -175,7 +187,9 @@ export function renderDigestEmail(opts: {
 	htmlParts.push(
 		'<p style="color: #67625a; font-size: 13px;">Prefer not to get these? Turn off digest emails in ' +
 			footerLinks +
-			'.</p>'
+			', or for all your trips in <a href="' +
+			base +
+			'/account" style="color: #67625a;">your profile</a>.</p>'
 	);
 	htmlParts.push('</div>');
 

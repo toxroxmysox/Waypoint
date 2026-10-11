@@ -95,7 +95,10 @@ export function composeReminders(input: ReminderInput): TripReminders {
 			const date = neededBy(item, start).slice(0, 10);
 			if (item.type === 'lodging') stays.push({ title: item.title, date: date });
 			else if (item.type === 'flight' || item.type === 'transportation') travel.push({ title: item.title, date: date });
-			if (item.requiresBooking && !item.booked) unbooked.push({ title: item.title, date: date });
+			// #522 review — only what's needed during the trip, and not twice.
+			const dup = out.booking.some((bk) => bk.title === item.title && bk.date === date);
+			const during = date >= start && (!end || date <= end);
+			if (item.requiresBooking && !item.booked && during && !dup) unbooked.push({ title: item.title, date: date });
 		}
 		stays.sort(byDateThenTitle);
 		travel.sort(byDateThenTitle);
