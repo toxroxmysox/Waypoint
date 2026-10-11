@@ -99,3 +99,26 @@ onRecordDeleteRequest((e) => {
 	}
 	e.next();
 }, 'tasks');
+
+// ---------------------------------------------------------------------------
+// #519 — a task's assignee must be a member of the task's trip (via its
+// checklist). Checked when the assignee or checklist changed. goja: inlined.
+// ---------------------------------------------------------------------------
+onRecordValidate((e) => {
+	const r = e.record;
+	const assignee = r.getString('assignee');
+	const isNew = r.isNew();
+	const changed =
+		isNew ||
+		assignee !== r.original().getString('assignee') ||
+		r.getString('checklist') !== r.original().getString('checklist');
+	if (assignee && changed) {
+		let ok = false;
+		try {
+			const tripId = e.app.findRecordById('checklists', r.getString('checklist')).getString('trip');
+			ok = e.app.findRecordById('trip_members', assignee).getString('trip') === tripId;
+		} catch (_) {}
+		if (!ok) throw new BadRequestError("That member isn't on this trip.");
+	}
+	e.next();
+}, 'tasks');

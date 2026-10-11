@@ -84,3 +84,29 @@ onRecordDeleteRequest((e) => {
 
 	e.next();
 }, 'trip_goals');
+
+// ---------------------------------------------------------------------------
+// #519 — cross-trip references (#411 pattern). A goal's linked items must be on
+// the goal's trip. onRecordValidate, so admin saves are checked too; on update
+// only when the list or trip changed. goja: helpers inlined.
+// ---------------------------------------------------------------------------
+onRecordValidate((e) => {
+	const r = e.record;
+	const tripId = r.getString('trip');
+	const isNew = r.isNew();
+	const ids = r.getStringSlice('items');
+	const changed =
+		isNew ||
+		r.getString('trip') !== r.original().getString('trip') ||
+		JSON.stringify(ids) !== JSON.stringify(r.original().getStringSlice('items'));
+	if (changed) {
+		for (let i = 0; i < ids.length; i++) {
+			let ok = false;
+			try {
+				ok = e.app.findRecordById('items', ids[i]).getString('trip') === tripId;
+			} catch (_) {}
+			if (!ok) throw new BadRequestError("That item isn't on this trip.");
+		}
+	}
+	e.next();
+}, 'trip_goals');
