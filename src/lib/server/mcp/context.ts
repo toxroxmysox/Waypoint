@@ -9,6 +9,8 @@ export interface McpContext {
 	pb: PocketBase;
 	user: { id: string; name: string };
 	now: Date;
+	/** #503 — the mcp_connections id; a proposal is bound to the connection that made it. */
+	connectionId: string;
 }
 
 export interface TripRef {

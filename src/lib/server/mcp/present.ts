@@ -9,6 +9,8 @@ export interface Card {
 	title: string;
 	tag?: string;
 	lines: string[];
+	/** #503 — a write preview's changed fields, old → new ('' from for a new record). */
+	changes?: { field: string; from: string; to: string }[];
 }
 
 export interface ToolResult {

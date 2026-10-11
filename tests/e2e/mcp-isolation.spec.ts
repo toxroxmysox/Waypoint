@@ -16,9 +16,12 @@ const tokens: Record<'owner' | 'viewer' | 'outsider', string> = {} as never;
 const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
 const AI_OFF = 'AI access is turned off for this trip by its owner.';
 
-/** Valid args for each tool, aimed at `trip`. `scoped` = takes a trip. */
-function argsFor(name: string, trip: string): { args: Record<string, unknown>; scoped: boolean } {
-	const table: Record<string, { args: Record<string, unknown>; scoped: boolean }> = {
+/**
+ * Valid args for each tool, aimed at `trip`. `scoped` = takes a trip. `mutates`
+ * (#503 write tools) = refused, not served, on an AI-off trip and for a viewer.
+ */
+function argsFor(name: string, trip: string): { args: Record<string, unknown>; scoped: boolean; mutates?: true } {
+	const table: Record<string, { args: Record<string, unknown>; scoped: boolean; mutates?: true }> = {
 		list_trips: { args: {}, scoped: false },
 		get_trip: { args: { trip }, scoped: true },
 		get_day: { args: { trip, date: 'today' }, scoped: true },
@@ -29,7 +32,14 @@ function argsFor(name: string, trip: string): { args: Record<string, unknown>; s
 		what_changed: { args: { trip, since: seed.startedAt }, scoped: true },
 		get_lists: { args: { trip }, scoped: true },
 		get_memories: { args: { trip }, scoped: true },
-		trip_brief: { args: { trip }, scoped: true }
+		trip_brief: { args: { trip }, scoped: true },
+		describe: { args: { trip }, scoped: true },
+		// Proposes only (writes nothing); its preview shows a planted email's old value, which must be scrubbed.
+		propose_changes: {
+			args: { trip, quote: 'tidy the note', ops: [{ action: 'update', collection: 'items', id: seed.items.overlapA, data: { description: 'Booked' } }] },
+			scoped: true,
+			mutates: true
+		}
 	};
 	const row = table[name];
 	if (!row) throw new Error(`mcp-isolation: no sweep args for new tool "${name}"`);
@@ -59,7 +69,7 @@ async function ownerSweep(): Promise<string> {
 }
 
 test('every tool is covered by the sweep', () => {
-	expect(toolNames.length).toBeGreaterThanOrEqual(11);
+	expect(toolNames.length).toBeGreaterThanOrEqual(13);
 	for (const n of toolNames) argsFor(n, 'x');
 });
 
@@ -92,9 +102,14 @@ test('an outsider gets nothing from the trip', async () => {
 
 test('an AI-off trip shows only its name, dates and the notice', async () => {
 	for (const name of toolNames) {
-		const { args, scoped } = argsFor(name, seed.trips.off);
+		const { args, scoped, mutates } = argsFor(name, seed.trips.off);
 		if (!scoped) continue;
 		const r = await callTool(tokens.owner, name, args);
+		if (mutates) {
+			expect(r.isError, name).toBe(true);
+			expect(r.text, name).toBe(AI_OFF);
+			continue;
+		}
 		expect(r.isError, name).toBeFalsy();
 		expect(r.text, name).toContain(AI_OFF);
 		expect(r.structured.cards, name).toHaveLength(1);
@@ -105,10 +120,12 @@ test('an AI-off trip shows only its name, dates and the notice', async () => {
 	expect(dump(item)).not.toContain(seed.offSecretText);
 });
 
-test('a viewer can use every tool', async () => {
+test('a viewer can use every read tool, and no write tool', async () => {
 	for (const name of toolNames) {
-		const r = await callTool(tokens.viewer, name, argsFor(name, seed.trips.current).args);
-		expect(r.isError, `${name}: ${r.text}`).toBeFalsy();
+		const { args, mutates } = argsFor(name, seed.trips.current);
+		const r = await callTool(tokens.viewer, name, args);
+		if (mutates) expect(r.text, name).toBe("Viewers can't change this trip.");
+		else expect(r.isError, `${name}: ${r.text}`).toBeFalsy();
 	}
 });
 

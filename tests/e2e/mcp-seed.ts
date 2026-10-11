@@ -35,8 +35,8 @@ export interface McpSeed {
 	suffix: string;
 	/** ISO instant just before anything was created. */
 	startedAt: string;
-	trips: { current: string; past: string; off: string; foreign: string };
-	tripIds: { current: string; past: string; off: string; foreign: string };
+	trips: { current: string; past: string; off: string; foreign: string; noWrite: string };
+	tripIds: { current: string; past: string; off: string; foreign: string; noWrite: string };
 	members: { owner: string; traveler: string; viewer: string };
 	items: {
 		lodging: string;
@@ -341,6 +341,10 @@ export async function seedMcpTrips(): Promise<McpSeed> {
 	).id as string;
 	await req(T, 'PATCH', `/api/collections/trips/records/${off.trip.id}`, { ai_access: false });
 
+	// ── no-write trip (#503): AI can read, AI changes off ──────────────────────
+	const noWrite = await makeTrip(T, owner.id, `e2e-mcp-nowrite-${suffix}`, `E2E MCP Read Only ${suffix}`, addDays(today, 40), addDays(today, 41), 'UTC');
+	await req(T, 'PATCH', `/api/collections/trips/records/${noWrite.trip.id}`, { ai_write: false });
+
 	// ── foreign trip: someone else's ───────────────────────────────────────────
 	// Owned by the co-owner test user, NOT the outsider: onboarding-organic needs
 	// rules-nonmember to have no trips at all (empty /trips on-ramp).
@@ -358,8 +362,8 @@ export async function seedMcpTrips(): Promise<McpSeed> {
 	return {
 		suffix,
 		startedAt,
-		trips: { current: cur.trip.slug, past: past.trip.slug, off: off.trip.slug, foreign: foreign.trip.slug },
-		tripIds: { current: cur.trip.id, past: past.trip.id, off: off.trip.id, foreign: foreign.trip.id },
+		trips: { current: cur.trip.slug, past: past.trip.slug, off: off.trip.slug, foreign: foreign.trip.slug, noWrite: noWrite.trip.slug },
+		tripIds: { current: cur.trip.id, past: past.trip.id, off: off.trip.id, foreign: foreign.trip.id, noWrite: noWrite.trip.id },
 		members: { owner: cur.ownerMember, traveler: travelerMember, viewer: viewerMember },
 		items: {
 			lodging,

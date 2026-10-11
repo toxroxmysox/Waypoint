@@ -3,7 +3,7 @@
 // by name, phases, days), scrubbed like every other output.
 import { z } from 'zod';
 import { resolveTrip } from '../context';
-import { result, ymd, type Card } from '../present';
+import { offTrip, result, ymd, type Card } from '../present';
 import { WRITABLE } from '../writes/registry';
 import { loadMembers, memberName } from './get-trip';
 import type { ToolDef } from './types';
@@ -39,6 +39,8 @@ export const describe: ToolDef = {
 		if (!trip) return result('What I can change', cards, extra);
 
 		const ref = await resolveTrip(ctx, trip);
+		// ADR-0024 §2: an AI-off trip shows only its name and dates, here too.
+		if (!ref.open) return offTrip(ref.trip);
 		const t = ref.trip;
 		const [members, phases, days] = await Promise.all([
 			loadMembers(ctx, t.id),
