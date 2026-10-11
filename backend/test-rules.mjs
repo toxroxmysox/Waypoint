@@ -244,6 +244,15 @@ const OWNER_COOWNER_ONLY = {
 	non_member: 'deny'
 };
 
+// #411 — every member but viewers (days notes).
+const TRAVELER_PLUS = {
+	owner: 'allow',
+	co_owner: 'allow',
+	traveler: 'allow',
+	viewer: 'deny',
+	non_member: 'deny'
+};
+
 const EXPECT = {
 	// users (#103 / ADR-0006):
 	//   list:   SELF_ONLY — no user enumeration. listRule stays `id = auth.id`,
@@ -312,11 +321,13 @@ const EXPECT = {
 		update: OWNER_COOWNER_ONLY,
 		delete: OWNER_COOWNER_ONLY
 	},
+	// days (#411): update = notes edit, viewers blocked (days.pb.js). Which
+	//           fields each role may change is driven by the novel cases.
 	days: {
 		list: ALLOW_MEMBERS_DENY_NONMEMBER,
 		view: ALLOW_MEMBERS_DENY_NONMEMBER,
 		create: DENY_ALL,
-		update: ALLOW_MEMBERS_DENY_NONMEMBER,
+		update: TRAVELER_PLUS,
 		delete: DENY_ALL
 	},
 	// items (#175):
@@ -584,7 +595,8 @@ function createBody(collection, role, fixture) {
 			return {
 				trip: fixture.tripId,
 				name: `Harness phase ${role} ${stamp}`,
-				start_date: '2026-06-01 00:00:00.000Z',
+				// #411: a new phase must split the trip strictly inside it (06-01..03).
+				start_date: '2026-06-02 00:00:00.000Z',
 				end_date: '2026-06-02 00:00:00.000Z',
 				order: 99
 			};
@@ -593,6 +605,7 @@ function createBody(collection, role, fixture) {
 		case 'items':
 			return {
 				trip: fixture.tripId,
+				day: fixture.dayId, // #411: an item needs a day or a phase
 				type: 'activity',
 				title: `Harness item ${role} ${stamp}`,
 				created_by: fixture.memberIds[role] || fixture.memberIds.owner
@@ -811,6 +824,10 @@ async function runCreatePhase(tokens, fixture) {
 				: { token: tokens[role], body: createBody(col, role, fixture) };
 			const r = await pbRequest('POST', `/api/collections/${col}/records`, opts);
 			recordResult(col, 'create', role, EXPECT[col].create[role], classifyWrite(r.status), r.status);
+			// #411: the 3-day fixture has one free phase start (06-02); free it for the next role.
+			if (col === 'phases' && r.status === 200) {
+				await pbRequest('DELETE', `/api/collections/phases/records/${r.data.id}`, { token: tokens.owner });
+			}
 		}
 		const anonOpts = multipart
 			? { form: documentsCreateForm(fixture) }
@@ -1147,6 +1164,7 @@ async function runCreatorEditNovelCases(tokens) {
 		token: tokens.owner,
 		body: {
 			trip: fixture.tripId,
+			day: fixture.dayId, // #411: an item needs a day or a phase
 			type: 'activity',
 			title: 'Traveler-authored item (#219)',
 			created_by: fixture.memberIds.traveler
@@ -1183,6 +1201,7 @@ async function runCreatorEditNovelCases(tokens) {
 		token: tokens.owner,
 		body: {
 			trip: fixture.tripId,
+			day: fixture.dayId, // #411: an item needs a day or a phase
 			type: 'activity',
 			title: 'Traveler-authored item to delete (#219)',
 			created_by: fixture.memberIds.traveler
@@ -1234,7 +1253,7 @@ const NOT_GOING_OPS = [
 async function ngFreshItem(tokens, fixture, extra = {}) {
 	const made = await pbRequest('POST', '/api/collections/items/records', {
 		token: tokens.owner,
-		body: { trip: fixture.tripId, type: 'activity', title: 'Not going harness item (#402)', ...extra }
+		body: { trip: fixture.tripId, day: fixture.dayId, type: 'activity', title: 'Not going harness item (#402)', ...extra }
 	});
 	return made.data?.id;
 }
@@ -1349,13 +1368,13 @@ async function runNotGoingNovelCases(tokens) {
 
 	r = await pbRequest('POST', '/api/collections/items/records', {
 		token: tokens.owner,
-		body: { trip: fixture.tripId, type: 'activity', title: 'Create with other not going (#402)', not_going: [t] }
+		body: { trip: fixture.tripId, day: fixture.dayId, type: 'activity', title: 'Create with other not going (#402)', not_going: [t] }
 	});
 	recordResult('items', 'create_ng_other', 'owner', 'deny', classifyWrite(r.status), r.status);
 
 	r = await pbRequest('POST', '/api/collections/items/records', {
 		token: tokens.owner,
-		body: { trip: fixture.tripId, type: 'activity', title: 'Create with own not going (#402)', not_going: [m.owner] }
+		body: { trip: fixture.tripId, day: fixture.dayId, type: 'activity', title: 'Create with own not going (#402)', not_going: [m.owner] }
 	});
 	recordResult('items', 'create_ng_self', 'owner', 'allow', classifyWrite(r.status), r.status);
 }
@@ -2935,6 +2954,56 @@ function printScenarioChampionReport() {
 	}
 }
 
+// #411 — days field gate (notes for any non-viewer; phases owner·co_owner;
+// date/trip never) and notifications (recipient may change only read_at).
+const DAYS_NOTIF_OPS = [
+	'traveler_phases',
+	'owner_phases',
+	'owner_date',
+	'recipient_body',
+	'recipient_read_at'
+];
+
+async function runDaysNotificationsGateCases(tokens) {
+	const fixture = await setupFixture();
+	const day = `/api/collections/days/records/${fixture.dayId}`;
+	// Send phases that differ from what the rebucket hook seeded (a same-value
+	// PATCH is a no-op the gate rightly passes).
+	const seeded = (await pbRequest('GET', day, { token: tokens.owner })).data?.phases || [];
+	const otherPhases = seeded.length > 0 ? [] : [fixture.phaseId];
+	let r = await pbRequest('PATCH', day, { token: tokens.traveler, body: { phases: otherPhases } });
+	recordResult('days', 'traveler_phases', 'traveler', 'deny', classifyWrite(r.status), r.status);
+	r = await pbRequest('PATCH', day, { token: tokens.owner, body: { phases: otherPhases } });
+	recordResult('days', 'owner_phases', 'owner', 'allow', classifyWrite(r.status), r.status);
+	r = await pbRequest('PATCH', day, { token: tokens.owner, body: { date: '2026-06-09 00:00:00.000Z' } });
+	recordResult('days', 'owner_date', 'owner', 'deny', classifyWrite(r.status), r.status);
+
+	const list = await pbRequest(
+		'GET',
+		`/api/collections/notifications/records?perPage=1&filter=${filterQuery(fixture.tripId, '')}`,
+		{ token: tokens.traveler }
+	);
+	const nid = list.data?.items?.[0]?.id;
+	if (!nid) {
+		recordResult('notifications', 'recipient_body', 'traveler', 'deny', 'no_fixture_notification', list.status);
+		recordResult('notifications', 'recipient_read_at', 'traveler', 'allow', 'no_fixture_notification', list.status);
+		return;
+	}
+	const n = `/api/collections/notifications/records/${nid}`;
+	r = await pbRequest('PATCH', n, { token: tokens.traveler, body: { body: 'Harness rewrote this' } });
+	recordResult('notifications', 'recipient_body', 'traveler', 'deny', classifyWrite(r.status), r.status);
+	r = await pbRequest('PATCH', n, { token: tokens.traveler, body: { read_at: '2026-06-02 10:00:00.000Z' } });
+	recordResult('notifications', 'recipient_read_at', 'traveler', 'allow', classifyWrite(r.status), r.status);
+}
+
+function printDaysNotificationsReport() {
+	console.log('\n[novel #411 days + notifications field gates]');
+	for (const r of results.filter((x) => DAYS_NOTIF_OPS.includes(x.op))) {
+		const mark = r.passed ? 'PASS' : 'FAIL';
+		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+	}
+}
+
 function printReport() {
 	const ops = ['list', 'view', 'create', 'update', 'delete'];
 	const allRoles = [...ROLES, 'anon'];
@@ -3064,6 +3133,9 @@ async function main() {
 	console.log('#337 cases: scenarios champion-only edit/delete (non-champion owner denied)');
 	await runScenarioChampionNovelCases(tokens);
 
+	console.log('#411 cases: days notes-only + viewer block; notifications read_at only');
+	await runDaysNotificationsGateCases(tokens);
+
 	printReport();
 	printNovelReport();
 	printSuggestionVotesReport();
@@ -3084,6 +3156,7 @@ async function main() {
 	printLastPhaseDeleteReport();
 	printMemoriesReport();
 	printScenarioChampionReport();
+	printDaysNotificationsReport();
 
 	const failed = results.some((r) => !r.passed);
 	exit(failed ? 1 : 0);

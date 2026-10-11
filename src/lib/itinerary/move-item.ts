@@ -87,6 +87,8 @@ export function computeMovePatch(input: MoveItemInput): MoveItemPatch {
 		status: (isTerminal ? currentStatus : 'unplanned') as ItemStatus,
 		start_time: '',
 		end_time: '',
+		// #411: a span needs a start day (items.pb.js refuses an end_date without one).
+		end_date: '',
 		sort_order: 0
 	};
 }

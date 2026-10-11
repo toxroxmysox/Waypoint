@@ -55,6 +55,8 @@ export interface CloneItemPlacementInput {
 	mappedDay: string;
 	/** The clone-target phase id resolved from the source phase, or '' if none. */
 	mappedPhase: string;
+	/** #411 — phase for a parked item with no mapped phase (the clone's first phase). */
+	fallbackPhase?: string;
 }
 
 export interface CloneItemPlacement {
@@ -67,7 +69,8 @@ export interface CloneItemPlacement {
  * Resolve the {status, day, phase} of a cloned item so day and status can never
  * contradict (#196). Two invariants, enforced here so every caller is safe:
  *
- *   - An unplanned idea is forced day-less (parking lot).
+ *   - An unplanned idea is forced day-less (parking lot), in its mapped phase or
+ *     the fallback phase (never phase-less, #411).
  *   - A would-be `planned` item whose day did NOT resolve (e.g. a phases-off
  *     clone, or the source day fell outside the new range) is downgraded to
  *     `unplanned` parking — NEVER left day-less-but-`planned` (which renders
@@ -80,6 +83,7 @@ export function cloneItemPlacement(input: CloneItemPlacementInput): CloneItemPla
 	if (status === 'planned' && input.mappedDay) {
 		return { status: 'planned', day: input.mappedDay, phase: input.mappedPhase };
 	}
-	// Unplanned idea, OR a planned item with no day to land on → parking lot.
-	return { status: 'unplanned', day: '', phase: '' };
+	// Unplanned idea, OR a planned item with no day to land on → parking lot. A
+	// parked item must keep a phase (#196; items.pb.js refuses one without, #411).
+	return { status: 'unplanned', day: '', phase: input.mappedPhase || input.fallbackPhase || '' };
 }

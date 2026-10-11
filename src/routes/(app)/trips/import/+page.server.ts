@@ -6,8 +6,8 @@ import {
 	planImportPhases,
 	resolveImportItemStatus
 } from '$lib/portability/import';
-import { applyRetile } from '$lib/itinerary/phase-tiling.server';
 import type { Day, Phase } from '$lib/types';
+import { sanitizeItemSpan } from '$lib/itinerary/item-span';
 
 export const load: PageServerLoad = async () => {
 	return {};
@@ -104,10 +104,8 @@ export const actions: Actions = {
 					phaseMap.set(phase.name, created.id);
 				}
 			}
-			await applyRetile(locals.pb, trip.id, tripEnd);
-
-			// Days: reuse the hook-seeded day for each date (phases were bucketed by
-			// the phases hooks during retile); carry the imported notes onto it.
+			// Days: reuse the hook-seeded day for each date (the phases hooks retiled
+			// and re-bucketed on every phase write, #411); carry the imported notes onto it.
 			const seededDays = await locals.pb.collection('days').getFullList<Day>({
 				filter: `trip = "${trip.id}"`,
 				sort: 'date'
@@ -146,7 +144,8 @@ export const actions: Actions = {
 					start_tz: item.start_tz || '',
 					end_tz: item.end_tz || '',
 					flight_number: item.flight_number || '',
-					end_date: item.end_date || '',
+					// #411 — keep the span only where it holds (items.pb.js refuses one that doesn't).
+					end_date: sanitizeItemSpan(day?.date, item.end_date, tripEnd),
 					status,
 					booked: item.booked || false,
 					requires_booking: item.requires_booking || false,

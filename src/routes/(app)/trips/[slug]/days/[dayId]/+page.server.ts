@@ -234,7 +234,7 @@ export const actions: Actions = {
 		}
 	},
 
-	pushToParking: async ({ request, locals }) => {
+	pushToParking: async ({ request, locals, params }) => {
 		const data = await request.formData();
 		const itemId = data.get('item_id')?.toString();
 		if (!itemId) return fail(400, { error: 'Missing item ID.' });
@@ -242,12 +242,22 @@ export const actions: Actions = {
 		try {
 			// Eject → unschedule (#60): drop the day, mark unplanned, and STRIP the
 			// time so "unscheduled" means unscheduled (no silent re-anchor later).
+			// #411: drop the span too (it needs a start day), and keep a phase: the
+			// item's own, else the phase of the day it leaves.
+			const item = await locals.pb.collection('items').getOne(itemId, { fields: 'phase' });
+			let phase = String(item.phase || '');
+			if (!phase) {
+				const day = await locals.pb.collection('days').getOne(params.dayId, { fields: 'phases' });
+				phase = String((day.phases as string[] | undefined)?.[0] || '');
+			}
 			await locals.pb.collection('items').update(itemId, {
 				day: '',
+				phase,
 				status: 'unplanned',
 				sort_order: 0,
 				start_time: '',
-				end_time: ''
+				end_time: '',
+				end_date: ''
 			});
 			return { success: true };
 		} catch (err: unknown) {

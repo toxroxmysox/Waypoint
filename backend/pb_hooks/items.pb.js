@@ -239,6 +239,93 @@ onRecordDeleteRequest((e) => {
 }, 'items');
 
 // ---------------------------------------------------------------------------
+// #411 — item validity, on EVERY validated save: REST (any member's token) and
+// admin-context saves (suggestion approval, import, clone, trip date hooks).
+// The SvelteKit actions keep their own checks for field-level errors; this is
+// the backstop, with the same messages. onRecordValidate (not a request hook) so
+// e.app.save is covered too; PB's own reference cleanup on a phase/day delete
+// saves without validation, so those deletes are never blocked here.
+//
+// On update, each check runs only when one of its inputs changed, so a legacy
+// row that predates a rule stays editable (going / not going, title, …).
+// Also normalises: no day + status "planned" → "unplanned".
+// goja: helpers inlined; relation/date truthiness via getString.
+// ---------------------------------------------------------------------------
+onRecordValidate((e) => {
+	const r = e.record;
+	const isNew = r.isNew();
+	const original = isNew ? null : r.original();
+	const changed = (f) => isNew || r.getString(f) !== original.getString(f);
+
+	const tripId = r.getString('trip');
+	const dayId = r.getString('day');
+	const phaseId = r.getString('phase');
+	const parentId = r.getString('parent_item');
+	const endDate = r.getString('end_date').substring(0, 10);
+
+	if (!dayId && r.getString('status') === 'planned') r.set('status', 'unplanned');
+
+	let dayDate = '';
+	if (dayId && (changed('day') || changed('trip') || changed('end_date'))) {
+		let day = null;
+		try {
+			day = e.app.findRecordById('days', dayId);
+		} catch (_) {}
+		if (!day || day.getString('trip') !== tripId) throw new BadRequestError("That day isn't on this trip.");
+		dayDate = day.getString('date').substring(0, 10);
+	}
+
+	if (phaseId && (changed('phase') || changed('trip'))) {
+		let phase = null;
+		try {
+			phase = e.app.findRecordById('phases', phaseId);
+		} catch (_) {}
+		if (!phase || phase.getString('trip') !== tripId) throw new BadRequestError("That phase isn't on this trip.");
+	}
+
+	if (!dayId && !phaseId && (changed('day') || changed('phase'))) {
+		let phases = [];
+		try {
+			phases = e.app.findRecordsByFilter('phases', 'trip = {:t}', '', 1, 0, { t: tripId });
+		} catch (_) {}
+		if (phases.length > 0) {
+			throw new BadRequestError('Pick a phase for an unscheduled item, or assign it to a day.');
+		}
+	}
+
+	// A note can't be booked. Meals can (#462: a meal is reserved), so the item
+	// forms' older meal check is not mirrored here.
+	if (r.getBool('booked') && r.getString('type') === 'note' && (changed('booked') || changed('type'))) {
+		throw new BadRequestError('Note items cannot be marked as booked.');
+	}
+
+	if (endDate && (changed('end_date') || changed('day'))) {
+		if (!dayId) throw new BadRequestError('Pick a start day before setting an end date.');
+		if (!dayDate) {
+			try {
+				dayDate = e.app.findRecordById('days', dayId).getString('date').substring(0, 10);
+			} catch (_) {}
+		}
+		let tripEnd = '';
+		try {
+			tripEnd = e.app.findRecordById('trips', tripId).getString('end_date').substring(0, 10);
+		} catch (_) {}
+		if (tripEnd && endDate > tripEnd) throw new BadRequestError('End date is after the trip ends.');
+		if (dayDate && endDate <= dayDate) throw new BadRequestError('End date must be after the start day.');
+	}
+
+	if (parentId && (changed('parent_item') || changed('trip'))) {
+		let parent = null;
+		try {
+			parent = e.app.findRecordById('items', parentId);
+		} catch (_) {}
+		if (!parent || parent.getString('trip') !== tripId) throw new BadRequestError("That item isn't on this trip.");
+	}
+
+	e.next();
+}, 'items');
+
+// ---------------------------------------------------------------------------
 // #402 — going / not going are EXCLUSIVE: a member is in at most one of
 // `assigned_to` (going) and `not_going` (said not going); in neither = no answer.
 // "Setting one clears the other." MODEL hooks (not request hooks), so they run on

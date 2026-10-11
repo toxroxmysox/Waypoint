@@ -101,10 +101,132 @@ onRecordDeleteRequest((e) => {
 	e.next();
 }, 'phases');
 
+// ---------------------------------------------------------------------------
+// #411 — phase tiling validation (ADR-0021), for every client, not only the
+// SvelteKit phases actions. A new phase's start must split a segment strictly
+// inside the trip and not sit on an existing boundary; a moved start must stay
+// strictly between its neighbours, and the first phase is pinned to the trip
+// start. Messages match validateNewPhaseStart / validateMovePhaseStart
+// (src/lib/itinerary/phase-tiling.ts). The record's own end_date / order are
+// set here from the tiled layout (client values are ignored) so the response
+// is already tiled; siblings are retiled after the save, in the hooks below.
+// Registered after the role gate, before the rebucket hooks.
+// ---------------------------------------------------------------------------
+onRecordCreateRequest((e) => {
+	const tripId = e.record.getString('trip');
+	let tripRec = null;
+	try {
+		tripRec = e.app.findRecordById('trips', tripId);
+	} catch (_) {}
+	const tStart = tripRec ? tripRec.getString('start_date').substring(0, 10) : '';
+	const tEnd = tripRec ? tripRec.getString('end_date').substring(0, 10) : '';
+	if (!tStart || !tEnd) {
+		e.next();
+		return;
+	}
+	const s = e.record.getString('start_date').substring(0, 10);
+	let found = [];
+	try {
+		found = e.app.findRecordsByFilter('phases', 'trip = {:t}', '', 0, 0, { t: tripId });
+	} catch (_) {}
+	const starts = [];
+	for (const p of found) starts.push(p.getString('start_date').substring(0, 10));
+	if (found.length > 0) {
+		if (s <= tStart) throw new BadRequestError('A new phase must start after the trip begins.');
+		if (s >= tEnd) throw new BadRequestError('A new phase must start before the trip ends.');
+		if (starts.indexOf(s) !== -1) throw new BadRequestError('A phase already starts on that day.');
+	}
+	starts.push(s);
+	starts.sort();
+	const i = starts.indexOf(s);
+	e.record.set('end_date', (i < starts.length - 1 ? starts[i + 1] : tEnd) + ' 00:00:00.000Z');
+	e.record.set('order', i);
+	e.next();
+}, 'phases');
+
+onRecordUpdateRequest((e) => {
+	const tripId = e.record.getString('trip');
+	let tripRec = null;
+	try {
+		tripRec = e.app.findRecordById('trips', tripId);
+	} catch (_) {}
+	const tStart = tripRec ? tripRec.getString('start_date').substring(0, 10) : '';
+	const tEnd = tripRec ? tripRec.getString('end_date').substring(0, 10) : '';
+	if (!tStart || !tEnd) {
+		e.next();
+		return;
+	}
+	let found = [];
+	try {
+		found = e.app.findRecordsByFilter('phases', 'trip = {:t}', '', 0, 0, { t: tripId });
+	} catch (_) {}
+	const others = [];
+	let oldStart = e.record.original().getString('start_date').substring(0, 10);
+	for (const p of found) {
+		if (p.id === e.record.id) continue;
+		others.push(p.getString('start_date').substring(0, 10));
+	}
+	others.sort();
+	const s = e.record.getString('start_date').substring(0, 10);
+	if (s !== oldStart) {
+		// Position among the CURRENT layout decides the bounds.
+		const current = others.concat([oldStart]).sort();
+		const idx = current.indexOf(oldStart);
+		if (idx === 0) {
+			if (s !== tStart) throw new BadRequestError('The first phase must start when the trip begins.');
+		} else {
+			const lower = current[idx - 1];
+			const upper = idx < current.length - 1 ? current[idx + 1] : tEnd;
+			if (s <= lower || s >= upper) {
+				throw new BadRequestError('This phase must start between ' + lower + ' and ' + upper + '.');
+			}
+		}
+	}
+	const all = others.concat([s]).sort();
+	const i = all.indexOf(s);
+	e.record.set('end_date', (i < all.length - 1 ? all[i + 1] : tEnd) + ' 00:00:00.000Z');
+	e.record.set('order', i);
+	e.next();
+}, 'phases');
+
 onRecordCreateRequest((e) => {
 	e.next();
 
 	const tripId = e.record.getString('trip');
+	// #411 — retile the trip's phases (ADR-0021 boundary model) before
+	// bucketing: sort by start, the first starts at the trip start, each end is
+	// the next start (the shared travel day), the last ends at the trip end,
+	// order = position. Sibling writes use e.app.save, which fires no request
+	// hooks (no recursion), and only when something differs.
+	{
+		let tripRec = null;
+		try {
+			tripRec = e.app.findRecordById('trips', tripId);
+		} catch (_) {}
+		const tStart = tripRec ? tripRec.getString('start_date').substring(0, 10) : '';
+		const tEnd = tripRec ? tripRec.getString('end_date').substring(0, 10) : '';
+		if (tStart && tEnd) {
+			let found = [];
+			try {
+				found = e.app.findRecordsByFilter('phases', 'trip = {:t}', '', 0, 0, { t: tripId });
+			} catch (_) {}
+			const ps = [];
+			for (const p of found) ps.push(p);
+			const startOf = (p) => p.getString('start_date').substring(0, 10);
+			ps.sort((a, b) => (startOf(a) < startOf(b) ? -1 : startOf(a) > startOf(b) ? 1 : 0));
+			const starts = ps.map((p, i) => (i === 0 ? tStart : startOf(p)));
+			for (let i = 0; i < ps.length; i++) {
+				const end = i < ps.length - 1 ? starts[i + 1] : tEnd;
+				const p = ps[i];
+				if (startOf(p) === starts[i] && p.getString('end_date').substring(0, 10) === end && p.getInt('order') === i) continue;
+				p.set('start_date', starts[i] + ' 00:00:00.000Z');
+				p.set('end_date', end + ' 00:00:00.000Z');
+				p.set('order', i);
+				e.app.save(p);
+			}
+		}
+	}
+
 	let days;
 	try {
 		days = e.app.findRecordsByFilter('days', 'trip = {:tripId}', '+date', 0, 0, { tripId: tripId });
@@ -138,6 +260,40 @@ onRecordUpdateRequest((e) => {
 	e.next();
 
 	const tripId = e.record.getString('trip');
+	// #411 — retile the trip's phases (ADR-0021 boundary model) before
+	// bucketing: sort by start, the first starts at the trip start, each end is
+	// the next start (the shared travel day), the last ends at the trip end,
+	// order = position. Sibling writes use e.app.save, which fires no request
+	// hooks (no recursion), and only when something differs.
+	{
+		let tripRec = null;
+		try {
+			tripRec = e.app.findRecordById('trips', tripId);
+		} catch (_) {}
+		const tStart = tripRec ? tripRec.getString('start_date').substring(0, 10) : '';
+		const tEnd = tripRec ? tripRec.getString('end_date').substring(0, 10) : '';
+		if (tStart && tEnd) {
+			let found = [];
+			try {
+				found = e.app.findRecordsByFilter('phases', 'trip = {:t}', '', 0, 0, { t: tripId });
+			} catch (_) {}
+			const ps = [];
+			for (const p of found) ps.push(p);
+			const startOf = (p) => p.getString('start_date').substring(0, 10);
+			ps.sort((a, b) => (startOf(a) < startOf(b) ? -1 : startOf(a) > startOf(b) ? 1 : 0));
+			const starts = ps.map((p, i) => (i === 0 ? tStart : startOf(p)));
+			for (let i = 0; i < ps.length; i++) {
+				const end = i < ps.length - 1 ? starts[i + 1] : tEnd;
+				const p = ps[i];
+				if (startOf(p) === starts[i] && p.getString('end_date').substring(0, 10) === end && p.getInt('order') === i) continue;
+				p.set('start_date', starts[i] + ' 00:00:00.000Z');
+				p.set('end_date', end + ' 00:00:00.000Z');
+				p.set('order', i);
+				e.app.save(p);
+			}
+		}
+	}
+
 	let days;
 	try {
 		days = e.app.findRecordsByFilter('days', 'trip = {:tripId}', '+date', 0, 0, { tripId: tripId });
@@ -226,6 +382,40 @@ onRecordDeleteRequest((e) => {
 	}
 
 	e.next();
+
+	// #411 — retile the trip's phases (ADR-0021 boundary model) before
+	// bucketing: sort by start, the first starts at the trip start, each end is
+	// the next start (the shared travel day), the last ends at the trip end,
+	// order = position. Sibling writes use e.app.save, which fires no request
+	// hooks (no recursion), and only when something differs.
+	{
+		let tripRec = null;
+		try {
+			tripRec = e.app.findRecordById('trips', tripId);
+		} catch (_) {}
+		const tStart = tripRec ? tripRec.getString('start_date').substring(0, 10) : '';
+		const tEnd = tripRec ? tripRec.getString('end_date').substring(0, 10) : '';
+		if (tStart && tEnd) {
+			let found = [];
+			try {
+				found = e.app.findRecordsByFilter('phases', 'trip = {:t}', '', 0, 0, { t: tripId });
+			} catch (_) {}
+			const ps = [];
+			for (const p of found) ps.push(p);
+			const startOf = (p) => p.getString('start_date').substring(0, 10);
+			ps.sort((a, b) => (startOf(a) < startOf(b) ? -1 : startOf(a) > startOf(b) ? 1 : 0));
+			const starts = ps.map((p, i) => (i === 0 ? tStart : startOf(p)));
+			for (let i = 0; i < ps.length; i++) {
+				const end = i < ps.length - 1 ? starts[i + 1] : tEnd;
+				const p = ps[i];
+				if (startOf(p) === starts[i] && p.getString('end_date').substring(0, 10) === end && p.getInt('order') === i) continue;
+				p.set('start_date', starts[i] + ' 00:00:00.000Z');
+				p.set('end_date', end + ' 00:00:00.000Z');
+				p.set('order', i);
+				e.app.save(p);
+			}
+		}
+	}
 
 	let days;
 	try {

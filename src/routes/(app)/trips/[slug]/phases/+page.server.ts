@@ -2,7 +2,6 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Item, Phase, Vote } from '$lib/types';
 import { validateNewPhaseStart, validateMovePhaseStart, retilePhases, toDay } from '$lib/itinerary/phase-tiling';
-import { applyRetile } from '$lib/itinerary/phase-tiling.server';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
 	const { trip, membership, phases } = await parent();
@@ -59,7 +58,8 @@ export const actions: Actions = {
 
 		// Boundary model (ADR-0021): a phase is defined by its start day; its end is
 		// derived from the next phase's start. Validate the start splits an existing
-		// segment; applyRetile then recomputes every phase's end + order.
+		// segment (for an in-context error); phases.pb.js re-validates and retiles
+		// every phase's end + order (#411).
 		const existing = await locals.pb.collection('phases').getFullList({
 			filter: `trip = "${trip.id}"`,
 			fields: 'start_date'
@@ -73,8 +73,7 @@ export const actions: Actions = {
 		if (validationError) return fail(400, { error: validationError });
 
 		try {
-			// Placeholder end = trip end; applyRetile immediately corrects it to the
-			// next phase's start. order is likewise corrected by applyRetile.
+			// end_date / order are derived by phases.pb.js (#411); these are placeholders.
 			await locals.pb.collection('phases').create({
 				trip: trip.id,
 				name,
@@ -84,7 +83,6 @@ export const actions: Actions = {
 				end_date: tripEnd + ' 00:00:00.000Z',
 				order: 0
 			});
-			await applyRetile(locals.pb, trip.id, tripEnd);
 			return { success: true };
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : 'Failed to create phase.';
@@ -120,7 +118,6 @@ export const actions: Actions = {
 			await locals.pb
 				.collection('phases')
 				.update(phaseId, { start_date: toDay(startDate) + ' 00:00:00.000Z' });
-			await applyRetile(locals.pb, trip.id, tripEnd);
 			return { success: true };
 		} catch (err: unknown) {
 			return fail(500, { error: err instanceof Error ? err.message : 'Failed to move boundary.' });
@@ -174,19 +171,10 @@ export const actions: Actions = {
 				}
 			}
 
-			// Deleting the FIRST phase: the next phase must extend back to cover the
-			// trip start (retilePhases adjusts ends, not starts), or days at the trip
-			// head are left phase-less. Pull the target's start to the deleted phase's
-			// start (= the trip start). Non-first deletes merge via the previous
-			// phase's end growing in applyRetile, so no start change is needed there.
-			if (idx === 0 && target) {
-				await locals.pb.collection('phases').update(target.id, {
-					start_date: tiled[idx].start + ' 00:00:00.000Z'
-				});
-			}
-
+			// The merge itself (the previous phase's end grows; on a first-phase delete
+			// the next phase is pulled back to the trip start) is phases.pb.js's retile
+			// after the delete (#411).
 			await locals.pb.collection('phases').delete(phaseId);
-			await applyRetile(locals.pb, trip.id, tripEnd);
 			return { success: true };
 		} catch (err: unknown) {
 			// #196 — the delete hook throws "Move N ideas first" when the phase still

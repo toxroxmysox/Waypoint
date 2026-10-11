@@ -82,3 +82,30 @@ onRecordDeleteRequest((e) => {
 
 	e.next();
 }, 'settlements');
+
+// ---------------------------------------------------------------------------
+// #411 — cross-trip references. Every relation that names another trip-scoped
+// record must point into this record's own trip. onRecordValidate, so admin
+// saves are checked too. On update only changed fields are checked. Empty
+// relation values are absent, not foreign ids. goja: helpers inlined.
+// ---------------------------------------------------------------------------
+onRecordValidate((e) => {
+	const r = e.record;
+	const tripId = r.getString('trip');
+	const isNew = r.isNew();
+	const changed = (f) => isNew || r.getString(f) !== r.original().getString(f);
+	const sameTrip = (collection, id) => {
+		try {
+			return e.app.findRecordById(collection, id).getString('trip') === tripId;
+		} catch (_) {
+			return false;
+		}
+	};
+	for (const f of ['from_member', 'to_member']) {
+		const id = r.getString(f);
+		if (id && (changed(f) || changed('trip')) && !sameTrip('trip_members', id)) {
+			throw new BadRequestError("That member isn't on this trip.");
+		}
+	}
+	e.next();
+}, 'settlements');

@@ -5,6 +5,8 @@ import { cloneChecklistPayloads } from '$lib/itinerary/clone-checklists';
 import { fetchManualChecklists } from '$lib/itinerary/checklist-loaders';
 import { cloneItemPlacement } from '$lib/itinerary/clone-items';
 import { shiftStoredDays } from '$lib/shell/trip-time';
+import { planImportPhases } from '$lib/portability/import';
+import { sanitizeItemSpan } from '$lib/itinerary/item-span';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
 	const { trip, membership, phases } = await parent();
@@ -99,21 +101,54 @@ export const actions: Actions = {
 					filter: `trip = "${sourceTripRecord.id}"`,
 					sort: 'order'
 				});
-				for (const phase of sourcePhases) {
-					const newPhase = await locals.pb.collection('phases').create({
-						trip: newTrip.id,
-						name: phase.name,
-						location: phase.location,
-						country_code: phase.country_code,
-						start_date: shiftDate(phase.start_date),
-						end_date: shiftDate(phase.end_date),
-						order: phase.order
-					});
-					phaseIdMap.set(phase.id, newPhase.id);
+				// Phases tile the trip (ADR-0021) and PB enforces it (#411): the trips
+				// create hook already seeded Phase 1 at the trip start, so the first
+				// source phase retargets it, the rest are created by shifted start, and a
+				// start that can't tile in the new range (a shorter clone) folds into the
+				// phase covering that day. Same plan as import.
+				const seeded = await locals.pb.collection('phases').getFullList<Phase>({
+					filter: `trip = "${newTrip.id}"`,
+					sort: 'order'
+				});
+				const firstPhaseId = seeded[0].id;
+				const shifted = sourcePhases.map((p) => ({
+					name: p.name,
+					location: p.location || '',
+					country_code: p.country_code || '',
+					start_date: shiftDate(p.start_date),
+					end_date: shiftDate(p.end_date),
+					order: p.order
+				}));
+				const sourceIdOf = new Map(shifted.map((p, i) => [p, sourcePhases[i].id]));
+				const idByStart = new Map<string, string>([[startDate, firstPhaseId]]);
+				for (const step of planImportPhases(shifted, startDate, endDate)) {
+					const sourceId = sourceIdOf.get(step.phase)!;
+					const fields = {
+						name: step.phase.name,
+						location: step.phase.location,
+						country_code: step.phase.country_code
+					};
+					if (step.action === 'first') {
+						await locals.pb.collection('phases').update(firstPhaseId, fields);
+						phaseIdMap.set(sourceId, firstPhaseId);
+					} else if (step.action === 'fold') {
+						phaseIdMap.set(sourceId, idByStart.get(step.intoStart!) ?? firstPhaseId);
+					} else {
+						const created = await locals.pb.collection('phases').create({
+							trip: newTrip.id,
+							...fields,
+							start_date: step.start + ' 00:00:00.000Z',
+							end_date: endDate + ' 00:00:00.000Z',
+							order: 0
+						});
+						idByStart.set(step.start, created.id);
+						phaseIdMap.set(sourceId, created.id);
+					}
 				}
 			}
 
 			const dayIdMap = new Map<string, string>();
+			const dayDateById = new Map<string, string>(); // clone day id → 'YYYY-MM-DD'
 			if (includePhases) {
 				// The trips.pb.js create hook already seeded a day record for every
 				// date in newTrip's range (and bucketed phases by date overlap). The
@@ -153,6 +188,7 @@ export const actions: Actions = {
 							});
 						}
 						dayIdMap.set(day.id, existing.id);
+						dayDateById.set(existing.id, dateKey);
 					} else {
 						const newDay = await locals.pb.collection('days').create<Day>({
 							trip: newTrip.id,
@@ -162,6 +198,7 @@ export const actions: Actions = {
 						});
 						targetByDate.set(dateKey, newDay);
 						dayIdMap.set(day.id, newDay.id);
+						dayDateById.set(newDay.id, dateKey);
 					}
 				}
 			}
@@ -170,6 +207,12 @@ export const actions: Actions = {
 				const sourceItems = await locals.pb.collection('items').getFullList<Item>({
 					filter: `trip = "${sourceTripRecord.id}"`,
 					sort: 'sort_order'
+				});
+				// #411 — a parked item needs a phase: its mapped one, else the clone's first.
+				const [firstPhase] = await locals.pb.collection('phases').getFullList<Phase>({
+					filter: `trip = "${newTrip.id}"`,
+					sort: 'start_date',
+					fields: 'id'
 				});
 				const membership = await locals.pb
 					.collection('trip_members')
@@ -186,7 +229,8 @@ export const actions: Actions = {
 					const placement = cloneItemPlacement({
 						sourceStatus: item.status,
 						mappedDay: dayIdMap.get(item.day) || '',
-						mappedPhase: phaseIdMap.get(item.phase) || ''
+						mappedPhase: phaseIdMap.get(item.phase) || '',
+						fallbackPhase: firstPhase?.id || ''
 					});
 					// Parking-lot items carry no clock anchor (mirrors pushToParking /
 					// move-item): an unscheduled clone is a clean idea, not a timed item
@@ -207,7 +251,12 @@ export const actions: Actions = {
 						// #497 — times shift with the days, or Now sees last year's dates.
 						start_time: isParked ? '' : shiftStoredDays(item.start_time, offsetDays),
 						end_time: isParked ? '' : shiftStoredDays(item.end_time, offsetDays),
-						end_date: !isParked && item.end_date ? shiftDate(item.end_date) : '',
+						// #411 — keep the span only where it still holds (after the day, within
+						// the clone's range); items.pb.js refuses one that doesn't.
+						end_date:
+							!isParked && item.end_date
+								? sanitizeItemSpan(dayDateById.get(placement.day), shiftDate(item.end_date), endDate)
+								: '',
 						status: placement.status,
 						booked: false,
 						confirmation_codes: [],
