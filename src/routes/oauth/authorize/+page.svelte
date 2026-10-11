@@ -12,6 +12,13 @@
 	const otpId = $derived((form?.otpId as string) ?? '');
 	const email = $derived((form?.email as string) ?? '');
 	const otp = otpAutoSubmit();
+
+	// One post per form: auto-submit, iOS code autofill and a tap can all fire.
+	let submitting = $state(false);
+	function once(e: SubmitEvent) {
+		if (submitting) e.preventDefault();
+		submitting = true;
+	}
 </script>
 
 <svelte:head><title>Connect to Waypoint</title></svelte:head>
@@ -36,7 +43,7 @@
 		{/if}
 
 		{#if !otpId}
-			<form method="POST" action="?/requestOTP">
+			<form method="POST" action="?/requestOTP" onsubmit={once}>
 				<input type="hidden" name="req" value={req} />
 				<label for="email" class="text-ink-soft block text-sm font-medium">Email</label>
 				<input
@@ -53,7 +60,7 @@
 				<Button type="submit" variant="moss" size="lg" class="mt-4 w-full">Send code</Button>
 			</form>
 		{:else}
-			<form method="POST" action="?/verifyOTP">
+			<form method="POST" action="?/verifyOTP" onsubmit={once}>
 				<input type="hidden" name="req" value={req} />
 				<input type="hidden" name="otpId" value={otpId} />
 				<input type="hidden" name="email" value={email} />
@@ -68,7 +75,7 @@
 					enterkeyhint="go"
 					maxlength="6"
 					pattern={'[0-9]{6}'}
-					use:otp.action={false}
+					use:otp.action={submitting}
 					class="border-line bg-surface text-ink font-mono mt-1 block w-full rounded-md border px-3 py-2 text-center text-2xl tracking-[0.5em]"
 					placeholder="000000"
 				/>

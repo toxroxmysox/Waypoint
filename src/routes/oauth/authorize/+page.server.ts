@@ -6,7 +6,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { createPb } from '$lib/shell/pb';
 import { resolveClient } from '$lib/server/mcp/oauth/clients';
-import { createPending, getPending } from '$lib/server/mcp/oauth/pending';
+import { completedRedirect, createPending, getPending } from '$lib/server/mcp/oauth/pending';
 import { appNameOf, completeAuthorize } from '$lib/server/mcp/oauth/authorize';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -52,7 +52,11 @@ export const actions: Actions = {
 		const req = data.get('req')?.toString() ?? '';
 		const email = data.get('email')?.toString().trim().toLowerCase() ?? '';
 		const pending = getPending(req);
-		if (!pending) return fail(400, { req, error: EXPIRED });
+		if (!pending) {
+			const done = completedRedirect(req);
+			if (done) redirect(303, done);
+			return fail(400, { req, error: EXPIRED });
+		}
 		const appName = appNameOf(pending);
 		if (!email) return fail(400, { req, appName, error: 'Email is required.' });
 		try {
@@ -70,7 +74,11 @@ export const actions: Actions = {
 		const email = data.get('email')?.toString() ?? '';
 		const code = data.get('code')?.toString().trim() ?? '';
 		const pending = getPending(req);
-		if (!pending) return fail(400, { req, error: EXPIRED });
+		if (!pending) {
+			const done = completedRedirect(req);
+			if (done) redirect(303, done);
+			return fail(400, { req, error: EXPIRED });
+		}
 		const appName = appNameOf(pending);
 
 		const pb = createPb();
