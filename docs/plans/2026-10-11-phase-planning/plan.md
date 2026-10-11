@@ -118,7 +118,7 @@
 
 **Interfaces:**
 - Produces:
-  - `NotesEditor` props: `{ notes: string; action: string /* e.g. '?/updateNotes' */; canEdit: boolean; emptyPrompt: string /* 'Add phase notes' */; savedToast?: string /* default 'Notes saved' */ }`. Read mode shows full text (`whitespace-pre-wrap`); empty + `canEdit` shows the prompt as a button; editing = textarea + Save/Cancel via `use:enhance`; posts field `notes`. Hidden entirely when empty and `!canEdit`.
+  - `NotesEditor` props: `{ notes: string; action: string /* e.g. '?/updateNotes' */; canEdit: boolean; emptyPrompt: string /* 'Add phase notes' */; savedToast?: string /* default 'Notes saved' */ }`. Read mode shows the full text (`whitespace-pre-wrap`) with **no label** — no "Trip notes"/"Phase notes" heading — plus a small pencil icon button (`aria-label="Edit notes"`, ≥44px target) when `canEdit`; empty + `canEdit` shows only the prompt (`Add trip notes` / `Add phase notes` / `Add day notes`) as a button; editing = textarea + Save/Cancel via `use:enhance`; posts field `notes`. Hidden entirely when empty and `!canEdit`.
   - `interface LevelChip { label: string; href: string; sub?: string; filled?: boolean; travel?: boolean }`
   - `LevelHeader` props: `{ title: string; place?: string; span: string; meta?: string /* e.g. timezone */; href?: string /* whole identity block becomes one link */; chips?: LevelChip[]; notes?: Snippet; actions?: Snippet; size?: 'page' | 'card' }`. Chips render outside the `href` link (own targets); travel chips dashed with `⇄`; `filled` renders a dot.
 - [ ] **Step 1: Failing e2e** — `day notes save from the header`: open a seeded day, click **Edit**, type, Save, reload → text persists; viewer sees no Edit.

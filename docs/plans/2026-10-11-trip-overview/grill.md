@@ -44,6 +44,7 @@ The Overview's job is to show the hierarchy and let you jump to anything fast.
 - **The Overview drops** whole-trip lists, per-phase lists, Flights & stays, and the Capture ideas link. This reverses the 2026-10-10 placement of Flights & stays below the itinerary.
 - **The sub-tabs stay** under the nav bar, above the trip header (as today).
 - **Phase notes show on the Overview's phase cards**, in full.
+- **Notes carry no label when filled** (Scott, mockup review): trip, phase and day notes show as plain text with a pencil edit button; only an empty notes block shows its prompt ("Add trip notes").
 
 ## Testing Decisions
 
