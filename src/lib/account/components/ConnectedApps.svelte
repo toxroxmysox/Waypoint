@@ -9,6 +9,15 @@
 	import { formatCalendarDate } from '$lib/shell/format';
 	import { toast } from '$lib/shell/stores/toast';
 
+	interface AiChange {
+		id: string;
+		quote: string;
+		created: string;
+		reverted: boolean;
+		trip: string;
+		count: number;
+	}
+
 	interface Connection {
 		id: string;
 		client_name: string;
@@ -16,8 +25,16 @@
 		last_used_at: string;
 	}
 
-	let { connections }: { connections: Connection[] } = $props();
+	let { connections, aiChanges = [] }: { connections: Connection[]; aiChanges?: AiChange[] } = $props();
 	let pending = $state('');
+
+	// #503 — created is a real instant: show it in the viewer's zone, as "9:40 am".
+	const when = (d: string) => {
+		const t = new Date(d.replace(' ', 'T'));
+		const day = t.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+		const clock = t.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toLowerCase();
+		return `${day}, ${clock}`;
+	};
 
 	const ago = (d: string) => {
 		const r = relativeTime(d);
@@ -61,6 +78,46 @@
 					</li>
 				{/each}
 			</ul>
+		{/if}
+
+		{#if aiChanges.length}
+			<details class="border-line border-t pt-3">
+				<summary class="text-ink cursor-pointer text-sm font-medium">Recent AI changes</summary>
+				<ul class="divide-line mt-2 divide-y">
+					{#each aiChanges as a (a.id)}
+						<li class="flex items-center justify-between gap-3 py-2">
+							<div class="min-w-0">
+								<p class="text-ink text-sm">“{a.quote}”</p>
+								<p class="text-ink-muted text-[12px]">
+									{a.trip ? `${a.trip} · ` : ''}{a.count} change{a.count === 1 ? '' : 's'} · {when(a.created)}
+								</p>
+							</div>
+							{#if a.reverted}
+								<span class="text-ink-muted shrink-0 text-[12px]">Undone</span>
+							{:else}
+								<form
+									method="POST"
+									action="?/revertAiChange"
+									use:enhance={() => {
+										pending = a.id;
+										return async ({ result, update }) => {
+											pending = '';
+											if (result.type === 'success') {
+												const skipped = (result.data?.skipped as string[] | undefined) ?? [];
+												toast.show(skipped.length ? `Undone. Left as is: ${skipped.join('; ')}` : 'Undone');
+											}
+											await update();
+										};
+									}}
+								>
+									<input type="hidden" name="id" value={a.id} />
+									<Button type="submit" variant="ghost" size="sm" loading={pending === a.id}>Revert</Button>
+								</form>
+							{/if}
+						</li>
+					{/each}
+				</ul>
+			</details>
 		{/if}
 	</section>
 </Card>

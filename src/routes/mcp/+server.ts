@@ -28,7 +28,12 @@ const handle: RequestHandler = async ({ request, url }) => {
 		.collection('users')
 		.getOne(grant.userId, { fields: 'id,name', requestKey: null })
 		.catch(() => ({ id: grant.userId, name: '' }));
-	const server = buildServer({ pb, user: { id: user.id, name: (user.name as string) || 'member' }, now: new Date() });
+	const server = buildServer({
+		pb,
+		user: { id: user.id, name: (user.name as string) || 'member' },
+		now: new Date(),
+		connectionId: grant.connectionId
+	});
 	const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
 	await server.connect(transport);
 	return transport.handleRequest(request);

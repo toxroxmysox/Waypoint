@@ -147,3 +147,59 @@ onRecordDeleteRequest((e) => {
 
 	e.next();
 }, 'expenses');
+
+// ---------------------------------------------------------------------------
+// #411 — cross-trip references. Every relation that names another trip-scoped
+// record must point into this record's own trip. onRecordValidate, so admin
+// saves are checked too. On update only changed fields are checked. Empty
+// relation values are absent, not foreign ids. goja: helpers inlined.
+// ---------------------------------------------------------------------------
+onRecordValidate((e) => {
+	const r = e.record;
+	const tripId = r.getString('trip');
+	const isNew = r.isNew();
+	const changed = (f) => isNew || r.getString(f) !== r.original().getString(f);
+	const sameTrip = (collection, id) => {
+		try {
+			return e.app.findRecordById(collection, id).getString('trip') === tripId;
+		} catch (_) {
+			return false;
+		}
+	};
+	const M = "That member isn't on this trip.";
+	const paidBy = r.getString('paid_by');
+	if (paidBy && (changed('paid_by') || changed('trip')) && !sameTrip('trip_members', paidBy)) throw new BadRequestError(M);
+	const linked = r.getString('linked_item');
+	if (linked && (changed('linked_item') || changed('trip')) && !sameTrip('items', linked)) {
+		throw new BadRequestError("That item isn't on this trip.");
+	}
+	if (changed('split_data') || changed('split_mode') || changed('trip')) {
+		let splitData = r.get('split_data');
+		// PB JSON fields read back as a byte array (or string) in hooks.
+		if (splitData && typeof splitData === 'object' && typeof splitData.length === 'number') {
+			try {
+				splitData = JSON.parse(String.fromCharCode.apply(null, splitData));
+			} catch (_) {
+				splitData = null;
+			}
+		} else if (typeof splitData === 'string') {
+			try {
+				splitData = JSON.parse(splitData);
+			} catch (_) {
+				splitData = null;
+			}
+		}
+		const ids = [];
+		if (splitData && Array.isArray(splitData.members)) {
+			for (let i = 0; i < splitData.members.length; i++) ids.push('' + splitData.members[i]);
+		}
+		if (splitData && splitData.amounts && typeof splitData.amounts === 'object') {
+			const keys = Object.keys(splitData.amounts);
+			for (let i = 0; i < keys.length; i++) ids.push('' + keys[i]);
+		}
+		for (let i = 0; i < ids.length; i++) {
+			if (ids[i] && !sameTrip('trip_members', ids[i])) throw new BadRequestError(M);
+		}
+	}
+	e.next();
+}, 'expenses');

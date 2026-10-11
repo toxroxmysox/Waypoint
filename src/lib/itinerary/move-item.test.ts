@@ -57,6 +57,11 @@ describe('computeMovePatch — day cleared', () => {
 		expect(patch.sort_order).toBe(0);
 	});
 
+	it('drops the span when unscheduling (#411: an end_date needs a start day)', () => {
+		const patch = computeMovePatch({ currentStatus: 'planned', newDay: '', newPhase: 'ph1' });
+		expect(patch.end_date).toBe('');
+	});
+
 	it('done is preserved when the day is cleared (terminal, not auto-flipped)', () => {
 		const patch = computeMovePatch({ currentStatus: 'done', newDay: '', newPhase: 'ph1' });
 		expect(patch.status).toBe('done');

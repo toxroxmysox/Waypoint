@@ -353,3 +353,38 @@ routerAdd('POST', '/api/notifications/mark-read', (e) => {
 
 	return e.json(200, { ok: true });
 });
+
+// ---------------------------------------------------------------------------
+// #411 — Before update: the recipient may only mark read. The rule (0053) lets
+// the recipient PATCH any field; over REST only `read_at` may change. The bell's
+// /api/notifications/mark-read endpoint and the fan-out triggers save in admin
+// context and don't fire request hooks. Allowlist over the collection's current
+// fields so a future field is locked by default.
+// ---------------------------------------------------------------------------
+onRecordUpdateRequest((e) => {
+	if (e.hasSuperuserAuth()) {
+		e.next();
+		return;
+	}
+	const original = e.record.original();
+	// getString returns "" for multi-value fields (relation/select slices), so a
+	// slice is compared element by element; everything else by its string form.
+	const val = (r, f) => {
+		const v = r.get(f);
+		if (v && typeof v === 'object' && typeof v.length === 'number') {
+			const out = [];
+			for (let j = 0; j < v.length; j++) out.push('' + v[j]);
+			return out.join(',');
+		}
+		return r.getString(f);
+	};
+	const fieldNames = e.record.collection().fields.fieldNames();
+	for (let i = 0; i < fieldNames.length; i++) {
+		const f = '' + fieldNames[i];
+		if (f === 'read_at' || f === 'updated') continue;
+		if (val(e.record, f) !== val(original, f)) {
+			throw new BadRequestError('Only read state can change.');
+		}
+	}
+	e.next();
+}, 'notifications');

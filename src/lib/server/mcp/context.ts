@@ -9,17 +9,40 @@ export interface McpContext {
 	pb: PocketBase;
 	user: { id: string; name: string };
 	now: Date;
+	/** #503 — the mcp_connections id; a proposal is bound to the connection that made it. */
+	connectionId: string;
 }
 
 export interface TripRef {
 	trip: Trip;
 	role: MemberRole;
 	memberId: string;
+	/** AI can read this trip (ai_access). */
 	open: boolean;
+	/** #503 / ADR-0025 §6 — AI can make changes: read on, ai_write on, not a viewer. */
+	canWrite: boolean;
+}
+
+export function tripRef(trip: Trip, role: MemberRole, memberId: string): TripRef {
+	const open = trip.ai_access !== false;
+	return { trip, role, memberId, open, canWrite: open && trip.ai_write !== false && role !== 'viewer' };
 }
 
 // ADR-0024 §5 layer 1: no file fields (cover_image), no share token.
-const TRIP_FIELDS = ['id', 'slug', 'title', 'start_date', 'end_date', 'timezone', 'location_summary', 'countries', 'ai_access', 'archived'];
+const TRIP_FIELDS = [
+	'id',
+	'slug',
+	'title',
+	'start_date',
+	'end_date',
+	'timezone',
+	'location_summary',
+	'countries',
+	'ai_access',
+	'ai_write',
+	'auto_approve_suggestions',
+	'archived'
+];
 
 /** Every trip the user is an active member of, newest start first. */
 export async function myTrips(ctx: McpContext): Promise<TripRef[]> {
@@ -31,10 +54,7 @@ export async function myTrips(ctx: McpContext): Promise<TripRef[]> {
 	});
 	return rows
 		.filter((m) => m.expand?.trip)
-		.map((m) => {
-			const trip = m.expand!.trip as Trip;
-			return { trip, role: m.role as MemberRole, memberId: m.id, open: trip.ai_access !== false };
-		})
+		.map((m) => tripRef(m.expand!.trip as Trip, m.role as MemberRole, m.id))
 		.sort((a, b) => (b.trip.start_date || '9999').localeCompare(a.trip.start_date || '9999'));
 }
 

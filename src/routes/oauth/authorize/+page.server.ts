@@ -35,6 +35,10 @@ export const load: PageServerLoad = async ({ url }) => {
 	};
 	if (q.get('response_type') !== 'code') back('unsupported_response_type', 'code only');
 	if (q.get('code_challenge_method') !== 'S256' || !q.get('code_challenge')) back('invalid_request', 'PKCE S256 required');
+	// #512 — RFC 8707: Waypoint serves one resource, its MCP endpoint. Absent is
+	// fine (older clients); anything else is a token meant for someone else.
+	const resource = q.get('resource') ?? '';
+	if (resource && resource.replace(/\/$/, '') !== `${url.origin}/mcp`) back('invalid_target', `resource must be ${url.origin}/mcp`);
 
 	const pending = createPending({
 		client,

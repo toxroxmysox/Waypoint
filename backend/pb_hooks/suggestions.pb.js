@@ -135,6 +135,27 @@ routerAdd('POST', '/api/suggestions/create', (e) => {
 		item.set('free_cancellation', payload.free_cancellation === true);
 		item.set('cost_estimate_usd', Number(payload.cost_estimate_usd) || 0);
 		item.set('cost_actual_usd', Number(payload.cost_actual_usd) || 0);
+		// #411 — lossless: carry the span, timezones, place and booking fields too
+		// (same list in both builders: isolated sandbox). parent_item must be on this
+		// trip, else it's dropped (as #496 drops a foreign day/phase); items.pb.js
+		// then validates the result (end_date bounds) on save.
+		// A span needs a start day: a missing or scrubbed (#496) day drops it.
+		item.set('end_date', payload.day ? payload.end_date || '' : '');
+		item.set('start_tz', payload.start_tz || '');
+		item.set('end_tz', payload.end_tz || '');
+		item.set('location_coords', payload.location_coords || null);
+		item.set('google_place_id', payload.google_place_id || '');
+		item.set('requires_booking', payload.requires_booking === true);
+		item.set('flight_number', payload.flight_number || '');
+		let parentId = payload.parent_item ? '' + payload.parent_item : '';
+		if (parentId) {
+			try {
+				if (e.app.findRecordById('items', parentId).getString('trip') !== '' + tripId) parentId = '';
+			} catch (_) {
+				parentId = '';
+			}
+		}
+		item.set('parent_item', parentId);
 		item.set('assigned_to', Array.isArray(payload.assigned_to) ? payload.assigned_to : []);
 		// #402 — not going is carried like assigned_to, but it is self-only: keep
 		// only the author's (the caller's) own answer. items.pb.js keeps the two
@@ -151,7 +172,14 @@ routerAdd('POST', '/api/suggestions/create', (e) => {
 		item.set('sort_order', 0);
 		item.set('created_by', callerMember.id);
 		item.set('status', payload.day ? 'planned' : 'unplanned');
-		e.app.save(item);
+		// #411 — items.pb.js validates the item. If it refuses, drop the just-saved
+		// auto-approved suggestion so no approved-with-no-item row is left behind.
+		try {
+			e.app.save(item);
+		} catch (err) {
+			e.app.delete(suggestion);
+			throw err;
+		}
 		itemId = item.id;
 
 		// #268 / ADR-0016 — persist the submitted confirmation codes as `kind: 'code'`
@@ -333,6 +361,10 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 	const authorMemberId = suggestion.get('author');
 
 	const now = new Date().toISOString().replace('T', ' ').replace('Z', '') + 'Z';
+	// #411 — kept to undo the approval if items.pb.js refuses the item below.
+	const prevStatus = suggestion.getString('status');
+	const prevReviewedBy = suggestion.getString('reviewed_by');
+	const prevReviewedAt = suggestion.getString('reviewed_at');
 	suggestion.set('status', action === 'approve' ? 'approved' : 'rejected');
 	suggestion.set('reviewed_by', callerMember.id);
 	suggestion.set('reviewed_at', now);
@@ -439,6 +471,27 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 		item.set('free_cancellation', payload.free_cancellation === true);
 		item.set('cost_estimate_usd', Number(payload.cost_estimate_usd) || 0);
 		item.set('cost_actual_usd', Number(payload.cost_actual_usd) || 0);
+		// #411 — lossless: carry the span, timezones, place and booking fields too
+		// (same list in both builders: isolated sandbox). parent_item must be on this
+		// trip, else it's dropped (as #496 drops a foreign day/phase); items.pb.js
+		// then validates the result (end_date bounds) on save.
+		// A span needs a start day: a missing or scrubbed (#496) day drops it.
+		item.set('end_date', payload.day ? payload.end_date || '' : '');
+		item.set('start_tz', payload.start_tz || '');
+		item.set('end_tz', payload.end_tz || '');
+		item.set('location_coords', payload.location_coords || null);
+		item.set('google_place_id', payload.google_place_id || '');
+		item.set('requires_booking', payload.requires_booking === true);
+		item.set('flight_number', payload.flight_number || '');
+		let parentId = payload.parent_item ? '' + payload.parent_item : '';
+		if (parentId) {
+			try {
+				if (e.app.findRecordById('items', parentId).getString('trip') !== '' + tripId) parentId = '';
+			} catch (_) {
+				parentId = '';
+			}
+		}
+		item.set('parent_item', parentId);
 		item.set('assigned_to', Array.isArray(payload.assigned_to) ? payload.assigned_to : []);
 		// #402 — not going is carried like assigned_to, but it is self-only: keep
 		// only the suggestion AUTHOR's own answer (never the reviewer's edit of
@@ -459,7 +512,17 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 		// went missing (data integrity), so created_by is never blank/wrong.
 		item.set('created_by', authorMemberId || callerMember.id);
 		item.set('status', payload.day ? 'planned' : 'unplanned');
-		e.app.save(item);
+		// #411 — items.pb.js validates the item (e.g. end_date past the trip end). If it
+		// refuses, undo the approval so the suggestion stays pending, not approved-with-no-item.
+		try {
+			e.app.save(item);
+		} catch (err) {
+			suggestion.set('status', prevStatus);
+			suggestion.set('reviewed_by', prevReviewedBy);
+			suggestion.set('reviewed_at', prevReviewedAt);
+			e.app.save(suggestion);
+			throw err;
+		}
 		itemId = item.id;
 		landingPhaseId = resolvedPhase;
 		landingDayId = payload.day || '';

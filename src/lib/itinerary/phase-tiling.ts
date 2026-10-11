@@ -2,7 +2,8 @@
  * Phase tiling core (ADR-0021, #323). Boundary model: a phase is defined by its
  * start day; its end is derived as the NEXT phase's start (the shared travel/
  * boundary day), or the trip end for the last phase. Pure — Vitest-covered.
- * The thin server wrapper (phase-tiling.server.ts) persists the computed layout.
+ * PB enforces the same layout on every write (phases.pb.js + trips.pb.js, #411);
+ * these stay the spec and the client-side pre-check.
  */
 
 /** Normalise a PB date or datetime to a bare 'YYYY-MM-DD' day. */
@@ -27,7 +28,7 @@ export interface TiledPhase {
  * NEXT phase's start (the shared travel/boundary day); the last phase's end is
  * the trip end; order = position. Single source of truth for a trip's phase
  * ranges — phases store only their start meaningfully; end + order are derived
- * from this and persisted by applyRetile (see phase-tiling.server).
+ * from this; phases.pb.js persists it (#411).
  */
 export function retilePhases(phases: PhaseStart[], tripEnd: string): TiledPhase[] {
 	const sorted = phases

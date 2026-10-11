@@ -20,6 +20,8 @@ export interface Trip extends RecordModel {
 	auto_approve_suggestions: boolean;
 	/** #502 / ADR-0024 — may members' connected AI read this trip. Default true. */
 	ai_access: boolean;
+	/** #503 / ADR-0025 §6 — may members' connected AI make changes (needs ai_access). Default true. */
+	ai_write?: boolean;
 	created_by: string;
 	archived: boolean;
 }

@@ -7,6 +7,7 @@ import { env } from '$env/dynamic/private';
 import { createPb } from '$lib/shell/pb';
 
 const IMPERSONATE_S = 900;
+const MAX_USERS = 100;
 
 let admin: Promise<PocketBase> | null = null;
 const users = new Map<string, { pb: PocketBase; exp: number }>();
@@ -28,11 +29,21 @@ export async function adminPb(): Promise<PocketBase> {
 	return admin;
 }
 
+/** #512 — drop expired clients; past the cap, the oldest go first. */
+export function pruneUserCache(m: Map<string, { pb: PocketBase; exp: number }>, now = Date.now(), cap = MAX_USERS): void {
+	for (const [k, v] of m) if (v.exp <= now) m.delete(k);
+	for (const k of m.keys()) {
+		if (m.size < cap) break;
+		m.delete(k);
+	}
+}
+
 /** A client authenticated as `userId`, valid ≥60 s from now. */
 export async function userPb(userId: string): Promise<PocketBase> {
 	const hit = users.get(userId);
 	if (hit && hit.exp - Date.now() > 60_000) return hit.pb;
 	const pb = await (await adminPb()).collection('users').impersonate(userId, IMPERSONATE_S);
+	pruneUserCache(users);
 	users.set(userId, { pb, exp: Date.now() + IMPERSONATE_S * 1000 });
 	return pb;
 }

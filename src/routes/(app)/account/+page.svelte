@@ -180,7 +180,7 @@
 		</form>
 	</Card>
 
-	<ConnectedApps connections={data.connections} />
+	<ConnectedApps connections={data.connections} aiChanges={data.aiChanges} />
 
 	<AppVersion />
 </main>

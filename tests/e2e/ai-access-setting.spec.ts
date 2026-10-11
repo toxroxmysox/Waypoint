@@ -64,7 +64,7 @@ test('owner turns AI Access off and on', async ({ browser }) => {
 	const { page, close } = await devLogin(browser, EMAILS.owner);
 	await page.goto(`${BASE}/trips/${SLUG}/settings`, { waitUntil: 'networkidle' });
 
-	const box = page.getByLabel('AI Access').filter({ visible: true });
+	const box = page.getByLabel('AI can read this trip').filter({ visible: true });
 	await expect(box).toBeChecked();
 	await expect(
 		page
@@ -80,8 +80,8 @@ test('owner turns AI Access off and on', async ({ browser }) => {
 	await expect.poll(async () => (await pb(ownerToken, 'GET', `/api/collections/trips/records/${tripId}`)).json.ai_access).toBe(false);
 
 	await page.reload({ waitUntil: 'networkidle' });
-	await expect(page.getByLabel('AI Access').filter({ visible: true })).not.toBeChecked();
-	await page.getByLabel('AI Access').filter({ visible: true }).check();
+	await expect(page.getByLabel('AI can read this trip').filter({ visible: true })).not.toBeChecked();
+	await page.getByLabel('AI can read this trip').filter({ visible: true }).check();
 	await page.getByRole('button', { name: 'Save changes' }).filter({ visible: true }).click();
 	await expect.poll(async () => (await pb(ownerToken, 'GET', `/api/collections/trips/records/${tripId}`)).json.ai_access).toBe(true);
 	await close();
@@ -128,4 +128,55 @@ test('traveler cannot change AI Access', async () => {
 	expect([400, 403]).toContain(res.status);
 	const after = await pb(ownerToken, 'GET', `/api/collections/trips/records/${tripId}`);
 	expect(after.json.ai_access).toBe(true);
+});
+
+// #503 / ADR-0025 §6 — AI Access splits into read and changes. Changes needs
+// read: with read off the changes switch greys out and its stored value stays.
+test('owner turns AI changes off while reading stays on', async ({ browser }) => {
+	const { page, close } = await devLogin(browser, EMAILS.owner);
+	await page.goto(`${BASE}/trips/${SLUG}/settings`, { waitUntil: 'networkidle' });
+
+	const read = () => page.getByLabel('AI can read this trip').filter({ visible: true });
+	const write = () => page.getByLabel('AI can make changes').filter({ visible: true });
+	const save = () => page.getByRole('button', { name: 'Save changes' }).filter({ visible: true });
+	const trip = async () => (await pb(ownerToken, 'GET', `/api/collections/trips/records/${tripId}`)).json;
+
+	await expect(read()).toBeChecked();
+	await expect(write()).toBeChecked();
+	await write().uncheck();
+	await save().click();
+	await expect.poll(async () => (await trip()).ai_write).toBe(false);
+	expect((await trip()).ai_access).toBe(true);
+
+	await page.reload({ waitUntil: 'networkidle' });
+	await expect(read()).toBeChecked();
+	await expect(write()).not.toBeChecked();
+
+	// Back on, then read off: changes greys out and keeps its stored value (true).
+	await write().check();
+	await save().click();
+	await expect.poll(async () => (await trip()).ai_write).toBe(true);
+	await page.reload({ waitUntil: 'networkidle' });
+	await read().uncheck();
+	await expect(write()).toBeDisabled();
+	await save().click();
+	await expect.poll(async () => (await trip()).ai_access).toBe(false);
+	expect((await trip()).ai_write).toBe(true);
+
+	// Restore for later specs.
+	await page.reload({ waitUntil: 'networkidle' });
+	await read().check();
+	await save().click();
+	await expect.poll(async () => (await trip()).ai_access).toBe(true);
+	await close();
+});
+
+test('traveler sees neither AI switch as editable', async ({ browser }) => {
+	const { page, close } = await devLogin(browser, EMAILS.traveler);
+	await page.goto(`${BASE}/trips/${SLUG}/settings`, { waitUntil: 'networkidle' });
+	await expect(page.getByLabel('AI can read this trip').filter({ visible: true })).toHaveCount(0);
+	await expect(page.getByLabel('AI can make changes').filter({ visible: true })).toHaveCount(0);
+	const res = await pb(await token(EMAILS.traveler), 'PATCH', `/api/collections/trips/records/${tripId}`, { ai_write: false });
+	expect([400, 403]).toContain(res.status);
+	await close();
 });

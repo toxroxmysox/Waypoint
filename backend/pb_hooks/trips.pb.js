@@ -34,7 +34,9 @@ onRecordUpdateRequest((e) => {
 		'public_share_token',
 		'auto_approve_suggestions',
 		// #502 / ADR-0024 §2 — AI Access is an owner/co_owner switch.
-		'ai_access'
+		'ai_access',
+		// #503 / ADR-0025 §6 — so is AI can make changes.
+		'ai_write'
 	];
 
 	let protectedChanged = false;
@@ -119,6 +121,8 @@ onRecordDeleteRequest((e) => {
 // in settings afterwards.
 onRecordCreate((e) => {
 	e.record.set('ai_access', true);
+	// #503 / ADR-0025 §6 — AI can make changes starts ON too.
+	e.record.set('ai_write', true);
 	e.next();
 }, 'trips');
 
@@ -132,6 +136,11 @@ onRecordCreateRequest((e) => {
 	const end = e.record.getString('end_date');
 	if ((start && !end) || (!start && end)) {
 		throw new BadRequestError('A trip needs both dates or neither.');
+	}
+	// #503 invariant audit — the form actions checked this; generic AI writes
+	// go straight to PB. Stored dates share one format, so strings compare.
+	if (start && end && start.substring(0, 10) > end.substring(0, 10)) {
+		throw new BadRequestError('The trip ends before it starts.');
 	}
 
 	// #395 — slug dedupe. idx_trips_slug is GLOBAL, but a caller-side probe runs
@@ -500,6 +509,10 @@ onRecordUpdateRequest((e) => {
 			'This trip already has dates — they can be changed, but not removed.'
 		);
 	}
+	// #503 invariant audit — end before start, as on create.
+	if (newStartDate && newEndDate && newStartDate.substring(0, 10) > newEndDate.substring(0, 10)) {
+		throw new BadRequestError('The trip ends before it starts.');
+	}
 
 	e.next();
 
@@ -526,6 +539,60 @@ onRecordUpdateRequest((e) => {
 			e.app.save(seedPhase);
 		} catch (_) {
 			// Best-effort, matching the create hook: still generate days below.
+		}
+	}
+
+	// --- #411: retile the phases to the new dates (ADR-0021) BEFORE the day
+	// work below. Phases that no longer fit are merged, as deleting a phase on
+	// the phases page does: every phase that starts on/before the new trip start
+	// except the last of them merges into it (it becomes the first, pinned to
+	// the trip start); every later phase that starts on/after the new trip end
+	// merges into its predecessor. A merged phase's items and checklists are
+	// re-homed to the phase it merges into before it's deleted (checklists
+	// cascade-delete with their phase). Then: ends = next start, last ends at
+	// the trip end, order = position. Admin saves: no request hooks fire.
+	{
+		const tStart = newStartDate.substring(0, 10);
+		const tEnd = newEndDate.substring(0, 10);
+		let found = [];
+		try {
+			found = e.app.findRecordsByFilter('phases', 'trip = {:t}', '', 0, 0, { t: e.record.id });
+		} catch (_) {}
+		const ps = [];
+		for (const p of found) ps.push(p);
+		const startOf = (p) => p.getString('start_date').substring(0, 10);
+		ps.sort((a, b) => (startOf(a) < startOf(b) ? -1 : startOf(a) > startOf(b) ? 1 : 0));
+		let firstIdx = 0;
+		for (let i = 0; i < ps.length; i++) if (startOf(ps[i]) <= tStart) firstIdx = i;
+		const kept = [];
+		const merges = [];
+		for (let i = 0; i < ps.length; i++) {
+			if (i < firstIdx) merges.push([ps[i], ps[firstIdx]]);
+			else if (i > firstIdx && startOf(ps[i]) >= tEnd) merges.push([ps[i], kept[kept.length - 1]]);
+			else kept.push(ps[i]);
+		}
+		for (const [from, into] of merges) {
+			for (const col of ['items', 'checklists']) {
+				let rows = [];
+				try {
+					rows = e.app.findRecordsByFilter(col, 'phase = {:p}', '', 0, 0, { p: from.id });
+				} catch (_) {}
+				for (const row of rows) {
+					row.set('phase', into.id);
+					e.app.save(row);
+				}
+			}
+			e.app.delete(from);
+		}
+		for (let i = 0; i < kept.length; i++) {
+			const p = kept[i];
+			const start = i === 0 ? tStart : startOf(p);
+			const end = i < kept.length - 1 ? startOf(kept[i + 1]) : tEnd;
+			if (startOf(p) === start && p.getString('end_date').substring(0, 10) === end && p.getInt('order') === i) continue;
+			p.set('start_date', start + ' 00:00:00.000Z');
+			p.set('end_date', end + ' 00:00:00.000Z');
+			p.set('order', i);
+			e.app.save(p);
 		}
 	}
 
@@ -586,28 +653,75 @@ onRecordUpdateRequest((e) => {
 		e.app.save(day);
 	}
 
+	// #411: the retile above moved phase ranges, so re-bucket the days that stay.
+	for (const [dateStr, day] of Object.entries(existingByDate)) {
+		if (!neededDates[dateStr]) continue;
+		const matched = [];
+		for (const phase of phases) {
+			const pStart = phase.getString('start_date');
+			const pEnd = phase.getString('end_date');
+			if (!pStart || !pEnd) continue;
+			if (dateStr >= pStart.substring(0, 10) && dateStr <= pEnd.substring(0, 10)) matched.push(phase.id);
+		}
+		const cur = [];
+		const raw = day.get('phases');
+		if (raw) for (let i = 0; i < raw.length; i++) cur.push('' + raw[i]);
+		if (cur.slice().sort().join(',') !== matched.slice().sort().join(',')) {
+			day.set('phases', matched);
+			e.app.save(day);
+		}
+	}
+
 	// Remove days outside the new range; unlink their items first so items
-	// become unscheduled rather than deleted.
+	// become unscheduled rather than deleted. #411: an unscheduled item must keep
+	// a phase (items.pb.js validates it; every idea surface is phase-scoped), so
+	// it keeps its own, else takes the phase covering that date.
+	// Its span goes with the day (end_date needs a start day); status → unplanned.
 	for (const [dateStr, day] of Object.entries(existingByDate)) {
 		if (neededDates[dateStr]) continue;
+		let items = [];
 		try {
-			const items = e.app.findRecordsByFilter(
-				'items',
-				'day = {:dayId}',
-				'',
-				0,
-				0,
-				{ dayId: day.id }
-			);
-			for (const item of items) {
-				item.set('day', '');
-				item.set('phase', '');
-				e.app.save(item);
-			}
+			items = e.app.findRecordsByFilter('items', 'day = {:dayId}', '', 0, 0, { dayId: day.id });
 		} catch (_) {
 			// No items to unlink
 		}
+		// The surviving phase covering this date (the last one starting on/before
+		// it), else the first. Read fresh: the retile above may have merged phases.
+		let fallbackPhase = '';
+		try {
+			const live = e.app.findRecordsByFilter('phases', 'trip = {:t}', '+start_date', 0, 0, { t: e.record.id });
+			for (const p of live) {
+				if (!fallbackPhase || p.getString('start_date').substring(0, 10) <= dateStr) fallbackPhase = p.id;
+			}
+		} catch (_) {}
+		for (const item of items) {
+			item.set('day', '');
+			item.set('end_date', '');
+			if (!item.getString('phase')) item.set('phase', fallbackPhase);
+			e.app.save(item);
+		}
 		e.app.delete(day);
+	}
+
+	// #411: a span on a kept day can't run past the new trip end. Clamp it to the
+	// end; if that leaves it on/before its start day, it's a one-day item: drop it.
+	{
+		const endDay = newEndDate.substring(0, 10);
+		let spanning = [];
+		try {
+			spanning = e.app.findRecordsByFilter('items', 'trip = {:t} && end_date > {:e}', '', 0, 0, {
+				t: e.record.id,
+				e: endDay + ' 23:59:59.999Z'
+			});
+		} catch (_) {}
+		for (const item of spanning) {
+			let dayDate = '';
+			try {
+				dayDate = e.app.findRecordById('days', item.getString('day')).getString('date').substring(0, 10);
+			} catch (_) {}
+			item.set('end_date', dayDate && endDay > dayDate ? endDay + ' 00:00:00.000Z' : '');
+			e.app.save(item);
+		}
 	}
 
 	// --- Promotion follow-through (#270): re-home phase-less forming ideas.

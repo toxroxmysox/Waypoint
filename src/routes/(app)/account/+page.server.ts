@@ -1,6 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { pbFileUrl } from '$lib/shell/pb-file-url';
+import { revertChange } from '$lib/server/mcp/writes/revert';
 
 // /account ("Profile") — the first user-level settings surface (#104 / PRD #59).
 // Self-edit only; covered by the existing users.updateRule = self-only, so no
@@ -20,6 +21,18 @@ export const load: PageServerLoad = async ({ locals }) => {
 		.collection('mcp_connections')
 		.getFullList({ sort: '-created', fields: 'id,client_name,created,last_used_at' })
 		.catch(() => []);
+	// #503 — Recent AI changes: the last 30 days of this member's AI Changes
+	// (ai_changes list rule = own rows only), newest first.
+	const since = new Date(Date.now() - 30 * 86400_000).toISOString().replace('T', ' ');
+	const aiChanges = await locals.pb
+		.collection('ai_changes')
+		.getFullList({
+			filter: locals.pb.filter('created >= {:since}', { since }),
+			sort: '-created',
+			fields: 'id,quote,created,reverted_at,changes,expand.trip.title',
+			expand: 'trip'
+		})
+		.catch(() => []);
 	return {
 		profile: { id: user.id, name: user.name as string, avatar: user.avatar as string },
 		avatarUrl,
@@ -28,6 +41,14 @@ export const load: PageServerLoad = async ({ locals }) => {
 			client_name: c.client_name as string,
 			created: c.created as string,
 			last_used_at: c.last_used_at as string
+		})),
+		aiChanges: aiChanges.map((c) => ({
+			id: c.id,
+			quote: c.quote as string,
+			created: c.created as string,
+			reverted: !!c.reverted_at,
+			trip: (c.expand?.trip?.title as string) ?? '',
+			count: Array.isArray(c.changes) ? c.changes.length : 0
 		}))
 	};
 };
@@ -41,6 +62,17 @@ export const actions: Actions = {
 			return { disconnected: true };
 		} catch {
 			return fail(404, { disconnectError: 'That connection is already gone.' });
+		}
+	},
+
+	// #503 — Revert from Recent AI changes (same undo as chat's revert_change).
+	revertAiChange: async ({ request, locals }) => {
+		const id = (await request.formData()).get('id')?.toString() ?? '';
+		try {
+			const r = await revertChange(locals.pb, locals.user!.id, id);
+			return { reverted: id, skipped: r.skipped };
+		} catch (err) {
+			return fail(400, { revertError: (err as Error).message || 'Could not undo that change.' });
 		}
 	},
 
