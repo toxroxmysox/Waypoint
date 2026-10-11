@@ -49,6 +49,18 @@ function tripLocalHour(nowDt, tzRaw) {
 	}
 }
 
+// #522 — trip-local calendar date (YYYY-MM-DD), same tz rules as tripLocalHour.
+function tripLocalDate(nowDt, tzRaw) {
+	const tz = (tzRaw || '').trim();
+	const usable = tz === 'UTC' || (tz.indexOf('/') > 0 && tz.toLowerCase() !== 'local');
+	if (!usable) return nowDt.time().format('2006-01-02');
+	try {
+		return nowDt.time().in(new Timezone(tz)).format('2006-01-02');
+	} catch (_) {
+		return nowDt.time().format('2006-01-02');
+	}
+}
+
 // --- pure diff (port of src/lib/digest/digest-diff.ts) ----------------------
 
 function buildSignature(fields) {
@@ -126,6 +138,76 @@ function hasChanges(diff) {
 	);
 }
 
+// --- pure reminders (port of src/lib/digest/digest-reminders.ts) — #522 -----
+
+const BOOKING_LEADS = [60, 30, 14];
+const BRIEF_LEAD = 3;
+const CLOSEOUT_LAG = 3;
+
+function daysBetween(a, b) {
+	const pa = /^(\d{4})-(\d{2})-(\d{2})/.exec(a || '');
+	const pb = /^(\d{4})-(\d{2})-(\d{2})/.exec(b || '');
+	if (!pa || !pb) return NaN;
+	const ta = Date.UTC(+pa[1], +pa[2] - 1, +pa[3]);
+	const tb = Date.UTC(+pb[1], +pb[2] - 1, +pb[3]);
+	return Math.round((tb - ta) / 86400000);
+}
+
+function neededBy(item, tripStart) {
+	return item.dayDate || item.phaseStart || tripStart || '';
+}
+
+function byDateThenTitle(a, b) {
+	return a.date < b.date ? -1 : a.date > b.date ? 1 : a.title.localeCompare(b.title);
+}
+
+function composeReminders(input) {
+	const out = { booking: [], brief: null, closeout: false };
+	if (input.archived) return out;
+	const start = (input.tripStart || '').slice(0, 10);
+	const end = (input.tripEnd || '').slice(0, 10);
+
+	for (const item of input.items) {
+		if (!item.requiresBooking || item.booked) continue;
+		const date = neededBy(item, start).slice(0, 10);
+		const daysOut = daysBetween(input.today, date);
+		if (BOOKING_LEADS.indexOf(daysOut) !== -1) {
+			out.booking.push({ title: item.title, date: date, daysOut: daysOut, going: item.going.slice() });
+		}
+	}
+	out.booking.sort(byDateThenTitle);
+
+	if (start && daysBetween(input.today, start) === BRIEF_LEAD) {
+		const stays = [];
+		const travel = [];
+		const unbooked = [];
+		for (const item of input.items) {
+			const date = neededBy(item, start).slice(0, 10);
+			if (item.type === 'lodging') stays.push({ title: item.title, date: date });
+			else if (item.type === 'flight' || item.type === 'transportation') travel.push({ title: item.title, date: date });
+			if (item.requiresBooking && !item.booked) unbooked.push({ title: item.title, date: date });
+		}
+		stays.sort(byDateThenTitle);
+		travel.sort(byDateThenTitle);
+		unbooked.sort(byDateThenTitle);
+		out.brief = { start: start, stays: stays, travel: travel, unbooked: unbooked };
+	}
+
+	if (end && daysBetween(end, input.today) === CLOSEOUT_LAG) out.closeout = true;
+	return out;
+}
+
+function remindersFor(r, role, memberId) {
+	const planner = role === 'owner' || role === 'co_owner';
+	const booking =
+		role === 'viewer' ? [] : planner ? r.booking : r.booking.filter((b) => b.going.indexOf(memberId) !== -1);
+	return { booking: booking, brief: r.brief, closeout: planner && r.closeout };
+}
+
+function hasReminders(r) {
+	return !!r && (r.booking.length > 0 || !!r.brief || r.closeout);
+}
+
 // --- pure email render (port of src/lib/digest/digest-email.ts) -------------
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -150,6 +232,34 @@ function movedLine(entry) {
 	return entry.title + ' — ' + formatDigestDay(entry.fromDay) + ' → ' + formatDigestDay(entry.toDay);
 }
 
+function reminderGroups(section, base) {
+	const r = section.reminders;
+	if (!r) return [];
+	const groups = [];
+	if (r.booking.length > 0) {
+		groups.push([
+			'Still to book',
+			r.booking.map((b) => b.title + ' — needed ' + formatDigestDay(b.date) + ' (in ' + b.daysOut + ' days)')
+		]);
+	}
+	if (r.brief) {
+		const lines = [];
+		for (const x of r.brief.stays) lines.push('Stay: ' + x.title + ' — ' + formatDigestDay(x.date));
+		for (const x of r.brief.travel) lines.push('Travel: ' + x.title + ' — ' + formatDigestDay(x.date));
+		for (const x of r.brief.unbooked) lines.push('Not booked yet: ' + x.title + ' — ' + formatDigestDay(x.date));
+		if (lines.length === 0) lines.push('Nothing booked to list yet.');
+		lines.push('Your trip: ' + base + '/trips/' + section.tripSlug);
+		groups.push(['Starts in 3 days (' + formatDigestDay(r.brief.start) + ')', lines]);
+	}
+	if (r.closeout) {
+		groups.push([
+			'Wrap up',
+			['The trip ended 3 days ago. Close it out: ' + base + '/trips/' + section.tripSlug + '/closeout']
+		]);
+	}
+	return groups;
+}
+
 function escapeHtml(s) {
 	return s
 		.replace(/&/g, '&amp;')
@@ -161,15 +271,19 @@ function escapeHtml(s) {
 function renderDigestEmail(opts) {
 	const base = opts.appUrl.replace(/\/$/, '');
 	const many = opts.sections.length > 1;
-	let subject = many
-		? 'What changed on ' + opts.sections.length + ' of your trips'
-		: 'What changed on ' + opts.sections[0].tripTitle;
+	const anyChanges = opts.sections.some((s) => hasChanges(s.diff));
+	const verb = anyChanges ? 'What changed on ' : 'Coming up on ';
+	let subject = many ? verb + opts.sections.length + ' of your trips' : verb + opts.sections[0].tripTitle;
 	if (opts.testLabel) subject = '[Waypoint digest test] ' + subject;
 
 	const greeting = opts.recipientName ? 'Hi ' + opts.recipientName + ',' : 'Hi,';
-	const intro = many
-		? 'Here’s what changed on your trips since the last digest.'
-		: 'Here’s what changed on ' + opts.sections[0].tripTitle + ' since the last digest.';
+	const intro = !anyChanges
+		? many
+			? 'Here’s what’s coming up on your trips.'
+			: 'Here’s what’s coming up on ' + opts.sections[0].tripTitle + '.'
+		: many
+			? 'Here’s what changed on your trips since the last digest.'
+			: 'Here’s what changed on ' + opts.sections[0].tripTitle + ' since the last digest.';
 
 	const textParts = [greeting, '', intro, ''];
 	const htmlParts = [
@@ -190,6 +304,7 @@ function renderDigestEmail(opts) {
 			['Edited', section.diff.edited.map(editedLine)],
 			['Removed', section.diff.removed.map((r) => r.title)]
 		];
+		for (const g of reminderGroups(section, base)) groups.push(g);
 
 		for (const group of groups) {
 			const label = group[0];
@@ -287,7 +402,8 @@ function parseDigestState(raw) {
  *      real digest can go out the very next morning), send nothing.
  *   2. Not ~8am trip-local (hourly cron at :00 → local hour === 8 covers
  *      "morning ~8am" incl. :30/:45 offset zones) and not forced → skip.
- *   3. Diff snapshot vs current items; no changes → skip (no state write).
+ *   3. Diff snapshot vs current items + #522 reminders due today; neither →
+ *      skip (no state write). Reminder-only members get a "Coming up" email.
  *   4. Recipients = active members (removed_at = "" — #133 invariant) with a
  *      real user and digest_opt_out = false. Grouped per user across trips →
  *      ONE email per user per run.
@@ -351,10 +467,31 @@ function runDigest(app, opts) {
 			for (const d of days) dayDates[d.id] = d.getString('date').slice(0, 10);
 		} catch (_) {}
 
+		// #522 — phase starts, for items that need booking but have no day.
+		const phaseStarts = {};
+		try {
+			const phases = app.findRecordsByFilter('phases', 'trip = {:t}', '', 500, 0, { t: tripId });
+			for (const p of phases) phaseStarts[p.id] = p.getString('start_date').slice(0, 10);
+		} catch (_) {}
+
 		let sourceItems = [];
+		const reminderItems = [];
 		try {
 			const records = app.findRecordsByFilter('items', 'trip = {:t}', '', 2000, 0, { t: tripId });
 			for (const r of records) {
+				// Go slice → plain JS array (indexOf/slice in composeReminders).
+				const goingRaw = r.getStringSlice('assigned_to');
+				const going = [];
+				for (let i = 0; i < goingRaw.length; i++) going.push('' + goingRaw[i]);
+				reminderItems.push({
+					title: r.getString('title'),
+					type: r.getString('type'),
+					dayDate: dayDates[r.getString('day')] || '',
+					phaseStart: phaseStarts[r.getString('phase')] || '',
+					requiresBooking: r.getBool('requires_booking'),
+					booked: r.getBool('booked'),
+					going: going
+				});
 				sourceItems.push({
 					id: r.id,
 					title: r.getString('title'),
@@ -397,7 +534,16 @@ function runDigest(app, opts) {
 		}
 
 		const diff = composeTripDiff(prev, sourceItems);
-		if (!hasChanges(diff)) {
+		const changes = hasChanges(diff);
+		// #522 — reminders due today (trip-local). Stateless: once a day at ~8am.
+		const reminders = composeReminders({
+			today: tripLocalDate(nowDt, trip.getString('timezone')),
+			tripStart: trip.getString('start_date'),
+			tripEnd: trip.getString('end_date'),
+			archived: trip.getBool('archived'),
+			items: reminderItems
+		});
+		if (!changes && !hasReminders(reminders)) {
 			summary.no_changes++;
 			continue;
 		}
@@ -431,15 +577,24 @@ function runDigest(app, opts) {
 				continue;
 			}
 			if (!email) continue;
+			// #522 — this member's share of the reminders (role-filtered).
+			const mine = remindersFor(reminders, member.getString('role'), member.id);
+			if (!changes && !hasReminders(mine)) continue;
 			recipientCount++;
 			if (!perUser[email]) perUser[email] = { name: name, sections: [], tripIds: [] };
-			perUser[email].sections.push({ tripTitle: tripTitle, tripSlug: tripSlug, diff: diff });
+			perUser[email].sections.push({
+				tripTitle: tripTitle,
+				tripSlug: tripSlug,
+				diff: diff,
+				reminders: hasReminders(mine) ? mine : undefined
+			});
 			perUser[email].tripIds.push(tripId);
 		}
 
 		if (recipientCount === 0) {
 			// Changes but nobody to tell (all opted out) — consume so the trip
-			// doesn't stay perpetually due.
+			// doesn't stay perpetually due. Reminders alone leave nothing to consume.
+			if (!changes) continue;
 			if (!dryRun) {
 				try {
 					trip.set('digest_state', JSON.stringify(newSnapshot));
@@ -536,12 +691,17 @@ function runDigest(app, opts) {
 
 module.exports = {
 	tripLocalHour: tripLocalHour,
+	tripLocalDate: tripLocalDate,
 	buildSignature: buildSignature,
 	snapshotItems: snapshotItems,
 	composeTripDiff: composeTripDiff,
 	hasChanges: hasChanges,
 	formatDigestDay: formatDigestDay,
 	renderDigestEmail: renderDigestEmail,
+	daysBetween: daysBetween,
+	composeReminders: composeReminders,
+	remindersFor: remindersFor,
+	hasReminders: hasReminders,
 	parseDigestState: parseDigestState,
 	runDigest: runDigest
 };
