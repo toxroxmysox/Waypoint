@@ -99,6 +99,13 @@ docker logs waypoint 2>&1 | grep -iE "migrat|smtp\.pb|ratelimit\.pb|error|panic|
 # Public edge (tunnel + security headers) from anywhere:
 curl -sS -I https://app.vandenwarsen.com/ | grep -iE 'HTTP/|content-type-options|frame-options|strict-transport|referrer-policy|permissions-policy'
 # Want 200/303 + nosniff, X-Frame DENY, HSTS, Referrer-Policy, Permissions-Policy.
+
+# MCP connector (v3.1+): token endpoint through the tunnel, metadata, auth gate.
+curl -s -XPOST https://app.vandenwarsen.com/oauth/token -d grant_type=refresh_token
+# Want {"error":"invalid_grant",...} JSON. A 403 = the token-origin shim isn't running
+# (start.sh must launch deploy/server.mjs); an HTML page = a Cloudflare challenge.
+curl -s https://app.vandenwarsen.com/.well-known/oauth-authorization-server | grep -o '"client_id_metadata_document_supported":true'
+curl -s -o /dev/null -w '%{http_code}\n' -XPOST https://app.vandenwarsen.com/mcp   # want 401
 ```
 `curl -s https://app.vandenwarsen.com/_app/version.json` must report the new version, which proves the build without logging in.
 Then load `https://app.vandenwarsen.com` and **send yourself an OTP** to confirm end-to-end login. The Profile page footer must read `Waypoint {version}` (anything else means a stale build or a cached shell).
