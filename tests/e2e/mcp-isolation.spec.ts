@@ -20,8 +20,8 @@ const AI_OFF = 'AI access is turned off for this trip by its owner.';
  * Valid args for each tool, aimed at `trip`. `scoped` = takes a trip. `mutates`
  * (#503 write tools) = refused, not served, on an AI-off trip and for a viewer.
  */
-function argsFor(name: string, trip: string): { args: Record<string, unknown>; scoped: boolean; mutates?: true } {
-	const table: Record<string, { args: Record<string, unknown>; scoped: boolean; mutates?: true }> = {
+function argsFor(name: string, trip: string): { args: Record<string, unknown>; scoped: boolean; mutates?: true; errors?: true } {
+	const table: Record<string, { args: Record<string, unknown>; scoped: boolean; mutates?: true; errors?: true }> = {
 		list_trips: { args: {}, scoped: false },
 		get_trip: { args: { trip }, scoped: true },
 		get_day: { args: { trip, date: 'today' }, scoped: true },
@@ -39,7 +39,9 @@ function argsFor(name: string, trip: string): { args: Record<string, unknown>; s
 			args: { trip, quote: 'tidy the note', ops: [{ action: 'update', collection: 'items', id: seed.items.overlapA, data: { description: 'Booked' } }] },
 			scoped: true,
 			mutates: true
-		}
+		},
+		// No real proposal: refused ("expired"), and the refusal must leak nothing.
+		commit_changes: { args: { proposal_id: 'no-such-proposal' }, scoped: false, errors: true }
 	};
 	const row = table[name];
 	if (!row) throw new Error(`mcp-isolation: no sweep args for new tool "${name}"`);
@@ -122,9 +124,10 @@ test('an AI-off trip shows only its name, dates and the notice', async () => {
 
 test('a viewer can use every read tool, and no write tool', async () => {
 	for (const name of toolNames) {
-		const { args, mutates } = argsFor(name, seed.trips.current);
+		const { args, mutates, errors } = argsFor(name, seed.trips.current);
 		const r = await callTool(tokens.viewer, name, args);
 		if (mutates) expect(r.text, name).toBe("Viewers can't change this trip.");
+		else if (errors) expect(r.isError, name).toBe(true);
 		else expect(r.isError, `${name}: ${r.text}`).toBeFalsy();
 	}
 });

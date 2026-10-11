@@ -122,3 +122,124 @@ test.describe('propose_changes', () => {
 		expect((await ask([{ action: 'update', collection: 'items', id: seed.items.untimedMeal, data: { created_by: seed.members.traveler } }])).isError).toBe(true);
 	});
 });
+
+async function myAiChanges(email: string) {
+	const pb = await pbAs(email);
+	return (await pb('GET', '/api/collections/ai_changes/records?perPage=200&sort=-created')).json.items as {
+		id: string;
+		quote: string;
+		user: string;
+		reverted_at: string;
+		changes: unknown[];
+	}[];
+}
+const propose = (who: keyof typeof tokens, trip: string, quote: string, ops: unknown[]) =>
+	callTool(tokens[who], 'propose_changes', { trip, quote, ops });
+const commit = (who: keyof typeof tokens, id: string) => callTool(tokens[who], 'commit_changes', { proposal_id: id });
+
+test.describe('commit_changes', () => {
+	test('commit writes the change and a private AI Change with the user\'s words', async () => {
+		const r = await commit('owner', proposalId);
+		expect(r.isError, r.text).toBeFalsy();
+		expect(r.text).toContain('Saved');
+		const owner = await pbAs(MCP_EMAILS.owner);
+		expect((await owner('GET', `/api/collections/items/records/${seed.items.untimedMeal}`)).json.title).toBe(RENAME);
+		const rows = (await myAiChanges(MCP_EMAILS.owner)).filter((x) => x.quote === QUOTE);
+		expect(rows).toHaveLength(1);
+		expect((await myAiChanges(MCP_EMAILS.traveler)).filter((x) => x.quote === QUOTE)).toHaveLength(0);
+	});
+
+	test('a double commit saves once (Review Focus 2)', async () => {
+		const r = await commit('owner', proposalId);
+		expect(r.isError).toBeFalsy();
+		expect(r.text).toContain('Already saved');
+		expect((await myAiChanges(MCP_EMAILS.owner)).filter((x) => x.quote === QUOTE)).toHaveLength(1);
+	});
+
+	test('a stale preview is refused and writes nothing', async () => {
+		const p = await propose('owner', seed.trips.current, 'rename the train', [
+			{ action: 'update', collection: 'items', id: seed.items.unbooked, data: { title: 'Train to Aveiro' } }
+		]);
+		const owner = await pbAs(MCP_EMAILS.owner);
+		await owner('PATCH', `/api/collections/items/records/${seed.items.unbooked}`, { title: 'Train to Braga' });
+		const r = await commit('owner', p.structured.proposal.id);
+		expect(r.isError).toBe(true);
+		expect(r.text).toContain('changed since the preview (title)');
+		expect((await owner('GET', `/api/collections/items/records/${seed.items.unbooked}`)).json.title).toBe('Train to Braga');
+	});
+
+	test('someone else cannot commit your proposal (Review Focus 3)', async () => {
+		const p = await propose('owner', seed.trips.current, 'rename the cruise', [
+			{ action: 'update', collection: 'items', id: seed.items.overlapB, data: { title: 'Douro cruise' } }
+		]);
+		const r = await commit('traveler', p.structured.proposal.id);
+		expect(r.isError).toBe(true);
+		const owner = await pbAs(MCP_EMAILS.owner);
+		expect((await owner('GET', `/api/collections/items/records/${seed.items.overlapB}`)).json.title).toBe('River cruise');
+	});
+
+	test('AI changes switched off after the preview refuses the commit (Review Focus 4)', async () => {
+		const p = await propose('owner', seed.trips.current, 'rename the cruise', [
+			{ action: 'update', collection: 'items', id: seed.items.overlapB, data: { title: 'Douro cruise' } }
+		]);
+		const owner = await pbAs(MCP_EMAILS.owner);
+		await owner('PATCH', `/api/collections/trips/records/${seed.tripIds.current}`, { ai_write: false });
+		const r = await commit('owner', p.structured.proposal.id);
+		await owner('PATCH', `/api/collections/trips/records/${seed.tripIds.current}`, { ai_write: true });
+		expect(r.isError).toBe(true);
+		expect(r.text).toBe('AI changes are turned off for this trip by its owner.');
+		expect((await owner('GET', `/api/collections/items/records/${seed.items.overlapB}`)).json.title).toBe('River cruise');
+	});
+
+	test('all-or-nothing: one bad op and nothing is written', async () => {
+		const p = await propose('owner', seed.trips.current, 'rename the cruise and end the stay on arrival', [
+			{ action: 'update', collection: 'items', id: seed.items.overlapB, data: { title: 'Douro cruise' } },
+			{ action: 'update', collection: 'items', id: seed.items.lodging, data: { end_date: seed.dates.start } }
+		]);
+		expect(p.isError, p.text).toBeFalsy();
+		const r = await commit('owner', p.structured.proposal.id);
+		expect(r.isError).toBe(true);
+		expect(r.text).toMatch(/end date/i);
+		const owner = await pbAs(MCP_EMAILS.owner);
+		expect((await owner('GET', `/api/collections/items/records/${seed.items.overlapB}`)).json.title).toBe('River cruise');
+	});
+
+	test('a traveler adding an item sends it to the owners as a suggestion', async () => {
+		const title = `Cooking class ${seed.suffix}`;
+		const p = await propose('traveler', seed.trips.current, 'add the cooking class tomorrow', [
+			{ action: 'create', collection: 'items', data: { type: 'activity', title, date: seed.dates.tomorrow } }
+		]);
+		expect(p.isError, p.text).toBeFalsy();
+		expect(p.structured.proposal.outcome).toBe('Sent to the owners as a suggestion');
+		const r = await commit('traveler', p.structured.proposal.id);
+		expect(r.isError, r.text).toBeFalsy();
+		const owner = await pbAs(MCP_EMAILS.owner);
+		const items = (await owner('GET', `/api/collections/items/records?filter=${encodeURIComponent(`title = "${title}"`)}`)).json.items;
+		expect(items).toHaveLength(0);
+		const sug = await owner('GET', `/api/suggestions/list?trip_id=${seed.tripIds.current}&status=pending`);
+		expect(JSON.stringify(sug.json)).toContain(title);
+	});
+
+	test('a trip-date shrink commits the phases the preview showed', async () => {
+		const owner = await pbAs(MCP_EMAILS.owner);
+		const trip = (await owner('GET', `/api/collections/trips/records/${seed.tripIds.past}`)).json;
+		const start = String(trip.start_date).slice(0, 10);
+		const newEnd = new Date(Date.parse(`${start}T00:00:00Z`) + 2 * 86400000).toISOString().slice(0, 10);
+		const p = await propose('owner', seed.trips.past, 'cut the last day', [
+			{ action: 'update', collection: 'trips', id: seed.tripIds.past, data: { end_date: newEnd } }
+		]);
+		expect(p.isError, p.text).toBeFalsy();
+		expect(p.text).toContain('removed');
+		expect(p.text).toContain('Lisbon merges into the phase before it');
+		expect(p.text).toMatch(/1 item moves to Lucerne: Taberna da Rua/);
+		expect(p.structured.proposal.calendar.after).toEqual([start, newEnd]);
+		const r = await commit('owner', p.structured.proposal.id);
+		expect(r.isError, r.text).toBeFalsy();
+		const phases = (
+			await owner('GET', `/api/collections/phases/records?sort=start_date&filter=${encodeURIComponent(`trip = "${seed.tripIds.past}"`)}`)
+		).json.items.map((x: { name: string; start_date: string; end_date: string }) => [x.name, x.start_date.slice(0, 10), x.end_date.slice(0, 10)]);
+		expect(phases).toEqual([['Lucerne', start, newEnd]]);
+		const restaurant = (await owner('GET', `/api/collections/items/records/${seed.items.restaurantLisbon}`)).json;
+		expect(restaurant.day).toBe('');
+	});
+});
