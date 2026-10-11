@@ -62,6 +62,10 @@ Record row counts for every collection via the admin API (same TOKEN trick as st
 
 **v3.2 (#503/#411) — duplicate phase starts.** #411's tiling hooks assume no two phases of a trip share a `start_date` (review M2). Before shipping v3.2, dry-run on live (admin API, read-only): list phases sorted by `trip,start_date` and look for any trip with two rows on the same day. Expect 0. Anything else is a hard stop: surface the trips to Scott; fix by hand, never by script.
 
+**v3.2.1 (#506) — viewers in expense splits.** Run `PUBLIC_PB_URL=http://127.0.0.1:8091/pb node scripts/audit-viewer-splits.mjs` on basecamp (read-only). It lists every expense that names a current viewer as payer or in its split, with a proposed fix each. Hard stop: surface the list to Scott; nothing is rewritten without his OK. The new hook only blocks *changing* a split to include a viewer, so un-fixed rows still save on unrelated edits.
+
+**v3.2.1 (#519) — cross-trip relations.** New validate hooks check only changed fields, so existing rows are untouched. No dry-run needed.
+
 **v3.2 — `MCP_WRITES`.** AI writes (propose/commit/revert) are on unless `waypoint.env` sets `MCP_WRITES=off`, which removes the write tools from every connection. Flipping it needs a container restart (step 3). Default: leave it unset (on).
 
 **v3.1.1 — glance tile.** `GET /api/glance` 401s until `waypoint.env` sets `WAYPOINT_GLANCE_TOKEN` and 503s until `WAYPOINT_GLANCE_EMAILS` names at least one user. Add both before step 3 if the Homepage tile should work; leaving them unset is safe.
