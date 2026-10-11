@@ -33,6 +33,8 @@ export const PLANTED_EMAILS = [
 
 export interface McpSeed {
 	suffix: string;
+	/** ISO instant just before anything was created. */
+	startedAt: string;
 	trips: { current: string; past: string; off: string; foreign: string };
 	tripIds: { current: string; past: string; off: string; foreign: string };
 	members: { owner: string; traveler: string; viewer: string };
@@ -119,6 +121,7 @@ async function makeTrip(t: string, userId: string, slug: string, title: string, 
 }
 
 export async function seedMcpTrips(): Promise<McpSeed> {
+	const startedAt = new Date(Date.now() - 1000).toISOString();
 	const suffix = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
 	const su = await superuser();
 	const owner = await bypass(MCP_EMAILS.owner);
@@ -351,6 +354,7 @@ export async function seedMcpTrips(): Promise<McpSeed> {
 
 	return {
 		suffix,
+		startedAt,
 		trips: { current: cur.trip.slug, past: past.trip.slug, off: off.trip.slug, foreign: foreign.trip.slug },
 		tripIds: { current: cur.trip.id, past: past.trip.id, off: off.trip.id, foreign: foreign.trip.id },
 		members: { owner: cur.ownerMember, traveler: travelerMember, viewer: viewerMember },

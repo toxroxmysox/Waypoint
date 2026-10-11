@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { BASE, callTool, connect, rpc } from './mcp-helpers';
 import { MCP_EMAILS, seedMcpTrips, type McpSeed } from './mcp-seed';
+import { E2E_PB_BASE } from './e2e-env';
 
 // #502 — the MCP read tools, called the way the Claude connector calls them, as
 // seeded users against the disposable PB. Assertions are on tool output only.
@@ -242,5 +243,50 @@ test.describe('audit_trip', () => {
 		expect(t).toContain('Surf lesson in Matosinhos');
 		expect(t).toContain('Adapter for');
 		expect(t).not.toContain('Passports');
+	});
+});
+
+test.describe('what_changed', () => {
+	test('lists what was added since a time, then what was edited', async () => {
+		const r = await callTool(tokens.owner, 'what_changed', { trip: seed.trips.current, since: seed.startedAt });
+		const tc = r.structured.cards.find((c: { title: string }) => c.title === 'Train to Coimbra');
+		expect(tc.tag).toMatch(/^added/);
+		expect(r.structured.heading + r.text).toMatch(/deletions aren't tracked/i);
+
+		const beforeEdit = new Date(Date.now() - 1000).toISOString();
+		const bypass = await fetch(`${E2E_PB_BASE}/api/dev/auth-bypass`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ email: MCP_EMAILS.owner })
+		}).then((x) => x.json());
+		const patched = await fetch(`${E2E_PB_BASE}/api/collections/items/records/${seed.items.overlapB}`, {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json', Authorization: bypass.token },
+			body: JSON.stringify({ description: 'Bring hats' })
+		});
+		expect(patched.ok).toBe(true);
+		const r2 = await callTool(tokens.owner, 'what_changed', { trip: seed.trips.current, since: beforeEdit });
+		const rc = r2.structured.cards.find((c: { title: string }) => c.title === 'River cruise');
+		expect(rc.tag).toBe('edited');
+		expect(r2.structured.cards.find((c: { title: string }) => c.title === 'Train to Coimbra')).toBeUndefined();
+	});
+});
+
+test.describe('get_lists', () => {
+	test('lists with tasks, open first, with assignee names', async () => {
+		const r = await callTool(tokens.owner, 'get_lists', { trip: seed.trips.current });
+		const packing = r.structured.cards.find((c: { title: string }) => c.title === 'Packing');
+		expect(packing.lines[0]).toMatch(/^☐ Adapter for .* · Abby/);
+		expect(packing.lines[1]).toBe('☑ Passports');
+	});
+});
+
+test.describe('get_memories', () => {
+	test('thoughts only, never the photo', async () => {
+		const r = await callTool(tokens.owner, 'get_memories', { trip: seed.trips.current });
+		expect(r.text).toContain('Sunset at the miradouro');
+		const all = JSON.stringify(r);
+		expect(all).not.toContain(seed.photoName);
+		expect(all).not.toContain('/api/files/');
 	});
 });
