@@ -127,7 +127,7 @@ export async function seedMcpTrips(): Promise<McpSeed> {
 	const owner = await bypass(MCP_EMAILS.owner);
 	const traveler = await bypass(MCP_EMAILS.traveler);
 	const viewer = await bypass(MCP_EMAILS.viewer);
-	const outsider = await bypass(MCP_EMAILS.outsider);
+	await bypass(MCP_EMAILS.outsider); // exists, member of nothing
 	const T = owner.token;
 
 	// ── current trip: today is day 2 of 4 (3 nights) ───────────────────────────
@@ -341,10 +341,13 @@ export async function seedMcpTrips(): Promise<McpSeed> {
 	).id as string;
 	await req(T, 'PATCH', `/api/collections/trips/records/${off.trip.id}`, { ai_access: false });
 
-	// ── foreign trip: the outsider's ───────────────────────────────────────────
+	// ── foreign trip: someone else's ───────────────────────────────────────────
+	// Owned by the co-owner test user, NOT the outsider: onboarding-organic needs
+	// rules-nonmember to have no trips at all (empty /trips on-ramp).
+	const stranger = await bypass('rules-coowner@e2e.test');
 	const foreign = await makeTrip(
-		outsider.token,
-		outsider.id,
+		stranger.token,
+		stranger.id,
 		`e2e-mcp-foreign-${suffix}`,
 		`E2E MCP Not Yours ${suffix}`,
 		addDays(today, 10),

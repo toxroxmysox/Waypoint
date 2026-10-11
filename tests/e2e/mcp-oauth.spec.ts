@@ -37,6 +37,23 @@ test('metadata advertises CIMD + S256 and no dynamic registration', async () => 
 	expect(pr.authorization_servers).toEqual([BASE]);
 });
 
+test('authorize refuses a client from a host not on the allowlist, without fetching it', async () => {
+	const { challenge } = pkcePair();
+	const res = await fetch(
+		authorizeUrl({
+			response_type: 'code',
+			client_id: 'https://evil.example/oauth/client.json',
+			redirect_uri: 'https://evil.example/cb',
+			state: 's',
+			code_challenge: challenge,
+			code_challenge_method: 'S256'
+		}),
+		{ redirect: 'manual' }
+	);
+	expect(res.status).toBe(400);
+	expect(res.headers.get('location')).toBeNull();
+});
+
 test('authorize rejects an unregistered redirect_uri without redirecting', async () => {
 	const { challenge } = pkcePair();
 	const res = await fetch(

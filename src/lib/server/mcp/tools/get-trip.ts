@@ -9,13 +9,16 @@ import { lodgingForNight, nightsOf } from '../audit';
 import { offTrip, result, stripHtml, tripDates, ymd, EMOJI, type Card } from '../present';
 import type { ToolDef } from './types';
 
-export const memberName = (m: Pick<TripMember, 'display_name' | 'placeholder_name'>) =>
-	m.display_name || m.placeholder_name || 'member';
+/** As the app names members (memberDisplayName): display name, account name, placeholder name. Never an email (#409). */
+export const memberName = (m: Pick<TripMember, 'display_name' | 'placeholder_name' | 'expand'>) =>
+	m.display_name || m.expand?.user?.name || m.placeholder_name || 'member';
 
 export async function loadMembers(ctx: Parameters<ToolDef['run']>[0], tripId: string): Promise<TripMember[]> {
 	return ctx.pb.collection('trip_members').getFullList<TripMember>({
 		filter: ctx.pb.filter('trip = {:t} && removed_at = ""', { t: tripId }),
-		fields: 'id,display_name,placeholder_name,role',
+		// ADR-0024 §5: only the account's name, never its email or avatar.
+		fields: 'id,display_name,placeholder_name,role,expand.user.name',
+		expand: 'user',
 		requestKey: null
 	});
 }

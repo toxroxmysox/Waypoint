@@ -2,17 +2,36 @@ import { z } from 'zod';
 import type { TripMember } from '$lib/types';
 import { formatDayDate } from '$lib/shell/format';
 import { toDateOnly } from '$lib/itinerary/multi-day';
+import { tripNow, tripTz } from '$lib/shell/trip-time';
 import { resolveTrip, type McpContext } from '../context';
 import { EMOJI, offTrip, result, stripHtml, type Card } from '../present';
 import { loadMembers, memberName } from './get-trip';
 import type { ToolDef } from './types';
 
-/** ISO datetime, YYYY-MM-DD, "yesterday" or "last week" → a UTC instant. */
-export function resolveSince(since: string, now: Date): Date {
+/** Wall clock in `tz` for an instant, as `YYYY-MM-DD HH:MM`. */
+const localStamp = (instant: Date, tz: string) => tripNow(tz, instant).toISOString().slice(0, 16).replace('T', ' ');
+
+/** The UTC instant of trip-local midnight starting `ymd`. */
+function localMidnight(ymd: string, tz: string): Date {
+	const guess = new Date(`${ymd}T00:00:00Z`);
+	const offset = tripNow(tz, guess).getTime() - guess.getTime();
+	return new Date(guess.getTime() - offset);
+}
+
+/**
+ * `since` → a UTC instant. A bare date and "yesterday" mean trip-local
+ * midnight; "last week" is 7 days before now; anything else is parsed as ISO.
+ */
+export function resolveSince(since: string, now: Date, tz = 'UTC'): Date {
 	const s = since.trim().toLowerCase();
-	if (s === 'yesterday') return new Date(now.getTime() - 86_400_000);
+	if (s === 'yesterday') {
+		const d = tripNow(tz, now);
+		d.setUTCDate(d.getUTCDate() - 1);
+		return localMidnight(d.toISOString().slice(0, 10), tz);
+	}
 	if (s === 'last week') return new Date(now.getTime() - 7 * 86_400_000);
-	const t = Date.parse(/^\d{4}-\d{2}-\d{2}$/.test(s) ? `${s}T00:00:00Z` : since);
+	if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return localMidnight(s, tz);
+	const t = Date.parse(since);
 	if (Number.isNaN(t)) throw new Error(`Use an ISO date/time, YYYY-MM-DD, "yesterday" or "last week" (got "${since}").`);
 	return new Date(t);
 }
@@ -111,11 +130,13 @@ export const whatChanged: ToolDef = {
 	async run(ctx, { trip: ref, since }: { trip: string; since: string }) {
 		const t = await resolveTrip(ctx, ref);
 		if (!t.open) return offTrip(t.trip);
-		const at = resolveSince(since, ctx.now).toISOString().replace('T', ' ');
+		const tz = tripTz(t.trip);
+		const sinceAt = resolveSince(since, ctx.now, tz);
+		const at = sinceAt.toISOString().replace('T', ' ');
 		const members: TripMember[] = await loadMembers(ctx, t.trip.id);
 		const names = new Map(members.map((m) => [m.id, memberName(m)]));
 		const rows = await changes(ctx, t.trip.id, at, names);
-		const cards: Card[] = rows.map(({ at: when, ...c }) => ({ ...c, lines: [...c.lines, when.slice(0, 16)] }));
-		return result(`Changes since ${at.slice(0, 16)} UTC · ${t.trip.title} (deletions aren't tracked)`, cards, cards.length ? {} : { note: 'Nothing changed.' });
+		const cards: Card[] = rows.map(({ at: when, ...c }) => ({ ...c, lines: [...c.lines, localStamp(new Date(when.replace(' ', 'T')), tz)] }));
+		return result(`Changes since ${localStamp(sinceAt, tz)} · ${t.trip.title} (deletions aren't tracked)`, cards, cards.length ? {} : { note: 'Nothing changed.' });
 	}
 };

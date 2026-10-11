@@ -116,6 +116,9 @@ test.describe('get_trip', () => {
 		expect(text).toContain('Vic');
 		expect(text).toContain('Abby');
 		expect(text).toContain('Eat a francesinha');
+		// A member with no display name reads as the app shows them (account name), never "member".
+		const membersCard = r.structured.cards.find((c: { title: string }) => c.title === 'Members');
+		expect(membersCard.lines.join('\n')).not.toMatch(/^member ·/m);
 		expect(text).toMatch(/Surf lesson in Matosinhos[\s\S]*2 votes/);
 	});
 
@@ -142,6 +145,12 @@ test.describe('search', () => {
 		const card = r.structured.cards.find((c: { title: string; tag: string }) => c.title === 'Hotel Schweizerhof' && c.tag === `E2E MCP Alps and Lisbon ${seed.suffix}`);
 		expect(card).toBeTruthy();
 		expect(card.lines.join(' ')).toContain(`id: ${seed.items.hotelLucerne}`);
+	});
+
+	test('a multi-word query matches each word, not one phrase', async () => {
+		// "hotel" is in the item title, "Lucerne" in its phase: no field holds the phrase.
+		const r = await callTool(tokens.owner, 'search', { query: 'Lucerne hotel', trip: seed.trips.past });
+		expect(titles(r)).toContain('Hotel Schweizerhof');
 	});
 
 	test('filters by country', async () => {

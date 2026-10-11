@@ -16,7 +16,11 @@ export const POST: RequestHandler = async ({ request }) => {
 	let client_id = f.get('client_id') ?? '';
 	const basic = request.headers.get('authorization');
 	if (!client_id && basic?.startsWith('Basic ')) {
-		client_id = decodeURIComponent(atob(basic.slice(6)).split(':')[0] ?? '');
+		try {
+			client_id = decodeURIComponent(atob(basic.slice(6)).split(':')[0] ?? '');
+		} catch {
+			client_id = '';
+		}
 	}
 
 	const grant = f.get('grant_type');

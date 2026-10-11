@@ -48,3 +48,14 @@ describe('authorization codes', () => {
 		expect(takeCode(code)).toBeUndefined();
 	});
 });
+
+describe('sweep', () => {
+	it('drops expired pending requests when a new one is created', () => {
+		vi.useFakeTimers();
+		const old = createPending({ client: { client_id: 'c', redirect_uris: [] }, redirect_uri: 'r', state: '', code_challenge: 'x', resource: '' });
+		vi.advanceTimersByTime(16 * 60_000);
+		createPending({ client: { client_id: 'c', redirect_uris: [] }, redirect_uri: 'r', state: '', code_challenge: 'x', resource: '' });
+		expect(getPending(old.id)).toBeUndefined();
+		vi.useRealTimers();
+	});
+});
