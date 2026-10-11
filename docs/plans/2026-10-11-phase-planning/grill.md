@@ -99,4 +99,4 @@ Observable outcomes:
 
 - **Assumed:** phase notes use the same edit permission as day notes. Planning confirms the current day-notes rule and mirrors it in PB rules.
 - **Assumed:** "N to rate" counts the viewer's unvoted ideas in the phase, the same count the swipe deck drains.
-- **Open, by design:** the trip level header is built in v3.3 without notes. The trip Overview grill (next session) may change the trip header's contents before the plan is written, and that grill's record amends this one where they overlap.
+- **Resolved by the [trip Overview grill](../2026-10-11-trip-overview/grill.md):** the trip header gains Trip Notes and drops Capture ideas. The Overview itself is redesigned there. That record supersedes story 27 and the "No trip notes" decision above.
