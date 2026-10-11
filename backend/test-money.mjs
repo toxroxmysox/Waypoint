@@ -227,6 +227,17 @@ async function main() {
     r = await req('PATCH', `/api/collections/expenses/records/${sameTripExpense}`, { token: tokens.owner, body: { paid_by: foreignMember } });
     check('X6 expenses.update paid_by to a foreign member -> 400', is400(r, M), show(r));
 
+    // #506 — viewers are never a payer or part of a split.
+    const V = "Viewers can't pay for or share an expense.";
+    r = await expense({ split_data: { members: [memberIds.owner, memberIds.viewer] } });
+    check('V1 expenses equal split with a viewer -> 400', is400(r, V), show(r));
+    r = await expense({ split_mode: 'by_amount', split_data: { amounts: { [memberIds.owner]: 10, [memberIds.viewer]: 10 } } });
+    check('V2 expenses by_amount split with a viewer -> 400', is400(r, V), show(r));
+    r = await expense({ paid_by: memberIds.viewer });
+    check('V3 expenses.paid_by viewer -> 400', is400(r, V), show(r));
+    r = await req('PATCH', `/api/collections/expenses/records/${sameTripExpense}`, { token: tokens.owner, body: { amount_usd: 30 } });
+    check('V4 expenses.update leaving split untouched -> 200', r.status === 200, show(r));
+
     r = await req('POST', '/api/collections/settlements/records', { token: tokens.owner, body: {
       trip: tripId, from_member: memberIds.owner, to_member: foreignMember, amount_usd: 5, date: today
     }});
@@ -246,6 +257,54 @@ async function main() {
       trip: tripId, item: foreignItem, member: memberIds.traveler, value: 'like'
     }});
     check('X11 votes.item foreign item -> 400', is400(r, I), show(r));
+
+    // #519 — the remaining member/item/scenario references, and the item trip/creator lock.
+    const S = "That scenario isn't on this trip.";
+    const patch = (col, id, body, token = tokens.owner) => req('PATCH', `/api/collections/${col}/records/${id}`, { token, body });
+    r = await req('POST', '/api/collections/trip_goals/records', { token: tokens.owner, body: {
+      trip: tripId, title: 'Cross-trip goal', created_by: memberIds.owner, manual_status: 'unplanned', items: [foreignItem]
+    }});
+    check('X12 trip_goals.items foreign item -> 400', is400(r, I), show(r));
+    r = await req('POST', '/api/collections/trip_goals/records', { token: tokens.owner, body: {
+      trip: tripId, title: 'Same-trip goal', created_by: memberIds.owner, manual_status: 'unplanned', items: [fx.data.itemId]
+    }});
+    check('X13 trip_goals.items same-trip item -> 200', r.status === 200, show(r));
+
+    const scen = await req('POST', '/api/collections/scenarios/records', { token: tokens.owner, body: {
+      trip: tripId, title: 'Home scenario', champion: memberIds.owner, status: 'candidate'
+    }});
+    const foreignScen = await req('POST', '/api/collections/scenarios/records', { token: tokens.owner, body: {
+      trip: otherTrip, title: 'Foreign scenario', champion: foreignMember, status: 'candidate'
+    }});
+    if (scen.status !== 200 || foreignScen.status !== 200) { console.error('scenario setup failed', show(scen), show(foreignScen)); process.exit(2); }
+    r = await patch('scenarios', scen.data.id, { keystones: [foreignItem] });
+    check('X14 scenarios.keystones foreign item -> 400', is400(r, I), show(r));
+    r = await patch('scenarios', scen.data.id, { fork_of: foreignScen.data.id });
+    check('X15 scenarios.fork_of foreign scenario -> 400', is400(r, S), show(r));
+    r = await patch('scenarios', scen.data.id, { keystones: [fx.data.itemId] });
+    check('X16 scenarios.keystones same-trip item -> 200', r.status === 200, show(r));
+
+    const list = await checklist({ title: 'Task list' });
+    const task = await req('POST', '/api/collections/tasks/records', { token: tokens.owner, body: { checklist: list.data?.id, title: 'Pack' } });
+    r = await patch('tasks', task.data?.id, { assignee: foreignMember });
+    check('X17 tasks.assignee foreign member -> 400', is400(r, M), show(r));
+    r = await patch('tasks', task.data?.id, { assignee: memberIds.traveler });
+    check('X18 tasks.assignee same-trip member -> 200', r.status === 200, show(r));
+
+    const ci = await req('POST', '/api/collections/checklist_items/records', { token: tokens.owner, body: { item: fx.data.itemId, text: 'Passport' } });
+    r = await patch('checklist_items', ci.data?.id, { checked_by: foreignMember });
+    check('X19 checklist_items.checked_by foreign member -> 400', ci.status === 200 && is400(r, M), `${ci.status} / ${show(r)}`);
+
+    r = await patch('items', fx.data.itemId, { booked_by: foreignMember });
+    check('X20 items.booked_by foreign member -> 400', is400(r, M), show(r));
+    r = await patch('items', fx.data.itemId, { 'assigned_to+': foreignMember });
+    check('X21 items.assigned_to foreign member -> 400', is400(r, M), show(r));
+    r = await patch('items', fx.data.itemId, { trip: otherTrip });
+    check('X22 items.trip move to another trip -> 400', r.status === 400 && /another trip/.test(r.data?.message), show(r));
+    r = await patch('items', fx.data.itemId, { created_by: memberIds.traveler });
+    check('X23 items.created_by rewrite -> 400', r.status === 400 && /creator/.test(r.data?.message), show(r));
+    r = await patch('items', fx.data.itemId, { assigned_to: [memberIds.owner] });
+    check('X24 items.assigned_to same-trip member -> 200', r.status === 200, show(r));
   }
 
   console.log(results.join('\n'));

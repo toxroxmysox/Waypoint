@@ -304,7 +304,7 @@
 -->
 <BottomSheet bind:open={showAddExpense} title="Add Expense" dirty={addDirty} discardLabel="Discard this expense?">
 	<ExpenseForm
-		members={data.members}
+		members={data.splitMembers}
 		membershipId={data.membership.id}
 		{form}
 		initialAmount={prefill.amount}
@@ -321,7 +321,7 @@
 <BottomSheet bind:open={showExpenseDetail} title="Edit Expense" dirty={editDirty} discardLabel="Discard these changes?">
 	{#if selectedExpense}
 		<ExpenseForm
-			members={data.members}
+			members={data.splitMembers}
 			membershipId={data.membership.id}
 			expense={selectedExpense}
 			linkedItemHref={selectedLinkedItem ? `/trips/${data.trip.slug}/items/${selectedLinkedItem.id}` : ''}

@@ -3,7 +3,8 @@
 // src/lib). This suite proves the two copies agree, so the Vitest coverage of
 // the canonical TS module transfers to the hook copy.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { tripHour, tripTz } from '../shell/trip-time';
+import { tripHour, tripTz, tripToday } from '../shell/trip-time';
+import * as rem from './digest-reminders';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -183,6 +184,8 @@ function hourIn(instant: Date, zone: string): number {
 function goTime(instant: Date, zone: string) {
 	return {
 		hour: () => hourIn(instant, zone),
+		// Only the '2006-01-02' layout is used (tripLocalDate).
+		format: () => new Intl.DateTimeFormat('sv-SE', { timeZone: zone }).format(instant),
 		in: (tz: GojaTimezoneShim) => goTime(instant, tz.id)
 	};
 }
@@ -265,5 +268,75 @@ describe('#339 trip-local hour parity: digest-core.js vs trip-time.ts', () => {
 		expect(core.tripLocalHour(gojaNow(instant), '  Asia/Tokyo  ')).toBe(
 			tripHour('Asia/Tokyo', instant)
 		);
+	});
+});
+
+describe('#522 reminders parity: digest-core.js vs digest-reminders.ts + digest-email.ts', () => {
+	const item = (o: Partial<rem.ReminderItem>): rem.ReminderItem => ({
+		title: 'x',
+		type: 'activity',
+		dayDate: '',
+		phaseStart: '',
+		requiresBooking: false,
+		booked: false,
+		going: [],
+		...o
+	});
+	const ritems = [
+		item({ title: 'Ryokan', type: 'lodging', dayDate: '2026-12-01', requiresBooking: true, going: ['m2'] }),
+		item({ title: 'Sushi class', dayDate: '2026-11-17', requiresBooking: true, going: ['m3'] }),
+		item({ title: 'Onsen day', phaseStart: '2026-12-31', requiresBooking: true }),
+		item({ title: 'Booked dinner', dayDate: '2026-12-01', requiresBooking: true, booked: true }),
+		item({ title: 'Flight HND', type: 'flight', dayDate: '2026-11-06' })
+	];
+	const cases: rem.ReminderInput[] = [
+		{ today: '2026-11-03', tripStart: '2026-11-06', tripEnd: '2026-11-20', archived: false, items: ritems },
+		{ today: '2026-10-01', tripStart: '2026-11-06', tripEnd: '2026-11-20', archived: false, items: ritems },
+		{ today: '2026-11-23', tripStart: '2026-11-06', tripEnd: '2026-11-20', archived: false, items: ritems },
+		{ today: '2026-11-23', tripStart: '2026-11-06', tripEnd: '2026-11-20', archived: true, items: ritems },
+		{ today: '2026-11-03', tripStart: '', tripEnd: '', archived: false, items: ritems }
+	];
+
+	it('composeReminders agrees', () => {
+		for (const c of cases) expect(core.composeReminders(c)).toEqual(rem.composeReminders(c));
+	});
+
+	it('remindersFor + hasReminders agree per role', () => {
+		const r = rem.composeReminders(cases[0]);
+		for (const [role, id] of [['owner', 'm1'], ['co_owner', 'm9'], ['traveler', 'm3'], ['traveler', 'm4'], ['viewer', 'm5']]) {
+			expect(core.remindersFor(r, role, id)).toEqual(rem.remindersFor(r, role, id));
+			expect(core.hasReminders(core.remindersFor(r, role, id))).toBe(rem.hasReminders(rem.remindersFor(r, role, id)));
+		}
+	});
+
+	it('renderDigestEmail agrees with reminders (alone and alongside changes)', () => {
+		const empty = { added: [], edited: [], moved: [], removed: [] };
+		const changed = { added: [{ title: 'New bar', dayDate: '2026-11-07' }], edited: [], moved: [], removed: [] };
+		const r0 = rem.composeReminders(cases[0]);
+		const r2 = rem.composeReminders(cases[2]);
+		const variants = [
+			[{ tripTitle: 'Japan', tripSlug: 'japan', diff: empty, reminders: r0 }],
+			[{ tripTitle: 'Japan', tripSlug: 'japan', diff: changed, reminders: r0 }],
+			[
+				{ tripTitle: 'Japan', tripSlug: 'japan', diff: empty, reminders: r0 },
+				{ tripTitle: 'Lisbon', tripSlug: 'lisbon', diff: empty, reminders: r2 }
+			]
+		];
+		for (const sections of variants) {
+			const opts = { recipientName: 'Abby', sections, appUrl: 'https://app.example.com/' };
+			expect(core.renderDigestEmail(opts)).toEqual(tsRender(opts));
+		}
+	});
+
+	it('tripLocalDate agrees with tripToday', () => {
+		(globalThis as { Timezone?: unknown }).Timezone = GojaTimezoneShim;
+		try {
+			const instant = new Date('2026-11-02T20:30:00Z');
+			for (const tz of ['Asia/Tokyo', 'America/Los_Angeles', 'UTC', '', 'Local', 'bogus']) {
+				expect(core.tripLocalDate(gojaNow(instant), tz)).toBe(tripToday(tripTz({ timezone: tz }), instant));
+			}
+		} finally {
+			delete (globalThis as { Timezone?: unknown }).Timezone;
+		}
 	});
 });

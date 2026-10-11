@@ -87,6 +87,15 @@ onRecordUpdateRequest((e) => {
 	const authId = e.requestInfo().auth?.id;
 	if (!authId) throw new UnauthorizedError('Authentication required');
 
+	// #519 — an item never changes trip or creator over the API (PB's `trip+` /
+	// `created_by+` modifiers made both writable for an owner).
+	if (e.record.getString('trip') !== e.record.original().getString('trip')) {
+		throw new BadRequestError("An item can't move to another trip.");
+	}
+	if (e.record.getString('created_by') !== e.record.original().getString('created_by')) {
+		throw new BadRequestError("An item's creator can't change.");
+	}
+
 	const tripId = e.record.get('trip');
 
 	let callerMember;
@@ -320,6 +329,22 @@ onRecordValidate((e) => {
 			parent = e.app.findRecordById('items', parentId);
 		} catch (_) {}
 		if (!parent || parent.getString('trip') !== tripId) throw new BadRequestError("That item isn't on this trip.");
+	}
+
+	// #519 — member references (booked_by, paid_by, going, not going) must be
+	// members of this trip. Single + multi relations; only when changed.
+	const memberFields = ['booked_by', 'paid_by', 'assigned_to', 'not_going'];
+	for (let f = 0; f < memberFields.length; f++) {
+		const field = memberFields[f];
+		const ids = r.getStringSlice(field);
+		if (!isNew && !changed('trip') && JSON.stringify(ids) === JSON.stringify(original.getStringSlice(field))) continue;
+		for (let i = 0; i < ids.length; i++) {
+			let ok = false;
+			try {
+				ok = e.app.findRecordById('trip_members', ids[i]).getString('trip') === tripId;
+			} catch (_) {}
+			if (!ok) throw new BadRequestError("That member isn't on this trip.");
+		}
 	}
 
 	e.next();

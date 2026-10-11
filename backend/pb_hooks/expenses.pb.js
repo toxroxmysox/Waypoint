@@ -167,8 +167,18 @@ onRecordValidate((e) => {
 		}
 	};
 	const M = "That member isn't on this trip.";
+	// #506 — viewers aren't on the trip for money: never a payer or in a split.
+	const V = "Viewers can't pay for or share an expense.";
+	const isViewer = (id) => {
+		try {
+			return e.app.findRecordById('trip_members', id).getString('role') === 'viewer';
+		} catch (_) {
+			return false;
+		}
+	};
 	const paidBy = r.getString('paid_by');
 	if (paidBy && (changed('paid_by') || changed('trip')) && !sameTrip('trip_members', paidBy)) throw new BadRequestError(M);
+	if (paidBy && (changed('paid_by') || changed('trip')) && isViewer(paidBy)) throw new BadRequestError(V);
 	const linked = r.getString('linked_item');
 	if (linked && (changed('linked_item') || changed('trip')) && !sameTrip('items', linked)) {
 		throw new BadRequestError("That item isn't on this trip.");
@@ -199,6 +209,7 @@ onRecordValidate((e) => {
 		}
 		for (let i = 0; i < ids.length; i++) {
 			if (ids[i] && !sameTrip('trip_members', ids[i])) throw new BadRequestError(M);
+			if (ids[i] && isViewer(ids[i])) throw new BadRequestError(V);
 		}
 	}
 	e.next();

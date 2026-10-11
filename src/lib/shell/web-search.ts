@@ -1,7 +1,14 @@
 // #406 — "What is this?" for someone else's idea or goal: a web search for
 // `what is <title> in <place>`, opened in the browser. No preload (that would be a
-// server fetch or AI, and it would send trip data out). Google for now; this is the
-// one place a per-user search-engine default would plug in.
+// server fetch or AI, and it would send trip data out). The engine is the user's
+// #510 default (Google when unset).
+
+import type { SearchEngine } from './types';
+
+const ENGINES: Record<SearchEngine, string> = {
+	google: 'https://www.google.com/search?q=',
+	duckduckgo: 'https://duckduckgo.com/?q='
+};
 
 /** The search query: `what is Pastéis de Belém in Lisbon, Portugal`. Place is optional. */
 export function whatIsQuery(title: string, place = ''): string {
@@ -11,7 +18,7 @@ export function whatIsQuery(title: string, place = ''): string {
 }
 
 /** The search URL for `whatIsQuery`, or '' for an empty title. */
-export function whatIsSearchUrl(title: string, place = ''): string {
+export function whatIsSearchUrl(title: string, place = '', engine?: SearchEngine | ''): string {
 	if (!title.trim()) return '';
-	return `https://www.google.com/search?q=${encodeURIComponent(whatIsQuery(title, place))}`;
+	return (ENGINES[engine || 'google'] ?? ENGINES.google) + encodeURIComponent(whatIsQuery(title, place));
 }

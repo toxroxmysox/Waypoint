@@ -80,3 +80,19 @@ describe('mapsUrl', () => {
 		expect(mapsUrl({})).toBe('');
 	});
 });
+
+describe('mapsUrl in Apple Maps (#510)', () => {
+	it('coords, labelled with the name', () => {
+		expect(mapsUrl({ google_place_id: 'P1', location_name: 'A B', location_coords: { lat: 1, lng: 2 } }, 'apple')).toBe(
+			'https://maps.apple.com/?ll=1,2&q=A%20B'
+		);
+	});
+	it('then the address, then nothing', () => {
+		expect(mapsUrl({ location_address: '1 Main St' }, 'apple')).toBe('https://maps.apple.com/?q=1%20Main%20St');
+		expect(mapsUrl({}, 'apple')).toBe('');
+	});
+	it('unset or google stays Google', () => {
+		expect(mapsUrl({ location_address: 'x' }, '')).toContain('google.com/maps');
+		expect(mapsUrl({ location_address: 'x' }, 'google')).toContain('google.com/maps');
+	});
+});

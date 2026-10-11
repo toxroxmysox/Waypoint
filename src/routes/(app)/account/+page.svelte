@@ -10,6 +10,7 @@
 	import AvatarCropper from '$lib/account/components/AvatarCropper.svelte';
 	import ConnectedApps from '$lib/account/components/ConnectedApps.svelte';
 	import { toast } from '$lib/shell/stores/toast';
+	import { untrack } from 'svelte';
 
 	let { data, form } = $props();
 
@@ -53,6 +54,18 @@
 	// --- Name ---
 	let savingName = $state(false);
 	const nameError = $derived(form?.nameError ?? '');
+
+	// --- #510 link defaults ---
+	let savingLinks = $state(false);
+	let searchEngine = $state(untrack(() => data.linkDefaults.search_engine));
+	let mapsApp = $state(untrack(() => data.linkDefaults.maps_app));
+
+	// --- #523 daily trip emails. Client-owned + bound: an unbound `checked`
+	// re-syncs on any effect re-run and silently reverts a tap (#272 scar).
+	let savingEmails = $state(false);
+	let emailOn = $state<Record<string, boolean>>(
+		untrack(() => Object.fromEntries(data.tripEmails.map((t) => [t.id, t.on])))
+	);
 </script>
 
 <NavBar title="Profile" back backHref="/trips" />
@@ -177,6 +190,99 @@
 			<div class="flex justify-end">
 				<Button type="submit" variant="moss" size="md" loading={savingName}>Save</Button>
 			</div>
+		</form>
+	</Card>
+
+	<!-- #510 — where links open -->
+	<Card>
+		<form
+			method="POST"
+			action="?/updateLinkDefaults"
+			use:enhance={() => {
+				savingLinks = true;
+				return async ({ result, update }) => {
+					savingLinks = false;
+					if (result.type === 'success') toast.show('Defaults saved');
+					await update({ reset: false });
+				};
+			}}
+			class="space-y-3 p-4"
+		>
+			<h2 class="text-ink text-sm font-semibold">Open links in</h2>
+			<div class="grid grid-cols-2 gap-3">
+				<div>
+					<label for="search_engine" class="text-ink-soft block text-sm font-medium">Web search</label>
+					<select
+						id="search_engine"
+						name="search_engine"
+						bind:value={searchEngine}
+						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+					>
+						<option value="google">Google</option>
+						<option value="duckduckgo">DuckDuckGo</option>
+					</select>
+				</div>
+				<div>
+					<label for="maps_app" class="text-ink-soft block text-sm font-medium">Maps</label>
+					<select
+						id="maps_app"
+						name="maps_app"
+						bind:value={mapsApp}
+						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+					>
+						<option value="google">Google Maps</option>
+						<option value="apple">Apple Maps</option>
+					</select>
+				</div>
+			</div>
+			{#if form?.linkDefaultsError}
+				<p role="alert" class="text-error-deep text-[12px]">{form.linkDefaultsError}</p>
+			{/if}
+			<div class="flex justify-end">
+				<Button type="submit" variant="ghost" size="sm" loading={savingLinks}>Save</Button>
+			</div>
+		</form>
+	</Card>
+
+	<!-- #523 — daily trip emails, one toggle per trip -->
+	<Card>
+		<form
+			method="POST"
+			action="?/updateTripEmails"
+			use:enhance={() => {
+				savingEmails = true;
+				return async ({ result, update }) => {
+					savingEmails = false;
+					if (result.type === 'success') toast.show('Email preferences saved');
+					await update({ reset: false });
+				};
+			}}
+			class="space-y-3 p-4"
+		>
+			<div>
+				<h2 class="text-ink text-sm font-semibold">Daily trip emails</h2>
+				<p class="text-ink-muted mt-0.5 text-[12px]">A morning email when a trip changes, plus booking and pre-trip reminders.</p>
+			</div>
+			{#if data.tripEmails.length === 0}
+				<p class="text-ink-muted text-sm">No current trips.</p>
+			{:else}
+				<ul class="space-y-1" data-trip-emails>
+					{#each data.tripEmails as t (t.id)}
+						<li>
+							<label class="flex min-h-11 items-center gap-3">
+								<input type="checkbox" name="on" value={t.id} bind:checked={emailOn[t.id]} class="border-line h-4 w-4 rounded" />
+								<span class="text-ink text-sm">{t.title}</span>
+							</label>
+						</li>
+					{/each}
+				</ul>
+				{#if form?.tripEmailsError}
+					<p role="alert" class="text-error-deep text-[12px]">{form.tripEmailsError}</p>
+				{/if}
+				<div class="flex justify-end">
+					<Button type="submit" variant="ghost" size="sm" loading={savingEmails}>Save</Button>
+				</div>
+			{/if}
 		</form>
 	</Card>
 

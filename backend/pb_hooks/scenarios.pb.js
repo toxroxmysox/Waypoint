@@ -397,3 +397,33 @@ routerAdd('POST', '/api/scenarios/promote', (e) => {
 
 	return e.json(200, { ok: true, decision_id: decision.id, date_start: dateStart, date_end: dateEnd });
 });
+
+// ---------------------------------------------------------------------------
+// #519 — cross-trip references (#411 pattern). Keystone items and the scenario
+// it forks must be on this scenario's trip. Checked on create, or on update when
+// the field or trip changed. goja: helpers inlined.
+// ---------------------------------------------------------------------------
+onRecordValidate((e) => {
+	const r = e.record;
+	const tripId = r.getString('trip');
+	const isNew = r.isNew();
+	const tripChanged = isNew || r.getString('trip') !== r.original().getString('trip');
+	const sameTrip = (collection, id) => {
+		try {
+			return e.app.findRecordById(collection, id).getString('trip') === tripId;
+		} catch (_) {
+			return false;
+		}
+	};
+	const keys = r.getStringSlice('keystones');
+	if (tripChanged || JSON.stringify(keys) !== JSON.stringify(r.original().getStringSlice('keystones'))) {
+		for (let i = 0; i < keys.length; i++) {
+			if (!sameTrip('items', keys[i])) throw new BadRequestError("That item isn't on this trip.");
+		}
+	}
+	const fork = r.getString('fork_of');
+	if (fork && (tripChanged || fork !== r.original().getString('fork_of')) && !sameTrip('scenarios', fork)) {
+		throw new BadRequestError("That scenario isn't on this trip.");
+	}
+	e.next();
+}, 'scenarios');

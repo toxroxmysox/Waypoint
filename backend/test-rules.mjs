@@ -1493,7 +1493,8 @@ const USERS_CROSSREAD_OPS = [
 	'crossread_avatar_visible',
 	'crossread_email_hidden',
 	'crossread_password_hidden',
-	'crossread_tokenkey_hidden'
+	'crossread_tokenkey_hidden',
+	'self_view'
 ];
 
 async function runUsersCrossReadCases(tokens, fixture) {
@@ -1529,6 +1530,13 @@ async function runUsersCrossReadCases(tokens, fixture) {
 	recordResult('users', 'crossread_email_hidden', 'co_owner', 'yes', emailHidden ? 'yes' : 'no', view.status);
 	recordResult('users', 'crossread_password_hidden', 'co_owner', 'yes', passwordHidden ? 'yes' : 'no', view.status);
 	recordResult('users', 'crossread_tokenkey_hidden', 'co_owner', 'yes', tokenKeyHidden ? 'yes' : 'no', view.status);
+
+	// #508 — every user can read their OWN row, trips or not (0084). non_member
+	// shares no trip with anyone in the fixture, the case 0043 alone 404'd.
+	const self = await pbRequest('GET', `/api/collections/users/records/${fixture.userIds.non_member}`, {
+		token: tokens.non_member
+	});
+	recordResult('users', 'self_view', 'non_member', 'allow', classifyView(self.status), self.status);
 }
 
 // #122 — suggestions member-read. Comments live in `suggestions`; writes go
