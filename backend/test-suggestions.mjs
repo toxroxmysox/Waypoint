@@ -523,6 +523,75 @@ console.log('\n15. #444 update (Save keeps it pending)');
 	}
 }
 
+// ─── #411: approval keeps span, timezone, place and booking fields ───────────
+{
+	console.log('\n#411 — lossless suggestion → item');
+	const own = fixtureRes.json;
+	const getItem = async (id) => (await api('GET', `/api/collections/items/records/${id}`, null, tokens.owner)).json || {};
+	const rich = {
+		...samplePayload,
+		type: 'lodging',
+		day: own.dayId,
+		end_date: '2026-06-03 00:00:00.000Z',
+		start_tz: 'Europe/Paris',
+		end_tz: 'Europe/Rome',
+		location_coords: { lat: 48.8566, lng: 2.3522 },
+		google_place_id: 'ChIJD7fiBh9u5kcRYJSMaMOCCwQ',
+		requires_booking: true,
+		flight_number: 'AF1234',
+		parent_item: own.itemId
+	};
+	const lossless = (it) =>
+		it.end_date?.slice(0, 10) === '2026-06-03' &&
+		it.start_tz === 'Europe/Paris' &&
+		it.end_tz === 'Europe/Rome' &&
+		it.location_coords?.lat === 48.8566 &&
+		it.location_coords?.lng === 2.3522 &&
+		it.google_place_id === rich.google_place_id &&
+		it.requires_booking === true &&
+		it.flight_number === 'AF1234' &&
+		it.parent_item === own.itemId;
+	const fields = (it) => JSON.stringify({ end_date: it.end_date, start_tz: it.start_tz, end_tz: it.end_tz, location_coords: it.location_coords, google_place_id: it.google_place_id, requires_booking: it.requires_booking, flight_number: it.flight_number, parent_item: it.parent_item });
+
+	const t = await api('POST', '/api/suggestions/create', { trip_id: tripId, payload: { ...rich, title: '3-night stay (#411)' } }, tokens.traveler);
+	const ap = await api('POST', '/api/suggestions/review', { suggestion_id: t.json?.suggestion_id, action: 'approve' }, tokens.owner);
+	const ai = ap.json?.item_id ? await getItem(ap.json.item_id) : {};
+	lossless(ai) ? pass('approve keeps every field') : fail('approve keeps every field', `${ap.status} ${fields(ai)}`);
+
+	const auto = await api('POST', '/api/suggestions/create', { trip_id: tripId, payload: { ...rich, title: 'Auto stay (#411)' } }, tokens.owner);
+	const au = auto.json?.item_id ? await getItem(auto.json.item_id) : {};
+	lossless(au) ? pass('auto-approve keeps every field') : fail('auto-approve keeps every field', `${auto.status} ${fields(au)}`);
+
+	const far = await api('POST', '/api/suggestions/create', { trip_id: tripId, payload: { ...rich, title: 'Too long (#411)', end_date: '2026-06-09 00:00:00.000Z' } }, tokens.traveler);
+	const farAp = await api('POST', '/api/suggestions/review', { suggestion_id: far.json?.suggestion_id, action: 'approve' }, tokens.owner);
+	farAp.status === 400 && farAp.json?.message === 'End date is after the trip ends.'
+		? pass('approving an out-of-bounds end_date is refused')
+		: fail('out-of-bounds end_date refused', `${farAp.status} ${JSON.stringify(farAp.json)}`);
+
+	const listed = async (title) =>
+		((await api('GET', `/api/suggestions/list?trip_id=${tripId}`, null, tokens.owner)).json?.items || []).filter((x) => {
+			let pl = x.payload;
+			if (typeof pl === 'string') pl = JSON.parse(pl);
+			return pl?.title === title;
+		});
+	const farRow = (await listed('Too long (#411)'))[0];
+	farRow?.status === 'pending'
+		? pass('a refused approval leaves the suggestion pending')
+		: fail('refused approval leaves it pending', JSON.stringify(farRow && { status: farRow.status }));
+	const farAuto = await api('POST', '/api/suggestions/create', { trip_id: tripId, payload: { ...rich, title: 'Too long auto (#411)', end_date: '2026-06-09 00:00:00.000Z' } }, tokens.owner);
+	const farAutoRows = await listed('Too long auto (#411)');
+	farAuto.status === 400 && farAutoRows.length === 0
+		? pass('a refused auto-approve leaves no suggestion behind')
+		: fail('refused auto-approve leaves nothing', `${farAuto.status} rows=${JSON.stringify(farAutoRows.map((r) => r.status))}`);
+
+	const other = await api('POST', '/api/dev/rules-fixture', { emails: EMAILS, slug: 'e2e-rules-test-sugg-parent' }, tokens.owner);
+	const fp = await api('POST', '/api/suggestions/create', { trip_id: tripId, payload: { ...rich, title: 'Foreign parent (#411)', parent_item: other.json?.itemId } }, tokens.owner);
+	const fpi = fp.json?.item_id ? await getItem(fp.json.item_id) : null;
+	fpi && fpi.parent_item === ''
+		? pass('foreign parent_item is dropped (as #496 drops day/phase)')
+		: fail('foreign parent_item dropped', `${fp.status} parent=${fpi?.parent_item} ${JSON.stringify(fp.json)}`);
+}
+
 // ─── summary ─────────────────────────────────────────────────────────────────
 
 console.log(`\n${'─'.repeat(50)}`);
