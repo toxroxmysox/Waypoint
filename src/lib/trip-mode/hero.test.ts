@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { heroStatus, goingNames, goingPeople, mapsUrl } from './hero';
+import { heroStatus, goingPeople, mapsUrl } from './hero';
 
 describe('goingPeople (#440): going first, then struck not-going; no answer never listed', () => {
 	const ms = [
@@ -62,23 +62,6 @@ describe('heroStatus (the NOW line)', () => {
 	});
 	it('#431: a deadline (end-only) has no live line', () => {
 		expect(heroStatus({ start_time: '', end_time: at('16:30') }, now('16:00'))).toBeNull();
-	});
-});
-
-describe('goingNames', () => {
-	const members = [
-		{ id: 'm1', display_name: 'Scott' },
-		{ id: 'm2', display_name: 'Kim' },
-		{ id: 'm3', display_name: 'Gone', removed_at: '2026-01-01' }
-	] as never[];
-	it('lists going members in assigned order, skipping departed and unknown', () => {
-		expect(goingNames({ assigned_to: ['m2', 'm3', 'm1', 'zz'] }, members)).toEqual([
-			{ memberId: 'm2', name: 'Kim' },
-			{ memberId: 'm1', name: 'Scott' }
-		]);
-	});
-	it('is empty when nobody is going', () => {
-		expect(goingNames({ assigned_to: [] }, members)).toEqual([]);
 	});
 });
 

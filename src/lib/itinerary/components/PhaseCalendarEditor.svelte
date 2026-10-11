@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { formatCalendarDate } from '$lib/shell/format';
 	// #330 / ADR-0021 V2 — the calendar phase editor. A week-aligned grid where each
 	// phase tints its run of days; travel days (shared boundaries) are split cells
 	// carrying a draggable route handle. Drag a handle to move a boundary, tap a day to
@@ -190,10 +191,9 @@
 	}
 
 	function fmtShort(date: string): string {
-		return new Date(date + 'T00:00:00.000Z').toLocaleDateString('en-US', {
+		return formatCalendarDate(date, {
 			month: 'short',
-			day: 'numeric',
-			timeZone: 'UTC'
+			day: 'numeric'
 		});
 	}
 	const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];

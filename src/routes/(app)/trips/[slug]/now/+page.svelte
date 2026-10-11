@@ -30,6 +30,7 @@
 	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
 	import type { Item } from '$lib/types';
 	import { page } from '$app/state';
+	import { invalidateAll } from '$app/navigation';
 	import { untrack, tick, onMount } from 'svelte';
 
 	let { data } = $props();
@@ -45,7 +46,6 @@
 	});
 
 	const nowIso = untrack(() => data.now);
-	const todayStr = nowIso.split('T')[0];
 	// Trip-local "now" (UTC fields = the trip's wall clock). Ticks every 30s so the
 	// Hero's "55m left" counts down and the Focus hands over when the item ends.
 	let now = $state(new Date(nowIso));
@@ -61,6 +61,12 @@
 			30_000
 		);
 		return () => clearInterval(id);
+	});
+	// Trip-local today follows the ticking clock. Crossing trip-local midnight with
+	// the page open reloads, so today's items and the NBB key move to the new day (#500).
+	const todayStr = $derived(now.toISOString().split('T')[0]);
+	$effect(() => {
+		if (todayStr !== data.now.split('T')[0]) invalidateAll();
 	});
 
 	// The merged feed: faded past / Focus / normal rest (timed + untimed woven).
@@ -132,6 +138,9 @@
 	// Auto-scroll to the Focus on open (the contract's anchor). This naturally
 	// pushes the faded past above the fold → "reveal on scroll-up". No-op on
 	// SSR / when there's no past to hide.
+	// A ref, not an id: AppShell renders this page twice and getElementById would
+	// return the hidden mobile copy, so desktop never scrolled (#500).
+	let focusEl = $state<HTMLElement | null>(null);
 	onMount(() => {
 		// Add-sheet door: /now?capture=memory opens the composer directly.
 		if (page.url.searchParams.get('capture') === 'memory' && canCapture) {
@@ -139,7 +148,7 @@
 		}
 		if (pastItems.length === 0) return;
 		tick().then(() => {
-			document.getElementById('now-focus')?.scrollIntoView({ behavior: 'auto', block: 'start' });
+			focusEl?.scrollIntoView({ behavior: 'auto', block: 'start' });
 		});
 	});
 </script>
@@ -197,7 +206,7 @@
 	{/if}
 
 	<!-- Weight 2: Focus — the live state, front-and-centre, full detail. Auto-scroll target. -->
-	<div id="now-focus" class="scroll-mt-[110px]">
+	<div bind:this={focusEl} class="scroll-mt-[110px]">
 		{#if focus.kind === 'mid-event'}
 			<!-- #430: a Hero for every ongoing item (the viewer's first, then by start). Stacking
 			     already says "at the same time", so no conflict is shown between them. -->

@@ -97,6 +97,7 @@
 						canReview
 						review="inbox"
 						tripSlug={data.trip.slug}
+						place={data.trip.location_summary}
 						actions={{ approve: '?/approve', reject: '?/reject', vote: '?/voteGhost', unvote: '?/unvoteGhost' }}
 					/>
 				{:else}

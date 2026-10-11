@@ -97,6 +97,8 @@ export interface TripExport {
 	goals: Array<{
 		title: string;
 		description: string;
+		/** #403 — the capture prompt id it answered; '' otherwise. */
+		prompt: string;
 		status: string;
 		sort_order: number;
 		created_by_ref: string;

@@ -9,6 +9,7 @@
 	import Pill from '$lib/ui/Pill.svelte';
 	import FlightSubLine from './FlightSubLine.svelte';
 	import { rowTrailing, type FlightSub } from '$lib/itinerary/row';
+	import { bookingWords } from '$lib/itinerary/booking-projection';
 	import type { ItemType } from '$lib/types';
 
 	let {
@@ -38,6 +39,8 @@
 		onBook?: () => void;
 	} = $props();
 
+	// #462 — a meal row reads "Mark reserved" / "Reserved".
+	const words = $derived(bookingWords(type));
 	const trailingKind = $derived(rowTrailing({ chip: pending ? 'booked' : undefined }));
 </script>
 
@@ -57,7 +60,7 @@
 		<button
 			type="submit"
 			class="-ml-3 flex h-11 w-11 shrink-0 items-center justify-center"
-			aria-label="Mark booked"
+			aria-label={words.mark}
 			aria-pressed={pending}
 		>
 			<span
@@ -80,7 +83,7 @@
 
 {#snippet trailing()}
 	{#if trailingKind === 'chip'}
-		<Pill variant="booked" size="sm">Booked</Pill>
+		<Pill variant="booked" size="sm">{words.done}</Pill>
 	{/if}
 {/snippet}
 

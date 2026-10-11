@@ -86,7 +86,7 @@ const usd = (n: number) => `$${n.toFixed(2)}`;
  * expense is linked, else `Log payment` for roles that may log one.
  */
 export function detailsRows(p: {
-	item: { cost_estimate_usd?: number; reservation_url?: string; free_cancellation?: boolean };
+	item: { type?: string; cost_estimate_usd?: number; reservation_url?: string; free_cancellation?: boolean };
 	phaseName?: string;
 	paid: { isPaid: boolean; total: number; count: number };
 	canLogPayment: boolean;
@@ -110,7 +110,7 @@ export function detailsRows(p: {
 	if (p.item.reservation_url) {
 		rows.push({
 			key: 'booking',
-			label: 'Booking',
+			label: p.item.type === 'meal' ? 'Reservation' : 'Booking', // #462
 			value: hostLabel(p.item.reservation_url),
 			href: p.item.reservation_url,
 			external: true

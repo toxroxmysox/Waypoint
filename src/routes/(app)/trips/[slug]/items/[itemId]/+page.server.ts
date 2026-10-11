@@ -12,7 +12,7 @@ import { needsBooking } from '$lib/itinerary/booking-projection';
 import { tripNow, tripTz } from '$lib/shell/trip-time';
 import { parseMarkBooked, markBookedDestination } from '$lib/itinerary/item-page';
 
-const BOOK_ERROR = "Couldn't mark this booked. Reload the page and try again.";
+const BOOK_ERROR = "Couldn't save that. Reload the page and try again.";
 
 // A failed PB call's status when it is an HTTP error, else 500.
 function failStatus(err: unknown): number {

@@ -8,6 +8,7 @@
 	import Hero from '$lib/itinerary/components/Hero.svelte';
 	import { formatTimeText } from '$lib/shell/format';
 	import Button from '$lib/ui/Button.svelte';
+	import WhatIsLink from '$lib/ui/WhatIsLink.svelte';
 	import { toast } from '$lib/shell/stores/toast';
 
 	let { data } = $props();
@@ -124,8 +125,11 @@
 						{#if card.description}
 							<p class="text-ink-soft text-sm leading-relaxed">{card.description}</p>
 						{/if}
-						{#if data.nameByUser[card.created_by]}
-							<p class="text-ink-muted text-[13px]">Added by {data.nameByUser[card.created_by]}</p>
+						{#if data.nameByMember[card.created_by]}
+							<p class="text-ink-muted text-[13px]">Added by {data.nameByMember[card.created_by]}</p>
+						{/if}
+						{#if card.created_by !== data.membership?.id}
+							<WhatIsLink title={card.title} place={data.trip.location_summary} />
 						{/if}
 					</Hero>
 				{/snippet}

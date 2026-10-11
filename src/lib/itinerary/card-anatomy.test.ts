@@ -187,7 +187,7 @@ describe('accessible name', () => {
 	const dinner = mk({ id: 'd', title: 'Dinner at The Immigrant', type: 'meal', start_time: t('18:30'), end_time: t('20:30') });
 	it('time + title + type + state', () => {
 		expect(cardAccessibleName({ item: dinner, needsBooking: true, booked: false })).toBe(
-			'6:30 to 8:30 PM, Dinner at The Immigrant, meal, needs booking'
+			'6:30 to 8:30 PM, Dinner at The Immigrant, meal, needs reservation'
 		);
 	});
 	it('spoken time forms', () => {
@@ -262,5 +262,19 @@ describe('stripEntries (#429)', () => {
 	it('Trip Mode: a stray code on an unbooked item shows Needs booking, not a chip', () => {
 		const e = stripEntries({ ...base, mode: 'trip', booked: false, needsBooking: true });
 		expect(kinds(e)).toEqual(['needs-booking', 'docs']);
+	});
+});
+
+describe('stripEntries meal words (#462)', () => {
+	const base = { mode: 'planning' as const, booked: false, docCount: 0 };
+	it('a meal reads To reserve / Reserved', () => {
+		expect(stripEntries({ ...base, needsBooking: true, type: 'meal' })[0]).toMatchObject({
+			text: 'To reserve',
+			label: 'Needs reservation'
+		});
+		expect(stripEntries({ ...base, needsBooking: false, booked: true, type: 'meal' })[0].text).toBe('Reserved');
+	});
+	it('an activity keeps To book', () => {
+		expect(stripEntries({ ...base, needsBooking: true, type: 'activity' })[0].text).toBe('To book');
 	});
 });

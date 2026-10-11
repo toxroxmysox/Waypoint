@@ -19,7 +19,8 @@
 		members = [],
 		myMemberId = '',
 		canVoteGhosts = false,
-		canReviewGhosts = false
+		canReviewGhosts = false,
+		place = ''
 	}: {
 		/** The merged, vote-tagged cards from `parkingLotCards` (items + ghosts). */
 		cards: ParkingCard[];
@@ -28,6 +29,8 @@
 		myMemberId?: string;
 		canVoteGhosts?: boolean;
 		canReviewGhosts?: boolean;
+		/** The trip's place, for a ghost's "What is this?" search (#406). */
+		place?: string;
 	} = $props();
 
 	const typeOf = (c: ParkingCard) =>
@@ -45,7 +48,7 @@
 					<IdeaCard item={card.item} {tripSlug} votes={card.votes} {members} {myMemberId} canVote={canVoteGhosts} />
 				{:else}
 					<!-- #248 — a pending suggestion: dotted, votable, in its type group. -->
-					<GhostCard suggestion={card.suggestion} votes={card.votes} {members} {myMemberId} canVote={canVoteGhosts} canReview={canReviewGhosts} />
+					<GhostCard suggestion={card.suggestion} votes={card.votes} {members} {myMemberId} canVote={canVoteGhosts} canReview={canReviewGhosts} {place} />
 				{/if}
 			{/each}
 		</section>

@@ -107,5 +107,7 @@ export function relativeTime(created: string, now: Date = new Date()): string {
 	if (hr < 24) return `${hr}h`;
 	const day = Math.floor(hr / 24);
 	if (day < 7) return `${day}d`;
+	// An instant, not a calendar day, so not formatCalendarDate. UTC on purpose:
+	// SSR and the client render the same text (hydration keeps the server's).
 	return then.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }

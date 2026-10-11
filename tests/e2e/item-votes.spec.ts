@@ -82,7 +82,8 @@ test.describe('Votes on the item page (#442)', () => {
 			...(phase ? { phase: phase.id } : {}),
 			type: 'activity',
 			title: 'Kayak trip',
-			status: 'unplanned'
+			status: 'unplanned',
+			created_by: fx.memberIds.owner
 		});
 		ideaId = idea.id;
 		const planned = await pb(owner.token, 'POST', '/api/collections/items/records', {
@@ -107,6 +108,8 @@ test.describe('Votes on the item page (#442)', () => {
 			// Votes and Going never share a face.
 			await expect(vis(page, '[data-testid="going-answer"]')).toHaveCount(0);
 			await expect(vis(page, '[data-testid="item-your-vote"]')).toHaveCount(0);
+			// #406 — your own idea: no "What is this?".
+			await expect(vis(page, '[data-what-is]')).toHaveCount(0);
 			await vis(page, '[data-testid="add-to-day"]').first().getByRole('button', { name: 'Add to a day' }).click();
 			await expect(page.locator('[data-sheet-panel]').filter({ visible: true }).first()).toContainText('Add to a day');
 		} finally {
@@ -120,6 +123,10 @@ test.describe('Votes on the item page (#442)', () => {
 			await open(page, ideaId, 'Kayak trip');
 			await expect(vis(page, '[data-testid="item-votes"]').first()).toBeVisible();
 			await expect(vis(page, '[data-testid="add-to-day"]')).toHaveCount(0);
+			// #406 — someone else's idea: a web search for what it is, in a new tab.
+			const whatIs = vis(page, '[data-what-is]').first();
+			await expect(whatIs).toHaveAttribute('href', /^https:\/\/www\.google\.com\/search\?q=what%20is%20Kayak%20trip/);
+			await expect(whatIs).toHaveAttribute('target', '_blank');
 		} finally {
 			await ctx.close();
 		}

@@ -1,7 +1,7 @@
 import { fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Day, TripGoal, TripMember } from '$lib/types';
-import { datetimeToTime } from '$lib/shell/format';
+import { datetimeToTime, formatCalendarDate } from '$lib/shell/format';
 import { combineDateTime } from '$lib/shell/trip-time';
 import { nextSortOrder } from '$lib/itinerary/sort-order';
 import { syncGoalLinks } from '$lib/itinerary/goal-links';
@@ -95,10 +95,7 @@ export const load: PageServerLoad = async ({ url, locals, parent }) => {
 				let proposedDayLabel = 'Unscheduled';
 				const proposedDayRec = (days as Day[]).find((d) => d.id === String(raw.day ?? ''));
 				if (proposedDayRec?.date) {
-					proposedDayLabel = new Date(proposedDayRec.date.replace(' ', 'T')).toLocaleDateString(
-						'en-US',
-						{ weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }
-					);
+					proposedDayLabel = formatCalendarDate(proposedDayRec.date, { weekday: 'short', month: 'short', day: 'numeric' });
 				}
 				prefill = {
 					...raw,

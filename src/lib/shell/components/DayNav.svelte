@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { formatCalendarDate } from '$lib/shell/format';
 	import type { Day } from '$lib/types';
 
 	let {
@@ -16,11 +17,10 @@
 	let nextDay = $derived(currentIndex < days.length - 1 ? days[currentIndex + 1] : null);
 
 	function dayLabel(d: Day): string {
-		return new Date(d.date.replace(' ', 'T')).toLocaleDateString('en-US', {
+		return formatCalendarDate(d.date, {
 			weekday: 'short',
 			month: 'short',
-			day: 'numeric',
-			timeZone: 'UTC'
+			day: 'numeric'
 		});
 	}
 

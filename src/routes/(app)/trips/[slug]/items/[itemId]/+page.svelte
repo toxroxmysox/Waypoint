@@ -6,7 +6,7 @@
 	import { addLine, bookingControls, detailsRows, goingView, itemTimeText, itemTypeLine, newestFirst, votesView, tripModeView } from '$lib/itinerary/item-page';
 	import { applyGoing } from '$lib/itinerary/assignment';
 	import { invalidateAll } from '$app/navigation';
-	import { needsBooking } from '$lib/itinerary/booking-projection';
+	import { bookingWords, needsBooking } from '$lib/itinerary/booking-projection';
 	import { documentLabel } from '$lib/documents/files';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
@@ -28,6 +28,7 @@
 	import ChecklistBody from '$lib/itinerary/components/ChecklistBody.svelte';
 	import AssignMemberSheet from '$lib/itinerary/components/AssignMemberSheet.svelte';
 	import Avatar from '$lib/ui/Avatar.svelte';
+	import WhatIsLink from '$lib/ui/WhatIsLink.svelte';
 	import DocumentSection from '$lib/documents/components/DocumentSection.svelte';
 	import { logPaymentHref } from '$lib/money/expense-prefill';
 	import type { Comment, Task } from '$lib/types';
@@ -39,8 +40,8 @@
 	// #416 — every control below renders only for roles the server accepts it
 	// from (itemPermissions, computed in the loader). #437 reuses the same set.
 	const can = $derived(data.permissions);
-	// #437 — the ⋯ menu's entries are a projection of the same permissions.
-	const menuEntries = $derived(itemMenuEntries(can));
+	// Per-instance ids: AppShell renders this page twice (mobile + desktop trees).
+	const uid = $props.id();
 	let moveSheetOpen = $state(false);
 	let skipSheetOpen = $state(false);
 	let deleteSheetOpen = $state(false);
@@ -70,10 +71,16 @@
 		clockBase = { server: new Date(data.now).getTime(), at: Date.now() };
 		now = new Date(data.now);
 	});
-	onMount(() => {
+	// The tick only matters in Trip Mode (the NOW line); Planning Mode never reads `now`.
+	$effect(() => {
+		if (chromeMode() !== 'trip') return;
 		const id = setInterval(() => (now = new Date(clockBase.server + (Date.now() - clockBase.at))), 30_000);
 		return () => clearInterval(id);
 	});
+	// Comment dates are timestamps → the viewer's local day, so render them only on
+	// the client (SSR would bake in the server's timezone and hydration keeps it).
+	let mounted = $state(false);
+	onMount(() => (mounted = true));
 	const tm = $derived(
 		tripModeView({
 			tripMode: chromeMode() === 'trip',
@@ -139,7 +146,12 @@
 	const votesFace = $derived(
 		votesView({ item: data.item, canVote: can.canVote, canMove: can.canMove, myVote: data.myVote })
 	);
+	// #437 — the ⋯ menu's entries are a projection of the same permissions. An idea
+	// shows "Add to a day" in the body, so the menu drops its duplicate Move (#500).
+	const menuEntries = $derived(itemMenuEntries({ ...can, canMove: can.canMove && !votesFace.showAddToDay }));
 	let voteRowOpen = $state(false);
+	// #462 — a meal is reserved: "Reserve ↗" / "Mark reserved".
+	const bookWords = $derived(bookingWords(data.item.type));
 	const votersByValue = $derived(
 		votePills(data.votes, data.membership.id, (id) => memberDisplayName(data.members.find((m) => m.id === id)))
 			.filter((p) => p.count > 0)
@@ -195,7 +207,7 @@
 				class="text-ink hover:bg-surface-2 active:bg-surface-2 inline-flex min-h-11 items-center rounded-md px-3 text-sm font-semibold"
 				data-testid="book-link"
 			>
-				Book ↗<span class="sr-only"> (opens in a new tab)</span>
+				{bookWords.book} ↗<span class="sr-only"> (opens in a new tab)</span>
 			</a>
 		{/if}
 		<button
@@ -204,7 +216,7 @@
 			class="text-ink hover:bg-surface-2 active:bg-surface-2 inline-flex min-h-11 items-center rounded-md px-3 text-sm font-semibold"
 			data-testid="mark-booked-open"
 		>
-			Mark booked
+			{bookWords.mark}
 		</button>
 	</span>
 {/snippet}
@@ -213,20 +225,24 @@
 	<dl class="divide-line mt-1 divide-y" data-testid="item-details">
 		{#each rows as row (row.key)}
 			{#if row.href}
-				<a
-					href={row.href}
-					target={row.external ? '_blank' : undefined}
-					rel={row.external ? 'noopener noreferrer' : undefined}
-					class="hover:bg-surface-2 active:bg-surface-2 flex min-h-11 items-center justify-between gap-3 py-2"
+				<!-- The link sits in the dd (dl allows only div/dt/dd children) and stretches
+				     over the whole row, so the full row stays the tap target. -->
+				<div
+					class="hover:bg-surface-2 active:bg-surface-2 relative flex min-h-11 items-center justify-between gap-3 py-2"
 					data-detail={row.key}
 				>
 					<dt class="text-ink-muted shrink-0 text-xs font-semibold tracking-wide uppercase">{row.label}</dt>
 					<dd class="text-ink flex min-w-0 items-center gap-2 text-sm font-medium">
-						<span class="truncate">{row.value}</span>
+						<a
+							href={row.href}
+							target={row.external ? '_blank' : undefined}
+							rel={row.external ? 'noopener noreferrer' : undefined}
+							class="truncate after:absolute after:inset-0"
+						>{row.value}</a>
 						{#if row.hint}<span class="text-ink-muted shrink-0 text-xs font-normal">{row.hint}</span>{/if}
 						<span class="text-ink-muted shrink-0" aria-hidden="true">{row.external ? '↗' : '›'}</span>
 					</dd>
-				</a>
+				</div>
 			{:else}
 				<div class="flex min-h-11 items-center justify-between gap-3 py-2" data-detail={row.key}>
 					<dt class="text-ink-muted shrink-0 text-xs font-semibold tracking-wide uppercase">{row.label}</dt>
@@ -237,7 +253,7 @@
 	</dl>
 	{#if votesFace.face === 'row'}
 		<div class="border-line border-t" data-testid="item-your-vote">
-			<div class="flex min-h-11 items-center justify-between gap-3 py-2">
+			<dl class="flex min-h-11 items-center justify-between gap-3 py-2">
 				<dt class="text-ink-muted shrink-0 text-xs font-semibold tracking-wide uppercase">Your vote</dt>
 				<dd class="text-ink flex min-w-0 items-center gap-2 text-sm font-medium">
 					<span>{votesFace.rowText}</span>
@@ -252,7 +268,7 @@
 						change
 					</button>
 				</dd>
-			</div>
+			</dl>
 			{#if voteRowOpen}
 				<div class="pb-2">
 					<VotePills
@@ -331,8 +347,12 @@
 			{/if}
 
 			{#if votesFace.face === 'pills'}
-				<section class="space-y-2 px-1" data-testid="item-votes" aria-labelledby="item-votes-h">
-					<h2 id="item-votes-h" class="font-display text-ink text-base font-semibold">What do you think?</h2>
+				<section class="space-y-2 px-1" data-testid="item-votes" aria-labelledby="{uid}-votes-h">
+					<h2 id="{uid}-votes-h" class="font-display text-ink text-base font-semibold">What do you think?</h2>
+					<!-- #406 — someone else's idea: a quick web search for what it is. -->
+					{#if data.item.created_by !== data.membership.id}
+						<WhatIsLink title={data.item.title} place={data.trip.location_summary} />
+					{/if}
 					<VotePills
 						labels
 						votes={data.votes}
@@ -562,11 +582,13 @@
 											{#if c.author_role}
 												<span class="text-ink-muted text-[11px]">{titleCase(c.author_role)}</span>
 											{/if}
-											<span class="text-ink-muted text-[11px]">
-												{new Date(c.created.replace(' ', 'T')).toLocaleDateString('en-US', {
-													month: 'short', day: 'numeric', timeZone: 'UTC'
-												})}
-											</span>
+											{#if mounted}
+												<span class="text-ink-muted text-[11px]">
+													{new Date(c.created.replace(' ', 'T')).toLocaleDateString('en-US', {
+														month: 'short', day: 'numeric'
+													})}
+												</span>
+											{/if}
 										</div>
 										<p class="text-ink-soft mt-0.5 text-sm whitespace-pre-wrap">{c.comment_text}</p>
 									</div>
@@ -585,6 +607,7 @@
 		bind:open={markBookedOpen}
 		{itemUrl}
 		title={data.item.title}
+		words={bookWords}
 		error={form?.bookError}
 	/>
 {/if}

@@ -2,7 +2,7 @@ import { test, expect, type Browser } from '@playwright/test';
 import { E2E_BASE, E2E_PB_BASE } from './e2e-env';
 
 // #404 — a comma in a captured goal stays in the title; it no longer splits
-// the input into several goals.
+// the input into several goals. #403 — the goal keeps its prompt's kicker.
 //
 // Driven as the TRAVELER. The fixture also seeds others' goals, so the deck may
 // open on reaction cards; the test votes past them to a prompt card.
@@ -80,6 +80,14 @@ test.describe('#404 goal capture keeps commas', () => {
 			await expect(traveler.page.locator('span.rounded-full', { hasText: /^✓Kayak$/ })).toHaveCount(
 				0
 			);
+
+			// #403 — the goal keeps the prompt it answered: the list shows its kicker.
+			await traveler.page.waitForLoadState('networkidle');
+			await traveler.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/goals`, { waitUntil: 'networkidle' });
+			const row = traveler.page
+				.locator('div.relative', { has: traveler.page.getByRole('link', { name: 'Kayak, then lunch' }) })
+				.filter({ visible: true });
+			await expect(row.locator('[data-goal-kicker]')).not.toHaveText('');
 		} finally {
 			await traveler.ctx.close();
 		}

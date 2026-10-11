@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { formatCalendarDate } from '$lib/shell/format';
 	import { withOrigin } from '$lib/shell/back-nav';
 	import { page } from '$app/state';
 	import type { Phase, Day } from '$lib/types';
@@ -68,19 +69,8 @@
 	let ideaSheetOpen = $state(false);
 
 	function formatDateRange(start: string, end: string): string {
-		const s = new Date(start.replace(' ', 'T'));
-		const e = new Date(end.replace(' ', 'T'));
-		const startStr = s.toLocaleDateString('en-US', {
-			month: 'short',
-			day: 'numeric',
-			timeZone: 'UTC'
-		});
-		const endStr = e.toLocaleDateString('en-US', {
-			month: 'short',
-			day: 'numeric',
-			year: 'numeric',
-			timeZone: 'UTC'
-		});
+		const startStr = formatCalendarDate(start, { month: 'short', day: 'numeric' });
+		const endStr = formatCalendarDate(end, { month: 'short', day: 'numeric', year: 'numeric' });
 		return `${startStr} – ${endStr}`;
 	}
 

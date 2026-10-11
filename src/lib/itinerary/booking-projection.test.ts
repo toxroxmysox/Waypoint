@@ -3,7 +3,8 @@ import {
 	needsBooking,
 	bookingProjection,
 	defaultRequiresBooking,
-	BOOKABLE_TYPES
+	BOOKABLE_TYPES,
+	bookingWords
 } from './booking-projection';
 import type { Item, ItemType } from '$lib/types';
 
@@ -65,6 +66,24 @@ describe('defaultRequiresBooking', () => {
 	it('is false for other types', () => {
 		for (const t of ['activity', 'meal', 'note'] as ItemType[]) {
 			expect(defaultRequiresBooking(t)).toBe(false);
+		}
+	});
+});
+
+describe('bookingWords (#462)', () => {
+	it('a meal is reserved', () => {
+		expect(bookingWords('meal')).toEqual({
+			needs: 'Needs reservation',
+			chip: 'To reserve',
+			book: 'Reserve',
+			mark: 'Mark reserved',
+			done: 'Reserved'
+		});
+	});
+	it('everything else is booked', () => {
+		for (const t of ['lodging', 'activity', 'flight', undefined]) {
+			expect(bookingWords(t).chip).toBe('To book');
+			expect(bookingWords(t).done).toBe('Booked');
 		}
 	});
 });

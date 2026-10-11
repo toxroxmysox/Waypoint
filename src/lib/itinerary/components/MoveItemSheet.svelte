@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { formatCalendarDate } from '$lib/shell/format';
 	import { enhance } from '$app/forms';
 	import { untrack } from 'svelte';
 	import type { Day, Phase } from '$lib/types';
@@ -36,11 +37,10 @@
 	let phaseRequired = $derived(selectedDay === '' && phases.length > 0);
 
 	function dayLabel(d: Day): string {
-		return new Date(d.date.replace(' ', 'T')).toLocaleDateString('en-US', {
+		return formatCalendarDate(d.date, {
 			weekday: 'short',
 			month: 'short',
-			day: 'numeric',
-			timeZone: 'UTC'
+			day: 'numeric'
 		});
 	}
 
