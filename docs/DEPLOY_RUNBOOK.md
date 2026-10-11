@@ -64,6 +64,8 @@ Record row counts for every collection via the admin API (same TOKEN trick as st
 
 **v3.2 — `MCP_WRITES`.** AI writes (propose/commit/revert) are on unless `waypoint.env` sets `MCP_WRITES=off`, which removes the write tools from every connection. Flipping it needs a container restart (step 3). Default: leave it unset (on).
 
+**v3.1.1 — glance tile.** `GET /api/glance` 401s until `waypoint.env` sets `WAYPOINT_GLANCE_TOKEN` and 503s until `WAYPOINT_GLANCE_EMAILS` names at least one user. Add both before step 3 if the Homepage tile should work; leaving them unset is safe.
+
 ## 2. Ship the source (additive swap; never clobbers data/ or .env)
 
 Extract into a fresh dir, check it, then swap with two `mv`s. Nothing is deleted. (The `rm -rf` one-liner is refused by the permission classifier, and the old trees are cheap to keep.)
