@@ -185,7 +185,10 @@ function composeReminders(input) {
 			const date = neededBy(item, start).slice(0, 10);
 			if (item.type === 'lodging') stays.push({ title: item.title, date: date });
 			else if (item.type === 'flight' || item.type === 'transportation') travel.push({ title: item.title, date: date });
-			if (item.requiresBooking && !item.booked) unbooked.push({ title: item.title, date: date });
+			// #522 review — only what's needed during the trip, and not twice.
+			const dup = out.booking.some((bk) => bk.title === item.title && bk.date === date);
+			const during = date >= start && (!end || date <= end);
+			if (item.requiresBooking && !item.booked && during && !dup) unbooked.push({ title: item.title, date: date });
 		}
 		stays.sort(byDateThenTitle);
 		travel.sort(byDateThenTitle);
@@ -272,12 +275,22 @@ function renderDigestEmail(opts) {
 	const base = opts.appUrl.replace(/\/$/, '');
 	const many = opts.sections.length > 1;
 	const anyChanges = opts.sections.some((s) => hasChanges(s.diff));
-	const verb = anyChanges ? 'What changed on ' : 'Coming up on ';
+	// A lone closeout nudge is about a finished trip: "Wrapping up", not "Coming up".
+	const onlyCloseout =
+		!anyChanges &&
+		!many &&
+		!!opts.sections[0].reminders &&
+		opts.sections[0].reminders.closeout &&
+		opts.sections[0].reminders.booking.length === 0 &&
+		!opts.sections[0].reminders.brief;
+	const verb = anyChanges ? 'What changed on ' : onlyCloseout ? 'Wrapping up ' : 'Coming up on ';
 	let subject = many ? verb + opts.sections.length + ' of your trips' : verb + opts.sections[0].tripTitle;
 	if (opts.testLabel) subject = '[Waypoint digest test] ' + subject;
 
 	const greeting = opts.recipientName ? 'Hi ' + opts.recipientName + ',' : 'Hi,';
-	const intro = !anyChanges
+	const intro = onlyCloseout
+		? 'Time to wrap up ' + opts.sections[0].tripTitle + '.'
+		: !anyChanges
 		? many
 			? 'Here’s what’s coming up on your trips.'
 			: 'Here’s what’s coming up on ' + opts.sections[0].tripTitle + '.'
@@ -328,11 +341,13 @@ function renderDigestEmail(opts) {
 	if (opts.sections.length === 1) {
 		const url = base + '/trips/' + opts.sections[0].tripSlug + '/settings';
 		textParts.push('Prefer not to get these? Turn off digest emails in trip settings:', url);
+		textParts.push('Or for all your trips in your profile: ' + base + '/account');
 	} else {
 		textParts.push('Prefer not to get these? Turn off digest emails in each trip’s settings:');
 		for (const s of opts.sections) {
 			textParts.push('  ' + s.tripTitle + ': ' + base + '/trips/' + s.tripSlug + '/settings');
 		}
+		textParts.push('Or for all your trips in your profile: ' + base + '/account');
 	}
 
 	htmlParts.push('<p style="margin-top: 20px;">&mdash; Waypoint</p>');
@@ -351,7 +366,9 @@ function renderDigestEmail(opts) {
 	htmlParts.push(
 		'<p style="color: #67625a; font-size: 13px;">Prefer not to get these? Turn off digest emails in ' +
 			footerLinks +
-			'.</p>'
+			', or for all your trips in <a href="' +
+			base +
+			'/account" style="color: #67625a;">your profile</a>.</p>'
 	);
 	htmlParts.push('</div>');
 

@@ -57,6 +57,19 @@ describe('pre-trip brief + closeout (#522)', () => {
 		expect(r.brief?.unbooked.map((x) => x.title)).toEqual(['Kaiseki']);
 		expect(composeReminders({ ...trip, today: '2026-11-04', items }).brief).toBeNull();
 	});
+	it('brief lists only unbooked items during the trip, never one already in Still to book', () => {
+		const r = composeReminders({
+			...trip,
+			today: '2026-11-03',
+			items: [
+				item({ title: 'In trip', dayDate: '2026-11-08', requiresBooking: true }),
+				item({ title: 'After trip', dayDate: '2026-12-17', requiresBooking: true }),
+				item({ title: 'Due now', dayDate: '2026-11-17', requiresBooking: true })
+			]
+		});
+		expect(r.booking.map((b) => b.title)).toEqual(['Due now']);
+		expect(r.brief?.unbooked.map((x) => x.title)).toEqual(['In trip']);
+	});
 	it('closeout exactly 3 days after the trip ends, not when dateless', () => {
 		expect(composeReminders({ ...trip, today: '2026-11-23', items }).closeout).toBe(true);
 		expect(composeReminders({ ...trip, today: '2026-11-24', items }).closeout).toBe(false);
@@ -90,16 +103,31 @@ describe('remindersFor (#522 recipients)', () => {
 
 describe('renderDigestEmail with reminders (#522)', () => {
 	const empty = { added: [], edited: [], moved: [], removed: [] };
-	it('reminder-only email reads "Coming up" with the closeout link', () => {
+	it('closeout-only email reads "Wrapping up" with the closeout + profile links', () => {
 		const reminders = composeReminders({ ...trip, today: '2026-11-23', items: [] });
 		const out = renderDigestEmail({
 			recipientName: 'Abby',
 			appUrl: 'https://app.example.com',
 			sections: [{ tripTitle: 'Japan', tripSlug: 'japan', diff: empty, reminders }]
 		});
-		expect(out.subject).toBe('Coming up on Japan');
-		expect(out.text).toContain('Wrap up');
+		expect(out.subject).toBe('Wrapping up Japan');
+		expect(out.text).toContain('Time to wrap up Japan.');
+		expect(out.text).toContain('Or for all your trips in your profile: https://app.example.com/account');
+		expect(out.html).toContain('href="https://app.example.com/account"');
 		expect(out.text).toContain('https://app.example.com/trips/japan/closeout');
+	});
+	it('booking or brief reminders read "Coming up"', () => {
+		const reminders = composeReminders({
+			...trip,
+			today: '2026-11-03',
+			items: [item({ title: 'Ryokan', type: 'lodging', dayDate: '2026-11-07' })]
+		});
+		const out = renderDigestEmail({
+			recipientName: 'Abby',
+			appUrl: 'https://app.example.com',
+			sections: [{ tripTitle: 'Japan', tripSlug: 'japan', diff: empty, reminders }]
+		});
+		expect(out.subject).toBe('Coming up on Japan');
 	});
 	it('no reminders → unchanged "What changed" email', () => {
 		const out = renderDigestEmail({
