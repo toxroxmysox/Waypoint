@@ -10,7 +10,7 @@ export const getMemories: ToolDef = {
 	name: 'get_memories',
 	title: 'Memories',
 	description:
-		"What members wrote in a trip's memories (their thoughts on each day), oldest day first. Photos are never shared. " +
+		"What members wrote in a trip's memories (their thoughts on each day), oldest day first. Photos are not included. " +
 		'`date` (YYYY-MM-DD) narrows to one day.',
 	inputSchema: {
 		trip: z.string().describe('Trip slug, or part of its title'),

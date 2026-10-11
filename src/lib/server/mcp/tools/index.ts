@@ -7,7 +7,8 @@ import { getMoney } from './get-money';
 import { getTrip } from './get-trip';
 import { listTrips } from './list-trips';
 import { search } from './search';
+import { tripBrief } from './trip-brief';
 import { whatChanged } from './what-changed';
 import type { ToolDef } from './types';
 
-export const TOOLS: ToolDef[] = [listTrips, getTrip, getDay, search, getItem, getMoney, auditTripTool, whatChanged, getLists, getMemories];
+export const TOOLS: ToolDef[] = [listTrips, getTrip, getDay, search, getItem, getMoney, auditTripTool, whatChanged, getLists, getMemories, tripBrief];

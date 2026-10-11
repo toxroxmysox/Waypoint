@@ -5,7 +5,7 @@ import { formatDayDate } from '$lib/shell/format';
 import { toDateOnly } from '$lib/itinerary/multi-day';
 import { myTrips, resolveTrip, type McpContext, type TripRef } from '../context';
 import { ITEM_FIELDS, itemCard } from '../day-data';
-import { AI_OFF_NOTICE, result, stripHtml, type Card, type ToolResult } from '../present';
+import { AI_OFF_NOTICE, offTrip, result, stripHtml, type Card, type ToolResult } from '../present';
 import type { ToolDef } from './types';
 
 const SEARCH_CAP = 25;
@@ -67,6 +67,8 @@ export const search: ToolDef = {
 		if (!q && !anyFilter && !a.trip) throw new Error('Give a query, a filter, or a trip to search.');
 
 		const scope: TripRef[] = a.trip ? [await resolveTrip(ctx, a.trip)] : await myTrips(ctx);
+		// Searching inside one AI-off trip reads like any other tool on it.
+		if (a.trip && !scope[0].open) return offTrip(scope[0].trip);
 		const open = scope.filter((t) => t.open);
 		const skipped = scope
 			.filter((t) => !t.open)
