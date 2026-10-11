@@ -27,7 +27,7 @@ migrate(
 				{ type: 'autodate', name: 'created', onCreate: true },
 				{ type: 'autodate', name: 'updated', onCreate: true, onUpdate: true }
 			],
-			indexes: ['CREATE INDEX idx_mcp_connections_user ON mcp_connections (user, client_id)']
+			indexes: ['CREATE UNIQUE INDEX idx_mcp_connections_user ON mcp_connections (user, client_id)']
 		});
 		app.save(connections);
 

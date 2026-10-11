@@ -8,6 +8,7 @@
 	import AppVersion from '$lib/ui/AppVersion.svelte';
 	import BottomSheet from '$lib/ui/BottomSheet.svelte';
 	import AvatarCropper from '$lib/account/components/AvatarCropper.svelte';
+	import ConnectedApps from '$lib/account/components/ConnectedApps.svelte';
 	import { toast } from '$lib/shell/stores/toast';
 
 	let { data, form } = $props();
@@ -178,6 +179,8 @@
 			</div>
 		</form>
 	</Card>
+
+	<ConnectedApps connections={data.connections} />
 
 	<AppVersion />
 </main>

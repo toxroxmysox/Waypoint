@@ -57,18 +57,28 @@ async function mint(connectionId: string): Promise<TokenSet> {
 	return { access_token, refresh_token, token_type: 'Bearer', expires_in: ttl };
 }
 
+/** One connection per (user, client): reconnecting reuses it. The unique index
+ *  settles a concurrent first connect; the loser re-reads the winner's row. */
 async function connectionFor(userId: string, client: OAuthClient): Promise<string> {
 	const pb = await adminPb();
-	const existing = await pb
-		.collection('mcp_connections')
-		.getFirstListItem(pb.filter('user = {:u} && client_id = {:c}', { u: userId, c: client.client_id }), { requestKey: null })
-		.catch(() => null);
+	const find = () =>
+		pb
+			.collection('mcp_connections')
+			.getFirstListItem(pb.filter('user = {:u} && client_id = {:c}', { u: userId, c: client.client_id }), { requestKey: null })
+			.catch(() => null);
+	const existing = await find();
 	if (existing) return existing.id;
-	const created = await pb.collection('mcp_connections').create(
-		{ user: userId, client_id: client.client_id, client_name: client.client_name ?? '' },
-		{ requestKey: null }
-	);
-	return created.id;
+	try {
+		const created = await pb.collection('mcp_connections').create(
+			{ user: userId, client_id: client.client_id, client_name: client.client_name ?? '' },
+			{ requestKey: null }
+		);
+		return created.id;
+	} catch (err) {
+		const winner = await find();
+		if (winner) return winner.id;
+		throw err;
+	}
 }
 
 async function revokeConnectionTokens(connectionId: string): Promise<void> {

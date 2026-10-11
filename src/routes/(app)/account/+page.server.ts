@@ -15,13 +15,35 @@ export const load: PageServerLoad = async ({ locals }) => {
 	// the same request. The own row is always self-readable.
 	const user = await locals.pb.collection('users').getOne(locals.user!.id);
 	const avatarUrl = user.avatar ? pbFileUrl(user, user.avatar as string) : '';
+	// #502 — Connected apps (mcp_connections: list/delete rule = own rows only).
+	const connections = await locals.pb
+		.collection('mcp_connections')
+		.getFullList({ sort: '-created', fields: 'id,client_name,created,last_used_at' })
+		.catch(() => []);
 	return {
 		profile: { id: user.id, name: user.name as string, avatar: user.avatar as string },
-		avatarUrl
+		avatarUrl,
+		connections: connections.map((c) => ({
+			id: c.id,
+			client_name: c.client_name as string,
+			created: c.created as string,
+			last_used_at: c.last_used_at as string
+		}))
 	};
 };
 
 export const actions: Actions = {
+	// #502 / ADR-0024 — Disconnect: deleting the connection cascades its tokens.
+	disconnect: async ({ request, locals }) => {
+		const id = (await request.formData()).get('id')?.toString() ?? '';
+		try {
+			await locals.pb.collection('mcp_connections').delete(id);
+			return { disconnected: true };
+		} catch {
+			return fail(404, { disconnectError: 'That connection is already gone.' });
+		}
+	},
+
 	updateName: async ({ request, locals }) => {
 		const data = await request.formData();
 		const name = data.get('name')?.toString().trim() ?? '';

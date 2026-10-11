@@ -18,7 +18,8 @@ import { E2E_PB_BASE } from './e2e-env';
 // screen, refresh rotation with replay revocation. The test client is a CIMD
 // document the preview serves at /api/dev/test-cimd (dev-mode only).
 
-const EMAIL = 'rules-owner@e2e.test';
+// Its own user: the replay test revokes this user's connection, which parallel specs must not share.
+const EMAIL = 'e2e@waypoint.local';
 
 test.describe.configure({ mode: 'serial' });
 

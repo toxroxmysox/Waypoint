@@ -2,6 +2,9 @@
 // (stateless Streamable HTTP), bound to the connected user's context.
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpContext } from './context';
+import { CARD_HTML } from './card-html';
+import { UI_MIME, UI_URI, uiMeta } from './present';
+import { TOOLS } from './tools';
 
 export const INSTRUCTIONS =
 	"Waypoint is the user's group-trip planner, and you are helping one of its members. " +
@@ -10,7 +13,31 @@ export const INSTRUCTIONS =
 	'offered as a suggestion for them to decide: the trip belongs to its members. ' +
 	"If a trip's AI access is off, say so plainly.";
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function buildServer(ctx: McpContext): McpServer {
-	return new McpServer({ name: 'waypoint', version: '3.1.0' }, { instructions: INSTRUCTIONS });
+	const server = new McpServer({ name: 'waypoint', version: '3.1.0' }, { instructions: INSTRUCTIONS });
+
+	server.registerResource('waypoint-cards', UI_URI, { mimeType: UI_MIME, description: 'Waypoint card view' }, async () => ({
+		contents: [{ uri: UI_URI, mimeType: UI_MIME, text: CARD_HTML }]
+	}));
+
+	for (const tool of TOOLS) {
+		server.registerTool(
+			tool.name,
+			{
+				title: tool.title,
+				description: tool.description,
+				inputSchema: tool.inputSchema,
+				annotations: { readOnlyHint: true },
+				_meta: uiMeta
+			},
+			async (args: unknown) => {
+				try {
+					return await tool.run(ctx, args);
+				} catch (err) {
+					return { content: [{ type: 'text' as const, text: (err as Error).message || 'Something went wrong.' }], isError: true };
+				}
+			}
+		);
+	}
+	return server;
 }
