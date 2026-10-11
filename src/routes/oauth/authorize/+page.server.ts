@@ -23,7 +23,7 @@ export const load: PageServerLoad = async ({ url }) => {
 	if (!client_id) error(400, 'Start connecting from your AI app.');
 	const client = await resolveClient(client_id);
 	// Bad client or redirect_uri: show an error, never redirect (open-redirect rule).
-	if ('error' in client) error(400, `Unknown app: ${client.error}`);
+	if ('error' in client) error(400, client.error);
 	if (!client.redirect_uris.includes(redirect_uri)) error(400, 'This app sent an unregistered redirect address.');
 
 	const back = (err: string, desc: string): never => {

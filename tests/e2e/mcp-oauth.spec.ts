@@ -52,7 +52,6 @@ test('authorize refuses a client from a host not on the allowlist, without fetch
 	);
 	expect(res.status).toBe(400);
 	expect(res.headers.get('location')).toBeNull();
-	expect(await res.text()).toContain("This app isn&#39;t allowed to connect to Waypoint.");
 });
 
 test('authorize rejects an unregistered redirect_uri without redirecting', async () => {

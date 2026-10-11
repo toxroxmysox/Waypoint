@@ -6,6 +6,7 @@ import { toDateOnly } from '$lib/itinerary/multi-day';
 import { myTrips, resolveTrip, type McpContext, type TripRef } from '../context';
 import { ITEM_FIELDS, itemCard } from '../day-data';
 import { AI_OFF_NOTICE, offTrip, result, stripHtml, type Card, type ToolResult } from '../present';
+import { memberName } from './get-trip';
 import type { ToolDef } from './types';
 
 const SEARCH_CAP = 25;
@@ -36,8 +37,10 @@ function inTrips(pb: PocketBase, field: string, ids: string[]): string {
 	return ids.map((id) => pb.filter(`${field} = {:id}`, { id })).join(' || ');
 }
 
+/** Every word of `q` appears in at least one of `fields` ("Lucerne hotel" ≠ one literal phrase). */
 function textMatch(pb: PocketBase, fields: string[], q: string): string {
-	return fields.map((f) => pb.filter(`${f} ~ {:q}`, { q })).join(' || ');
+	const words = q.split(/\s+/).filter(Boolean);
+	return words.map((w) => `(${fields.map((f) => pb.filter(`${f} ~ {:w}`, { w })).join(' || ')})`).join(' && ');
 }
 
 export const search: ToolDef = {
@@ -150,7 +153,7 @@ async function searchDayNotes(ctx: McpContext, a: SearchArgs, q: string, ids: st
 	const days = await pb.collection('days').getFullList<Day>({
 		filter: and(
 			inTrips(pb, 'trip', ids),
-			pb.filter('notes ~ {:q}', { q }),
+			textMatch(pb, ['notes'], q),
 			a.from && pb.filter('date >= {:v}', { v: `${a.from} 00:00:00.000Z` }),
 			a.to && pb.filter('date <= {:v}', { v: `${a.to} 23:59:59.999Z` })
 		),
@@ -189,14 +192,14 @@ async function searchExpenses(ctx: McpContext, a: SearchArgs, q: string, ids: st
 	const rows = await pb.collection('expenses').getFullList<Expense>({
 		filter: and(
 			inTrips(pb, 'trip', ids),
-			q && pb.filter('description ~ {:q}', { q }),
+			q && textMatch(pb, ['description'], q),
 			a.min_cost !== undefined && pb.filter('amount_usd >= {:v}', { v: a.min_cost }),
 			a.max_cost !== undefined && pb.filter('amount_usd <= {:v}', { v: a.max_cost }),
 			a.from && pb.filter('date >= {:v}', { v: `${a.from} 00:00:00.000Z` }),
 			a.to && pb.filter('date <= {:v}', { v: `${a.to} 23:59:59.999Z` })
 		),
-		fields: 'id,trip,amount_usd,description,date,category,expand.paid_by.display_name,expand.paid_by.placeholder_name',
-		expand: 'paid_by',
+		fields: 'id,trip,amount_usd,description,date,category,expand.paid_by.display_name,expand.paid_by.placeholder_name,expand.paid_by.expand.user.name',
+		expand: 'paid_by.user',
 		requestKey: null
 	});
 	return rows.map((e) => {
@@ -207,7 +210,7 @@ async function searchExpenses(ctx: McpContext, a: SearchArgs, q: string, ids: st
 			tag: titleOf.get(e.trip),
 			lines: [
 				`$${e.amount_usd.toFixed(2).replace(/\.00$/, '')} · ${e.category}`,
-				[formatDayDate(toDateOnly(e.date)), payer ? `paid by ${payer.display_name || payer.placeholder_name}` : ''].filter(Boolean).join(' · ')
+				[formatDayDate(toDateOnly(e.date)), payer ? `paid by ${memberName(payer)}` : ''].filter(Boolean).join(' · ')
 			],
 			sortKey: toDateOnly(e.date)
 		};
