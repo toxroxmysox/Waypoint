@@ -21,7 +21,7 @@ export const getItem: ToolDef = {
 		const pb = ctx.pb;
 		const item = await pb
 			.collection('items')
-			.getOne<Item & { expand?: { day?: Day } }>(id.trim(), { fields: `${ITEM_FIELDS},expand.day.date`, expand: 'day', requestKey: null })
+			.getOne<Item & { expand?: { day?: Day } }>(id.trim(), { fields: `${ITEM_FIELDS},created_by,expand.day.date`, expand: 'day', requestKey: null })
 			.catch(() => null);
 		const ref = item && (await myTrips(ctx)).find((t) => t.trip.id === item.trip);
 		if (!item || !ref) throw new Error(NOT_FOUND);
@@ -61,7 +61,9 @@ export const getItem: ToolDef = {
 			item.location_address && item.location_address !== main.lines.at(-1) ? item.location_address : '',
 			item.flight_number ? `Flight ${item.flight_number}` : '',
 			item.cost_estimate_usd ? `Cost estimate $${item.cost_estimate_usd}` : '',
-			`Status: ${item.status}${date ? '' : ' (idea, not on a day)'}`
+			`Status: ${item.status}${date ? '' : ' (idea, not on a day)'}`,
+			// #503 story 35 — who made it, by name only (never writable).
+			item.created_by ? `Added by ${name.get(item.created_by) ?? 'a former member'}` : ''
 		].filter(Boolean);
 		const cards: Card[] = [{ ...main, tag: ref.trip.title, lines: [...main.lines, ...facts] }];
 

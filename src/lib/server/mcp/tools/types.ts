@@ -7,6 +7,10 @@ export interface ToolDef {
 	title: string;
 	description: string;
 	inputSchema: ZodRawShape;
+	/** #503 — part of the write surface: listed only while MCP_WRITES is on. */
+	write?: true;
+	/** #503 — changes data (readOnlyHint false). */
+	mutates?: true;
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	run(ctx: McpContext, args: any): Promise<ToolResult>;
 }

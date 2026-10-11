@@ -1,4 +1,5 @@
 import { auditTripTool } from './audit-trip';
+import { describe } from './describe';
 import { getDay } from './get-day';
 import { getLists } from './get-lists';
 import { getMemories } from './get-memories';
@@ -12,3 +13,6 @@ import { whatChanged } from './what-changed';
 import type { ToolDef } from './types';
 
 export const TOOLS: ToolDef[] = [listTrips, getTrip, getDay, search, getItem, getMoney, auditTripTool, whatChanged, getLists, getMemories, tripBrief];
+
+/** #503 — the write surface; registered only while MCP_WRITES is on. */
+export const WRITE_TOOLS: ToolDef[] = [describe];

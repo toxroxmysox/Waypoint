@@ -38,11 +38,13 @@ test.describe('list_trips', () => {
 		expect(cur.tag).toBe('viewer');
 	});
 
-	test('every tool is listed read-only', async () => {
+	test('every read tool is listed read-only', async () => {
 		const r = await rpc(tokens.owner, 'tools/list');
 		const tools = r.json.result.tools as { name: string; annotations?: { readOnlyHint?: boolean } }[];
 		expect(tools.map((t) => t.name)).toContain('list_trips');
-		for (const t of tools) expect(t.annotations?.readOnlyHint, t.name).toBe(true);
+		// #503: the write tools (propose/commit/revert) are the only non-read-only ones.
+		const writes = new Set(['propose_changes', 'commit_changes', 'revert_change']);
+		for (const t of tools) expect(t.annotations?.readOnlyHint, t.name).toBe(!writes.has(t.name));
 	});
 
 	test('no token → 401 pointing at the protected-resource metadata', async () => {
