@@ -2447,6 +2447,68 @@ async function runAiChangesCases(tokens) {
 	recordResult('ai_changes', 'ai_changes_member_delete_denied', 'owner', 'deny', classifyWrite(del.status), del.status);
 }
 
+// #503 invariant audit — rules the app enforced only in SvelteKit, moved into PB
+// so a connected AI's generic writes meet the same gate
+// (docs/plans/2026-10-11-mcp-writes/invariant-audit.md).
+const AUDIT_OPS = [
+	'trip_dates_reversed_update_denied',
+	'trip_dates_reversed_create_denied',
+	'money_unit_created_by_pinned',
+	'money_unit_cross_trip_member_denied'
+];
+
+async function runAuditHookCases(tokens) {
+	let fixture = await setupFixture();
+	const rev = await pbRequest('PATCH', `/api/collections/trips/records/${fixture.tripId}`, {
+		token: tokens.owner,
+		body: { start_date: '2026-06-05 00:00:00.000Z', end_date: '2026-06-02 00:00:00.000Z' }
+	});
+	recordResult('trips', 'trip_dates_reversed_update_denied', 'owner', 'deny', classifyWrite(rev.status), rev.status);
+
+	const revC = await pbRequest('POST', '/api/collections/trips/records', {
+		token: tokens.owner,
+		body: {
+			slug: 'harness-revdates-' + Date.now(),
+			title: 'Reversed',
+			start_date: '2027-01-05 00:00:00.000Z',
+			end_date: '2027-01-02 00:00:00.000Z',
+			timezone: 'UTC',
+			created_by: fixture.userIds.owner
+		}
+	});
+	if (revC.status === 200) {
+		const su = await superuserToken();
+		if (su) await pbRequest('DELETE', `/api/collections/trips/records/${revC.data.id}`, { token: su });
+	}
+	recordResult('trips', 'trip_dates_reversed_create_denied', 'owner', 'deny', classifyWrite(revC.status), revC.status);
+
+	fixture = await setupFixture();
+	const mu = await pbRequest('POST', '/api/collections/money_units/records', {
+		token: tokens.traveler,
+		body: { trip: fixture.tripId, members: [fixture.memberIds.traveler], created_by: fixture.memberIds.owner }
+	});
+	const pinned = mu.status === 200 && mu.data?.created_by === fixture.memberIds.traveler;
+	recordResult('money_units', 'money_unit_created_by_pinned', 'traveler', 'yes', pinned ? 'yes' : 'no', mu.status);
+
+	const other = await pbRequest('POST', '/api/dev/rules-fixture', {
+		body: { emails: EMAILS, slug: 'harness-audit-other' }
+	});
+	const foreign = other.data?.memberIds?.viewer;
+	const cross = await pbRequest('POST', '/api/collections/money_units/records', {
+		token: tokens.traveler,
+		body: { trip: fixture.tripId, members: [fixture.memberIds.traveler, foreign], created_by: fixture.memberIds.traveler }
+	});
+	recordResult('money_units', 'money_unit_cross_trip_member_denied', 'traveler', 'deny', classifyWrite(cross.status), cross.status);
+}
+
+function printAuditReport() {
+	console.log('\n[#503 invariant audit — trip dates ordered; money_units create pins created_by, same-trip members]');
+	for (const r of results.filter((x) => AUDIT_OPS.includes(x.op))) {
+		const mark = r.passed ? 'PASS' : 'FAIL';
+		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+	}
+}
+
 function printAiChangesReport() {
 	console.log('\n[#503 ai_changes — list own rows only; members cannot create/update/delete]');
 	for (const r of results.filter((x) => AI_CHANGES_OPS.includes(x.op))) {
@@ -3213,6 +3275,9 @@ async function main() {
 	console.log('#503 cases: ai_changes private to author, superuser-only writes');
 	await runAiChangesCases(tokens);
 
+	console.log('#503 invariant audit cases: trip date order, money_units create');
+	await runAuditHookCases(tokens);
+
 	console.log('#281 cases: money_units edit/delete gate (unit-member or owner·co_owner; no unilateral self-add)');
 	await runMoneyUnitNovelCases(tokens);
 
@@ -3256,6 +3321,7 @@ async function main() {
 	printPendingRouteReport();
 	printTripsGateReport();
 	printAiChangesReport();
+	printAuditReport();
 	printMoneyUnitReport();
 	printChecklistTaskReport();
 	printJoinLinkReport();

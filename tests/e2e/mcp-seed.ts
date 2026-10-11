@@ -79,7 +79,7 @@ async function bypass(email: string): Promise<{ token: string; id: string }> {
 	return { token: r.token, id: r.record.id };
 }
 
-async function superuser(): Promise<string> {
+export async function superuser(): Promise<string> {
 	const r = await req('', 'POST', '/api/collections/_superusers/auth-with-password', {
 		identity: process.env.PB_ADMIN_EMAIL ?? 'admin@e2e.test',
 		password: process.env.PB_ADMIN_PASSWORD ?? 'e2eAdminPass123'

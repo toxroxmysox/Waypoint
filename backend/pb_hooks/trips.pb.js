@@ -137,6 +137,11 @@ onRecordCreateRequest((e) => {
 	if ((start && !end) || (!start && end)) {
 		throw new BadRequestError('A trip needs both dates or neither.');
 	}
+	// #503 invariant audit — the form actions checked this; generic AI writes
+	// go straight to PB. Stored dates share one format, so strings compare.
+	if (start && end && start.substring(0, 10) > end.substring(0, 10)) {
+		throw new BadRequestError('The trip ends before it starts.');
+	}
 
 	// #395 — slug dedupe. idx_trips_slug is GLOBAL, but a caller-side probe runs
 	// under the trips view rule and can't see other people's trips, so it picked
@@ -503,6 +508,10 @@ onRecordUpdateRequest((e) => {
 		throw new BadRequestError(
 			'This trip already has dates — they can be changed, but not removed.'
 		);
+	}
+	// #503 invariant audit — end before start, as on create.
+	if (newStartDate && newEndDate && newStartDate.substring(0, 10) > newEndDate.substring(0, 10)) {
+		throw new BadRequestError('The trip ends before it starts.');
 	}
 
 	e.next();

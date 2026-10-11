@@ -27,6 +27,45 @@
 // user ids.
 
 // ---------------------------------------------------------------------------
+// #503 invariant audit — before create: the groups form action set created_by
+// to the caller and only offered this trip's members. Generic AI writes go
+// straight to PB, so pin created_by to the caller's membership and refuse any
+// member from another trip. Viewers may still declare a unit (rule unchanged).
+// ---------------------------------------------------------------------------
+onRecordCreateRequest((e) => {
+	const authId = e.requestInfo().auth?.id;
+	if (!authId) throw new UnauthorizedError('Authentication required');
+	const tripId = e.record.getString('trip');
+
+	let callerMember;
+	try {
+		callerMember = e.app.findFirstRecordByFilter(
+			'trip_members',
+			'trip = {:tripId} && user = {:uid} && removed_at = ""',
+			{ tripId: tripId, uid: authId }
+		);
+	} catch (_) {
+		throw new ForbiddenError('You are not a member of this trip');
+	}
+	e.record.set('created_by', callerMember.id);
+
+	const raw = e.record.get('members') || [];
+	for (let i = 0; i < raw.length; i++) {
+		const id = '' + raw[i];
+		let m;
+		try {
+			m = e.app.findRecordById('trip_members', id);
+		} catch (_) {
+			throw new BadRequestError('Unknown member in this group');
+		}
+		if (m.getString('trip') !== tripId) {
+			throw new BadRequestError('A group can only hold members of this trip');
+		}
+	}
+	e.next();
+}, 'money_units');
+
+// ---------------------------------------------------------------------------
 // Before update: owner/co_owner OR an existing member of the unit.
 // ---------------------------------------------------------------------------
 onRecordUpdateRequest((e) => {
