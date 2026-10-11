@@ -604,6 +604,7 @@ function createBody(collection, role, fixture) {
 		case 'items':
 			return {
 				trip: fixture.tripId,
+				day: fixture.dayId, // #411: an item needs a day or a phase
 				type: 'activity',
 				title: `Harness item ${role} ${stamp}`,
 				created_by: fixture.memberIds[role] || fixture.memberIds.owner
@@ -1158,6 +1159,7 @@ async function runCreatorEditNovelCases(tokens) {
 		token: tokens.owner,
 		body: {
 			trip: fixture.tripId,
+			day: fixture.dayId, // #411: an item needs a day or a phase
 			type: 'activity',
 			title: 'Traveler-authored item (#219)',
 			created_by: fixture.memberIds.traveler
@@ -1194,6 +1196,7 @@ async function runCreatorEditNovelCases(tokens) {
 		token: tokens.owner,
 		body: {
 			trip: fixture.tripId,
+			day: fixture.dayId, // #411: an item needs a day or a phase
 			type: 'activity',
 			title: 'Traveler-authored item to delete (#219)',
 			created_by: fixture.memberIds.traveler
@@ -1245,7 +1248,7 @@ const NOT_GOING_OPS = [
 async function ngFreshItem(tokens, fixture, extra = {}) {
 	const made = await pbRequest('POST', '/api/collections/items/records', {
 		token: tokens.owner,
-		body: { trip: fixture.tripId, type: 'activity', title: 'Not going harness item (#402)', ...extra }
+		body: { trip: fixture.tripId, day: fixture.dayId, type: 'activity', title: 'Not going harness item (#402)', ...extra }
 	});
 	return made.data?.id;
 }
@@ -1360,13 +1363,13 @@ async function runNotGoingNovelCases(tokens) {
 
 	r = await pbRequest('POST', '/api/collections/items/records', {
 		token: tokens.owner,
-		body: { trip: fixture.tripId, type: 'activity', title: 'Create with other not going (#402)', not_going: [t] }
+		body: { trip: fixture.tripId, day: fixture.dayId, type: 'activity', title: 'Create with other not going (#402)', not_going: [t] }
 	});
 	recordResult('items', 'create_ng_other', 'owner', 'deny', classifyWrite(r.status), r.status);
 
 	r = await pbRequest('POST', '/api/collections/items/records', {
 		token: tokens.owner,
-		body: { trip: fixture.tripId, type: 'activity', title: 'Create with own not going (#402)', not_going: [m.owner] }
+		body: { trip: fixture.tripId, day: fixture.dayId, type: 'activity', title: 'Create with own not going (#402)', not_going: [m.owner] }
 	});
 	recordResult('items', 'create_ng_self', 'owner', 'allow', classifyWrite(r.status), r.status);
 }

@@ -587,25 +587,32 @@ onRecordUpdateRequest((e) => {
 	}
 
 	// Remove days outside the new range; unlink their items first so items
-	// become unscheduled rather than deleted.
+	// become unscheduled rather than deleted. #411: an unscheduled item must keep
+	// a phase (items.pb.js validates it; every idea surface is phase-scoped), so
+	// it keeps its own, else takes the day's phase, else the trip's first phase.
+	// Its span goes with the day (end_date needs a start day); status → unplanned.
 	for (const [dateStr, day] of Object.entries(existingByDate)) {
 		if (neededDates[dateStr]) continue;
+		let items = [];
 		try {
-			const items = e.app.findRecordsByFilter(
-				'items',
-				'day = {:dayId}',
-				'',
-				0,
-				0,
-				{ dayId: day.id }
-			);
-			for (const item of items) {
-				item.set('day', '');
-				item.set('phase', '');
-				e.app.save(item);
-			}
+			items = e.app.findRecordsByFilter('items', 'day = {:dayId}', '', 0, 0, { dayId: day.id });
 		} catch (_) {
 			// No items to unlink
+		}
+		let fallbackPhase = '';
+		const dayPhases = day.get('phases');
+		if (dayPhases && dayPhases.length > 0) fallbackPhase = '' + dayPhases[0];
+		if (!fallbackPhase) {
+			try {
+				const first = e.app.findRecordsByFilter('phases', 'trip = {:t}', '+start_date', 1, 0, { t: e.record.id });
+				if (first.length > 0) fallbackPhase = first[0].id;
+			} catch (_) {}
+		}
+		for (const item of items) {
+			item.set('day', '');
+			item.set('end_date', '');
+			if (!item.getString('phase')) item.set('phase', fallbackPhase);
+			e.app.save(item);
 		}
 		e.app.delete(day);
 	}
