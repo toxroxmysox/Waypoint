@@ -187,7 +187,8 @@ export async function seedMcpTrips(): Promise<McpSeed> {
 		end_time: at(today, '17:00'),
 		sort_order: 3
 	});
-	const untimedMeal = await item({ day: cur.dayId(today), type: 'meal', title: 'Picnic lunch', sort_order: 0 });
+	// Untimed, sort_order after the day's anchors → orderDayItems puts it last.
+	const untimedMeal = await item({ day: cur.dayId(today), type: 'meal', title: 'Picnic lunch', sort_order: 9 });
 	const unbooked = await item({
 		day: cur.dayId(tomorrow),
 		type: 'transportation',
