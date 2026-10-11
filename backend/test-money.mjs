@@ -183,6 +183,71 @@ async function main() {
     check('T1 trips.update extends date -> days reconciled (+3)', countAfter === countBefore + 3, `before=${countBefore} after=${countAfter}`);
   }
 
+  // ===================== CROSS-TRIP REFERENCES (#411) =====================
+  // A second trip from the same owner supplies foreign member / item / phase ids.
+  // Each reference must belong to the record's own trip (model-level, so admin
+  // saves are covered too); same-trip controls must still pass.
+  {
+    const other = await req('POST', '/api/collections/trips/records', { token: tokens.owner, body: {
+      title: 'Cross-trip harness', slug: 'cross-trip-harness-' + Date.now(), created_by: fx.data.userIds.owner,
+      timezone: 'UTC', start_date: '2026-07-01 00:00:00.000Z', end_date: '2026-07-03 00:00:00.000Z'
+    }});
+    const otherTrip = other.data?.id;
+    const q = (f) => encodeURIComponent(f);
+    const foreignMember = (await req('GET', `/api/collections/trip_members/records?filter=${q(`trip="${otherTrip}"`)}`, { token: tokens.owner })).data?.items?.[0]?.id;
+    const foreignDay = (await req('GET', `/api/collections/days/records?filter=${q(`trip="${otherTrip}"`)}&sort=date`, { token: tokens.owner })).data?.items?.[0]?.id;
+    const foreignPhase = (await req('GET', `/api/collections/phases/records?filter=${q(`trip="${otherTrip}"`)}`, { token: tokens.owner })).data?.items?.[0]?.id;
+    const foreignItem = (await req('POST', '/api/collections/items/records', { token: tokens.owner, body: {
+      trip: otherTrip, day: foreignDay, type: 'activity', title: 'Foreign item'
+    }})).data?.id;
+    if (!otherTrip || !foreignMember || !foreignPhase || !foreignItem) {
+      console.error('cross-trip setup failed', { otherTrip, foreignMember, foreignPhase, foreignItem }); process.exit(2);
+    }
+    const M = "That member isn't on this trip.";
+    const I = "That item isn't on this trip.";
+    const P = "That phase isn't on this trip.";
+    const is400 = (r, msg) => r.status === 400 && r.data?.message === msg;
+    const show = (r) => `${r.status} ${JSON.stringify(r.data?.message)}`;
+    const expense = (extra) => req('POST', '/api/collections/expenses/records', { token: tokens.owner, body: {
+      trip: tripId, amount_usd: 20, description: 'cross-trip', date: today, category: 'food',
+      split_mode: 'equal', split_data: { members: [memberIds.owner] }, ...extra
+    }});
+
+    let r = await expense({ paid_by: foreignMember });
+    check('X1 expenses.paid_by foreign member -> 400', is400(r, M), show(r));
+    r = await expense({ split_data: { members: [memberIds.owner, foreignMember] } });
+    check('X2 expenses equal split with a foreign member -> 400', is400(r, M), show(r));
+    r = await expense({ split_mode: 'by_amount', split_data: { amounts: { [memberIds.owner]: 10, [foreignMember]: 10 } } });
+    check('X3 expenses by_amount split with a foreign member -> 400', is400(r, M), show(r));
+    r = await expense({ linked_item: foreignItem });
+    check('X4 expenses.linked_item foreign item -> 400', is400(r, I), show(r));
+    r = await expense({ linked_item: fx.data.itemId, split_data: { members: [memberIds.owner, memberIds.traveler] } });
+    check('X5 expenses same-trip refs -> 200', r.status === 200, show(r));
+    const sameTripExpense = r.data?.id;
+    r = await req('PATCH', `/api/collections/expenses/records/${sameTripExpense}`, { token: tokens.owner, body: { paid_by: foreignMember } });
+    check('X6 expenses.update paid_by to a foreign member -> 400', is400(r, M), show(r));
+
+    r = await req('POST', '/api/collections/settlements/records', { token: tokens.owner, body: {
+      trip: tripId, from_member: memberIds.owner, to_member: foreignMember, amount_usd: 5, date: today
+    }});
+    check('X7 settlements.to_member foreign member -> 400', is400(r, M), show(r));
+
+    const checklist = (extra) => req('POST', '/api/collections/checklists/records', { token: tokens.owner, body: {
+      trip: tripId, title: 'Cross-trip list', kind: 'manual', ...extra
+    }});
+    r = await checklist({ phase: foreignPhase });
+    check('X8 checklists.phase foreign phase -> 400', is400(r, P), show(r));
+    r = await checklist({ item: foreignItem });
+    check('X9 checklists.item foreign item -> 400', is400(r, I), show(r));
+    r = await checklist({ phase: fx.data.phaseId, item: '' });
+    check('X10 checklists same-trip phase (empty item) -> 200', r.status === 200, show(r));
+
+    r = await req('POST', '/api/collections/votes/records', { token: tokens.traveler, body: {
+      trip: tripId, item: foreignItem, member: memberIds.traveler, value: 'like'
+    }});
+    check('X11 votes.item foreign item -> 400', is400(r, I), show(r));
+  }
+
   console.log(results.join('\n'));
   console.log(`\n  ${pass} passed, ${fail} failed`);
   process.exit(fail > 0 ? 1 : 0);
