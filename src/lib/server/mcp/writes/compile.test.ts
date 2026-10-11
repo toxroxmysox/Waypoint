@@ -15,15 +15,34 @@ const TRIP = {
 	ai_write: true,
 	auto_approve_suggestions: false
 } as Trip;
-const DAYS = Array.from({ length: 8 }, (_, i) => ({ id: `day0${i + 1}`, date: `2026-11-0${i + 1} 00:00:00.000Z` }));
+const DAYS = Array.from({ length: 8 }, (_, i) => ({
+	id: `day0${i + 1}`,
+	date: `2026-11-0${i + 1} 00:00:00.000Z`,
+	phases: [i < 4 ? 'pPorto' : 'pLisbon']
+}));
+const PHASES = [
+	{ id: 'pPorto', name: 'Porto', start_date: '2026-11-01 00:00:00.000Z', order: 0 },
+	{ id: 'pLisbon', name: 'Lisbon', start_date: '2026-11-05 00:00:00.000Z', order: 1 }
+];
 
 const RECORDS: Record<string, Record<string, Record<string, unknown>>> = {
 	items: {
 		lunch: { id: 'lunch', trip: 'porto', day: 'day03', title: 'Lunch', start_time: '2026-11-03 09:00:00.000Z', created_by: 'mOwner' },
 		mine: { id: 'mine', trip: 'porto', day: 'day03', title: 'My idea', created_by: 'mTrav' },
+		redeye: {
+			id: 'redeye',
+			trip: 'porto',
+			day: 'day02',
+			title: 'Red-eye',
+			start_time: '2026-11-02 23:30:00.000Z',
+			end_time: '2026-11-03 06:10:00.000Z',
+			end_date: '2026-11-03 00:00:00.000Z'
+		},
 		lisbon: { id: 'lisbon', trip: 'lisbon', day: 'x', title: 'Elsewhere' }
 	},
 	checklists: { packing: { id: 'packing', trip: 'porto', title: 'Packing' } },
+	phases: { pPorto: { id: 'pPorto', trip: 'porto' }, pLisbon: { id: 'pLisbon', trip: 'porto' }, pElse: { id: 'pElse', trip: 'lisbon' } },
+	trip_members: { mOwner: { id: 'mOwner', trip: 'porto' }, mTrav: { id: 'mTrav', trip: 'porto' }, mElse: { id: 'mElse', trip: 'lisbon' } },
 	trips: { porto: { id: 'porto', title: 'Porto', timezone: 'UTC' } }
 };
 
@@ -38,6 +57,9 @@ const loader: RecordLoader = {
 	},
 	async days() {
 		return DAYS;
+	},
+	async phases() {
+		return PHASES;
 	}
 };
 
@@ -148,5 +170,83 @@ describe('compileOps — moving records', () => {
 		await expect(compile([{ action: 'update', collection: 'items', id: 'lunch', data: { trip: 'lisbon' } }])).rejects.toThrow(
 			"That record isn't in Porto."
 		);
+	});
+});
+
+describe('compileOps — only real field names (review C1)', () => {
+	it('refuses PB field modifiers that would slip past the can\'t-list', async () => {
+		for (const key of ['created_by+', '+created_by', 'trip+', '+trip', 'title-']) {
+			await expect(compile([{ action: 'update', collection: 'items', id: 'lunch', data: { [key]: 'x' } }]), key).rejects.toThrow();
+		}
+	});
+	it('refuses a field the collection does not have', async () => {
+		await expect(compile([{ action: 'update', collection: 'items', id: 'lunch', data: { bogus: 1 } }])).rejects.toThrow(/"bogus"/);
+	});
+});
+
+describe('compileOps — links stay in the trip (review I6)', () => {
+	it('refuses a phase or member from another trip', async () => {
+		await expect(compile([{ action: 'update', collection: 'items', id: 'lunch', data: { phase: 'pElse' } }])).rejects.toThrow(
+			"That phase isn't in Porto."
+		);
+		await expect(compile([{ action: 'update', collection: 'items', id: 'lunch', data: { paid_by: 'mElse' } }])).rejects.toThrow(
+			"That paid by isn't in Porto."
+		);
+		await expect(compile([{ action: 'update', collection: 'items', id: 'lunch', data: { assigned_to: ['mOwner', 'mElse'] } }])).rejects.toThrow(
+			/isn't in Porto/
+		);
+	});
+	it('accepts links within the trip', async () => {
+		await expect(compile([{ action: 'update', collection: 'items', id: 'lunch', data: { phase: 'pLisbon', paid_by: 'mTrav' } }])).resolves.toHaveLength(1);
+	});
+});
+
+describe('compileOps — fills what the app fills (intent review: stories 17, 19)', () => {
+	it('an undated idea lands in the first phase as unplanned; a dated item takes its day\'s phase', async () => {
+		const [idea] = await compile([{ action: 'create', collection: 'items', data: { type: 'activity', title: 'Surf' } }]);
+		expect(idea.after).toMatchObject({ phase: 'pPorto', status: 'unplanned' });
+		const [plan] = await compile([{ action: 'create', collection: 'items', data: { type: 'meal', title: 'Fado', date: '2026-11-06' } }]);
+		expect(plan.after).toMatchObject({ phase: 'pLisbon', status: 'planned', day: 'day06' });
+	});
+	it('a new list is a manual list; a goal starts unplanned; a scenario starts as a candidate', async () => {
+		const [list] = await compile([{ action: 'create', collection: 'checklists', data: { title: 'Packing' } }]);
+		expect(list.after.kind).toBe('manual');
+		const [goal] = await compile([{ action: 'create', collection: 'trip_goals', data: { title: 'See the sea' } }]);
+		expect(goal.after.manual_status).toBe('unplanned');
+		const [sc] = await compile([{ action: 'create', collection: 'scenarios', data: { title: 'Coast' } }], 'owner', { start_date: '', end_date: '' });
+		expect(sc.after).toMatchObject({ status: 'candidate', champion: 'mOwner' });
+	});
+});
+
+describe('compileOps — moving to another day moves the times (intent review: story 11)', () => {
+	it('re-anchors start, end and span by the same number of days', async () => {
+		const [u] = await compile([{ action: 'update', collection: 'items', id: 'redeye', data: { date: '2026-11-04' } }]);
+		expect(u.after).toMatchObject({
+			day: 'day04',
+			start_time: '2026-11-04 23:30:00.000Z',
+			end_time: '2026-11-05 06:10:00.000Z',
+			end_date: '2026-11-05 00:00:00.000Z'
+		});
+		expect(u.before).toMatchObject({ start_time: '2026-11-02 23:30:00.000Z' });
+	});
+});
+
+describe('compileOps — phase rules the hooks enforce, refused at preview (intent review: story 8)', () => {
+	it('refuses a new phase on the trip\'s first or last day, or outside it', async () => {
+		for (const d of ['2026-11-01', '2026-11-08', '2030-01-01']) {
+			await expect(compile([{ action: 'create', collection: 'phases', data: { name: 'X', start_date: d } }]), d).rejects.toThrow(/phase/);
+		}
+		await expect(compile([{ action: 'create', collection: 'phases', data: { name: 'Coast', start_date: '2026-11-03' } }])).resolves.toHaveLength(1);
+	});
+	it('refuses moving a phase past its neighbour', async () => {
+		await expect(compile([{ action: 'update', collection: 'phases', id: 'pLisbon', data: { start_date: '2026-11-01' } }])).rejects.toThrow(
+			/must start between/
+		);
+	});
+	it('refuses phase and budget changes from a traveler (owners only in the app)', async () => {
+		await expect(compile([{ action: 'create', collection: 'phases', data: { name: 'Coast', start_date: '2026-11-03' } }], 'traveler')).rejects.toThrow(
+			/owners/
+		);
+		await expect(compile([{ action: 'create', collection: 'trip_budgets', data: { categories: [] } }], 'traveler')).rejects.toThrow(/owners/);
 	});
 });

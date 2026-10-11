@@ -33,9 +33,16 @@ export function pbLoader(pb: PocketBase): RecordLoader {
 			return String(parent?.trip ?? '');
 		},
 		async days(tripId) {
-			return pb.collection('days').getFullList<{ id: string; date: string }>({
+			return pb.collection('days').getFullList<{ id: string; date: string; phases: string[] }>({
 				filter: pb.filter('trip = {:t}', { t: tripId }),
-				fields: 'id,date',
+				fields: 'id,date,phases',
+				requestKey: null
+			});
+		},
+		async phases(tripId) {
+			return pb.collection('phases').getFullList<{ id: string; name: string; start_date: string; order: number }>({
+				filter: pb.filter('trip = {:t}', { t: tripId }),
+				fields: 'id,name,start_date,order',
 				requestKey: null
 			});
 		}

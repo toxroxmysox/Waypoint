@@ -45,3 +45,10 @@ Verdicts: **hook** = moved into PB with a `test-rules.mjs` cell; **registry** = 
 `created_by`, `uploaded_by`, `author`, `champion`, `member` are blocked for the AI and filled by the write layer (`stamp`) on create. Hooks pin most of them anyway (expenses, documents, money_units).
 
 ## Hook moves: 2 (under the plan's ~6 scope check)
+
+## Corrections after the final review (2026-10-11)
+
+- **Field modifiers.** PB accepts `field+` / `+field` / `field-` on relation, select, number and file fields. The can't-list compared exact names, so `created_by+` or `trip+` slipped past it (reproduced over REST). The write layer now accepts only each collection's real field names (`WritableSpec.fields` is the allowlist, plus the day field and `trip`).
+- **Cross-trip links.** Several relation fields have no PB hook checking that their target is in the record's trip: `trip_goals.items`, `scenarios.keystones`/`fork_of`, `tasks.assignee`, `checklist_items.checked_by`, and the member fields on items (`booked_by`, `paid_by`, `assigned_to`). "Covered" above was wrong for these. The write layer now checks every link an op sets (`compile.ts` `LINKS`). The same gap over raw REST predates #503 and is filed separately.
+- **Required fields the forms fill.** `checklists.kind`, `scenarios.status`, `trip_goals.manual_status`, and an item's `status`/`phase` are filled by the app's forms. The write layer now fills them the same way.
+- **Trip title/dates/timezone** stay member-writable, as PB has them (#280). Scott's call: follow PB defaults.

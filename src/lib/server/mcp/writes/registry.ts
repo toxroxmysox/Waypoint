@@ -124,6 +124,10 @@ export const WRITABLE: Record<string, WritableSpec> = {
 			not_going: 'member ids not going (your own only)',
 			requires_booking: 'true/false',
 			flight_number: 'e.g. TP1234',
+			subtype: 'free text, e.g. ferry',
+			start_tz: 'IANA zone of the start (flights)',
+			end_tz: 'IANA zone of the end (flights)',
+			parent_item: 'item id this belongs to',
 			sort_order: 'number'
 		}
 	},
@@ -194,6 +198,7 @@ export const WRITABLE: Record<string, WritableSpec> = {
 			description: 'details',
 			manual_status: 'unplanned | planned | done | considered',
 			items: 'item ids that serve it',
+			prompt: 'short prompt label',
 			sort_order: 'number'
 		}
 	},

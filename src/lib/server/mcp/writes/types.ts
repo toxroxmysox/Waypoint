@@ -46,6 +46,8 @@ export interface Proposal {
 	cascade: Cascade | null;
 	expiresAt: number;
 	committedChangeId?: string;
+	/** Set synchronously when a commit starts, so an overlapping second commit can't run (review I3). */
+	committing?: boolean;
 }
 
 export type CommittedChange = PlannedChange & { committed: boolean; suggestionId?: string };

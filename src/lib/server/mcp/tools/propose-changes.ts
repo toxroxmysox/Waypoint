@@ -6,6 +6,7 @@ import { resolveTrip } from '../context';
 import { result } from '../present';
 import { cascadeFor } from '../writes/cascade';
 import { compileOps } from '../writes/compile';
+import { QUOTE_MAX } from '../writes/commit';
 import { assertCanWrite } from '../writes/gate';
 import { loadLabels, loadSnapshot, pbLoader } from '../writes/loader';
 import { outcomeLine, previewCards, rangeText } from '../writes/preview';
@@ -53,7 +54,7 @@ export const proposeChanges: ToolDef = {
 			userId: ctx.user.id,
 			connectionId: ctx.connectionId,
 			tripId: ref.trip.id,
-			quote: quote.trim(),
+			quote: quote.trim().length > QUOTE_MAX ? `${quote.trim().slice(0, QUOTE_MAX - 1)}…` : quote.trim(),
 			changes,
 			cascade
 		});

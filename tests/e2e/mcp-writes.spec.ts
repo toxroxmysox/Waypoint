@@ -125,13 +125,17 @@ test.describe('propose_changes', () => {
 
 async function myAiChanges(email: string) {
 	const pb = await pbAs(email);
-	return (await pb('GET', '/api/collections/ai_changes/records?perPage=200&sort=-created')).json.items as {
+	const rows = (await pb('GET', '/api/collections/ai_changes/records?perPage=200&sort=-created')).json.items as {
 		id: string;
 		quote: string;
 		user: string;
+		trip: string;
 		reverted_at: string;
 		changes: unknown[];
 	}[];
+	// Only this seed's trips: a retry re-seeds and re-runs with the same quotes.
+	const mine = new Set(Object.values(seed.tripIds));
+	return rows.filter((r) => mine.has(r.trip));
 }
 const propose = (who: keyof typeof tokens, trip: string, quote: string, ops: unknown[]) =>
 	callTool(tokens[who], 'propose_changes', { trip, quote, ops });
@@ -200,6 +204,8 @@ test.describe('commit_changes', () => {
 		const r = await commit('owner', p.structured.proposal.id);
 		expect(r.isError).toBe(true);
 		expect(r.text).toMatch(/end date/i);
+		// Says which change PB refused.
+		expect(r.text).toContain('Casa do Rio');
 		const owner = await pbAs(MCP_EMAILS.owner);
 		expect((await owner('GET', `/api/collections/items/records/${seed.items.overlapB}`)).json.title).toBe('River cruise');
 	});
@@ -231,7 +237,7 @@ test.describe('commit_changes', () => {
 		expect(p.isError, p.text).toBeFalsy();
 		expect(p.text).toContain('removed');
 		expect(p.text).toContain('Lisbon merges into the phase before it');
-		expect(p.text).toMatch(/1 item moves to Lucerne: Taberna da Rua/);
+		expect(p.text).toMatch(/1 item becomes an idea in Lucerne: Taberna da Rua/);
 		expect(p.structured.proposal.calendar.after).toEqual([start, newEnd]);
 		const r = await commit('owner', p.structured.proposal.id);
 		expect(r.isError, r.text).toBeFalsy();
@@ -270,5 +276,73 @@ test.describe('revert_change', () => {
 		const owner = await pbAs(MCP_EMAILS.owner);
 		const sug = await owner('GET', `/api/suggestions/list?trip_id=${seed.tripIds.current}&status=pending`);
 		expect(JSON.stringify(sug.json)).not.toContain(`Cooking class ${seed.suffix}`);
+	});
+});
+
+test.describe('final review fixes', () => {
+	test('a PB field modifier cannot slip past the can\'t-list (review C1)', async () => {
+		for (const key of ['created_by+', 'trip+']) {
+			const r = await propose('owner', seed.trips.current, 'x', [
+				{ action: 'update', collection: 'items', id: seed.items.overlapA, data: { [key]: seed.members.traveler } }
+			]);
+			expect(r.isError, key).toBe(true);
+		}
+	});
+
+	test('undo from chat honours "AI can make changes" (review I2)', async () => {
+		const quote = `rename the tour ${seed.suffix}`;
+		const p = await propose('owner', seed.trips.current, quote, [
+			{ action: 'update', collection: 'items', id: seed.items.overlapA, data: { title: 'Cellar tour' } }
+		]);
+		expect((await commit('owner', p.structured.proposal.id)).isError).toBeFalsy();
+		const [row] = (await myAiChanges(MCP_EMAILS.owner)).filter((x) => x.quote === quote);
+		const owner = await pbAs(MCP_EMAILS.owner);
+		await owner('PATCH', `/api/collections/trips/records/${seed.tripIds.current}`, { ai_write: false });
+		const r = await callTool(tokens.owner, 'revert_change', { change_id: row.id });
+		await owner('PATCH', `/api/collections/trips/records/${seed.tripIds.current}`, { ai_write: true });
+		expect(r.isError).toBe(true);
+		expect(r.text).toBe('AI changes are turned off for this trip by its owner.');
+		expect((await owner('GET', `/api/collections/items/records/${seed.items.overlapA}`)).json.title).toBe('Cellar tour');
+	});
+
+	test('Confirm and "yes" at the same moment save once (review I3)', async () => {
+		const quote = `call it Cellar tour and tasting ${seed.suffix}`;
+		const p = await propose('owner', seed.trips.current, quote, [
+			{ action: 'update', collection: 'items', id: seed.items.overlapA, data: { title: 'Cellar tour and tasting' } }
+		]);
+		const [a, b] = await Promise.all([commit('owner', p.structured.proposal.id), commit('owner', p.structured.proposal.id)]);
+		expect([a.text, b.text].filter((t) => t.includes('Already saved'))).toHaveLength(1);
+		expect((await myAiChanges(MCP_EMAILS.owner)).filter((x) => x.quote === quote)).toHaveLength(1);
+	});
+
+	test('a very long quote still saves with its undo record (review I4)', async () => {
+		const quote = `long ${seed.suffix} ` + 'x'.repeat(2500);
+		const p = await propose('owner', seed.trips.current, quote, [
+			{ action: 'update', collection: 'items', id: seed.items.overlapA, data: { title: 'Cellar tour' } }
+		]);
+		expect(p.isError, p.text).toBeFalsy();
+		const r = await commit('owner', p.structured.proposal.id);
+		expect(r.isError, r.text).toBeFalsy();
+		const rows = (await myAiChanges(MCP_EMAILS.owner)).filter((x) => x.quote.startsWith(`long ${seed.suffix}`));
+		expect(rows).toHaveLength(1);
+		expect(rows[0].quote.length).toBeLessThanOrEqual(2000);
+	});
+
+	test('undoing an add leaves it when another member has commented on it (review I5)', async () => {
+		const quote = `add a wine bar ${seed.suffix}`;
+		const title = `Wine bar ${seed.suffix}`;
+		const p = await propose('owner', seed.trips.current, quote, [
+			{ action: 'create', collection: 'items', data: { type: 'activity', title, date: seed.dates.tomorrow } }
+		]);
+		expect((await commit('owner', p.structured.proposal.id)).isError).toBeFalsy();
+		const owner = await pbAs(MCP_EMAILS.owner);
+		const item = (await owner('GET', `/api/collections/items/records?filter=${encodeURIComponent(`title = "${title}"`)}`)).json.items[0];
+		const traveler = await pbAs(MCP_EMAILS.traveler);
+		const c = await traveler('POST', '/api/comments/add', { item_id: item.id, comment_text: 'Count me in' });
+		expect(c.status, JSON.stringify(c.json)).toBe(200);
+		const [row] = (await myAiChanges(MCP_EMAILS.owner)).filter((x) => x.quote === quote);
+		const r = await callTool(tokens.owner, 'revert_change', { change_id: row.id });
+		expect(r.text).toContain('remove it in the app');
+		expect((await owner('GET', `/api/collections/items/records/${item.id}`)).status).toBe(200);
 	});
 });

@@ -19,6 +19,8 @@ import { WRITABLE } from './registry';
 import type { CommittedChange, Proposal } from './types';
 
 export const ALREADY_SAVED = 'Already saved.';
+/** ai_changes.quote max (0081). propose trims to it too. */
+export const QUOTE_MAX = 2000;
 export const WRITES_OFF = 'AI changes are turned off on this Waypoint right now.';
 
 /** Every human-readable message in a PB error, batch sub-errors included. */
@@ -36,17 +38,37 @@ export function pbErrorText(err: unknown): string {
 	return scrub(msgs.join(' ') || err.message || 'Waypoint refused the change.');
 }
 
+/** A batch failure, naming the change PB refused when it says which (review: "which op failed"). */
+export function batchErrorText(err: unknown, titles: string[]): string {
+	const msg = pbErrorText(err).replace(/^Batch request failed\.?\s*/i, '');
+	const reqs = err instanceof ClientResponseError ? (err.response?.data as { requests?: Record<string, unknown> } | undefined)?.requests : undefined;
+	const idx = reqs ? Object.keys(reqs).map(Number).filter((n) => Number.isInteger(n) && titles[n]) : [];
+	return idx.length ? `${idx.map((n) => titles[n]).join(', ')}: ${msg}` : msg;
+}
+
 export async function commitProposal(
 	ctx: McpContext,
 	proposalId: string
-): Promise<{ changeId: string; changes: CommittedChange[]; outcome: string; proposal: Proposal; already?: true }> {
+): Promise<{ changeId: string; changes: CommittedChange[]; outcome: string; proposal: Proposal; already?: true; unrecorded?: true }> {
 	const p = takeProposal(proposalId.trim(), ctx.user.id, ctx.connectionId);
 	if (p === 'expired') throw new Error('That preview has expired (they last 15 minutes). Ask me to propose it again.');
 	if (p === 'not_yours') throw new Error("That preview isn't yours to confirm.");
-	if (p.committedChangeId) {
-		return { changeId: p.committedChangeId, changes: [], outcome: ALREADY_SAVED, proposal: p, already: true };
+	if (p.committedChangeId || p.committing) {
+		return { changeId: p.committedChangeId ?? '', changes: [], outcome: ALREADY_SAVED, proposal: p, already: true };
 	}
+	// Claimed before the first await: Confirm and "yes" can arrive together (review I3).
+	p.committing = true;
+	try {
+		return await commitClaimed(ctx, p);
+	} finally {
+		p.committing = false;
+	}
+}
 
+async function commitClaimed(
+	ctx: McpContext,
+	p: Proposal
+): Promise<{ changeId: string; changes: CommittedChange[]; outcome: string; proposal: Proposal; unrecorded?: true }> {
 	if (!writesEnabled(env)) throw new Error(WRITES_OFF);
 	const ref = (await myTrips(ctx)).find((t) => t.trip.id === p.tripId);
 	if (!ref) throw new Error("You're no longer a member of that trip.");
@@ -69,7 +91,7 @@ export async function commitProposal(
 		try {
 			await batch.send({ requestKey: null });
 		} catch (err) {
-			throw new Error(pbErrorText(err));
+			throw new Error(batchErrorText(err, records.map((c) => c.title)));
 		}
 	}
 
@@ -96,10 +118,17 @@ export async function commitProposal(
 		}
 	}
 
-	const row = await (await adminPb()).collection('ai_changes').create(
-		{ user: ctx.user.id, connection: ctx.connectionId, trip: p.tripId, quote: p.quote, changes: committed },
-		{ requestKey: null }
-	);
-	markCommitted(p.id, row.id);
-	return { changeId: row.id, changes: committed, outcome: outcomeLine(committed.filter((c) => c.committed)), proposal: p };
+	const outcome = outcomeLine(committed.filter((c) => c.committed));
+	// The data is written: never let the audit row turn that into an error (review I4).
+	try {
+		const row = await (await adminPb()).collection('ai_changes').create(
+			{ user: ctx.user.id, connection: ctx.connectionId, trip: p.tripId, quote: p.quote.slice(0, QUOTE_MAX), changes: committed },
+			{ requestKey: null }
+		);
+		markCommitted(p.id, row.id);
+		return { changeId: row.id, changes: committed, outcome, proposal: p };
+	} catch {
+		markCommitted(p.id, 'unrecorded');
+		return { changeId: '', changes: committed, outcome, proposal: p, unrecorded: true };
+	}
 }

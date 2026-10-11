@@ -52,11 +52,12 @@ export function clockAm(t: string): string {
 	return `${h % 12 || 12}:${m[2]} ${h >= 12 ? 'pm' : 'am'}`;
 }
 
-/** `Mon 3 Nov` from 'YYYY-MM-DD' or a stored day. */
-export function dayText(d: string): string {
+/** `Mon 3 Nov` from 'YYYY-MM-DD' or a stored day; `Sat 2 Jan 2027` when outside `year`. */
+export function dayText(d: string, year?: string): string {
 	if (!d) return '';
 	const p = (o: Intl.DateTimeFormatOptions) => formatCalendarDate(d, o);
-	return `${p({ weekday: 'short' })} ${p({ day: 'numeric' })} ${p({ month: 'short' })}`;
+	const base = `${p({ weekday: 'short' })} ${p({ day: 'numeric' })} ${p({ month: 'short' })}`;
+	return year && d.slice(0, 4) !== year ? `${base} ${d.slice(0, 4)}` : base;
 }
 
 export const rangeText = (r: [string, string] | null) => (r ? `${dayText(r[0])} → ${dayText(r[1])}` : 'none');
@@ -68,12 +69,12 @@ const sentence = (f: string) => {
 
 const MEMBER_FIELDS = new Set(['paid_by', 'booked_by', 'assigned_to', 'not_going', 'assignee', 'checked_by', 'from_member', 'to_member', 'members', 'created_by', 'member', 'author', 'champion', 'uploaded_by']);
 
-function show(collection: string, field: string, v: unknown, labels: Labels): string {
+function show(collection: string, field: string, v: unknown, labels: Labels, year?: string): string {
 	if (v === undefined || v === null || v === '' || (Array.isArray(v) && !v.length)) return '—';
 	const spec = WRITABLE[collection];
 	if (spec?.timeFields?.includes(field)) return clockAm(String(v));
-	if (spec?.dateFields?.includes(field)) return dayText(String(v));
-	if (field === spec?.dayField) return dayText(labels.days?.get(String(v)) ?? '') || 'a day';
+	if (spec?.dateFields?.includes(field)) return dayText(String(v), year);
+	if (field === spec?.dayField) return dayText(labels.days?.get(String(v)) ?? '', year) || 'a day';
 	if (field === 'phase') return labels.phases?.get(String(v)) ?? 'a phase';
 	if (MEMBER_FIELDS.has(field)) {
 		const ids = Array.isArray(v) ? v : [v];
@@ -108,23 +109,33 @@ function cascadeCard(c: Cascade): Card {
 		else if (!p.before) lines.push(`${p.name}: new, ${rangeText(p.after)}`);
 		else lines.push(`${p.name}: ${rangeText(p.after)} (was ${rangeText(p.before)})`);
 	}
-	const byTo = new Map<string, string[]>();
-	for (const m of c.moves) byTo.set(m.to, [...(byTo.get(m.to) ?? []), m.title]);
-	for (const [to, titles] of byTo) {
-		lines.push(`${titles.length} item${titles.length === 1 ? '' : 's'} move${titles.length === 1 ? 's' : ''} to ${to}: ${titles.join(', ')}`);
+	// A merged phase's items move; a dropped day's items lose the day and become ideas.
+	const groups = new Map<string, { to: string; idea: boolean; titles: string[] }>();
+	for (const m of c.moves) {
+		const idea = /^\d{4}-\d{2}-\d{2}$/.test(m.from);
+		const key = `${idea}|${m.to}`;
+		const g = groups.get(key) ?? { to: m.to, idea, titles: [] };
+		g.titles.push(m.title);
+		groups.set(key, g);
+	}
+	for (const g of groups.values()) {
+		const n = g.titles.length;
+		const what = g.idea ? `become${n === 1 ? 's an idea' : ' ideas'} in` : `move${n === 1 ? 's' : ''} to`;
+		lines.push(`${n} item${n === 1 ? '' : 's'} ${what} ${g.to}: ${g.titles.join(', ')}`);
 	}
 	return { emoji: '🗓️', title: 'What else changes', lines };
 }
 
 export function previewCards(changes: PlannedChange[], cascade: Cascade | null, trip: Trip, labels: Labels = {}): Card[] {
+	const year = (trip.start_date ?? '').slice(0, 4) || undefined;
 	const cards: Card[] = cascade ? [cascadeCard(cascade)] : [];
 	for (const ch of changes) {
 		const rows = Object.keys(ch.after)
 			.filter((f) => f !== 'trip' && !(ch.action === 'create' && WRITABLE[ch.collection]?.stamp?.[f]))
 			.map((f) => ({
 				field: f === WRITABLE[ch.collection]?.dayField ? 'Day' : sentence(f),
-				from: ch.before ? show(ch.collection, f, ch.before[f], labels) : '',
-				to: show(ch.collection, f, ch.after[f], labels)
+				from: ch.before ? show(ch.collection, f, ch.before[f], labels, year) : '',
+				to: show(ch.collection, f, ch.after[f], labels, year)
 			}));
 		const type = (ch.after.type as ItemType | undefined) ?? undefined;
 		cards.push({

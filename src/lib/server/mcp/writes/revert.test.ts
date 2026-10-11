@@ -50,3 +50,14 @@ describe('inverseOf', () => {
 		expect(inverseOf({ ...update, committed: false }, null)).toEqual({ data: null, delete: false, skipped: [] });
 	});
 });
+
+describe('inverseOf — undo never clobbers (review I5)', () => {
+	it('leaves a created record someone has edited since', () => {
+		const create: CommittedChange = { ...update, action: 'create', before: null, title: 'Lunch at Taberna' };
+		expect(inverseOf(create, { title: 'Lunch at Taberna (moved)', start_time: '2026-11-03 09:40:00.000Z' })).toEqual({
+			data: null,
+			delete: false,
+			skipped: ['Lunch at Taberna was changed since — remove it in the app if you still want it gone']
+		});
+	});
+});
