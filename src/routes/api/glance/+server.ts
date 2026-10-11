@@ -35,7 +35,13 @@ export const GET: RequestHandler = async ({ request }) => {
 	const counts = new Map<string, number>();
 	await Promise.all(
 		tripIds.map(async (id) => {
-			const t = await pb.collection('trips').getOne(id, { fields: 'id,start_date,end_date', requestKey: null }).catch(() => null);
+			const t = await pb
+				.collection('trips')
+				.getOne(id, { fields: 'id,start_date,end_date', requestKey: null })
+				.catch((e: { status?: number }) => {
+					if (e?.status === 404) return null; // deleted between queries: skip
+					throw e; // 5xx/network: surface an error, never a silently low count
+				});
 			if (!t?.start_date || !t?.end_date) return;
 			trips.push({ id, start: String(t.start_date).slice(0, 10), end: String(t.end_date).slice(0, 10) });
 			const r = await pb.collection('items').getList(1, 1, { filter: `trip = "${id}"`, fields: 'id', requestKey: null });
