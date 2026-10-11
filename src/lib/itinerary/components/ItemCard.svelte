@@ -72,7 +72,8 @@
 			needsBooking: showNeedsBooking,
 			booked: !!item.booked,
 			codes: item.confirmation_codes,
-			docCount
+			docCount,
+			type: item.type
 		})
 	);
 

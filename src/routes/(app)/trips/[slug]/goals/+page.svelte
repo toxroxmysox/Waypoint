@@ -11,6 +11,7 @@
 	import { memberDisplayName, memberInitial } from '$lib/itinerary/member-name';
 	import { untrack } from 'svelte';
 	import type { TripGoal } from '$lib/types';
+	import { promptKicker } from '$lib/itinerary/goal-prompts';
 
 	let { data, form } = $props();
 
@@ -97,6 +98,10 @@
 				>
 					<Avatar img={authorAvatar(goal)} initial={memberInitial(author)} alt={memberDisplayName(author)} size={28} />
 					<div class="min-w-0 flex-1">
+						<!-- #403 — the prompt it answered, so "Sushi" reads as "Food to try · Sushi". -->
+						{#if promptKicker(goal.prompt)}
+							<div class="text-ink-muted text-[10.5px] font-semibold tracking-wide uppercase" data-goal-kicker>{promptKicker(goal.prompt)}</div>
+						{/if}
 						<div class="text-ink text-[14.5px] font-semibold">
 							<!-- Stretched link: the ::after covers the whole row for navigation, while the
 							     sentiment-stacks button below sits above it (relative z-10) and stays tappable. -->

@@ -309,7 +309,7 @@ export const actions: Actions = {
 			// Upsert: change an existing vote, else create one. The unique
 			// (suggestion, member) index forbids duplicates either way.
 			const existing = await locals.pb.collection('suggestion_votes').getFullList({
-				filter: `suggestion = "${suggestionId}" && member = "${membership.id}"`,
+				filter: locals.pb.filter('suggestion = {:s} && member = {:m}', { s: suggestionId, m: membership.id }),
 				fields: 'id'
 			});
 			if (existing.length > 0) {

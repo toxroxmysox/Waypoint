@@ -45,9 +45,9 @@ test.describe('Trip Mode rail lists (#429)', () => {
 		expect(page.url()).toBe(before);
 	});
 
-	test('a booked item without a code keeps ✓ Booked', async ({ page }) => {
+	test('a booked item without a code keeps ✓ Reserved (a meal, #462)', async ({ page }) => {
 		const c = card(page, 'Fireside tacos');
-		await expect(c.locator('[data-strip="booked"]')).toContainText('Booked');
+		await expect(c.locator('[data-strip="booked"]')).toContainText('Reserved');
 		await expect(c.locator('[data-strip="code"]')).toHaveCount(0);
 	});
 

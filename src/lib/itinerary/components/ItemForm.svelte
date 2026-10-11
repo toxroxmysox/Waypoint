@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { getFieldConfig } from '$lib/itinerary/item-fields';
-	import { defaultRequiresBooking } from '$lib/itinerary/booking-projection';
+	import { bookingWords, defaultRequiresBooking } from '$lib/itinerary/booking-projection';
 	import type { ItemType, ConfirmationCode, Item } from '$lib/types';
 	import Card from '$lib/ui/Card.svelte';
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
 	import PlacesAutocomplete from '$lib/itinerary/components/PlacesAutocomplete.svelte';
 	import FlightLookup from '$lib/itinerary/components/FlightLookup.svelte';
-	import { titleCase } from '$lib/shell/format';
+	import { titleCase, formatCalendarDate } from '$lib/shell/format';
 	import { untrack } from 'svelte';
 	import { memberDisplayName } from '$lib/itinerary/member-name';
 	import type { ItemFormMode, ItemFormData, ItemFormContext } from './ItemFormFields';
@@ -278,11 +278,10 @@
 						<option value="">Unscheduled</option>
 						{#each context.days as d}
 							<option value={d.id}>
-								{new Date(d.date.replace(' ', 'T')).toLocaleDateString('en-US', {
+								{formatCalendarDate(d.date, {
 									weekday: 'short',
 									month: 'short',
-									day: 'numeric',
-									timeZone: 'UTC'
+									day: 'numeric'
 								})}
 							</option>
 						{/each}
@@ -399,14 +398,14 @@
 	{#if fields.booking}
 		<Card>
 			<div class="p-4 space-y-3">
-				<SectionH>Booking</SectionH>
+				<SectionH>{selectedType === 'meal' ? 'Reservation' : 'Booking'}</SectionH>
 				<label class="flex items-center gap-2">
 					<input type="checkbox" name="requires_booking" bind:checked={requiresBooking} class="border-line rounded" />
 					<span class="text-ink-soft text-sm">Needs a reservation</span>
 				</label>
 				<label class="flex items-center gap-2">
 					<input type="checkbox" name="booked" checked={initialData.booked} class="border-line rounded" />
-					<span class="text-ink-soft text-sm">Booked</span>
+					<span class="text-ink-soft text-sm">{bookingWords(selectedType).done}</span>
 				</label>
 				<div>
 					<label for="reservation_url" class="text-ink-soft block text-sm font-medium">Reservation URL</label>

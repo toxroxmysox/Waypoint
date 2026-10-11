@@ -348,3 +348,13 @@ describe('tripModeView (#439): the item page in Trip Mode', () => {
 		expect(tripModeView({ ...base, item: { status: 'planned' }, dayDate: undefined }).started).toBe(false);
 	});
 });
+
+describe('detailsRows meal label (#462)', () => {
+	const base = { paid: { isPaid: false, total: 0, count: 0 }, canLogPayment: false, payHref: '', expensesHref: '' };
+	it('a meal links its Reservation, everything else its Booking', () => {
+		const label = (type: string) =>
+			detailsRows({ ...base, item: { type, reservation_url: 'https://x.com' } }).find((r) => r.key === 'booking')?.label;
+		expect(label('meal')).toBe('Reservation');
+		expect(label('lodging')).toBe('Booking');
+	});
+});

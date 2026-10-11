@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { formatCalendarDate } from '$lib/shell/format';
 	import { withOrigin } from '$lib/shell/back-nav';
 	import { page } from '$app/state';
 	import { enhance } from '$app/forms';
@@ -37,20 +38,18 @@
 	});
 
 	function dayLabel(): string {
-		return new Date(data.day.date.replace(' ', 'T')).toLocaleDateString('en-US', {
+		return formatCalendarDate(data.day.date, {
 			weekday: 'long',
 			month: 'long',
-			day: 'numeric',
-			timeZone: 'UTC'
+			day: 'numeric'
 		});
 	}
 
 	function shortDayLabel(): string {
-		return new Date(data.day.date.replace(' ', 'T')).toLocaleDateString('en-US', {
+		return formatCalendarDate(data.day.date, {
 			weekday: 'short',
 			month: 'short',
-			day: 'numeric',
-			timeZone: 'UTC'
+			day: 'numeric'
 		});
 	}
 

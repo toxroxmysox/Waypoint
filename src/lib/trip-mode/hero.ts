@@ -35,20 +35,6 @@ export function heroStatus(
 	return { label: 'NOW', text: `until ${formatClock(item.end_time!)} · ${left} left` };
 }
 
-/** Who's going, by name, in `assigned_to` order. Departed and unknown ids drop. */
-export function goingNames(
-	item: { assigned_to?: string[] },
-	members: Array<Pick<TripMember, 'id'> & Partial<TripMember>>
-): { memberId: string; name: string }[] {
-	const out: { memberId: string; name: string }[] = [];
-	for (const id of item.assigned_to ?? []) {
-		const m = members.find((mm) => mm.id === id);
-		if (!m || m.removed_at) continue;
-		out.push({ memberId: id, name: memberDisplayName(m as TripMember) });
-	}
-	return out;
-}
-
 export interface GoingPerson {
 	memberId: string;
 	name: string;

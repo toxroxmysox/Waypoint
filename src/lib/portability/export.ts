@@ -182,6 +182,7 @@ export function buildTripExport(
 		goals: goals.map((g) => ({
 			title: g.title,
 			description: g.description || '',
+			prompt: g.prompt || '',
 			status: g.manual_status,
 			sort_order: g.sort_order,
 			created_by_ref: g.created_by || '',

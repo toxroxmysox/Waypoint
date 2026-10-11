@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { formatCalendarDate } from '$lib/shell/format';
 	import { withOrigin } from '$lib/shell/back-nav';
 	import { page } from '$app/state';
 	import { enhance } from '$app/forms';
@@ -12,6 +13,7 @@
 	import BottomSheet from '$lib/ui/BottomSheet.svelte';
 	import { memberDisplayName, memberInitial } from '$lib/itinerary/member-name';
 	import type { GoalStatus, Item } from '$lib/types';
+	import { promptKicker } from '$lib/itinerary/goal-prompts';
 
 	let { data, form } = $props();
 
@@ -40,11 +42,10 @@
 		const day = data.days.find((d) => d.id === item.day);
 		if (day) {
 			parts.push(
-				new Date(day.date.replace(' ', 'T')).toLocaleDateString('en-US', {
+				formatCalendarDate(day.date, {
 					weekday: 'short',
 					month: 'short',
-					day: 'numeric',
-					timeZone: 'UTC'
+					day: 'numeric'
 				})
 			);
 		}
@@ -72,7 +73,11 @@
 			<Avatar img={data.authorAvatar} initial={memberInitial(author)} alt={memberDisplayName(author)} size={22} />
 			<span>{memberDisplayName(author)}'s goal</span>
 		</div>
-		<h1 class="font-display text-ink mt-2 text-[24px] font-semibold leading-tight">{goal.title}</h1>
+		<!-- #403 — the prompt it answered. -->
+		{#if promptKicker(goal.prompt)}
+			<div class="text-ink-muted text-[10.5px] font-semibold tracking-wide uppercase mt-3" data-goal-kicker>{promptKicker(goal.prompt)}</div>
+		{/if}
+		<h1 class="font-display text-ink {promptKicker(goal.prompt) ? 'mt-0.5' : 'mt-2'} text-[24px] font-semibold leading-tight">{goal.title}</h1>
 		{#if goal.description}
 			<p class="text-ink-soft mt-1.5 text-sm">{goal.description}</p>
 		{/if}

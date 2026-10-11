@@ -19,6 +19,7 @@
 	import PersonBubble from '$lib/ui/PersonBubble.svelte';
 	import CodeRow from '$lib/documents/components/CodeRow.svelte';
 	import NeedsBookingChip from '$lib/ui/NeedsBookingChip.svelte';
+	import { bookingWords } from '$lib/itinerary/booking-projection';
 	import { goingPeople, mapsUrl, type HeroStatus } from '$lib/trip-mode/hero';
 	import type { Item, TripMember } from '$lib/types';
 	import type { ConfirmationCode } from '$lib/itinerary/types';
@@ -99,6 +100,7 @@
 	const maps = $derived(placeLink ? mapsUrl(item) : '');
 	const hasPlace = $derived(!!(item.location_name || item.location_address || placeExtra));
 	const memberOf = (id: string) => members.find((m) => m.id === id);
+	const words = $derived(bookingWords(item.type));
 </script>
 
 <article
@@ -197,7 +199,7 @@
 		{#if item.booked || done || needsBooking}
 			<div class="flex flex-wrap items-center gap-x-4 gap-y-2">
 				{#if needsBooking && !item.booked}
-					<NeedsBookingChip />
+					<NeedsBookingChip label={words.chip} ariaLabel={words.needs} />
 					{#if bookingActions}{@render bookingActions()}{/if}
 				{/if}
 				{#if done}
@@ -209,7 +211,7 @@
 				{#if item.booked}
 					<span class="text-ink-soft inline-flex items-center gap-1 text-sm font-medium" data-testid="hero-booked">
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg>
-						Booked
+						{words.done}
 					</span>
 				{/if}
 			</div>

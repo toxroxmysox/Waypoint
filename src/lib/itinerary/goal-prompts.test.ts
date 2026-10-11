@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildGoalPrompts, locationPhrase } from './goal-prompts';
+import { buildGoalPrompts, locationPhrase, promptKicker } from './goal-prompts';
 
 describe('locationPhrase', () => {
 	it('prefers location_summary when present', () => {
@@ -43,5 +43,19 @@ describe('buildGoalPrompts', () => {
 		const generic = buildGoalPrompts('', []).map((p) => p.id);
 		expect(located).toEqual(generic);
 		expect(new Set(located).size).toBe(located.length); // ids unique
+	});
+});
+
+describe('promptKicker (#403)', () => {
+	it('names the prompt a goal answered', () => {
+		expect(promptKicker('food')).toBe('Food to try');
+	});
+	it('every prompt has a kicker', () => {
+		for (const p of buildGoalPrompts('', [])) expect(promptKicker(p.id)).not.toBe('');
+	});
+	it("'' for no prompt or an unknown one", () => {
+		expect(promptKicker('')).toBe('');
+		expect(promptKicker(undefined)).toBe('');
+		expect(promptKicker('retired')).toBe('');
 	});
 });
