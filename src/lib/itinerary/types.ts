@@ -131,6 +131,8 @@ export interface TripGoal extends RecordModel {
 	trip: string;
 	title: string;
 	description: string;
+	/** #403 — the capture prompt id this goal answered ('food'); '' otherwise. */
+	prompt?: string;
 	created_by: string;
 	manual_status: GoalStatus;
 	sort_order: number;

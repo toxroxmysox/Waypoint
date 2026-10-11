@@ -3,7 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 import type { TripGoal, GoalVote, TripMember } from '$lib/types';
 import { VOTE_OPTIONS, type VoteValue } from '$lib/collaboration/voting';
 import { buildCaptureDeck, type ReactionCandidate } from '$lib/collaboration/swipe-deck';
-import { buildGoalPrompts } from '$lib/itinerary/goal-prompts';
+import { buildGoalPrompts, promptKicker } from '$lib/itinerary/goal-prompts';
 import { withAvatarUrls } from '$lib/collaboration/member-avatar';
 
 /** Fisher–Yates — prompts are "shown once per session, shuffled" (per page load). */
@@ -90,6 +90,9 @@ export const actions: Actions = {
 		const data = await request.formData();
 		const title = data.get('title')?.toString().trim();
 		if (!title) return fail(400, { error: 'A goal needs a title.' });
+		// #403 — the prompt card it answered; only a known prompt id is kept.
+		const promptId = data.get('prompt')?.toString() ?? '';
+		const prompt = promptKicker(promptId) ? promptId : '';
 
 		try {
 			const existing = await locals.pb.collection('trip_goals').getFullList({
@@ -103,6 +106,7 @@ export const actions: Actions = {
 				trip: trip.id,
 				title,
 				description: '',
+				prompt,
 				created_by: membership.id,
 				manual_status: 'unplanned',
 				sort_order: nextOrder

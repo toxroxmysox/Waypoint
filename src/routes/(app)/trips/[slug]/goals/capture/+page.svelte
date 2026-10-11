@@ -9,6 +9,7 @@
 	import { memberDisplayName, memberInitial } from '$lib/itinerary/member-name';
 	import { toast } from '$lib/shell/stores/toast';
 	import type { WizardCard } from './+page.server';
+	import { promptKicker } from '$lib/itinerary/goal-prompts';
 
 	let { data } = $props();
 
@@ -60,22 +61,23 @@
 		form.requestSubmit();
 	}
 
-	function addOne(cardId: string, title: string) {
+	function addOne(cardId: string, prompt: string, title: string) {
 		const t = title.trim();
 		if (!t || !addGoalForm) return;
 		pendingAddCardId = cardId;
 		goalsAdded += 1; // optimistic
 		goalTitlesByCard = { ...goalTitlesByCard, [cardId]: [...(goalTitlesByCard[cardId] ?? []), t] };
-		setFields(addGoalForm, { title: t });
+		setFields(addGoalForm, { title: t, prompt });
 	}
 
-	function flush(cardId: string) {
-		for (const w of pendingGoals) addOne(cardId, w);
+	function flush(card: WizardCard) {
+		if (card.kind !== 'prompt') return;
+		for (const w of pendingGoals) addOne(card.id, card.promptId, w);
 		promptInput = '';
 	}
 
 	function nextPrompt(card: WizardCard, advance: () => void) {
-		flush(card.id);
+		flush(card);
 		advance();
 	}
 
@@ -98,10 +100,10 @@
 		promptInput = '';
 	}
 
-	function onPromptKey(e: KeyboardEvent, cardId: string) {
+	function onPromptKey(e: KeyboardEvent, card: WizardCard) {
 		if (e.key === 'Enter') {
 			e.preventDefault();
-			flush(cardId);
+			flush(card);
 		}
 	}
 </script>
@@ -125,6 +127,7 @@
 		}}
 >
 	<input type="hidden" name="title" value="" />
+	<input type="hidden" name="prompt" value="" />
 </form>
 <form
 	bind:this={deleteGoalForm}
@@ -202,7 +205,7 @@
 							<input
 								type="text"
 								bind:value={promptInput}
-								onkeydown={(e) => onPromptKey(e, card.id)}
+								onkeydown={(e) => onPromptKey(e, card)}
 								onpointerdown={(e) => e.stopPropagation()}
 								placeholder="Type a goal, press enter…"
 								class="border-line bg-surface text-ink mt-4 w-full rounded-lg border px-3 py-2.5 text-sm"
@@ -224,7 +227,8 @@
 						{@const authorImg = data.members.find((m) => m.id === card.goal.created_by)?.avatarUrl ?? ''}
 						<div class="min-h-[180px]">
 							<div class="text-ink-muted mb-3 inline-flex items-center gap-1.5 text-[11.5px] font-semibold tracking-wide uppercase">
-								<span aria-hidden="true">♡</span> A group goal
+								<!-- #403 — the prompt it answered names the card, else the generic label. -->
+								<span aria-hidden="true">♡</span> {promptKicker(card.goal.prompt) || 'A group goal'}
 							</div>
 							<h2 class="font-display text-ink text-[21px] leading-snug font-semibold">
 								{card.goal.title}
