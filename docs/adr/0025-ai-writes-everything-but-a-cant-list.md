@@ -19,7 +19,7 @@ The AI acts as the user with their [[Role]] and may make any change the app lets
 The ADR-0024 transcription rule stands and extends to votes: the AI **records** a decision or vote the user states; it never chooses or initiates one.
 
 ### 2. Generic record ops, gated by PocketBase
-Writes are `create` / `update` ops on any collection not on the can't-list, run with the user's own short-lived PB token, so PB rules and the #411 hooks decide exactly as they do for the app. The server adds only: the can't-list (collection + field blocklist) and the app's Suggestion routing (a traveler's change to someone else's item, or an add with Auto-approve off, becomes a Suggestion). A `describe` tool tells the AI what is writable in plain terms.
+Writes are `create` / `update` ops on any collection not on the can't-list, run with the user's own short-lived PB token, so PB rules and the #411 hooks decide exactly as they do for the app. The server adds only: the can't-list (collection + field blocklist) and the app's Suggestion routing (a traveler's item add goes through suggestions, auto-approved or queued per Auto-approve; item edits stay owner/co_owner-only, as in the app). A `describe` tool tells the AI what is writable in plain terms.
 
 ### 3. Propose → confirm → commit
 `propose_changes` (ops + the user's words stating the decision) returns a preview and a proposal id; `commit_changes(proposal_id)` commits exactly that proposal, all-or-nothing. Proposals live 15 minutes and are refused at commit if any field they touch has changed since the preview. Confirmation is the user's yes in chat **or** a Confirm button on the preview card. The server does not try to prove a human turn happened; the tool contract asks the AI to wait, and Revert is the backstop.

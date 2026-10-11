@@ -14,7 +14,7 @@ Observable outcomes:
 - Nothing is written without a yes in chat or a tap on the card's Confirm.
 - A change confirmed on a stale preview is refused, not applied.
 - Any AI change can be undone from chat or from Recent AI changes in account settings.
-- A traveler's AI behaves exactly like the traveler in the app: edits to others' items become Suggestions.
+- A traveler's AI behaves exactly like the traveler in the app: item adds go through Suggestions (auto-approved or queued per Auto-approve); item edits, which the app reserves for owners/co-owners, are refused with the reason.
 - Other members see the change as the member's own; nothing says "via Claude".
 - An owner can turn AI changes off per trip; Scott can turn all AI writes off server-wide.
 - Members/invitations, AI settings, emails and tokens are never writable through the connector.
@@ -39,7 +39,7 @@ Observable outcomes:
 17. As a member of a dateless trip, I want to create and edit scenarios through Claude, so that ideation can happen in chat.
 18. As a member, I want to walk through closeout (marking items done or considered) through Claude, so that the end-of-trip review is conversational.
 19. As a member, I want to add tasks, check them off, add goals, day notes and memory thoughts, so that the small stuff is captured on the go.
-20. As a traveler, I want my change to someone else's item to become a Suggestion, exactly as in the app, so that owners keep their say.
+20. As a traveler, I want my AI to follow my role exactly as the app does (my item adds become Suggestions; an item edit I couldn't make in the app is refused with the reason, and Claude may offer to leave a comment instead), so that owners keep their say.
 21. As a traveler on a trip with Auto-approve off, I want my AI adds to go to review like my app adds, so that the rules don't change because I used Claude.
 22. As a viewer, I want Claude to be unable to change anything I couldn't change in the app, so that my role means the same thing everywhere.
 23. As a member, I want a proposal I confirm after someone else has changed the same fields to be refused and re-proposed, so that I never commit something I didn't see.
@@ -81,7 +81,7 @@ Observable outcomes:
   - The preview may choose a better view where it communicates more, e.g. a small calendar for trip or phase date changes.
 - **Cascades:** trip-date and phase changes list every consequence (days removed or added, items and ideas re-homed), computed with the app's own tiling logic, before confirm.
 - **Formats:** AI ↔ server use ISO `YYYY-MM-DD` and 24h `HH:MM`, trip-local. Cards show `9:40 am`. Dates outside the trip are refused with a reason, except an explicit trip-date change.
-- **Suggestions:** a traveler's change to someone else's item, or an add with Auto-approve off, becomes a Suggestion, exactly as in the app.
+- **Suggestions:** exactly as in the app. A traveler's item add goes through the suggestion endpoint: "Added as an idea" when Auto-approve is on, "Sent to the owners as a suggestion" when off. Item edits are owner/co_owner only in the app (#175), so a traveler's AI edit is refused with that reason; the AI may offer a comment. *(Corrected 2026-10-11 while planning: the grill assumed an edit-suggestion path; the app has none: suggestions are `new_item` | `comment` only.)*
 - **Attribution:** none. Changes are the member's own. Notifications fire as the app's would.
 - **AI Change audit** (glossary [[AI Change]]): each commit records the changes (before → after per field) and the user's words. Private to the author. Recent AI changes covers 30 days, lives in Account → Connected apps, and is collapsed by default.
 - **Revert:**
