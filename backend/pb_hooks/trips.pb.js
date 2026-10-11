@@ -662,7 +662,7 @@ onRecordUpdateRequest((e) => {
 	// Remove days outside the new range; unlink their items first so items
 	// become unscheduled rather than deleted. #411: an unscheduled item must keep
 	// a phase (items.pb.js validates it; every idea surface is phase-scoped), so
-	// it keeps its own, else takes the day's phase, else the trip's first phase.
+	// it keeps its own, else takes the phase covering that date.
 	// Its span goes with the day (end_date needs a start day); status → unplanned.
 	for (const [dateStr, day] of Object.entries(existingByDate)) {
 		if (neededDates[dateStr]) continue;
@@ -672,15 +672,15 @@ onRecordUpdateRequest((e) => {
 		} catch (_) {
 			// No items to unlink
 		}
+		// The surviving phase covering this date (the last one starting on/before
+		// it), else the first. Read fresh: the retile above may have merged phases.
 		let fallbackPhase = '';
-		const dayPhases = day.get('phases');
-		if (dayPhases && dayPhases.length > 0) fallbackPhase = '' + dayPhases[0];
-		if (!fallbackPhase) {
-			try {
-				const first = e.app.findRecordsByFilter('phases', 'trip = {:t}', '+start_date', 1, 0, { t: e.record.id });
-				if (first.length > 0) fallbackPhase = first[0].id;
-			} catch (_) {}
-		}
+		try {
+			const live = e.app.findRecordsByFilter('phases', 'trip = {:t}', '+start_date', 0, 0, { t: e.record.id });
+			for (const p of live) {
+				if (!fallbackPhase || p.getString('start_date').substring(0, 10) <= dateStr) fallbackPhase = p.id;
+			}
+		} catch (_) {}
 		for (const item of items) {
 			item.set('day', '');
 			item.set('end_date', '');
@@ -688,6 +688,27 @@ onRecordUpdateRequest((e) => {
 			e.app.save(item);
 		}
 		e.app.delete(day);
+	}
+
+	// #411: a span on a kept day can't run past the new trip end. Clamp it to the
+	// end; if that leaves it on/before its start day, it's a one-day item: drop it.
+	{
+		const endDay = newEndDate.substring(0, 10);
+		let spanning = [];
+		try {
+			spanning = e.app.findRecordsByFilter('items', 'trip = {:t} && end_date > {:e}', '', 0, 0, {
+				t: e.record.id,
+				e: endDay + ' 23:59:59.999Z'
+			});
+		} catch (_) {}
+		for (const item of spanning) {
+			let dayDate = '';
+			try {
+				dayDate = e.app.findRecordById('days', item.getString('day')).getString('date').substring(0, 10);
+			} catch (_) {}
+			item.set('end_date', dayDate && endDay > dayDate ? endDay + ' 00:00:00.000Z' : '');
+			e.app.save(item);
+		}
 	}
 
 	// --- Promotion follow-through (#270): re-home phase-less forming ideas.

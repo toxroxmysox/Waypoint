@@ -139,7 +139,8 @@ routerAdd('POST', '/api/suggestions/create', (e) => {
 		// (same list in both builders: isolated sandbox). parent_item must be on this
 		// trip, else it's dropped (as #496 drops a foreign day/phase); items.pb.js
 		// then validates the result (end_date bounds) on save.
-		item.set('end_date', payload.end_date || '');
+		// A span needs a start day: a missing or scrubbed (#496) day drops it.
+		item.set('end_date', payload.day ? payload.end_date || '' : '');
 		item.set('start_tz', payload.start_tz || '');
 		item.set('end_tz', payload.end_tz || '');
 		item.set('location_coords', payload.location_coords || null);
@@ -474,7 +475,8 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 		// (same list in both builders: isolated sandbox). parent_item must be on this
 		// trip, else it's dropped (as #496 drops a foreign day/phase); items.pb.js
 		// then validates the result (end_date bounds) on save.
-		item.set('end_date', payload.end_date || '');
+		// A span needs a start day: a missing or scrubbed (#496) day drops it.
+		item.set('end_date', payload.day ? payload.end_date || '' : '');
 		item.set('start_tz', payload.start_tz || '');
 		item.set('end_tz', payload.end_tz || '');
 		item.set('location_coords', payload.location_coords || null);

@@ -56,7 +56,7 @@ test.describe('Trip clone round-trip (#411)', () => {
 		const seeded = await fetch(`${PB}/api/dev/seed-visual-trip`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ slug: SRC_SLUG })
+			body: JSON.stringify({ slug: SRC_SLUG, stay: true })
 		});
 		expect(seeded.ok).toBe(true);
 		const { tripId } = (await seeded.json()) as { tripId: string };
@@ -76,6 +76,17 @@ test.describe('Trip clone round-trip (#411)', () => {
 			).status
 		).toBe(200);
 		const srcPhases = await list('phases', `trip = "${tripId}"`, token, 'start_date');
+		// An idea (no day) — the default clone form copies it as a parking-lot idea.
+		expect(
+			(
+				await pb('POST', '/api/collections/items/records', token, {
+					trip: tripId,
+					phase: srcPhases[1].id,
+					type: 'activity',
+					title: 'Clone idea (#411)'
+				})
+			).status
+		).toBe(200);
 		expect(srcPhases.map((p) => p.name)).toHaveLength(2);
 
 		// Clone 30 days later, same length.
@@ -84,9 +95,20 @@ test.describe('Trip clone round-trip (#411)', () => {
 		const title = `Clone of tiling ${Date.now()}`;
 		await page.goto(`${BASE}/api/dev/login`);
 		const res = await page.request.post(`${BASE}/trips/${SRC_SLUG}/clone`, {
-			form: { title, start_date: start, end_date: end, include_phases: 'on' },
+			// The form's defaults: phases + every item type (a repeated field, so a raw body).
+			data: new URLSearchParams([
+				['title', title],
+				['start_date', start],
+				['end_date', end],
+				['include_phases', 'on'],
+				...['lodging', 'transportation', 'flight', 'activity', 'meal', 'note'].map((t) => ['include_item_types', t])
+			]).toString(),
 			// x-sveltekit-action: the action answers with its JSON result (redirect or failure).
-			headers: { origin: BASE, 'x-sveltekit-action': 'true' }
+			headers: {
+				origin: BASE,
+				'x-sveltekit-action': 'true',
+				'content-type': 'application/x-www-form-urlencoded'
+			}
 		});
 		const result = await res.text();
 		expect(result, 'clone action result').toContain('"type":"redirect"');
@@ -95,6 +117,14 @@ test.describe('Trip clone round-trip (#411)', () => {
 		expect(clone, 'cloned trip exists').toBeTruthy();
 		const phases = await list('phases', `trip = "${clone.id}"`, token, 'start_date');
 		expect(phases.map((p) => p.name)).toEqual(srcPhases.map((p) => p.name));
+		const items = await list('items', `trip = "${clone.id}"`, token);
+		const idea = items.find((i) => i.title === 'Clone idea (#411)');
+		expect(idea, 'idea cloned').toBeTruthy();
+		expect(idea!.day).toBe('');
+		expect(idea!.phase).toBe(phases[1].id);
+		const srcStay = (await list('items', `trip = "${tripId}" && end_date != ""`, token))[0];
+		const stay = items.find((i) => i.title === srcStay.title);
+		expect(day(stay?.end_date), 'spanning stay keeps its shifted span').toBe(plus(day(srcStay.end_date), 30));
 		expect(phases.map((p) => [day(p.start_date), day(p.end_date), Number(p.order)])).toEqual([
 			[start, plus(srcBoundary, 30), 0],
 			[plus(srcBoundary, 30), end, 1]

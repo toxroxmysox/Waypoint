@@ -174,6 +174,7 @@ async function main() {
 	).items;
 	const lastDay = days[days.length - 1];
 	const stranded = (await create({ day: lastDay.id, status: 'planned' })).data;
+	const stay = (await create({ day: days[0].id, type: 'lodging', end_date: lastDay.date })).data;
 	const shrink = await pb('PATCH', `/api/collections/trips/records/${fx.tripId}`, {
 		token: owner,
 		body: { end_date: days[days.length - 2].date }
@@ -184,6 +185,13 @@ async function main() {
 		'pruned day item is unscheduled into a phase',
 		after.status === 200 && after.data.day === '' && after.data.phase !== '' && after.data.status === 'unplanned',
 		after.data && { day: after.data.day, phase: after.data.phase, status: after.data.status }
+	);
+
+	const stayAfter = (await pb('GET', `/api/collections/items/records/${stay.id}`, { token: owner })).data;
+	assert(
+		'a kept-day span is clamped to the new trip end',
+		stayAfter?.end_date?.slice(0, 10) === days[days.length - 2].date.slice(0, 10),
+		stayAfter?.end_date
 	);
 
 	console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'}: ${pass}/${pass + fail}`);

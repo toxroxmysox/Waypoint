@@ -175,8 +175,13 @@ export const actions: Actions = {
 		const endDate = (data.get('end_date')?.toString() || '').split(/[T ]/)[0];
 		if (!itemId) return fail(400, { error: 'Missing item ID.' });
 		try {
+			// #411: trimmed to its start day = a one-day item, which has no span
+			// (items.pb.js refuses an end_date on or before the start day).
+			const item = await locals.pb.collection('items').getOne(itemId, { expand: 'day', fields: 'expand.day.date' });
+			const startDay = String((item.expand?.day as { date?: string } | undefined)?.date || '').slice(0, 10);
+			const keep = endDate && !(startDay && endDate <= startDay);
 			await locals.pb.collection('items').update(itemId, {
-				end_date: endDate ? `${endDate} 00:00:00.000Z` : ''
+				end_date: keep ? `${endDate} 00:00:00.000Z` : ''
 			});
 			return { success: true };
 		} catch (err: unknown) {

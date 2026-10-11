@@ -165,12 +165,21 @@ async function main() {
 		'checklist in F',
 		await pb('POST', '/api/collections/checklists/records', { token, body: { trip: tripId, phase: f.id, title: 'F list', kind: 'manual' } })
 	);
+	// An item on a pruned day with no phase of its own takes the day's phase —
+	// which must be a surviving one, not the merged-away F (#411 review M5).
+	const d10 = must('day 10', await pb('GET', `/api/collections/days/records?filter=${q(`trip="${tripId}" && date="${D(10)}"`)}`, { token })).items[0];
+	const lateItem = must(
+		'item on day 10',
+		await pb('POST', '/api/collections/items/records', { token, body: { trip: tripId, day: d10.id, type: 'activity', title: 'Day 10 plan', status: 'planned' } })
+	);
 	must('shrink end to the 8th', await pb('PATCH', `/api/collections/trips/records/${tripId}`, { token, body: { end_date: D(8) } }));
 	const shrunk = await tiles('shrink: a phase starting on the new end merges into its predecessor');
 	assert('F is gone', !shrunk.find((p) => p.id === f.id), shrunk.map((p) => p.name));
 	const ideaAfter = (await pb('GET', `/api/collections/items/records/${idea.id}`, { token })).data;
 	assert('F idea re-homed to E', ideaAfter?.phase === e.id, ideaAfter?.phase);
 	const listAfter = await pb('GET', `/api/collections/checklists/records/${list.id}`, { token });
+	const lateAfter = (await pb('GET', `/api/collections/items/records/${lateItem.id}`, { token })).data;
+	assert('pruned-day item lands in a surviving phase', lateAfter?.day === '' && lateAfter?.phase === e.id, lateAfter && { day: lateAfter.day, phase: lateAfter.phase });
 	assert('F checklist re-homed to E', listAfter.status === 200 && listAfter.data?.phase === e.id, { status: listAfter.status, phase: listAfter.data?.phase });
 
 	const cIdea = must(

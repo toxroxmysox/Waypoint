@@ -45,13 +45,13 @@ describe('cloneItemStatus (#173 — statuses were flattened)', () => {
 });
 
 describe('cloneItemPlacement (#196 — never day-less-but-planned)', () => {
-	it('forces an unplanned idea day-less (parking lot), dropping any mapped day/phase', () => {
+	it('forces an unplanned idea day-less (parking lot), keeping its mapped phase (#411)', () => {
 		const placement = cloneItemPlacement({
 			sourceStatus: 'unplanned',
 			mappedDay: 'day_target',
 			mappedPhase: 'phase_target'
 		});
-		expect(placement).toEqual({ status: 'unplanned', day: '', phase: '' });
+		expect(placement).toEqual({ status: 'unplanned', day: '', phase: 'phase_target' });
 	});
 
 	it('keeps a planned clone on its mapped day + phase', () => {
@@ -81,7 +81,7 @@ describe('cloneItemPlacement (#196 — never day-less-but-planned)', () => {
 			mappedDay: '',
 			mappedPhase: 'phase_target'
 		});
-		expect(placement).toEqual({ status: 'unplanned', day: '', phase: '' });
+		expect(placement).toEqual({ status: 'unplanned', day: '', phase: 'phase_target' });
 	});
 
 	it('a done item whose day did not map also falls back to parking, never day-less-but-planned', () => {
@@ -91,5 +91,23 @@ describe('cloneItemPlacement (#196 — never day-less-but-planned)', () => {
 			mappedPhase: ''
 		});
 		expect(placement).toEqual({ status: 'unplanned', day: '', phase: '' });
+	});
+});
+
+describe('cloneItemPlacement — unplanned items keep a phase (#411)', () => {
+	it('an idea lands in its mapped phase', () => {
+		expect(
+			cloneItemPlacement({ sourceStatus: 'unplanned', mappedDay: '', mappedPhase: 'p2', fallbackPhase: 'p1' })
+		).toEqual({ status: 'unplanned', day: '', phase: 'p2' });
+	});
+	it('an idea with no mapped phase lands in the fallback phase', () => {
+		expect(
+			cloneItemPlacement({ sourceStatus: 'unplanned', mappedDay: '', mappedPhase: '', fallbackPhase: 'p1' })
+		).toEqual({ status: 'unplanned', day: '', phase: 'p1' });
+	});
+	it('a planned item whose day did not resolve parks in a phase too', () => {
+		expect(
+			cloneItemPlacement({ sourceStatus: 'planned', mappedDay: '', mappedPhase: '', fallbackPhase: 'p1' })
+		).toEqual({ status: 'unplanned', day: '', phase: 'p1' });
 	});
 });

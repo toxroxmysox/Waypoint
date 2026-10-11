@@ -585,6 +585,13 @@ console.log('\n15. #444 update (Save keeps it pending)');
 		: fail('refused auto-approve leaves nothing', `${farAuto.status} rows=${JSON.stringify(farAutoRows.map((r) => r.status))}`);
 
 	const other = await api('POST', '/api/dev/rules-fixture', { emails: EMAILS, slug: 'e2e-rules-test-sugg-parent' }, tokens.owner);
+	// A scrubbed (foreign) day takes the span with it, or plain Approve could never succeed.
+	const spanNoDay = await api('POST', '/api/suggestions/create', { trip_id: tripId, payload: { ...rich, title: 'Span, foreign day (#411)', day: other.json?.dayId } }, tokens.traveler);
+	const spanAp = await api('POST', '/api/suggestions/review', { suggestion_id: spanNoDay.json?.suggestion_id, action: 'approve' }, tokens.owner);
+	const spanItem = spanAp.json?.item_id ? await getItem(spanAp.json.item_id) : null;
+	spanAp.status === 200 && spanItem && spanItem.day === '' && spanItem.end_date === ''
+		? pass('a scrubbed day drops the span, so approval succeeds')
+		: fail('scrubbed day drops the span', `${spanAp.status} ${JSON.stringify(spanAp.json)}`);
 	const fp = await api('POST', '/api/suggestions/create', { trip_id: tripId, payload: { ...rich, title: 'Foreign parent (#411)', parent_item: other.json?.itemId } }, tokens.owner);
 	const fpi = fp.json?.item_id ? await getItem(fp.json.item_id) : null;
 	fpi && fpi.parent_item === ''

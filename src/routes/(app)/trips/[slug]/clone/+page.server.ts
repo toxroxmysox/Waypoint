@@ -6,6 +6,7 @@ import { fetchManualChecklists } from '$lib/itinerary/checklist-loaders';
 import { cloneItemPlacement } from '$lib/itinerary/clone-items';
 import { shiftStoredDays } from '$lib/shell/trip-time';
 import { planImportPhases } from '$lib/portability/import';
+import { sanitizeItemSpan } from '$lib/itinerary/item-span';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
 	const { trip, membership, phases } = await parent();
@@ -147,6 +148,7 @@ export const actions: Actions = {
 			}
 
 			const dayIdMap = new Map<string, string>();
+			const dayDateById = new Map<string, string>(); // clone day id → 'YYYY-MM-DD'
 			if (includePhases) {
 				// The trips.pb.js create hook already seeded a day record for every
 				// date in newTrip's range (and bucketed phases by date overlap). The
@@ -186,6 +188,7 @@ export const actions: Actions = {
 							});
 						}
 						dayIdMap.set(day.id, existing.id);
+						dayDateById.set(existing.id, dateKey);
 					} else {
 						const newDay = await locals.pb.collection('days').create<Day>({
 							trip: newTrip.id,
@@ -195,6 +198,7 @@ export const actions: Actions = {
 						});
 						targetByDate.set(dateKey, newDay);
 						dayIdMap.set(day.id, newDay.id);
+						dayDateById.set(newDay.id, dateKey);
 					}
 				}
 			}
@@ -203,6 +207,12 @@ export const actions: Actions = {
 				const sourceItems = await locals.pb.collection('items').getFullList<Item>({
 					filter: `trip = "${sourceTripRecord.id}"`,
 					sort: 'sort_order'
+				});
+				// #411 — a parked item needs a phase: its mapped one, else the clone's first.
+				const [firstPhase] = await locals.pb.collection('phases').getFullList<Phase>({
+					filter: `trip = "${newTrip.id}"`,
+					sort: 'start_date',
+					fields: 'id'
 				});
 				const membership = await locals.pb
 					.collection('trip_members')
@@ -219,7 +229,8 @@ export const actions: Actions = {
 					const placement = cloneItemPlacement({
 						sourceStatus: item.status,
 						mappedDay: dayIdMap.get(item.day) || '',
-						mappedPhase: phaseIdMap.get(item.phase) || ''
+						mappedPhase: phaseIdMap.get(item.phase) || '',
+						fallbackPhase: firstPhase?.id || ''
 					});
 					// Parking-lot items carry no clock anchor (mirrors pushToParking /
 					// move-item): an unscheduled clone is a clean idea, not a timed item
@@ -240,7 +251,12 @@ export const actions: Actions = {
 						// #497 — times shift with the days, or Now sees last year's dates.
 						start_time: isParked ? '' : shiftStoredDays(item.start_time, offsetDays),
 						end_time: isParked ? '' : shiftStoredDays(item.end_time, offsetDays),
-						end_date: !isParked && item.end_date ? shiftDate(item.end_date) : '',
+						// #411 — keep the span only where it still holds (after the day, within
+						// the clone's range); items.pb.js refuses one that doesn't.
+						end_date:
+							!isParked && item.end_date
+								? sanitizeItemSpan(dayDateById.get(placement.day), shiftDate(item.end_date), endDate)
+								: '',
 						status: placement.status,
 						booked: false,
 						confirmation_codes: [],
