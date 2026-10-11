@@ -316,6 +316,11 @@ export async function seedMcpTrips(): Promise<McpSeed> {
 		sort_order: 0
 	});
 
+	// Volume for search's 25-result cap.
+	for (let i = 0; i < 30; i++) {
+		await pItem({ phase: past.phase, day: past.dayId(addDays(pStart, i % 3)), type: 'activity', title: `Museum visit ${i + 1}`, sort_order: 10 + i });
+	}
+
 	// ── off trip: AI Access off ────────────────────────────────────────────────
 	const offSecretText = `Secret hideaway ${suffix}`;
 	const off = await makeTrip(T, owner.id, `e2e-mcp-off-${suffix}`, `E2E MCP Private ${suffix}`, addDays(today, 30), addDays(today, 32), 'UTC');

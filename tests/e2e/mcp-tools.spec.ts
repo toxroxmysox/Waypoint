@@ -132,3 +132,84 @@ test.describe('get_trip', () => {
 		expect(v.structured.cards).toEqual(o.structured.cards);
 	});
 });
+
+test.describe('search', () => {
+	const titles = (r: { structured: { cards: { title: string }[] } }) => r.structured.cards.map((c) => c.title);
+
+	test('finds the Lucerne hotel across trips, tagged with its trip', async () => {
+		const r = await callTool(tokens.owner, 'search', { query: 'Lucerne', type: 'lodging' });
+		const card = r.structured.cards.find((c: { title: string; tag: string }) => c.title === 'Hotel Schweizerhof' && c.tag === `E2E MCP Alps and Lisbon ${seed.suffix}`);
+		expect(card).toBeTruthy();
+		expect(card.lines.join(' ')).toContain(`id: ${seed.items.hotelLucerne}`);
+	});
+
+	test('filters by country', async () => {
+		const r = await callTool(tokens.owner, 'search', { query: `restaurant ${seed.suffix}`, country: 'PT' });
+		expect(titles(r)).toContain(`Taberna da Rua restaurant ${seed.suffix}`);
+		const ch = await callTool(tokens.owner, 'search', { query: `restaurant ${seed.suffix}`, country: 'CH' });
+		expect(titles(ch)).not.toContain(`Taberna da Rua restaurant ${seed.suffix}`);
+	});
+
+	test('covers day notes, codes, expenses and goals', async () => {
+		const trip = seed.trips.current;
+		expect((await callTool(tokens.owner, 'search', { trip, query: 'before 9' })).text).toContain('Call the host');
+		expect((await callTool(tokens.owner, 'search', { trip, query: 'TAP9XZ' })).text).toContain('TP 123 to Lisbon');
+		expect((await callTool(tokens.owner, 'search', { trip, query: 'Dinner' })).text).toContain('$90');
+		expect((await callTool(tokens.owner, 'search', { trip, query: 'francesinha' })).text).toContain('Eat a francesinha');
+	});
+
+	test('never searches comments', async () => {
+		const r = await callTool(tokens.owner, 'search', { trip: seed.trips.current, query: seed.commentText.split(' ').pop()! });
+		expect(r.structured.cards).toHaveLength(0);
+	});
+
+	test('skips AI-off trips and says so', async () => {
+		const r = await callTool(tokens.owner, 'search', { query: seed.offSecretText });
+		expect(r.structured.cards).toHaveLength(0);
+		// The heading echoes the query itself; the results must not carry it.
+		expect(JSON.stringify(r.structured.skipped)).not.toContain(seed.offSecretText);
+		expect(r.structured.skipped.map((s: { title: string }) => s.title)).toContain(`E2E MCP Private ${seed.suffix}`);
+	});
+
+	test('caps at 25 results and says how to narrow', async () => {
+		// The seed's past trip has 30 "Museum visit N" items.
+		const all = await callTool(tokens.owner, 'search', { trip: seed.trips.past, query: 'Museum visit' });
+		expect(all.structured.total).toBeGreaterThan(25);
+		expect(all.structured.cards).toHaveLength(25);
+		expect(all.structured.heading).toMatch(/\+\d+ more — narrow by trip, type, or date/);
+	});
+
+	test('needs a query or a filter', async () => {
+		const r = await callTool(tokens.owner, 'search', {});
+		expect(r.isError).toBe(true);
+	});
+});
+
+test.describe('get_item', () => {
+	test('the full item: comments with author, codes, who is going', async () => {
+		const r = await callTool(tokens.owner, 'get_item', { item: seed.items.overlapA });
+		expect(r.text).toContain('Port cellar tour');
+		expect(r.text).toContain(seed.commentText.replace(/\S+@\S+/, '[email removed]'));
+		expect(r.text).toContain('Abby');
+		const flight = await callTool(tokens.owner, 'get_item', { item: seed.items.flightWithCode });
+		expect(flight.text).toContain('TAP9XZ');
+	});
+
+	test('an item on a foreign trip reveals nothing', async () => {
+		const foreignItem = await callTool(tokens.outsider, 'get_item', { item: seed.items.overlapA });
+		expect(foreignItem.isError).toBe(true);
+		expect(foreignItem.text).not.toContain('Port cellar tour');
+	});
+
+	test('an item on an AI-off trip shows only the trip notice', async () => {
+		const r = await callTool(tokens.owner, 'get_item', { item: seed.items.offSecret });
+		expect(r.text).toContain('AI access is turned off');
+		expect(JSON.stringify(r)).not.toContain(seed.offSecretText);
+	});
+
+	test('a viewer can read an item', async () => {
+		const r = await callTool(tokens.viewer, 'get_item', { item: seed.items.overlapA });
+		expect(r.isError).toBeFalsy();
+		expect(r.text).toContain('Port cellar tour');
+	});
+});
