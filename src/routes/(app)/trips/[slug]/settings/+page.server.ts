@@ -18,6 +18,9 @@ export const actions: Actions = {
 		const locationSummary = data.get('location_summary')?.toString().trim() || '';
 		const autoApproveSuggestions = data.get('auto_approve_suggestions') === 'on';
 		const aiAccess = data.get('ai_access') === 'on';
+		// #503 — "AI can make changes" needs read. With read off the checkbox is
+		// disabled and not submitted, so leave the stored ai_write alone.
+		const aiWrite = aiAccess ? { ai_write: data.get('ai_write') === 'on' } : {};
 
 		// #375 — `field` names the control the client should focus; it never
 		// changes what is validated, only where the failure is reported.
@@ -63,7 +66,8 @@ export const actions: Actions = {
 				timezone,
 				location_summary: locationSummary,
 				auto_approve_suggestions: autoApproveSuggestions,
-				ai_access: aiAccess
+				ai_access: aiAccess,
+				...aiWrite
 			});
 
 			return { success: true };

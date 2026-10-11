@@ -18,6 +18,10 @@
 	// class as the money-units checkbox race — cerebrum 2026-07-02).
 	let digestOn = $state(untrack(() => !data.membership.digest_opt_out));
 	let confirmDelete = $state(false);
+	// #503 — client-owned for the same #272 reason. Changes needs read: with read
+	// off the changes box is disabled (not submitted) and the server keeps ai_write.
+	let aiRead = $state(untrack(() => data.trip.ai_access !== false));
+	let aiWrite = $state(untrack(() => data.trip.ai_write !== false));
 
 	let success = $derived(form?.success ?? false);
 	// #176 — Settings is an owner console: non-owner/co-owner sees read-only trip
@@ -130,12 +134,26 @@
 				<input
 					type="checkbox"
 					name="ai_access"
-					checked={data.trip.ai_access}
+					bind:checked={aiRead}
 					class="border-line h-4 w-4 rounded"
 				/>
 				<div>
-					<span class="text-ink block text-sm font-medium">AI Access</span>
+					<span class="text-ink block text-sm font-medium">AI can read this trip</span>
 					<span class="text-ink-muted block text-xs">Lets members' connected AI assistants (like Claude) read this trip. Turning it off hides everything but the trip's name and dates.</span>
+				</div>
+			</label>
+
+			<label class="flex items-center gap-3" class:opacity-50={!aiRead}>
+				<input
+					type="checkbox"
+					name="ai_write"
+					bind:checked={aiWrite}
+					disabled={!aiRead}
+					class="border-line h-4 w-4 rounded"
+				/>
+				<div>
+					<span class="text-ink block text-sm font-medium">AI can make changes</span>
+					<span class="text-ink-muted block text-xs">Lets a member's AI make the changes they could make themselves, after they confirm. Needs reading on.</span>
 				</div>
 			</label>
 
