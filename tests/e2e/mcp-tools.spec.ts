@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { BASE, callTool, connect, rpc } from './mcp-helpers';
-import { MCP_EMAILS, seedMcpTrips, type McpSeed } from './mcp-seed';
+import { MCP_EMAILS, seedMcpTrips, superuser, type McpSeed } from './mcp-seed';
 import { E2E_PB_BASE } from './e2e-env';
 
 // #502 — the MCP read tools, called the way the Claude connector calls them, as
@@ -111,10 +111,10 @@ test.describe('get_trip', () => {
 		const r = await callTool(tokens.owner, 'get_trip', { trip: seed.trips.current });
 		const text = r.text;
 		expect(text).toContain('Porto');
-		// One sleep card per night; all three nights at Casa do Rio.
-		const nights = r.structured.cards.filter((c: { tag?: string }) => c.tag === 'night');
-		expect(nights).toHaveLength(3);
-		for (const n of nights) expect(n.lines.join(' ')).toContain('Casa do Rio');
+		// #512: a run of nights at one place is one card; all three nights at Casa do Rio.
+		const nights = r.structured.cards.filter((c: { tag?: string }) => c.tag === 'night' || c.tag === 'nights');
+		expect(nights).toHaveLength(1);
+		expect(nights[0].lines.join(' ')).toContain('Casa do Rio · 3 nights');
 		expect(text).toContain('Vic');
 		expect(text).toContain('Abby');
 		expect(text).toContain('Eat a francesinha');
@@ -128,7 +128,7 @@ test.describe('get_trip', () => {
 		const r = await callTool(tokens.owner, 'get_trip', { trip: seed.trips.off });
 		expect(r.text).toContain('AI access is turned off');
 		const p = await callTool(tokens.owner, 'get_trip', { trip: seed.trips.past });
-		const nights = p.structured.cards.filter((c: { tag?: string }) => c.tag === 'night');
+		const nights = p.structured.cards.filter((c: { tag?: string }) => c.tag === 'night' || c.tag === 'nights');
 		expect(nights.some((n: { lines: string[] }) => n.lines.join(' ').includes('no lodging'))).toBe(true);
 	});
 
@@ -299,5 +299,71 @@ test.describe('get_memories', () => {
 		const all = JSON.stringify(r);
 		expect(all).not.toContain(seed.photoName);
 		expect(all).not.toContain('/api/files/');
+	});
+});
+
+// #512 — e2e gaps from the v3.1 review.
+test.describe('membership + overnight', () => {
+	test('a member removed from a trip no longer sees it in list_trips', async () => {
+		const su = await superuser();
+		const pb = (method: string, path: string, body?: unknown) =>
+			fetch(`${E2E_PB_BASE}${path}`, {
+				method,
+				headers: { 'content-type': 'application/json', Authorization: su },
+				body: body === undefined ? undefined : JSON.stringify(body)
+			}).then((r) => r.json());
+		const viewer = await fetch(`${E2E_PB_BASE}/api/dev/auth-bypass`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ email: MCP_EMAILS.viewer })
+		}).then((r) => r.json());
+		const m = await pb('POST', '/api/collections/trip_members/records', {
+			trip: seed.tripIds.past,
+			user: viewer.record.id,
+			role: 'viewer',
+			display_name: 'Vic'
+		});
+		const title = `E2E MCP Alps and Lisbon ${seed.suffix}`;
+		const titles = async () => (await callTool(tokens.viewer, 'list_trips')).structured.cards.map((c: { title: string }) => c.title);
+		expect(await titles()).toContain(title);
+		await pb('PATCH', `/api/collections/trip_members/records/${m.id}`, { removed_at: new Date().toISOString().replace('T', ' ') });
+		expect(await titles()).not.toContain(title);
+	});
+
+	test('a red-eye that lands today shows in get_day today', async () => {
+		const owner = await fetch(`${E2E_PB_BASE}/api/dev/auth-bypass`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ email: MCP_EMAILS.owner })
+		}).then((r) => r.json());
+		const days = await fetch(
+			`${E2E_PB_BASE}/api/collections/days/records?perPage=50&filter=${encodeURIComponent(`trip = "${seed.tripIds.current}"`)}`,
+			{ headers: { Authorization: owner.token } }
+		).then((r) => r.json());
+		const phases = await fetch(
+			`${E2E_PB_BASE}/api/collections/phases/records?filter=${encodeURIComponent(`trip = "${seed.tripIds.current}"`)}`,
+			{ headers: { Authorization: owner.token } }
+		).then((r) => r.json());
+		const startDay = days.items.find((d: { date: string }) => d.date.startsWith(seed.dates.start));
+		const title = `Red-eye from Toronto ${seed.suffix}`;
+		const res = await fetch(`${E2E_PB_BASE}/api/collections/items/records`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json', Authorization: owner.token },
+			body: JSON.stringify({
+				trip: seed.tripIds.current,
+				phase: phases.items[0].id,
+				day: startDay.id,
+				type: 'flight',
+				title,
+				status: 'planned',
+				start_time: `${seed.dates.start} 23:30:00.000Z`,
+				end_time: `${seed.dates.today} 06:10:00.000Z`,
+				end_date: `${seed.dates.today} 00:00:00.000Z`,
+				created_by: seed.members.owner
+			})
+		});
+		expect(res.ok, await res.clone().text()).toBe(true);
+		const r = await callTool(tokens.owner, 'get_day', { trip: seed.trips.current, date: seed.dates.today });
+		expect(r.text).toContain(title);
 	});
 });

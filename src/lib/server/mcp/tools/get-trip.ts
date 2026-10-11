@@ -23,6 +23,27 @@ export async function loadMembers(ctx: Parameters<ToolDef['run']>[0], tripId: st
 	});
 }
 
+/**
+ * #512 — one card per run of nights at the same place, not one per night: a
+ * 45-night trip otherwise fills the 50-card cap and drops goals and ideas.
+ */
+export function nightCards(nights: { date: string; lodging: string }[]): Card[] {
+	const runs: { from: string; to: string; lodging: string; n: number }[] = [];
+	for (const { date, lodging } of nights) {
+		const last = runs.at(-1);
+		if (last && last.lodging === lodging) {
+			last.to = date;
+			last.n++;
+		} else runs.push({ from: date, to: date, lodging, n: 1 });
+	}
+	return runs.map((r) => ({
+		emoji: '🌙',
+		title: r.n === 1 ? formatDayDate(r.from) : `${formatDayDate(r.from)} → ${formatDayDate(r.to)}`,
+		tag: r.n === 1 ? 'night' : 'nights',
+		lines: [r.n === 1 ? r.lodging : `${r.lodging} · ${r.n} nights`]
+	}));
+}
+
 export const getTrip: ToolDef = {
 	name: 'get_trip',
 	title: 'Trip overview',
@@ -64,15 +85,14 @@ export const getTrip: ToolDef = {
 			lines: [[p.location, p.country_code].filter(Boolean).join(', '), tripDates(p)].filter(Boolean)
 		}));
 
-		for (const date of nightsOf(days)) {
-			const here = lodgingForNight(items, days, date);
-			cards.push({
-				emoji: '🌙',
-				title: formatDayDate(date),
-				tag: 'night',
-				lines: [here.length ? here.map((l) => l.title).join(', ') : 'no lodging']
-			});
-		}
+		cards.push(
+			...nightCards(
+				nightsOf(days).map((date) => {
+					const here = lodgingForNight(items, days, date);
+					return { date, lodging: here.length ? here.map((l) => l.title).join(', ') : 'no lodging' };
+				})
+			)
+		);
 
 		if (members.length) {
 			cards.push({ emoji: '👥', title: 'Members', lines: members.map((m) => `${memberName(m)} · ${m.role.replace('_', '-')}`) });

@@ -214,3 +214,31 @@ test('a second post of the code form after sign-in lands on the same callback, n
 	expect(again.status).toBe(303);
 	expect(again.headers.get('location')).toBe(first.headers.get('location'));
 });
+
+// #512 — RFC 8707: the only resource Waypoint serves is <origin>/mcp.
+test('authorize for a foreign resource redirects back with invalid_target', async () => {
+	const { challenge } = pkcePair();
+	const res = await fetch(
+		authorizeUrl({
+			response_type: 'code',
+			client_id: CLIENT_ID,
+			redirect_uri: REDIRECT_URI,
+			state: 's',
+			code_challenge: challenge,
+			code_challenge_method: 'S256',
+			resource: 'https://evil.example/mcp'
+		}),
+		{ redirect: 'manual' }
+	);
+	expect(res.status).toBe(303);
+	const loc = new URL(res.headers.get('location')!);
+	expect(loc.searchParams.get('error')).toBe('invalid_target');
+});
+
+// #512 — rotation is atomic: one refresh token, two concurrent refreshes → one wins.
+test('two concurrent refreshes with one token: exactly one succeeds', async () => {
+	const { refresh } = await connect(EMAIL);
+	const body = { grant_type: 'refresh_token', refresh_token: refresh, client_id: CLIENT_ID };
+	const [a, b] = await Promise.all([tokenRequest(body), tokenRequest(body)]);
+	expect([a.status, b.status].filter((s) => s === 200)).toHaveLength(1);
+});

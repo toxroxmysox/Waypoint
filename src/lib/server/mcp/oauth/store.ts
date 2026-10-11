@@ -2,6 +2,7 @@
 // refresh tokens 30 days, and every refresh rotates. A rotated refresh token is
 // kept, expired, so a second use is recognisable as replay: that revokes the
 // whole connection (RFC 9700 §4.14.2).
+import type PocketBase from 'pocketbase';
 import type { RecordModel } from 'pocketbase';
 import { env } from '$env/dynamic/private';
 import { adminPb } from '../admin-pb';
@@ -38,22 +39,31 @@ async function findToken(hash: string, kind: 'access' | 'refresh'): Promise<Reco
 		.catch(() => null);
 }
 
-async function mint(connectionId: string): Promise<TokenSet> {
+/**
+ * New access + refresh tokens. On rotation the refresh row is inserted FIRST,
+ * carrying `rotated_from` under a unique index (0083): of two concurrent
+ * rotations of one token only one insert succeeds; the other throws.
+ */
+async function mint(connectionId: string, rotatedFrom = ''): Promise<TokenSet> {
 	const pb = await adminPb();
 	const access_token = randomToken();
 	const refresh_token = randomToken();
 	const now = Date.now();
 	const ttl = accessTtlS();
-	await Promise.all([
-		pb.collection('mcp_tokens').create(
-			{ connection: connectionId, kind: 'access', hash: sha256Hex(access_token), expires_at: pbDate(now + ttl * 1000) },
-			{ requestKey: null }
-		),
-		pb.collection('mcp_tokens').create(
-			{ connection: connectionId, kind: 'refresh', hash: sha256Hex(refresh_token), expires_at: pbDate(now + REFRESH_TTL_S * 1000) },
-			{ requestKey: null }
-		)
-	]);
+	await pb.collection('mcp_tokens').create(
+		{
+			connection: connectionId,
+			kind: 'refresh',
+			hash: sha256Hex(refresh_token),
+			expires_at: pbDate(now + REFRESH_TTL_S * 1000),
+			rotated_from: rotatedFrom
+		},
+		{ requestKey: null }
+	);
+	await pb.collection('mcp_tokens').create(
+		{ connection: connectionId, kind: 'access', hash: sha256Hex(access_token), expires_at: pbDate(now + ttl * 1000) },
+		{ requestKey: null }
+	);
 	return { access_token, refresh_token, token_type: 'Bearer', expires_in: ttl };
 }
 
@@ -104,6 +114,29 @@ export async function exchangeCode(p: {
 	return mint(await connectionFor(rec.userId, rec.client));
 }
 
+const SWEEP_EVERY_MS = 3600_000;
+let lastSweep = 0;
+
+/**
+ * #512 — delete dead token rows: expired access tokens, and refresh rows that
+ * expired (rotated or lapsed) more than a refresh lifetime ago. A recently
+ * rotated row is kept: a second use of it is how replay is recognised.
+ */
+export async function sweepExpiredTokens(now = Date.now(), pb?: PocketBase): Promise<number> {
+	const db = pb ?? (await adminPb());
+	const rows = await db.collection('mcp_tokens').getFullList({
+		filter: db.filter('expires_at < {:now}', { now: pbDate(now) }),
+		fields: 'id,kind,expires_at',
+		requestKey: null
+	});
+	const dead = rows.filter((r) => {
+		const exp = new Date(String(r.expires_at).replace(' ', 'T')).getTime();
+		return r.kind === 'access' ? exp < now : exp < now - REFRESH_TTL_S * 1000;
+	});
+	await Promise.all(dead.map((r) => db.collection('mcp_tokens').delete(r.id, { requestKey: null }).catch(() => false)));
+	return dead.length;
+}
+
 export async function rotateRefresh(p: { refresh_token: string; client_id: string }): Promise<TokenSet | OAuthError> {
 	if (!p.refresh_token) return { error: 'invalid_request', error_description: 'refresh_token required' };
 	const row = await findToken(sha256Hex(p.refresh_token), 'refresh');
@@ -114,9 +147,20 @@ export async function rotateRefresh(p: { refresh_token: string; client_id: strin
 	}
 	const conn = row.expand?.connection as RecordModel | undefined;
 	if (!conn || conn.client_id !== p.client_id) return grantError('client mismatch');
+	let tokens: TokenSet;
+	try {
+		tokens = await mint(conn.id, row.id);
+	} catch {
+		// #512 — a concurrent refresh with this token won the rotation.
+		return grantError('refresh token already used or expired');
+	}
 	const pb = await adminPb();
 	await pb.collection('mcp_tokens').update(row.id, { expires_at: pbDate(Date.now()) }, { requestKey: null });
-	return mint(conn.id);
+	if (Date.now() - lastSweep > SWEEP_EVERY_MS) {
+		lastSweep = Date.now();
+		sweepExpiredTokens().catch(() => {});
+	}
+	return tokens;
 }
 
 export async function lookupAccess(token: string): Promise<{ connectionId: string; userId: string } | null> {
