@@ -2,11 +2,13 @@
 	// #406 — "What is this?" on someone else's idea or goal: opens a web search for
 	// `what is <title> in <place>` in the browser. Stops pointerdown so a swipe card
 	// does not start a drag from it.
+	import { page } from '$app/state';
 	import { whatIsSearchUrl } from '$lib/shell/web-search';
 
 	let { title, place = '', class: klass = '' }: { title: string; place?: string; class?: string } = $props();
 
-	const href = $derived(whatIsSearchUrl(title, place));
+	// #510 — the signed-in user's search engine (Google when unset).
+	const href = $derived(whatIsSearchUrl(title, place, page.data.user?.search_engine));
 </script>
 
 {#if href}

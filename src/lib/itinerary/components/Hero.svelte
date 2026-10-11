@@ -97,7 +97,8 @@
 	const people = $derived(goingPeople(item, members));
 	const goers = $derived(people.filter((p) => !p.notGoing));
 	const passers = $derived(people.filter((p) => p.notGoing));
-	const maps = $derived(placeLink ? mapsUrl(item) : '');
+	// #510 — the signed-in user's maps app (Google when unset).
+	const maps = $derived(placeLink ? mapsUrl(item, page.data.user?.maps_app) : '');
 	const hasPlace = $derived(!!(item.location_name || item.location_address || placeExtra));
 	const memberOf = (id: string) => members.find((m) => m.id === id);
 	const words = $derived(bookingWords(item.type));

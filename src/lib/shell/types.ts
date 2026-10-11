@@ -8,4 +8,10 @@ export interface User extends RecordModel {
 	// unset date field as `''` (falsy) to the SvelteKit client — never a truthy
 	// goja DateTime (that scar is hook-side only). `''`/absent → needs onboarding.
 	onboarded_at?: string;
+	// #510 — where links open. '' / absent = Google.
+	search_engine?: SearchEngine | '';
+	maps_app?: MapsApp | '';
 }
+
+export type SearchEngine = 'google' | 'duckduckgo';
+export type MapsApp = 'google' | 'apple';

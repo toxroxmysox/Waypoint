@@ -17,3 +17,14 @@ describe('whatIsSearchUrl (#406)', () => {
 		expect(whatIsSearchUrl('  ', 'Porto')).toBe('');
 	});
 });
+
+describe('whatIsSearchUrl engine (#510)', () => {
+	it('DuckDuckGo when chosen', () => {
+		expect(whatIsSearchUrl('Tram 28', 'Lisbon', 'duckduckgo')).toBe(
+			'https://duckduckgo.com/?q=what%20is%20Tram%2028%20in%20Lisbon'
+		);
+	});
+	it('Google when unset', () => {
+		expect(whatIsSearchUrl('Tram 28', '', '')).toMatch(/^https:\/\/www\.google\.com\/search\?q=/);
+	});
+});

@@ -29,7 +29,7 @@ test.describe('Account / Profile (#104)', () => {
 	test('display name edits and persists', async ({ page }) => {
 		await page.goto(`${BASE}/account`, { waitUntil: 'networkidle' });
 		await page.locator('#name').fill('Renamed Tester');
-		await page.getByRole('button', { name: 'Save', exact: true }).click();
+		await page.locator('form[action="?/updateName"]').getByRole('button', { name: 'Save' }).click();
 		await expect(page.getByText('Name saved')).toBeVisible();
 
 		await page.reload();
