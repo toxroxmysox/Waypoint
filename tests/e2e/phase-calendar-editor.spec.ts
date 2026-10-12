@@ -40,7 +40,7 @@ test.describe('#330 phase calendar editor', () => {
 			await expect(page.getByText('New phase').filter({ visible: true }).first()).toBeVisible();
 			await expect(page.getByText('Days 1–5').filter({ visible: true }).first()).toBeVisible();
 			await expect(page.getByText('Days 5–9').filter({ visible: true }).first()).toBeVisible();
-			// Phase Detail is still reachable from each row (add-ideas path preserved).
+			// Phase Detail is reachable from each phase's Overview card (#391 moved it off the editor rows).
 			await expect(page.locator('a[href^="/trips/e2e-active-trip/phases/"]:visible').first()).toBeVisible();
 
 			// Drag the boundary handle day 5 → day 7 (a real Pointer-Event drag, multiple
@@ -48,6 +48,8 @@ test.describe('#330 phase calendar editor', () => {
 			// (drag "stopped" + never persisted); capture now lives on the stable grid.
 			const handle = page.locator('[data-handle]:visible').first();
 			const target = page.locator('[data-day="7"]:visible').first();
+			// #391: the editor sits below the Phase Overview cards — bring it on screen.
+			await target.evaluate((el) => el.scrollIntoView({ block: 'center' }));
 			const hb = await handle.boundingBox();
 			const tb = await target.boundingBox();
 			if (!hb || !tb) throw new Error('handle/target not measurable');

@@ -236,3 +236,56 @@ test('swipe deck closes back to the Phase Detail it was opened from', async ({ b
 	await page.waitForURL(`${BASE}/trips/${SLUG}/phases/${fx.tokyo}`);
 	await close();
 });
+
+// #391 — Phase Overview (Phases tab): one card per phase. The card opens Phase
+// Detail; its day chips open days; its swipe row opens that phase's deck.
+test('Phase Overview cards open Phase Detail, days and the deck', async ({ browser }) => {
+	const { page, close } = await devLogin(browser, EMAILS.owner);
+	const phases = `${BASE}/trips/${SLUG}/phases`;
+	await page.goto(phases, { waitUntil: 'networkidle' });
+
+	const tokyoCard = page.locator(`[data-phase-card="${fx.tokyo}"]`).filter({ visible: true });
+	await expect(tokyoCard.getByRole('link', { name: /Tokyo/ }).first()).toHaveAttribute('href', `/trips/${SLUG}/phases/${fx.tokyo}`);
+	await expect(tokyoCard.getByRole('link', { name: /^Thu 18/ })).toHaveAttribute('href', `/trips/${SLUG}/days/${fx.days['2027-11-18']}`);
+
+	// Tokyo: ideas the owner hasn't rated → a swipe link carrying from=. (The
+	// rules-fixture's own items re-home into Tokyo too, so counts aren't fixed.)
+	const swipe = tokyoCard.getByRole('link', { name: /\d+ ideas? · \d+ to rate/ });
+	const href = (await swipe.getAttribute('href')) ?? '';
+	expect(href).toContain(`/trips/${SLUG}/swipe/${fx.tokyo}`);
+	expect(decodeURIComponent(href)).toContain(`from=/trips/${SLUG}/phases`);
+
+	// Kanazawa has no ideas → no swipe row.
+	const kanCard = page.locator(`[data-phase-card="${fx.kanazawa}"]`).filter({ visible: true });
+	await expect(kanCard.getByText(/ideas ·/)).toHaveCount(0);
+
+	// The trip-wide swipe banner is gone; the editor sits under Edit phases with no Open link.
+	await expect(page.getByText(/Swipe through/)).toHaveCount(0);
+	await expect(page.getByRole('heading', { name: 'Edit phases' }).filter({ visible: true })).toBeVisible();
+	await expect(page.getByRole('link', { name: /^Open (Tokyo|Kanazawa)$/ })).toHaveCount(0);
+
+	await tokyoCard.getByRole('link', { name: /Tokyo/ }).first().click();
+	await page.waitForURL(`${BASE}/trips/${SLUG}/phases/${fx.tokyo}`);
+	await close();
+});
+
+test('a phase whose ideas are all rated reads "all rated", not a link', async ({ browser }) => {
+	const owner = await token(EMAILS.owner);
+	const me = (await pb(owner, 'GET', `/api/collections/trip_members/records?filter=${encodeURIComponent(`trip="${fx.tripId}" && role="owner"`)}`))
+		.items as { id: string }[];
+	const items = (await pb(owner, 'GET', `/api/collections/items/records?perPage=50&filter=${encodeURIComponent(`phase="${fx.tokyo}" && (status="planned" || status="unplanned")`)}`))
+		.items as { id: string }[];
+	for (const it of items) {
+		await fetch(`${PB_BASE}/api/collections/votes/records`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${owner}` },
+			body: JSON.stringify({ trip: fx.tripId, item: it.id, member: me[0].id, value: 'like' })
+		});
+	}
+	const { page, close } = await devLogin(browser, EMAILS.owner);
+	await page.goto(`${BASE}/trips/${SLUG}/phases`, { waitUntil: 'networkidle' });
+	const tokyoCard = page.locator(`[data-phase-card="${fx.tokyo}"]`).filter({ visible: true });
+	await expect(tokyoCard.getByText(/\d+ ideas? · all rated/)).toBeVisible();
+	await expect(tokyoCard.getByRole('link', { name: /ideas ·/ })).toHaveCount(0);
+	await close();
+});
