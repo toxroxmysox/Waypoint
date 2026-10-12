@@ -843,8 +843,14 @@ async function runUpdatePhase(tokens, fixture) {
 		for (const role of ROLES) {
 			// trip_members.pb.js (#408) passes a no-op PATCH (nothing changed), so
 			// each role must send a value that actually differs from the last one.
+			// #401: phases.pb.js now lets a traveler send a no-op (notes-only gate), so
+			// phases also need a per-role value to exercise the structure gate.
 			const body =
-				col === 'trip_members' ? { display_name: `Harness updated by ${role}` } : updateBody(col);
+				col === 'trip_members'
+					? { display_name: `Harness updated by ${role}` }
+					: col === 'phases'
+						? { name: `Harness updated by ${role}` }
+						: updateBody(col);
 			const r = await pbRequest('PATCH', `/api/collections/${col}/records/${fid}`, {
 				token: tokens[role],
 				body
@@ -3178,6 +3184,40 @@ function printDaysNotificationsReport() {
 	}
 }
 
+// #401 — phase + trip notes: any non-viewer member edits notes (same as day
+// notes); phase structure stays owner/co_owner; viewers can't edit notes.
+const NOTES_OPS = [
+	'phase_notes_traveler',
+	'phase_notes_viewer',
+	'phase_name_traveler',
+	'trip_notes_traveler',
+	'trip_notes_viewer'
+];
+
+async function runNotesGateCases(tokens) {
+	const fixture = await setupFixture();
+	const phase = `/api/collections/phases/records/${fixture.phaseId}`;
+	const trip = `/api/collections/trips/records/${fixture.tripId}`;
+	let r = await pbRequest('PATCH', phase, { token: tokens.traveler, body: { notes: 'Rail pass starts here.' } });
+	recordResult('phases', 'phase_notes_traveler', 'traveler', 'allow', classifyWrite(r.status), r.status);
+	r = await pbRequest('PATCH', phase, { token: tokens.viewer, body: { notes: 'Viewer wrote this' } });
+	recordResult('phases', 'phase_notes_viewer', 'viewer', 'deny', classifyWrite(r.status), r.status);
+	r = await pbRequest('PATCH', phase, { token: tokens.traveler, body: { name: 'Renamed by traveler' } });
+	recordResult('phases', 'phase_name_traveler', 'traveler', 'deny', classifyWrite(r.status), r.status);
+	r = await pbRequest('PATCH', trip, { token: tokens.traveler, body: { notes: 'JR passes ordered.' } });
+	recordResult('trips', 'trip_notes_traveler', 'traveler', 'allow', classifyWrite(r.status), r.status);
+	r = await pbRequest('PATCH', trip, { token: tokens.viewer, body: { notes: 'Viewer wrote this' } });
+	recordResult('trips', 'trip_notes_viewer', 'viewer', 'deny', classifyWrite(r.status), r.status);
+}
+
+function printNotesReport() {
+	console.log('\n[novel #401 phase + trip notes gates]');
+	for (const r of results.filter((x) => NOTES_OPS.includes(x.op))) {
+		const mark = r.passed ? 'PASS' : 'FAIL';
+		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+	}
+}
+
 function printReport() {
 	const ops = ['list', 'view', 'create', 'update', 'delete'];
 	const allRoles = [...ROLES, 'anon'];
@@ -3317,6 +3357,9 @@ async function main() {
 	console.log('#411 cases: days notes-only + viewer block; notifications read_at only');
 	await runDaysNotificationsGateCases(tokens);
 
+	console.log('#401 cases: phase + trip notes (non-viewers edit notes; structure stays owner)');
+	await runNotesGateCases(tokens);
+
 	printReport();
 	printNovelReport();
 	printSuggestionVotesReport();
@@ -3340,6 +3383,7 @@ async function main() {
 	printMemoriesReport();
 	printScenarioChampionReport();
 	printDaysNotificationsReport();
+	printNotesReport();
 
 	const failed = results.some((r) => !r.passed);
 	exit(failed ? 1 : 0);

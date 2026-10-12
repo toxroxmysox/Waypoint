@@ -24,6 +24,8 @@ export interface Trip extends RecordModel {
 	ai_write?: boolean;
 	created_by: string;
 	archived: boolean;
+	/** #401 — Trip Notes: free text, any non-viewer member edits. */
+	notes: string;
 }
 
 export interface Phase extends RecordModel {
@@ -34,6 +36,8 @@ export interface Phase extends RecordModel {
 	start_date: string;
 	end_date: string;
 	order: number;
+	/** #401 — Phase Notes: free text, any non-viewer member edits. */
+	notes: string;
 }
 
 export interface Day extends RecordModel {

@@ -55,7 +55,7 @@ describe('buildTripExport', () => {
 
 	it('resolves day dates and phase names for items', () => {
 		const phases: Phase[] = [
-			{ id: 'p1', trip: 'trip1', name: 'Barcelona', location: 'Barcelona', country_code: 'ES', start_date: '2026-06-01', end_date: '2026-06-03', order: 0, collectionId: '', collectionName: 'phases', created: '', updated: '' }
+			{ id: 'p1', trip: 'trip1', name: 'Barcelona', location: 'Barcelona', country_code: 'ES', start_date: '2026-06-01', end_date: '2026-06-03', order: 0, notes: '', collectionId: '', collectionName: 'phases', created: '', updated: '' }
 		];
 		const days: Day[] = [
 			{ id: 'd1', trip: 'trip1', phases: ['p1'], date: '2026-06-01', notes: '', collectionId: '', collectionName: 'days', created: '', updated: '' }
@@ -145,7 +145,7 @@ describe('buildTripExport', () => {
 
 	it('exports checklists with checked preserved and assignee stripped (#53)', () => {
 		const phases: Phase[] = [
-			{ id: 'p1', trip: 'trip1', name: 'Barcelona', location: '', country_code: '', start_date: '', end_date: '', order: 0, collectionId: '', collectionName: 'phases', created: '', updated: '' }
+			{ id: 'p1', trip: 'trip1', name: 'Barcelona', location: '', country_code: '', start_date: '', end_date: '', order: 0, notes: '', collectionId: '', collectionName: 'phases', created: '', updated: '' }
 		];
 		const checklists = [
 			{ id: 'c1', trip: 'trip1', phase: '', item: '', title: 'Packing', kind: 'manual', order: 0 },
@@ -199,6 +199,7 @@ describe('buildTripExport → import round-trip (#174)', () => {
 			start_date: '2026-06-01 00:00:00.000Z',
 			end_date: '2026-06-03 00:00:00.000Z',
 			order: 0,
+			notes: '',
 			collectionId: '',
 			collectionName: 'phases',
 			created: '',
@@ -397,6 +398,7 @@ describe('buildPublicTripExport (#208 — PII-stripped archive export)', () => {
 			start_date: '2026-06-01 00:00:00.000Z',
 			end_date: '2026-06-03 00:00:00.000Z',
 			order: 0,
+			notes: '',
 			collectionId: '',
 			collectionName: 'phases',
 			created: '',
