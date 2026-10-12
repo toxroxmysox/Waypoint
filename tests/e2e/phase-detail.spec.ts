@@ -225,3 +225,14 @@ test('phase notes persist across reload', async ({ browser }) => {
 	await expect(page.getByText('Rail pass starts here.').filter({ visible: true })).toBeVisible();
 	await close();
 });
+
+test('swipe deck closes back to the Phase Detail it was opened from', async ({ browser }) => {
+	const { page, close } = await devLogin(browser, EMAILS.owner);
+	await page.goto(`${BASE}/trips/${SLUG}/phases/${fx.tokyo}`, { waitUntil: 'networkidle' });
+	await page.getByRole('link', { name: /^Rate \d+$/ }).filter({ visible: true }).click();
+	await page.waitForURL(new RegExp(`/swipe/${fx.tokyo}`));
+	await page.waitForLoadState('networkidle');
+	await page.getByRole('button', { name: 'Close', exact: true }).filter({ visible: true }).first().click();
+	await page.waitForURL(`${BASE}/trips/${SLUG}/phases/${fx.tokyo}`);
+	await close();
+});

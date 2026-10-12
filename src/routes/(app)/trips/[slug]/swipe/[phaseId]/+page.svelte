@@ -10,10 +10,17 @@
 	import Button from '$lib/ui/Button.svelte';
 	import WhatIsLink from '$lib/ui/WhatIsLink.svelte';
 	import { toast } from '$lib/shell/stores/toast';
+	import { page } from '$app/state';
+	import { resolveBack, withOrigin } from '$lib/shell/back-nav';
 
 	let { data } = $props();
 
-	const phasesHref = $derived(`/trips/${data.trip.slug}/phases`);
+	// #401 — close returns to where the deck was opened (Phase Detail, Phases),
+	// and the next-phase hop keeps that origin.
+	const phasesHref = $derived(resolveBack(page.url, `/trips/${data.trip.slug}/phases`));
+	const nextHref = $derived(
+		data.nextPhase ? withOrigin(`/trips/${data.trip.slug}/swipe/${data.nextPhase.id}`, page.url.searchParams.get('from')) : ''
+	);
 
 	// tablet+ uses a centered modal for detail; mobile uses a bottom sheet.
 	let isWide = $state(false);
@@ -88,14 +95,14 @@
 				</p>
 				<div class="flex w-full max-w-[280px] flex-col gap-2.5">
 					{#if data.nextPhase}
-						<Button onclick={() => goto(`/trips/${data.trip.slug}/swipe/${data.nextPhase!.id}`)}>
+						<Button onclick={() => goto(nextHref)}>
 							Continue to {data.nextPhase.name} ›
 						</Button>
 					{/if}
 					<Button variant="outline" onclick={() => goto(data.parkingLotHref)}>
 						Jump to the phase parking lot
 					</Button>
-					<Button variant="ghost" onclick={() => goto(phasesHref)}>Back to phases</Button>
+					<Button variant="ghost" onclick={() => goto(phasesHref)}>Back</Button>
 				</div>
 			</div>
 		{:else}
@@ -168,7 +175,7 @@
 						</p>
 						<div class="flex w-full max-w-[280px] flex-col gap-2.5">
 							{#if data.nextPhase}
-								<Button onclick={() => goto(`/trips/${data.trip.slug}/swipe/${data.nextPhase!.id}`)}>
+								<Button onclick={() => goto(nextHref)}>
 									Continue to {data.nextPhase.name} ›
 								</Button>
 							{/if}
