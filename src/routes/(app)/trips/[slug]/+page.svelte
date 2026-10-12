@@ -28,6 +28,9 @@
 	import { tripToday, tripTz } from '$lib/shell/trip-time';
 	import { enhance } from '$app/forms';
 	import type { Notification } from '$lib/types';
+	import LevelHeader from '$lib/itinerary/components/LevelHeader.svelte';
+	import NotesEditor from '$lib/itinerary/components/NotesEditor.svelte';
+	import { spanLabel } from '$lib/itinerary/span-label';
 
 	let { data, form } = $props();
 
@@ -354,48 +357,41 @@
 			balanceOwed={data.wrapUp?.balanceOwed ?? false}
 		/>
 	{:else}
-	<!-- Trip stats card -->
-	<Card>
-		<div class="flex items-start justify-between p-4">
-			<div>
-				<p class="text-ink-soft font-mono text-[12px]">
-					{formatDateRange(data.trip.start_date, data.trip.end_date)}
-				</p>
-				{#if data.trip.timezone}
-					<p class="text-ink-muted font-mono mt-0.5 text-xs">{data.trip.timezone}</p>
-				{/if}
-				<p class="text-ink-soft mt-2 text-sm">
-					<span class="font-mono">{data.days.length}</span> days ·
-					<span class="font-mono">{data.phases.length}</span> phase{data.phases.length === 1 ? '' : 's'}
-				</p>
-				<!-- #252 — name the lightweight capture path so "ideas" surfaces here. -->
-				<button
-					type="button"
-					onclick={() => (ideaSheetOpen = true)}
-					class="text-moss hover:text-ink active:text-ink mt-2 inline-flex items-center gap-1 text-xs font-semibold"
+	<!-- #401 — the trip Level Header: span · phases, timezone, trip notes, phase chips. -->
+	<LevelHeader
+		title={data.trip.title}
+		place={data.trip.location_summary}
+		span={spanLabel(data.trip.start_date, data.trip.end_date, data.phases.length)}
+		meta={data.trip.timezone}
+		chips={data.phases.map((p: Phase) => ({
+			label: p.name,
+			sub: `${daysInPhase(p).length}d`,
+			href: `/trips/${data.trip.slug}/phases/${p.id}`
+		}))}
+	>
+		{#snippet actions()}
+			{#if tripActive}
+				<a
+					href="/trips/{data.trip.slug}/now"
+					class="bg-clay text-paper inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-xs font-semibold"
 				>
-					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-						<path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z" />
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<circle cx="12" cy="12" r="10" />
+						<polyline points="12 6 12 12 16 14" />
 					</svg>
-					Capture ideas
-				</button>
-			</div>
-			<div class="flex flex-col items-end gap-2">
-				{#if tripActive}
-					<a
-						href="/trips/{data.trip.slug}/now"
-						class="bg-clay text-paper inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
-					>
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-							<circle cx="12" cy="12" r="10" />
-							<polyline points="12 6 12 12 16 14" />
-						</svg>
-						Trip Mode
-					</a>
-				{/if}
-			</div>
-		</div>
-	</Card>
+					Trip Mode
+				</a>
+			{/if}
+		{/snippet}
+		{#snippet notes()}
+			<NotesEditor
+				notes={data.trip.notes ?? ''}
+				action="?/updateTripNotes"
+				canEdit={data.membership.role !== 'viewer'}
+				emptyPrompt="Add trip notes"
+			/>
+		{/snippet}
+	</LevelHeader>
 
 	{/if}
 

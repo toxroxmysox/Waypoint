@@ -383,6 +383,23 @@ async function requireOwner(
 }
 
 export const actions: Actions = {
+	// #401 — Trip Notes, edited like day notes; trips.pb.js blocks viewers.
+	updateTripNotes: async ({ request, locals, params }) => {
+		const data = await request.formData();
+		const notes = data.get('notes')?.toString() || '';
+		try {
+			const trip = await locals.pb
+				.collection('trips')
+				.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }), { fields: 'id' });
+			await locals.pb.collection('trips').update(trip.id, { notes });
+			return { success: true };
+		} catch (err: unknown) {
+			const status = (err as { status?: number })?.status;
+			const message = err instanceof Error ? err.message : "Couldn't save notes.";
+			return fail(typeof status === 'number' && status >= 400 && status < 600 ? status : 500, { error: message });
+		}
+	},
+
 	// #270 / ADR-0022 — the promotion door. The forming home's "Set the dates"
 	// form posts here; writing both dates promotes the trip (the trips.pb.js
 	// update hook seeds "Phase 1", generates + buckets the days, and re-homes
