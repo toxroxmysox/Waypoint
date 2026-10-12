@@ -89,7 +89,8 @@ export function buildTripExport(
 			photo_album_url: trip.photo_album_url || '',
 			archive_enabled: trip.archive_enabled,
 			archive_publish_after_days: trip.archive_publish_after_days,
-			auto_approve_suggestions: trip.auto_approve_suggestions
+			auto_approve_suggestions: trip.auto_approve_suggestions,
+			notes: trip.notes || ''
 		},
 		phases: phases.map((p) => ({
 			name: p.name,
@@ -97,7 +98,8 @@ export function buildTripExport(
 			country_code: p.country_code || '',
 			start_date: toDateOnly(p.start_date),
 			end_date: toDateOnly(p.end_date),
-			order: p.order
+			order: p.order,
+			notes: p.notes || ''
 		})),
 		days: days.map((d) => {
 			const phaseNames = (d.phases || [])

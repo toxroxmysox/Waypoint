@@ -44,6 +44,21 @@ export function nightCards(nights: { date: string; lodging: string }[]): Card[] 
 	}));
 }
 
+/** A phase card: place, dates, then its Phase Notes when set (#401). */
+export function phaseCard(p: Pick<Phase, 'name' | 'location' | 'country_code' | 'start_date' | 'end_date' | 'notes'>): Card {
+	return {
+		emoji: '📍',
+		title: p.name,
+		tag: 'phase',
+		lines: [[p.location, p.country_code].filter(Boolean).join(', '), tripDates(p), p.notes || ''].filter(Boolean)
+	};
+}
+
+/** #401 — the Trip Notes card, or null when the trip has none. */
+export function tripNotesCard(notes: string | undefined): Card | null {
+	return notes ? { emoji: '📝', title: 'Trip notes', lines: [notes] } : null;
+}
+
 export const getTrip: ToolDef = {
 	name: 'get_trip',
 	title: 'Trip overview',
@@ -58,7 +73,7 @@ export const getTrip: ToolDef = {
 		const [phases, days, items, members, goals, votes] = await Promise.all([
 			ctx.pb.collection('phases').getFullList<Phase>({
 				filter: ctx.pb.filter('trip = {:t}', { t: trip.id }),
-				fields: 'id,name,location,country_code,start_date,end_date,order',
+				fields: 'id,name,location,country_code,start_date,end_date,order,notes',
 				sort: 'order',
 				requestKey: null
 			}),
@@ -78,12 +93,8 @@ export const getTrip: ToolDef = {
 			})
 		]);
 
-		const cards: Card[] = phases.map((p) => ({
-			emoji: '📍',
-			title: p.name,
-			tag: 'phase',
-			lines: [[p.location, p.country_code].filter(Boolean).join(', '), tripDates(p)].filter(Boolean)
-		}));
+		const notesCard = tripNotesCard(trip.notes);
+		const cards: Card[] = [...(notesCard ? [notesCard] : []), ...phases.map(phaseCard)];
 
 		cards.push(
 			...nightCards(

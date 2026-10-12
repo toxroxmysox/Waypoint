@@ -43,6 +43,30 @@ export function validateTripImport(raw: unknown): ImportValidationResult {
 	return { valid: true, errors: [], data: obj as unknown as TripExport };
 }
 
+/** #401 — the imported trip's editable fields (slug, dates and lifecycle are set by the caller). Missing notes (older exports) → ''. */
+export function importTripFields(trip: TripExport['trip']) {
+	return {
+		title: trip.title,
+		timezone: trip.timezone || '',
+		location_summary: trip.location_summary || '',
+		countries: trip.countries || [],
+		photo_album_url: trip.photo_album_url || '',
+		archive_publish_after_days: trip.archive_publish_after_days || 7,
+		auto_approve_suggestions: trip.auto_approve_suggestions ?? true,
+		notes: trip.notes || ''
+	};
+}
+
+/** #401 — an imported phase's own fields (dates/order come from the tiling plan). */
+export function importPhaseFields(phase: TripExport['phases'][number]) {
+	return {
+		name: phase.name,
+		location: phase.location || '',
+		country_code: phase.country_code || '',
+		notes: phase.notes || ''
+	};
+}
+
 export function generateImportSlug(title: string): string {
 	const base = title
 		.toLowerCase()
