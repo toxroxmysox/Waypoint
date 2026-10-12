@@ -6,6 +6,9 @@ import { summarizeDays } from '$lib/itinerary/day-card';
 import { withAvatarUrls } from '$lib/collaboration/member-avatar';
 import { parkingLotCards } from '$lib/itinerary/parking-lot-cards';
 import { retilePhases, validateMovePhaseStart, toDay } from '$lib/itinerary/phase-tiling';
+import { phaseArrival, phaseDeparture, phaseStaying, dayMenuRows } from '$lib/itinerary/phase-logistics';
+import { formatCalendarDate } from '$lib/shell/format';
+import { planIdeaOnDay } from '$lib/server/plan-idea';
 
 // #249/#250 — ghost approve/reject reuse the same /api/suggestions/review hook
 // endpoint the Inbox uses (server-side: owner gate + author attribution + vote
@@ -21,7 +24,7 @@ type SuggestionRecord = Omit<Suggestion, 'author_id' | 'author_name' | 'author_r
 };
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
-	const { trip } = await parent();
+	const { trip, membership } = await parent();
 
 	let phase: Phase;
 	try {
@@ -37,13 +40,16 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	// Note: filtering multi-relation `phases` via `?=` against PB's filter parser
 	// returned nothing despite data being correct (Apr 2026, PB v0.27.x). Fetch
 	// trip's days and filter in-memory — same pattern the trip overview uses.
-	const [allDays, items, pendingRaw, members] = await Promise.all([
+	// #401: the trip's items, not just this phase's — a Travel Day is shared, so the
+	// train homed on Tokyo is also Kanazawa's Arrival, and a day's fullness counts
+	// every item on it whichever phase it is homed on.
+	const [allDays, tripItems, pendingRaw, members, myVotes] = await Promise.all([
 		locals.pb.collection('days').getFullList<Day>({
 			filter: `trip = "${trip.id}"`,
 			sort: 'date'
 		}),
 		locals.pb.collection('items').getFullList<Item>({
-			filter: `trip = "${trip.id}" && phase = "${phase.id}"`,
+			filter: `trip = "${trip.id}"`,
 			sort: 'sort_order'
 		}),
 		// #248 — pending suggestions become Ghost Cards. Fetch the trip's pending
@@ -55,14 +61,19 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		locals.pb.collection('trip_members').getFullList<TripMember>({
 			filter: `trip = "${trip.id}" && removed_at = ""`,
 			expand: 'user'
+		}),
+		locals.pb.collection('votes').getFullList<Vote>({
+			filter: `trip = "${trip.id}" && member = "${membership.id}"`,
+			fields: 'item'
 		})
 	]);
 
+	const items = tripItems.filter((it) => it.phase === phase.id);
 	const days = allDays.filter((d) => (d.phases ?? []).includes(phase.id));
 
-	// Same day-card summaries as the overview (#65), from the items already
-	// loaded for this phase — count + booked + budget + stay chip, one source.
-	const daySummaries = summarizeDays(items, days);
+	// Same day-card summaries as the overview (#65) — count + booked + budget +
+	// stay chip, one source — over every item on the phase's days.
+	const daySummaries = summarizeDays(tripItems, days);
 
 	// Resolve the viewer's own membership (id + role) — drives the ghost vote
 	// affordance (viewers read-only; the author can't vote their own).
@@ -119,8 +130,27 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		votesBySuggestion
 	});
 
+	// #401 — In / Staying / Out, the "On which day?" rows, and who may plan which idea.
+	const canPrivileged = membership.role === 'owner' || membership.role === 'co_owner';
+	const canPlanIds =
+		membership.role === 'viewer'
+			? []
+			: unplanned.filter((it) => canPrivileged || it.created_by === membership.id).map((it) => it.id);
+	const voted = new Set(myVotes.map((v) => v.item));
+	const unratedCount = items.filter(
+		(it) => (it.status === 'planned' || it.status === 'unplanned') && !voted.has(it.id)
+	).length;
+
 	return {
 		phase,
+		arrival: phaseArrival(tripItems, allDays, phase),
+		departure: phaseDeparture(tripItems, allDays, phase),
+		staying: phaseStaying(tripItems, allDays, phase),
+		planRows: dayMenuRows(days, daySummaries),
+		canPlanIds,
+		unratedCount,
+		canEditNotes: membership.role !== 'viewer',
+		canAddLogistics: canPrivileged,
 		phaseDays: days,
 		phaseItems: items,
 		daySummaries,
@@ -131,7 +161,67 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	};
 };
 
+// A failed PB call's HTTP status, else 500.
+function failStatus(err: unknown): number {
+	const status = (err as { status?: number })?.status;
+	return typeof status === 'number' && status >= 400 && status < 600 ? status : 500;
+}
+
 export const actions: Actions = {
+	// #401 — Phase Notes, edited like day notes; phases.pb.js lets any non-viewer
+	// change `notes` (and only that, for a traveler).
+	updateNotes: async ({ request, params, locals }) => {
+		const data = await request.formData();
+		const notes = data.get('notes')?.toString() || '';
+		try {
+			await locals.pb.collection('phases').update(params.phaseId, { notes });
+			return { success: true };
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : "Couldn't save notes.";
+			return fail(failStatus(err), { error: message });
+		}
+	},
+
+	// #401 — Do this → day: plan one of this phase's ideas on one of its days.
+	planIdea: async ({ request, params, locals }) => {
+		const data = await request.formData();
+		const itemId = data.get('item_id')?.toString();
+		const dayId = data.get('day_id')?.toString();
+		if (!itemId || !dayId) return fail(400, { error: 'Pick a day.' });
+		try {
+			const day = await locals.pb.collection('days').getOne<Day>(dayId);
+			if (!(day.phases ?? []).includes(params.phaseId)) {
+				return fail(400, { error: 'That day isn’t in this phase.' });
+			}
+			const prev = await planIdeaOnDay(locals.pb, itemId, dayId);
+			const dayLabel = `${formatCalendarDate(day.date, { weekday: 'short' })} ${formatCalendarDate(day.date, { day: 'numeric' })}`;
+			return { planned: { itemId, dayLabel, prevDay: prev.prevDay, prevSortOrder: prev.prevSortOrder } };
+		} catch (err: unknown) {
+			const status = failStatus(err);
+			if (status === 404) return fail(404, { error: 'That idea no longer exists.' });
+			const message = err instanceof Error ? err.message : 'Failed to plan the idea.';
+			return fail(status, { error: message });
+		}
+	},
+
+	// #401 — Undo a Do this: back to an unplanned idea at its prior place.
+	unplanIdea: async ({ request, locals }) => {
+		const data = await request.formData();
+		const itemId = data.get('item_id')?.toString();
+		if (!itemId) return fail(400, { error: 'Missing idea.' });
+		const day = data.get('day')?.toString() ?? '';
+		const sortOrder = Number(data.get('sort_order')?.toString() ?? '0') || 0;
+		try {
+			await locals.pb.collection('items').update(itemId, { status: 'unplanned', day, sort_order: sortOrder });
+			return { unplanned: true };
+		} catch (err: unknown) {
+			const status = failStatus(err);
+			if (status === 404) return fail(404, { error: 'That idea no longer exists.' });
+			const message = err instanceof Error ? err.message : 'Failed to undo.';
+			return fail(status, { error: message });
+		}
+	},
+
 	update: async ({ request, params, locals }) => {
 		const trip = await locals.pb
 			.collection('trips')

@@ -19,6 +19,11 @@ export const load: PageServerLoad = async ({ url, locals, parent }) => {
 	// goal id pre-checks "Addresses goal(s)" and seeds the title/notes from the
 	// goal so the new item links straight back (goal-side write on create).
 	const goalIdParam = url.searchParams.get('goal') || '';
+	// #401 — Phase Detail's Staying/In/Out "Add" presets the type and a stay's end.
+	const typeParam = url.searchParams.get('type') || '';
+	const presetType = ['lodging', 'transportation', 'flight'].includes(typeParam) ? typeParam : '';
+	const endParam = url.searchParams.get('end') || '';
+	const presetEnd = /^\d{4}-\d{2}-\d{2}$/.test(endParam) ? endParam : '';
 
 	// If a day was preselected and no phase was explicitly passed, infer the
 	// phase from the day's first matched phase so the form arrives filled in.
@@ -127,6 +132,8 @@ export const load: PageServerLoad = async ({ url, locals, parent }) => {
 		goals,
 		preselectedDay,
 		preselectedPhase,
+		presetType,
+		presetEnd,
 		tripStartDate: String(trip.start_date || '').split(/[T ]/)[0],
 		tripEndDate: String(trip.end_date || '').split(/[T ]/)[0],
 		submitAsSuggestion,

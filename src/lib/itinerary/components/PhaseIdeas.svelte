@@ -12,6 +12,8 @@
 	import IdeaGroupHeading from './IdeaGroupHeading.svelte';
 	import GhostCard from './GhostCard.svelte';
 	import { ideaGroups } from '$lib/itinerary/idea-groups';
+	import PlanOnDayMenu, { type PlannedIdea } from './PlanOnDayMenu.svelte';
+	import type { DayMenuRow } from '$lib/itinerary/phase-logistics';
 
 	let {
 		cards,
@@ -20,7 +22,10 @@
 		myMemberId = '',
 		canVoteGhosts = false,
 		canReviewGhosts = false,
-		place = ''
+		place = '',
+		planRows = [],
+		canPlanIds = new Set<string>(),
+		onPlanned = () => {}
 	}: {
 		/** The merged, vote-tagged cards from `parkingLotCards` (items + ghosts). */
 		cards: ParkingCard[];
@@ -31,6 +36,11 @@
 		canReviewGhosts?: boolean;
 		/** The trip's place, for a ghost's "What is this?" search (#406). */
 		place?: string;
+		/** #401 — the phase's days for "On which day?". */
+		planRows?: DayMenuRow[];
+		/** #401 — ideas this viewer may plan (creator, or owner/co_owner). Never ghosts. */
+		canPlanIds?: Set<string>;
+		onPlanned?: (p: PlannedIdea) => void;
 	} = $props();
 
 	const typeOf = (c: ParkingCard) =>
@@ -45,7 +55,14 @@
 			<IdeaGroupHeading type={group.type} />
 			{#each group.items as card (card.id)}
 				{#if card.kind === 'item'}
-					<IdeaCard item={card.item} {tripSlug} votes={card.votes} {members} {myMemberId} canVote={canVoteGhosts} />
+					<div data-idea-id={card.item.id}>
+						<IdeaCard item={card.item} {tripSlug} votes={card.votes} {members} {myMemberId} canVote={canVoteGhosts} />
+						{#if canPlanIds.has(card.item.id) && planRows.length > 0}
+							<div class="-mt-1 flex justify-end">
+								<PlanOnDayMenu itemId={card.item.id} rows={planRows} {onPlanned} />
+							</div>
+						{/if}
+					</div>
 				{:else}
 					<!-- #248 — a pending suggestion: dotted, votable, in its type group. -->
 					<GhostCard suggestion={card.suggestion} votes={card.votes} {members} {myMemberId} canVote={canVoteGhosts} canReview={canReviewGhosts} {place} />
