@@ -8,17 +8,11 @@
 	import Button from '$lib/ui/Button.svelte';
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import SubTabs from '$lib/ui/SubTabs.svelte';
+	import Row from '$lib/ui/Row.svelte';
 	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
 	import FAB from '$lib/shell/components/FAB.svelte';
 	import IdeaCaptureSheet from '$lib/itinerary/components/IdeaCaptureSheet.svelte';
-	import PhaseChip from '$lib/ui/PhaseChip.svelte';
-	import MiniListCard from '$lib/itinerary/components/MiniListCard.svelte';
 	import DayCard from '$lib/itinerary/components/DayCard.svelte';
-	import DayMetricToggle from '$lib/itinerary/components/DayMetricToggle.svelte';
-	import Row from '$lib/ui/Row.svelte';
-	import NeedsBookingChip from '$lib/ui/NeedsBookingChip.svelte';
-	import FlightSubLine from '$lib/itinerary/components/FlightSubLine.svelte';
-	import { rowTrailing } from '$lib/itinerary/row';
 	import WrapUpBanner from '$lib/trip-mode/components/WrapUpBanner.svelte';
 	import RecordView from '$lib/portability/components/RecordView.svelte';
 	import ScenarioBoard from '$lib/ideation/components/ScenarioBoard.svelte';
@@ -31,6 +25,9 @@
 	import LevelHeader from '$lib/itinerary/components/LevelHeader.svelte';
 	import NotesEditor from '$lib/itinerary/components/NotesEditor.svelte';
 	import { spanLabel } from '$lib/itinerary/span-label';
+	import ItineraryDensityToggle from '$lib/itinerary/components/ItineraryDensityToggle.svelte';
+	import CompactDayRow from '$lib/itinerary/components/CompactDayRow.svelte';
+	import { itineraryDensity } from '$lib/shell/stores/itinerary-density';
 
 	let { data, form } = $props();
 
@@ -126,10 +123,6 @@
 	}
 
 	// Checklist previews (#51)
-	let tripLists = $derived((data.lists ?? []).filter((l) => !l.phase));
-	function listsForPhase(phaseId: string) {
-		return (data.lists ?? []).filter((l) => l.phase === phaseId);
-	}
 </script>
 
 <NavBar
@@ -498,143 +491,70 @@
 		</Card>
 	{/if}
 
-	{#if tripLists.length > 0}
-		<!-- Whole-trip checklist previews (#51) -->
-		<section class="space-y-1.5">
-			<div class="text-ink-muted flex items-center gap-1.5 px-0.5 text-[9.5px] font-bold tracking-[0.14em] uppercase">
-				<svg width="9" height="9" viewBox="0 0 20 20" fill="none">
-					<path d="M10 2L11.5 7L16 8L11.5 9L10 14L8.5 9L4 8L8.5 7L10 2z" fill="currentColor" />
-				</svg>
-				Whole-trip lists
-			</div>
-			<div class="grid gap-1.5">
-				{#each tripLists as l (l.id)}
-					<MiniListCard title={l.title} done={l.done} total={l.total} href="/trips/{data.trip.slug}/lists/{l.id}" />
-				{/each}
-			</div>
-		</section>
-	{/if}
-
 	{#if data.days.length > 0}
 		<div class="flex items-center justify-between px-0.5">
 			<span class="text-ink-muted text-[9.5px] font-bold tracking-[0.14em] uppercase">Itinerary</span>
-			<DayMetricToggle />
+			<ItineraryDensityToggle />
 		</div>
 	{/if}
 
+	{#snippet dayList(days: Day[])}
+		{#if $itineraryDensity === 'compact'}
+			<div class="divide-line divide-y">
+				{#each days as day (day.id)}
+					<CompactDayRow
+						{day}
+						href="/trips/{data.trip.slug}/days/{day.id}"
+						plannedCount={data.daySummaries[day.id]?.plannedCount ?? 0}
+						travel={(day.phases?.length ?? 0) > 1}
+					/>
+				{/each}
+			</div>
+		{:else}
+			<div class="space-y-1">
+				{#each days as day (day.id)}
+					<DayCard {day} href="/trips/{data.trip.slug}/days/{day.id}" summary={data.daySummaries[day.id]} {today} />
+				{/each}
+			</div>
+		{/if}
+	{/snippet}
+
 	{#if data.phases.length > 0}
-		<!-- Phases with nested days -->
+		<!-- #401 — each phase is a bordered card: its Level Header (opens Phase Detail,
+		     full phase notes) over its days, Compact or Details. -->
 		{@const orphanDays = data.days.filter((d) => !data.phases.some((p) => (d.phases ?? []).includes(p.id)))}
-		{#each data.phases as phase}
+		{#each data.phases as phase (phase.id)}
 			{@const pDays = daysInPhase(phase)}
-			{@const pLists = listsForPhase(phase.id)}
-			<section class="space-y-1.5">
-				<div class="flex items-center justify-between">
-					<div class="flex items-center gap-2">
-						<PhaseChip name={phase.name} size={20} />
-						<a href="/trips/{data.trip.slug}/phases/{phase.id}" class="text-ink font-semibold hover:underline active:underline">{phase.name}</a>
-					</div>
-					<span class="text-ink-muted font-mono text-xs">
-						{formatDateRange(phase.start_date, phase.end_date)}
-						{#if phase.location}
-							<span class="text-line">·</span> {phase.location}
+			<section class="border-line bg-surface space-y-3 rounded-lg border p-3" data-phase-card={phase.id}>
+				<LevelHeader
+					title={phase.name}
+					place={phase.location}
+					span={spanLabel(phase.start_date, phase.end_date)}
+					href="/trips/{data.trip.slug}/phases/{phase.id}"
+					size="card"
+				>
+					{#snippet notes()}
+						{#if phase.notes}
+							<p class="text-ink-soft text-sm whitespace-pre-wrap">{phase.notes}</p>
 						{/if}
-					</span>
-				</div>
+					{/snippet}
+				</LevelHeader>
 				{#if pDays.length > 0}
-					<div class="space-y-1">
-						{#each pDays as day}
-							<DayCard
-								{day}
-								href="/trips/{data.trip.slug}/days/{day.id}"
-								summary={data.daySummaries[day.id]}
-								{today}
-							/>
-						{/each}
-					</div>
-				{/if}
-				{#if pLists.length > 0}
-					<div class="space-y-1.5 pt-1">
-						<div class="text-ink-muted flex items-center gap-1.5 px-0.5 text-[9.5px] font-bold tracking-[0.14em] uppercase">
-							<svg width="8" height="8" viewBox="0 0 20 20" fill="none">
-								<path d="M10 2L11.5 7L16 8L11.5 9L10 14L8.5 9L4 8L8.5 7L10 2z" fill="currentColor" />
-							</svg>
-							Lists
-						</div>
-						<div class="grid gap-1.5">
-							{#each pLists as l (l.id)}
-								<MiniListCard title={l.title} done={l.done} total={l.total} href="/trips/{data.trip.slug}/lists/{l.id}" />
-							{/each}
-						</div>
-					</div>
+					{@render dayList(pDays)}
 				{/if}
 			</section>
 		{/each}
 		{#if orphanDays.length > 0}
 			<section class="space-y-1.5">
 				<SectionH>Unassigned days</SectionH>
-				<div class="space-y-1">
-					{#each orphanDays as day}
-						<DayCard
-							{day}
-							href="/trips/{data.trip.slug}/days/{day.id}"
-							summary={data.daySummaries[day.id]}
-							{today}
-						/>
-					{/each}
-				</div>
+				{@render dayList(orphanDays)}
 			</section>
 		{/if}
 	{:else if data.days.length > 0}
-		<!-- No phases: flat day list. On a fresh trip this is the REAL first-run render
-		     (the PB hook seeds day rows, so days always exist); the #111/ES-1 hero above
-		     teaches what to do. The old `{:else}` "A blank itinerary." card was dead code —
-		     `days.length === 0` never holds on a real trip — and was removed (ES-1). -->
+		<!-- No phases: a flat day list. #217 seeds a phase on every dated trip, so this
+		     is legacy data only; the welcome card above still teaches the next step. -->
 		<section class="space-y-1.5">
-			<SectionH>Days</SectionH>
-			<div class="space-y-1">
-				{#each data.days as day}
-					<DayCard
-						{day}
-						href="/trips/{data.trip.slug}/days/{day.id}"
-						summary={data.daySummaries[day.id]}
-						{today}
-					/>
-				{/each}
-			</div>
-		</section>
-	{/if}
-
-	<!-- Scott 2026-10-10: Flights & stays sit BELOW the itinerary (header → welcome → itinerary → flights & stays). -->
-	{#if data.keyItems?.length && !isForming && !(isClosed && data.record && data.share) && !isWrapUp}
-		<!-- #200 — findability lens: flights & stays, the two most-hunted item types,
-		     reachable from the trip home without opening each day. Not a full search. -->
-		<section class="space-y-1.5">
-			<div class="text-ink-muted flex items-center gap-1.5 px-0.5 text-[9.5px] font-bold tracking-[0.14em] uppercase">
-				Flights &amp; stays
-			</div>
-			<Card>
-				<div class="px-4" data-key-items>
-					{#each data.keyItems as it, i (it.id)}
-						{#snippet subline()}
-							{#if it.flight}<FlightSubLine sub={it.flight} />{/if}
-						{/snippet}
-						{#snippet chip()}
-							<NeedsBookingChip />
-						{/snippet}
-						<Row
-							type={it.type}
-							subtype={it.subtype}
-							title={it.title}
-							sub={it.sub}
-							subline={it.flight ? subline : undefined}
-							href={withOrigin(`/trips/${data.trip.slug}/items/${it.id}`, page.url.pathname)}
-							trailing={rowTrailing({ chip: it.needsBooking ? 'needs-booking' : undefined }) === 'chip' ? chip : undefined}
-							divider={i < data.keyItems.length - 1}
-						/>
-					{/each}
-				</div>
-			</Card>
+			{@render dayList(data.days)}
 		</section>
 	{/if}
 	{/if}

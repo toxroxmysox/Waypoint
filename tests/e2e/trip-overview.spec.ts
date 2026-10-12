@@ -43,3 +43,35 @@ test('trip notes persist; viewer gets no edit', async ({ browser }) => {
 	await expect(vw.page.getByRole('button', { name: 'Edit notes' }).filter({ visible: true })).toHaveCount(0);
 	await vw.close();
 });
+
+test('itinerary: Compact rows by default, Details persists, phase cards open Phase Detail', async ({ browser }) => {
+	const { page, close } = await devLogin(browser, EMAILS.owner);
+	await page.goto(`${BASE}/trips/${SLUG}`, { waitUntil: 'networkidle' });
+	const main = page.locator('main').filter({ visible: true });
+
+	// Compact (default): one row per day with "N planned"; Mon 22 is a Travel Day.
+	const mon22 = main.locator(`a[href="/trips/${SLUG}/days/${fx.days['2027-11-22']}"][data-compact-day]`).first();
+	await expect(mon22).toContainText('1 planned');
+	await expect(mon22).toContainText('⇄');
+	await expect(main.locator('[data-compact-day]').first()).toContainText('0 planned');
+
+	// Each phase is a bordered card whose header opens Phase Detail.
+	const kanCard = main.locator(`[data-phase-card="${fx.kanazawa}"]`);
+	await expect(kanCard.locator('a[data-level-link]')).toHaveAttribute('href', `/trips/${SLUG}/phases/${fx.kanazawa}`);
+
+	// No lists or Flights & stays on the Overview.
+	await expect(page.getByText('Flights & stays').filter({ visible: true })).toHaveCount(0);
+	await expect(page.getByText(/Whole-trip lists/).filter({ visible: true })).toHaveCount(0);
+
+	// Details → DayCards; the choice survives reload.
+	await main.getByRole('button', { name: 'Details' }).click();
+	await expect(main.locator('[data-compact-day]')).toHaveCount(0);
+	await expect(main.locator(`a[href="/trips/${SLUG}/days/${fx.days['2027-11-22']}"]`).filter({ hasText: / item/ }).first()).toBeVisible();
+	await page.reload({ waitUntil: 'networkidle' });
+	await expect(page.locator('main').filter({ visible: true }).locator('[data-compact-day]')).toHaveCount(0);
+	await page.locator('main').filter({ visible: true }).getByRole('button', { name: 'Compact' }).click();
+
+	await mon22.click();
+	await page.waitForURL(`${BASE}/trips/${SLUG}/days/${fx.days['2027-11-22']}`);
+	await close();
+});

@@ -56,7 +56,7 @@
 	{/if}
 	{#if span || meta}
 		<p class="text-ink-muted mt-0.5 text-xs">
-			{span}{#if span && meta}<span aria-hidden="true"> · </span>{/if}{meta}
+			{[span, meta].filter(Boolean).join(' · ')}
 		</p>
 	{/if}
 {/snippet}
