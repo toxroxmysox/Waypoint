@@ -5,7 +5,7 @@ import { cloneChecklistPayloads } from '$lib/itinerary/clone-checklists';
 import { fetchManualChecklists } from '$lib/itinerary/checklist-loaders';
 import { cloneItemPlacement } from '$lib/itinerary/clone-items';
 import { shiftStoredDays } from '$lib/shell/trip-time';
-import { planImportPhases } from '$lib/portability/import';
+import { planImportPhases, importPhaseFields } from '$lib/portability/import';
 import { sanitizeItemSpan } from '$lib/itinerary/item-span';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
@@ -115,19 +115,17 @@ export const actions: Actions = {
 					name: p.name,
 					location: p.location || '',
 					country_code: p.country_code || '',
+					notes: p.notes || '',
 					start_date: shiftDate(p.start_date),
 					end_date: shiftDate(p.end_date),
 					order: p.order
 				}));
-				const sourceIdOf = new Map(shifted.map((p, i) => [p, sourcePhases[i].id]));
+				const sourceIdOf = new Map<object, string>(shifted.map((p, i) => [p, sourcePhases[i].id]));
 				const idByStart = new Map<string, string>([[startDate, firstPhaseId]]);
 				for (const step of planImportPhases(shifted, startDate, endDate)) {
 					const sourceId = sourceIdOf.get(step.phase)!;
-					const fields = {
-						name: step.phase.name,
-						location: step.phase.location,
-						country_code: step.phase.country_code
-					};
+					// #401: Phase Notes travel with the phase, as day notes do.
+					const fields = importPhaseFields(step.phase);
 					if (step.action === 'first') {
 						await locals.pb.collection('phases').update(firstPhaseId, fields);
 						phaseIdMap.set(sourceId, firstPhaseId);
