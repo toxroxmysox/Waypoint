@@ -38,6 +38,8 @@ export interface DayCardSummary {
 	 * is blank-titled.
 	 */
 	leadTitle: string;
+	/** #401 — own day items with status `planned` (the Overview's `N planned`). */
+	plannedCount: number;
 }
 
 /** Day-scoped, non-banner items for a day: `day === id && end_date === ''`. */
@@ -80,7 +82,8 @@ export function summarizeDay(items: Item[], days: Day[], day: Day): DayCardSumma
 		needsBookingCount: bookableCount - bookedCount,
 		budgetTotal,
 		stays,
-		leadTitle
+		leadTitle,
+		plannedCount: own.filter((i) => i.status === 'planned').length
 	};
 }
 
