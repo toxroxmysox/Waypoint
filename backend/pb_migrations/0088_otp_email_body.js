@@ -10,7 +10,8 @@ migrate(
 		users.otp.emailTemplate.body =
 			'<p>Here&rsquo;s your code to sign in to Waypoint:</p>\n' +
 			'<p style="font-size: 28px; font-weight: bold; letter-spacing: 4px; margin: 16px 0;">{OTP}</p>\n' +
-			'<p>There&rsquo;s no password, so this code and your email authenticate you into the app.</p>';
+			'<p>There&rsquo;s no password, so this code and your email authenticate you into the app.</p>\n' +
+			'<p>Thanks for using Waypoint, and let me know if you have any feedback or encounter any bugs.<br/>\n&ndash; Scott</p>';
 		app.save(users);
 	},
 	(app) => {
