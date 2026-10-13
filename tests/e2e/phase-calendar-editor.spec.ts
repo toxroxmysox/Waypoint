@@ -25,7 +25,7 @@ test.describe('#330 phase calendar editor', () => {
 		const { page, ctx } = await devLogin(browser);
 		try {
 			await page.setViewportSize({ width: 375, height: 812 });
-			await page.goto(`${BASE}/trips/e2e-active-trip/phases`);
+			await page.goto(`${BASE}/trips/e2e-active-trip/phases`, { waitUntil: 'networkidle' });
 
 			// Editor renders: hint, weekday header, calendar cells, single-phase summary.
 			await expect(page.getByText(/tap a day to split/i).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });

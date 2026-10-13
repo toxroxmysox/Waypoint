@@ -86,7 +86,7 @@ async function openDay(browser: Browser, width: number) {
 	const page = await ctx.newPage();
 	await page.goto(`${BASE}/api/dev/login?email=${encodeURIComponent(process.env.E2E_TEST_EMAIL!)}`);
 	await page.waitForURL(/\/trips|\/claim/, { timeout: 15000 });
-	await page.goto(`${BASE}/trips/${SLUG}/days/${dayId}`);
+	await page.goto(`${BASE}/trips/${SLUG}/days/${dayId}`, { waitUntil: 'networkidle' });
 	return { ctx, page };
 }
 

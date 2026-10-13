@@ -97,7 +97,7 @@ async function devLogin(
 
 /** Open the item and wait for it to render (the positive control every negative needs). */
 async function openItem(page: Page, slug: string, itemId: string, title = ITEM_TITLE) {
-	await page.goto(`${BASE}/trips/${slug}/items/${itemId}`);
+	await page.goto(`${BASE}/trips/${slug}/items/${itemId}`, { waitUntil: 'networkidle' });
 	await expect(
 		page.getByRole('heading', { name: title }).filter({ visible: true }).first()
 	).toBeVisible({
@@ -289,7 +289,7 @@ test.describe('#416 item detail role gating', () => {
 		const owner = await devLogin(browser, EMAILS.owner);
 		try {
 			const { page } = owner;
-			await page.goto(editPath);
+			await page.goto(editPath, { waitUntil: 'networkidle' });
 			await expect(saveBtn(page)).toBeVisible({ timeout: 10000 });
 			await expect(delHeading(page).first()).toBeVisible();
 			await expect(visible(page).del.first()).toBeVisible();
@@ -300,7 +300,7 @@ test.describe('#416 item detail role gating', () => {
 		const traveler = await devLogin(browser, EMAILS.traveler);
 		try {
 			const { page } = traveler;
-			await page.goto(editPath);
+			await page.goto(editPath, { waitUntil: 'networkidle' });
 			await expect(saveBtn(page)).toBeVisible({ timeout: 10000 });
 			await expect(delHeading(page)).toHaveCount(0);
 			await expect(visible(page).del).toHaveCount(0);

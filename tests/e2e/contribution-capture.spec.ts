@@ -73,7 +73,7 @@ test.describe('#252 easy capture — idea/plan fork sheet', () => {
 	test('the word "ideas" surfaces on the Overview', async ({ browser }) => {
 		const owner = await devLogin(browser, EMAILS.owner);
 		try {
-			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}`);
+			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}`, { waitUntil: 'networkidle' });
 			// The capture affordance surfaces on the Overview as the consistent FAB
 			// ("Add idea or plan"). The rules-fixture trip is past-dated → wrap-up
 			// lifecycle, so the inline "Capture ideas" link in the stats card is replaced
@@ -127,7 +127,7 @@ test.describe('#252 easy capture — idea/plan fork sheet', () => {
 		const ideaTitle = `Captured idea ${Date.now()}`;
 		const owner = await devLogin(browser, EMAILS.owner);
 		try {
-			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/phases/${ids.phaseId}`);
+			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/phases/${ids.phaseId}`, { waitUntil: 'networkidle' });
 			await owner.page
 				.getByRole('button', { name: /add idea or plan/i })
 				.filter({ visible: true })
@@ -197,7 +197,7 @@ test.describe('#252 easy capture — idea/plan fork sheet', () => {
 		const ideaTitle = `Traveler captured ${Date.now()}`;
 		const traveler = await devLogin(browser, EMAILS.traveler);
 		try {
-			await traveler.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/phases/${ids.phaseId}`);
+			await traveler.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/phases/${ids.phaseId}`, { waitUntil: 'networkidle' });
 			await traveler.page
 				.getByRole('button', { name: /add idea or plan/i })
 				.filter({ visible: true })
