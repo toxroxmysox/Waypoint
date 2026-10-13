@@ -505,11 +505,11 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 	e.app.save(checklistItem);
 
 	// Create a pending_invites row owned by the owner so the harness has a
-	// fixture record to exercise list/view/delete against. Code is fixed (per
-	// fixture) to keep the harness output deterministic; the create path
-	// generates random codes.
+	// fixture record to exercise list/view/delete against. `code` is unique, and
+	// parallel e2e workers call this fixture in the same millisecond, so a
+	// Date.now()-only code collided → 400 validation_not_unique (#384/#511).
 	const invitesCol = e.app.findCollectionByNameOrId('pending_invites');
-	const inviteCode = 'fixture-invite-code-' + Date.now();
+	const inviteCode = 'fixture-invite-code-' + Date.now() + '-' + $security.randomString(8);
 	const expiresAt =
 		new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 			.toISOString()

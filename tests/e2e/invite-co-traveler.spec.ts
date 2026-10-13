@@ -90,7 +90,7 @@ test.describe('#352 past co-traveler picker', () => {
 	}) => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 		try {
-			await page.goto(`${BASE}/trips/${TARGET_SLUG}/members`);
+			await page.goto(`${BASE}/trips/${TARGET_SLUG}/members`, { waitUntil: 'networkidle' });
 
 			// Dual-tree: AppShell renders the page twice, one copy CSS-hidden.
 			const picker = page
@@ -137,7 +137,7 @@ test.describe('#352 past co-traveler picker', () => {
 				}
 			});
 
-			await page.goto(`${BASE}/trips/${TARGET_SLUG}/members`);
+			await page.goto(`${BASE}/trips/${TARGET_SLUG}/members`, { waitUntil: 'networkidle' });
 			const picker = page
 				.locator('[data-testid="co-traveler-picker"]')
 				.filter({ visible: true })
@@ -196,7 +196,7 @@ test.describe('#352 past co-traveler picker', () => {
 	}) => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 		try {
-			await page.goto(`${BASE}/trips/${TARGET_SLUG}/members`);
+			await page.goto(`${BASE}/trips/${TARGET_SLUG}/members`, { waitUntil: 'networkidle' });
 			await expect(
 				page.locator('[data-testid="co-traveler-picker"]').filter({ visible: true }).first()
 			).toBeVisible({ timeout: 10000 });
@@ -240,7 +240,7 @@ test.describe('#352 past co-traveler picker', () => {
 			await page.setViewportSize({ width: 375, height: 812 });
 
 			// Populated — the TARGET trip has one poolable co-traveler.
-			await page.goto(`${BASE}/trips/${TARGET_SLUG}/members`);
+			await page.goto(`${BASE}/trips/${TARGET_SLUG}/members`, { waitUntil: 'networkidle' });
 			const picker = page
 				.locator('[data-testid="co-traveler-picker"]')
 				.filter({ visible: true })
@@ -249,7 +249,7 @@ test.describe('#352 past co-traveler picker', () => {
 			await page.screenshot({ path: '.visual/352-picker-populated-375.png', fullPage: true });
 
 			// Empty — on the PAST trip every co-traveler is already a member.
-			await page.goto(`${BASE}/trips/${PAST_SLUG}/members`);
+			await page.goto(`${BASE}/trips/${PAST_SLUG}/members`, { waitUntil: 'networkidle' });
 			await expect(
 				page.locator('[data-testid="co-traveler-empty"]').filter({ visible: true }).first()
 			).toBeVisible({ timeout: 10000 });

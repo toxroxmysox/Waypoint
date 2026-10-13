@@ -90,7 +90,7 @@ test.describe('#278 first-run — trip-less user', () => {
 
 	test('375px: no horizontal overflow', async ({ page }) => {
 		await page.setViewportSize({ width: 375, height: 812 });
-		await page.goto(`${BASE}/trips`);
+		await page.goto(`${BASE}/trips`, { waitUntil: 'networkidle' });
 		await expect(page.getByTestId('trips-empty-onramp')).toBeVisible();
 		const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
 		const viewportWidth = await page.evaluate(() => window.innerWidth);

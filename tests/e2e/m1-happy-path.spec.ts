@@ -91,7 +91,7 @@ test.describe('M1 Happy Path', () => {
 
 	test('no horizontal scroll on mobile viewport', async ({ page }) => {
 		await page.setViewportSize({ width: 375, height: 812 });
-		await page.goto(`${BASE_URL}/trips`);
+		await page.goto(`${BASE_URL}/trips`, { waitUntil: 'networkidle' });
 
 		const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
 		const viewportWidth = await page.evaluate(() => window.innerWidth);

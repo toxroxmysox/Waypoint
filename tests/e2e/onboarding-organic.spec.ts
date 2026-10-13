@@ -77,7 +77,7 @@ test.describe('#277 Organic-path onboarding (empty /trips → welcome card)', ()
 		const { page, ctx } = await devLogin(browser, EMAILS.non_member);
 		try {
 			await page.setViewportSize({ width: 375, height: 812 });
-			await page.goto(`${BASE}/trips`);
+			await page.goto(`${BASE}/trips`, { waitUntil: 'networkidle' });
 
 			await expect(page.getByTestId('trips-empty-onramp')).toBeVisible({ timeout: 10000 });
 
@@ -94,7 +94,7 @@ test.describe('#277 Organic-path onboarding (empty /trips → welcome card)', ()
 	}) => {
 		const { page, ctx } = await devLogin(browser, EMAILS.non_member);
 		try {
-			await page.goto(`${BASE}/trips`);
+			await page.goto(`${BASE}/trips`, { waitUntil: 'networkidle' });
 
 			// The on-ramp: the empty state is a warm first-run (#278) — "Where to?" +
 			// one orientation line + a prominent "Plan your first trip" door (NOT a

@@ -44,7 +44,7 @@ async function list(collection: string, filter: string, token: string, sort = ''
 const day = (d: unknown) => String(d ?? '').slice(0, 10);
 
 async function importFile(page: Page, json: unknown): Promise<void> {
-	await page.goto(`${BASE}/trips/import`);
+	await page.goto(`${BASE}/trips/import`, { waitUntil: 'networkidle' });
 	await page.locator('input[type="file"]').setInputFiles({
 		name: 'trip.json',
 		mimeType: 'application/json',

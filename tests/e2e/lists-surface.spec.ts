@@ -66,12 +66,12 @@ test.describe('Itinerary › Lists (#49)', () => {
 		await expect(page.getByRole('button', { name: 'Uncheck task' })).toHaveCount(0);
 
 		// --- Back on the index (NavBar back), the list shows with its progress ---
-		await page.goto(`${BASE}/trips/${tripSlug}/lists`);
+		await page.goto(`${BASE}/trips/${tripSlug}/lists`, { waitUntil: 'networkidle' });
 		await expect(page.getByText('Packing').filter({ visible: true }).first()).toBeVisible();
 		await expect(page.getByText('Whole trip').filter({ visible: true }).first()).toBeVisible();
 
 		// --- #401: the Overview no longer previews lists; the Lists tab is their home ---
-		await page.goto(`${BASE}/trips/${tripSlug}`);
+		await page.goto(`${BASE}/trips/${tripSlug}`, { waitUntil: 'networkidle' });
 		await expect(page.getByText('Whole-trip lists').filter({ visible: true })).toHaveCount(0);
 	});
 });

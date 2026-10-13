@@ -78,7 +78,7 @@ test.describe('BottomSheet teardown (#379)', () => {
 
 		try {
 			await page.setViewportSize({ width: 375, height: 812 });
-			await page.goto(`${BASE}/trips/${FIXTURE_SLUG}/expenses`);
+			await page.goto(`${BASE}/trips/${FIXTURE_SLUG}/expenses`, { waitUntil: 'networkidle' });
 
 			// Precondition: this page is FOREGROUND and animating. Without it a
 			// failure below is ambiguous — a hidden tab stalls Svelte's outro loop

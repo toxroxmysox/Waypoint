@@ -74,7 +74,7 @@ test.describe('#263 Goal → "Plan this"', () => {
 		const owner = await devLogin(browser, EMAILS.owner);
 		try {
 			// The goal detail surfaces the "Plan this" affordance.
-			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/goals/${ids.goalId}`);
+			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/goals/${ids.goalId}`, { waitUntil: 'networkidle' });
 			const planThis = owner.page
 				.getByRole('link', { name: /plan this/i })
 				.filter({ visible: true })

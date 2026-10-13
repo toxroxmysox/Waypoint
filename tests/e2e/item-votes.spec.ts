@@ -49,7 +49,7 @@ async function devLogin(browser: Browser, email: string, width = 375, height = 9
 const vis = (page: Page, sel: string) => page.locator(sel).filter({ visible: true });
 
 async function open(page: Page, itemId: string, title: string) {
-	await page.goto(`${BASE}/trips/${SLUG}/items/${itemId}`);
+	await page.goto(`${BASE}/trips/${SLUG}/items/${itemId}`, { waitUntil: 'networkidle' });
 	await expect(page.getByRole('heading', { name: title }).filter({ visible: true }).first()).toBeVisible({
 		timeout: 10000
 	});

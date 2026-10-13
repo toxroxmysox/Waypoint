@@ -62,7 +62,7 @@ test.describe('Trip create: same name across users (#395)', () => {
 
 		// 1. Owner creates it — no heads-up, plain slug.
 		const owner = await devLogin(browser, EMAILS.owner);
-		await owner.page.goto(`${BASE}/trips/new`);
+		await owner.page.goto(`${BASE}/trips/new`, { waitUntil: 'networkidle' });
 		await owner.page.fill('input[name="title"]', title);
 		await owner.page.getByRole('button', { name: 'Create trip' }).click();
 		await owner.page.waitForURL(`${BASE}/trips/${slug}`, { timeout: 15000 });
@@ -71,7 +71,7 @@ test.describe('Trip create: same name across users (#395)', () => {
 		//    punctuation. Before #395 this was a 500 page; now a heads-up naming
 		//    the owner, then "Create anyway" lands on a suffixed slug.
 		const traveler = await devLogin(browser, EMAILS.traveler);
-		await traveler.page.goto(`${BASE}/trips/new`);
+		await traveler.page.goto(`${BASE}/trips/new`, { waitUntil: 'networkidle' });
 		await traveler.page.fill('input[name="title"]', `${title}!`);
 		await traveler.page.getByRole('button', { name: 'Create trip' }).click();
 		const warn = traveler.page.getByTestId('duplicate-trip');
@@ -100,7 +100,7 @@ test.describe('Trip create: same name across users (#395)', () => {
 
 		// 3. Owner tries the same name again — told it's theirs, with a way in.
 		//    Editing the name away from the clash dismisses the heads-up.
-		await owner.page.goto(`${BASE}/trips/new`);
+		await owner.page.goto(`${BASE}/trips/new`, { waitUntil: 'networkidle' });
 		await owner.page.fill('input[name="title"]', title);
 		await owner.page.getByRole('button', { name: 'Create trip' }).click();
 		const mine = owner.page.getByTestId('duplicate-trip');

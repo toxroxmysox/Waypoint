@@ -37,7 +37,7 @@ test.describe('Trip Mode checklist check-off (#52)', () => {
 		await page.waitForURL(`${BASE}/trips/${tripSlug}`, { timeout: 10000 });
 
 		// --- Create a trip-scoped "Packing" list with a task (Planning) ---
-		await page.goto(`${BASE}/trips/${tripSlug}/lists`);
+		await page.goto(`${BASE}/trips/${tripSlug}/lists`, { waitUntil: 'networkidle' });
 		await page.getByRole('button', { name: 'New list' }).filter({ visible: true }).first().click();
 		await page.getByLabel('Name').fill('Packing');
 		await page.getByRole('button', { name: /create list/i }).filter({ visible: true }).first().click();
@@ -49,7 +49,7 @@ test.describe('Trip Mode checklist check-off (#52)', () => {
 		await expect(page.getByText('Tent').filter({ visible: true }).first()).toBeVisible();
 
 		// --- Trip Mode (merged Now, #244): the list shows, check the task ---
-		await page.goto(`${BASE}/trips/${tripSlug}/now`);
+		await page.goto(`${BASE}/trips/${tripSlug}/now`, { waitUntil: 'networkidle' });
 		await expect(page.getByText('Packing').filter({ visible: true }).first()).toBeVisible();
 		await expect(page.getByText('Tent').filter({ visible: true }).first()).toBeVisible();
 
@@ -65,7 +65,7 @@ test.describe('Trip Mode checklist check-off (#52)', () => {
 		expect((await saved).ok()).toBe(true);
 
 		// --- Persists to Planning ---
-		await page.goto(listUrl);
+		await page.goto(listUrl, { waitUntil: 'networkidle' });
 		await expect(page.getByRole('button', { name: 'Uncheck task' }).filter({ visible: true }).first()).toBeVisible();
 	});
 });

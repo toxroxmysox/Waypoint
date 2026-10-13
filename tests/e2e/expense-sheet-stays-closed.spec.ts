@@ -72,7 +72,7 @@ async function clientNavigate(page: Page, href: string) {
 
 /** Land on the expenses page first so the router is up, then navigate in. */
 async function openAddVia(page: Page, query: string) {
-	await page.goto(`${BASE}/trips/${SLUG}/expenses`);
+	await page.goto(`${BASE}/trips/${SLUG}/expenses`, { waitUntil: 'networkidle' });
 	await page.waitForLoadState('networkidle');
 	await clientNavigate(page, `/trips/${SLUG}/expenses?${query}`);
 	await expect(openSheets(page), 'the add sheet should open from ?action=add').toHaveCount(1, {

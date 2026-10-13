@@ -9,7 +9,7 @@ const BASE = E2E_BASE;
 // Secondary pages live at known routes, so navigate by URL (mode- and viewport-
 // independent) rather than clicking nav chrome that only exists in one mode.
 async function openTripSlug(page: import('@playwright/test').Page): Promise<string> {
-	await page.goto(`${BASE}/trips`);
+	await page.goto(`${BASE}/trips`, { waitUntil: 'networkidle' });
 	await page.locator('a[href*="/trips/"]').first().click();
 	await page.waitForURL('**/trips/**');
 	return page.url().split('/trips/')[1].split(/[/?#]/)[0];
@@ -50,7 +50,7 @@ test.describe('M4 Execution', () => {
 
 	test('trip mode today view renders', async ({ page }) => {
 		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/now`);
+		await page.goto(`${BASE}/trips/${slug}/now`, { waitUntil: 'networkidle' });
 		await page.waitForURL('**/now');
 
 		// #244 merged Today into the weighted Now view (/today 308-redirects to /now).
@@ -59,7 +59,7 @@ test.describe('M4 Execution', () => {
 
 	test('A2HS banner shows and dismisses', async ({ page }) => {
 		// Clear localStorage
-		await page.goto(`${BASE}/trips`);
+		await page.goto(`${BASE}/trips`, { waitUntil: 'networkidle' });
 		await page.evaluate(() => localStorage.removeItem('waypoint-a2hs-dismissed'));
 		await page.reload();
 
@@ -71,7 +71,7 @@ test.describe('M4 Execution', () => {
 	test('mobile responsive — trip mode at 375px', async ({ page }) => {
 		await page.setViewportSize({ width: 375, height: 812 });
 		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/now`);
+		await page.goto(`${BASE}/trips/${slug}/now`, { waitUntil: 'networkidle' });
 		await page.waitForURL('**/now');
 
 		const main = page.locator('main:visible').first();
