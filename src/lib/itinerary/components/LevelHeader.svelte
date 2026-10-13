@@ -20,6 +20,7 @@
 		title,
 		place = '',
 		span,
+		dates = '',
 		meta = '',
 		href,
 		chips = [],
@@ -30,6 +31,8 @@
 		title: string;
 		place?: string;
 		span: string;
+		/** #401 review — the dates, stated before the span: `Nov 18 – 22`. */
+		dates?: string;
 		meta?: string;
 		href?: string;
 		chips?: LevelChip[];
@@ -54,9 +57,9 @@
 	{#if place}
 		<p class="text-ink-soft mt-0.5 text-sm">{place}</p>
 	{/if}
-	{#if span || meta}
+	{#if dates || span || meta}
 		<p class="text-ink-muted mt-0.5 text-xs">
-			{[span, meta].filter(Boolean).join(' · ')}
+			{[dates, span, meta].filter(Boolean).join(' · ')}
 		</p>
 	{/if}
 {/snippet}
@@ -77,10 +80,6 @@
 		{/if}
 	</div>
 
-	{#if notes}
-		<div>{@render notes()}</div>
-	{/if}
-
 	{#if chips.length > 0}
 		<nav aria-label="{title} — open" class="flex flex-wrap gap-1.5">
 			{#each chips as chip (chip.href)}
@@ -98,5 +97,10 @@
 				</a>
 			{/each}
 		</nav>
+	{/if}
+
+	<!-- Notes after the chips: long notes never push the one-tap chips below the fold. -->
+	{#if notes}
+		<div>{@render notes()}</div>
 	{/if}
 </header>

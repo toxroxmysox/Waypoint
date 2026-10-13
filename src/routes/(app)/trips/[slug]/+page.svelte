@@ -24,7 +24,7 @@
 	import type { Notification } from '$lib/types';
 	import LevelHeader from '$lib/itinerary/components/LevelHeader.svelte';
 	import NotesEditor from '$lib/itinerary/components/NotesEditor.svelte';
-	import { spanLabel } from '$lib/itinerary/span-label';
+	import { spanLabel, dateRangeLabel } from '$lib/itinerary/span-label';
 	import ItineraryDensityToggle from '$lib/itinerary/components/ItineraryDensityToggle.svelte';
 	import CompactDayRow from '$lib/itinerary/components/CompactDayRow.svelte';
 	import { itineraryDensity } from '$lib/shell/stores/itinerary-density';
@@ -354,6 +354,7 @@
 	<LevelHeader
 		title={data.trip.title}
 		place={data.trip.location_summary}
+		dates={dateRangeLabel(data.trip.start_date, data.trip.end_date, { year: true })}
 		span={spanLabel(data.trip.start_date, data.trip.end_date, data.phases.length)}
 		meta={data.trip.timezone}
 		chips={data.phases.map((p: Phase) => ({
@@ -529,13 +530,15 @@
 				<LevelHeader
 					title={phase.name}
 					place={phase.location}
+					dates={dateRangeLabel(phase.start_date, phase.end_date)}
 					span={spanLabel(phase.start_date, phase.end_date)}
 					href="/trips/{data.trip.slug}/phases/{phase.id}"
 					size="card"
 				>
 					{#snippet notes()}
 						{#if phase.notes}
-							<p class="text-ink-soft text-sm whitespace-pre-wrap">{phase.notes}</p>
+							<!-- Part of the card's tap target into Phase Detail (trip story 10). -->
+							<a href="/trips/{data.trip.slug}/phases/{phase.id}" tabindex="-1" class="text-ink-soft block text-sm whitespace-pre-wrap">{phase.notes}</a>
 						{/if}
 					{/snippet}
 				</LevelHeader>

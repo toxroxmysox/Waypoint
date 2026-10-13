@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Day, Phase } from '$lib/types';
 	import LevelHeader from './LevelHeader.svelte';
-	import { spanLabel } from '$lib/itinerary/span-label';
+	import { spanLabel, dateRangeLabel } from '$lib/itinerary/span-label';
 	import { formatCalendarDate } from '$lib/shell/format';
 
 	// #391/#401 — a Phase Overview card: the phase's Level Header (read-only notes,
@@ -40,6 +40,7 @@
 	<LevelHeader
 		title={phase.name}
 		place={phase.location}
+		dates={dateRangeLabel(phase.start_date, phase.end_date)}
 		span={spanLabel(phase.start_date, phase.end_date)}
 		href="/trips/{tripSlug}/phases/{phase.id}"
 		{chips}

@@ -19,7 +19,7 @@
 	import NotesEditor from '$lib/itinerary/components/NotesEditor.svelte';
 	import PhaseLogistics from '$lib/itinerary/components/PhaseLogistics.svelte';
 	import type { PlannedIdea } from '$lib/itinerary/components/PlanOnDayMenu.svelte';
-	import { spanLabel } from '$lib/itinerary/span-label';
+	import { spanLabel, dateRangeLabel } from '$lib/itinerary/span-label';
 	import { toDateOnly } from '$lib/itinerary/multi-day';
 
 	let { data, form } = $props();
@@ -137,6 +137,7 @@
 		<LevelHeader
 			title={data.phase.name}
 			place={data.phase.location}
+			dates={dateRangeLabel(data.phase.start_date, data.phase.end_date)}
 			span={spanLabel(data.phase.start_date, data.phase.end_date)}
 			chips={dayChips}
 		>

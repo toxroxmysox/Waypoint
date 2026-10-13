@@ -97,7 +97,8 @@ test.describe('#252 easy capture — idea/plan fork sheet', () => {
 				`${BASE}/trips/${FIXTURE_SLUG}/days/${ids.dayId}`
 			];
 			for (const url of surfaces) {
-				await owner.page.goto(url);
+				// The FAB is a client control: click only after hydration (CLAUDE.md rule).
+				await owner.page.goto(url, { waitUntil: 'networkidle' });
 				// The consistent FAB.
 				const fab = owner.page
 					.getByRole('button', { name: /add idea or plan/i })

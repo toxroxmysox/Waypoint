@@ -30,13 +30,14 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 	}
 	const cards = (phases as Phase[]).map((phase) => {
 		const phaseDays = days.filter((d) => (d.phases ?? []).includes(phase.id));
-		const mine = items.filter((it) => it.phase === phase.id);
+		// "N ideas · M to rate": M counts the same ideas N does, unvoted by this member.
+		const ideas = items.filter((it) => it.phase === phase.id && it.status === 'unplanned' && !it.day);
 		return {
 			phase,
 			days: phaseDays,
 			plannedByDay: Object.fromEntries(phaseDays.map((d) => [d.id, plannedByDayAll[d.id] ?? 0])),
-			ideaCount: mine.filter((it) => it.status === 'unplanned' && !it.day).length,
-			unratedCount: mine.filter((it) => !voted.has(it.id)).length
+			ideaCount: ideas.length,
+			unratedCount: ideas.filter((it) => !voted.has(it.id)).length
 		};
 	});
 

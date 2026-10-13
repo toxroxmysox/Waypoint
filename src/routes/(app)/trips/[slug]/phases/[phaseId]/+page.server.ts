@@ -137,9 +137,8 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 			? []
 			: unplanned.filter((it) => canPrivileged || it.created_by === membership.id).map((it) => it.id);
 	const voted = new Set(myVotes.map((v) => v.item));
-	const unratedCount = items.filter(
-		(it) => (it.status === 'planned' || it.status === 'unplanned') && !voted.has(it.id)
-	).length;
+	// "Rate N" = this viewer's unvoted ideas (the parking lot it sits over).
+	const unratedCount = unplanned.filter((it) => !it.day && !voted.has(it.id)).length;
 
 	return {
 		phase,
@@ -189,6 +188,12 @@ export const actions: Actions = {
 		const dayId = data.get('day_id')?.toString();
 		if (!itemId || !dayId) return fail(400, { error: 'Pick a day.' });
 		try {
+			// Only this phase's still-unplanned ideas: a stale tab must not move an
+			// item someone already planned (and Undo would then invent a state).
+			const idea = await locals.pb.collection('items').getOne<Item>(itemId, { fields: 'id,phase,day,status' });
+			if (idea.phase !== params.phaseId || idea.status !== 'unplanned' || idea.day) {
+				return fail(409, { error: 'That idea is already planned.' });
+			}
 			const day = await locals.pb.collection('days').getOne<Day>(dayId);
 			if (!(day.phases ?? []).includes(params.phaseId)) {
 				return fail(400, { error: 'That day isn’t in this phase.' });

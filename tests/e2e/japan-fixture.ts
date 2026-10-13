@@ -56,11 +56,18 @@ export async function devLogin(browser: Browser, email: string): Promise<{ page:
 
 export async function seedJapanTrip(SLUG: string): Promise<JapanFx> {
 	const owner = await token(EMAILS.owner);
-	const res = await fetch(`${PB_BASE}/api/dev/rules-fixture`, {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${owner}` },
-		body: JSON.stringify({ emails: EMAILS, slug: SLUG })
-	});
+	// Specs using the rules-fixture run in parallel workers and can collide on its
+	// shared users (#511); retry a 400 a few times before failing.
+	let res: Response = new Response(null, { status: 599 });
+	for (let attempt = 0; attempt < 4; attempt++) {
+		res = await fetch(`${PB_BASE}/api/dev/rules-fixture`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${owner}` },
+			body: JSON.stringify({ emails: EMAILS, slug: SLUG })
+		});
+		if (res.ok) break;
+		await new Promise((r) => setTimeout(r, 750 * (attempt + 1)));
+	}
 	expect(res.ok, `rules-fixture: ${res.status}`).toBe(true);
 	const base = (await res.json()) as {
 		tripId: string;

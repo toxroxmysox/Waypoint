@@ -165,3 +165,43 @@ test('a phase whose ideas are all rated reads "all rated", not a link', async ({
 	await expect(tokyoCard.getByRole('link', { name: /ideas ·/ })).toHaveCount(0);
 	await close();
 });
+
+// #401 review — headers state dates; a stale Do this can't re-plan a planned item.
+test('Phase Detail header states the dates before the span', async ({ browser }) => {
+	const { page, close } = await devLogin(browser, EMAILS.owner);
+	await page.goto(`${BASE}/trips/${SLUG}/phases/${fx.tokyo}`, { waitUntil: 'networkidle' });
+	await expect(page.getByText('Nov 18 – 22 · 5 days · 4 nights').filter({ visible: true }).first()).toBeVisible();
+	await close();
+});
+
+test('Do this on an idea planned elsewhere meanwhile fails softly and moves nothing', async ({ browser }) => {
+	const owner = await token(EMAILS.owner);
+	const { page, close } = await devLogin(browser, EMAILS.owner);
+	await page.goto(`${BASE}/trips/${SLUG}/phases/${fx.tokyo}`, { waitUntil: 'networkidle' });
+	// Another device plans it on Fri 19 while this tab still shows it as an idea.
+	await pb(owner, 'PATCH', `/api/collections/items/records/${fx.ownerIdea}`, {
+		day: fx.days['2027-11-19'],
+		status: 'planned'
+	});
+	await page.locator(`[data-idea-id="${fx.ownerIdea}"]`).filter({ visible: true }).getByRole('button', { name: 'Do this' }).click();
+	await page.getByRole('button', { name: /^Sat 20/ }).filter({ visible: true }).click();
+	await expect(page.getByText('That idea is already planned.')).toBeVisible();
+	const after = await pb(owner, 'GET', `/api/collections/items/records/${fx.ownerIdea}`);
+	expect(after.day).toBe(fx.days['2027-11-19']);
+	await pb(owner, 'PATCH', `/api/collections/items/records/${fx.ownerIdea}`, { day: '', status: 'unplanned' });
+	await close();
+});
+
+test('Phase Overview: "to rate" never exceeds the ideas it counts', async ({ browser }) => {
+	const owner = await token(EMAILS.owner);
+	// Clear the owner's votes so Tokyo has something to rate.
+	const votes = (await pb(owner, 'GET', `/api/collections/votes/records?perPage=200&filter=${encodeURIComponent(`trip="${fx.tripId}"`)}`))
+		.items as { id: string }[];
+	for (const v of votes) await fetch(`${PB_BASE}/api/collections/votes/records/${v.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${owner}` } });
+	const { page, close } = await devLogin(browser, EMAILS.owner);
+	await page.goto(`${BASE}/trips/${SLUG}/phases`, { waitUntil: 'networkidle' });
+	const row = page.locator(`[data-phase-card="${fx.tokyo}"]`).filter({ visible: true }).getByText(/\d+ ideas? · \d+ to rate/);
+	const [, n, m] = /(\d+) ideas? · (\d+) to rate/.exec((await row.textContent()) ?? '')!;
+	expect(Number(m)).toBeLessThanOrEqual(Number(n));
+	await close();
+});
