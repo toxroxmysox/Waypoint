@@ -152,7 +152,6 @@ onRecordAfterCreateSuccess((e) => {
 
 	const tripId = e.record.get('trip');
 	const newMemberId = e.record.id;
-	const newMemberRole = e.record.getString('role');
 
 	// Resolve the joiner's name. On a REAL join the trip_members row's own
 	// display_name/placeholder_name are EMPTY (the name lives on the linked
@@ -244,13 +243,6 @@ routerAdd('GET', '/api/notifications/list', (e) => {
 		return e.json(200, { items: [], unread: 0 });
 	}
 
-	// Build filter: recipient IN memberIds.
-	// PB parameterized filter doesn't support IN lists natively — use string interpolation
-	// (IDs are alphanumeric so safe here).
-	const idList = memberIds.map((id) => `"${id}"`).join(',');
-	const filter = `recipient ?= "${memberIds.join('" || recipient ?= "')}"`;
-
-	// Simpler approach: OR chain of recipient conditions.
 	let records = [];
 	try {
 		// Fetch per member and merge (limit small so this is fine).

@@ -386,9 +386,8 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 	let landingDayId = '';
 	let approvedTitle = '';
 	if (action === 'approve') {
-		let trip;
 		try {
-			trip = e.app.findRecordById('trips', tripId);
+			e.app.findRecordById('trips', tripId);
 		} catch (_) {
 			throw new NotFoundError('Trip not found');
 		}
