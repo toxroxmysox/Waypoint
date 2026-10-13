@@ -13,6 +13,8 @@ export interface TripExport {
 		archive_enabled: boolean;
 		archive_publish_after_days: number;
 		auto_approve_suggestions: boolean;
+		/** #401 — Trip Notes. Optional: older exports have none. */
+		notes?: string;
 	};
 	phases: Array<{
 		name: string;
@@ -21,6 +23,8 @@ export interface TripExport {
 		start_date: string;
 		end_date: string;
 		order: number;
+		/** #401 — Phase Notes. Optional: older exports have none. */
+		notes?: string;
 	}>;
 	days: Array<{
 		date: string;

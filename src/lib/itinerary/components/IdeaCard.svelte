@@ -12,6 +12,7 @@
 	import VotePills from '$lib/collaboration/components/VotePills.svelte';
 	import AssigneeStacks from '$lib/itinerary/components/AssigneeStacks.svelte';
 	import { ideaSub } from '$lib/itinerary/idea-groups';
+	import type { Snippet } from 'svelte';
 
 	let {
 		item,
@@ -20,6 +21,7 @@
 		members = [],
 		myMemberId = '',
 		canVote = false,
+		action,
 		class: klass = ''
 	}: {
 		item: Item;
@@ -30,6 +32,8 @@
 		myMemberId?: string;
 		/** False for viewers: the pills show counts only. */
 		canVote?: boolean;
+		/** #401 — a small in-card action at the end of the vote row (Do this). */
+		action?: Snippet;
 		class?: string;
 	} = $props();
 
@@ -47,15 +51,20 @@
 		{#if sub}
 			<p class="text-ink-muted mt-0.5 truncate text-xs" data-idea-sub>{sub}</p>
 		{/if}
-		<div class="relative z-10 mt-1.5 w-fit">
-			<VotePills
-				{votes}
-				{members}
-				{myMemberId}
-				{canVote}
-				voteAction="/trips/{tripSlug}/items/{item.id}?/vote"
-				unvoteAction="/trips/{tripSlug}/items/{item.id}?/unvote"
-			/>
+		<div class="mt-1.5 flex items-center justify-between gap-2">
+			<div class="relative z-10 w-fit">
+				<VotePills
+					{votes}
+					{members}
+					{myMemberId}
+					{canVote}
+					voteAction="/trips/{tripSlug}/items/{item.id}?/vote"
+					unvoteAction="/trips/{tripSlug}/items/{item.id}?/unvote"
+				/>
+			</div>
+			{#if action}
+				<div class="relative z-10 shrink-0">{@render action()}</div>
+			{/if}
 		</div>
 	</div>
 	<!-- Going bubbles + struck not-going (ADR-0011 / #440) — child of the bordered

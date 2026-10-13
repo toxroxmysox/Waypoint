@@ -95,7 +95,8 @@ test.describe('Closeout leaves checklists untouched (#53)', () => {
 		// the hero button does not, so filter on it to select real day cards in date order.
 		const dayLinks = page
 			.locator(`a[href^="/trips/${tripSlug}/days/"]:visible`)
-			.filter({ hasText: /\bitems?\b/ });
+			// #401: the Overview defaults to Compact rows ("N planned"); Details cards say "N items".
+			.filter({ hasText: /\bitems?\b|\bplanned\b/ });
 		await expect(dayLinks.nth(1)).toBeVisible({ timeout: 5000 });
 		await dayLinks.nth(1).click();
 		await page.getByRole('link', { name: /^Add item$/i }).filter({ visible: true }).first().click();

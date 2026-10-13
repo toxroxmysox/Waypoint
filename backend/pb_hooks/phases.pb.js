@@ -69,8 +69,28 @@ onRecordUpdateRequest((e) => {
 	}
 
 	const role = callerMember.getString('role');
+	// #401 — Phase Notes are edited like day notes: any non-viewer member. A
+	// traveler may change `notes` and nothing else; structure stays owner/co_owner.
+	if (role === 'viewer') throw new ForbiddenError("Viewers can't edit the plan.");
 	if (role !== 'owner' && role !== 'co_owner') {
-		throw new ForbiddenError('Only an owner or co-owner can edit phases.');
+		const original = e.record.original();
+		const val = (r, f) => {
+			const v = r.get(f);
+			if (v && typeof v === 'object' && typeof v.length === 'number') {
+				const out = [];
+				for (let j = 0; j < v.length; j++) out.push('' + v[j]);
+				return out.join(',');
+			}
+			return r.getString(f);
+		};
+		const fieldNames = e.record.collection().fields.fieldNames();
+		for (let i = 0; i < fieldNames.length; i++) {
+			const f = '' + fieldNames[i];
+			if (f === 'updated' || f === 'notes') continue;
+			if (val(e.record, f) !== val(original, f)) {
+				throw new ForbiddenError('Only an owner or co-owner can edit phases.');
+			}
+		}
 	}
 
 	e.next();

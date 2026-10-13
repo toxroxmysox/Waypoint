@@ -1,8 +1,9 @@
 import { error, fail } from '@sveltejs/kit';
+import { planIdeaOnDay } from '$lib/server/plan-idea';
 import type { Actions, PageServerLoad } from './$types';
 import type { Day, Item, Vote, TripMember } from '$lib/types';
 import { phasesForDay } from '$lib/itinerary/phases';
-import { rebalanceDayOrder, GAP } from '$lib/itinerary/sort-order';
+import { rebalanceDayOrder } from '$lib/itinerary/sort-order';
 import { spanningItemsForDate } from '$lib/itinerary/multi-day';
 import { summarizeDays } from '$lib/itinerary/day-card';
 import { withAvatarUrls } from '$lib/collaboration/member-avatar';
@@ -188,16 +189,7 @@ export const actions: Actions = {
 		try {
 			if (!orderRaw) {
 				// Append to the end of the day (tap-to-plan, no drop position).
-				const tail = await locals.pb.collection('items').getFullList({
-					filter: `day = "${params.dayId}"`,
-					sort: '-sort_order',
-					fields: 'sort_order'
-				});
-				await locals.pb.collection('items').update(itemId, {
-					day: params.dayId,
-					status: 'planned',
-					sort_order: tail.length > 0 ? Number(tail[0].sort_order) + GAP : GAP
-				});
+				await planIdeaOnDay(locals.pb, itemId, params.dayId);
 				return { success: true };
 			}
 

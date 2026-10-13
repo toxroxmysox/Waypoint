@@ -41,7 +41,9 @@ const TRIP_FIELDS = [
 	'ai_access',
 	'ai_write',
 	'auto_approve_suggestions',
-	'archived'
+	'archived',
+	// #401 — Trip Notes.
+	'notes'
 ];
 
 /** Every trip the user is an active member of, newest start first. */

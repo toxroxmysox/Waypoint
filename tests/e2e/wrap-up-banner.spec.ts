@@ -57,9 +57,10 @@ test.describe('Wrap-up banner (#239)', () => {
 		await expect(banner.getByText('Close out')).toBeVisible();
 		await expect(banner.getByText('Your trip has ended').filter({ visible: true }).first()).toBeVisible();
 
-		// The normal planning Overview top (the "N days · M phases" stats line) is gone:
-		// the banner stands in its place. Itinerary/Days still render below (unaffected).
-		await expect(page.getByText(/\bdays ·/).filter({ visible: true })).toHaveCount(0);
+		// The normal planning Overview top (the trip Level Header's "… · M phases" span)
+		// is gone: the banner stands in its place. Itinerary/Days still render below —
+		// #401's phase cards carry their own "N days · M nights", so match the trip span.
+		await expect(page.getByText(/· \d+ phases?$/).filter({ visible: true })).toHaveCount(0);
 	});
 
 	test('Close-out row launches the existing closeout wizard', async ({ page }) => {

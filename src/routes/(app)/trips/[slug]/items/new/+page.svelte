@@ -70,14 +70,14 @@
 	let goalPrefillDescription = $derived(data.prefillGoalDescription ?? '');
 
 	let initialData: ItemFormData = $derived({
-		...buildEmptyFormData((prefill?.type as ItemType) ?? 'activity'),
-		type: (prefill?.type as ItemType) ?? 'activity',
+		...buildEmptyFormData((prefill?.type as ItemType) ?? ((data.presetType || 'activity') as ItemType)),
+		type: (prefill?.type as ItemType) ?? ((data.presetType || 'activity') as ItemType),
 		subtype: (prefill?.subtype as string) ?? '',
 		title: (prefill?.title as string) ?? goalPrefillTitle,
 		description: (prefill?.description as string) ?? goalPrefillDescription,
 		start_time: (prefill?.start_time as string) ?? '',
 		end_time: (prefill?.end_time as string) ?? '',
-		end_date: (prefill?.end_date as string) ?? '',
+		end_date: (prefill?.end_date as string) ?? data.presetEnd ?? '',
 		location_name: (prefill?.location_name as string) ?? '',
 		location_address: (prefill?.location_address as string) ?? '',
 		location_coords: prefill?.location_coords ?? null,

@@ -79,11 +79,17 @@ test.describe('Offline — read-only active trip on a plane (#255)', () => {
 			await page.goto(`${BASE}${dayHref}`);
 			await page.waitForLoadState('domcontentloaded');
 			await expect(page.locator('body')).not.toHaveText(/^Offline$/);
-			await expect(page.getByText('Notes').filter({ visible: true }).first()).toBeVisible();
+			// #401: day notes live in the Level Header — "Add day notes" when empty,
+			// a pencil "Edit notes" when filled.
+			const notesBtn = page
+				.getByRole('button', { name: /^(Add day notes|Edit notes)$/ })
+				.filter({ visible: true })
+				.first();
+			await expect(notesBtn).toBeVisible();
 
 			// ── Write-guard: attempt to edit (a mutation) while offline → blocked
 			// with the offline toast; read navigation was unaffected above.
-			await page.getByRole('button', { name: 'Edit' }).filter({ visible: true }).first().click();
+			await notesBtn.click();
 			await page.locator('textarea[name="notes"]:visible').first().fill('offline edit attempt');
 			await page.getByRole('button', { name: /^Save/ }).filter({ visible: true }).first().click();
 

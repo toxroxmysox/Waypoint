@@ -15,6 +15,12 @@
 	import { page } from '$app/state';
 	import { afterNavigate, replaceState } from '$app/navigation';
 	import { revealServerError, errorField } from '$lib/shell/actions/validate-form';
+	import LevelHeader from '$lib/itinerary/components/LevelHeader.svelte';
+	import NotesEditor from '$lib/itinerary/components/NotesEditor.svelte';
+	import PhaseLogistics from '$lib/itinerary/components/PhaseLogistics.svelte';
+	import type { PlannedIdea } from '$lib/itinerary/components/PlanOnDayMenu.svelte';
+	import { spanLabel, dateRangeLabel } from '$lib/itinerary/span-label';
+	import { toDateOnly } from '$lib/itinerary/multi-day';
 
 	let { data, form } = $props();
 
@@ -82,19 +88,34 @@
 
 	// #57 — quick-add an idea into this phase's parking lot.
 	let addingIdea = $state(false);
+
+	// #401 — Do this → Undo. The undo form lives here (the idea's own card leaves
+	// the parking lot once planned); the toast's Undo submits it.
+	let undoForm = $state<HTMLFormElement | null>(null);
+	let undo = $state({ itemId: '', day: '', sortOrder: 0 });
+	function onPlanned(p: PlannedIdea) {
+		undo = { itemId: p.itemId, day: p.prevDay, sortOrder: p.prevSortOrder };
+		toast.show(`Planned on ${p.dayLabel}`, 'success', {
+			action: { label: 'Undo', run: () => undoForm?.requestSubmit() }
+		});
+	}
+	const canPlanIds = $derived(new Set(data.canPlanIds));
+	const canEditStructure = $derived(data.viewerRole === 'owner' || data.viewerRole === 'co_owner');
+	const phasePath = $derived(`/trips/${data.trip.slug}/phases/${data.phase.id}`);
+	const dayChips = $derived(
+		data.planRows.map((r) => ({
+			label: r.label,
+			href: `/trips/${data.trip.slug}/days/${r.dayId}`,
+			filled: (data.daySummaries[r.dayId]?.plannedCount ?? 0) > 0,
+			travel: r.travel
+		}))
+	);
 	let savingIdea = $state(false);
 	let ideaTitle = $state('');
 	let ideaType = $state('activity');
 	let ideaError = $derived(form?.ideaError ?? '');
 	const ideaTypes = ['activity', 'meal', 'lodging', 'transportation', 'flight', 'note'] as const;
 
-	function daysNightsLabel(start: string, end: string): string {
-		const s = new Date(start.substring(0, 10) + 'T00:00:00.000Z');
-		const e = new Date(end.substring(0, 10) + 'T00:00:00.000Z');
-		const days = Math.round((e.getTime() - s.getTime()) / 86_400_000) + 1;
-		if (days <= 1) return '1 day';
-		return `${days} days · ${days - 1} night${days - 1 === 1 ? '' : 's'}`;
-	}
 </script>
 
 <NavBar title={data.phase.name} subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}/phases" />
@@ -112,33 +133,45 @@
 		<div bind:this={alertEl} role="alert" class="border-error/30 bg-error/10 text-error-deep mb-4 rounded-md border p-3 text-sm">{error}</div>
 	{/if}
 
-	<header class="border-line border-b pb-4">
-		<div class="flex items-start justify-between gap-3">
-			<div class="min-w-0">
-				<h2 class="font-display text-ink text-[26px] leading-[1.15] font-semibold tracking-[-0.3px]">{data.phase.name}</h2>
-				{#if data.phase.location}
-					<p class="text-ink-soft mt-1 text-sm">{data.phase.location}</p>
+	<div class="border-line border-b pb-4">
+		<LevelHeader
+			title={data.phase.name}
+			place={data.phase.location}
+			dates={dateRangeLabel(data.phase.start_date, data.phase.end_date)}
+			span={spanLabel(data.phase.start_date, data.phase.end_date)}
+			chips={dayChips}
+		>
+			{#snippet actions()}
+				{#if canEditStructure}
+					<Button onclick={() => (editing = !editing)} variant="ghost" size="sm">
+						{editing ? 'Cancel' : 'Edit'}
+					</Button>
 				{/if}
-			</div>
-			<Button onclick={() => (editing = !editing)} variant="ghost" size="sm">
-				{editing ? 'Cancel' : 'Edit'}
-			</Button>
-		</div>
-		<p class="text-ink-muted font-mono mt-2.5 text-[11.5px]">
-			{formatCalendarDate(data.phase.start_date, {
-				month: 'short',
-				day: 'numeric'
-			})}
-			–
-			{formatCalendarDate(data.phase.end_date, {
-				month: 'short',
-				day: 'numeric',
-				year: 'numeric'
-			})}
-			<span class="text-line">·</span>
-			{daysNightsLabel(data.phase.start_date, data.phase.end_date)}
-		</p>
-	</header>
+			{/snippet}
+			{#snippet notes()}
+				<NotesEditor
+					notes={data.phase.notes ?? ''}
+					action="?/updateNotes"
+					canEdit={data.canEditNotes}
+					emptyPrompt="Add phase notes"
+				/>
+			{/snippet}
+		</LevelHeader>
+	</div>
+
+	<section class="mt-4" aria-label="Getting in, staying, getting out">
+		<PhaseLogistics
+			arrival={data.arrival}
+			departure={data.departure}
+			staying={data.staying}
+			tripSlug={data.trip.slug}
+			firstDayId={data.planRows[0]?.dayId ?? ''}
+			lastDayId={data.planRows.at(-1)?.dayId ?? ''}
+			lastDate={toDateOnly(data.phase.end_date)}
+			canAdd={data.canAddLogistics}
+			originPath={phasePath}
+		/>
+	</section>
 
 	{#if editing}
 		<Card class="mt-4">
@@ -255,9 +288,17 @@
 					<SectionH>Parking lot</SectionH>
 					<span class="text-ink-muted font-mono text-[11px]">{parkingLotCount}</span>
 				</div>
-				<Button onclick={() => (addingIdea = !addingIdea)} variant="ghost" size="sm">
-					{addingIdea ? 'Cancel' : '+ Add idea'}
-				</Button>
+				<div class="flex items-center gap-1">
+					{#if data.unratedCount > 0}
+						<a
+							href="/trips/{data.trip.slug}/swipe/{data.phase.id}?from={encodeURIComponent(phasePath)}"
+							class="text-moss min-h-11 px-2 text-sm leading-[44px] font-semibold"
+						>Rate {data.unratedCount}</a>
+					{/if}
+					<Button onclick={() => (addingIdea = !addingIdea)} variant="ghost" size="sm">
+						{addingIdea ? 'Cancel' : '+ Add idea'}
+					</Button>
+				</div>
 			</div>
 
 			<div class="border-line bg-surface-2 rounded-lg border p-2.5 space-y-3">
@@ -327,6 +368,9 @@
 						canVoteGhosts={canVoteGhosts}
 						canReviewGhosts={canReviewGhosts}
 						place={data.trip.location_summary}
+						planRows={data.planRows}
+						{canPlanIds}
+						{onPlanned}
 					/>
 				{/if}
 
@@ -340,6 +384,26 @@
 		</section>
 	</div>
 </main>
+
+<form
+	bind:this={undoForm}
+	method="POST"
+	action="?/unplanIdea"
+	class="hidden"
+	use:enhance={() => {
+		return async ({ result, update }) => {
+			if (result.type === 'failure') {
+				toast.show((result.data?.error as string) || "Couldn't undo.", 'error');
+			} else {
+				await update();
+			}
+		};
+	}}
+>
+	<input type="hidden" name="item_id" value={undo.itemId} />
+	<input type="hidden" name="day" value={undo.day} />
+	<input type="hidden" name="sort_order" value={undo.sortOrder} />
+</form>
 
 <!-- #252 — same capture affordance + position as the Overview and day views.
      Defaults the idea's phase to THIS phase. -->

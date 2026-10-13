@@ -11,6 +11,7 @@ const item = (id: string, start?: string, end?: string) =>
 
 const summary = (over: Partial<DayCardSummary> = {}): DayCardSummary => ({
 	itemCount: 0,
+	plannedCount: 0,
 	bookedCount: 0,
 	bookableCount: 0,
 	needsBookingCount: 0,

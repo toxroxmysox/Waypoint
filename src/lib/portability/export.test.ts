@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildTripExport, buildPublicTripExport } from './export';
-import { validateTripImport } from './import';
+import { validateTripImport, importTripFields, importPhaseFields } from './import';
 import type {
 	Trip,
 	Phase,
@@ -55,7 +55,7 @@ describe('buildTripExport', () => {
 
 	it('resolves day dates and phase names for items', () => {
 		const phases: Phase[] = [
-			{ id: 'p1', trip: 'trip1', name: 'Barcelona', location: 'Barcelona', country_code: 'ES', start_date: '2026-06-01', end_date: '2026-06-03', order: 0, collectionId: '', collectionName: 'phases', created: '', updated: '' }
+			{ id: 'p1', trip: 'trip1', name: 'Barcelona', location: 'Barcelona', country_code: 'ES', start_date: '2026-06-01', end_date: '2026-06-03', order: 0, notes: '', collectionId: '', collectionName: 'phases', created: '', updated: '' }
 		];
 		const days: Day[] = [
 			{ id: 'd1', trip: 'trip1', phases: ['p1'], date: '2026-06-01', notes: '', collectionId: '', collectionName: 'days', created: '', updated: '' }
@@ -145,7 +145,7 @@ describe('buildTripExport', () => {
 
 	it('exports checklists with checked preserved and assignee stripped (#53)', () => {
 		const phases: Phase[] = [
-			{ id: 'p1', trip: 'trip1', name: 'Barcelona', location: '', country_code: '', start_date: '', end_date: '', order: 0, collectionId: '', collectionName: 'phases', created: '', updated: '' }
+			{ id: 'p1', trip: 'trip1', name: 'Barcelona', location: '', country_code: '', start_date: '', end_date: '', order: 0, notes: '', collectionId: '', collectionName: 'phases', created: '', updated: '' }
 		];
 		const checklists = [
 			{ id: 'c1', trip: 'trip1', phase: '', item: '', title: 'Packing', kind: 'manual', order: 0 },
@@ -199,6 +199,7 @@ describe('buildTripExport → import round-trip (#174)', () => {
 			start_date: '2026-06-01 00:00:00.000Z',
 			end_date: '2026-06-03 00:00:00.000Z',
 			order: 0,
+			notes: '',
 			collectionId: '',
 			collectionName: 'phases',
 			created: '',
@@ -397,6 +398,7 @@ describe('buildPublicTripExport (#208 — PII-stripped archive export)', () => {
 			start_date: '2026-06-01 00:00:00.000Z',
 			end_date: '2026-06-03 00:00:00.000Z',
 			order: 0,
+			notes: '',
 			collectionId: '',
 			collectionName: 'phases',
 			created: '',
@@ -541,5 +543,36 @@ describe('buildPublicTripExport (#208 — PII-stripped archive export)', () => {
 		const full = buildTripExport(pbTrip, pbPhases, pbDays, pbItems, null, [], [], members, expenses);
 		const pub = buildPublicTripExport(pbTrip, pbPhases, pbDays, pbItems);
 		expect(Object.keys(pub).sort()).toEqual(Object.keys(full).sort());
+	});
+});
+
+describe('#401 phase and trip notes', () => {
+	const phase: Phase = {
+		id: 'p1', trip: 'trip1', name: 'Tokyo', location: 'Tokyo', country_code: 'JP',
+		start_date: '2027-11-18 00:00:00.000Z', end_date: '2027-11-22 00:00:00.000Z', order: 0,
+		notes: 'Rail pass starts here.', collectionId: '', collectionName: 'phases', created: '', updated: ''
+	};
+	it('export includes phase and trip notes', () => {
+		const out = buildTripExport(makeTrip({ notes: 'JR passes ordered.' }), [phase], [], [], null);
+		expect(out.phases[0].notes).toBe('Rail pass starts here.');
+		expect(out.trip.notes).toBe('JR passes ordered.');
+	});
+	it('import restores notes', () => {
+		const out = buildTripExport(makeTrip({ notes: 'JR passes ordered.' }), [phase], [], [], null);
+		const back = JSON.parse(JSON.stringify(out));
+		expect(validateTripImport(back).valid).toBe(true);
+		expect(importTripFields(back.trip).notes).toBe('JR passes ordered.');
+		expect(importPhaseFields(back.phases[0])).toEqual({
+			name: 'Tokyo', location: 'Tokyo', country_code: 'JP', notes: 'Rail pass starts here.'
+		});
+	});
+	it('import tolerates missing notes', () => {
+		const out = buildTripExport(makeTrip(), [phase], [], [], null);
+		const old = JSON.parse(JSON.stringify(out));
+		delete old.trip.notes;
+		delete old.phases[0].notes;
+		expect(validateTripImport(old).valid).toBe(true);
+		expect(importTripFields(old.trip).notes).toBe('');
+		expect(importPhaseFields(old.phases[0]).notes).toBe('');
 	});
 });

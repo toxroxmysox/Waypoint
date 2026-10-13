@@ -2,17 +2,12 @@
 	import { formatCalendarDate } from '$lib/shell/format';
 	import { withOrigin } from '$lib/shell/back-nav';
 	import { page } from '$app/state';
-	import { enhance } from '$app/forms';
 	import NavBar from '$lib/ui/NavBar.svelte';
-	import Card from '$lib/ui/Card.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
-	import Button from '$lib/ui/Button.svelte';
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import FAB from '$lib/shell/components/FAB.svelte';
 	import IdeaCaptureSheet from '$lib/itinerary/components/IdeaCaptureSheet.svelte';
-	import { toast } from '$lib/shell/stores/toast';
 	import DayNav from '$lib/shell/components/DayNav.svelte';
-	import PhaseChip from '$lib/ui/PhaseChip.svelte';
 	import DayTimeline from '$lib/itinerary/components/DayTimeline.svelte';
 	import { ideaScores } from '$lib/itinerary/idea-groups';
 	import ParkingDivider from '$lib/itinerary/components/ParkingDivider.svelte';
@@ -20,22 +15,13 @@
 	import { itemPermissions } from '$lib/itinerary/item-actions';
 	import SpanBand from '$lib/itinerary/components/SpanBand.svelte';
 	import ServerErrorAlert from '$lib/ui/ServerErrorAlert.svelte';
+	import LevelHeader from '$lib/itinerary/components/LevelHeader.svelte';
+	import NotesEditor from '$lib/itinerary/components/NotesEditor.svelte';
 
 	let { data, form } = $props();
 
-	let editingNotes = $state(false);
-	let notesLoading = $state(false);
-
 	// #252 — consistent capture affordance, defaulting to this day + its phase.
 	let ideaSheetOpen = $state(false);
-
-	// Reset editing state when navigating between days (client-side reuse of component instance).
-	// $effect is safe here: editingNotes starts false (correct SSR value); this only resets a UI flag.
-	$effect(() => {
-		const _ = data.day.id;
-		editingNotes = false;
-		notesLoading = false;
-	});
 
 	function dayLabel(): string {
 		return formatCalendarDate(data.day.date, {
@@ -64,78 +50,33 @@
 <DayNav days={data.days} currentDayId={data.day.id} tripSlug={data.trip.slug} />
 
 <main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-24 space-y-4">
-	<div>
-		<h2 class="font-display text-ink text-xl leading-tight font-semibold">{dayLabel()}</h2>
-		{#if data.dayPhases.length > 0}
-			<div class="mt-1 flex flex-wrap items-center gap-2">
-				{#each data.dayPhases as p, idx}
-					<div class="flex items-center gap-1.5">
-						<PhaseChip name={p.name} size={18} />
-						<span class="text-ink-soft text-sm">{p.name}</span>
-					</div>
-					{#if idx < data.dayPhases.length - 1}
-						<svg class="text-line h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-						</svg>
-					{/if}
-				{/each}
+	<!-- #401 — day Level Header; keyed by day id so an unsaved notes draft is discarded on day navigation -->
+	{#key data.day.id}
+		<LevelHeader
+			title={dayLabel()}
+			span=""
+			chips={data.dayPhases.map((p) => ({
+				label: p.name,
+				href: `/trips/${data.trip.slug}/phases/${p.id}`
+			}))}
+		>
+			{#snippet actions()}
 				{#if data.dayPhases.length > 1}
 					<Pill variant="info" size="sm">Travel day</Pill>
 				{/if}
-			</div>
-		{/if}
-	</div>
+			{/snippet}
+			{#snippet notes()}
+				<NotesEditor
+					notes={data.day.notes}
+					action="?/updateNotes"
+					canEdit={data.membership.role !== 'viewer'}
+					emptyPrompt="Add day notes"
+				/>
+			{/snippet}
+		</LevelHeader>
+	{/key}
 
 	<ServerErrorAlert {form} />
-
-	<!-- Day notes — keyed by day id so unsaved draft is discarded on day navigation -->
-	{#key data.day.id}
-	<Card>
-		<div class="p-3">
-			<div class="flex items-center justify-between">
-				<h3 class="text-moss text-[11px] font-bold tracking-[0.2em] uppercase">Notes</h3>
-				<button
-					type="button"
-					onclick={() => (editingNotes = !editingNotes)}
-					class="text-ink-muted hover:text-ink-soft active:text-ink-soft text-xs"
-				>
-					{editingNotes ? 'Cancel' : 'Edit'}
-				</button>
-			</div>
-			{#if editingNotes}
-				<form
-					method="POST"
-					action="?/updateNotes"
-					use:enhance={() => {
-						notesLoading = true;
-						return async ({ result, update }) => {
-							notesLoading = false;
-							if (result.type === 'success') {
-								editingNotes = false;
-								toast.show('Notes saved');
-							}
-							await update();
-						};
-					}}
-					class="mt-2"
-				>
-					<textarea
-						name="notes"
-						rows="3"
-						class="border-line bg-surface text-ink block w-full rounded-md border px-3 py-2 text-sm"
-					>{data.day.notes}</textarea>
-					<Button type="submit" disabled={notesLoading} loading={notesLoading} variant="primary" size="sm" class="mt-2">
-						{notesLoading ? 'Saving…' : 'Save'}
-					</Button>
-				</form>
-			{:else if data.day.notes}
-				<p class="text-ink-soft mt-1 text-sm whitespace-pre-wrap">{data.day.notes}</p>
-			{:else}
-				<p class="text-ink-muted mt-1 text-xs italic">No notes for this day.</p>
-			{/if}
-		</div>
-	</Card>
-	{/key}
 
 	{#if data.spanningItems.length > 0}
 		<div class="space-y-2">

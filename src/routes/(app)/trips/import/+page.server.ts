@@ -4,6 +4,8 @@ import {
 	validateTripImport,
 	generateImportSlug,
 	planImportPhases,
+	importTripFields,
+	importPhaseFields,
 	resolveImportItemStatus
 } from '$lib/portability/import';
 import type { Day, Phase } from '$lib/types';
@@ -51,17 +53,11 @@ export const actions: Actions = {
 			// seed (like clone does) — creating its own owner row 403s (createRule
 			// null) and its own days collide with idx_days_trip_date(trip,date).
 			const trip = await locals.pb.collection('trips').create({
+				...importTripFields(importData.trip),
 				slug,
-				title: importData.trip.title,
 				start_date: tripStart + ' 00:00:00.000Z',
 				end_date: tripEnd + ' 00:00:00.000Z',
-				timezone: importData.trip.timezone || '',
-				location_summary: importData.trip.location_summary || '',
-				countries: importData.trip.countries || [],
-				photo_album_url: importData.trip.photo_album_url || '',
 				archive_enabled: false,
-				archive_publish_after_days: importData.trip.archive_publish_after_days || 7,
-				auto_approve_suggestions: importData.trip.auto_approve_suggestions ?? true,
 				created_by: locals.user!.id,
 				archived: false
 			});
@@ -82,11 +78,7 @@ export const actions: Actions = {
 			const idByStart = new Map<string, string>([[tripStart, firstPhaseId]]); // planned start → phase id
 			for (const [i, step] of planImportPhases(importData.phases, tripStart, tripEnd).entries()) {
 				const { phase } = step;
-				const fields = {
-					name: phase.name,
-					location: phase.location || '',
-					country_code: phase.country_code || ''
-				};
+				const fields = importPhaseFields(phase);
 				if (step.action === 'first') {
 					await locals.pb.collection('phases').update(firstPhaseId, fields);
 					phaseMap.set(phase.name, firstPhaseId);

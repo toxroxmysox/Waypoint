@@ -238,3 +238,16 @@ describe('summarizeDays — keyed by day id', () => {
 		expect(map.d3.itemCount).toBe(0);
 	});
 });
+
+describe('summarizeDay — plannedCount (#401)', () => {
+	it('counts planned, excludes unplanned-with-day, done, considered', () => {
+		const items = [
+			item({ id: 'a', status: 'planned' }),
+			item({ id: 'b', status: 'planned' }),
+			item({ id: 'c', status: 'unplanned' }),
+			item({ id: 'd', status: 'done' }),
+			item({ id: 'e', status: 'considered' })
+		];
+		expect(summarizeDay(items, days, days[0]).plannedCount).toBe(2);
+	});
+});

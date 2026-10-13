@@ -53,6 +53,23 @@ onRecordUpdateRequest((e) => {
 		}
 	}
 
+	// #401 — Trip Notes are edited like day notes: any non-viewer member.
+	if (!e.hasSuperuserAuth() && e.record.getString('notes') !== original.getString('notes')) {
+		let notesMember;
+		try {
+			notesMember = e.app.findFirstRecordByFilter(
+				'trip_members',
+				'trip = {:tripId} && user = {:uid} && removed_at = ""',
+				{ tripId: e.record.id, uid: authId }
+			);
+		} catch (_) {
+			throw new ForbiddenError('You are not a member of this trip');
+		}
+		if (notesMember.getString('role') === 'viewer') {
+			throw new ForbiddenError("Viewers can't edit the plan.");
+		}
+	}
+
 	// No protected field touched → an ordinary member edit; let it proceed to the
 	// reconcile handler at the MEMBER rule allowance.
 	if (!protectedChanged) {

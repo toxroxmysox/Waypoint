@@ -58,6 +58,7 @@ export const WRITABLE: Record<string, WritableSpec> = {
 			end_date: 'YYYY-MM-DD',
 			timezone: 'IANA zone, e.g. Europe/Lisbon',
 			location_summary: 'short place summary',
+			notes: 'free-text trip notes',
 			countries: 'list of country codes',
 			photo_album_url: 'link to a shared album',
 			auto_approve_suggestions: 'owners only: add traveler suggestions straight away',
@@ -80,7 +81,8 @@ export const WRITABLE: Record<string, WritableSpec> = {
 			name: 'phase name',
 			location: 'where',
 			country_code: 'two-letter country code',
-			start_date: 'YYYY-MM-DD; a phase runs until the next one starts'
+			start_date: 'YYYY-MM-DD; a phase runs until the next one starts',
+			notes: 'free-text notes for the phase'
 		},
 		dateFields: ['start_date'],
 		blockedFields: ['end_date', 'order']

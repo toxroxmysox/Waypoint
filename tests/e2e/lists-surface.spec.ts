@@ -70,9 +70,8 @@ test.describe('Itinerary › Lists (#49)', () => {
 		await expect(page.getByText('Packing').filter({ visible: true }).first()).toBeVisible();
 		await expect(page.getByText('Whole trip').filter({ visible: true }).first()).toBeVisible();
 
-		// --- Overview previews the trip-scoped list (#51) ---
+		// --- #401: the Overview no longer previews lists; the Lists tab is their home ---
 		await page.goto(`${BASE}/trips/${tripSlug}`);
-		await expect(page.getByText('Whole-trip lists').filter({ visible: true }).first()).toBeVisible();
-		await expect(page.getByText('Packing').filter({ visible: true }).first()).toBeVisible();
+		await expect(page.getByText('Whole-trip lists').filter({ visible: true })).toHaveCount(0);
 	});
 });

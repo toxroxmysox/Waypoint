@@ -1,31 +1,45 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Item, Phase, Vote } from '$lib/types';
+import type { Day, Item, Phase, Vote } from '$lib/types';
+import { toDateOnly } from '$lib/itinerary/multi-day';
 import { validateNewPhaseStart, validateMovePhaseStart, retilePhases, toDay } from '$lib/itinerary/phase-tiling';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
 	const { trip, membership, phases } = await parent();
 
-	// Launch-card data: how many items the member hasn't rated yet, and the first
-	// phase (in order) that still has unrated cards to kick the deck off from.
-	const items = await locals.pb.collection('items').getFullList<Item>({
-		filter: `trip = "${trip.id}" && (status = "planned" || status = "unplanned")`,
-		fields: 'id,phase'
-	});
-	const myVotes = await locals.pb.collection('votes').getFullList<Vote>({
-		filter: `trip = "${trip.id}" && member = "${membership.id}"`,
-		fields: 'item'
-	});
-	const votedItemIds = new Set(myVotes.map((v) => v.item));
-
-	const unratedByPhase: Record<string, number> = {};
-	let unratedTotal = 0;
+	// #391/#401 — one Phase Overview card per phase: its days (chips, with a dot
+	// when a day has planned items), its idea count and how many this member has
+	// left to rate. One query each for days, items and votes, bucketed in memory.
+	const [days, items, myVotes] = await Promise.all([
+		locals.pb.collection('days').getFullList<Day>({ filter: `trip = "${trip.id}"`, sort: 'date' }),
+		locals.pb.collection('items').getFullList<Item>({
+			filter: `trip = "${trip.id}" && (status = "planned" || status = "unplanned")`,
+			fields: 'id,phase,day,status,end_date'
+		}),
+		locals.pb.collection('votes').getFullList<Vote>({
+			filter: `trip = "${trip.id}" && member = "${membership.id}"`,
+			fields: 'item'
+		})
+	]);
+	const voted = new Set(myVotes.map((v) => v.item));
+	const plannedByDayAll: Record<string, number> = {};
 	for (const it of items) {
-		if (votedItemIds.has(it.id)) continue;
-		unratedByPhase[it.phase] = (unratedByPhase[it.phase] ?? 0) + 1;
-		unratedTotal++;
+		if (it.status === 'planned' && it.day && !toDateOnly(it.end_date ?? '')) {
+			plannedByDayAll[it.day] = (plannedByDayAll[it.day] ?? 0) + 1;
+		}
 	}
-	const launchPhaseId = (phases as Phase[]).find((p) => (unratedByPhase[p.id] ?? 0) > 0)?.id ?? null;
+	const cards = (phases as Phase[]).map((phase) => {
+		const phaseDays = days.filter((d) => (d.phases ?? []).includes(phase.id));
+		// "N ideas · M to rate": M counts the same ideas N does, unvoted by this member.
+		const ideas = items.filter((it) => it.phase === phase.id && it.status === 'unplanned' && !it.day);
+		return {
+			phase,
+			days: phaseDays,
+			plannedByDay: Object.fromEntries(phaseDays.map((d) => [d.id, plannedByDayAll[d.id] ?? 0])),
+			ideaCount: ideas.length,
+			unratedCount: ideas.filter((it) => !voted.has(it.id)).length
+		};
+	});
 
 	// #196 — catch-all for pre-existing orphans: unplanned items with no phase
 	// render on no surface (every parking lot is phase-scoped). Surface them here
@@ -37,7 +51,7 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 		sort: 'title'
 	});
 
-	return { trip, phases, unratedTotal, launchPhaseId, orphans };
+	return { trip, phases, cards, orphans };
 };
 
 export const actions: Actions = {

@@ -370,11 +370,6 @@
 						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /></svg>
 					</button>
 				{/if}
-				<!-- Open Phase Detail (days + this phase's parking lot / add idea). The name is
-				     the rename target, so navigation lives on this explicit chevron. -->
-				<a href="/trips/{trip.slug}/phases/{row.id}" class="text-ink-muted hover:text-ink-soft active:text-ink-soft shrink-0 p-1" aria-label="Open {row.name}">
-					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
-				</a>
 			</div>
 			{#if row.index < rows.length - 1}
 				<div class="text-ink-soft flex items-center gap-2 border-y border-dashed border-line py-[7px] pl-[23px] text-[9.5px] font-bold tracking-[0.18em]">
