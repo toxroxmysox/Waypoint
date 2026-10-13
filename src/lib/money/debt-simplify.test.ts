@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeBalances, simplifyDebts, type DebtEdge } from './debt-simplify';
+import { computeBalances, simplifyDebts } from './debt-simplify';
 import type { Expense, Settlement } from '$lib/types';
 
 function makeExpense(overrides: Partial<Expense> & Pick<Expense, 'paid_by' | 'amount_usd' | 'split_mode' | 'split_data'>): Expense {

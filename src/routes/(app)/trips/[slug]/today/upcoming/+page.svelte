@@ -61,7 +61,7 @@
 			</div>
 		</Card>
 	{:else}
-		{#each tripMode.timeline.upcomingDays as group}
+		{#each tripMode.timeline.upcomingDays as group (group.day.id)}
 			{@const gaps = freeTimeGaps(group.items)}
 			<section class="space-y-2">
 				<h2 class="font-display text-ink text-lg font-semibold">{dayLabel(group.day.date)}</h2>

@@ -52,7 +52,7 @@ routerAdd('POST', '/api/dev/auth-bypass', (e) => {
 			user.set('name', 'E2E Test User');
 			user.set('verified', true);
 			e.app.save(user);
-		} catch (saveErr) {
+		} catch (_saveErr) {
 			user = e.app.findAuthRecordByEmail('users', data.email);
 		}
 	}
@@ -102,7 +102,7 @@ routerAdd('POST', '/api/dev/seed-baseline-trip', (e) => {
 			user.set('name', 'E2E Test User');
 			user.set('verified', true);
 			e.app.save(user);
-		} catch (saveErr) {
+		} catch (_saveErr) {
 			user = e.app.findAuthRecordByEmail('users', email);
 		}
 	}
@@ -186,7 +186,7 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 				user.set('name', 'E2E ' + role);
 				user.set('verified', true);
 				e.app.save(user);
-			} catch (saveErr) {
+			} catch (_saveErr) {
 				user = e.app.findAuthRecordByEmail('users', email);
 			}
 		}
@@ -817,7 +817,7 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 			user.set('name', 'E2E Test User');
 			user.set('verified', true);
 			e.app.save(user);
-		} catch (saveErr) {
+		} catch (_saveErr) {
 			user = e.app.findAuthRecordByEmail('users', email);
 		}
 	}
@@ -1522,7 +1522,7 @@ routerAdd('POST', '/api/dev/cotraveler-fixture', (e) => {
 				user.setPassword($security.randomString(40));
 				user.set('verified', true);
 				e.app.save(user);
-			} catch (saveErr) {
+			} catch (_saveErr) {
 				user = e.app.findAuthRecordByEmail('users', email);
 			}
 		}

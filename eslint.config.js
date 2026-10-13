@@ -37,8 +37,58 @@ export default defineConfig(
 		}
 	},
 	{
-		// Override or add rule settings here, such as:
-		// 'svelte/button-has-type': 'error'
-		rules: {}
+		rules: {
+			// `_`-prefixed names are deliberately unused: PB's `catch (_) {}` idiom, placeholder args.
+			'@typescript-eslint/no-unused-vars': [
+				'error',
+				{
+					argsIgnorePattern: '^_',
+					varsIgnorePattern: '^_',
+					caughtErrorsIgnorePattern: '^_',
+					destructuredArrayIgnorePattern: '^_'
+				}
+			],
+			// Empty catch is a deliberate "ignore this failure" across hooks, tests and scripts.
+			'no-empty': ['error', { allowEmptyCatch: true }],
+			// `let x = null; try { x = load() } catch {}` keeps a defensive default; also
+			// false-positives on `dirty = $bindable(false)` props.
+			'no-useless-assignment': 'off',
+			// Served at the root with no `paths.base`: resolve() would be 115 sites of
+			// churn with no behaviour change. Revisit if a base path is ever set.
+			'svelte/no-navigation-without-resolve': 'off',
+			// Flags local, never-reactive Map/Set/URLSearchParams and the deliberate
+			// `state = new Set(state)` replace-to-trigger pattern.
+			'svelte/prefer-svelte-reactivity': 'off'
+		}
+	},
+	{
+		// PocketBase JSVM (goja) hooks + migrations: runtime idioms, not ordinary TS.
+		files: ['backend/pb_hooks/**', 'backend/pb_migrations/**'],
+		rules: {
+			// `/// <reference path="../pb_data/types.d.ts" />` is how hooks get their types.
+			'@typescript-eslint/triple-slash-reference': 'off',
+			// require(`${__hooks}/x.js`) is goja's only module loading.
+			'@typescript-eslint/no-require-imports': 'off'
+		}
+	},
+	{
+		// Untyped API responses and partial fixtures in specs and seed helpers.
+		files: ['tests/**', '**/*.test.ts'],
+		rules: { '@typescript-eslint/no-explicit-any': 'off' }
+	},
+	{
+		// Migrations are append-only history: findings there are never actionable.
+		files: ['backend/pb_migrations/**'],
+		rules: {
+			'@typescript-eslint/no-unused-vars': 'off',
+			'no-empty': 'off'
+		}
+	},
+	{
+		// Node test scripts: `cond ? pass(..) : fail(..)` is the assertion idiom.
+		files: ['backend/test-*.mjs'],
+		rules: {
+			'@typescript-eslint/no-unused-expressions': ['error', { allowTernary: true }]
+		}
 	}
 );

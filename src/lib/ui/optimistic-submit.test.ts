@@ -23,7 +23,6 @@ function harness() {
 	});
 	function fire() {
 		const cancel = vi.fn();
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const after = submit({ cancel } as any) as
 			| ((o: { result: ActionResult; update: (o?: unknown) => Promise<void> }) => Promise<void>)
 			| undefined;

@@ -15,11 +15,9 @@ import { renderDigestEmail as tsRender, formatDigestDay as tsFormatDay } from '.
 // hook file. Evaluate it the way PB's goja require() does: wrap in a CJS
 // module shim. (Renaming to .cjs would desync it from the goja-verified path.)
 const corePath = join(dirname(fileURLToPath(import.meta.url)), '../../../backend/pb_hooks/digest-core.js');
-/* eslint-disable @typescript-eslint/no-explicit-any */
 const coreModule = { exports: {} as any };
 new Function('module', 'exports', readFileSync(corePath, 'utf8'))(coreModule, coreModule.exports);
 const core = coreModule.exports;
-/* eslint-enable @typescript-eslint/no-explicit-any */
 
 const items: ts.DigestSourceItem[] = [
 	{

@@ -6,7 +6,6 @@
 	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
 	import Button from '$lib/ui/Button.svelte';
 	import Card from '$lib/ui/Card.svelte';
-	import { titleCase } from '$lib/shell/format';
 	import { moneyTabs } from '$lib/money/money-tabs';
 	import TypeIcon from '$lib/ui/TypeIcon.svelte';
 	import type { Notification, BudgetCategory, ExpenseCategory, ItemType } from '$lib/types';
@@ -159,7 +158,7 @@
 		<input type="hidden" name="categories" value={buildCategoriesJson()} />
 
 		<div class="space-y-3">
-			{#each cats as cat, idx}
+			{#each cats as cat, idx (idx)}
 				{@const spent = data.spentByCategory[cat.category] ?? 0}
 				{@const planned = data.plannedByCategory[cat.category] ?? 0}
 				{@const meta = categoryMeta[cat.category]}

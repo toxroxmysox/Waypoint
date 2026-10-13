@@ -3,7 +3,7 @@ import { TokenBucket, TtlCache } from './rate-limit';
 
 describe('TokenBucket', () => {
 	it('allows up to the burst ceiling (capacity) immediately, then denies', () => {
-		let now = 0;
+		const now = 0;
 		const bucket = new TokenBucket({
 			capacity: 240,
 			refillPerSecond: 2, // 120/min
@@ -45,7 +45,7 @@ describe('TokenBucket', () => {
 	});
 
 	it('isolates buckets per key (one user cannot drain another)', () => {
-		let now = 0;
+		const now = 0;
 		const bucket = new TokenBucket({ capacity: 3, refillPerSecond: 1, clock: () => now });
 
 		expect(bucket.tryRemove('a')).toBe(true);
@@ -98,7 +98,7 @@ describe('TtlCache', () => {
 	});
 
 	it('evicts oldest-inserted entries past maxEntries', () => {
-		let now = 0;
+		const now = 0;
 		const cache = new TtlCache<number>({ ttlMs: 1_000_000, maxEntries: 2, clock: () => now });
 		cache.set('a', 1);
 		cache.set('b', 2);

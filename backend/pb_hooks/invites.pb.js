@@ -126,7 +126,7 @@ routerAdd('POST', '/api/invites/create', (e) => {
 
 	try {
 		e.app.save(invite);
-	} catch (err) {
+	} catch (_err) {
 		// Most likely the unique (trip, email) constraint — invite already exists.
 		throw new BadRequestError(
 			'An invite for that email already exists on this trip; revoke it first'
@@ -1146,7 +1146,7 @@ routerAdd('POST', '/api/invites/create-for-user', (e) => {
 
 	try {
 		e.app.save(invite);
-	} catch (err) {
+	} catch (_err) {
 		throw new BadRequestError('They already have an open invite to this trip');
 	}
 

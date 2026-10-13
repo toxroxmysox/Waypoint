@@ -95,7 +95,7 @@ export function currentPhaseId(input: CurrentPhaseInput): string {
 	// toward, today or on a later day. Skip chained transit legs (a connecting
 	// flight) to the first real destination.
 	if (isTransit(anchor)) {
-		const arriving = nextArrivingItem(anchor, todayItems, forwardItems, now);
+		const arriving = nextArrivingItem(anchor, todayItems, forwardItems);
 		if (arriving) return arriving.phase;
 		// No destination yet recorded (still en route, nothing booked beyond) —
 		// fall back to the day's own phase rather than the departing transit phase.
@@ -113,8 +113,7 @@ export function currentPhaseId(input: CurrentPhaseInput): string {
 function nextArrivingItem(
 	transit: Item,
 	todayItems: Item[],
-	forwardItems: Item[],
-	now: Date
+	forwardItems: Item[]
 ): Item | null {
 	const transitStart = parseDateTime(transit.start_time).getTime();
 

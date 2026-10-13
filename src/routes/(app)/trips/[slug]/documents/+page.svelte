@@ -109,7 +109,7 @@
 					</div>
 					<div>
 						{#each itemCodes as entry (entry.item_id)}
-							{#each entry.codes as code}
+							{#each entry.codes as code, i (i)}
 								<Row
 									type={entry.item_type}
 									title={entry.item_title}

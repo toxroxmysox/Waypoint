@@ -37,6 +37,7 @@
 				<p class="text-ink-soft mt-1 text-sm">{formatDateRange(d.dateStart, d.dateEnd)}</p>
 			{/if}
 			<p class="text-ink-muted mt-2 text-[12px]">
+				<!-- eslint-disable-next-line svelte/no-useless-mustaches -- {' '} keeps the space Svelte would trim at the block start -->
 				Chosen by {d.chooserName}{#if decidedOn(d.decidedAt)}{' '}on {decidedOn(d.decidedAt)}{/if}.
 			</p>
 		</div>

@@ -273,7 +273,7 @@
 		<fieldset class="mb-4">
 			<legend class="mb-1.5 text-xs font-medium text-ink-muted">Category</legend>
 			<div class="flex flex-wrap gap-1.5">
-				{#each categories as cat}
+				{#each categories as cat (cat.value)}
 					<button
 						type="button"
 						class="rounded-full px-3 py-1 text-xs font-medium transition-colors {category === cat.value ? 'bg-ink text-paper' : 'bg-surface-2 text-ink-soft hover:bg-line active:bg-line'}"
@@ -302,7 +302,7 @@
 				bind:value={paidBy}
 				class="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-moss focus:outline-none"
 			>
-				{#each members as member}
+				{#each members as member (member.id)}
 					<option value={member.id}>{memberName(member.id)}</option>
 				{/each}
 			</select>
@@ -346,7 +346,7 @@
 
 			{#if splitMode === 'equal'}
 				<div class="space-y-1.5">
-					{#each members as member}
+					{#each members as member (member.id)}
 						<label class="flex items-center gap-2 cursor-pointer">
 							<input
 								type="checkbox"
@@ -365,7 +365,7 @@
 				</div>
 			{:else}
 				<div class="space-y-2">
-					{#each members as member}
+					{#each members as member (member.id)}
 						<div class="flex items-center gap-2">
 							<span class="min-w-[80px] text-sm text-ink truncate">{memberName(member.id)}</span>
 							<input
@@ -399,7 +399,7 @@
 			<fieldset>
 				<legend class="mb-1.5 text-xs font-medium text-ink-muted">Category</legend>
 				<div class="flex flex-wrap gap-1.5">
-					{#each categories as cat}
+					{#each categories as cat (cat.value)}
 						<button
 							type="button"
 							class="rounded-full px-3 py-1 text-xs font-medium transition-colors {category === cat.value ? 'bg-ink text-paper' : 'bg-surface-2 text-ink-soft hover:bg-line active:bg-line'}"
@@ -428,7 +428,7 @@
 					bind:value={paidBy}
 					class="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-moss focus:outline-none"
 				>
-					{#each members as member}
+					{#each members as member (member.id)}
 						<option value={member.id}>{memberName(member.id)}</option>
 					{/each}
 				</select>

@@ -91,7 +91,7 @@ async function commitClaimed(
 		try {
 			await batch.send({ requestKey: null });
 		} catch (err) {
-			throw new Error(batchErrorText(err, records.map((c) => c.title)));
+			throw new Error(batchErrorText(err, records.map((c) => c.title)), { cause: err });
 		}
 	}
 
@@ -114,7 +114,7 @@ async function commitClaimed(
 			committed.push({ ...c, committed: true, suggestionId: res.suggestion_id });
 		} catch (err) {
 			committed.push({ ...c, committed: false });
-			if (!records.length && committed.every((x) => !x.committed)) throw new Error(pbErrorText(err));
+			if (!records.length && committed.every((x) => !x.committed)) throw new Error(pbErrorText(err), { cause: err });
 		}
 	}
 

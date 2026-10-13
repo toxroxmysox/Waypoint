@@ -34,7 +34,7 @@
 				assign it a phase (or a day) to file it back.
 			</p>
 			<ul class="space-y-1">
-				{#each data.orphans as orphan}
+				{#each data.orphans as orphan (orphan.id)}
 					<li>
 						<a
 							href={withOrigin(`/trips/${data.trip.slug}/items/${orphan.id}/edit`, page.url.pathname)}

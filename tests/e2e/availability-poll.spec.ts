@@ -1,4 +1,4 @@
-import { test, expect, type Browser } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { E2E_BASE } from './e2e-env';
 
 // #271 / ADR-0023 — the availability wedge end to end:

@@ -135,7 +135,7 @@
 		<ul
 			class="border-line bg-surface absolute z-modal mt-1 max-h-60 w-full overflow-y-auto rounded-md border shadow-lg"
 		>
-			{#each predictions as suggestion}
+			{#each predictions as suggestion (suggestion.placePrediction.placeId)}
 				<li>
 					<button
 						type="button"

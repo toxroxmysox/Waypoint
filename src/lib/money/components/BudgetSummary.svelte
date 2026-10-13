@@ -73,7 +73,7 @@
 
 {#if expanded}
 	<div class="mb-4 space-y-1.5">
-		{#each budget.categories as cat}
+		{#each budget.categories as cat, i (i)}
 			{@const spent = spentByCategory[cat.category] ?? 0}
 			{#if cat.total > 0}
 				<div class="flex items-center gap-2 rounded-md bg-surface-2/50 px-3 py-2">
