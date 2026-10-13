@@ -14,27 +14,23 @@
 	import type { DayMenuRow } from '$lib/itinerary/phase-logistics';
 
 	// #401 — Do this → On which day? → planned. Two taps from an idea to a day.
+	// One sheet per parking lot; the idea card's "Do this" pill opens it. It lives
+	// outside the cards: a fixed sheet inside a card's z-10 layer could be covered.
 	let {
 		itemId,
 		rows,
+		open = $bindable(false),
 		onPlanned
 	}: {
 		itemId: string;
 		rows: DayMenuRow[];
+		open: boolean;
 		onPlanned: (p: PlannedIdea) => void;
 	} = $props();
 
-	let open = $state(false);
 	let busy = $state(false);
 </script>
 
-<button
-	type="button"
-	onclick={() => (open = true)}
-	class="text-moss hover:bg-moss-tint min-h-11 shrink-0 rounded-full px-3 text-sm font-semibold"
->
-	Do this
-</button>
 
 <BottomSheet bind:open title="On which day?">
 	<form

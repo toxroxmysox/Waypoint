@@ -47,6 +47,8 @@
 		c.kind === 'item' ? c.item.type : String(c.suggestion.payload?.type ?? 'activity');
 	const scores = $derived(Object.fromEntries(cards.map((c) => [c.id, scoreVotes(c.votes)])));
 	const groups = $derived(ideaGroups(cards, typeOf, scores));
+	let planningId = $state('');
+	let planOpen = $state(false);
 </script>
 
 <div class="space-y-3" data-phase-ideas>
@@ -55,13 +57,26 @@
 			<IdeaGroupHeading type={group.type} />
 			{#each group.items as card (card.id)}
 				{#if card.kind === 'item'}
-					<div data-idea-id={card.item.id}>
-						<IdeaCard item={card.item} {tripSlug} votes={card.votes} {members} {myMemberId} canVote={canVoteGhosts} />
-						{#if canPlanIds.has(card.item.id) && planRows.length > 0}
-							<div class="-mt-1 flex justify-end">
-								<PlanOnDayMenu itemId={card.item.id} rows={planRows} {onPlanned} />
-							</div>
-						{/if}
+					{@const itemId = card.item.id}
+					<div data-idea-id={itemId}>
+						{#snippet doThis()}
+							<button
+								type="button"
+								onclick={() => ((planningId = itemId), (planOpen = true))}
+								class="hit-44 border-moss/30 text-moss hover:bg-moss-tint rounded-full border px-2.5 py-0.5 text-xs font-semibold"
+							>
+								Do this
+							</button>
+						{/snippet}
+						<IdeaCard
+							item={card.item}
+							{tripSlug}
+							votes={card.votes}
+							{members}
+							{myMemberId}
+							canVote={canVoteGhosts}
+							action={canPlanIds.has(itemId) && planRows.length > 0 ? doThis : undefined}
+						/>
 					</div>
 				{:else}
 					<!-- #248 — a pending suggestion: dotted, votable, in its type group. -->
@@ -71,3 +86,7 @@
 		</section>
 	{/each}
 </div>
+
+{#if planRows.length > 0}
+	<PlanOnDayMenu itemId={planningId} rows={planRows} bind:open={planOpen} {onPlanned} />
+{/if}
