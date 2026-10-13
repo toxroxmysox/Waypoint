@@ -2,12 +2,10 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { PUBLIC_PB_URL } from '$env/static/public';
 import {
-	canvasExtent,
 	daysInExtent,
 	rollupByDay,
 	myValueByDay,
-	type AvailabilityCell,
-	type AvailabilityValue
+	type AvailabilityCell
 } from '$lib/ideation/availability';
 import { toDay } from '$lib/ideation/scenario-planning';
 import type { PollDay } from '$lib/ideation/availability-poll.server';

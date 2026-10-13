@@ -210,7 +210,7 @@
 			</div>
 		{:else}
 			<div class="space-y-2">
-				{#each visibleExpenses as expense}
+				{#each visibleExpenses as expense (expense.id)}
 					{@const payerName = memberName(expense.paid_by)}
 					<Card>
 						<button type="button" class="flex w-full items-center gap-3 p-3 text-left" onclick={() => openExpenseDetail(expense)}>
@@ -236,7 +236,7 @@
 
 		{#if myDebts.length > 0}
 			<div class="mb-4 flex gap-3 overflow-x-auto pb-1 -mx-4 px-4">
-				{#each myDebts as debt}
+				{#each myDebts as debt, i (i)}
 					{@const iOwe = debt.from === data.membership.id}
 					<div class="flex-shrink-0 rounded-lg border px-4 py-3 min-w-[200px] {iOwe ? 'border-accent/30 bg-accent/5' : 'border-moss/30 bg-moss-tint'}">
 						<p class="text-xs font-medium {iOwe ? 'text-accent' : 'text-moss'}">
@@ -266,7 +266,7 @@
 		{/if}
 
 		<div class="space-y-2">
-			{#each data.expenses as expense}
+			{#each data.expenses as expense (expense.id)}
 				{@const payerName = memberName(expense.paid_by)}
 				<Card>
 					<button type="button" class="flex w-full items-center gap-3 p-3 text-left" onclick={() => openExpenseDetail(expense)}>

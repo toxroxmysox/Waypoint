@@ -33,6 +33,7 @@
 
 	// Re-seed the selection whenever the sheet targets a different task.
 	$effect(() => {
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- read to track taskId
 		taskId;
 		selected = currentAssignee;
 	});

@@ -277,7 +277,7 @@
 
 	<!-- weekday header -->
 	<div class="mb-1.5 grid grid-cols-7 gap-[5px]">
-		{#each WEEKDAYS as wd}
+		{#each WEEKDAYS as wd, i (i)}
 			<span class="text-ink-muted text-center text-[9px] font-bold tracking-[0.1em]">{wd}</span>
 		{/each}
 	</div>
@@ -295,8 +295,8 @@
 		onpointerup={onGridPointerUp}
 		onpointercancel={onGridPointerUp}
 	>
-		{#each model.weeks as week}
-			{#each week as cell}
+		{#each model.weeks as week, wi (wi)}
+			{#each week as cell, ci (ci)}
 				{#if !cell}
 					<div></div>
 				{:else if cell.isTravelDay}

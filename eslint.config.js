@@ -49,7 +49,16 @@ export default defineConfig(
 				}
 			],
 			// Empty catch is a deliberate "ignore this failure" across hooks, tests and scripts.
-			'no-empty': ['error', { allowEmptyCatch: true }]
+			'no-empty': ['error', { allowEmptyCatch: true }],
+			// `let x = null; try { x = load() } catch {}` keeps a defensive default; also
+			// false-positives on `dirty = $bindable(false)` props.
+			'no-useless-assignment': 'off',
+			// Served at the root with no `paths.base`: resolve() would be 115 sites of
+			// churn with no behaviour change. Revisit if a base path is ever set.
+			'svelte/no-navigation-without-resolve': 'off',
+			// Flags local, never-reactive Map/Set/URLSearchParams and the deliberate
+			// `state = new Set(state)` replace-to-trigger pattern.
+			'svelte/prefer-svelte-reactivity': 'off'
 		}
 	},
 	{
@@ -63,13 +72,8 @@ export default defineConfig(
 		}
 	},
 	{
-		// `let rows = []; try { rows = find() } catch (_) {}` keeps a defensive default.
-		files: ['backend/**', 'tests/**', 'scripts/**'],
-		rules: { 'no-useless-assignment': 'off' }
-	},
-	{
-		// Untyped API responses in specs and seed helpers.
-		files: ['tests/**'],
+		// Untyped API responses and partial fixtures in specs and seed helpers.
+		files: ['tests/**', '**/*.test.ts'],
 		rules: { '@typescript-eslint/no-explicit-any': 'off' }
 	},
 	{

@@ -1,5 +1,4 @@
 import { formatCalendarDate } from '$lib/shell/format';
-import { page } from '$app/state';
 
 export type TripSection = 'itinerary' | 'money' | 'members' | 'documents' | 'more';
 

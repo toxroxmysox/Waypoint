@@ -411,7 +411,7 @@
 								required
 								class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-ink"
 							>
-								{#each allowedRoles as role}
+								{#each allowedRoles as role (role)}
 									<option value={role}>{roleLabel[role]}</option>
 								{/each}
 							</select>
@@ -471,7 +471,7 @@
 								bind:value={coTravelerRole}
 								class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 							>
-								{#each allowedRoles as role}
+								{#each allowedRoles as role (role)}
 									<option value={role}>{roleLabel[role]}</option>
 								{/each}
 							</select>
@@ -575,7 +575,7 @@
 							required
 							class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 						>
-							{#each allowedRoles as role}
+							{#each allowedRoles as role (role)}
 								<option value={role}>{roleLabel[role]}</option>
 							{/each}
 						</select>

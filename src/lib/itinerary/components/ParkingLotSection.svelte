@@ -14,7 +14,6 @@
 	// lives INSIDE the wrapper of the first idea of its run.
 	let {
 		items,
-		phases,
 		tripSlug,
 		votesByItem = {},
 		members = [],

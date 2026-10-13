@@ -2,7 +2,6 @@
 	import './layout.css';
 	import { onMount } from 'svelte';
 	import { afterNavigate } from '$app/navigation';
-	import { page } from '$app/stores';
 	import A2HSBanner from '$lib/shell/components/A2HSBanner.svelte';
 	import Toast from '$lib/ui/Toast.svelte';
 	import { page as pageState } from '$app/state';

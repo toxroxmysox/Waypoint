@@ -16,8 +16,6 @@
 		gold: { bg: 'var(--color-gold-tint)', ink: 'var(--color-gold-deep, #7a5a1e)' },
 		clay: { bg: 'var(--color-clay-tint)', ink: 'var(--color-clay-deep, #7a3a2e)' }
 	};
-
-	const total = $derived(sketch.reduce((sum, s) => sum + Math.max(1, Math.round(s.days || 0)), 0));
 </script>
 
 {#if sketch.length > 0}

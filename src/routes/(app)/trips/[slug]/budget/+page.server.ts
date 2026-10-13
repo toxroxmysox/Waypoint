@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { TripBudget, Expense, BudgetCategory, ExpenseCategory, Item } from '$lib/types';
+import type { TripBudget, Expense, BudgetCategory, Item } from '$lib/types';
 import { plannedByCategory } from '$lib/money/planned-by-category';
 
 const DEFAULT_CATEGORIES: BudgetCategory[] = [

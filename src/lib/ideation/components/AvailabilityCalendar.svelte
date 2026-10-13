@@ -16,8 +16,6 @@
 
 	let {
 		weeks,
-		members,
-		myMemberId,
 		activeMemberCount,
 		canPaint = true
 	}: {
@@ -40,10 +38,6 @@
 	}
 
 	const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-	const memberName = (id: string) => {
-		const m = members.find((x) => x.id === id);
-		return (m?.display_name || m?.placeholder_name || m?.expand?.user?.name || 'Someone') as string;
-	};
 
 	// --- persist plumbing: a hidden enhance form posts a JSON delta list ---
 	let paintForm = $state<HTMLFormElement>();

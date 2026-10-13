@@ -34,7 +34,7 @@
 				class="border-line bg-surface text-ink w-full rounded-md border px-3 py-2 text-sm"
 			>
 				<option value="">Whole trip</option>
-				{#each itemOptions as opt}
+				{#each itemOptions as opt (opt.id)}
 					<option value={opt.id}>{opt.title}</option>
 				{/each}
 			</select>

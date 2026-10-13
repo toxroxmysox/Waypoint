@@ -9,7 +9,6 @@
 	import { tripToday, tripTz } from '$lib/shell/trip-time';
 	import type { Day, Item } from '$lib/types';
 	import type { Memory } from '$lib/memory/types';
-	import { untrack } from 'svelte';
 
 	let { data } = $props();
 

@@ -114,7 +114,7 @@
 		<Card>
 			<div class="space-y-3 p-4">
 				<p class="text-ink-soft text-sm font-medium">Clone items by type</p>
-				{#each itemTypes as type}
+				{#each itemTypes as type (type)}
 					{@const count = data.itemTypeCounts[type] ?? 0}
 					{#if count > 0}
 						<div class="flex items-center gap-3">

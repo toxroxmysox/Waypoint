@@ -82,7 +82,7 @@
 				class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 			>
 				<option value="">No day (unscheduled)</option>
-				{#each days as d}
+				{#each days as d (d.id)}
 					<option value={d.id}>{dayLabel(d)}</option>
 				{/each}
 			</select>
@@ -101,7 +101,7 @@
 					class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 				>
 					<option value="">{phaseRequired ? 'Select a phase…' : 'No phase'}</option>
-					{#each phases as p}
+					{#each phases as p (p.id)}
 						<option value={p.id}>{p.name}</option>
 					{/each}
 				</select>

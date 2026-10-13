@@ -1,4 +1,4 @@
-import { fail, redirect, isRedirect } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { TripMember } from '$lib/types';
 import { loadAvailabilityPoll } from '$lib/ideation/availability-poll.server';

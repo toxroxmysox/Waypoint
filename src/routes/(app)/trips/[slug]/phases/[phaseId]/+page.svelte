@@ -10,7 +10,7 @@
 	import FAB from '$lib/shell/components/FAB.svelte';
 	import IdeaCaptureSheet from '$lib/itinerary/components/IdeaCaptureSheet.svelte';
 	import { toast } from '$lib/shell/stores/toast';
-	import { titleCase, formatCalendarDate } from '$lib/shell/format';
+	import { titleCase } from '$lib/shell/format';
 	import { tripToday, tripTz } from '$lib/shell/trip-time';
 	import { page } from '$app/state';
 	import { afterNavigate, replaceState } from '$app/navigation';
@@ -270,7 +270,7 @@
 				</div>
 			{:else}
 				<div class="space-y-1.5">
-					{#each data.phaseDays as day}
+					{#each data.phaseDays as day (day.id)}
 						<DayCard
 							{day}
 							href="/trips/{data.trip.slug}/days/{day.id}"
@@ -345,7 +345,7 @@
 									bind:value={ideaType}
 									class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 								>
-									{#each ideaTypes as t}
+									{#each ideaTypes as t (t)}
 										<option value={t}>{titleCase(t)}</option>
 									{/each}
 								</select>

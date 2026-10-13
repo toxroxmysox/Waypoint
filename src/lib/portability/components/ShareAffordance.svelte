@@ -17,7 +17,6 @@
 	let {
 		url = '',
 		status,
-		archiveEnabled = false,
 		publishDate = '',
 		showBudget = false,
 		today = '',
