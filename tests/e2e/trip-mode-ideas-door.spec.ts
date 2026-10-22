@@ -73,7 +73,7 @@ test.describe('Trip Mode Door 1 — ideas for now (#245)', () => {
 		// --- Park an idea in the trip's (auto-seeded "Trip") phase. A new trip
 		//     seeds one phase spanning the whole range (#217), so today's current
 		//     phase IS that phase → the idea is in scope for Door 1. ---
-		await page.goto(`${BASE_URL}/trips/${tripSlug}/phases`);
+		await page.goto(`${BASE_URL}/trips/${tripSlug}/phases`, { waitUntil: 'networkidle' });
 		const phaseLink = page.locator(`a[href^="/trips/${tripSlug}/phases/"]:visible`).first();
 		await expect(phaseLink).toBeVisible({ timeout: 5000 });
 		await phaseLink.click();
@@ -92,7 +92,7 @@ test.describe('Trip Mode Door 1 — ideas for now (#245)', () => {
 		});
 
 		// --- Now: free-time / nothing-else Focus, with the ideas strip below it. ---
-		await page.goto(`${BASE_URL}/trips/${tripSlug}/now`);
+		await page.goto(`${BASE_URL}/trips/${tripSlug}/now`, { waitUntil: 'networkidle' });
 		await page.waitForURL('**/now');
 
 		// The door is open. With the pinned noon tz an empty today is `nothing-else-planned`
@@ -109,7 +109,7 @@ test.describe('Trip Mode Door 1 — ideas for now (#245)', () => {
 		// reload once if the strip hasn't rendered yet (the strip is loader-driven, idempotent).
 		const strip = page.locator('section[aria-label="Ideas for now"]:visible').first();
 		if (!(await strip.isVisible().catch(() => false))) {
-			await page.reload();
+			await page.reload({ waitUntil: 'networkidle' });
 			await page.waitForURL('**/now');
 		}
 		await expect(strip).toBeVisible({ timeout: 7000 });

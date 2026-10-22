@@ -64,7 +64,7 @@ test.describe('Ideas grouped by type (#424)', () => {
 
 	test('Phase Detail groups the phase ideas the same way', async ({ page }) => {
 		await open(page, 768);
-		await page.goto(`${BASE}/trips/${SLUG}/phases/${phaseId}`);
+		await page.goto(`${BASE}/trips/${SLUG}/phases/${phaseId}`, { waitUntil: 'networkidle' });
 		await expect(page.locator('[data-phase-ideas]:visible [data-idea-heading]')).toHaveText(HEADINGS);
 	});
 

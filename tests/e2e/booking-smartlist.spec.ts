@@ -44,7 +44,7 @@ test.describe('Booking Smart List (#50)', () => {
 		await page.waitForURL(/\/days\//, { timeout: 10000 });
 
 		// --- Booking smart list shows the unbooked lodging row ---
-		await page.goto(`${BASE}/trips/${tripSlug}/lists/booking`);
+		await page.goto(`${BASE}/trips/${tripSlug}/lists/booking`, { waitUntil: 'networkidle' });
 		await expect(page.getByText('Grand Hotel').filter({ visible: true }).first()).toBeVisible();
 		await expect(page.getByText('A lens over your itinerary.').filter({ visible: true }).first()).toBeVisible();
 
@@ -54,7 +54,7 @@ test.describe('Booking Smart List (#50)', () => {
 		await expect(page.getByText('All booked. Nothing left to reserve.').filter({ visible: true }).first()).toBeVisible();
 
 		// --- The source item is now booked (pill on its detail) ---
-		await page.goto(`${BASE}/trips/${tripSlug}/lists`);
+		await page.goto(`${BASE}/trips/${tripSlug}/lists`, { waitUntil: 'networkidle' });
 		await expect(page.getByText('0 left').filter({ visible: true }).first()).toBeVisible();
 	});
 });

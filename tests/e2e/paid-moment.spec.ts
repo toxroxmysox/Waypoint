@@ -120,7 +120,7 @@ test.describe('Paid-Moment affordance + prefilled add-expense (#265)', () => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 		try {
 			await page.setViewportSize({ width: 375, height: 812 });
-			await page.goto(`${BASE}/trips/${SLUG}/items/${itemId}`);
+			await page.goto(`${BASE}/trips/${SLUG}/items/${itemId}`, { waitUntil: 'networkidle' });
 
 			// Derived paid state = false (no linked expense) → the affordance is "Log payment".
 			await expect(
@@ -137,7 +137,7 @@ test.describe('Paid-Moment affordance + prefilled add-expense (#265)', () => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 		try {
 			await page.setViewportSize({ width: 375, height: 812 });
-			await page.goto(`${BASE}/trips/${SLUG}/items/${itemId}`);
+			await page.goto(`${BASE}/trips/${SLUG}/items/${itemId}`, { waitUntil: 'networkidle' });
 
 			await page
 				.getByRole('link', { name: /log payment/i })
@@ -182,7 +182,7 @@ test.describe('Paid-Moment affordance + prefilled add-expense (#265)', () => {
 		try {
 			await page.setViewportSize({ width: 375, height: 812 });
 			// The prior test linked an expense to this item; the derived paid state flips.
-			await page.goto(`${BASE}/trips/${SLUG}/items/${itemId}`);
+			await page.goto(`${BASE}/trips/${SLUG}/items/${itemId}`, { waitUntil: 'networkidle' });
 
 			const paid = page
 				.getByRole('link', { name: new RegExp(`Paid \\$${EST}`) })
@@ -205,7 +205,7 @@ test.describe('Paid-Moment affordance + prefilled add-expense (#265)', () => {
 	test('viewer never sees the "Log payment" affordance', async ({ browser }) => {
 		const { page, ctx } = await devLogin(browser, EMAILS.viewer);
 		try {
-			await page.goto(`${BASE}/trips/${SLUG}/items/${itemId}`);
+			await page.goto(`${BASE}/trips/${SLUG}/items/${itemId}`, { waitUntil: 'networkidle' });
 			// The item is already paid, so a viewer sees the read-only "Paid $X" summary
 			// (a plain link-out) but must NEVER get the write affordance.
 			await expect(

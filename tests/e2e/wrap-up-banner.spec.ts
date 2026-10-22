@@ -20,7 +20,7 @@ async function createPastTrip(page: import('@playwright/test').Page): Promise<st
 	// Deterministic — don't guess word order, and don't race the /trips/new URL.
 	const slug = title.toLowerCase().replace(/\s+/g, '-');
 
-	await page.goto(`${BASE}/trips/new`);
+	await page.goto(`${BASE}/trips/new`, { waitUntil: 'networkidle' });
 	await page.waitForURL('**/trips/new');
 
 	await page.fill('input[name="title"]', title);

@@ -33,7 +33,7 @@ test.describe('Forming lifecycle (#270)', () => {
 		const slug = title.toLowerCase().replace(/\s+/g, '-');
 
 		// --- 1. Name-first create: skip the dates expander entirely.
-		await page.goto(`${BASE}/trips/new`);
+		await page.goto(`${BASE}/trips/new`, { waitUntil: 'networkidle' });
 		await page.waitForURL('**/trips/new');
 		await page.fill('input[name="title"]', title);
 		await page.fill('input[name="location_summary"]', 'Forming Location');
@@ -83,7 +83,7 @@ test.describe('Forming lifecycle (#270)', () => {
 		).toBeVisible({ timeout: 10000 });
 
 		// --- 4. Trips list: 'No dates yet' badge, sorted ahead of Past.
-		await page.goto(`${BASE}/trips`);
+		await page.goto(`${BASE}/trips`, { waitUntil: 'networkidle' });
 		await expect(
 			page.getByText(title).filter({ visible: true }).first()
 		).toBeVisible();
@@ -95,7 +95,7 @@ test.describe('Forming lifecycle (#270)', () => {
 		// first — the board is the primary path, so it's collapsed by default). The
 		// PB update hook seeds "Phase 1" + generates days and re-homes the phase-less
 		// idea into it.
-		await page.goto(`${BASE}/trips/${slug}`);
+		await page.goto(`${BASE}/trips/${slug}`, { waitUntil: 'networkidle' });
 		await page.getByTestId('set-dates-toggle').filter({ visible: true }).first().click();
 		const start = new Date(Date.now() + 30 * 86_400_000).toISOString().split('T')[0];
 		const end = new Date(Date.now() + 33 * 86_400_000).toISOString().split('T')[0];
@@ -138,7 +138,7 @@ test.describe('Forming lifecycle (#270)', () => {
 		const slug = title.toLowerCase().replace(/\s+/g, '-');
 
 		// Dated create.
-		await page.goto(`${BASE}/trips/new`);
+		await page.goto(`${BASE}/trips/new`, { waitUntil: 'networkidle' });
 		await page.waitForURL('**/trips/new');
 		await page.fill('input[name="title"]', title);
 		// #270 forming-polish (43ac497): the create form's date fields are now INLINE
@@ -151,7 +151,7 @@ test.describe('Forming lifecycle (#270)', () => {
 		await page.waitForURL(`${BASE}/trips/${slug}`, { timeout: 10000 });
 
 		// Settings: blank out both dates → the action rejects with the friendly 400.
-		await page.goto(`${BASE}/trips/${slug}/settings`);
+		await page.goto(`${BASE}/trips/${slug}/settings`, { waitUntil: 'networkidle' });
 		await page.locator('input[name="start_date"]:visible').fill('');
 		await page.locator('input[name="end_date"]:visible').fill('');
 		// The inputs are required on a dated trip (client-side); strip the attribute

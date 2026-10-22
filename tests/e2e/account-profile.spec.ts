@@ -32,7 +32,7 @@ test.describe('Account / Profile (#104)', () => {
 		await page.locator('form[action="?/updateName"]').getByRole('button', { name: 'Save' }).click();
 		await expect(page.getByText('Name saved')).toBeVisible();
 
-		await page.reload();
+		await page.reload({ waitUntil: 'networkidle' });
 		await expect(page.locator('#name')).toHaveValue('Renamed Tester');
 	});
 

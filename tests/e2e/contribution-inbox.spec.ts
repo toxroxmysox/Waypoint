@@ -64,7 +64,7 @@ test.describe('#251 Inbox tabs + vote tallies', () => {
 	}) => {
 		const owner = await devLogin(browser, EMAILS.owner);
 		try {
-			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/inbox`);
+			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/inbox`, { waitUntil: 'networkidle' });
 
 			// All three tabs present (scope to the visible subtree).
 			for (const label of ['Pending', 'Approved', 'Rejected']) {
@@ -114,7 +114,7 @@ test.describe('#251 Inbox tabs + vote tallies', () => {
 	}) => {
 		const owner = await devLogin(browser, EMAILS.owner);
 		try {
-			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/inbox`);
+			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/inbox`, { waitUntil: 'networkidle' });
 			const card = owner.page
 				.locator('[aria-label^="Pending idea:"]')
 				.filter({ visible: true })
@@ -139,7 +139,7 @@ test.describe('#251 Inbox tabs + vote tallies', () => {
 	test('a member can vote a pending idea from the Inbox (tap-to-vote pills)', async ({ browser }) => {
 		const owner = await devLogin(browser, EMAILS.owner);
 		try {
-			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/inbox`);
+			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/inbox`, { waitUntil: 'networkidle' });
 			// "Neutral ghost" is the viewer's, with zero seeded votes: the owner may vote it.
 			const votable = owner.page
 				.locator('[aria-label="Pending idea: Neutral ghost"]')
@@ -157,7 +157,7 @@ test.describe('#251 Inbox tabs + vote tallies', () => {
 	test('Inbox stays owner/co_owner-only: traveler gets 403', async ({ browser }) => {
 		const traveler = await devLogin(browser, EMAILS.traveler);
 		try {
-			const res = await traveler.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/inbox`);
+			const res = await traveler.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/inbox`, { waitUntil: 'networkidle' });
 			// SvelteKit error(403) renders the branded error boundary with a 403 status.
 			expect(res?.status()).toBe(403);
 		} finally {

@@ -45,7 +45,7 @@ test.describe('Back chevron — origin-aware up-navigation (#361)', () => {
 		// than skipping on the first empty screen — this assertion is the point of
 		// the file, so it should be hard to skip by accident.
 		const origins = [`${BASE}/trips/${slug}`];
-		await page.goto(`${BASE}/trips/${slug}`);
+		await page.goto(`${BASE}/trips/${slug}`, { waitUntil: 'networkidle' });
 		for (const d of await page.locator('a[href*="/days/"]').evaluateAll((els) =>
 			els.map((e) => (e as HTMLAnchorElement).getAttribute('href')).filter(Boolean)
 		)) {
@@ -54,7 +54,7 @@ test.describe('Back chevron — origin-aware up-navigation (#361)', () => {
 
 		let itemLink = page.locator('a[href*="/items/"]').filter({ visible: true }).first();
 		for (const origin of origins) {
-			await page.goto(origin);
+			await page.goto(origin, { waitUntil: 'networkidle' });
 			itemLink = page.locator('a[href*="/items/"]').filter({ visible: true }).first();
 			if ((await itemLink.count()) > 0) break;
 		}
@@ -72,7 +72,7 @@ test.describe('Back chevron — origin-aware up-navigation (#361)', () => {
 
 	test('browsing days is a PEER move — one tap gets you out, not five', async ({ page }) => {
 		const slug = await openFirstTrip(page);
-		await page.goto(`${BASE}/trips/${slug}`);
+		await page.goto(`${BASE}/trips/${slug}`, { waitUntil: 'networkidle' });
 
 		const dayLink = page.locator('a[href*="/days/"]').filter({ visible: true }).first();
 		test.skip((await dayLink.count()) === 0, 'seed trip has no days');
@@ -114,7 +114,7 @@ test.describe('Back chevron — origin-aware up-navigation (#361)', () => {
 
 	test('the OS back gesture stays chronological — it still steps day by day', async ({ page }) => {
 		const slug = await openFirstTrip(page);
-		await page.goto(`${BASE}/trips/${slug}`);
+		await page.goto(`${BASE}/trips/${slug}`, { waitUntil: 'networkidle' });
 		const dayLink = page.locator('a[href*="/days/"]').filter({ visible: true }).first();
 		test.skip((await dayLink.count()) === 0, 'seed trip has no days');
 		await dayLink.click();
@@ -149,7 +149,7 @@ test.describe('Back chevron — origin-aware up-navigation (#361)', () => {
 		const slug = await openFirstTrip(page);
 
 		// No `?from=` — this is what an invite link or a digest email looks like.
-		await page.goto(`${BASE}/trips/${slug}/documents`);
+		await page.goto(`${BASE}/trips/${slug}/documents`, { waitUntil: 'networkidle' });
 		await chevron(page).click();
 		await page.waitForURL(`${BASE}/trips/${slug}`, { timeout: 10000 });
 		expect(page.url()).toBe(`${BASE}/trips/${slug}`);
@@ -162,7 +162,7 @@ test.describe('Back chevron — origin-aware up-navigation (#361)', () => {
 		// open redirect. `//evil.com` is the one that beats a naive
 		// startsWith('/') check, which is exactly why it is asserted here.
 		for (const hostile of ['https://evil.com', '//evil.com', '/\\evil.com']) {
-			await page.goto(`${BASE}/trips/${slug}/documents?from=${encodeURIComponent(hostile)}`);
+			await page.goto(`${BASE}/trips/${slug}/documents?from=${encodeURIComponent(hostile)}`, { waitUntil: 'networkidle' });
 			await chevron(page).click();
 			await page.waitForURL(`${BASE}/trips/${slug}`, { timeout: 10000 });
 			expect(page.url(), `?from=${hostile} must not leave the app`).toBe(`${BASE}/trips/${slug}`);

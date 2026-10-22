@@ -74,13 +74,13 @@ test.describe('M2 Collaboration', () => {
 
 		try {
 			// Owner sees Inbox on the More page (dual-tree → scope to the visible subtree).
-			await ownerPage.goto(`${BASE}/trips/${tripSlug}/more`);
+			await ownerPage.goto(`${BASE}/trips/${tripSlug}/more`, { waitUntil: 'networkidle' });
 			await expect(
 				ownerPage.getByRole('link', { name: /inbox/i }).filter({ visible: true }).first()
 			).toBeVisible({ timeout: 10000 });
 
 			// Traveler does NOT see Inbox on the More page.
-			await travelerPage.goto(`${BASE}/trips/${tripSlug}/more`);
+			await travelerPage.goto(`${BASE}/trips/${tripSlug}/more`, { waitUntil: 'networkidle' });
 			await expect(
 				travelerPage.getByRole('link', { name: /inbox/i }).filter({ visible: true })
 			).not.toBeVisible({ timeout: 5000 });
@@ -95,7 +95,7 @@ test.describe('M2 Collaboration', () => {
 		const { page, ctx } = await devLogin(browser, EMAILS.traveler);
 
 		try {
-			await page.goto(`${BASE}/trips/${tripSlug}/items/new`);
+			await page.goto(`${BASE}/trips/${tripSlug}/items/new`, { waitUntil: 'networkidle' });
 
 			// The "You're a traveler" notice should be visible since auto_approve=false.
 			await expect(page.getByText(/traveler/i).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
@@ -115,7 +115,7 @@ test.describe('M2 Collaboration', () => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 
 		try {
-			await page.goto(`${BASE}/trips/${tripSlug}/inbox`);
+			await page.goto(`${BASE}/trips/${tripSlug}/inbox`, { waitUntil: 'networkidle' });
 			// Inbox page loads without error.
 			await expect(
 				page.getByRole('heading', { name: /inbox/i, level: 1 }).filter({ visible: true }).first()
@@ -129,7 +129,7 @@ test.describe('M2 Collaboration', () => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 
 		try {
-			await page.goto(`${BASE}/trips/${tripSlug}`);
+			await page.goto(`${BASE}/trips/${tripSlug}`, { waitUntil: 'networkidle' });
 			await expect(
 				page.getByRole('button', { name: /notifications/i }).filter({ visible: true }).first()
 			).toBeVisible({ timeout: 10000 });
@@ -143,7 +143,7 @@ test.describe('M2 Collaboration', () => {
 
 		try {
 			await page.setViewportSize({ width: 375, height: 812 });
-			await page.goto(`${BASE}/trips/${tripSlug}/inbox`);
+			await page.goto(`${BASE}/trips/${tripSlug}/inbox`, { waitUntil: 'networkidle' });
 
 			const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
 			const viewportWidth = await page.evaluate(() => window.innerWidth);
@@ -159,7 +159,7 @@ test.describe('M2 Collaboration', () => {
 		const { page, ctx } = await devLogin(browser, EMAILS.traveler);
 
 		try {
-			await page.goto(`${BASE}/trips/${tripSlug}/members`);
+			await page.goto(`${BASE}/trips/${tripSlug}/members`, { waitUntil: 'networkidle' });
 			// The traveler's own row exposes a self-serve leave control, enabled
 			// (a non-owner is never the sole owner).
 			const leaveBtn = page.getByRole('button', { name: /leave trip/i });
@@ -176,7 +176,7 @@ test.describe('M2 Collaboration', () => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 
 		try {
-			await page.goto(`${BASE}/trips/${tripSlug}/members`);
+			await page.goto(`${BASE}/trips/${tripSlug}/members`, { waitUntil: 'networkidle' });
 			// The fixture's owner is the only owner — their leave control renders
 			// but is blocked (transfer ownership / remove others first).
 			const leaveBtn = page.getByRole('button', { name: /leave trip/i });
@@ -192,7 +192,7 @@ test.describe('M2 Collaboration', () => {
 
 		try {
 			await page.setViewportSize({ width: 375, height: 812 });
-			await page.goto(`${BASE}/trips/${tripSlug}/members`);
+			await page.goto(`${BASE}/trips/${tripSlug}/members`, { waitUntil: 'networkidle' });
 
 			const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
 			const viewportWidth = await page.evaluate(() => window.innerWidth);

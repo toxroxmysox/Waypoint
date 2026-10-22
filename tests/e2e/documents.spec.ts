@@ -8,7 +8,7 @@ const BASE = E2E_BASE;
 // the bottom nav surfaces Now/Money/Add/Docs (#244). Secondary pages live at known
 // routes, so navigate by URL (mode- and viewport-independent).
 async function openTripSlug(page: import('@playwright/test').Page): Promise<string> {
-	await page.goto(`${BASE}/trips`);
+	await page.goto(`${BASE}/trips`, { waitUntil: 'networkidle' });
 	await page.locator('a[href*="/trips/"]').first().click();
 	await page.waitForURL('**/trips/**');
 	return page.url().split('/trips/')[1].split(/[/?#]/)[0];
@@ -35,7 +35,7 @@ test.describe('Documents', () => {
 
 	test('aggregate renders an empty state or grouped rows', async ({ page }) => {
 		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/documents`);
+		await page.goto(`${BASE}/trips/${slug}/documents`, { waitUntil: 'networkidle' });
 		await page.waitForURL('**/documents');
 
 		// Either the empty state copy or at least one document row's action menu.
@@ -47,7 +47,7 @@ test.describe('Documents', () => {
 	test('mobile responsive — documents at 375px', async ({ page }) => {
 		await page.setViewportSize({ width: 375, height: 812 });
 		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/documents`);
+		await page.goto(`${BASE}/trips/${slug}/documents`, { waitUntil: 'networkidle' });
 		await page.waitForURL('**/documents');
 
 		const main = page.locator('main:visible').first();

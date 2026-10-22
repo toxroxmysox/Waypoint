@@ -64,7 +64,7 @@ test.describe('Trip Memory — Note Before Bed capture + Today review (#269)', (
 		await page.waitForURL(`${BASE_URL}/trips/${tripSlug}`, { timeout: 10000 });
 
 		// --- Now: Day wrapped + the Note Before Bed prompt. ---
-		await page.goto(`${BASE_URL}/trips/${tripSlug}/now`);
+		await page.goto(`${BASE_URL}/trips/${tripSlug}/now`, { waitUntil: 'networkidle' });
 		await expect(page.getByText('Day wrapped').filter({ visible: true }).first()).toBeVisible({
 			timeout: 7000
 		});
@@ -106,7 +106,7 @@ test.describe('Trip Memory — Note Before Bed capture + Today review (#269)', (
 		await page.getByRole('button', { name: 'Not tonight' }).filter({ visible: true }).first().click();
 		await expect(page.getByText('Note before bed').filter({ visible: true })).toHaveCount(0);
 		// ...and stays dismissed across a reload (localStorage-backed).
-		await page.reload();
+		await page.reload({ waitUntil: 'networkidle' });
 		await expect(page.getByText('Day wrapped').filter({ visible: true }).first()).toBeVisible({
 			timeout: 7000
 		});

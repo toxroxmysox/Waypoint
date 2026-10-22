@@ -53,13 +53,13 @@ test.describe('#337 candidate scenarios', () => {
 		const { page, ctx } = await devLogin(browser);
 		try {
 			// The forming home leads with the scenario board — empty → "Pitch the first scenario".
-			await page.goto(`${BASE}/trips/${slug}`);
+			await page.goto(`${BASE}/trips/${slug}`, { waitUntil: 'networkidle' });
 			await expect(page.getByTestId('scenario-empty').filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
 
 			// --- PITCH a scenario WITH dates (promotable) + a two-leg sketch. ------
 			// AppShell renders mobile + desktop variants into the DOM (one hidden by
 			// CSS), so every shared control resolves to 2 nodes — use .first().
-			await page.goto(`${BASE}/trips/${slug}/scenarios/new`);
+			await page.goto(`${BASE}/trips/${slug}/scenarios/new`, { waitUntil: 'networkidle' });
 			await page.getByTestId('sc-title').first().fill('Northern loop');
 			await page.locator('input[name="date_start"]').first().fill('2027-09-01');
 			await page.locator('input[name="date_end"]').first().fill('2027-09-08'); // 7 nights
@@ -90,7 +90,7 @@ test.describe('#337 candidate scenarios', () => {
 			await page.waitForURL(new RegExp(`/trips/${slug}/scenarios/[^/]+$`), { timeout: 10000 });
 
 			// Back on the board there are now two candidates.
-			await page.goto(`${BASE}/trips/${slug}`);
+			await page.goto(`${BASE}/trips/${slug}`, { waitUntil: 'networkidle' });
 			await expect(page.getByText(/2 candidates/i).first()).toBeVisible({ timeout: 10000 });
 
 			// --- PROMOTE the original. Open it, "Go with this one", confirm. -------
@@ -110,7 +110,7 @@ test.describe('#337 candidate scenarios', () => {
 			await expect(page.getByText('Highlands', { exact: true }).first()).toBeVisible();
 
 			// --- DECISION record is readable forever (More → How we decided). -----
-			await page.goto(`${BASE}/trips/${slug}/more`);
+			await page.goto(`${BASE}/trips/${slug}/more`, { waitUntil: 'networkidle' });
 			await page.getByTestId('how-we-decided').first().click();
 			await page.waitForURL(new RegExp(`/trips/${slug}/decision$`), { timeout: 10000 });
 			await expect(page.getByText('The decision').first()).toBeVisible();
