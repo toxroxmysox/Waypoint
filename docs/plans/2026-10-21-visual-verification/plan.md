@@ -81,7 +81,7 @@ These need `.env.local` with `WAYPOINT_DEV_MODE` and `E2E_TEST_EMAIL`. On the fi
 
 **Files:**
 - Modify: `playwright.config.ts`, `vite.config.ts` (vitest `test.env`), `package.json`, `scripts/e2e-isolated.sh`
-- Create: `scripts/visual-update.sh`
+- Create: `scripts/visual-update.sh`, `scripts/aria-update.sh`
 - Create: `tests/visual/visual-fixture.ts`, `tests/visual/smoke.spec.ts`, `src/lib/shell/default-tz.test.ts`
 
 **Interfaces:**
@@ -94,7 +94,8 @@ These need `.env.local` with `WAYPOINT_DEV_MODE` and `E2E_TEST_EMAIL`. On the fi
   - **`vite.config.ts`:** `test.env.TZ = process.env.TZ ?? 'America/Detroit'`.
   - **`package.json`:**
     - `test:visual` = `bash scripts/e2e-isolated.sh --project=visual`
-    - `test:visual:update` = `bash scripts/visual-update.sh`: exits 1 with `snapshot regeneration is Scott-only: run this in your own terminal` unless `[ -t 0 ]`, then prompts `type "update" to regenerate changed snapshots:` and only on exact `update` runs `bash scripts/e2e-isolated.sh --project=visual --update-snapshots=changed`.
+    - `test:visual:update` (pixel, Scott-only) = `bash scripts/visual-update.sh`: exits 1 with `pixel baseline regeneration is Scott-only: run this in your own terminal` unless `[ -t 0 ]`, then prompts `type "update" to regenerate changed snapshots:` and only on exact `update` runs `bash scripts/e2e-isolated.sh --project=visual --update-snapshots=changed`.
+    - `test:aria:update` (agents allowed) = `bash scripts/aria-update.sh`: runs `bash scripts/e2e-isolated.sh --project=visual --grep @aria --update-snapshots=changed`, then if `git status --porcelain -- 'tests/visual/**/*.png'` is non-empty, restores those files with `git checkout --` and exits 1 (`aria-update must not change pixel baselines`); otherwise prints the changed `.aria.yml` paths from `git status --porcelain`.
     - `playwright.config.ts` also sets `updateSnapshots: 'missing'` so new snapshots are written on first run without any flag.
     - `test:e2e` = `playwright test --project=e2e`
     - `@playwright/test` pinned to the exact version in `pnpm-lock.yaml`.
@@ -108,7 +109,7 @@ These need `.env.local` with `WAYPOINT_DEV_MODE` and `E2E_TEST_EMAIL`. On the fi
   - `smoke.spec.ts`: go to `/trips/${trip.slug}` and expect `page.viewportSize()?.width` to be 375, and the in-page `Intl…timeZone` to be `'America/Detroit'`.
 - [ ] **Step 2:** Run `pnpm test:unit --run src/lib/shell/default-tz.test.ts` → FAIL. Run `pnpm test:visual` → FAIL.
 - [ ] **Step 3:** Implement. First confirm that `seed-visual-trip` answers on the `test:e2e:clean` PB. If it doesn't, stop and report.
-- [ ] **Step 4:** Rerun both → PASS. Also run `E2E_SLOT=1 pnpm test:visual` → PASS (Review Focus 3). Then `pnpm test:visual:update < /dev/null` → exit 1 with the Scott-only message and no snapshot written.
+- [ ] **Step 4:** Rerun both → PASS. Also run `E2E_SLOT=1 pnpm test:visual` → PASS (Review Focus 3). Then `pnpm test:visual:update < /dev/null` → exit 1 with the Scott-only message and no snapshot written. `pnpm test:aria:update` → exit 0 and prints no changes (nothing to update yet).
 - [ ] **Step 5:** Run `pnpm test:unit --run` and `pnpm test:e2e:clean` under Detroit, and handle every new red:
   - **Test-side UTC assumption:** fix the test's setup or expected value. Never loosen the assertion.
   - **Real app bug:** file `Detroit TZ: …`.
@@ -185,6 +186,8 @@ These need `.env.local` with `WAYPOINT_DEV_MODE` and `E2E_TEST_EMAIL`. On the fi
   - `expectHitTarget` on each visible `.hit-44` element
   - `expectClearOfFixedChrome` on the surface's first heading and first card link
   - `expectNoA11yViolations(page, { exclude: <per-surface known rules> })`
+
+  Put the ARIA assertion in its own test tagged `@aria` (`test('<surface> structure', { tag: '@aria' }, …)`) and the geometry + axe checks in a separate untagged test, so `test:aria:update` touches only ARIA files.
 - [ ] **Step 5:** Run `pnpm test:visual` twice. The first run writes the 5 missing `.aria.yml` files (`updateSnapshots: 'missing'`); never pass `-u`/`--update-snapshots`. Read each one: it must list the surface's real headings and controls, with no timestamps. The second run → PASS. App failures from geometry get filed as `Geometry: …` issues, and that assertion is annotated `allowed-skip` and skipped. Existing serious/critical axe violations get one `A11y: <rule id>` issue per rule and an `exclude` entry with that issue number.
 - [ ] **Step 6: Determinism check (Review Focus 1).** Run `pnpm test:visual` three times in a row.
   - Expected: all pass, and `git status --porcelain tests/visual/__snapshots__` stays empty.
@@ -277,7 +280,7 @@ These need `.env.local` with `WAYPOINT_DEV_MODE` and `E2E_TEST_EMAIL`. On the fi
   4. Look small: the new `verify:visual` defaults, `--crop` and `--full`.
   5. A single small crop may be read inline. More than two images, or any diff set, goes to `visual-reviewer`.
   6. Pixel baselines: none yet (#550). The rule for adding one: ≥2 waves without a redesign, one surface per PR, Mac only (ADR-0003).
-  7. Snapshot regeneration is Scott-only: agents never pass `-u`/`--update-snapshots`; new snapshots write on first run; an agent whose diff is `intended` asks Scott to run `pnpm test:visual:update` in his terminal, and never hand-edits a committed snapshot to make it pass.
+  7. Snapshots: agents never pass `-u`/`--update-snapshots` directly; new snapshots write on first run. When a task intentionally changes a surface's structure, the agent runs `pnpm test:aria:update` and lists each changed `.aria.yml` in the PR body; an ARIA change the task doesn't call for is a blocking review finding. Pixel baselines (#550) are regenerated only by Scott via `pnpm test:visual:update` in his terminal; an agent whose image diff is `intended` asks him. Never delete or hand-edit a committed snapshot to make a test pass.
   8. axe: serious/critical violations fail `pnpm test:visual`; exclusions only by rule id with a filed issue.
 
   Then add the browser-pane rule: use `read_page` / `get_page_text` first, take a screenshot only when appearance is the question, and never trust timing or animation without `document.visibilityState` plus an rAF tick count, or a Playwright rerun.
@@ -300,7 +303,7 @@ These need `.env.local` with `WAYPOINT_DEV_MODE` and `E2E_TEST_EMAIL`. On the fi
 - `pnpm test:e2e:clean` → exit 0. The STRICT block shows only issue-linked skip allowances.
 - `pnpm test:visual` → exit 0, three times in a row, with a clean `tests/visual/__snapshots__`.
 - The DayNav revert check was observed failing; the line is recorded in the commit message.
-- `pnpm test:visual:update < /dev/null` → exit 1, Scott-only message.
+- `pnpm test:visual:update < /dev/null` → exit 1, Scott-only message; `pnpm test:aria:update` → exit 0, and no `.png` under `tests/visual` changed.
 - `surfaces.spec.ts` runs `expectNoA11yViolations` on all five surfaces; every `exclude` value links a filed issue.
 - No pixel baseline PNG is committed (`git ls-files tests/visual | grep -c '\.png$'` → 0).
 - `token-estimate.md` exists, and #540 has the comment.
