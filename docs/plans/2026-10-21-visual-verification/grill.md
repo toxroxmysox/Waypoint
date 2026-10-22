@@ -42,7 +42,7 @@ Success, observable:
 13. As Scott, I want Detroit reds that are test-side assumptions fixed, and real app bugs filed as issues, so that scope holds and CI's unit gate stays green honestly.
 14. As Scott, I want a strict reporter that fails the run on any skip unless the skip carries an `allowed-skip` annotation linking an open issue, so that a skip can never read as a pass.
 15. As an agent, I want the strict reporter to list flaky (retried-then-passed) tests in text without failing the run, so that flakes are visible without random reds from known multi-context races.
-16. As an agent, I want the `toHaveScreenshot()` config and a `test:visual:update` command in place with zero baselines and a documented rule for adding one, so that the first stable surface can be baselined cheaply later.
+16. As an agent, I want the `toHaveScreenshot()` config in place with zero baselines and a documented rule for adding one, so that the first stable surface can be baselined cheaply later.
 17. As an agent, I want `verify:visual` to default to one width (375) and viewport-only, with an element-crop mode (`--crop SELECTOR`) and full-page / multi-width opt-in, so that a look, when needed, is as small as possible.
 18. As an agent, I want `verify:visual` to print shot paths and dimensions as text, so that I choose deliberately whether to read a shot or delegate it.
 19. As an agent, I want a `visual-reviewer` subagent that reads several images (or a diff set) and returns a text verdict, so that batch looks never land in the main session.
@@ -50,11 +50,14 @@ Success, observable:
 21. As an agent, I want CLAUDE.md to state the browser-pane rule, so that #379-style false findings stop. The rule: use `read_page` / `get_page_text` first, take a screenshot only when appearance is the question, and never trust timing or animation observations from the pane without checking `document.visibilityState` and an rAF tick count or rerunning in Playwright.
 22. As an agent, I want `.wolf/cerebrum.md` updated with the new flow, so that the scar tissue points at the fix.
 23. As Scott, I want a static token estimate from real transcripts (historic image count × tokens per shot at old vs new defaults), so that the savings claim is grounded without paying for a full rerun.
+24. As Scott, I want only me to regenerate an existing snapshot (pixel or ARIA), via `pnpm test:visual:update` run from my own terminal, so that an agent can never "fix" a failing visual test by re-approving whatever it now shows.
+25. As an agent, I want new snapshots written on first run without any update flag, so that adding a check never needs the guarded command.
+26. As Scott, I want axe-core accessibility checks on the five surfaces, failing on serious and critical violations with text output, so that accessibility regressions are caught alongside layout and structure.
 
 ## Decisions
 
 - **Pixel baselines are deferred.** The config and update command land, with zero baselines. A surface gets a baseline only after it has gone at least two waves without a redesign, and baselines are added one surface at a time, each in its own PR. Why: 128 `.svelte` commits in 30 days means constant churn and constant approvals, and a failed diff produces three images, about what the look it replaces costs. Follow-up: #550.
-- When baselines land, they are generated on the Mac. See [ADR-0003](../../adr/0003-visual-baselines-macos-local.md); container baselines are in #547. Approval flow: update only after a `visual-reviewer` verdict of `intended`, list changed baselines in the PR body, and get Scott's sweep sign-off before merge.
+- When baselines land, they are generated on the Mac. See [ADR-0003](../../adr/0003-visual-baselines-macos-local.md); container baselines are in #547. Approval flow: an agent may propose an update after a `visual-reviewer` verdict of `intended`, but only Scott regenerates; changed baselines are listed in the PR body and need his sweep sign-off before merge.
 - **ARIA snapshots and geometry sweeps** cover trip overview, day page, phase detail, item page and Trip Mode at 375px. These are text and cheap to review.
 - The visual, ARIA and geometry specs are a separate `visual` Playwright project at 375px. It runs under the `test:e2e:clean` harness against the preview build and is exposed as `pnpm test:visual`. The default `test:e2e` run and CI exclude it.
 - `@playwright/test` is exact-pinned.
@@ -65,6 +68,9 @@ Success, observable:
 - **`verify:visual` defaults** change to `--widths 375` and viewport-only. `--full` and `--widths` opt in. `--crop SELECTOR` takes an element screenshot of the first visible match. Output lists each shot's path and size.
 - **Image review:** `visual-reviewer` is a project agent (Sonnet, Read-only) that returns a text verdict per image or diff set. It is used when there are more than two images or any diff set. A single small crop may be read inline, because a subagent spawn costs ~15–25k tokens.
 - **Token comparison:** a static estimate. Take historic image counts per session, apply tokens per shot at the old defaults (full-page 375 + 768) and the new ones (375 viewport or crop), and add the turns each image stayed in context. No live rerun.
+- **Snapshot regeneration is Scott-only.** Agents never run Playwright with `--update-snapshots` / `-u` (the svw plugin hook blocks it generally). The approved path is `pnpm test:visual:update`, a script that refuses unless stdin is a TTY and Scott types `update` at its prompt; agent Bash has no TTY. New snapshots are still written on first run (`updateSnapshots: 'missing'`), so agents can add checks. Hand-editing a committed snapshot file counts as regeneration: it is listed in the PR and needs Scott's sign-off. Why a TTY gate and not an env flag: an agent can set an env var.
+- **axe-core** (`@axe-core/playwright`) runs on the same five surfaces, tags `wcag2a`, `wcag2aa`, failing on `serious` and `critical` impact. Existing violations are filed as `A11y: …` issues and excluded by rule id with the issue number, so the check is green and every exclusion is visible.
+- **Stryker mutation testing is #551, not #540:** it tests unit-test strength on pure-logic modules, a different concern from visual verification, and it would roughly double this effort.
 - No CONTEXT.md terms; these are dev-process terms, not product domain.
 
 ## Testing Decisions
@@ -92,6 +98,8 @@ Success, observable:
 - A live before/after rerun for the token comparison.
 - Fixing app bugs exposed by Detroit or the geometry checks, unless they block #540 (filed as issues).
 - Desktop-width checks.
+- Stryker mutation testing (#551).
+- axe violations at `moderate`/`minor` impact.
 
 ## Assumptions & Open Questions
 
@@ -114,3 +122,7 @@ Scott approved these cuts:
 - the 20-host dismissal matrix becomes a static check plus three hosts
 - the #393 e2e pin is dropped
 - `visual-reviewer` is used only for batches and diffs
+
+### Addendum (2026-10-21, later)
+
+Scott approved three more items via a sibling session: a guard on snapshot regeneration, axe-core checks on the key surfaces, and Stryker mutation testing. The first two are folded into this scope. Stryker went to its own issue.
