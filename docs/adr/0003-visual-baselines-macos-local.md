@@ -9,6 +9,10 @@
 
 `toHaveScreenshot()` baselines are generated and compared on Scott's Mac only (Playwright's `-darwin` snapshots): exact-pinned `@playwright/test`, Playwright's bundled Chromium, self-hosted fonts from `static/fonts`. CI excludes the visual project. A macOS update that shifts rasterization is handled by one regenerate-all commit, approved in the visual sweep.
 
+## Note (2026-10-21)
+
+#540 lands the `toHaveScreenshot()` config and update command with zero baselines; the first baselines are deferred to #550 (a surface must go ≥2 waves without a redesign). This ADR governs them when they land.
+
 ## Why
 
 Every agent session and Scott's visual sweep run on this one Mac, so that is where a diff must be stable. CI e2e is report-only today (#341), so a CI-side visual gate would buy nothing yet. The Mac has no Docker/Colima; a container would add a VM boot to every run.
