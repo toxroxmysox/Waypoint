@@ -101,8 +101,7 @@ test.describe('Are you going? (#440)', () => {
 			await expect(vis(page, '[data-testid="hero-not-going"]').first()).toBeVisible();
 
 			// Survives a reload.
-			await page.reload();
-			await page.waitForLoadState('networkidle');
+			await page.reload({ waitUntil: 'networkidle' });
 			await expect(vis(page, '[data-testid="going-answer"]').first()).toContainText("You're not going");
 
 			// Day page: a struck bubble after the going one, and no "+ Me" chip.

@@ -61,7 +61,7 @@ test.describe('M4 Execution', () => {
 		// Clear localStorage
 		await page.goto(`${BASE}/trips`, { waitUntil: 'networkidle' });
 		await page.evaluate(() => localStorage.removeItem('waypoint-a2hs-dismissed'));
-		await page.reload();
+		await page.reload({ waitUntil: 'networkidle' });
 
 		// Banner may or may not show depending on browser (Chrome shows, others may not).
 		// Just verify the page loads without errors (/trips is single-tree).

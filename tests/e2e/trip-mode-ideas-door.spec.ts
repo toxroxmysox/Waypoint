@@ -109,7 +109,7 @@ test.describe('Trip Mode Door 1 — ideas for now (#245)', () => {
 		// reload once if the strip hasn't rendered yet (the strip is loader-driven, idempotent).
 		const strip = page.locator('section[aria-label="Ideas for now"]:visible').first();
 		if (!(await strip.isVisible().catch(() => false))) {
-			await page.reload();
+			await page.reload({ waitUntil: 'networkidle' });
 			await page.waitForURL('**/now');
 		}
 		await expect(strip).toBeVisible({ timeout: 7000 });

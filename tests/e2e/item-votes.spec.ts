@@ -147,8 +147,7 @@ test.describe('Votes on the item page (#442)', () => {
 			await row.locator('[data-vote="like"]').click();
 			await expect(row).toContainText('Like');
 			await saved;
-			await page.reload();
-			await page.waitForLoadState('networkidle');
+			await page.reload({ waitUntil: 'networkidle' });
 			await expect(vis(page, '[data-testid="item-your-vote"]').first()).toContainText('Like');
 			// Going stays on the planned face.
 			await expect(vis(page, '[data-testid="going-answer"]').first()).toBeVisible();

@@ -60,7 +60,7 @@ test.describe('#330 phase calendar editor', () => {
 			await expect(page.getByText('Days 1–7').filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
 			await expect(page.getByText('Days 7–9').filter({ visible: true }).first()).toBeVisible();
 			// Persisted: a reload keeps the moved boundary (not just optimistic local state).
-			await page.reload();
+			await page.reload({ waitUntil: 'networkidle' });
 			await expect(page.getByText('Days 1–7').filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
 
 			// Rename the new phase via its pill → inline input → Enter.
