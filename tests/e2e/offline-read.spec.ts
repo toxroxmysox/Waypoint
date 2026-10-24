@@ -113,4 +113,42 @@ test.describe('Offline — read-only active trip on a plane (#255)', () => {
 		await context.setOffline(false);
 		await expect(page.locator('[data-testid="offline-banner"]')).toHaveCount(0);
 	});
+
+	// #533: weak signal ("lie-fi"). navigator.onLine stays true but requests stall.
+	// The SW's network-first must give up after its timeout and serve the cached
+	// page, report degraded so the banner shows, and the write-guard must block.
+	test('weak signal: stalled network serves the cached day fast, shows the banner, blocks edits', async ({
+		page,
+		context
+	}) => {
+		await page.setViewportSize({ width: 375, height: 812 });
+		const slug = await openActiveTrip(page);
+		const dayHref = await firstDayHref(page, slug);
+		test.skip(!dayHref, 'active trip has no day links');
+		await page.waitForTimeout(500);
+
+		// Stall every page + data request for this trip (the SW's fetches are routed
+		// through the context in Chromium). Never fulfilled, never aborted: lie-fi.
+		await context.route(`**/trips/${slug}/**`, () => {});
+
+		const started = Date.now();
+		await page.goto(`${BASE}${dayHref}`, { waitUntil: 'domcontentloaded' });
+		expect(Date.now() - started).toBeLessThan(8_000);
+
+		const banner = page.locator('[data-testid="offline-banner"]:visible').first();
+		await expect(banner).toBeVisible();
+
+		const notesBtn = page
+			.getByRole('button', { name: /^(Add day notes|Edit notes)$/ })
+			.filter({ visible: true })
+			.first();
+		await notesBtn.click();
+		await page.locator('textarea[name="notes"]:visible').first().fill('lie-fi edit attempt');
+		await page.getByRole('button', { name: /^Save/ }).filter({ visible: true }).first().click();
+		await expect(
+			page.getByText("You're offline — reconnect to make changes").filter({ visible: true })
+		).toBeVisible();
+
+		await context.unrouteAll({ behavior: 'ignoreErrors' });
+	});
 });

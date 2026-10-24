@@ -1,6 +1,4 @@
-import { get } from 'svelte/store';
 import { invalidateAll } from '$app/navigation';
-import { online } from '$lib/shell/stores/online';
 
 /**
  * Resume revalidation (#372).
@@ -31,7 +29,9 @@ export const RESUME_REFRESH_MS = 60_000;
  *
  * Offline is skipped: invalidating with no network re-runs loads that can only
  * fail, churning the service worker's fallback paths for nothing. The next
- * resume while online picks it up.
+ * resume while online picks it up. "Offline" here is `navigator.onLine` only,
+ * not the `online` store: on weak signal (#533) that store reads offline until a
+ * request gets through, and this refresh is one of the requests that can.
  */
 export function shouldRefreshOnResume(
 	hiddenAt: number | null,
@@ -67,7 +67,7 @@ export function installResumeRefresh(deps: ResumeRefreshDeps = {}): () => void {
 
 	const now = deps.now ?? (() => Date.now());
 	const revalidate = deps.revalidate ?? (() => invalidateAll());
-	const isOnline = deps.isOnline ?? (() => get(online));
+	const isOnline = deps.isOnline ?? (() => navigator.onLine);
 
 	// Mounting while already hidden (a backgrounded launch, or a headless/preview
 	// tab) counts as hidden from now — otherwise the first foreground after a

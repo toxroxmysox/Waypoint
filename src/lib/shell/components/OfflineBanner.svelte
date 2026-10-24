@@ -2,7 +2,8 @@
 	import { online } from '$lib/shell/stores/online';
 
 	// App-wide offline banner (#255). Automatic — keyed off the reactive `online`
-	// store (navigator.onLine + online/offline events), no toggle to find. When
+	// store (navigator.onLine + online/offline events + the SW's weak-signal
+	// report, #533), no toggle to find. When
 	// offline it announces that the trip is a snapshot and roughly how fresh it is;
 	// it clears the instant signal returns. Most prominent in Trip Mode, where the
 	// trip title is passed in.

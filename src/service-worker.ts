@@ -17,8 +17,10 @@ import {
 	cacheFirst,
 	networkFirst,
 	prefetchManifest,
-	shellResponse
+	shellResponse,
+	type NetworkOutcome
 } from '$lib/offline/sw-runtime';
+import { GET_NETWORK_STATE, NETWORK_STATE } from '$lib/offline/network-state';
 
 declare const self: ServiceWorkerGlobalScope;
 
@@ -35,6 +37,21 @@ const DOCS_CACHE = `waypoint-docs-${version}`;
 const CURRENT_CACHES = [STATIC_CACHE, DATA_CACHE, DOCS_CACHE];
 
 const ASSETS = [...build, ...files];
+
+// Degraded connectivity (#533): true while network-first requests are timing out
+// or failing (weak signal). Broadcast on change; a page that loads afterwards
+// asks with GET_NETWORK_STATE. Lost if the SW is terminated — the page keeps its
+// last report until the next one, so that only resets this side.
+let degraded = false;
+
+function reportOutcome(outcome: NetworkOutcome) {
+	const next = outcome === 'degraded';
+	if (next === degraded) return;
+	degraded = next;
+	void self.clients.matchAll({ type: 'window' }).then((clients) => {
+		for (const client of clients) client.postMessage({ type: NETWORK_STATE, degraded });
+	});
+}
 
 self.addEventListener('install', (event) => {
 	event.waitUntil(
@@ -60,7 +77,9 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('message', (event) => {
 	const data = event.data;
-	if (data?.type === 'PREFETCH_TRIP') {
+	if (data?.type === GET_NETWORK_STATE) {
+		event.source?.postMessage({ type: NETWORK_STATE, degraded });
+	} else if (data?.type === 'PREFETCH_TRIP') {
 		// Whole-trip prefetch (#254): the `offline-manifest` URL list for the ONE
 		// active trip, fired on app-open during its active window. Best-effort —
 		// document bytes go to DOCS_CACHE (where cache-first reads them), every
@@ -113,7 +132,12 @@ self.addEventListener('fetch', (event) => {
 			return;
 		}
 		case 'network-first':
-			event.respondWith(networkFirst(event.request, DATA_CACHE, strategy.fallbackToShell));
+			event.respondWith(
+				networkFirst(event.request, DATA_CACHE, strategy.fallbackToShell, {
+					onOutcome: reportOutcome,
+					waitUntil: (p) => event.waitUntil(p)
+				})
+			);
 			return;
 		default:
 			// passthrough: let the browser handle it (default fetch). Not respondWith'd.
