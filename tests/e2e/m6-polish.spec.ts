@@ -7,7 +7,7 @@ const BASE = E2E_BASE;
 // E2E_TEST_EMAIL's first trip is active → loads in trip mode (no "More" tab).
 // Navigate by URL (mode- and viewport-independent) instead of clicking nav chrome.
 async function openTripSlug(page: import('@playwright/test').Page): Promise<string> {
-	await page.goto(`${BASE}/trips`);
+	await page.goto(`${BASE}/trips`, { waitUntil: 'networkidle' });
 	await page.locator('a[href*="/trips/"]').first().click();
 	await page.waitForURL('**/trips/**');
 	return page.url().split('/trips/')[1].split(/[/?#]/)[0];
@@ -21,13 +21,13 @@ test.describe('M6 Polish', () => {
 
 	test('clone trip link visible on More page for owner', async ({ page }) => {
 		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/more`);
+		await page.goto(`${BASE}/trips/${slug}/more`, { waitUntil: 'networkidle' });
 		await expect(page.getByText('Clone trip').filter({ visible: true }).first()).toBeVisible();
 	});
 
 	test('clone trip page renders with form', async ({ page }) => {
 		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/clone`);
+		await page.goto(`${BASE}/trips/${slug}/clone`, { waitUntil: 'networkidle' });
 		await page.waitForURL('**/clone');
 
 		await expect(page.locator('input[name="title"]:visible').first()).toBeVisible();
@@ -39,7 +39,7 @@ test.describe('M6 Polish', () => {
 	// The More menu must no longer link to it.
 	test('parking lot link is gone from More page (#86)', async ({ page }) => {
 		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/more`);
+		await page.goto(`${BASE}/trips/${slug}/more`, { waitUntil: 'networkidle' });
 		// Wait for the menu to render via a sibling card that stays (Export is always present).
 		await expect(page.getByText('Export').filter({ visible: true }).first()).toBeVisible();
 		await expect(page.getByText('Parking lot')).toHaveCount(0);
@@ -48,7 +48,7 @@ test.describe('M6 Polish', () => {
 	// #86: the old /parking-lot route redirects to the phases list.
 	test('trip-wide /parking-lot redirects to phases list (#86)', async ({ page }) => {
 		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/parking-lot`);
+		await page.goto(`${BASE}/trips/${slug}/parking-lot`, { waitUntil: 'networkidle' });
 		await page.waitForURL(`**/trips/${slug}/phases`);
 		expect(page.url()).toContain(`/trips/${slug}/phases`);
 	});

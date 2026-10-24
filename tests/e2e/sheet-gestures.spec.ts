@@ -335,7 +335,7 @@ test.describe('BottomSheet gestures (#365)', () => {
 		const { page, ctx } = await devLogin(browser);
 		try {
 			// Land on the overview first so there is somewhere to go back TO.
-			await page.goto(`${BASE}/trips/${FIXTURE_SLUG}`);
+			await page.goto(`${BASE}/trips/${FIXTURE_SLUG}`, { waitUntil: 'networkidle' });
 			await openAddExpense(page);
 			const urlWithSheetOpen = page.url();
 

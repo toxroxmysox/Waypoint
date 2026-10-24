@@ -51,7 +51,7 @@ test.describe('OTP code field auto-submit (#374 / #381)', () => {
 
 	test('login', async ({ page }) => {
 		const posts = countVerifies(page);
-		await page.goto(`${BASE}/login`);
+		await page.goto(`${BASE}/login`, { waitUntil: 'networkidle' });
 		await page.fill('input[name="email"]', `otp-probe-${Date.now().toString(36)}@e2e.test`);
 		await page.getByRole('button', { name: 'Send code' }).click();
 		await exerciseCodeField(page, posts);
@@ -75,7 +75,7 @@ test.describe('OTP code field auto-submit (#374 / #381)', () => {
 		const { pendingInviteCode } = (await res.json()) as { pendingInviteCode: string };
 
 		const posts = countVerifies(page);
-		await page.goto(`${BASE}/invite/${pendingInviteCode}`);
+		await page.goto(`${BASE}/invite/${pendingInviteCode}`, { waitUntil: 'networkidle' });
 		await page.getByRole('button', { name: 'Send 6-digit code' }).click();
 		await exerciseCodeField(page, posts);
 	});

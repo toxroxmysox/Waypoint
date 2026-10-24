@@ -109,7 +109,7 @@ test.describe('#250 reject ghost → note + archive', () => {
 			// in the first server render (and load already ran — it won't appear on its own).
 			// Reload once as a robust fallback (the ghost is loader-driven, idempotent).
 			if (!(await ghost.isVisible({ timeout: 5000 }).catch(() => false))) {
-				await owner.page.reload();
+				await owner.page.reload({ waitUntil: 'networkidle' });
 			}
 			await expect(ghost).toBeVisible({ timeout: 10000 });
 

@@ -21,7 +21,7 @@ async function createPastTrip(page: import('@playwright/test').Page): Promise<st
 	const title = `Record E2E ${stamp}`;
 	const slug = title.toLowerCase().replace(/\s+/g, '-');
 
-	await page.goto(`${BASE}/trips/new`);
+	await page.goto(`${BASE}/trips/new`, { waitUntil: 'networkidle' });
 	await page.waitForURL('**/trips/new');
 
 	await page.fill('input[name="title"]', title);
@@ -240,7 +240,7 @@ test.describe('Closed Record view + Share + reopen (#242)', () => {
 		expect(created.ok()).toBeTruthy();
 
 		// Reload the closed record — the origin-story section now renders.
-		await page.reload();
+		await page.reload({ waitUntil: 'networkidle' });
 		const section = page
 			.getByText('How this trip came together')
 			.filter({ visible: true })

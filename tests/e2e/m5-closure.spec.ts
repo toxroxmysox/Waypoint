@@ -8,7 +8,7 @@ const BASE = E2E_BASE;
 // Secondary pages are surfaced on the /more page (planning mode) or reached by
 // direct route; navigate by URL to stay mode- and viewport-independent.
 async function openTripSlug(page: import('@playwright/test').Page): Promise<string> {
-	await page.goto(`${BASE}/trips`);
+	await page.goto(`${BASE}/trips`, { waitUntil: 'networkidle' });
 	await page.locator('a[href*="/trips/"]').first().click();
 	await page.waitForURL('**/trips/**');
 	return page.url().split('/trips/')[1].split(/[/?#]/)[0];
@@ -22,7 +22,7 @@ test.describe('M5 Closure', () => {
 
 	test('closeout wizard link visible on More page for owner', async ({ page }) => {
 		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/more`);
+		await page.goto(`${BASE}/trips/${slug}/more`, { waitUntil: 'networkidle' });
 		await expect(page.getByText('Closeout').filter({ visible: true }).first()).toBeVisible();
 	});
 
@@ -43,7 +43,7 @@ test.describe('M5 Closure', () => {
 		await page.getByRole('button', { name: /create|save/i }).click();
 		await page.waitForURL(`${BASE}/trips/${slug}`, { timeout: 10000 });
 
-		await page.goto(`${BASE}/trips/${slug}/closeout`);
+		await page.goto(`${BASE}/trips/${slug}/closeout`, { waitUntil: 'networkidle' });
 		await page.waitForURL('**/closeout');
 
 		const progress = page.getByText(/Day \d+ of \d+/).filter({ visible: true }).first();
@@ -52,7 +52,7 @@ test.describe('M5 Closure', () => {
 
 	test('archive settings section in trip settings', async ({ page }) => {
 		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/settings`);
+		await page.goto(`${BASE}/trips/${slug}/settings`, { waitUntil: 'networkidle' });
 		await page.waitForURL('**/settings');
 
 		// Section heading is "Public Archive" — substring match on "Archive".
@@ -61,13 +61,13 @@ test.describe('M5 Closure', () => {
 
 	test('export link on More page triggers download', async ({ page }) => {
 		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/more`);
+		await page.goto(`${BASE}/trips/${slug}/more`, { waitUntil: 'networkidle' });
 		await expect(page.getByText('Export').filter({ visible: true }).first()).toBeVisible();
 	});
 
 	test('import page renders with file input', async ({ page }) => {
 		// /trips/import is single-tree.
-		await page.goto(`${BASE}/trips/import`);
+		await page.goto(`${BASE}/trips/import`, { waitUntil: 'networkidle' });
 		const fileInput = page.locator('input[type="file"]');
 		await expect(fileInput).toBeAttached();
 	});
@@ -80,7 +80,7 @@ test.describe('M5 Closure', () => {
 			!process.env.PB_ADMIN_EMAIL,
 			'Set PB_ADMIN_EMAIL + PB_ADMIN_PASSWORD to exercise the public archive route'
 		);
-		const response = await page.goto(`${BASE}/archive/nonexistent-token-12345`);
+		const response = await page.goto(`${BASE}/archive/nonexistent-token-12345`, { waitUntil: 'networkidle' });
 		expect(response?.status()).toBe(404);
 	});
 });

@@ -113,7 +113,7 @@ test.describe('#274 + #275 Onboarding welcome card', () => {
 	}) => {
 		const { page, ctx } = await devLogin(browser, EMAILS.traveler);
 		try {
-			await page.goto(`${BASE}/trips/${tripSlug}`);
+			await page.goto(`${BASE}/trips/${tripSlug}`, { waitUntil: 'networkidle' });
 
 			// The card auto-shows regardless of trip content — the fixture trip has
 			// phases + VOTABLE items, so the old content-keyed hero would render nothing.
@@ -158,7 +158,7 @@ test.describe('#274 + #275 Onboarding welcome card', () => {
 				expect(res.ok()).toBeTruthy();
 			}
 
-			await page.goto(`${BASE}/trips/${tripSlug}`);
+			await page.goto(`${BASE}/trips/${tripSlug}`, { waitUntil: 'networkidle' });
 			const card = page.getByTestId('welcome-card').filter({ visible: true }).first();
 			await expect(card).toBeVisible({ timeout: 10000 });
 			// Now there's nothing left to vote on → the goals CTA, NOT the vote deck.
@@ -176,7 +176,7 @@ test.describe('#274 + #275 Onboarding welcome card', () => {
 	}) => {
 		const { page, ctx } = await devLogin(browser, EMAILS.viewer);
 		try {
-			await page.goto(`${BASE}/trips/${tripSlug}`);
+			await page.goto(`${BASE}/trips/${tripSlug}`, { waitUntil: 'networkidle' });
 
 			const card = page.getByTestId('welcome-card').filter({ visible: true }).first();
 			await expect(card).toBeVisible({ timeout: 10000 });
@@ -186,7 +186,7 @@ test.describe('#274 + #275 Onboarding welcome card', () => {
 			await expect(page.getByTestId('welcome-card')).toHaveCount(0, { timeout: 10000 });
 
 			// Reload the same trip — still gone (the signal persists).
-			await page.goto(`${BASE}/trips/${tripSlug}`);
+			await page.goto(`${BASE}/trips/${tripSlug}`, { waitUntil: 'networkidle' });
 			await expect(page.getByTestId('welcome-card')).toHaveCount(0, { timeout: 10000 });
 		} finally {
 			await ctx.close();
@@ -206,11 +206,11 @@ test.describe('#274 + #275 Onboarding welcome card', () => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 		try {
 			// 1. Onboarded → the welcome card does NOT auto-show on the trip overview.
-			await page.goto(`${BASE}/trips/${tripSlug}`);
+			await page.goto(`${BASE}/trips/${tripSlug}`, { waitUntil: 'networkidle' });
 			await expect(page.getByTestId('welcome-card')).toHaveCount(0, { timeout: 10000 });
 
 			// 2. The "Replay intro" entry lives in the trip "More" menu.
-			await page.goto(`${BASE}/trips/${tripSlug}/more`);
+			await page.goto(`${BASE}/trips/${tripSlug}/more`, { waitUntil: 'networkidle' });
 			const replay = page.getByTestId('replay-intro').filter({ visible: true }).first();
 			await expect(replay).toBeVisible({ timeout: 10000 });
 
@@ -243,11 +243,11 @@ test.describe('#274 + #275 Onboarding welcome card', () => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 		try {
 			// No param → gated → no card.
-			await page.goto(`${BASE}/trips/${tripSlug}`);
+			await page.goto(`${BASE}/trips/${tripSlug}`, { waitUntil: 'networkidle' });
 			await expect(page.getByTestId('welcome-card')).toHaveCount(0, { timeout: 10000 });
 
 			// ?welcome=1 → force-shown regardless of the stamped flag.
-			await page.goto(`${BASE}/trips/${tripSlug}?welcome=1`);
+			await page.goto(`${BASE}/trips/${tripSlug}?welcome=1`, { waitUntil: 'networkidle' });
 			await expect(
 				page.getByTestId('welcome-card').filter({ visible: true }).first()
 			).toBeVisible({ timeout: 10000 });
@@ -260,7 +260,7 @@ test.describe('#274 + #275 Onboarding welcome card', () => {
 		const { page, ctx } = await devLogin(browser, EMAILS.co_owner);
 		try {
 			await page.setViewportSize({ width: 375, height: 812 });
-			await page.goto(`${BASE}/trips/${tripSlug}`);
+			await page.goto(`${BASE}/trips/${tripSlug}`, { waitUntil: 'networkidle' });
 
 			await expect(
 				page.getByTestId('welcome-card').filter({ visible: true }).first()

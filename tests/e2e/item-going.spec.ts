@@ -82,7 +82,7 @@ test.describe('Are you going? (#440)', () => {
 	test('answer Going, change to Not going, see the struck bubble on the day page', async ({ browser }) => {
 		const { ctx, page } = await devLogin(browser, EMAILS.traveler);
 		try {
-			await page.goto(`${BASE}/trips/${SLUG}/items/${itemId}`);
+			await page.goto(`${BASE}/trips/${SLUG}/items/${itemId}`, { waitUntil: 'networkidle' });
 			await expect(page.getByRole('heading', { name: TITLE }).filter({ visible: true }).first()).toBeVisible({
 				timeout: 10000
 			});
@@ -101,12 +101,11 @@ test.describe('Are you going? (#440)', () => {
 			await expect(vis(page, '[data-testid="hero-not-going"]').first()).toBeVisible();
 
 			// Survives a reload.
-			await page.reload();
-			await page.waitForLoadState('networkidle');
+			await page.reload({ waitUntil: 'networkidle' });
 			await expect(vis(page, '[data-testid="going-answer"]').first()).toContainText("You're not going");
 
 			// Day page: a struck bubble after the going one, and no "+ Me" chip.
-			await page.goto(`${BASE}/trips/${SLUG}/days/${dayId}`);
+			await page.goto(`${BASE}/trips/${SLUG}/days/${dayId}`, { waitUntil: 'networkidle' });
 			await expect(page.getByText(TITLE).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
 			await page.waitForLoadState('networkidle');
 			await expect(page.locator('[aria-label$=", not going"]').filter({ visible: true }).first()).toBeVisible();
@@ -119,7 +118,7 @@ test.describe('Are you going? (#440)', () => {
 	test('viewers get no Going controls', async ({ browser }) => {
 		const { ctx, page } = await devLogin(browser, EMAILS.viewer);
 		try {
-			await page.goto(`${BASE}/trips/${SLUG}/items/${itemId}`);
+			await page.goto(`${BASE}/trips/${SLUG}/items/${itemId}`, { waitUntil: 'networkidle' });
 			await expect(page.getByRole('heading', { name: TITLE }).filter({ visible: true }).first()).toBeVisible({
 				timeout: 10000
 			});

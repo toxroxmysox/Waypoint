@@ -83,7 +83,7 @@ test.describe('#271 availability poll', () => {
 		// --- 1. COLD-OPEN the public poll (anonymous context — no login). ---------
 		const anonCtx = await browser.newContext({ viewport: { width: 375, height: 812 } });
 		const poll = await anonCtx.newPage();
-		await poll.goto(`${BASE}/poll/${token}`);
+		await poll.goto(`${BASE}/poll/${token}`, { waitUntil: 'networkidle' });
 		await expect(poll.getByText('E2E Availability Trip').first()).toBeVisible({ timeout: 10000 });
 
 		// Paint the green day, then a couple neighbours (tap to mark Free).
@@ -126,7 +126,7 @@ test.describe('#271 availability poll', () => {
 		const app = await ownerCtx.newPage();
 		await app.goto(`${BASE}/api/dev/login`);
 		await app.waitForURL(/\/(trips|claim)/, { timeout: 15000 });
-		await app.goto(`${BASE}/trips/${slug}/availability`);
+		await app.goto(`${BASE}/trips/${slug}/availability`, { waitUntil: 'networkidle' });
 		await app.getByTestId('mode-group').filter({ visible: true }).first().click();
 		const greenCell = app.getByTestId(`day-${greenDay}`).filter({ visible: true }).first();
 		await expect(greenCell).toHaveAttribute('data-status', 'green', { timeout: 10000 });

@@ -65,8 +65,12 @@ test.describe('Multi-day items', () => {
 		await expect(startBanner).toContainText(/Check-in/i);
 
 		// --- Walk to the next day (a middle day, inside [today, +3]) via DayNav ---
-		await page.locator('a[aria-label^="Next day:"]:visible').first().click();
-		await page.waitForURL(new RegExp(`/trips/${tripSlug}/days/`));
+		// Wait for the NEXT day's path: a bare /days/ pattern already matches the start
+		// day, so it returned before navigating and read the start day's banner (#384).
+		const nextDay = page.locator('a[aria-label^="Next day:"]:visible').first();
+		const nextPath = (await nextDay.getAttribute('href'))!.split('?')[0];
+		await nextDay.click();
+		await page.waitForURL((u) => u.pathname === nextPath, { timeout: 10000 });
 		// Banner re-renders here with "night X of N" — proof it spans, not a timeline card.
 		const midBanner = page.locator('[data-span-band]:visible').first();
 		await expect(midBanner).toContainText('Test Hotel', { timeout: 5000 });

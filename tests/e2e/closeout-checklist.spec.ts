@@ -54,12 +54,12 @@ test.describe('Closeout leaves checklists untouched (#53)', () => {
 		await expect(page.getByText('Tent').filter({ visible: true }).first()).toBeVisible();
 
 		// --- Closeout: mark the item done (reviews the Item) ---
-		await page.goto(`${BASE}/trips/${tripSlug}/closeout`);
+		await page.goto(`${BASE}/trips/${tripSlug}/closeout`, { waitUntil: 'networkidle' });
 		await page.getByRole('button', { name: 'Done', exact: true }).first().click();
 		await expect(page.getByRole('button', { name: 'Done', exact: true })).toHaveCount(0, { timeout: 5000 });
 
 		// --- Item is reviewed (Done) but its checklist + task survive ---
-		await page.goto(itemUrl);
+		await page.goto(itemUrl, { waitUntil: 'networkidle' });
 		await expect(page.getByText('Done').filter({ visible: true }).first()).toBeVisible();
 		await expect(page.getByText('Tent').filter({ visible: true }).first()).toBeVisible();
 	});
@@ -106,7 +106,7 @@ test.describe('Closeout leaves checklists untouched (#53)', () => {
 		await page.waitForURL(/\/days\//, { timeout: 10000 });
 
 		// Closeout: advance to Day 2, then click "All done".
-		await page.goto(`${BASE}/trips/${tripSlug}/closeout`);
+		await page.goto(`${BASE}/trips/${tripSlug}/closeout`, { waitUntil: 'networkidle' });
 		await expect(page.getByText('Day 1 of', { exact: false }).filter({ visible: true }).first()).toBeVisible();
 		await page.getByRole('button', { name: 'Next Day' }).filter({ visible: true }).first().click();
 		await expect(page.getByText('Day 2 of', { exact: false }).filter({ visible: true }).first()).toBeVisible();

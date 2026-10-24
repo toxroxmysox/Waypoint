@@ -171,7 +171,7 @@ test.describe('Trip-Mode Money summary (#227)', () => {
 	test('glance renders both N1 and N2, labeled, per-person', async ({ browser }) => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 		try {
-			await page.goto(`${BASE}/trips/${SLUG}/money`);
+			await page.goto(`${BASE}/trips/${SLUG}/money`, { waitUntil: 'networkidle' });
 			await page.waitForURL('**/money');
 
 			await expect(page.getByText('Left to spend').filter({ visible: true }).first()).toBeVisible({
@@ -205,7 +205,7 @@ test.describe('Trip-Mode Money summary (#227)', () => {
 	test('deep-links to the planning Money pages', async ({ browser }) => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 		try {
-			await page.goto(`${BASE}/trips/${SLUG}/money`);
+			await page.goto(`${BASE}/trips/${SLUG}/money`, { waitUntil: 'networkidle' });
 			await page.waitForURL('**/money');
 			await expect(page.locator(`a[href="/trips/${SLUG}/expenses"]`).first()).toHaveCount(1);
 		} finally {
@@ -217,7 +217,7 @@ test.describe('Trip-Mode Money summary (#227)', () => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 		try {
 			await page.setViewportSize({ width: 375, height: 812 });
-			await page.goto(`${BASE}/trips/${SLUG}/money`);
+			await page.goto(`${BASE}/trips/${SLUG}/money`, { waitUntil: 'networkidle' });
 			await page.waitForURL('**/money');
 			await expect(page.getByText('Left to spend').filter({ visible: true }).first()).toBeVisible({
 				timeout: 10000
@@ -243,7 +243,7 @@ test.describe('Trip-Mode Money summary (#227)', () => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 		try {
 			await page.setViewportSize({ width: 1280, height: 900 });
-			await page.goto(`${BASE}/trips/${SLUG}/money`);
+			await page.goto(`${BASE}/trips/${SLUG}/money`, { waitUntil: 'networkidle' });
 			await page.waitForURL('**/money');
 			await expect(page.getByText('Left to spend').filter({ visible: true }).first()).toBeVisible({
 				timeout: 10000

@@ -97,7 +97,7 @@ test.describe('Book and Mark booked (#441)', () => {
 	test('Mark booked with a code, then the prefilled Add expense', async ({ browser }) => {
 		const { ctx, page } = await devLogin(browser, EMAILS.owner);
 		try {
-			await page.goto(`${BASE}/trips/${SLUG}/items/${ids.pay}`);
+			await page.goto(`${BASE}/trips/${SLUG}/items/${ids.pay}`, { waitUntil: 'networkidle' });
 			await expect(page.getByRole('heading', { name: 'Harbor Hotel' }).filter({ visible: true }).first()).toBeVisible({
 				timeout: 10000
 			});
@@ -127,7 +127,7 @@ test.describe('Book and Mark booked (#441)', () => {
 			expect(expenses.items).toHaveLength(0);
 
 			// The item is booked and carries the code.
-			await page.goto(`${BASE}/trips/${SLUG}/items/${ids.pay}`);
+			await page.goto(`${BASE}/trips/${SLUG}/items/${ids.pay}`, { waitUntil: 'networkidle' });
 			await page.waitForLoadState('networkidle');
 			await expect(vis(page, '[data-testid="hero-booked"]').first()).toBeVisible();
 			await expect(vis(page, '[data-needs-booking]')).toHaveCount(0);
@@ -141,7 +141,7 @@ test.describe('Book and Mark booked (#441)', () => {
 	test('unticked: stays on the item page, booked, no expense screen', async ({ browser }) => {
 		const { ctx, page } = await devLogin(browser, EMAILS.owner);
 		try {
-			await page.goto(`${BASE}/trips/${SLUG}/items/${ids.plain}`);
+			await page.goto(`${BASE}/trips/${SLUG}/items/${ids.plain}`, { waitUntil: 'networkidle' });
 			await expect(page.getByRole('heading', { name: 'Beach Cabin' }).filter({ visible: true }).first()).toBeVisible({
 				timeout: 10000
 			});
@@ -158,7 +158,7 @@ test.describe('Book and Mark booked (#441)', () => {
 	test('a meal reads as a reservation (#462)', async ({ browser }) => {
 		const { ctx, page } = await devLogin(browser, EMAILS.owner);
 		try {
-			await page.goto(`${BASE}/trips/${SLUG}/items/${ids.meal}`);
+			await page.goto(`${BASE}/trips/${SLUG}/items/${ids.meal}`, { waitUntil: 'networkidle' });
 			await expect(page.getByRole('heading', { name: 'Harbor Oysters' }).filter({ visible: true }).first()).toBeVisible({
 				timeout: 10000
 			});
@@ -181,7 +181,7 @@ test.describe('Book and Mark booked (#441)', () => {
 		for (const email of [EMAILS.traveler, EMAILS.viewer]) {
 			const { ctx, page } = await devLogin(browser, email);
 			try {
-				await page.goto(`${BASE}/trips/${SLUG}/items/${ids.gate}`);
+				await page.goto(`${BASE}/trips/${SLUG}/items/${ids.gate}`, { waitUntil: 'networkidle' });
 				await expect(page.getByRole('heading', { name: 'Mountain Lodge' }).filter({ visible: true }).first()).toBeVisible({
 					timeout: 10000
 				});

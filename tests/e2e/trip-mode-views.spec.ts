@@ -19,7 +19,7 @@ test.describe('Trip Mode Views (#244 merged Now)', () => {
 
 	test('Now tab renders a valid weighted state (not the old stub)', async ({ page }) => {
 		const slug = await goToActiveTrip(page);
-		await page.goto(`${BASE}/trips/${slug}/now`);
+		await page.goto(`${BASE}/trips/${slug}/now`, { waitUntil: 'networkidle' });
 		await page.waitForURL('**/now');
 
 		// Should NOT show the old stub text (visible-scoped — dual AppShell trees).
@@ -37,7 +37,7 @@ test.describe('Trip Mode Views (#244 merged Now)', () => {
 
 	test('Now owns the Today / Next 3 Days sub-tabs', async ({ page }) => {
 		const slug = await goToActiveTrip(page);
-		await page.goto(`${BASE}/trips/${slug}/now`);
+		await page.goto(`${BASE}/trips/${slug}/now`, { waitUntil: 'networkidle' });
 		await page.waitForURL('**/now');
 
 		// The merged Now carries the sub-tabs (Today is the default view here).
@@ -47,14 +47,14 @@ test.describe('Trip Mode Views (#244 merged Now)', () => {
 
 	test('/today redirects to the merged /now', async ({ page }) => {
 		const slug = await goToActiveTrip(page);
-		await page.goto(`${BASE}/trips/${slug}/today`);
+		await page.goto(`${BASE}/trips/${slug}/today`, { waitUntil: 'networkidle' });
 		await page.waitForURL(`**/trips/${slug}/now`);
 		expect(page.url()).toContain(`/trips/${slug}/now`);
 	});
 
 	test('Next 3 Days sub-tab still lives at /today/upcoming', async ({ page }) => {
 		const slug = await goToActiveTrip(page);
-		await page.goto(`${BASE}/trips/${slug}/today/upcoming`);
+		await page.goto(`${BASE}/trips/${slug}/today/upcoming`, { waitUntil: 'networkidle' });
 		await page.waitForURL('**/today/upcoming');
 		await expect(page.locator(':visible', { hasText: 'Next 3 Days' }).first()).toBeVisible();
 	});
@@ -62,7 +62,7 @@ test.describe('Trip Mode Views (#244 merged Now)', () => {
 	test('Trip nav = Now · Money · Add · Docs; no 5th-tab overflow at 375px', async ({ page }) => {
 		await page.setViewportSize({ width: 375, height: 812 });
 		const slug = await goToActiveTrip(page);
-		await page.goto(`${BASE}/trips/${slug}/now`);
+		await page.goto(`${BASE}/trips/${slug}/now`, { waitUntil: 'networkidle' });
 		await page.waitForURL('**/now');
 
 		// The mobile BottomNav is the visible nav at 375px (last :visible <nav>).
@@ -80,7 +80,7 @@ test.describe('Trip Mode Views (#244 merged Now)', () => {
 	test('Money tab navigates to the /money glance', async ({ page }) => {
 		await page.setViewportSize({ width: 375, height: 812 });
 		const slug = await goToActiveTrip(page);
-		await page.goto(`${BASE}/trips/${slug}/now`);
+		await page.goto(`${BASE}/trips/${slug}/now`, { waitUntil: 'networkidle' });
 		await page.waitForURL('**/now');
 
 		await page.locator('nav:visible').last().getByText('Money').click();
@@ -91,7 +91,7 @@ test.describe('Trip Mode Views (#244 merged Now)', () => {
 	test('Add button opens the choice sheet', async ({ page }) => {
 		await page.setViewportSize({ width: 375, height: 812 });
 		const slug = await goToActiveTrip(page);
-		await page.goto(`${BASE}/trips/${slug}/now`);
+		await page.goto(`${BASE}/trips/${slug}/now`, { waitUntil: 'networkidle' });
 		await page.waitForURL('**/now');
 
 		await page.locator('.md-desktop\\:hidden button[aria-label="Add"]').click();
