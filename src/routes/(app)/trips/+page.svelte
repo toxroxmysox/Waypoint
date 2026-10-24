@@ -275,7 +275,7 @@
 					<div class="flex items-baseline justify-between pt-1">
 						<h2 class="text-moss text-[11px] font-bold tracking-[0.2em] uppercase">On trip</h2>
 					</div>
-					{#each data.active as { trip }}
+					{#each data.active as { trip }, i (trip?.id ?? i)}
 						<Card href="/trips/{trip?.slug}" strong accent="var(--color-clay)">
 							<div class="p-4">
 								<div class="flex items-start justify-between gap-2">
@@ -303,7 +303,7 @@
 					<div class="flex items-baseline justify-between pt-1">
 						<h2 class="text-moss text-[11px] font-bold tracking-[0.2em] uppercase">Upcoming</h2>
 					</div>
-					{#each data.upcoming as { trip }}
+					{#each data.upcoming as { trip }, i (trip?.id ?? i)}
 						<Card href="/trips/{trip?.slug}">
 							<div class="p-4">
 								<h3 class="font-display text-ink text-lg leading-tight font-semibold">
@@ -332,7 +332,7 @@
 							Taking shape
 						</h2>
 					</div>
-					{#each data.forming as { trip }}
+					{#each data.forming as { trip }, i (trip?.id ?? i)}
 						<Card href="/trips/{trip?.slug}">
 							<div class="p-4">
 								<div class="flex items-start justify-between gap-2">
@@ -359,7 +359,7 @@
 							Past
 						</h2>
 					</div>
-					{#each data.past as { trip }}
+					{#each data.past as { trip }, i (trip?.id ?? i)}
 						<Card href="/trips/{trip?.slug}" class="opacity-80">
 							<div class="p-4">
 								<h3 class="text-ink-soft text-base leading-tight font-medium">{trip?.title}</h3>

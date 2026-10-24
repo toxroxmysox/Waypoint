@@ -9,7 +9,6 @@
 
 	let {
 		slug,
-		role = '',
 		tripName = '',
 		phases = [],
 		config,
@@ -94,7 +93,7 @@
 
 	<!-- Nav tabs -->
 	<div class="flex flex-1 flex-col gap-1 px-2 pt-3 lg-desktop:px-3">
-		{#each config.tabs as tab}
+		{#each config.tabs as tab (tab.id)}
 			{@const isActive = activeTabId === tab.id}
 			{@const activeClasses = config.accent === 'clay'
 				? 'bg-clay-tint text-clay font-medium'
@@ -158,7 +157,7 @@
 	{#if phases.length > 0 && mode === 'planning'}
 		<div class="border-line hidden flex-col gap-1 border-t px-3 py-3 lg-desktop:flex">
 			<p class="text-ink-muted mb-1 px-2 text-[11px] font-semibold uppercase tracking-wider">Phases</p>
-			{#each phases as phase}
+			{#each phases as phase (phase.id)}
 				<a
 					href="/trips/{slug}/phases/{phase.id}"
 					class="text-ink-soft hover:text-ink flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-paper"

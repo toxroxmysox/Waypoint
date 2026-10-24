@@ -165,7 +165,7 @@
 				<p class="text-ink text-sm font-medium">{formatTripDate(todayDay.date, 'full')}</p>
 				{#if todayPhases.length > 0}
 					<div class="flex flex-wrap gap-1.5">
-						{#each todayPhases as phase}
+						{#each todayPhases as phase (phase.id)}
 							<span
 								class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
 								style="background-color: var(--color-moss-tint); color: var(--color-moss)"
@@ -291,7 +291,7 @@
 			</p>
 			{#if phases.length > 0}
 				<div class="space-y-1.5 pt-1">
-					{#each phases as phase}
+					{#each phases as phase (phase.id)}
 						<div class="flex items-center gap-2 text-xs">
 							<span class="h-2 w-2 shrink-0 rounded-full" style="background-color: var(--color-moss)"></span>
 							<span class="text-ink-soft flex-1 truncate">{phase.name}</span>
@@ -311,7 +311,7 @@
 			</p>
 			{#if phases.length > 0}
 				<div class="space-y-2 pt-2">
-					{#each phases as phase}
+					{#each phases as phase (phase.id)}
 						<div class="flex items-start gap-2">
 							<span class="mt-1 h-2 w-2 shrink-0 rounded-full" style="background-color: var(--color-moss)"></span>
 							<div class="min-w-0">
@@ -340,7 +340,7 @@
 				</p>
 				{#if summary && summary.breakdown.length > 0}
 					<div class="space-y-1.5 pt-1">
-						{#each summary.breakdown as row}
+						{#each summary.breakdown as row, i (i)}
 							<div class="flex items-center gap-2 text-xs">
 								<span class="text-ink-soft flex-1 truncate">{row.label}</span>
 								<span class="text-ink-muted font-mono tabular-nums">{row.count}</span>

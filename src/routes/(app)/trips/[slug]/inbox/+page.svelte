@@ -128,7 +128,7 @@
 										class="text-ink-soft flex items-center gap-2 text-xs"
 										aria-label="{tally.total} {tally.total === 1 ? 'vote' : 'votes'}"
 									>
-										{#each ['love', 'like', 'flexible', 'dislike'] as const as opt}
+										{#each ['love', 'like', 'flexible', 'dislike'] as const as opt (opt)}
 											{#if tally.counts[opt] > 0}
 												<span class="inline-flex items-center gap-0.5 tabular-nums">
 													<span aria-hidden="true">{TALLY_GLYPH[opt]}</span>{tally.counts[opt]}

@@ -4,7 +4,12 @@
 
 	let show = $state(false);
 	let isIOS = $state(false);
-	let deferredPrompt: Event | null = null;
+	// Chromium-only; not in lib.dom.
+	type BeforeInstallPromptEvent = Event & {
+		prompt(): Promise<void>;
+		userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+	};
+	let deferredPrompt: BeforeInstallPromptEvent | null = null;
 
 	const STORAGE_KEY = 'waypoint-a2hs-dismissed';
 	const DISMISS_DAYS = 30;
@@ -32,7 +37,7 @@
 		// Android: listen for beforeinstallprompt
 		window.addEventListener('beforeinstallprompt', (e) => {
 			e.preventDefault();
-			deferredPrompt = e;
+			deferredPrompt = e as BeforeInstallPromptEvent;
 			show = true;
 		});
 	});
@@ -44,8 +49,8 @@
 
 	async function installAndroid() {
 		if (!deferredPrompt) return;
-		(deferredPrompt as any).prompt();
-		const result = await (deferredPrompt as any).userChoice;
+		deferredPrompt.prompt();
+		const result = await deferredPrompt.userChoice;
 		if (result.outcome === 'accepted') {
 			show = false;
 		}

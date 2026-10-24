@@ -1,7 +1,7 @@
 import { fail, redirect, isRedirect, error } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { TripMember } from '$lib/types';
-import type { Scenario, ScenarioVote, ScenarioPoint, Decision } from '$lib/ideation/types';
+import type { Scenario, ScenarioVote, ScenarioPoint } from '$lib/ideation/types';
 import type { Item } from '$lib/itinerary/types';
 import { withAvatarUrls } from '$lib/collaboration/member-avatar';
 import { formatDateRange } from '$lib/shell/format';

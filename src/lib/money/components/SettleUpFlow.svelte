@@ -90,7 +90,7 @@
 	{:else}
 		<p class="text-sm text-ink-muted mb-4">{debts.length} {debts.length === 1 ? 'payment' : 'payments'} needed to settle all debts</p>
 		<div class="space-y-2">
-			{#each debts as debt}
+			{#each debts as debt, i (i)}
 				{@const iOwe = debt.from === membershipId}
 				{@const owedToMe = debt.to === membershipId}
 				<div class="flex items-center justify-between rounded-lg border border-line p-3">

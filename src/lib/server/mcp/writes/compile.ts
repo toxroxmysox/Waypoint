@@ -92,7 +92,7 @@ function titleOf(record: Record<string, unknown> | null, data: Record<string, un
 }
 
 /** The field names an op may carry: the spec's fields, its day field, and `trip` on a create. */
-function allowedKeys(spec: WritableSpec, action: WriteOp['action']): Set<string> {
+function allowedKeys(spec: WritableSpec): Set<string> {
 	const keys = new Set(Object.keys(spec.fields));
 	if (spec.dayField) keys.add(spec.dayField);
 	if (spec.tripPath === 'trip') keys.add('trip');
@@ -144,7 +144,7 @@ export async function compileOps(loader: RecordLoader, ref: TripRef, ops: WriteO
 		if (OWNERS_ONLY[op.collection] && !isPrivileged(ref)) throw new Error(`Only the trip's owners can change ${OWNERS_ONLY[op.collection]}.`);
 
 		const raw = { ...(op.data ?? {}) };
-		const allowed = allowedKeys(spec, op.action);
+		const allowed = allowedKeys(spec);
 		for (const field of Object.keys(raw)) {
 			if (field === 'date' && spec.dayField) continue;
 			const why = blockedReason(op.collection, field.replace(/^\+|[+-]$/g, ''));

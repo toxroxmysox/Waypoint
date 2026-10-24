@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { getFieldConfig } from '$lib/itinerary/item-fields';
 	import { bookingWords, defaultRequiresBooking } from '$lib/itinerary/booking-projection';
-	import type { ItemType, ConfirmationCode, Item } from '$lib/types';
+	import type { ItemType, ConfirmationCode } from '$lib/types';
 	import Card from '$lib/ui/Card.svelte';
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
 	import PlacesAutocomplete from '$lib/itinerary/components/PlacesAutocomplete.svelte';
 	import FlightLookup from '$lib/itinerary/components/FlightLookup.svelte';
-	import { titleCase, formatCalendarDate } from '$lib/shell/format';
+	import { formatCalendarDate } from '$lib/shell/format';
 	import { untrack } from 'svelte';
 	import { memberDisplayName } from '$lib/itinerary/member-name';
 	import type { ItemFormMode, ItemFormData, ItemFormContext } from './ItemFormFields';
@@ -161,7 +161,7 @@
 				<fieldset>
 					<legend class="text-ink-soft block text-sm font-medium">Type</legend>
 					<div class="mt-1 flex flex-wrap gap-2">
-						{#each (['lodging', 'transportation', 'flight', 'activity', 'meal', 'note'] as const) as type}
+						{#each (['lodging', 'transportation', 'flight', 'activity', 'meal', 'note'] as const) as type (type)}
 							{@const typeLabel = getFieldConfig(type).labels.typeLabel}
 							{@const active = selectedType === type}
 							<button
@@ -198,7 +198,7 @@
 						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 					>
 						<option value="">None</option>
-						{#each config.labels.subtypeOptions as opt}
+						{#each config.labels.subtypeOptions as opt (opt.value)}
 							<option value={opt.value}>{opt.label}</option>
 						{/each}
 					</select>
@@ -276,7 +276,7 @@
 						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 					>
 						<option value="">Unscheduled</option>
-						{#each context.days as d}
+						{#each context.days as d (d.id)}
 							<option value={d.id}>
 								{formatCalendarDate(d.date, {
 									weekday: 'short',
@@ -303,7 +303,7 @@
 					class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
 				>
 					<option value="">{phaseRequired ? 'Select a phase…' : 'None'}</option>
-					{#each context.phases as p}
+					{#each context.phases as p (p.id)}
 						<option value={p.id}>{p.name}</option>
 					{/each}
 				</select>
@@ -439,7 +439,7 @@
 					{/snippet}
 					Confirmation codes
 				</SectionH>
-				{#each confirmationCodes as code, i}
+				{#each confirmationCodes as code, i (i)}
 					<div class="flex gap-2">
 						<input
 							type="text"
@@ -498,7 +498,7 @@
 				<fieldset>
 					<legend class="text-moss text-[11px] font-bold tracking-[0.2em] uppercase">Going</legend>
 					<div class="mt-2 space-y-1">
-						{#each context.members as member}
+						{#each context.members as member (member.id)}
 							<label class="flex items-center gap-2">
 								<input
 									type="checkbox"
@@ -525,7 +525,7 @@
 					<legend class="text-moss text-[11px] font-bold tracking-[0.2em] uppercase">Addresses goal(s)</legend>
 					<p class="text-ink-muted mt-1 text-xs">Link this plan to the goals it helps make happen.</p>
 					<div class="mt-2 space-y-1">
-						{#each context.goals as goal}
+						{#each context.goals as goal (goal.id)}
 							<label class="flex items-center gap-2">
 								<input
 									type="checkbox"

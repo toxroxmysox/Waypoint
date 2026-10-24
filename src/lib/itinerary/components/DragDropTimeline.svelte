@@ -35,8 +35,6 @@
 		parkingByPhase = [],
 		dayPhaseIds = [],
 		scoreById = {},
-		tripSlug,
-		dayId,
 		canArrange = true,
 		canPullUp = () => true,
 		children

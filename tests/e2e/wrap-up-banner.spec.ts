@@ -48,7 +48,7 @@ test.describe('Wrap-up banner (#239)', () => {
 	test('past-end trip Overview renders the wrap-up banner instead of the trip-details top', async ({
 		page
 	}) => {
-		const slug = await createPastTrip(page);
+		await createPastTrip(page);
 
 		// The banner replaces the top of the Overview. Its Close-out row is always
 		// outstanding in wrap-up — it's the deliberate transition out of wrap-up.
@@ -78,7 +78,7 @@ test.describe('Wrap-up banner (#239)', () => {
 	test('a fresh past-end trip with no expenses hides the Settle-up row (gated on balance)', async ({
 		page
 	}) => {
-		const slug = await createPastTrip(page);
+		await createPastTrip(page);
 
 		// No expenses → no balance owed → the Settle-up row falls away (Grill Res. #6:
 		// settle-up is gated on balance, not lifecycle). Close-out still shows.
@@ -90,7 +90,7 @@ test.describe('Wrap-up banner (#239)', () => {
 
 	test('wrap-up banner is usable one-handed at 375px', async ({ page }) => {
 		await page.setViewportSize({ width: 375, height: 812 });
-		const slug = await createPastTrip(page);
+		await createPastTrip(page);
 
 		const banner = page.getByRole('region', { name: 'Trip wrap-up' }).filter({ visible: true }).first();
 		await expect(banner).toBeVisible();

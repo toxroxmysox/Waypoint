@@ -67,7 +67,7 @@
 					};
 				}}
 			>
-				{#each pendingItems as item}
+				{#each pendingItems as item (item.id)}
 					<input type="hidden" name="item_ids" value={item.id} />
 				{/each}
 				<button
