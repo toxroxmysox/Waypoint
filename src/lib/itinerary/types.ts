@@ -47,7 +47,14 @@ export interface Day extends RecordModel {
 	notes: string;
 }
 
-export type ItemType = 'lodging' | 'transportation' | 'activity' | 'meal' | 'note' | 'checklist' | 'flight';
+export type ItemType =
+	| 'lodging'
+	| 'transportation'
+	| 'activity'
+	| 'meal'
+	| 'note'
+	| 'checklist'
+	| 'flight';
 export type ItemStatus = 'planned' | 'done' | 'considered' | 'unplanned';
 
 export interface ConfirmationCode {

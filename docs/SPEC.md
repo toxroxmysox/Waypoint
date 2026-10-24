@@ -11,6 +11,7 @@
 A self-hosted, mobile-first PWA that replaces the Google Doc / Google Sheet / Splitwise / pinned-message stack Scott and Abby use for trip planning, execution, and post-trip sharing. Must be polished enough that non-technical friends will actually contribute, structured enough that nothing gets lost between planning and trip day, and shareable enough that the trip lives on as a public archive afterward.
 
 **Two modes, one view:**
+
 1. **Planning Mode** — collaborative itinerary building. Default mode. 5-tab moss nav (Itinerary, Money, Activity, Vault, More). Available in every lifecycle state. **Forming exception (#270/ADR-0022):** a dateless trip (derived lifecycle `forming`) gates the nav to its scope — 4-tab moss nav (Ideas, Members, Goals, More; settings stays reachable under More as chrome). Day/phase/timeline, money, and documents surfaces hide until dated; the trip home carries a prominent set-dates affordance (the one-way promotion). The trips list shows forming trips with a subtle "No dates yet" badge, sorted ahead of past trips. "Forming" is internal vocabulary — never a UI label.
 2. **Trip Mode** — live-trip execution. Phone-first, one-handed, large cards, offline-capable read. 4-tab clay nav (Now, Money, Add, Docs). Available only when the trip's **derived lifecycle** is `active` (there is no stored `status` field — the lifecycle is computed from dates + `archived`; see §Data Model / CONTEXT.md Trip). Default mode for active trips; user can switch to Planning Mode and back. **Now** absorbed Today (#244): it is one weighted whole-day tab with sub-tabs **Today** (default — the weighted view at `/now`) and **Next 3 days** (`/today/upcoming`); `/today` redirects to `/now`. The **Money** tab is the read-only Trip-Mode per-person money glance at `/trips/[slug]/money` (clay chrome via `resolveChromeMode`) — see §Money; merging Now+Today freed its slot (375px can't hold a 5th tab + the centre Add FAB).
 3. **Public Archive** — read-only post-trip view of what actually happened. Not a mode — rendered automatically for closed trips and via public share link. Linkable from Scott's website.
@@ -19,21 +20,21 @@ A self-hosted, mobile-first PWA that replaces the Google Doc / Google Sheet / Sp
 
 ## 2. Tech Stack
 
-| Layer | Choice | Rationale |
-|---|---|---|
-| Frontend | **SvelteKit** (TypeScript) | Lighter than Next, great PWA support, gentler learning curve for first webapp |
-| UI | **Tailwind CSS** + custom design tokens | Fast iteration, no CSS-in-JS overhead |
-| Component primitives | **Melt UI** or **shadcn-svelte** | Headless, accessible, themeable |
-| Backend | **PocketBase** (Go binary, SQLite under the hood) | Auth, DB, file storage, realtime, admin UI in one binary; matches open-source/self-hosted preference |
-| Auth | PocketBase email + 6-digit code | No passwords; less friction; sidesteps magic-link device trap |
-| Maps / Places | **Google Maps Platform** (Places API New, with session tokens) | Best worldwide coverage; usage well within free tier |
-| Flight data | **AeroDataBox** (RapidAPI) | Freemium, sufficient for personal volume |
-| Email delivery | **Resend** | Free tier 3000/month; clean API |
-| Analytics | **Umami** (self-hosted) | Privacy-first, no cookies, lightweight |
-| Reverse proxy + SSL | **Caddy** | Auto Let's Encrypt; trivial config |
-| Hosting (production) | **Home server "basecamp"** — self-hosted, public via Cloudflare Tunnel. Infra → `homeserver-stacks/BASECAMP.md`; deploy → `docs/NAS_MIGRATION_RUNBOOK.md` | Open-source, self-hosted, low cost |
-| Hosting (preview) | Local dev / isolated PocketBase over Tailscale | — |
-| Backups | Nightly cron rsync of PocketBase SQLite to second location (B2/S3 or another box) | Cheap, simple, sufficient |
+| Layer                | Choice                                                                                                                                                    | Rationale                                                                                            |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Frontend             | **SvelteKit** (TypeScript)                                                                                                                                | Lighter than Next, great PWA support, gentler learning curve for first webapp                        |
+| UI                   | **Tailwind CSS** + custom design tokens                                                                                                                   | Fast iteration, no CSS-in-JS overhead                                                                |
+| Component primitives | **Melt UI** or **shadcn-svelte**                                                                                                                          | Headless, accessible, themeable                                                                      |
+| Backend              | **PocketBase** (Go binary, SQLite under the hood)                                                                                                         | Auth, DB, file storage, realtime, admin UI in one binary; matches open-source/self-hosted preference |
+| Auth                 | PocketBase email + 6-digit code                                                                                                                           | No passwords; less friction; sidesteps magic-link device trap                                        |
+| Maps / Places        | **Google Maps Platform** (Places API New, with session tokens)                                                                                            | Best worldwide coverage; usage well within free tier                                                 |
+| Flight data          | **AeroDataBox** (RapidAPI)                                                                                                                                | Freemium, sufficient for personal volume                                                             |
+| Email delivery       | **Resend**                                                                                                                                                | Free tier 3000/month; clean API                                                                      |
+| Analytics            | **Umami** (self-hosted)                                                                                                                                   | Privacy-first, no cookies, lightweight                                                               |
+| Reverse proxy + SSL  | **Caddy**                                                                                                                                                 | Auto Let's Encrypt; trivial config                                                                   |
+| Hosting (production) | **Home server "basecamp"** — self-hosted, public via Cloudflare Tunnel. Infra → `homeserver-stacks/BASECAMP.md`; deploy → `docs/NAS_MIGRATION_RUNBOOK.md` | Open-source, self-hosted, low cost                                                                   |
+| Hosting (preview)    | Local dev / isolated PocketBase over Tailscale                                                                                                            | —                                                                                                    |
+| Backups              | Nightly cron rsync of PocketBase SQLite to second location (B2/S3 or another box)                                                                         | Cheap, simple, sufficient                                                                            |
 
 ---
 
@@ -42,12 +43,15 @@ A self-hosted, mobile-first PWA that replaces the Google Doc / Google Sheet / Sp
 ### Start servers (two terminals)
 
 **Terminal 1 — PocketBase:**
+
 ```bash
 ./backend/start.sh
 ```
+
 `start.sh` sources `.env.local` automatically. **Do not use `./backend/pocketbase serve` directly** — it won't pick up `RESEND_API_KEY`, `RESEND_FROM`, or `WAYPOINT_DEV_MODE`.
 
 **Terminal 2 — SvelteKit:**
+
 ```bash
 pnpm dev
 ```
@@ -80,41 +84,42 @@ All test harnesses require PocketBase running via `./backend/start.sh` with `WAY
 
 ## 4. User Roles & Permissions
 
-| Action | Owner | Co-Owner | Traveler | Viewer | Public (archive link) |
-|---|:---:|:---:|:---:|:---:|:---:|
-| Create/edit trip metadata | ✓ | ✓ | — | — | — |
-| Add/edit/delete items | ✓ | ✓ | suggest only*; edit OWN immediate‡ | — | — |
-| Self-assign (toggle own `assigned_to`) | ✓ | ✓ | ✓ (immediate)† | — | — |
-| Say Not going (own `not_going`, #402) | ✓ own only | ✓ own only | ✓ own only (immediate)† | — | — |
-| Book / unbook items | ✓ | ✓ | suggest only | — | — |
-| Mark done / use closeout wizard (item walk) | ✓ | ✓ | ✓§ | — | — |
-| Publish public record (closeout publish step / Publish control) | ✓ | ✓ | — | — | — |
-| View Trip Vault | ✓ | ✓ | ✓ (with trip password) | — | — |
-| Edit Trip Vault | ✓ | ✓ | — | — | — |
-| Add expenses | ✓ | ✓ | ✓ | — | — |
-| View expense ledger | ✓ | ✓ | ✓ | — | — |
-| Settle up | ✓ | ✓ | ✓ | — | — |
-| Submit suggestions | ✓ (auto-approve) | ✓ (auto-approve) | ✓ (queued) | comment only | — |
-| Approve suggestions | ✓ | ✓ | — | — | — |
-| Comment on items | ✓ | ✓ | ✓ | ✓ | — |
-| Vote on items | ✓ | ✓ | ✓ | — | — |
-| Capture/edit own daily Memory (#269, ADR-0007) | ✓ | ✓ | ✓ | — | — |
-| View trip memories | ✓ | ✓ | ✓ | ✓ | — (never public) |
-| Invite Travelers / Viewers | ✓ | ✓ | ✓ | — | — |
-| Invite Co-Owners | ✓ | ✓ | — | — | — |
-| Promote Traveler → Co-Owner | ✓ | ✓ | — | — | — |
-| Remove members | ✓ | ✓ | — | — | — |
-| View archive (post-trip) | ✓ | ✓ | ✓ | ✓ | ✓ (when `archive_publish_at` reached, #241) |
+| Action                                                          |      Owner       |     Co-Owner     |              Traveler               |    Viewer    |            Public (archive link)            |
+| --------------------------------------------------------------- | :--------------: | :--------------: | :---------------------------------: | :----------: | :-----------------------------------------: |
+| Create/edit trip metadata                                       |        ✓         |        ✓         |                  —                  |      —       |                      —                      |
+| Add/edit/delete items                                           |        ✓         |        ✓         | suggest only\*; edit OWN immediate‡ |      —       |                      —                      |
+| Self-assign (toggle own `assigned_to`)                          |        ✓         |        ✓         |           ✓ (immediate)†            |      —       |                      —                      |
+| Say Not going (own `not_going`, #402)                           |    ✓ own only    |    ✓ own only    |       ✓ own only (immediate)†       |      —       |                      —                      |
+| Book / unbook items                                             |        ✓         |        ✓         |            suggest only             |      —       |                      —                      |
+| Mark done / use closeout wizard (item walk)                     |        ✓         |        ✓         |                 ✓§                  |      —       |                      —                      |
+| Publish public record (closeout publish step / Publish control) |        ✓         |        ✓         |                  —                  |      —       |                      —                      |
+| View Trip Vault                                                 |        ✓         |        ✓         |       ✓ (with trip password)        |      —       |                      —                      |
+| Edit Trip Vault                                                 |        ✓         |        ✓         |                  —                  |      —       |                      —                      |
+| Add expenses                                                    |        ✓         |        ✓         |                  ✓                  |      —       |                      —                      |
+| View expense ledger                                             |        ✓         |        ✓         |                  ✓                  |      —       |                      —                      |
+| Settle up                                                       |        ✓         |        ✓         |                  ✓                  |      —       |                      —                      |
+| Submit suggestions                                              | ✓ (auto-approve) | ✓ (auto-approve) |             ✓ (queued)              | comment only |                      —                      |
+| Approve suggestions                                             |        ✓         |        ✓         |                  —                  |      —       |                      —                      |
+| Comment on items                                                |        ✓         |        ✓         |                  ✓                  |      ✓       |                      —                      |
+| Vote on items                                                   |        ✓         |        ✓         |                  ✓                  |      —       |                      —                      |
+| Capture/edit own daily Memory (#269, ADR-0007)                  |        ✓         |        ✓         |                  ✓                  |      —       |                      —                      |
+| View trip memories                                              |        ✓         |        ✓         |                  ✓                  |      ✓       |              — (never public)               |
+| Invite Travelers / Viewers                                      |        ✓         |        ✓         |                  ✓                  |      —       |                      —                      |
+| Invite Co-Owners                                                |        ✓         |        ✓         |                  —                  |      —       |                      —                      |
+| Promote Traveler → Co-Owner                                     |        ✓         |        ✓         |                  —                  |      —       |                      —                      |
+| Remove members                                                  |        ✓         |        ✓         |                  —                  |      —       |                      —                      |
+| View archive (post-trip)                                        |        ✓         |        ✓         |                  ✓                  |      ✓       | ✓ (when `archive_publish_at` reached, #241) |
 
-*Traveler-suggested items can be auto-approved via per-trip setting (default: yes).
+\*Traveler-suggested items can be auto-approved via per-trip setting (default: yes).
 
-†**Self-assign exception (#226, ADR-0011):** the suggest-only gate on item edits has one narrow carve-out — a Traveler (and Co-Owner/Owner) may add or remove **their own** `trip_members.id` in an item's `assigned_to`, even on an item they didn't create, and it takes effect **immediately** (no review queue). Declaring "I'm doing this" is a note about one's own participation, not a plan change an owner must approve. The exception is self-only: it is enforced in `items.pb.js` (the update hook compares old-vs-new `assigned_to` server-side and rejects any change to another member's id or to any other field), and Viewers are excluded. Assigning *other* members stays the deliberate owner/co-owner edit-form path. **Not going (#402):** the same exception covers the caller's own id in `not_going` (going / not going / no answer, via `POST /api/items/:id/assign-self { state }`). Not going is self-only for **every** role, owners included, and Viewers can't answer. A member is in at most one of `assigned_to` / `not_going`; the server clears one when the other is set (an owner assigning someone going clears their not going).
+†**Self-assign exception (#226, ADR-0011):** the suggest-only gate on item edits has one narrow carve-out — a Traveler (and Co-Owner/Owner) may add or remove **their own** `trip_members.id` in an item's `assigned_to`, even on an item they didn't create, and it takes effect **immediately** (no review queue). Declaring "I'm doing this" is a note about one's own participation, not a plan change an owner must approve. The exception is self-only: it is enforced in `items.pb.js` (the update hook compares old-vs-new `assigned_to` server-side and rejects any change to another member's id or to any other field), and Viewers are excluded. Assigning _other_ members stays the deliberate owner/co-owner edit-form path. **Not going (#402):** the same exception covers the caller's own id in `not_going` (going / not going / no answer, via `POST /api/items/:id/assign-self { state }`). Not going is self-only for **every** role, owners included, and Viewers can't answer. A member is in at most one of `assigned_to` / `not_going`; the server clears one when the other is set (an owner assigning someone going clears their not going).
 
-‡**Creator-edit exception (#219):** "suggest only" governs contributing to *others'* plans. A Traveler may **edit ALL fields of an item they created** (`created_by` == the caller's own `trip_members.id`) **directly and immediately** — including booking/money fields — with no suggestion queue. Enforced in `items.pb.js` (the update hook allows the write when `created_by` matches the caller's member id) and mirrored in the edit-form UI gate (the Edit affordance and the `…/edit` route both check the same condition, so a Traveler reaches and submits the form for their own item, while another member's item still 403s). **Delete remains owner/co-owner only** — a creator can edit but not delete. Editing items created by *others* stays suggest-only.
+‡**Creator-edit exception (#219):** "suggest only" governs contributing to _others'_ plans. A Traveler may **edit ALL fields of an item they created** (`created_by` == the caller's own `trip_members.id`) **directly and immediately** — including booking/money fields — with no suggestion queue. Enforced in `items.pb.js` (the update hook allows the write when `created_by` matches the caller's member id) and mirrored in the edit-form UI gate (the Edit affordance and the `…/edit` route both check the same condition, so a Traveler reaches and submits the form for their own item, while another member's item still 403s). **Delete remains owner/co-owner only** — a creator can edit but not delete. Editing items created by _others_ stays suggest-only.
 
 §**Closeout opens to travelers (#240, TRIP_WRAPUP_PRD Grill Resolution #13):** the closeout wizard's day-by-day done/considered **item walk** is open to **owner/co-owner/traveler** (anyone who traveled contributes to the record); **viewers** are redirected to the read-only record view, never the wizard. The wizard's loader and `finishCloseout` both gate server-side, and run only when the trip is `wrap-up` or `closed` (lifecycle gate — a planning/active trip can't reach closeout). Travelers walk **planned items only** and never see the unplanned [[Parking Lot]] ideas; their flow ends at "submit review → closed" with **no publish step**. The **publish decision** (the optional final closeout step AND the standalone "Publish record" control) stays **owner/co-owner only**, gated on role alone and enforced server-side (Slice 3).
 
 **Notes:**
+
 - Owner and Co-Owner are functionally identical. Distinction exists only for "who can promote others."
 - The original creator is the Owner; they can promote Travelers to Co-Owner. A trip can have any number of Co-Owners.
 - Co-Owners cannot remove the original Owner. Owner cannot demote themselves if they are the only Owner.
@@ -128,109 +133,116 @@ All test harnesses require PocketBase running via `./backend/start.sh` with `WAY
 PocketBase collections. Field types use PocketBase notation. All collections include `id`, `created`, `updated` automatically.
 
 ### `users`
-| Field | Type | Notes |
-|---|---|---|
-| email | email, unique, required | Login identifier |
-| name | text | Display name |
-| avatar | file, single | Optional |
+
+| Field  | Type                    | Notes            |
+| ------ | ----------------------- | ---------------- |
+| email  | email, unique, required | Login identifier |
+| name   | text                    | Display name     |
+| avatar | file, single            | Optional         |
 
 ### `trips`
-| Field | Type | Notes |
-|---|---|---|
-| slug | text, unique, required | URL identifier (e.g. `italy-2026`) |
-| title | text, required | Display title |
-| start_date | date, optional (#270/ADR-0022) | Trip start (in trip timezone). Empty ⇔ the trip's derived lifecycle is **`forming`** (dateless — no stored status flag). Both-or-neither with `end_date`, enforced at the app layer (forms + `trips.pb.js`); first date-set **promotes** the trip (seeds "Phase 1" + days, re-homes phase-less ideas) and is one-way — un-dating is rejected. |
-| end_date | date, optional (#270/ADR-0022) | Trip end. Both-or-neither with `start_date` (see above). |
-| timezone | text | IANA tz, e.g. `Europe/Rome` |
-| location_summary | text | Free-text "Spain", "Switzerland Alps" |
-| countries | json (array of ISO codes) | For filtering, archive metadata |
-| cover_image | file | Optional |
-| photo_album_url | url | Linkout to Apple/Google Photos |
-| archive_enabled | bool | Owner toggle — sharing on/off |
-| archive_publish_at | date, nullable (#241) | **The publish gate.** "" = unpublished (default + reopen-pause); a date = the moment the public `/archive/[token]` route opens (today/past = live, future = scheduled). Owner-set at closeout or via the Publish control. |
-| archive_show_budget | bool, default off (#241/#243) | Opt-in public budget summary (trip total + rough per-person only; never itemized expenses or who-owes-whom). |
-| archive_publish_after_days | int, default 7 | **Derived/legacy (#241).** No longer the gate — import/export/clone-compat only; may seed `archive_publish_at` when an owner picks "wait N days". |
-| public_share_token | text, unique | URL-safe random token for public archive |
-| vault_password_hash | text | Argon2 hash; null = vault unused |
-| auto_approve_suggestions | bool, default true | Per-trip toggle |
-| created_by | relation→users | Original Owner |
-| archived | bool, default false | Trip is "done", read-only mode |
+
+| Field                      | Type                           | Notes                                                                                                                                                                                                                                                                                                                                         |
+| -------------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| slug                       | text, unique, required         | URL identifier (e.g. `italy-2026`)                                                                                                                                                                                                                                                                                                            |
+| title                      | text, required                 | Display title                                                                                                                                                                                                                                                                                                                                 |
+| start_date                 | date, optional (#270/ADR-0022) | Trip start (in trip timezone). Empty ⇔ the trip's derived lifecycle is **`forming`** (dateless — no stored status flag). Both-or-neither with `end_date`, enforced at the app layer (forms + `trips.pb.js`); first date-set **promotes** the trip (seeds "Phase 1" + days, re-homes phase-less ideas) and is one-way — un-dating is rejected. |
+| end_date                   | date, optional (#270/ADR-0022) | Trip end. Both-or-neither with `start_date` (see above).                                                                                                                                                                                                                                                                                      |
+| timezone                   | text                           | IANA tz, e.g. `Europe/Rome`                                                                                                                                                                                                                                                                                                                   |
+| location_summary           | text                           | Free-text "Spain", "Switzerland Alps"                                                                                                                                                                                                                                                                                                         |
+| countries                  | json (array of ISO codes)      | For filtering, archive metadata                                                                                                                                                                                                                                                                                                               |
+| cover_image                | file                           | Optional                                                                                                                                                                                                                                                                                                                                      |
+| photo_album_url            | url                            | Linkout to Apple/Google Photos                                                                                                                                                                                                                                                                                                                |
+| archive_enabled            | bool                           | Owner toggle — sharing on/off                                                                                                                                                                                                                                                                                                                 |
+| archive_publish_at         | date, nullable (#241)          | **The publish gate.** "" = unpublished (default + reopen-pause); a date = the moment the public `/archive/[token]` route opens (today/past = live, future = scheduled). Owner-set at closeout or via the Publish control.                                                                                                                     |
+| archive_show_budget        | bool, default off (#241/#243)  | Opt-in public budget summary (trip total + rough per-person only; never itemized expenses or who-owes-whom).                                                                                                                                                                                                                                  |
+| archive_publish_after_days | int, default 7                 | **Derived/legacy (#241).** No longer the gate — import/export/clone-compat only; may seed `archive_publish_at` when an owner picks "wait N days".                                                                                                                                                                                             |
+| public_share_token         | text, unique                   | URL-safe random token for public archive                                                                                                                                                                                                                                                                                                      |
+| vault_password_hash        | text                           | Argon2 hash; null = vault unused                                                                                                                                                                                                                                                                                                              |
+| auto_approve_suggestions   | bool, default true             | Per-trip toggle                                                                                                                                                                                                                                                                                                                               |
+| created_by                 | relation→users                 | Original Owner                                                                                                                                                                                                                                                                                                                                |
+| archived                   | bool, default false            | Trip is "done", read-only mode                                                                                                                                                                                                                                                                                                                |
 
 ### `trip_members`
-| Field | Type | Notes |
-|---|---|---|
-| trip | relation→trips, required | |
-| user | relation→users, nullable | Null = placeholder, not yet a user |
-| placeholder_name | text, nullable | Used when user is null |
-| placeholder_email | email, nullable | Used for auto-merge when they sign up |
-| display_name | text | Nickname for this trip; defaults to user.name or placeholder_name |
-| role | enum: owner, co_owner, traveler, viewer | |
-| joined_at | datetime | |
+
+| Field             | Type                                    | Notes                                                             |
+| ----------------- | --------------------------------------- | ----------------------------------------------------------------- |
+| trip              | relation→trips, required                |                                                                   |
+| user              | relation→users, nullable                | Null = placeholder, not yet a user                                |
+| placeholder_name  | text, nullable                          | Used when user is null                                            |
+| placeholder_email | email, nullable                         | Used for auto-merge when they sign up                             |
+| display_name      | text                                    | Nickname for this trip; defaults to user.name or placeholder_name |
+| role              | enum: owner, co_owner, traveler, viewer |                                                                   |
+| joined_at         | datetime                                |                                                                   |
 
 **Merge logic:** when a user signs up with email matching a `placeholder_email`, prompt: "Join trip [X] as [placeholder_name]? You can change your display name." On confirm, link `user`, clear placeholder fields.
 
 **Removal (ADR-0008 + ADR-0013):** a `removed_at` timestamp tombstones a removed member so authored records keep their identity ("Bob paid $40"). But a member that **nothing references** — a typo'd placeholder, a vote-only member (votes always drop on removal) — is **hard-deleted** instead of tombstoned: with no record to preserve, the tombstone is pure clutter. So the **Former-members** roster disclosure only ever holds members who left data behind. Any reference (incl. a share in an `expenses.split_data`) → tombstone; reassign is the only escape for money. Forward behavior only — existing tombstones are not retroactively purged.
 
 ### `phases`
-| Field | Type | Notes |
-|---|---|---|
-| trip | relation→trips, required | |
-| name | text, required | "Barcelona", "Granada" |
-| location | text | City name |
-| country_code | text | ISO 3166-1 alpha-2 |
-| start_date | date | The phase boundary — the only field the user sets (ADR-0021) |
-| end_date | date | **Derived + maintained:** the next phase's `start_date` (the shared travel day), or the trip's `end_date` for the last phase (ADR-0021) |
-| order | int | **Derived** from start order (ADR-0021) — no manual reorder |
+
+| Field        | Type                     | Notes                                                                                                                                   |
+| ------------ | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| trip         | relation→trips, required |                                                                                                                                         |
+| name         | text, required           | "Barcelona", "Granada"                                                                                                                  |
+| location     | text                     | City name                                                                                                                               |
+| country_code | text                     | ISO 3166-1 alpha-2                                                                                                                      |
+| start_date   | date                     | The phase boundary — the only field the user sets (ADR-0021)                                                                            |
+| end_date     | date                     | **Derived + maintained:** the next phase's `start_date` (the shared travel day), or the trip's `end_date` for the last phase (ADR-0021) |
+| order        | int                      | **Derived** from start order (ADR-0021) — no manual reorder                                                                             |
 
 Phases **tile** the trip (ADR-0021, #323): they partition it with no gaps, and adjacent phases share only their boundary day (the travel day). A phase is defined by its **start day**; adding one splits the covering segment, deleting one merges into the previous neighbour. A trip always has ≥1 phase (seeded as "Phase 1" spanning the trip, subdivided as you plan). Arbitrary overlap is impossible by construction.
 
 Phase indicators use the active mode's accent color (moss in Planning Mode, clay in Trip Mode), not per-phase colors. See GitHub issue #11.
 
 ### `days`
-| Field | Type | Notes |
-|---|---|---|
-| trip | relation→trips, required | |
+
+| Field | Type                      | Notes                      |
+| ----- | ------------------------- | -------------------------- |
+| trip  | relation→trips, required  |                            |
 | phase | relation→phases, nullable | Computed from date if null |
-| date | date, required | |
-| notes | text | Day-level free notes |
+| date  | date, required            |                            |
+| notes | text                      | Day-level free notes       |
 
 Days are auto-generated from trip start/end dates and re-bucketed (multi-relation `day.phases`) whenever phases change. Under tiling (ADR-0021) a day belongs to **exactly one phase, or two on a shared travel day** (a phase boundary).
 
 ### `items`
-| Field | Type | Notes |
-|---|---|---|
-| trip | relation→trips, required | |
-| phase | relation→phases, required | Every item belongs to a phase |
-| day | relation→days, nullable | Required when status is planned or done. Optional when unplanned or considered. |
-| type | enum: lodging, transportation, flight, activity, meal, note, checklist | |
-| subtype | text, nullable | "tour", "guided", "train", etc. — drives icon/color |
-| title | text, required | |
-| description | text | |
-| location_name | text | |
-| location_address | text | |
-| location_coords | json `{lat, lng}` | |
-| google_place_id | text | For re-fetch / deep-link to Maps |
-| start_time | datetime, nullable | Anchor time — trip-local. See glossary "Anchor Time." |
-| end_time | datetime, nullable | Anchor time — trip-local. See glossary "Anchor Time." |
-| end_date | date, nullable | For multi-day items (e.g. hotel stay). Item spans from day.date to end_date and appears at top of each spanned day. |
-| start_tz | text, nullable | For flights crossing zones |
-| end_tz | text, nullable | |
-| status | enum: unplanned, planned, done, considered | Default unplanned. Lifecycle: unplanned → planned → done or considered. |
-| booked | bool, default false | Only meaningful for lodging/transportation/flight/activity |
-| booked_by | relation→trip_members, nullable | Who made the reservation |
-| paid_by | relation→trip_members, nullable | If pre-paid; for budget tracking |
-| confirmation_codes | json (array of `{label, value}`) | "Booking ref", "PIN", etc. — supports multiple |
-| reservation_url | url | Link to original booking |
-| free_cancellation | bool, nullable | Optional metadata |
-| cost_estimate_usd | number, nullable | Per-item estimated cost |
-| cost_actual_usd | number, nullable | Filled in after booking/spending |
-| assigned_to | relation→trip_members, multiple | Subset of members this applies to (room assignments, sub-group activities) |
-| not_going | relation→trip_members, multiple | Members who said they're not going (#402). Exclusive with `assigned_to`; in neither = no answer. Self-only |
-| sort_order | int | Drag-to-reorder position for untimed items within a day view |
-| parent_item | relation→items, nullable | For multi-leg transit (flight with layover) |
-| created_by | relation→trip_members | |
+
+| Field              | Type                                                                   | Notes                                                                                                               |
+| ------------------ | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| trip               | relation→trips, required                                               |                                                                                                                     |
+| phase              | relation→phases, required                                              | Every item belongs to a phase                                                                                       |
+| day                | relation→days, nullable                                                | Required when status is planned or done. Optional when unplanned or considered.                                     |
+| type               | enum: lodging, transportation, flight, activity, meal, note, checklist |                                                                                                                     |
+| subtype            | text, nullable                                                         | "tour", "guided", "train", etc. — drives icon/color                                                                 |
+| title              | text, required                                                         |                                                                                                                     |
+| description        | text                                                                   |                                                                                                                     |
+| location_name      | text                                                                   |                                                                                                                     |
+| location_address   | text                                                                   |                                                                                                                     |
+| location_coords    | json `{lat, lng}`                                                      |                                                                                                                     |
+| google_place_id    | text                                                                   | For re-fetch / deep-link to Maps                                                                                    |
+| start_time         | datetime, nullable                                                     | Anchor time — trip-local. See glossary "Anchor Time."                                                               |
+| end_time           | datetime, nullable                                                     | Anchor time — trip-local. See glossary "Anchor Time."                                                               |
+| end_date           | date, nullable                                                         | For multi-day items (e.g. hotel stay). Item spans from day.date to end_date and appears at top of each spanned day. |
+| start_tz           | text, nullable                                                         | For flights crossing zones                                                                                          |
+| end_tz             | text, nullable                                                         |                                                                                                                     |
+| status             | enum: unplanned, planned, done, considered                             | Default unplanned. Lifecycle: unplanned → planned → done or considered.                                             |
+| booked             | bool, default false                                                    | Only meaningful for lodging/transportation/flight/activity                                                          |
+| booked_by          | relation→trip_members, nullable                                        | Who made the reservation                                                                                            |
+| paid_by            | relation→trip_members, nullable                                        | If pre-paid; for budget tracking                                                                                    |
+| confirmation_codes | json (array of `{label, value}`)                                       | "Booking ref", "PIN", etc. — supports multiple                                                                      |
+| reservation_url    | url                                                                    | Link to original booking                                                                                            |
+| free_cancellation  | bool, nullable                                                         | Optional metadata                                                                                                   |
+| cost_estimate_usd  | number, nullable                                                       | Per-item estimated cost                                                                                             |
+| cost_actual_usd    | number, nullable                                                       | Filled in after booking/spending                                                                                    |
+| assigned_to        | relation→trip_members, multiple                                        | Subset of members this applies to (room assignments, sub-group activities)                                          |
+| not_going          | relation→trip_members, multiple                                        | Members who said they're not going (#402). Exclusive with `assigned_to`; in neither = no answer. Self-only          |
+| sort_order         | int                                                                    | Drag-to-reorder position for untimed items within a day view                                                        |
+| parent_item        | relation→items, nullable                                               | For multi-leg transit (flight with layover)                                                                         |
+| created_by         | relation→trip_members                                                  |                                                                                                                     |
 
 **Notes on items:**
+
 - A single-segment flight = one item. A multi-leg flight (DTW→FRA→ZRH) = parent item with 2 child items via `parent_item`. Flight type integrates with AeroDataBox for autofill of airline, departure/arrival airports, times, and timezones.
 - A `meal` or `note` cannot be `booked` (UI hides the toggle).
 - The parking lot is a filtered view of items where `status = unplanned` within a phase. Not a separate data structure.
@@ -238,47 +250,51 @@ Days are auto-generated from trip start/end dates and re-bucketed (multi-relatio
 - A multi-day item (has `end_date`) is "ongoing" during Trip Mode when the current date/time falls within its span. Single-day items with anchor times are ongoing when the current time is between start_time and end_time. Ongoing is a display state, never stored.
 
 ### `checklist_items` (for items where `type=checklist`)
-| Field | Type | Notes |
-|---|---|---|
-| item | relation→items, required | The parent checklist item |
-| text | text, required | |
-| checked_by | relation→trip_members, nullable | Who checked it off |
-| checked_at | datetime, nullable | |
-| order | int | |
+
+| Field      | Type                            | Notes                     |
+| ---------- | ------------------------------- | ------------------------- |
+| item       | relation→items, required        | The parent checklist item |
+| text       | text, required                  |                           |
+| checked_by | relation→trip_members, nullable | Who checked it off        |
+| checked_at | datetime, nullable              |                           |
+| order      | int                             |                           |
 
 ### `suggestions`
-| Field | Type | Notes |
-|---|---|---|
-| trip | relation→trips, required | |
-| author | relation→trip_members, required | |
-| target_type | enum: new_item, comment | |
-| target_item | relation→items, nullable | For comments; null for new_item |
-| payload | json | Full proposed item structure (for new_item) |
-| comment_text | text | For comments |
-| status | enum: pending, approved, rejected | |
-| reviewed_by | relation→trip_members, nullable | |
-| reviewed_at | datetime, nullable | |
+
+| Field        | Type                              | Notes                                       |
+| ------------ | --------------------------------- | ------------------------------------------- |
+| trip         | relation→trips, required          |                                             |
+| author       | relation→trip_members, required   |                                             |
+| target_type  | enum: new_item, comment           |                                             |
+| target_item  | relation→items, nullable          | For comments; null for new_item             |
+| payload      | json                              | Full proposed item structure (for new_item) |
+| comment_text | text                              | For comments                                |
+| status       | enum: pending, approved, rejected |                                             |
+| reviewed_by  | relation→trip_members, nullable   |                                             |
+| reviewed_at  | datetime, nullable                |                                             |
 
 **Auto-approval:** if author role is owner or co_owner, OR trip has `auto_approve_suggestions=true` and author is traveler, status auto-set to `approved` and the item is created/comment posted immediately. The suggestion record is still kept for audit/notification purposes.
 
 ### `votes`
-| Field | Type | Notes |
-|---|---|---|
-| item | relation→items, required | |
-| member | relation→trip_members, required | |
-| value | enum: love, like, flexible, dislike, required | Love (+2), Like (+1), Flexible (0), Dislike (-2) — weights used for sort, never displayed |
-| created | datetime | |
+
+| Field   | Type                                          | Notes                                                                                     |
+| ------- | --------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| item    | relation→items, required                      |                                                                                           |
+| member  | relation→trip_members, required               |                                                                                           |
+| value   | enum: love, like, flexible, dislike, required | Love (+2), Like (+1), Flexible (0), Dislike (-2) — weights used for sort, never displayed |
+| created | datetime                                      |                                                                                           |
 
 Unique constraint on (item, member). One vote per member per item. Updating a vote replaces the previous value. UI shows avatar stacks per vote option, not aggregate scores. Unplanned items sort by aggregate vote score as the default ordering.
 
 ### `memories` (#269, ADR-0007 — Trip Memory context)
-| Field | Type | Notes |
-|---|---|---|
-| trip | relation→trips, required | cascadeDelete |
-| day | relation→days, required | cascadeDelete — memories group by day, the experiential timeline |
-| author | relation→trip_members, required | Auto-pinned to the caller in `memories.pb.js` |
-| photo | file, single image, nullable | jpg/png/webp/heic, 20 MB, `protected` (token-proxied). No PDF — a memory is never a document |
-| thought | text, max 280, nullable | Tweet-length — "one thought," not an essay |
+
+| Field   | Type                            | Notes                                                                                        |
+| ------- | ------------------------------- | -------------------------------------------------------------------------------------------- |
+| trip    | relation→trips, required        | cascadeDelete                                                                                |
+| day     | relation→days, required         | cascadeDelete — memories group by day, the experiential timeline                             |
+| author  | relation→trip_members, required | Auto-pinned to the caller in `memories.pb.js`                                                |
+| photo   | file, single image, nullable    | jpg/png/webp/heic, 20 MB, `protected` (token-proxied). No PDF — a memory is never a document |
+| thought | text, max 280, nullable         | Tweet-length — "one thought," not an essay                                                   |
 
 **Unique constraint on (day, author)** — the hard cap: one photo + one thought, per member,
 per day (the cap IS the feature — ADR-0007). Editing replaces (the UI upserts). **At least one
@@ -289,33 +305,36 @@ plan-only). Capture: Note Before Bed (Trip Mode day-wrapped), Trip Mode Add, Clo
 per-day. Review: Trip Mode Today + Closeout. No standalone gallery/nav tab (v4).
 
 ### `expenses`
-| Field | Type | Notes |
-|---|---|---|
-| trip | relation→trips, required | |
-| paid_by | relation→trip_members, required | |
-| amount_usd | number, required | All amounts USD only |
-| description | text, required | |
-| date | date, required | |
-| category | enum: lodging, transportation, food, activity, other | |
-| linked_item | relation→items, nullable | Optional link to itinerary item |
-| split_mode | enum: equal, by_share, by_amount, by_percent | |
-| split_data | json | Per-mode payload; see below |
+
+| Field       | Type                                                 | Notes                           |
+| ----------- | ---------------------------------------------------- | ------------------------------- |
+| trip        | relation→trips, required                             |                                 |
+| paid_by     | relation→trip_members, required                      |                                 |
+| amount_usd  | number, required                                     | All amounts USD only            |
+| description | text, required                                       |                                 |
+| date        | date, required                                       |                                 |
+| category    | enum: lodging, transportation, food, activity, other |                                 |
+| linked_item | relation→items, nullable                             | Optional link to itinerary item |
+| split_mode  | enum: equal, by_share, by_amount, by_percent         |                                 |
+| split_data  | json                                                 | Per-mode payload; see below     |
 
 **Split data formats:**
+
 - `equal`: `{members: [id1, id2, ...]}` — split evenly among listed members
 - `by_share`: `{shares: {id1: 2, id2: 1, ...}}` — proportional shares
 - `by_amount`: `{amounts: {id1: 40.00, id2: 35.00, ...}}` — exact amounts (must sum to total)
 - `by_percent`: `{percents: {id1: 50, id2: 50}}` — must sum to 100
 
 ### `settlements`
-| Field | Type | Notes |
-|---|---|---|
-| trip | relation→trips, required | |
-| from_member | relation→trip_members, required | |
-| to_member | relation→trip_members, required | |
-| amount_usd | number, required | |
-| date | date, required | |
-| note | text | |
+
+| Field       | Type                            | Notes |
+| ----------- | ------------------------------- | ----- |
+| trip        | relation→trips, required        |       |
+| from_member | relation→trip_members, required |       |
+| to_member   | relation→trip_members, required |       |
+| amount_usd  | number, required                |       |
+| date        | date, required                  |       |
+| note        | text                            |       |
 
 A settlement is treated as a reverse-flow expense for balance calculation.
 
@@ -324,59 +343,64 @@ A settlement is treated as a reverse-flow expense for balance calculation.
 > Removed entirely and replaced by the `documents` collection. See `docs/V4_DOCUMENTS_PRD.md` and
 > ADR-0005. Schema below kept for historical reference only; do not build against it.
 
-| Field | Type | Notes |
-|---|---|---|
-| trip | relation→trips, required | |
-| label | text, required | "Rental car confirmation", "Passport — Scott" |
-| value_encrypted | text, required | AES-GCM encrypted with trip-password-derived key |
-| category | enum: contact, document, reservation, reference, other | |
-| order | int | |
+| Field           | Type                                                   | Notes                                            |
+| --------------- | ------------------------------------------------------ | ------------------------------------------------ |
+| trip            | relation→trips, required                               |                                                  |
+| label           | text, required                                         | "Rental car confirmation", "Passport — Scott"    |
+| value_encrypted | text, required                                         | AES-GCM encrypted with trip-password-derived key |
+| category        | enum: contact, document, reservation, reference, other |                                                  |
+| order           | int                                                    |                                                  |
 
 Vault items are decrypted client-side after user enters trip password. Server never sees plaintext.
 
 ### `notifications`
-| Field | Type | Notes |
-|---|---|---|
-| user | relation→users, required | |
-| trip | relation→trips, required | |
-| type | text | "suggestion_added", "comment_added", "item_booked", etc. |
-| payload | json | Type-specific |
-| read_at | datetime, nullable | |
+
+| Field   | Type                     | Notes                                                    |
+| ------- | ------------------------ | -------------------------------------------------------- |
+| user    | relation→users, required |                                                          |
+| trip    | relation→trips, required |                                                          |
+| type    | text                     | "suggestion_added", "comment_added", "item_booked", etc. |
+| payload | json                     | Type-specific                                            |
+| read_at | datetime, nullable       |                                                          |
 
 In-app only for v1. Display: bell icon with unread count, dropdown list. No email/push.
 
 ### `pending_invites`
-| Field | Type | Notes |
-|---|---|---|
-| trip | relation→trips, required | |
-| email | email, required | |
-| role | enum: co_owner, traveler, viewer | |
-| invited_by | relation→trip_members, required | |
-| code | text, unique | URL token for accept link |
-| expires_at | datetime | |
+
+| Field      | Type                             | Notes                     |
+| ---------- | -------------------------------- | ------------------------- |
+| trip       | relation→trips, required         |                           |
+| email      | email, required                  |                           |
+| role       | enum: co_owner, traveler, viewer |                           |
+| invited_by | relation→trip_members, required  |                           |
+| code       | text, unique                     | URL token for accept link |
+| expires_at | datetime                         |                           |
 
 ---
 
 ## 6. Item Types & Status Model
 
 ### Item types
-| Type | Bookable? | Time-anchored? | Examples |
-|---|:---:|:---:|---|
-| lodging | ✓ | sometimes (check-in time) | Hotel, Airbnb, chalet |
-| transportation | ✓ | usually | Train, bus, car rental, rideshare |
-| flight | ✓ | usually | Air travel — AeroDataBox integration for autofill of airline, airports, times, timezones |
-| activity | ✓ | sometimes | Tour, museum, hike, ski day, cooking class |
-| meal | — | sometimes (reservations) | Breakfast, lunch, dinner, drinks |
-| note | — | — | Free-text reminders, day notes |
-| checklist | — | — | Grocery list, packing list, to-book list |
+
+| Type           | Bookable? |      Time-anchored?       | Examples                                                                                 |
+| -------------- | :-------: | :-----------------------: | ---------------------------------------------------------------------------------------- |
+| lodging        |     ✓     | sometimes (check-in time) | Hotel, Airbnb, chalet                                                                    |
+| transportation |     ✓     |          usually          | Train, bus, car rental, rideshare                                                        |
+| flight         |     ✓     |          usually          | Air travel — AeroDataBox integration for autofill of airline, airports, times, timezones |
+| activity       |     ✓     |         sometimes         | Tour, museum, hike, ski day, cooking class                                               |
+| meal           |     —     | sometimes (reservations)  | Breakfast, lunch, dinner, drinks                                                         |
+| note           |     —     |             —             | Free-text reminders, day notes                                                           |
+| checklist      |     —     |             —             | Grocery list, packing list, to-book list                                                 |
 
 ### Subtype tags (color/icon hints)
+
 - transportation: `train | bus | car_rental | rideshare | walk`
 - activity: `tour | museum | outdoor | sport | shopping | spa | nightlife | sightseeing`
 - meal: `breakfast | brunch | lunch | dinner | drinks | snack | coffee`
 - lodging: `hotel | airbnb | hostel | resort | chalet`
 
 ### Status model
+
 - `status: unplanned | planned | done | considered`
   - **unplanned** — on the trip as an idea/option. Phase required, day optional. Colloquially "ideas."
   - **planned** — committed to the itinerary. Phase and day required.
@@ -395,6 +419,7 @@ In-app only for v1. Display: bell icon with unread count, dropdown list. No emai
 **Time Slot headers** (Morning / Afternoon / Evening / Anytime) are soft display groupings derived from anchor times, never stored. Items without anchor times appear in "Anytime."
 
 **Derived views:**
+
 - "To-book list" = items where `booked = false` AND `status = planned` AND type ∈ {lodging, transportation, flight, activity}
 - "Today" view = see sort order above
 - "Parking lot" = items where `status = unplanned` within a phase. A filtered view, not a separate data structure.
@@ -409,9 +434,11 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 > **Note:** Milestone descriptions below are a historical build log. Some domain language (slots, rank, alternates, parking_lot_scope) was superseded by the v3 design alignment (2026-05-29). For current data model and terminology, see Sections 5–6 above and CONTEXT.md.
 
 ### M1 — Skeleton (target: by May 1)
+
 **Goal:** Manually enter a trip and view it on your phone. No collaboration, no money, no offline.
 
 **Features:**
+
 - Email + 6-digit code auth
 - Create / edit / delete trip
 - Trip metadata: title, dates, timezone, location, countries, cover image
@@ -430,6 +457,7 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 - assigned_to for sub-group items
 
 **Acceptance:**
+
 - Scott can recreate the Spain trip in the App in under 60 minutes
 - Can be used on iPhone Safari and Android Chrome with no horizontal scroll
 - Basic accessibility: keyboard nav, alt text, semantic HTML
@@ -440,9 +468,11 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 ---
 
 ### M1.5 — Design System (target: by May 10, before China dogfood)
+
 **Goal:** Replace ad-hoc slate Tailwind styling with the Waypoint design system from the Claude Design handoff. Zero product surface change; zero feature regression. The China dogfood runs on this re-skinned build.
 
 **Features:**
+
 - Design tokens in Tailwind v4 `@theme`: paper, surface, surface-2, ink, ink-soft, ink-muted, line, moss, moss-soft, moss-tint, clay, gold, sky; radii sm/md/lg/xl; card shadow; 8pt spacing scale
 - Google Fonts: Fraunces (display), Inter (UI), JetBrains Mono (codes / times / money)
 - Primitive components in `src/lib/components/ui/`: `Pill`, `Card`, `Button`, `SectionH`, `TypeIcon`, `Avatar`, `NavBar`, `FAB`
@@ -454,6 +484,7 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 - `app.html` theme-color and apple-touch-icon refreshed to the paper/ink palette
 
 **Out of scope (deferred to future milestones — add when the underlying feature lands):**
+
 - `<BottomNav>` — keep top `<NavBar>` until M4 introduces a second top-level surface (Trip Mode "Today" home)
 - `<AvatarStack>` rendering of multiple members — only the single-user case is exercised pre-M2
 - Empty-trip CTA: "Invite a member" → M2; "Add an expense" → M3; "Open vault" → M4
@@ -463,6 +494,7 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 - Feature-flag infrastructure — introduced when the first flag is actually needed
 
 **Acceptance:**
+
 - All M1 acceptance criteria still pass
 - `pnpm check` clean, `pnpm test:e2e` 2/2 green
 - No horizontal scroll at 375px on any M1 route
@@ -475,9 +507,11 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 ---
 
 ### M2 — Collaboration (target: by June 15)
+
 **Goal:** Abby and friends can plan with you.
 
 **Features:**
+
 - Invite Travelers / Viewers / Co-Owners by email (creates `pending_invites`)
 - Invite acceptance flow (email → magic code → join)
 - Placeholder member creation (add by name, no email)
@@ -491,6 +525,7 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 - Promote traveler → co-owner
 
 **Acceptance:**
+
 - Abby can be added as Co-Owner and her edits appear immediately
 - A non-user friend can be added as a placeholder, then claim their identity on signup
 - Suggestions inbox shows clear diff for new items
@@ -499,9 +534,11 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 ---
 
 ### M3 — Money (target: by August 1)
+
 **Goal:** Splitwise replacement works.
 
 **Features:**
+
 - Budget view: line items with cost_estimate_usd, totaled per category
 - Per-person and per-couple derived columns (configurable: who's a "unit"?)
 - "Without flights" filter toggle (mirrors the pattern from Scott's Spain sheet)
@@ -513,10 +550,11 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 - "Settle up" action creates settlement record
 - Expense list view with filter by member, category, date range
 - Budget vs actual comparison view
-- **Trip-Mode Money summary** (`/money`, #227) — a read-only per-person glance for the road, in Trip-Mode (clay) chrome, answering "how much do *I* have left to spend?". My budget = group budget total (NET-NEW `groupBudgetTotal` helper: per_day × tripDays + total) ÷ member count; my spent = my **reconciliation-aware** share of logged expenses (the `computeBalances` split attribution — what I consumed/owe, not out-of-pocket). Shows **N1** (left to spend = my budget − my share) and **N2** (left for unplanned = N1 − my share of remaining unbooked/unlinked estimates), each as a per-day rate over the trip-local remaining days (the hero) plus a total. Pure core in `money-glance.ts`; every figure deep-links to /budget and /expenses (no editing on the glance). Its bottom-nav tab landed with #244 (the Now+Today merge freed the slot): Trip nav = `Now · Money · Add · Docs`.
+- **Trip-Mode Money summary** (`/money`, #227) — a read-only per-person glance for the road, in Trip-Mode (clay) chrome, answering "how much do _I_ have left to spend?". My budget = group budget total (NET-NEW `groupBudgetTotal` helper: per_day × tripDays + total) ÷ member count; my spent = my **reconciliation-aware** share of logged expenses (the `computeBalances` split attribution — what I consumed/owe, not out-of-pocket). Shows **N1** (left to spend = my budget − my share) and **N2** (left for unplanned = N1 − my share of remaining unbooked/unlinked estimates), each as a per-day rate over the trip-local remaining days (the hero) plus a total. Pure core in `money-glance.ts`; every figure deep-links to /budget and /expenses (no editing on the glance). Its bottom-nav tab landed with #244 (the Now+Today merge freed the slot): Trip nav = `Now · Money · Add · Docs`.
 - **Money Units / Groups** (`/groups`, ADR-0015, #230/#332) — a self-declared, shared, trip-scoped grouping of members who pool money (a couple, an ad-hoc pool). **Split is never affected** — expenses always divide per-person; a unit only regroups settle-up so intra-unit debts wash and inter-unit debts net (any one member settles the unit's total). Optional absolute per-unit budget override (decoupled — doesn't change the group total or other units). Planning-mode money nav is now a 3-tab `SubTabs` row: **Expenses · Budget · Groups**. The **Groups** tab (`/trips/[slug]/groups`) is the lifecycle home: create, edit (members + budget), **leave** (self-removal — the ADR "anyone can leave" consent valve), delete (whole unit; auto-dissolves when it drops below 2 members). Gated by `money_units.pb.js` (owner/co-owner or an existing member).
 
 **Acceptance:**
+
 - 3-person uneven dinner split (Scott $40, Abby $30, Jake $0 — Scott paid €120 = $130) settles correctly
 - Adding a settlement zeros the relevant balance
 - Algorithm produces minimum number of payments to settle group
@@ -526,13 +564,15 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 ---
 
 ### M4 — Execution (target: by September 15)
+
 **Goal:** Usable on a real trip.
 
 **Features:**
+
 - Trip Mode: today-focused view, large cards, optimized for one-handed phone use
 - Tomorrow / next-3-days quick views
 - "Now" indicator showing next time-anchored item
-- Service worker: read-only offline for the one active trip — the SW caches what it serves (navigations + their `__data.json`, network-first behind a precached app shell) and prefetches the whole active trip on app-open during its active window. *(Shipped via #203; the M4-era "full offline read mode, all trip data cached" claim never held against SSR — see §Offline for the real contract.)*
+- Service worker: read-only offline for the one active trip — the SW caches what it serves (navigations + their `__data.json`, network-first behind a precached app shell) and prefetches the whole active trip on app-open during its active window. _(Shipped via #203; the M4-era "full offline read mode, all trip data cached" claim never held against SSR — see §Offline for the real contract.)_
 - ~~Offline toggle: explicit user-controlled "go offline" mode~~ — **dropped (WP-A-004).** It was inert against the SSR architecture and buried in planning-only nav. Offline is automatic now (an app-wide banner keyed off `navigator.onLine`); there is no toggle.
 - Background revalidation: navigations are network-first, so the moment signal returns they refetch fresh and the whole-trip prefetch re-runs on the next online app-open. (No background job while the app is closed.)
 - "Add to Home Screen" first-visit banner (iOS + Android variants)
@@ -544,19 +584,22 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 - Move items between phases / days
 
 **Acceptance:**
+
 - Trip Mode loads in <1s on a 4-year-old phone
-- The **one active trip** works read-only offline after one online open during its active window (cold launch + in-app navigation render the cached trip, never a raw 503); editing offline is blocked with a toast. Inactive/future trips are not bulk-prefetched. *(See §Offline.)*
-- Vault entries encrypted at rest; password required per session *(superseded — Vault retired in M7, ADR-0005)*
-- Cannot accidentally lose vault data without explicit clear *(superseded — Vault retired in M7)*
+- The **one active trip** works read-only offline after one online open during its active window (cold launch + in-app navigation render the cached trip, never a raw 503); editing offline is blocked with a toast. Inactive/future trips are not bulk-prefetched. _(See §Offline.)_
+- Vault entries encrypted at rest; password required per session _(superseded — Vault retired in M7, ADR-0005)_
+- Cannot accidentally lose vault data without explicit clear _(superseded — Vault retired in M7)_
 
 **Dogfood:** Traverse City wine trip, October — first real group trip.
 
 ---
 
 ### M5 — Closure (target: by November 1)
+
 **Goal:** Trip ends well; archive lives on.
 
 **Features:**
+
 - Trip Closeout Wizard: walks day by day through planned items — mark each done or considered. At end of each phase, reviews unplanned items: keep for archive (mark considered) or remove, with bulk auto-consider option. New items can be added during closeout for things that happened spontaneously.
 - Inline quick-add during closeout for spontaneous items
 - ~~Auto-publish public archive after `end_date + N days`~~ → **explicit owner publish** via `archive_publish_at` (#241, TRIP_WRAPUP_PRD); auto-publish retired
@@ -570,6 +613,7 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 - JSON import (load trip from backup)
 
 **Acceptance:**
+
 - Closeout wizard completes a 7-day trip in <5 minutes
 - Public archive contains zero member names, zero expenses, zero vault entries
 - Archive URL works without login
@@ -578,6 +622,7 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 ---
 
 ### M6 — Polish & Nice-to-Haves (ongoing after M5)
+
 - Trip cloning with per-category checklist of what to bring over
 - Google Places autofill on item create (across types)
 - AeroDataBox flight number lookup → autofill departure/arrival/timezones
@@ -599,7 +644,7 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
   Sections 4, 5, 8, 9 below.
 - **New `documents` domain** — plain (unencrypted) PDF/image artifacts, membership-gated, one file per
   record, attached to an Item or the Trip. Takes the retired Vault nav slot (Planning + Trip Mode).
-- **Offline:** active-trip Document files auto-precached by the service worker; planning = cache-on-view. *(Now folded into the whole-trip prefetch — see §Offline / PRD #203.)*
+- **Offline:** active-trip Document files auto-precached by the service worker; planning = cache-on-view. _(Now folded into the whole-trip prefetch — see §Offline / PRD #203.)_
 - See the PRD for data model, permissions, views, offline, and the design grill decisions.
 
 ---
@@ -607,6 +652,7 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 ## 8. Screen Inventory
 
 ### Authenticated app
+
 1. **Login** — email entry → code entry → in
 2. **Home / Trips list** — cards for active, upcoming, past trips
 3. **Create Trip** — wizard (title, dates, location, cover, optional clone-from)
@@ -626,10 +672,11 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 17. **Trip Mode — Now** — what's happening now, next up, ongoing items; Note Before Bed memory prompt in the day-wrapped state (#269)
 18. **Trip Mode — Today** — today timeline, planned items + parking lot; today's memories from all travelers as small cards (#269)
 19. **Trip Mode — Add** — quick-add item, expense, or today's memory during trip (#269)
-20. **Trip Mode — Money** (`/money`) — read-only per-person glance: "how much do *I* have left to spend?" Two labeled figures — **N1** left-to-spend (my budget − my reconciliation-aware share) and **N2** left-for-unplanned (N1 − my share of remaining planned estimates) — each as a per-day rate (the hero) + a total. Deep-links to /budget and /expenses to settle/edit. Bottom-nav tab landed with #244 (#227).
+20. **Trip Mode — Money** (`/money`) — read-only per-person glance: "how much do _I_ have left to spend?" Two labeled figures — **N1** left-to-spend (my budget − my reconciliation-aware share) and **N2** left-for-unplanned (N1 − my share of remaining planned estimates) — each as a per-day rate (the hero) + a total. Deep-links to /budget and /expenses to settle/edit. Bottom-nav tab landed with #244 (#227).
 21. **Trip Mode — Vault** — password-gated encrypted entries
 
 ### Public
+
 19. **Public Archive** — read-only trip retrospective, no login
 20. **Invite Accept** — email + code → join trip
 
@@ -638,7 +685,9 @@ Each milestone is **independently shippable**. Do not start Mn+1 until Mn has be
 ## 9. Cross-Cutting UX Patterns
 
 ### Autofill from external source
+
 Every "add item" form has an optional **lookup field** at the top.
+
 - For lodging/activity/meal: Google Places search → pick → autofill name, address, coords, place_id, phone, website.
 - For flight: AeroDataBox flight # lookup → autofill airline, dep/arr airports, times, timezones, duration.
 - For transportation: manual entry (train, bus, car rental, rideshare).
@@ -646,6 +695,7 @@ Every "add item" form has an optional **lookup field** at the top.
 - Edits to autofilled fields are always allowed.
 
 ### Suggestions inbox (two-gate model)
+
 - One inbox per trip (shared by Owner + Co-Owners; not per-user).
 - Items: who suggested it, when, the diff/payload, [Approve] [Edit & Approve] [Reject] buttons.
 - **Gate 1 — Suggestion approval:** pending → approved. Auto-approve (default on) skips this gate for traveler contributions. When auto-approve is off, UI tells the traveler their contribution will be reviewed.
@@ -653,17 +703,20 @@ Every "add item" form has an optional **lookup field** at the top.
 - Auto-approved suggestions land in the inbox marked "auto-approved" so reviewers can see history.
 
 ### Parking lot
+
 - The parking lot is a filtered view: `status = unplanned` within a phase. Not a separate data structure.
 - Visible on day views as phase-scoped suggestion cards.
 - Sorted by aggregate vote score descending, then sort_order.
 
 ### Phase editor (calendar) — #330 / ADR-0021
+
 - Phases are edited on a **calendar grid** at `/trips/[slug]/phases` (replaces the start-only date-picker forms from #323). Phases **tile the trip**: a phase = a START day; its end is derived as the next phase's start (the shared **travel day**).
 - Direct manipulation: **drag a route handle** on a travel-day cell to move a boundary; **tap a normal day** to split it into a new phase; **tap a name** to rename.
 - Every gesture **live-persists on commit** via the tiling engine (`validateMovePhaseStart` / `validateNewPhaseStart` + `applyRetile`) — no batch/draft save. Phase colours are **derived by order** (moss/sky/gold/clay cycle), never stored.
 - The page still hosts the rate-your-ideas launch deck and the legacy phase-less "unsorted ideas" re-home list above the editor.
 
 ### Mode switching
+
 - Planning Mode ↔ Trip Mode toggle in trip header. Mode is UI state, not data.
 - Trip Mode available only when the trip's **derived lifecycle** (`getTripLifecycle` → forming/planning/active/wrap-up/closed; only `archived` persists) is `active`. Default mode for active trips.
 - Planning Mode: 5-tab moss nav (Itinerary, Money, Activity, Vault, More).
@@ -672,12 +725,14 @@ Every "add item" form has an optional **lookup field** at the top.
 - Archive view auto-rendered for closed trips (also accessible via public share link). Not a mode.
 
 ### Mobile-first interaction patterns
+
 - Bottom sheets for forms on mobile, slide-overs on tablet+
 - Floating action button for "Add item" on relevant screens
 - Swipe-to-edit on item rows (with desktop-friendly fallback)
 - Sticky bottom nav: see Mode switching section for per-mode tab structure
 
 ### Add-to-home-screen prompt
+
 - iOS: detect Safari, show banner with screenshots of the share menu steps
 - Android: use `beforeinstallprompt` event, show in-app prompt
 - Dismissable; remembered for 30 days
@@ -723,12 +778,12 @@ Items found in your Switzerland and Spain docs that are now folded into the spec
 
 ## 11. External Integrations
 
-| Service | Use | Auth | Notes |
-|---|---|---|---|
-| Google Maps Places (New) | Place search/autofill, place details | API key, restricted by domain | Use session tokens for free autocomplete; keep within free tier |
-| AeroDataBox (RapidAPI) | Flight # → flight details | API key | Free tier: ~100 calls/month, enough |
-| Resend | Transactional email (auth codes, invites) | API key | Free tier: 3,000/month |
-| Self (Pocketbase) | Everything else | — | Single binary, SQLite |
+| Service                  | Use                                       | Auth                          | Notes                                                           |
+| ------------------------ | ----------------------------------------- | ----------------------------- | --------------------------------------------------------------- |
+| Google Maps Places (New) | Place search/autofill, place details      | API key, restricted by domain | Use session tokens for free autocomplete; keep within free tier |
+| AeroDataBox (RapidAPI)   | Flight # → flight details                 | API key                       | Free tier: ~100 calls/month, enough                             |
+| Resend                   | Transactional email (auth codes, invites) | API key                       | Free tier: 3,000/month                                          |
+| Self (Pocketbase)        | Everything else                           | —                             | Single binary, SQLite                                           |
 
 API keys live in Pocketbase env vars or `.env` file, never in client code. Frontend calls Pocketbase endpoints which proxy external APIs server-side (so keys never leak).
 
@@ -803,9 +858,9 @@ v1 = M1 through M5. Considered done when:
 
 ## 16. Changelog
 
-| Date | Summary | Reference |
-|---|---|---|
+| Date       | Summary                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Reference                                                        |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | 2026-06-19 | **§Offline truthed up to shipped behavior (live-doc lie closed).** Offline shipped (PRD #203 / ADR-0010): read-only active trip after one online open, whole-trip prefetch on app-open (`offline-manifest`), SW caches what it serves behind a precached shell (`cache-policy`), automatic offline banner (no toggle — WP-A-004 closed), editing blocked offline, friendly "not available offline" state, device-scoped caches cleared on logout. Rewrote §Offline + the stale M4/M5 "full offline read mode / all trip data cached / full trip works offline" claims that never held against SSR. CONTEXT.md [[Document]] offline note verified accurate (unchanged). | docs/SPEC.md §Offline, PRD #203, ADR-0010, slices #253/#254/#255 |
-| 2026-06-07 | **M7 — Documents & Vault retirement registered.** Vault (`vault_entries`, `vault_password_hash`, client-side crypto, vault route) retired entirely; new `documents` domain (plain PDF/image artifacts, membership-gated, Item/Trip-scoped, offline-precached for active trip) takes its nav slot. Design handoff (*The Ledger*) grilled into the PRD. Supersedes Vault refs in §§4, 5, 8, 9. | docs/V4_DOCUMENTS_PRD.md, ADR-0005 |
-| 2026-05-29 | **v3 design alignment.** Slot → anchor time + time slot (derived). Status lifecycle expanded: unplanned → planned → done/considered. Flight promoted to first-class item type with AeroDataBox integration. Votes redesigned: Love/Like/Flexible/Dislike with avatar stacks, no visible score. Rank and parking_lot_scope removed — parking lot is now a filtered view (status = unplanned). Multi-day items via end_date. Phase colors removed (mode accent instead). Three modes → two modes + archive view. Closeout rewritten for new status lifecycle. Suggestion two-gate model (approved → unplanned, not planned). Ferry removed from transportation subtypes. | CONTEXT.md, GitHub #11 |
-| 2026-04-25 | Design system adopted. Paper/ink/moss/clay/gold/sky palette, Fraunces/Inter/JetBrains Mono fonts. | M1.5 milestone |
+| 2026-06-07 | **M7 — Documents & Vault retirement registered.** Vault (`vault_entries`, `vault_password_hash`, client-side crypto, vault route) retired entirely; new `documents` domain (plain PDF/image artifacts, membership-gated, Item/Trip-scoped, offline-precached for active trip) takes its nav slot. Design handoff (_The Ledger_) grilled into the PRD. Supersedes Vault refs in §§4, 5, 8, 9.                                                                                                                                                                                                                                                                           | docs/V4_DOCUMENTS_PRD.md, ADR-0005                               |
+| 2026-05-29 | **v3 design alignment.** Slot → anchor time + time slot (derived). Status lifecycle expanded: unplanned → planned → done/considered. Flight promoted to first-class item type with AeroDataBox integration. Votes redesigned: Love/Like/Flexible/Dislike with avatar stacks, no visible score. Rank and parking_lot_scope removed — parking lot is now a filtered view (status = unplanned). Multi-day items via end_date. Phase colors removed (mode accent instead). Three modes → two modes + archive view. Closeout rewritten for new status lifecycle. Suggestion two-gate model (approved → unplanned, not planned). Ferry removed from transportation subtypes. | CONTEXT.md, GitHub #11                                           |
+| 2026-04-25 | Design system adopted. Paper/ink/moss/clay/gold/sky palette, Fraunces/Inter/JetBrains Mono fonts.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | M1.5 milestone                                                   |

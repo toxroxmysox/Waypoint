@@ -36,7 +36,13 @@ export interface BookingWords {
 	done: string;
 }
 
-const BOOK_WORDS: BookingWords = { needs: 'Needs booking', chip: 'To book', book: 'Book', mark: 'Mark booked', done: 'Booked' };
+const BOOK_WORDS: BookingWords = {
+	needs: 'Needs booking',
+	chip: 'To book',
+	book: 'Book',
+	mark: 'Mark booked',
+	done: 'Booked'
+};
 const RESERVE_WORDS: BookingWords = {
 	needs: 'Needs reservation',
 	chip: 'To reserve',

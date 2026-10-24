@@ -78,7 +78,10 @@ test.describe('Book and Mark booked (#441)', () => {
 	test.beforeAll(async () => {
 		const owner = await bypass(EMAILS.owner);
 		ownerToken = owner.token;
-		const fx = await pb(ownerToken, 'POST', '/api/dev/rules-fixture', { emails: EMAILS, slug: SLUG });
+		const fx = await pb(ownerToken, 'POST', '/api/dev/rules-fixture', {
+			emails: EMAILS,
+			slug: SLUG
+		});
 		tripId = fx.tripId;
 		const day = (
 			await pb(
@@ -98,14 +101,19 @@ test.describe('Book and Mark booked (#441)', () => {
 		const { ctx, page } = await devLogin(browser, EMAILS.owner);
 		try {
 			await page.goto(`${BASE}/trips/${SLUG}/items/${ids.pay}`, { waitUntil: 'networkidle' });
-			await expect(page.getByRole('heading', { name: 'Harbor Hotel' }).filter({ visible: true }).first()).toBeVisible({
+			await expect(
+				page.getByRole('heading', { name: 'Harbor Hotel' }).filter({ visible: true }).first()
+			).toBeVisible({
 				timeout: 10000
 			});
 			await page.waitForLoadState('networkidle');
 
 			const actions = vis(page, '[data-testid="hero-booking-actions"]').first();
 			await expect(vis(page, '[data-needs-booking]').first()).toBeVisible();
-			await expect(actions.getByRole('link', { name: /Book ↗/ })).toHaveAttribute('href', 'https://example.com/book');
+			await expect(actions.getByRole('link', { name: /Book ↗/ })).toHaveAttribute(
+				'href',
+				'https://example.com/book'
+			);
 
 			await actions.getByRole('button', { name: 'Mark booked' }).click();
 			const form = vis(page, '[data-testid="mark-booked-form"]').first();
@@ -115,8 +123,13 @@ test.describe('Book and Mark booked (#441)', () => {
 
 			// The existing Add expense, prefilled from the estimate.
 			await page.waitForURL('**/expenses**', { timeout: 10000 });
-			await expect(page.locator('input[name="amount_usd"]:visible').first()).toHaveValue(String(EST), { timeout: 5000 });
-			await expect(page.locator('input[name="description"]:visible').first()).toHaveValue('Harbor Hotel');
+			await expect(page.locator('input[name="amount_usd"]:visible').first()).toHaveValue(
+				String(EST),
+				{ timeout: 5000 }
+			);
+			await expect(page.locator('input[name="description"]:visible').first()).toHaveValue(
+				'Harbor Hotel'
+			);
 
 			// Booked, not paid: no expense was written by Mark booked itself (ADR-0014).
 			const expenses = await pb(
@@ -142,13 +155,23 @@ test.describe('Book and Mark booked (#441)', () => {
 		const { ctx, page } = await devLogin(browser, EMAILS.owner);
 		try {
 			await page.goto(`${BASE}/trips/${SLUG}/items/${ids.plain}`, { waitUntil: 'networkidle' });
-			await expect(page.getByRole('heading', { name: 'Beach Cabin' }).filter({ visible: true }).first()).toBeVisible({
+			await expect(
+				page.getByRole('heading', { name: 'Beach Cabin' }).filter({ visible: true }).first()
+			).toBeVisible({
 				timeout: 10000
 			});
 			await page.waitForLoadState('networkidle');
-			await vis(page, '[data-testid="hero-booking-actions"]').first().getByRole('button', { name: 'Mark booked' }).click();
-			await vis(page, '[data-testid="mark-booked-form"]').first().getByRole('button', { name: 'Save' }).click();
-			await expect(vis(page, '[data-testid="hero-booked"]').first()).toBeVisible({ timeout: 10000 });
+			await vis(page, '[data-testid="hero-booking-actions"]')
+				.first()
+				.getByRole('button', { name: 'Mark booked' })
+				.click();
+			await vis(page, '[data-testid="mark-booked-form"]')
+				.first()
+				.getByRole('button', { name: 'Save' })
+				.click();
+			await expect(vis(page, '[data-testid="hero-booked"]').first()).toBeVisible({
+				timeout: 10000
+			});
 			expect(page.url()).toContain(`/items/${ids.plain}`);
 		} finally {
 			await ctx.close();
@@ -159,7 +182,9 @@ test.describe('Book and Mark booked (#441)', () => {
 		const { ctx, page } = await devLogin(browser, EMAILS.owner);
 		try {
 			await page.goto(`${BASE}/trips/${SLUG}/items/${ids.meal}`, { waitUntil: 'networkidle' });
-			await expect(page.getByRole('heading', { name: 'Harbor Oysters' }).filter({ visible: true }).first()).toBeVisible({
+			await expect(
+				page.getByRole('heading', { name: 'Harbor Oysters' }).filter({ visible: true }).first()
+			).toBeVisible({
 				timeout: 10000
 			});
 			await page.waitForLoadState('networkidle');
@@ -167,22 +192,33 @@ test.describe('Book and Mark booked (#441)', () => {
 			const actions = vis(page, '[data-testid="hero-booking-actions"]').first();
 			await expect(actions.getByRole('link', { name: /Reserve ↗/ })).toBeVisible();
 			await actions.getByRole('button', { name: 'Mark reserved' }).click();
-			await expect(page.getByRole('heading', { name: 'Mark reserved' }).filter({ visible: true })).toBeVisible();
-			await vis(page, '[data-testid="mark-booked-form"]').first().getByRole('button', { name: 'Save' }).click();
-			await expect(vis(page, '[data-testid="hero-booked"]').first()).toContainText('Reserved', { timeout: 10000 });
+			await expect(
+				page.getByRole('heading', { name: 'Mark reserved' }).filter({ visible: true })
+			).toBeVisible();
+			await vis(page, '[data-testid="mark-booked-form"]')
+				.first()
+				.getByRole('button', { name: 'Save' })
+				.click();
+			await expect(vis(page, '[data-testid="hero-booked"]').first()).toContainText('Reserved', {
+				timeout: 10000
+			});
 		} finally {
 			await ctx.close();
 		}
 	});
 
-	test('a traveler who did not create it, and a viewer, get no booking controls', async ({ browser }) => {
+	test('a traveler who did not create it, and a viewer, get no booking controls', async ({
+		browser
+	}) => {
 		// A fresh open item so the owner-booked ones above do not matter.
 		await makeItem('gate', 'Mountain Lodge');
 		for (const email of [EMAILS.traveler, EMAILS.viewer]) {
 			const { ctx, page } = await devLogin(browser, email);
 			try {
 				await page.goto(`${BASE}/trips/${SLUG}/items/${ids.gate}`, { waitUntil: 'networkidle' });
-				await expect(page.getByRole('heading', { name: 'Mountain Lodge' }).filter({ visible: true }).first()).toBeVisible({
+				await expect(
+					page.getByRole('heading', { name: 'Mountain Lodge' }).filter({ visible: true }).first()
+				).toBeVisible({
 					timeout: 10000
 				});
 				await page.waitForLoadState('networkidle');

@@ -72,7 +72,9 @@
 		return unit.members.map(memberName).join(' & ');
 	}
 	let hasUnits = $derived(data.moneyUnits.length > 0);
-	let hasBudget = $derived(data.budget !== null && (data.budget?.categories.reduce((s, c) => s + c.total, 0) ?? 0) > 0);
+	let hasBudget = $derived(
+		data.budget !== null && (data.budget?.categories.reduce((s, c) => s + c.total, 0) ?? 0) > 0
+	);
 
 	let showSettleUp = $state(false);
 	let showAddExpense = $state(false);
@@ -104,7 +106,7 @@
 	// The item behind the currently-open expense, for the detail "View item" link.
 	let selectedLinkedItem = $derived(
 		selectedExpense?.linked_item
-			? data.items.find((i) => i.id === selectedExpense!.linked_item) ?? null
+			? (data.items.find((i) => i.id === selectedExpense!.linked_item) ?? null)
 			: null
 	);
 
@@ -185,12 +187,12 @@
 </NavBar>
 <SubTabs tabs={moneyTabs(data.trip.slug)} />
 
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-24">
+<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-24 md-desktop:max-w-2xl">
 	{#if data.expenses.length === 0}
 		<div class="flex flex-col items-center justify-center py-16 text-center">
-			<div class="text-ink-muted mb-2 text-3xl">$</div>
-			<p class="font-display text-ink-soft text-base italic">No expenses yet.</p>
-			<p class="text-ink-muted mt-1 text-sm">Tap + to log your first expense.</p>
+			<div class="mb-2 text-3xl text-ink-muted">$</div>
+			<p class="font-display text-base text-ink-soft italic">No expenses yet.</p>
+			<p class="mt-1 text-sm text-ink-muted">Tap + to log your first expense.</p>
 		</div>
 	{:else if filterItemId}
 		<!-- #128 — filtered to one item's expenses. Banner + escape back to all. -->
@@ -199,24 +201,35 @@
 				<p class="text-xs text-moss">Expenses for</p>
 				<p class="truncate text-sm font-semibold text-ink">{data.filterItemTitle || 'this item'}</p>
 			</div>
-			<a href="/trips/{data.trip.slug}/expenses" class="flex-shrink-0 text-xs font-medium text-moss">
+			<a
+				href="/trips/{data.trip.slug}/expenses"
+				class="flex-shrink-0 text-xs font-medium text-moss"
+			>
 				Show all
 			</a>
 		</div>
 
 		{#if visibleExpenses.length === 0}
 			<div class="flex flex-col items-center justify-center py-16 text-center">
-				<p class="font-display text-ink-soft text-base italic">No expenses linked to this item.</p>
+				<p class="font-display text-base text-ink-soft italic">No expenses linked to this item.</p>
 			</div>
 		{:else}
 			<div class="space-y-2">
 				{#each visibleExpenses as expense (expense.id)}
 					{@const payerName = memberName(expense.paid_by)}
 					<Card>
-						<button type="button" class="flex w-full items-center gap-3 p-3 text-left" onclick={() => openExpenseDetail(expense)}>
-							<TypeIcon type={expenseCategoryIcon[expense.category as ExpenseCategory] ?? 'note'} size={36} variant="square" />
+						<button
+							type="button"
+							class="flex w-full items-center gap-3 p-3 text-left"
+							onclick={() => openExpenseDetail(expense)}
+						>
+							<TypeIcon
+								type={expenseCategoryIcon[expense.category as ExpenseCategory] ?? 'note'}
+								size={36}
+								variant="square"
+							/>
 							<div class="min-w-0 flex-1">
-								<p class="text-sm font-medium text-ink truncate">{expense.description}</p>
+								<p class="truncate text-sm font-medium text-ink">{expense.description}</p>
 								<p class="text-xs text-ink-muted">
 									{payerName} paid &middot; {formatDate(expense.date)}
 								</p>
@@ -235,10 +248,14 @@
 		{/if}
 
 		{#if myDebts.length > 0}
-			<div class="mb-4 flex gap-3 overflow-x-auto pb-1 -mx-4 px-4">
+			<div class="-mx-4 mb-4 flex gap-3 overflow-x-auto px-4 pb-1">
 				{#each myDebts as debt, i (i)}
 					{@const iOwe = debt.from === data.membership.id}
-					<div class="flex-shrink-0 rounded-lg border px-4 py-3 min-w-[200px] {iOwe ? 'border-accent/30 bg-accent/5' : 'border-moss/30 bg-moss-tint'}">
+					<div
+						class="min-w-[200px] flex-shrink-0 rounded-lg border px-4 py-3 {iOwe
+							? 'border-accent/30 bg-accent/5'
+							: 'border-moss/30 bg-moss-tint'}"
+					>
 						<p class="text-xs font-medium {iOwe ? 'text-accent' : 'text-moss'}">
 							{iOwe ? `You owe ${unitLabelFor(debt.to)}` : `${unitLabelFor(debt.from)} owes you`}
 						</p>
@@ -253,12 +270,23 @@
 		{#if debts.length > 0}
 			<div class="mb-4">
 				<Button variant="ghost" size="md" class="w-full" onclick={() => (showSettleUp = true)}>
-					Settle Up ({debts.length} {debts.length === 1 ? 'payment' : 'payments'} needed)
+					Settle Up ({debts.length}
+					{debts.length === 1 ? 'payment' : 'payments'} needed)
 				</Button>
 			</div>
 		{:else if data.expenses.length > 0}
 			<div class="mb-4 flex items-center gap-2 rounded-lg bg-moss-tint px-4 py-3">
-				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-moss">
+				<svg
+					width="18"
+					height="18"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					class="text-moss"
+				>
 					<path d="M20 6 9 17l-5-5" />
 				</svg>
 				<span class="text-sm font-medium text-moss">All squared up!</span>
@@ -269,10 +297,18 @@
 			{#each data.expenses as expense (expense.id)}
 				{@const payerName = memberName(expense.paid_by)}
 				<Card>
-					<button type="button" class="flex w-full items-center gap-3 p-3 text-left" onclick={() => openExpenseDetail(expense)}>
-						<TypeIcon type={expenseCategoryIcon[expense.category as ExpenseCategory] ?? 'note'} size={36} variant="square" />
+					<button
+						type="button"
+						class="flex w-full items-center gap-3 p-3 text-left"
+						onclick={() => openExpenseDetail(expense)}
+					>
+						<TypeIcon
+							type={expenseCategoryIcon[expense.category as ExpenseCategory] ?? 'note'}
+							size={36}
+							variant="square"
+						/>
 						<div class="min-w-0 flex-1">
-							<p class="text-sm font-medium text-ink truncate">{expense.description}</p>
+							<p class="truncate text-sm font-medium text-ink">{expense.description}</p>
 							<p class="text-xs text-ink-muted">
 								{payerName} paid &middot; {formatDate(expense.date)}
 							</p>
@@ -302,7 +338,12 @@
 	Before this, one mis-tap above the sheet threw a half-entered expense away
 	silently, while the page-hosted item forms had full navigation guards.
 -->
-<BottomSheet bind:open={showAddExpense} title="Add Expense" dirty={addDirty} discardLabel="Discard this expense?">
+<BottomSheet
+	bind:open={showAddExpense}
+	title="Add Expense"
+	dirty={addDirty}
+	discardLabel="Discard this expense?"
+>
 	<ExpenseForm
 		members={data.splitMembers}
 		membershipId={data.membership.id}
@@ -318,24 +359,39 @@
 	/>
 </BottomSheet>
 
-<BottomSheet bind:open={showExpenseDetail} title="Edit Expense" dirty={editDirty} discardLabel="Discard these changes?">
+<BottomSheet
+	bind:open={showExpenseDetail}
+	title="Edit Expense"
+	dirty={editDirty}
+	discardLabel="Discard these changes?"
+>
 	{#if selectedExpense}
 		<ExpenseForm
 			members={data.splitMembers}
 			membershipId={data.membership.id}
 			expense={selectedExpense}
-			linkedItemHref={selectedLinkedItem ? `/trips/${data.trip.slug}/items/${selectedLinkedItem.id}` : ''}
+			linkedItemHref={selectedLinkedItem
+				? `/trips/${data.trip.slug}/items/${selectedLinkedItem.id}`
+				: ''}
 			linkedItemTitle={selectedLinkedItem?.title ?? ''}
 			tripStartDate={data.trip.start_date}
 			tripEndDate={data.trip.end_date}
 			{form}
 			bind:dirty={editDirty}
-			onclose={() => { showExpenseDetail = false; selectedExpense = null; }}
+			onclose={() => {
+				showExpenseDetail = false;
+				selectedExpense = null;
+			}}
 		/>
 	{/if}
 </BottomSheet>
 
-<BottomSheet bind:open={showSettleUp} title="Settle Up" dirty={settleDirty} discardLabel="Discard this settlement?">
+<BottomSheet
+	bind:open={showSettleUp}
+	title="Settle Up"
+	dirty={settleDirty}
+	discardLabel="Discard this settlement?"
+>
 	<SettleUpFlow
 		{debts}
 		members={data.members}
@@ -345,4 +401,3 @@
 		bind:dirty={settleDirty}
 	/>
 </BottomSheet>
-

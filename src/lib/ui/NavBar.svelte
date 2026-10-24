@@ -49,17 +49,26 @@
 </script>
 
 <header
-	class="border-line bg-paper/95 sticky top-[var(--edge-top)] z-sticky flex items-center gap-3 border-b px-4 py-3 backdrop-blur"
+	class="sticky top-[var(--edge-top)] z-sticky flex items-center gap-3 border-b border-line bg-paper/95 px-4 py-3 backdrop-blur"
 >
 	<div class="flex w-10 shrink-0 items-center">
 		{#if back}
 			<button
 				type="button"
 				onclick={handleBack}
-				class="text-ink-soft hover:text-ink active:text-ink active:bg-surface-2 -ml-2 flex h-11 w-11 items-center justify-center rounded-full transition duration-75"
+				class="-ml-2 flex h-11 w-11 items-center justify-center rounded-full text-ink-soft transition duration-75 hover:text-ink active:bg-surface-2 active:text-ink"
 				aria-label="Back"
 			>
-				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+				<svg
+					width="20"
+					height="20"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2.25"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
 					<path d="m15 18-6-6 6-6" />
 				</svg>
 			</button>
@@ -72,20 +81,29 @@
 		     with no wordmark the left (back) and right (actions) slots balance so the
 		     title truly centres. Non-linked when homeLink is off (e.g. the /trips list
 		     title would self-link). -->
-		<h1 class="font-display text-ink truncate text-lg font-semibold leading-tight tracking-[-0.2px]" title={title}>
+		<h1
+			class="truncate font-display text-lg leading-tight font-semibold tracking-[-0.2px] text-ink"
+			{title}
+		>
 			{#if homeLink}
-				<a href="/trips" class="hover:text-moss active:text-moss transition-colors" aria-label="{title} — all trips">{title}</a>
+				<a
+					href="/trips"
+					class="transition-colors hover:text-moss active:text-moss"
+					aria-label="{title} — all trips">{title}</a
+				>
 			{:else}
 				{title}
 			{/if}
 		</h1>
 		{#if subtitle}
 			{#if subtitleStyle === 'tagline'}
-				<div class="text-ink-soft truncate text-[13px] leading-tight font-medium" title={subtitle}>
+				<div class="truncate text-[13px] leading-tight font-medium text-ink-soft" title={subtitle}>
 					{subtitle}
 				</div>
 			{:else}
-				<div class="text-ink-muted truncate text-[12px] leading-tight" title={subtitle}>{subtitle}</div>
+				<div class="truncate text-[12px] leading-tight text-ink-muted" title={subtitle}>
+					{subtitle}
+				</div>
 			{/if}
 		{/if}
 	</div>

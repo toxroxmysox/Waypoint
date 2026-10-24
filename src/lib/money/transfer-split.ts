@@ -91,10 +91,7 @@ export function transferSplitParticipation(
  * departed member participates in it. Lets a caller (the hook) decide whether
  * to write the record back at all.
  */
-export function splitNeedsTransfer(
-	split: SplitData | null | undefined,
-	fromId: string
-): boolean {
+export function splitNeedsTransfer(split: SplitData | null | undefined, fromId: string): boolean {
 	if (!split || typeof split !== 'object' || !fromId) return false;
 	const members = (split as { members?: unknown }).members;
 	if (Array.isArray(members)) return members.includes(fromId);

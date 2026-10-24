@@ -7,7 +7,10 @@
 	let { type, class: klass = '' }: { type: IdeaGroupType; class?: string } = $props();
 </script>
 
-<h4 class="text-ink-soft flex items-center gap-1.5 pt-1 pb-1.5 text-xs font-semibold {klass}" data-idea-heading={type}>
+<h4
+	class="flex items-center gap-1.5 pt-1 pb-1.5 text-xs font-semibold text-ink-soft {klass}"
+	data-idea-heading={type}
+>
 	<MonoTypeIcon {type} size={16} />
 	<span>{IDEA_GROUP_LABEL[type]}</span>
 </h4>

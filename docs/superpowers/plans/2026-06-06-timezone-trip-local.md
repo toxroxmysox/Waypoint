@@ -13,6 +13,7 @@
 ## Why this is the model (read before starting)
 
 Current state (audited):
+
 - `timeToDatetime(time)` ([src/lib/shell/format.ts:15](../../../src/lib/shell/format.ts)) returns `"1970-01-01 ${time}:00.000Z"` — **the date is hard-coded to 1970**. The owning day lives only in the `day` relation.
 - The "now" logic compares those against a real instant:
   - [src/lib/trip-mode/now-state.ts](../../../src/lib/trip-mode/now-state.ts) `findCurrentItem`: `now >= start && now < end` → `2026… >= 1970… && 2026… < 1970…` → **always false**.
@@ -20,8 +21,9 @@ Current state (audited):
 - Net effect: the Now view can never reach `mid-event`/`between-things`; it always falls through to `day-wrapped`. Unit tests pass because their fixtures use full real datetimes, not the 1970-pinned production format.
 
 The fix has two halves:
+
 1. **Storage** carries the real date (Tasks 1–2).
-2. **"Now"/"today"** are computed in trip-local time and fed into the existing pure functions, whose `getUTC*`/`toISOString` calls become *correct* when the `Date` they receive is `tripNow(tz)` (Tasks 3–6).
+2. **"Now"/"today"** are computed in trip-local time and fed into the existing pure functions, whose `getUTC*`/`toISOString` calls become _correct_ when the `Date` they receive is `tripNow(tz)` (Tasks 3–6).
 
 Display (Task 7) needs almost no change — verify, don't rewrite.
 
@@ -44,6 +46,7 @@ The pure functions in `now-state.ts`, `trip-mode.ts`, `activation.ts` are **not 
 ## Task 1: Core trip-time utility module
 
 **Files:**
+
 - Create: `src/lib/shell/trip-time.ts`
 - Test: `src/lib/shell/trip-time.test.ts`
 
@@ -179,6 +182,7 @@ git commit -m "feat(#40): trip-local time utilities (tripNow, tripToday, tripTz,
 The item create/edit actions currently call `timeToDatetime(startTime)` which produces a 1970 date. Replace with `combineDateTime(dayDate, startTime)`, fetching the owning day's date. Items with no day (parking-lot/unplanned) have no date to anchor to → store `''`.
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/items/new/+page.server.ts` (around line 145)
 - Modify: `src/routes/(app)/trips/[slug]/items/[itemId]/edit/+page.server.ts` (around lines 116–117)
 
@@ -187,32 +191,37 @@ The item create/edit actions currently call `timeToDatetime(startTime)` which pr
 In `src/routes/(app)/trips/[slug]/items/new/+page.server.ts`:
 
 Replace the import on line 4:
+
 ```ts
 import { datetimeToTime } from '$lib/shell/format';
 import { combineDateTime } from '$lib/shell/trip-time';
 ```
 
 After `const day = data.get('day')?.toString() || '';` (line 89) and after `startTime`/`endTime` are read (lines 103–104), resolve the day's date. Add this block immediately before the `payload` object (line 133):
+
 ```ts
-		// Resolve the owning day's date so item times carry the real calendar
-		// date (naive trip-local), not a 1970 placeholder. No day = no anchor.
-		let dayDate = '';
-		if (day) {
-			try {
-				const dayRec = await locals.pb.collection('days').getOne(day);
-				dayDate = String(dayRec.date || '');
-			} catch {
-				dayDate = '';
-			}
-		}
+// Resolve the owning day's date so item times carry the real calendar
+// date (naive trip-local), not a 1970 placeholder. No day = no anchor.
+let dayDate = '';
+if (day) {
+	try {
+		const dayRec = await locals.pb.collection('days').getOne(day);
+		dayDate = String(dayRec.date || '');
+	} catch {
+		dayDate = '';
+	}
+}
 ```
 
 Change the payload lines 145–146 from:
+
 ```ts
 			start_time: timeToDatetime(startTime),
 			end_time: timeToDatetime(endTime),
 ```
+
 to:
+
 ```ts
 			start_time: combineDateTime(dayDate, startTime),
 			end_time: combineDateTime(dayDate, endTime),
@@ -223,30 +232,35 @@ to:
 In `src/routes/(app)/trips/[slug]/items/[itemId]/edit/+page.server.ts`:
 
 Replace the import on line 4:
+
 ```ts
 import { datetimeToTime } from '$lib/shell/format';
 import { combineDateTime } from '$lib/shell/trip-time';
 ```
 
 Before the payload is built (near line 116), resolve `dayDate` the same way (the edit action has the submitted `day` value — read it the same way the create action does; if the local variable is named differently, match it):
+
 ```ts
-		let dayDate = '';
-		if (day) {
-			try {
-				const dayRec = await locals.pb.collection('days').getOne(day);
-				dayDate = String(dayRec.date || '');
-			} catch {
-				dayDate = '';
-			}
-		}
+let dayDate = '';
+if (day) {
+	try {
+		const dayRec = await locals.pb.collection('days').getOne(day);
+		dayDate = String(dayRec.date || '');
+	} catch {
+		dayDate = '';
+	}
+}
 ```
 
 Change lines 116–117 from:
+
 ```ts
 				start_time: timeToDatetime(startTime),
 				end_time: timeToDatetime(endTime),
 ```
+
 to:
+
 ```ts
 				start_time: combineDateTime(dayDate, startTime),
 				end_time: combineDateTime(dayDate, endTime),
@@ -278,6 +292,7 @@ git commit -m "fix(#40): store item times on the real day date, not 1970"
 Lock in the bug fix with a test that uses the **stored format** (real date + time) and a `tripNow`-style now.
 
 **Files:**
+
 - Modify: `src/lib/trip-mode/now-state.test.ts`
 
 - [ ] **Step 1: Add a failing-then-passing regression test**
@@ -320,7 +335,7 @@ describe('now-state with real stored datetimes (regression for 1970 bug)', () =>
 - [ ] **Step 2: Run the test**
 
 Run: `pnpm vitest run src/lib/trip-mode/now-state.test.ts`
-Expected: PASS. (These pass without touching `now-state.ts` because the pure logic was always correct — it was the *stored data* that was wrong. The test guards against regressions to the storage/`tripNow` contract.)
+Expected: PASS. (These pass without touching `now-state.ts` because the pure logic was always correct — it was the _stored data_ that was wrong. The test guards against regressions to the storage/`tripNow` contract.)
 
 - [ ] **Step 3: Commit**
 
@@ -336,6 +351,7 @@ git commit -m "test(#40): regression test for Now logic against real stored date
 Each server load that derives "today"/"now" must do so in the trip's timezone and pass `tripNow(tz).toISOString()` to the client.
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/now/+page.server.ts`
 - Modify: `src/routes/(app)/trips/[slug]/today/+page.server.ts`
 - Modify: `src/routes/(app)/trips/[slug]/today/upcoming/+page.server.ts`
@@ -343,13 +359,17 @@ Each server load that derives "today"/"now" must do so in the trip's timezone an
 - [ ] **Step 1: now/+page.server.ts**
 
 At the top add:
+
 ```ts
 import { tripNow, tripTz } from '$lib/shell/trip-time';
 ```
+
 Replace `const now = new Date();` (line 7) with:
+
 ```ts
-	const now = tripNow(tripTz(trip));
+const now = tripNow(tripTz(trip));
 ```
+
 The rest of the file already uses `now.toISOString()` and `now.setUTCDate(...)`, which now operate on trip-local fields. The returned `now: now.toISOString()` is correct for the client. No other change.
 
 - [ ] **Step 2: today/+page.server.ts**
@@ -377,6 +397,7 @@ git commit -m "fix(#40): derive trip-mode now/today in trip timezone (server loa
 ## Task 5: Trip-local "today" in the trips list and shell components
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/+page.server.ts`
 - Modify: `src/lib/shell/components/ContextRail.svelte`
 - Modify: `src/lib/shell/components/AppShell.svelte`
@@ -384,45 +405,59 @@ git commit -m "fix(#40): derive trip-mode now/today in trip timezone (server loa
 - [ ] **Step 1: trips/+page.server.ts (per-trip timezone)**
 
 The list sorts/flags trips by "now". Each trip has its own timezone, so compute per trip. Add:
+
 ```ts
 import { tripToday, tripTz } from '$lib/shell/trip-time';
 ```
+
 Remove the single `const now = new Date().toISOString().split('T')[0];` (line 11). Where a trip's active/upcoming/past status is computed (inside the `.map`/`.sort` over memberships), derive its own today:
+
 ```ts
-		const today = tripToday(tripTz(trip)); // trip is the per-membership Trip
+const today = tripToday(tripTz(trip)); // trip is the per-membership Trip
 ```
+
 Use `today` in place of the removed `now` for that trip's date comparisons. (If `now` was referenced in the sort comparator across two trips, compute `tripToday(tripTz(a.trip))` / `tripToday(tripTz(b.trip))` inline for each side.)
 
 - [ ] **Step 2: ContextRail.svelte**
 
 This component receives `days` and (per the trip layout) has access to the trip. Add the import in the `<script>`:
+
 ```ts
-	import { tripToday, tripTz } from '$lib/shell/trip-time';
+import { tripToday, tripTz } from '$lib/shell/trip-time';
 ```
+
 Replace line 25:
+
 ```ts
-	const today = $derived(new Date().toISOString().split('T')[0]);
+const today = $derived(new Date().toISOString().split('T')[0]);
 ```
+
 with (use the component's trip prop — confirm its name; the trip layout passes `trip`):
+
 ```ts
-	const today = $derived(tripToday(tripTz(trip)));
+const today = $derived(tripToday(tripTz(trip)));
 ```
+
 If `trip` is not already a prop of ContextRail, add it to the `$props()` destructure and pass it from the parent (`AppShell`/trip layout) which already has `trip` in scope.
 
 - [ ] **Step 3: AppShell.svelte**
 
 Add the import:
+
 ```ts
-	import { tripToday, tripTz } from '$lib/shell/trip-time';
+import { tripToday, tripTz } from '$lib/shell/trip-time';
 ```
+
 Replace the body of `todayDayId` (lines 50–54):
+
 ```ts
-	const todayDayId = $derived.by(() => {
-		const todayStr = tripToday(tripTz(trip));
-		const day = days.find((d) => d.date?.split(/[T ]/)[0] === todayStr);
-		return day?.id ?? null;
-	});
+const todayDayId = $derived.by(() => {
+	const todayStr = tripToday(tripTz(trip));
+	const day = days.find((d) => d.date?.split(/[T ]/)[0] === todayStr);
+	return day?.id ?? null;
+});
 ```
+
 `trip` is already available in AppShell (it renders trip chrome); if not, add it to `$props()`.
 
 - [ ] **Step 4: Typecheck**
@@ -444,12 +479,14 @@ git commit -m "fix(#40): trip-local today in trips list, ContextRail, AppShell"
 Confirm display helpers render trip-local correctly now that storage carries the real date. These operate on the stored string with `timeZone: 'UTC'`, so they are already correct under the naive-local model. This task is **verify + add a guard test**, not rewrite.
 
 **Files:**
+
 - Verify-only: `src/lib/shell/format.ts` (`formatTime`, `formatTimeRange`), `src/lib/shell/trip-nav.ts` (`formatTripDate`), `src/lib/shell/components/DayNav.svelte`, `src/lib/trip-mode/components/TodayTimeline.svelte`
 - Modify: `src/lib/shell/format.test.ts`
 
 - [ ] **Step 1: Add a display guard test**
 
 Append to `src/lib/shell/format.test.ts`:
+
 ```ts
 import { formatTime, formatTimeRange } from './format';
 
@@ -504,6 +541,7 @@ Expected: PASS. If the spec seeds items, confirm it now exercises the real-dated
 - [ ] **Step 4: Manual preview at 375px**
 
 Start the dev server (`pnpm dev` + `./backend/start.sh`), open a trip whose dates include "today", and verify via preview tools:
+
 - Now view shows `mid-event` / `between-things` when an item brackets the current trip-local time (previously always `day-wrapped`).
 - Today view marks the correct current item.
 - Create an item at 6:00 PM on a day; reopen — it still reads 6:00 PM and sits on the right day.
@@ -521,7 +559,7 @@ Open a PR referencing #40. In the description, call out the **headline fix**: it
 
 ## Out of scope (do not do here)
 
-- Per-item timezone UI. Flights already carry `start_tz`/`end_tz` from the lookup API; everything else inherits `trip.timezone`. Cross-tz flight *display* (showing departure in origin tz, arrival in destination tz) is a separate enhancement.
+- Per-item timezone UI. Flights already carry `start_tz`/`end_tz` from the lookup API; everything else inherits `trip.timezone`. Cross-tz flight _display_ (showing departure in origin tz, arrival in destination tz) is a separate enhancement.
 - Multi-day items / end-date spanning — that is **Issue #41**, the next session. This plan deliberately makes #41 trivial by storing real dates.
 - Deleting the now-unused `timeToDatetime` from `format.ts` — leave for a cleanup PR unless `pnpm check` flags it.
 - DST-boundary exactness for true instants — not applicable under the naive-local model.

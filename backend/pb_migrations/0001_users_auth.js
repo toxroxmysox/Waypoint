@@ -8,7 +8,7 @@ migrate(
 			new TextField({
 				name: 'name',
 				required: false,
-				max: 100,
+				max: 100
 			})
 		);
 		users.fields.add(
@@ -16,7 +16,7 @@ migrate(
 				name: 'avatar',
 				maxSelect: 1,
 				maxSize: 5242880, // 5MB
-				mimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+				mimeTypes: ['image/jpeg', 'image/png', 'image/webp']
 			})
 		);
 

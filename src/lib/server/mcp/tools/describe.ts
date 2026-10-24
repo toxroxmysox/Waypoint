@@ -58,9 +58,22 @@ export const describe: ToolDef = {
 			})
 		]);
 		Object.assign(extra, {
-			trip: { id: t.id, slug: t.slug, title: t.title, start: ymd(t.start_date), end: ymd(t.end_date), your_role: ref.role, ai_can_change: ref.canWrite },
+			trip: {
+				id: t.id,
+				slug: t.slug,
+				title: t.title,
+				start: ymd(t.start_date),
+				end: ymd(t.end_date),
+				your_role: ref.role,
+				ai_can_change: ref.canWrite
+			},
 			members: members.map((m) => ({ name: memberName(m), id: m.id, role: m.role })),
-			phases: phases.map((p) => ({ name: p.name, id: p.id, start: ymd(p.start_date), end: ymd(p.end_date) })),
+			phases: phases.map((p) => ({
+				name: p.name,
+				id: p.id,
+				start: ymd(p.start_date),
+				end: ymd(p.end_date)
+			})),
 			days: days.map((d) => ({ date: ymd(d.date), id: d.id }))
 		});
 		cards.unshift({

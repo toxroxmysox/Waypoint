@@ -51,7 +51,7 @@
 <svelte:window onfocusin={handleFocusIn} onfocusout={handleFocusOut} />
 
 <div
-	class="save-bar fixed inset-x-0 bottom-0 z-sticky mx-auto w-full max-w-lg md-desktop:max-w-2xl md-desktop:left-[72px] lg-desktop:left-[240px] lg-desktop:right-[320px] bg-paper px-4"
+	class="save-bar fixed inset-x-0 bottom-0 z-sticky mx-auto w-full max-w-lg bg-paper px-4 md-desktop:left-[72px] md-desktop:max-w-2xl lg-desktop:right-[320px] lg-desktop:left-[240px]"
 	class:save-bar--keyboard={inputFocused}
 >
 	{#if children}

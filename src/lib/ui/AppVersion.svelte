@@ -5,4 +5,4 @@
 	import { version } from '$app/environment';
 </script>
 
-<p class="text-ink-muted text-center text-[12px]" data-testid="app-version">Waypoint {version}</p>
+<p class="text-center text-[12px] text-ink-muted" data-testid="app-version">Waypoint {version}</p>

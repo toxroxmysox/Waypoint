@@ -83,7 +83,7 @@ Two separate, minigame-flavored features sharing the existing Vote infrastructur
    sub-tab under Itinerary (Overview · Phases · [Checklists] · [Goals]). Captured via a prompted
    brain-dump minigame that interleaves "add a wish" prompts with "do you like this one too?" cards
    on existing goals. Goals are votable (own `goal_votes` collection) and sort by aggregate score.
-   Items can be linked to a goal; a goal's status is *derived* from its highest-maturity linked item,
+   Items can be linked to a goal; a goal's status is _derived_ from its highest-maturity linked item,
    giving end-to-end traceability ("we wanted paella → Tapas at Bar Pinotxo → done ✓"). Reviewed in
    the closeout wizard.
 
@@ -112,7 +112,7 @@ up across the goal↔item link — goal votes and item votes are orthogonal sign
    actually cares about rise to the top.
 5. As a trip member, I want each goal to show who created it, so that authorship signals intent
    without needing a separate vote.
-6. As a goal creator, I want to delete a goal I made *as long as nobody else has voted on it*, so that
+6. As a goal creator, I want to delete a goal I made _as long as nobody else has voted on it_, so that
    I can clean up my own throwaway ideas but can't erase something the group has engaged with.
 7. As an owner/co-owner, I want to delete any goal, so that I can prune the list regardless of
    authorship or votes.
@@ -145,7 +145,7 @@ up across the goal↔item link — goal votes and item votes are orthogonal sign
 19. As a trip member, I want both planned and unplanned items in the deck, so that I can weigh in
     whether I'm planning early (mostly ideas) or late (mostly committed).
 20. As a trip member, I want to swipe through one phase at a time, so that I can do a bounded sitting.
-    *(v4: phase-scoped only; whole-trip sweep deferred — Resolution 5.)*
+    _(v4: phase-scoped only; whole-trip sweep deferred — Resolution 5.)_
 21. As a trip member finishing a phase, I want to be offered the next phase, so that I can keep going
     in a natural sequence without backing out to a menu.
 22. As a trip member, I want to swipe right=Like, left=Dislike, up=Love, so that the common reactions
@@ -194,13 +194,13 @@ up across the goal↔item link — goal votes and item votes are orthogonal sign
 ### Domain model — Trip Goal
 
 - **New collection `trip_goals`** (Itinerary functional area). Trip-scoped, **phase-less,
-  location-less, time-less** by definition. Sibling collection to `phases` — *not* a container and
-  *not* an item (an item requires a phase; a goal cannot be one).
+  location-less, time-less** by definition. Sibling collection to `phases` — _not_ a container and
+  _not_ an item (an item requires a phase; a goal cannot be one).
 - Fields: `trip` (relation, required), `title` (required), `description` (optional), `created_by`
   (relation → trip_members, required), `manual_status` (enum: unplanned/planned/done/considered — only
   authoritative when the goal has zero linked items), `sort_order` (int), `items` (relation → items,
   multiple).
-- **Link is stored goal-side** (`trip_goals.items`), deliberately: linking writes the *goal* record,
+- **Link is stored goal-side** (`trip_goals.items`), deliberately: linking writes the _goal_ record,
   not the item, so "anyone can link" doesn't violate "travelers can't edit items."
 - The link is a **cross-cutting reference, not ownership** — a linked item still lives in its phase.
 
@@ -221,7 +221,7 @@ up across the goal↔item link — goal votes and item votes are orthogonal sign
   is single-parent: `goal → trip`). Candidate for a short ADR (see Further Notes).
 - Fields mirror `votes`: `goal` (relation, required), `member` (relation → trip_members, required),
   `value` (enum: love/like/flexible/dislike). Unique `(goal, member)`.
-- **Creation casts no vote.** Authorship is the implicit "I want this"; votes come only from *other*
+- **Creation casts no vote.** Authorship is the implicit "I want this"; votes come only from _other_
   members. Therefore "has votes" in the delete rule = any `goal_votes` row exists.
 - **A member cannot vote on a goal they created** (enforced in rules). Scoped to goals only — item
   votes unchanged.
@@ -243,7 +243,7 @@ up across the goal↔item link — goal votes and item votes are orthogonal sign
 > Moved to a future closeout deep-dive + design pass. Retained here for that effort; not in scope for
 > v4 issue-slicing. US13–15 are likewise deferred.
 
-- New **goal-review step** runs *after* the per-phase unplanned-item review.
+- New **goal-review step** runs _after_ the per-phase unplanned-item review.
 - Surfaces **only unresolved goals** — hides auto-`done` and all-`considered` goals to avoid
   double-asking (resolving items already cascades to their goals).
 - Each surfaced goal prompts "Did this happen?" → **[Link existing item]** · **[+ Quick-add item]**
@@ -342,7 +342,7 @@ a full gesture E2E is deferred).
 
 - **Public-archive surface for goals** ("what we set out to do" summary) — deferred to the **Trip
   Memory grill**, which owns the archive-extension backlog item. Principle agreed (PII-stripped goal
-  titles + derived status belong in the public record); the *surface* is built there, not here.
+  titles + derived status belong in the public record); the _surface_ is built there, not here.
 - **Goal voting on items / item voting on goals as one merged deck** — the two minigames stay separate
   features (separate objectives, separate UX).
 - **Cross-layer vote rollup** — explicitly rejected.
@@ -358,8 +358,8 @@ a full gesture E2E is deferred).
 
 (Design-prompt fuel — deliberately unresolved. Needs a design pass before ready-for-agent.)
 
-- **Capture minigame flow & prompts:** *resolved 2026-06-07 — see Implementation Decisions →
-  "Capture minigame (Trip Goal)".* Still open within it: the exact wording of the curated core prompt
+- **Capture minigame flow & prompts:** _resolved 2026-06-07 — see Implementation Decisions →
+  "Capture minigame (Trip Goal)"._ Still open within it: the exact wording of the curated core prompt
   set and the context-injection templates.
 - **Swipe deck visuals/animation:** card stack styling, swipe physics/affordances, how the up=Love
   gesture reads, the peek-mode visual treatment, progress indicator. (Applies to both minigames — they

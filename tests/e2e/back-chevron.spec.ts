@@ -46,9 +46,11 @@ test.describe('Back chevron — origin-aware up-navigation (#361)', () => {
 		// the file, so it should be hard to skip by accident.
 		const origins = [`${BASE}/trips/${slug}`];
 		await page.goto(`${BASE}/trips/${slug}`, { waitUntil: 'networkidle' });
-		for (const d of await page.locator('a[href*="/days/"]').evaluateAll((els) =>
-			els.map((e) => (e as HTMLAnchorElement).getAttribute('href')).filter(Boolean)
-		)) {
+		for (const d of await page
+			.locator('a[href*="/days/"]')
+			.evaluateAll((els) =>
+				els.map((e) => (e as HTMLAnchorElement).getAttribute('href')).filter(Boolean)
+			)) {
 			origins.push(`${BASE}${d}`);
 		}
 
@@ -162,7 +164,9 @@ test.describe('Back chevron — origin-aware up-navigation (#361)', () => {
 		// open redirect. `//evil.com` is the one that beats a naive
 		// startsWith('/') check, which is exactly why it is asserted here.
 		for (const hostile of ['https://evil.com', '//evil.com', '/\\evil.com']) {
-			await page.goto(`${BASE}/trips/${slug}/documents?from=${encodeURIComponent(hostile)}`, { waitUntil: 'networkidle' });
+			await page.goto(`${BASE}/trips/${slug}/documents?from=${encodeURIComponent(hostile)}`, {
+				waitUntil: 'networkidle'
+			});
 			await chevron(page).click();
 			await page.waitForURL(`${BASE}/trips/${slug}`, { timeout: 10000 });
 			expect(page.url(), `?from=${hostile} must not leave the app`).toBe(`${BASE}/trips/${slug}`);

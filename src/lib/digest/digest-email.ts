@@ -42,7 +42,9 @@ function editedLine(entry: DigestEdited): string {
 }
 
 function movedLine(entry: DigestMoved): string {
-	return entry.title + ' — ' + formatDigestDay(entry.fromDay) + ' → ' + formatDigestDay(entry.toDay);
+	return (
+		entry.title + ' — ' + formatDigestDay(entry.fromDay) + ' → ' + formatDigestDay(entry.toDay)
+	);
 }
 
 // #522 — reminder groups, after a section's change groups.
@@ -53,14 +55,18 @@ function reminderGroups(section: TripDigestSection, base: string): Array<[string
 	if (r.booking.length > 0) {
 		groups.push([
 			'Still to book',
-			r.booking.map((b) => b.title + ' — needed ' + formatDigestDay(b.date) + ' (in ' + b.daysOut + ' days)')
+			r.booking.map(
+				(b) => b.title + ' — needed ' + formatDigestDay(b.date) + ' (in ' + b.daysOut + ' days)'
+			)
 		]);
 	}
 	if (r.brief) {
 		const lines: string[] = [];
 		for (const x of r.brief.stays) lines.push('Stay: ' + x.title + ' — ' + formatDigestDay(x.date));
-		for (const x of r.brief.travel) lines.push('Travel: ' + x.title + ' — ' + formatDigestDay(x.date));
-		for (const x of r.brief.unbooked) lines.push('Not booked yet: ' + x.title + ' — ' + formatDigestDay(x.date));
+		for (const x of r.brief.travel)
+			lines.push('Travel: ' + x.title + ' — ' + formatDigestDay(x.date));
+		for (const x of r.brief.unbooked)
+			lines.push('Not booked yet: ' + x.title + ' — ' + formatDigestDay(x.date));
 		if (lines.length === 0) lines.push('Nothing booked to list yet.');
 		lines.push('Your trip: ' + base + '/trips/' + section.tripSlug);
 		groups.push(['Starts in 3 days (' + formatDigestDay(r.brief.start) + ')', lines]);
@@ -68,7 +74,13 @@ function reminderGroups(section: TripDigestSection, base: string): Array<[string
 	if (r.closeout) {
 		groups.push([
 			'Wrap up',
-			['The trip ended 3 days ago. Close it out: ' + base + '/trips/' + section.tripSlug + '/closeout']
+			[
+				'The trip ended 3 days ago. Close it out: ' +
+					base +
+					'/trips/' +
+					section.tripSlug +
+					'/closeout'
+			]
 		]);
 	}
 	return groups;
@@ -106,19 +118,21 @@ export function renderDigestEmail(opts: {
 		opts.sections[0].reminders.booking.length === 0 &&
 		!opts.sections[0].reminders.brief;
 	const verb = anyChanges ? 'What changed on ' : onlyCloseout ? 'Wrapping up ' : 'Coming up on ';
-	let subject = many ? verb + opts.sections.length + ' of your trips' : verb + opts.sections[0].tripTitle;
+	let subject = many
+		? verb + opts.sections.length + ' of your trips'
+		: verb + opts.sections[0].tripTitle;
 	if (opts.testLabel) subject = '[Waypoint digest test] ' + subject;
 
 	const greeting = opts.recipientName ? 'Hi ' + opts.recipientName + ',' : 'Hi,';
 	const intro = onlyCloseout
 		? 'Time to wrap up ' + opts.sections[0].tripTitle + '.'
 		: !anyChanges
-		? many
-			? 'Here’s what’s coming up on your trips.'
-			: 'Here’s what’s coming up on ' + opts.sections[0].tripTitle + '.'
-		: many
-			? 'Here’s what changed on your trips since the last digest.'
-			: 'Here’s what changed on ' + opts.sections[0].tripTitle + ' since the last digest.';
+			? many
+				? 'Here’s what’s coming up on your trips.'
+				: 'Here’s what’s coming up on ' + opts.sections[0].tripTitle + '.'
+			: many
+				? 'Here’s what changed on your trips since the last digest.'
+				: 'Here’s what changed on ' + opts.sections[0].tripTitle + ' since the last digest.';
 
 	const textParts: string[] = [greeting, '', intro, ''];
 	const htmlParts: string[] = [
@@ -131,7 +145,8 @@ export function renderDigestEmail(opts: {
 		if (many) {
 			textParts.push(section.tripTitle, '');
 		}
-		if (many) htmlParts.push('<h3 style="margin: 20px 0 4px;">' + escapeHtml(section.tripTitle) + '</h3>');
+		if (many)
+			htmlParts.push('<h3 style="margin: 20px 0 4px;">' + escapeHtml(section.tripTitle) + '</h3>');
 
 		const groups: Array<[string, string[]]> = [
 			['Added', section.diff.added.map((a) => a.title + ' — ' + formatDigestDay(a.dayDate))],
@@ -195,7 +210,11 @@ export function renderDigestEmail(opts: {
 
 	return {
 		subject,
-		text: textParts.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd() + '\n',
+		text:
+			textParts
+				.join('\n')
+				.replace(/\n{3,}/g, '\n\n')
+				.trimEnd() + '\n',
 		html: htmlParts.join('')
 	};
 }

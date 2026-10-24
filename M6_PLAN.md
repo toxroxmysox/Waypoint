@@ -30,64 +30,66 @@
 
 ## Sub-Milestone Overview
 
-| Sub-milestone | Scope | Estimated sessions |
-|---|---|---|
-| **M6a** | Bug fixes from dogfood feedback | 1 |
-| **M6b** | UX polish from dogfood feedback | 1–2 |
-| **M6c** | Design system alignment & desktop layout | 2 |
-| **M6d** | External API integrations (Places, AeroDataBox) | 2 |
-| **M6e** | Trip cloning & content features | 2 |
-| **M6f** | E2E tests & final QA | 1 |
+| Sub-milestone | Scope                                           | Estimated sessions |
+| ------------- | ----------------------------------------------- | ------------------ |
+| **M6a**       | Bug fixes from dogfood feedback                 | 1                  |
+| **M6b**       | UX polish from dogfood feedback                 | 1–2                |
+| **M6c**       | Design system alignment & desktop layout        | 2                  |
+| **M6d**       | External API integrations (Places, AeroDataBox) | 2                  |
+| **M6e**       | Trip cloning & content features                 | 2                  |
+| **M6f**       | E2E tests & final QA                            | 1                  |
 
 ---
 
 ## File Map
 
 ### New files
-| File | Sub-milestone | Purpose |
-|---|---|---|
-| `src/lib/components/DayNav.svelte` | M6b | Prev/next arrows + swipe container for day detail |
-| `src/lib/components/ui/SideRail.svelte` | M6c | Desktop left navigation rail (replaces BottomNav at ≥900px) |
-| `src/lib/components/ui/AppShell.svelte` | M6c | Responsive layout wrapper: bottom nav mobile, side rail tablet+, 3-pane desktop |
-| `src/routes/api/places/autocomplete/+server.ts` | M6d | Google Places autocomplete proxy |
-| `src/routes/api/places/details/+server.ts` | M6d | Google Places details proxy |
-| `src/routes/api/flights/lookup/+server.ts` | M6d | AeroDataBox flight lookup proxy |
-| `src/lib/components/PlacesAutocomplete.svelte` | M6d | Places search input with dropdown results |
-| `src/lib/components/FlightLookup.svelte` | M6d | Flight number input with autofill preview |
-| `src/routes/(app)/trips/[slug]/clone/+page.server.ts` | M6e | Clone trip server actions |
-| `src/routes/(app)/trips/[slug]/clone/+page.svelte` | M6e | Clone wizard UI |
-| `src/routes/(app)/trips/[slug]/parking-lot/+page.server.ts` | M6e | Trip-level parking lot data loader |
-| `src/routes/(app)/trips/[slug]/parking-lot/+page.svelte` | M6e | Parking lot view |
-| `src/lib/components/ParkingLotSection.svelte` | M6e | Reusable parking lot item list |
-| `src/lib/config/checklist-templates.ts` | M6e | Packing, grocery, to-book template definitions |
-| `src/lib/styles/print.css` | M6e | Print-friendly stylesheet |
-| `tests/e2e/m6-polish.spec.ts` | M6f | M6 E2E tests |
+
+| File                                                        | Sub-milestone | Purpose                                                                         |
+| ----------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------- |
+| `src/lib/components/DayNav.svelte`                          | M6b           | Prev/next arrows + swipe container for day detail                               |
+| `src/lib/components/ui/SideRail.svelte`                     | M6c           | Desktop left navigation rail (replaces BottomNav at ≥900px)                     |
+| `src/lib/components/ui/AppShell.svelte`                     | M6c           | Responsive layout wrapper: bottom nav mobile, side rail tablet+, 3-pane desktop |
+| `src/routes/api/places/autocomplete/+server.ts`             | M6d           | Google Places autocomplete proxy                                                |
+| `src/routes/api/places/details/+server.ts`                  | M6d           | Google Places details proxy                                                     |
+| `src/routes/api/flights/lookup/+server.ts`                  | M6d           | AeroDataBox flight lookup proxy                                                 |
+| `src/lib/components/PlacesAutocomplete.svelte`              | M6d           | Places search input with dropdown results                                       |
+| `src/lib/components/FlightLookup.svelte`                    | M6d           | Flight number input with autofill preview                                       |
+| `src/routes/(app)/trips/[slug]/clone/+page.server.ts`       | M6e           | Clone trip server actions                                                       |
+| `src/routes/(app)/trips/[slug]/clone/+page.svelte`          | M6e           | Clone wizard UI                                                                 |
+| `src/routes/(app)/trips/[slug]/parking-lot/+page.server.ts` | M6e           | Trip-level parking lot data loader                                              |
+| `src/routes/(app)/trips/[slug]/parking-lot/+page.svelte`    | M6e           | Parking lot view                                                                |
+| `src/lib/components/ParkingLotSection.svelte`               | M6e           | Reusable parking lot item list                                                  |
+| `src/lib/config/checklist-templates.ts`                     | M6e           | Packing, grocery, to-book template definitions                                  |
+| `src/lib/styles/print.css`                                  | M6e           | Print-friendly stylesheet                                                       |
+| `tests/e2e/m6-polish.spec.ts`                               | M6f           | M6 E2E tests                                                                    |
 
 ### Modified files
-| File | Sub-milestone | Changes |
-|---|---|---|
-| `src/routes/(app)/trips/[slug]/items/new/+page.server.ts` | M6a | Fix start/end time persistence |
-| `src/routes/(app)/trips/[slug]/items/new/+page.svelte` | M6a, M6b, M6d | Fix time inputs, draft warning, Places/flight lookup |
-| `src/routes/(app)/trips/[slug]/items/[itemId]/edit/+page.server.ts` | M6a | Fix start/end time persistence |
-| `src/routes/(app)/trips/[slug]/items/[itemId]/edit/+page.svelte` | M6a, M6b, M6d | Fix time inputs, draft warning, Places/flight lookup |
-| `src/routes/(app)/trips/[slug]/today/+page.server.ts` | M6a | Fix upcoming day sort order |
-| `src/routes/(app)/trips/[slug]/today/upcoming/+page.server.ts` | M6a | Fix slot sort for next-day items |
-| `src/lib/components/BottomNav.svelte` | M6a, M6c | Fix keyboard overlap, hide at ≥900px |
-| `src/app.html` | M6a, M6e | Fix page title, add OG metadata slot |
-| `static/manifest.json` | M6a | Fix app icon references |
-| `src/routes/(app)/trips/[slug]/+page.svelte` | M6b | Days grouped under phases, show times |
-| `src/routes/(app)/trips/[slug]/days/[dayId]/+page.svelte` | M6b | Day nav arrows/swipe, show times, larger day cards |
-| `src/routes/(app)/trips/[slug]/items/[itemId]/+page.svelte` | M6b | Show times on detail |
-| `src/lib/components/ui/FAB.svelte` | M6b | Always visible positioning |
-| `src/routes/+layout.svelte` | M6c | AppShell integration |
-| `src/routes/(app)/+layout.svelte` | M6c | AppShell integration, SideRail |
-| `src/routes/(auth)/login/+page.svelte` | M6c | Desktop brand panel |
-| `src/lib/components/ui/TypeIcon.svelte` | M6c | Ensure all item types/subtypes covered |
-| `src/routes/layout.css` | M6c | Design token CSS custom properties |
-| `src/routes/(app)/trips/[slug]/phases/[phaseId]/+page.svelte` | M6e | Phase parking lot section |
-| `src/routes/(app)/trips/[slug]/more/+page.svelte` | M6e | Clone link, parking lot link |
-| `src/routes/archive/[token]/+page.svelte` | M6e | OG metadata |
-| `src/routes/archive/[token]/+page.server.ts` | M6e | OG data in load |
+
+| File                                                                | Sub-milestone | Changes                                              |
+| ------------------------------------------------------------------- | ------------- | ---------------------------------------------------- |
+| `src/routes/(app)/trips/[slug]/items/new/+page.server.ts`           | M6a           | Fix start/end time persistence                       |
+| `src/routes/(app)/trips/[slug]/items/new/+page.svelte`              | M6a, M6b, M6d | Fix time inputs, draft warning, Places/flight lookup |
+| `src/routes/(app)/trips/[slug]/items/[itemId]/edit/+page.server.ts` | M6a           | Fix start/end time persistence                       |
+| `src/routes/(app)/trips/[slug]/items/[itemId]/edit/+page.svelte`    | M6a, M6b, M6d | Fix time inputs, draft warning, Places/flight lookup |
+| `src/routes/(app)/trips/[slug]/today/+page.server.ts`               | M6a           | Fix upcoming day sort order                          |
+| `src/routes/(app)/trips/[slug]/today/upcoming/+page.server.ts`      | M6a           | Fix slot sort for next-day items                     |
+| `src/lib/components/BottomNav.svelte`                               | M6a, M6c      | Fix keyboard overlap, hide at ≥900px                 |
+| `src/app.html`                                                      | M6a, M6e      | Fix page title, add OG metadata slot                 |
+| `static/manifest.json`                                              | M6a           | Fix app icon references                              |
+| `src/routes/(app)/trips/[slug]/+page.svelte`                        | M6b           | Days grouped under phases, show times                |
+| `src/routes/(app)/trips/[slug]/days/[dayId]/+page.svelte`           | M6b           | Day nav arrows/swipe, show times, larger day cards   |
+| `src/routes/(app)/trips/[slug]/items/[itemId]/+page.svelte`         | M6b           | Show times on detail                                 |
+| `src/lib/components/ui/FAB.svelte`                                  | M6b           | Always visible positioning                           |
+| `src/routes/+layout.svelte`                                         | M6c           | AppShell integration                                 |
+| `src/routes/(app)/+layout.svelte`                                   | M6c           | AppShell integration, SideRail                       |
+| `src/routes/(auth)/login/+page.svelte`                              | M6c           | Desktop brand panel                                  |
+| `src/lib/components/ui/TypeIcon.svelte`                             | M6c           | Ensure all item types/subtypes covered               |
+| `src/routes/layout.css`                                             | M6c           | Design token CSS custom properties                   |
+| `src/routes/(app)/trips/[slug]/phases/[phaseId]/+page.svelte`       | M6e           | Phase parking lot section                            |
+| `src/routes/(app)/trips/[slug]/more/+page.svelte`                   | M6e           | Clone link, parking lot link                         |
+| `src/routes/archive/[token]/+page.svelte`                           | M6e           | OG metadata                                          |
+| `src/routes/archive/[token]/+page.server.ts`                        | M6e           | OG data in load                                      |
 
 ---
 
@@ -108,8 +110,8 @@
 
 ```typescript
 function timeToDatetime(time: string, dateStr: string): string {
-  if (!time) return '';
-  return `${dateStr.split(/[T ]/)[0]} ${time}:00.000Z`;
+	if (!time) return '';
+	return `${dateStr.split(/[T ]/)[0]} ${time}:00.000Z`;
 }
 ```
 
@@ -117,9 +119,9 @@ function timeToDatetime(time: string, dateStr: string): string {
 
 ```typescript
 function datetimeToTime(dt: string): string {
-  if (!dt) return '';
-  const match = dt.match(/(\d{2}:\d{2})/);
-  return match ? match[1] : '';
+	if (!dt) return '';
+	const match = dt.match(/(\d{2}:\d{2})/);
+	return match ? match[1] : '';
 }
 ```
 
@@ -158,26 +160,26 @@ items.sort((a, b) => (SLOT_ORDER[a.slot] ?? 9) - (SLOT_ORDER[b.slot] ?? 9));
 
 ```svelte
 <script lang="ts">
-  let inputFocused = $state(false);
+	let inputFocused = $state(false);
 
-  function handleFocusIn(e: FocusEvent) {
-    const tag = (e.target as HTMLElement)?.tagName;
-    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
-      inputFocused = true;
-    }
-  }
+	function handleFocusIn(e: FocusEvent) {
+		const tag = (e.target as HTMLElement)?.tagName;
+		if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+			inputFocused = true;
+		}
+	}
 
-  function handleFocusOut() {
-    inputFocused = false;
-  }
+	function handleFocusOut() {
+		inputFocused = false;
+	}
 </script>
 
 <svelte:window on:focusin={handleFocusIn} on:focusout={handleFocusOut} />
 
 {#if !inputFocused}
-  <nav class="fixed bottom-0 ...">
-    <!-- nav content -->
-  </nav>
+	<nav class="fixed bottom-0 ...">
+		<!-- nav content -->
+	</nav>
 {/if}
 ```
 
@@ -198,11 +200,11 @@ items.sort((a, b) => (SLOT_ORDER[a.slot] ?? 9) - (SLOT_ORDER[b.slot] ?? 9));
 
 ```json
 {
-  "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
-  ]
+	"icons": [
+		{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+		{ "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+		{ "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+	]
 }
 ```
 
@@ -246,6 +248,7 @@ items.sort((a, b) => (SLOT_ORDER[a.slot] ?? 9) - (SLOT_ORDER[b.slot] ?? 9));
 3. - [ ] `pnpm check`
 
 **Commit:**
+
 ```
 git commit -m "M6a: fix dogfood bugs — times, sort, keyboard nav, icons, title, phases, FAB"
 ```
@@ -267,17 +270,17 @@ git commit -m "M6a: fix dogfood bugs — times, sort, keyboard nav, icons, title
 
 ```svelte
 <script lang="ts">
-  let dirty = $state(false);
+	let dirty = $state(false);
 
-  function handleBeforeUnload(e: BeforeUnloadEvent) {
-    if (dirty) {
-      e.preventDefault();
-    }
-  }
+	function handleBeforeUnload(e: BeforeUnloadEvent) {
+		if (dirty) {
+			e.preventDefault();
+		}
+	}
 
-  function markDirty() {
-    dirty = true;
-  }
+	function markDirty() {
+		dirty = true;
+	}
 </script>
 
 <svelte:window on:beforeunload={handleBeforeUnload} />
@@ -290,9 +293,9 @@ git commit -m "M6a: fix dogfood bugs — times, sort, keyboard nav, icons, title
 import { beforeNavigate } from '$app/navigation';
 
 beforeNavigate(({ cancel }) => {
-  if (dirty && !confirm('You have unsaved changes. Leave anyway?')) {
-    cancel();
-  }
+	if (dirty && !confirm('You have unsaved changes. Leave anyway?')) {
+		cancel();
+	}
 });
 ```
 
@@ -321,25 +324,28 @@ beforeNavigate(({ cancel }) => {
 
 ```svelte
 {#each data.phases as phase}
-  <Card href="/trips/{data.trip.slug}/phases/{phase.id}" accent={phase.color}>
-    <div class="p-3">
-      <h3 class="text-ink font-semibold">{phase.name}</h3>
-      <p class="text-ink-muted font-mono mt-1 text-[11.5px]">
-        {formatDateRange(phase.start_date, phase.end_date)}
-        {#if phase.location} · {phase.location}{/if}
-      </p>
-    </div>
-  </Card>
-  <!-- Days in this phase, indented -->
-  {#each daysInPhase(phase) as day}
-    <a href="/trips/{data.trip.slug}/days/{day.id}"
-       class="ml-4 flex items-center justify-between rounded-lg bg-surface px-3 py-2.5 text-sm hover:bg-surface/80">
-      <span class="text-ink">{dayLabel(day)}</span>
-      {#if dayItemCount(day)}
-        <span class="text-ink-muted text-xs">{dayItemCount(day)} items</span>
-      {/if}
-    </a>
-  {/each}
+	<Card href="/trips/{data.trip.slug}/phases/{phase.id}" accent={phase.color}>
+		<div class="p-3">
+			<h3 class="font-semibold text-ink">{phase.name}</h3>
+			<p class="mt-1 font-mono text-[11.5px] text-ink-muted">
+				{formatDateRange(phase.start_date, phase.end_date)}
+				{#if phase.location}
+					· {phase.location}{/if}
+			</p>
+		</div>
+	</Card>
+	<!-- Days in this phase, indented -->
+	{#each daysInPhase(phase) as day}
+		<a
+			href="/trips/{data.trip.slug}/days/{day.id}"
+			class="ml-4 flex items-center justify-between rounded-lg bg-surface px-3 py-2.5 text-sm hover:bg-surface/80"
+		>
+			<span class="text-ink">{dayLabel(day)}</span>
+			{#if dayItemCount(day)}
+				<span class="text-xs text-ink-muted">{dayItemCount(day)} items</span>
+			{/if}
+		</a>
+	{/each}
 {/each}
 ```
 
@@ -359,18 +365,18 @@ beforeNavigate(({ cancel }) => {
 
 ```typescript
 export function formatTime(time: string): string {
-  if (!time) return '';
-  const [h, m] = time.split(':');
-  const hour = parseInt(h, 10);
-  const ampm = hour >= 12 ? 'PM' : 'AM';
-  const h12 = hour % 12 || 12;
-  return `${h12}:${m} ${ampm}`;
+	if (!time) return '';
+	const [h, m] = time.split(':');
+	const hour = parseInt(h, 10);
+	const ampm = hour >= 12 ? 'PM' : 'AM';
+	const h12 = hour % 12 || 12;
+	return `${h12}:${m} ${ampm}`;
 }
 
 export function formatTimeRange(start: string, end: string): string {
-  if (!start && !end) return '';
-  if (start && end) return `${formatTime(start)} – ${formatTime(end)}`;
-  return formatTime(start || end);
+	if (!start && !end) return '';
+	if (start && end) return `${formatTime(start)} – ${formatTime(end)}`;
+	return formatTime(start || end);
 }
 ```
 
@@ -390,7 +396,7 @@ export function formatTimeRange(start: string, end: string): string {
 
 ```typescript
 const sortedDays = $derived(data.days.toSorted((a, b) => a.date.localeCompare(b.date)));
-const dayIdx = $derived(sortedDays.findIndex(d => d.id === data.day.id));
+const dayIdx = $derived(sortedDays.findIndex((d) => d.id === data.day.id));
 const prevDayId = $derived(dayIdx > 0 ? sortedDays[dayIdx - 1].id : null);
 const nextDayId = $derived(dayIdx < sortedDays.length - 1 ? sortedDays[dayIdx + 1].id : null);
 ```
@@ -399,56 +405,74 @@ const nextDayId = $derived(dayIdx < sortedDays.length - 1 ? sortedDays[dayIdx + 
 
 ```svelte
 <script lang="ts">
-  import { goto } from '$app/navigation';
+	import { goto } from '$app/navigation';
 
-  let { prevHref, nextHref, label }: {
-    prevHref: string | null;
-    nextHref: string | null;
-    label: string;
-  } = $props();
+	let {
+		prevHref,
+		nextHref,
+		label
+	}: {
+		prevHref: string | null;
+		nextHref: string | null;
+		label: string;
+	} = $props();
 
-  let touchStartX = $state(0);
-  let touchEndX = $state(0);
-  const SWIPE_THRESHOLD = 50;
+	let touchStartX = $state(0);
+	let touchEndX = $state(0);
+	const SWIPE_THRESHOLD = 50;
 
-  function handleTouchStart(e: TouchEvent) {
-    touchStartX = e.changedTouches[0].screenX;
-  }
+	function handleTouchStart(e: TouchEvent) {
+		touchStartX = e.changedTouches[0].screenX;
+	}
 
-  function handleTouchEnd(e: TouchEvent) {
-    touchEndX = e.changedTouches[0].screenX;
-    const diff = touchStartX - touchEndX;
-    if (Math.abs(diff) > SWIPE_THRESHOLD) {
-      if (diff > 0 && nextHref) goto(nextHref);
-      if (diff < 0 && prevHref) goto(prevHref);
-    }
-  }
+	function handleTouchEnd(e: TouchEvent) {
+		touchEndX = e.changedTouches[0].screenX;
+		const diff = touchStartX - touchEndX;
+		if (Math.abs(diff) > SWIPE_THRESHOLD) {
+			if (diff > 0 && nextHref) goto(nextHref);
+			if (diff < 0 && prevHref) goto(prevHref);
+		}
+	}
 </script>
 
 <div
-  class="flex items-center justify-between px-4 py-2"
-  ontouchstart={handleTouchStart}
-  ontouchend={handleTouchEnd}
+	class="flex items-center justify-between px-4 py-2"
+	ontouchstart={handleTouchStart}
+	ontouchend={handleTouchEnd}
 >
-  {#if prevHref}
-    <a href={prevHref} class="text-moss p-2" aria-label="Previous day">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polyline points="15 18 9 12 15 6" />
-      </svg>
-    </a>
-  {:else}
-    <div class="w-10"></div>
-  {/if}
-  <span class="text-ink font-semibold text-sm">{label}</span>
-  {#if nextHref}
-    <a href={nextHref} class="text-moss p-2" aria-label="Next day">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polyline points="9 18 15 12 9 6" />
-      </svg>
-    </a>
-  {:else}
-    <div class="w-10"></div>
-  {/if}
+	{#if prevHref}
+		<a href={prevHref} class="p-2 text-moss" aria-label="Previous day">
+			<svg
+				width="20"
+				height="20"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+			>
+				<polyline points="15 18 9 12 15 6" />
+			</svg>
+		</a>
+	{:else}
+		<div class="w-10"></div>
+	{/if}
+	<span class="text-sm font-semibold text-ink">{label}</span>
+	{#if nextHref}
+		<a href={nextHref} class="p-2 text-moss" aria-label="Next day">
+			<svg
+				width="20"
+				height="20"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+			>
+				<polyline points="9 18 15 12 9 6" />
+			</svg>
+		</a>
+	{:else}
+		<div class="w-10"></div>
+	{/if}
 </div>
 ```
 
@@ -479,6 +503,7 @@ const nextDayId = $derived(dayIdx < sortedDays.length - 1 ? sortedDays[dayIdx + 
 2. - [ ] Verify the draft warning (Task 1) fires correctly when users land on a stale form via back-nav
 
 **Commit:**
+
 ```
 git commit -m "M6b: UX polish — draft warning, day nav, grouped days, times, tap targets"
 ```
@@ -498,8 +523,8 @@ git commit -m "M6b: UX polish — draft warning, day nav, grouped days, times, t
 1. - [ ] Add the two missing tokens to `layout.css`:
 
 ```css
---color-clay-tint: #F0E0D6;
---color-error: #B33A3A;
+--color-clay-tint: #f0e0d6;
+--color-error: #b33a3a;
 ```
 
 2. - [ ] Verify typography tokens exist (Fraunces, Inter, JetBrains Mono) — add if missing
@@ -532,39 +557,46 @@ git commit -m "M6b: UX polish — draft warning, day nav, grouped days, times, t
 
 ```svelte
 <script lang="ts">
-  import { page } from '$app/state';
+	import { page } from '$app/state';
 
-  const navItems = [
-    { label: 'Trips', href: '/trips', icon: 'trips' },
-    { label: 'Settings', href: '/settings', icon: 'settings' }
-  ];
+	const navItems = [
+		{ label: 'Trips', href: '/trips', icon: 'trips' },
+		{ label: 'Settings', href: '/settings', icon: 'settings' }
+	];
 
-  let { tripSlug }: { tripSlug?: string } = $props();
+	let { tripSlug }: { tripSlug?: string } = $props();
 
-  const tripItems = $derived(tripSlug ? [
-    { label: 'Overview', href: `/trips/${tripSlug}`, icon: 'overview' },
-    { label: 'Today', href: `/trips/${tripSlug}/today`, icon: 'today' },
-    { label: 'Budget', href: `/trips/${tripSlug}/budget`, icon: 'budget' },
-    { label: 'Vault', href: `/trips/${tripSlug}/vault`, icon: 'vault' },
-    { label: 'More', href: `/trips/${tripSlug}/more`, icon: 'more' },
-  ] : []);
+	const tripItems = $derived(
+		tripSlug
+			? [
+					{ label: 'Overview', href: `/trips/${tripSlug}`, icon: 'overview' },
+					{ label: 'Today', href: `/trips/${tripSlug}/today`, icon: 'today' },
+					{ label: 'Budget', href: `/trips/${tripSlug}/budget`, icon: 'budget' },
+					{ label: 'Vault', href: `/trips/${tripSlug}/vault`, icon: 'vault' },
+					{ label: 'More', href: `/trips/${tripSlug}/more`, icon: 'more' }
+				]
+			: []
+	);
 </script>
 
-<nav class="fixed left-0 top-0 hidden h-full w-[72px] flex-col items-center gap-2 border-r border-line bg-surface pt-4 md-desktop:flex">
-  <!-- Logo/brand mark at top -->
-  <div class="mb-4 font-display text-moss text-lg font-semibold">W</div>
+<nav
+	class="fixed top-0 left-0 hidden h-full w-[72px] flex-col items-center gap-2 border-r border-line bg-surface pt-4 md-desktop:flex"
+>
+	<!-- Logo/brand mark at top -->
+	<div class="mb-4 font-display text-lg font-semibold text-moss">W</div>
 
-  {#each (tripSlug ? tripItems : navItems) as item}
-    {@const active = page.url.pathname === item.href || page.url.pathname.startsWith(item.href + '/')}
-    <a
-      href={item.href}
-      class="flex w-14 flex-col items-center gap-0.5 rounded-lg px-1 py-2 text-[10px]
-             {active ? 'bg-moss-tint text-moss font-semibold' : 'text-ink-muted hover:bg-paper'}"
-    >
-      <!-- icon SVG based on item.icon -->
-      <span>{item.label}</span>
-    </a>
-  {/each}
+	{#each tripSlug ? tripItems : navItems as item}
+		{@const active =
+			page.url.pathname === item.href || page.url.pathname.startsWith(item.href + '/')}
+		<a
+			href={item.href}
+			class="flex w-14 flex-col items-center gap-0.5 rounded-lg px-1 py-2 text-[10px]
+             {active ? 'bg-moss-tint font-semibold text-moss' : 'text-ink-muted hover:bg-paper'}"
+		>
+			<!-- icon SVG based on item.icon -->
+			<span>{item.label}</span>
+		</a>
+	{/each}
 </nav>
 ```
 
@@ -572,25 +604,25 @@ git commit -m "M6b: UX polish — draft warning, day nav, grouped days, times, t
 
 ```svelte
 <script lang="ts">
-  import BottomNav from './BottomNav.svelte';
-  import SideRail from './SideRail.svelte';
-  import type { Snippet } from 'svelte';
+	import BottomNav from './BottomNav.svelte';
+	import SideRail from './SideRail.svelte';
+	import type { Snippet } from 'svelte';
 
-  let { children, tripSlug }: { children: Snippet; tripSlug?: string } = $props();
+	let { children, tripSlug }: { children: Snippet; tripSlug?: string } = $props();
 </script>
 
 <!-- Mobile: content + bottom nav -->
 <div class="md-desktop:hidden">
-  {@render children()}
-  <BottomNav />
+	{@render children()}
+	<BottomNav />
 </div>
 
 <!-- Desktop: side rail + content -->
 <div class="hidden md-desktop:flex">
-  <SideRail {tripSlug} />
-  <div class="ml-[72px] flex-1">
-    {@render children()}
-  </div>
+	<SideRail {tripSlug} />
+	<div class="ml-[72px] flex-1">
+		{@render children()}
+	</div>
 </div>
 ```
 
@@ -598,8 +630,8 @@ git commit -m "M6b: UX polish — draft warning, day nav, grouped days, times, t
 
 ```css
 @theme {
-  --breakpoint-md-desktop: 900px;
-  --breakpoint-lg-desktop: 1280px;
+	--breakpoint-md-desktop: 900px;
+	--breakpoint-lg-desktop: 1280px;
 }
 ```
 
@@ -618,18 +650,22 @@ git commit -m "M6b: UX polish — draft warning, day nav, grouped days, times, t
 
 ```svelte
 <div class="min-h-screen md-desktop:flex">
-  <!-- Brand panel: hidden on mobile, shown on desktop -->
-  <div class="hidden md-desktop:flex md-desktop:w-1/2 flex-col items-center justify-center bg-moss text-paper p-12">
-    <h1 class="font-display text-4xl font-bold italic">Waypoint</h1>
-    <p class="mt-4 text-lg text-paper/80 max-w-sm text-center">
-      Plan trips together. Share the adventure.
-    </p>
-  </div>
+	<!-- Brand panel: hidden on mobile, shown on desktop -->
+	<div
+		class="hidden flex-col items-center justify-center bg-moss p-12 text-paper md-desktop:flex md-desktop:w-1/2"
+	>
+		<h1 class="font-display text-4xl font-bold italic">Waypoint</h1>
+		<p class="mt-4 max-w-sm text-center text-lg text-paper/80">
+			Plan trips together. Share the adventure.
+		</p>
+	</div>
 
-  <!-- Auth form: full width on mobile, half on desktop -->
-  <div class="flex min-h-screen flex-col items-center justify-center p-6 md-desktop:w-1/2 md-desktop:min-h-0">
-    <!-- existing form content -->
-  </div>
+	<!-- Auth form: full width on mobile, half on desktop -->
+	<div
+		class="flex min-h-screen flex-col items-center justify-center p-6 md-desktop:min-h-0 md-desktop:w-1/2"
+	>
+		<!-- existing form content -->
+	</div>
 </div>
 ```
 
@@ -649,6 +685,7 @@ git commit -m "M6b: UX polish — draft warning, day nav, grouped days, times, t
 6. - [ ] Note: actual artwork generation may require Scott's input — implement a placeholder that matches the color palette and flag for Scott's review
 
 **Commit:**
+
 ```
 git commit -m "M6c: design system alignment — tokens, TypeIcon, AppShell, SideRail, brand panel"
 ```
@@ -675,29 +712,26 @@ import { GOOGLE_MAPS_API_KEY } from '$env/static/private';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ url, locals }) => {
-  if (!locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
+	if (!locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
 
-  const input = url.searchParams.get('input');
-  const sessionToken = url.searchParams.get('session_token');
-  if (!input) return json({ predictions: [] });
+	const input = url.searchParams.get('input');
+	const sessionToken = url.searchParams.get('session_token');
+	if (!input) return json({ predictions: [] });
 
-  const res = await fetch(
-    `https://places.googleapis.com/v1/places:autocomplete`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
-      },
-      body: JSON.stringify({
-        input,
-        sessionToken,
-      }),
-    }
-  );
+	const res = await fetch(`https://places.googleapis.com/v1/places:autocomplete`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY
+		},
+		body: JSON.stringify({
+			input,
+			sessionToken
+		})
+	});
 
-  const data = await res.json();
-  return json(data);
+	const data = await res.json();
+	return json(data);
 };
 ```
 
@@ -710,25 +744,25 @@ import { GOOGLE_MAPS_API_KEY } from '$env/static/private';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ url, locals }) => {
-  if (!locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
+	if (!locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
 
-  const placeId = url.searchParams.get('place_id');
-  const sessionToken = url.searchParams.get('session_token');
-  if (!placeId) return json({ error: 'Missing place_id' }, { status: 400 });
+	const placeId = url.searchParams.get('place_id');
+	const sessionToken = url.searchParams.get('session_token');
+	if (!placeId) return json({ error: 'Missing place_id' }, { status: 400 });
 
-  const fields = 'displayName,formattedAddress,location,id,websiteUri,internationalPhoneNumber';
-  const res = await fetch(
-    `https://places.googleapis.com/v1/places/${placeId}?sessionToken=${sessionToken}`,
-    {
-      headers: {
-        'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
-        'X-Goog-FieldMask': fields,
-      },
-    }
-  );
+	const fields = 'displayName,formattedAddress,location,id,websiteUri,internationalPhoneNumber';
+	const res = await fetch(
+		`https://places.googleapis.com/v1/places/${placeId}?sessionToken=${sessionToken}`,
+		{
+			headers: {
+				'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
+				'X-Goog-FieldMask': fields
+			}
+		}
+	);
 
-  const data = await res.json();
-  return json(data);
+	const data = await res.json();
+	return json(data);
 };
 ```
 
@@ -744,40 +778,58 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
 ```svelte
 <script lang="ts">
-  let { onSelect }: {
-    onSelect: (place: { name: string; address: string; coords: { lat: number; lng: number }; placeId: string }) => void;
-  } = $props();
+	let {
+		onSelect
+	}: {
+		onSelect: (place: {
+			name: string;
+			address: string;
+			coords: { lat: number; lng: number };
+			placeId: string;
+		}) => void;
+	} = $props();
 
-  let query = $state('');
-  let predictions = $state<Array<{ placePrediction: { placeId: string; text: { text: string } } }>>([]);
-  let sessionToken = $state(crypto.randomUUID());
-  let showDropdown = $state(false);
-  let debounceTimer: ReturnType<typeof setTimeout>;
+	let query = $state('');
+	let predictions = $state<Array<{ placePrediction: { placeId: string; text: { text: string } } }>>(
+		[]
+	);
+	let sessionToken = $state(crypto.randomUUID());
+	let showDropdown = $state(false);
+	let debounceTimer: ReturnType<typeof setTimeout>;
 
-  function handleInput() {
-    clearTimeout(debounceTimer);
-    if (query.length < 3) { predictions = []; return; }
-    debounceTimer = setTimeout(async () => {
-      const res = await fetch(`/api/places/autocomplete?input=${encodeURIComponent(query)}&session_token=${sessionToken}`);
-      const data = await res.json();
-      predictions = data.suggestions ?? [];
-      showDropdown = predictions.length > 0;
-    }, 300);
-  }
+	function handleInput() {
+		clearTimeout(debounceTimer);
+		if (query.length < 3) {
+			predictions = [];
+			return;
+		}
+		debounceTimer = setTimeout(async () => {
+			const res = await fetch(
+				`/api/places/autocomplete?input=${encodeURIComponent(query)}&session_token=${sessionToken}`
+			);
+			const data = await res.json();
+			predictions = data.suggestions ?? [];
+			showDropdown = predictions.length > 0;
+		}, 300);
+	}
 
-  async function selectPlace(placeId: string) {
-    const res = await fetch(`/api/places/details?place_id=${placeId}&session_token=${sessionToken}`);
-    const place = await res.json();
-    onSelect({
-      name: place.displayName?.text ?? '',
-      address: place.formattedAddress ?? '',
-      coords: place.location ? { lat: place.location.latitude, lng: place.location.longitude } : { lat: 0, lng: 0 },
-      placeId: place.id ?? placeId,
-    });
-    sessionToken = crypto.randomUUID(); // new session after details call
-    showDropdown = false;
-    query = '';
-  }
+	async function selectPlace(placeId: string) {
+		const res = await fetch(
+			`/api/places/details?place_id=${placeId}&session_token=${sessionToken}`
+		);
+		const place = await res.json();
+		onSelect({
+			name: place.displayName?.text ?? '',
+			address: place.formattedAddress ?? '',
+			coords: place.location
+				? { lat: place.location.latitude, lng: place.location.longitude }
+				: { lat: 0, lng: 0 },
+			placeId: place.id ?? placeId
+		});
+		sessionToken = crypto.randomUUID(); // new session after details call
+		showDropdown = false;
+		query = '';
+	}
 </script>
 ```
 
@@ -814,25 +866,25 @@ import { AERODATABOX_API_KEY } from '$env/static/private';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ url, locals }) => {
-  if (!locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
+	if (!locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
 
-  const flightNumber = url.searchParams.get('flight');
-  const date = url.searchParams.get('date'); // YYYY-MM-DD
-  if (!flightNumber || !date) return json({ error: 'Missing flight or date' }, { status: 400 });
+	const flightNumber = url.searchParams.get('flight');
+	const date = url.searchParams.get('date'); // YYYY-MM-DD
+	if (!flightNumber || !date) return json({ error: 'Missing flight or date' }, { status: 400 });
 
-  const res = await fetch(
-    `https://aerodatabox.p.rapidapi.com/flights/number/${encodeURIComponent(flightNumber)}/${date}`,
-    {
-      headers: {
-        'X-RapidAPI-Key': AERODATABOX_API_KEY,
-        'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com',
-      },
-    }
-  );
+	const res = await fetch(
+		`https://aerodatabox.p.rapidapi.com/flights/number/${encodeURIComponent(flightNumber)}/${date}`,
+		{
+			headers: {
+				'X-RapidAPI-Key': AERODATABOX_API_KEY,
+				'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com'
+			}
+		}
+	);
 
-  if (!res.ok) return json({ error: 'Flight not found' }, { status: 404 });
-  const data = await res.json();
-  return json(data);
+	if (!res.ok) return json({ error: 'Flight not found' }, { status: 404 });
+	const data = await res.json();
+	return json(data);
 };
 ```
 
@@ -848,47 +900,57 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
 ```svelte
 <script lang="ts">
-  let { onSelect }: {
-    onSelect: (flight: {
-      title: string;
-      start_time: string;
-      end_time: string;
-      start_tz: string;
-      end_tz: string;
-      location_name: string; // departure airport
-      description: string;   // arrival airport + airline
-    }) => void;
-  } = $props();
+	let {
+		onSelect
+	}: {
+		onSelect: (flight: {
+			title: string;
+			start_time: string;
+			end_time: string;
+			start_tz: string;
+			end_tz: string;
+			location_name: string; // departure airport
+			description: string; // arrival airport + airline
+		}) => void;
+	} = $props();
 
-  let flightNumber = $state('');
-  let flightDate = $state('');
-  let loading = $state(false);
-  let error = $state('');
+	let flightNumber = $state('');
+	let flightDate = $state('');
+	let loading = $state(false);
+	let error = $state('');
 
-  async function lookupFlight() {
-    if (!flightNumber || !flightDate) return;
-    loading = true;
-    error = '';
-    try {
-      const res = await fetch(`/api/flights/lookup?flight=${encodeURIComponent(flightNumber)}&date=${flightDate}`);
-      if (!res.ok) { error = 'Flight not found'; return; }
-      const data = await res.json();
-      const flight = Array.isArray(data) ? data[0] : data;
-      if (!flight) { error = 'No results'; return; }
+	async function lookupFlight() {
+		if (!flightNumber || !flightDate) return;
+		loading = true;
+		error = '';
+		try {
+			const res = await fetch(
+				`/api/flights/lookup?flight=${encodeURIComponent(flightNumber)}&date=${flightDate}`
+			);
+			if (!res.ok) {
+				error = 'Flight not found';
+				return;
+			}
+			const data = await res.json();
+			const flight = Array.isArray(data) ? data[0] : data;
+			if (!flight) {
+				error = 'No results';
+				return;
+			}
 
-      onSelect({
-        title: `${flight.airline?.name ?? ''} ${flightNumber}`.trim(),
-        start_time: flight.departure?.scheduledTime?.local?.split('T')[1]?.slice(0, 5) ?? '',
-        end_time: flight.arrival?.scheduledTime?.local?.split('T')[1]?.slice(0, 5) ?? '',
-        start_tz: flight.departure?.airport?.timeZone ?? '',
-        end_tz: flight.arrival?.airport?.timeZone ?? '',
-        location_name: `${flight.departure?.airport?.name ?? ''} (${flight.departure?.airport?.iata ?? ''})`,
-        description: `→ ${flight.arrival?.airport?.name ?? ''} (${flight.arrival?.airport?.iata ?? ''})`,
-      });
-    } finally {
-      loading = false;
-    }
-  }
+			onSelect({
+				title: `${flight.airline?.name ?? ''} ${flightNumber}`.trim(),
+				start_time: flight.departure?.scheduledTime?.local?.split('T')[1]?.slice(0, 5) ?? '',
+				end_time: flight.arrival?.scheduledTime?.local?.split('T')[1]?.slice(0, 5) ?? '',
+				start_tz: flight.departure?.airport?.timeZone ?? '',
+				end_tz: flight.arrival?.airport?.timeZone ?? '',
+				location_name: `${flight.departure?.airport?.name ?? ''} (${flight.departure?.airport?.iata ?? ''})`,
+				description: `→ ${flight.arrival?.airport?.name ?? ''} (${flight.arrival?.airport?.iata ?? ''})`
+			});
+		} finally {
+			loading = false;
+		}
+	}
 </script>
 ```
 
@@ -909,6 +971,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 5. - [ ] `pnpm check`
 
 **Commit:**
+
 ```
 git commit -m "M6d: external API integrations — Google Places autofill, AeroDataBox flight lookup"
 ```
@@ -929,10 +992,10 @@ git commit -m "M6d: external API integrations — Google Places autofill, AeroDa
 
 ```typescript
 export const load = async ({ params, locals }) => {
-  const trip = await locals.pb.collection('trips').getFirstListItem(`slug="${params.slug}"`);
-  const phases = await locals.pb.collection('phases').getFullList({ filter: `trip="${trip.id}"` });
-  const items = await locals.pb.collection('items').getFullList({ filter: `trip="${trip.id}"` });
-  return { sourceTrip: trip, phases, items };
+	const trip = await locals.pb.collection('trips').getFirstListItem(`slug="${params.slug}"`);
+	const phases = await locals.pb.collection('phases').getFullList({ filter: `trip="${trip.id}"` });
+	const items = await locals.pb.collection('items').getFullList({ filter: `trip="${trip.id}"` });
+	return { sourceTrip: trip, phases, items };
 };
 ```
 
@@ -940,15 +1003,15 @@ export const load = async ({ params, locals }) => {
 
 ```typescript
 export const actions = {
-  default: async ({ request, locals, params }) => {
-    const formData = await request.formData();
-    const title = formData.get('title') as string;
-    const startDate = formData.get('start_date') as string;
-    const endDate = formData.get('end_date') as string;
-    const includePhases = formData.get('include_phases') === 'on';
-    const includeItems = formData.getAll('include_item_types') as string[];
-    // ... create trip, optionally clone phases, items
-  }
+	default: async ({ request, locals, params }) => {
+		const formData = await request.formData();
+		const title = formData.get('title') as string;
+		const startDate = formData.get('start_date') as string;
+		const endDate = formData.get('end_date') as string;
+		const includePhases = formData.get('include_phases') === 'on';
+		const includeItems = formData.getAll('include_item_types') as string[];
+		// ... create trip, optionally clone phases, items
+	}
 };
 ```
 
@@ -971,57 +1034,57 @@ export const actions = {
 
 ```typescript
 export interface ChecklistTemplate {
-  name: string;
-  description: string;
-  items: string[];
+	name: string;
+	description: string;
+	items: string[];
 }
 
 export const checklistTemplates: ChecklistTemplate[] = [
-  {
-    name: 'Packing',
-    description: 'Common items to pack for a trip',
-    items: [
-      'Passport / ID',
-      'Phone charger',
-      'Adapter / converter',
-      'Toiletries',
-      'Medications',
-      'Comfortable walking shoes',
-      'Weather-appropriate clothing',
-      'Sunscreen',
-      'Reusable water bottle',
-      'Snacks',
-    ],
-  },
-  {
-    name: 'Grocery',
-    description: 'Grocery run for a trip rental',
-    items: [
-      'Water',
-      'Coffee / tea',
-      'Breakfast items',
-      'Snacks',
-      'Fruits',
-      'Lunch supplies',
-      'Dinner ingredients',
-      'Drinks',
-      'Paper towels',
-      'Trash bags',
-    ],
-  },
-  {
-    name: 'To Book',
-    description: 'Things to book before departure',
-    items: [
-      'Flights',
-      'Accommodation',
-      'Car rental',
-      'Travel insurance',
-      'Restaurant reservations',
-      'Activity tickets',
-      'Airport transfer',
-    ],
-  },
+	{
+		name: 'Packing',
+		description: 'Common items to pack for a trip',
+		items: [
+			'Passport / ID',
+			'Phone charger',
+			'Adapter / converter',
+			'Toiletries',
+			'Medications',
+			'Comfortable walking shoes',
+			'Weather-appropriate clothing',
+			'Sunscreen',
+			'Reusable water bottle',
+			'Snacks'
+		]
+	},
+	{
+		name: 'Grocery',
+		description: 'Grocery run for a trip rental',
+		items: [
+			'Water',
+			'Coffee / tea',
+			'Breakfast items',
+			'Snacks',
+			'Fruits',
+			'Lunch supplies',
+			'Dinner ingredients',
+			'Drinks',
+			'Paper towels',
+			'Trash bags'
+		]
+	},
+	{
+		name: 'To Book',
+		description: 'Things to book before departure',
+		items: [
+			'Flights',
+			'Accommodation',
+			'Car rental',
+			'Travel insurance',
+			'Restaurant reservations',
+			'Activity tickets',
+			'Airport transfer'
+		]
+	}
 ];
 ```
 
@@ -1040,12 +1103,12 @@ export const checklistTemplates: ChecklistTemplate[] = [
 
 ```typescript
 export const load = async ({ params, locals, parent }) => {
-  const { trip } = await parent();
-  const items = await locals.pb.collection('items').getFullList({
-    filter: `trip="${trip.id}" && parking_lot_scope!="none"`,
-    sort: '-created',
-  });
-  return { parkingLotItems: items };
+	const { trip } = await parent();
+	const items = await locals.pb.collection('items').getFullList({
+		filter: `trip="${trip.id}" && parking_lot_scope!="none"`,
+		sort: '-created'
+	});
+	return { parkingLotItems: items };
 };
 ```
 
@@ -1053,19 +1116,23 @@ export const load = async ({ params, locals, parent }) => {
 
 ```svelte
 <script lang="ts">
-  import type { Item, Phase } from '$lib/types';
-  import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
-  import Card from '$lib/components/ui/Card.svelte';
+	import type { Item, Phase } from '$lib/types';
+	import TypeIcon from '$lib/components/ui/TypeIcon.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
 
-  let { items, phases, tripSlug }: {
-    items: Item[];
-    phases: Phase[];
-    tripSlug: string;
-  } = $props();
+	let {
+		items,
+		phases,
+		tripSlug
+	}: {
+		items: Item[];
+		phases: Phase[];
+		tripSlug: string;
+	} = $props();
 
-  const tripLevel = $derived(items.filter(i => i.parking_lot_scope === 'trip'));
-  const phaseLevel = $derived(items.filter(i => i.parking_lot_scope === 'phase'));
-  const dayLevel = $derived(items.filter(i => i.parking_lot_scope === 'day'));
+	const tripLevel = $derived(items.filter((i) => i.parking_lot_scope === 'trip'));
+	const phaseLevel = $derived(items.filter((i) => i.parking_lot_scope === 'phase'));
+	const dayLevel = $derived(items.filter((i) => i.parking_lot_scope === 'day'));
 </script>
 ```
 
@@ -1089,14 +1156,20 @@ export const load = async ({ params, locals, parent }) => {
 
 ```svelte
 <svelte:head>
-  <title>{data.trip.title} — Waypoint Archive</title>
-  <meta property="og:title" content={data.trip.title} />
-  <meta property="og:description" content="{data.trip.location_summary} · {formatDateRange(data.trip.start_date, data.trip.end_date)}" />
-  <meta property="og:type" content="article" />
-  {#if data.trip.cover_image}
-    <meta property="og:image" content={coverImageUrl} />
-  {/if}
-  <meta property="og:url" content={$page.url.href} />
+	<title>{data.trip.title} — Waypoint Archive</title>
+	<meta property="og:title" content={data.trip.title} />
+	<meta
+		property="og:description"
+		content="{data.trip.location_summary} · {formatDateRange(
+			data.trip.start_date,
+			data.trip.end_date
+		)}"
+	/>
+	<meta property="og:type" content="article" />
+	{#if data.trip.cover_image}
+		<meta property="og:image" content={coverImageUrl} />
+	{/if}
+	<meta property="og:url" content={$page.url.href} />
 </svelte:head>
 ```
 
@@ -1112,51 +1185,64 @@ export const load = async ({ params, locals, parent }) => {
 
 ```css
 @media print {
-  /* Hide non-print elements */
-  nav, .bottom-nav, .side-rail, .fab, .notification-bell,
-  button, [role="button"], .no-print {
-    display: none !important;
-  }
+	/* Hide non-print elements */
+	nav,
+	.bottom-nav,
+	.side-rail,
+	.fab,
+	.notification-bell,
+	button,
+	[role='button'],
+	.no-print {
+		display: none !important;
+	}
 
-  /* Reset layout */
-  body {
-    background: white;
-    color: black;
-    font-size: 11pt;
-    line-height: 1.4;
-  }
+	/* Reset layout */
+	body {
+		background: white;
+		color: black;
+		font-size: 11pt;
+		line-height: 1.4;
+	}
 
-  main {
-    max-width: 100%;
-    padding: 0;
-    margin: 0;
-  }
+	main {
+		max-width: 100%;
+		padding: 0;
+		margin: 0;
+	}
 
-  /* Page breaks between days */
-  .day-section {
-    page-break-inside: avoid;
-    page-break-before: auto;
-  }
+	/* Page breaks between days */
+	.day-section {
+		page-break-inside: avoid;
+		page-break-before: auto;
+	}
 
-  /* Expand all collapsed sections */
-  details { display: block; }
-  details > * { display: block; }
+	/* Expand all collapsed sections */
+	details {
+		display: block;
+	}
+	details > * {
+		display: block;
+	}
 
-  /* Print header */
-  .print-header {
-    display: block !important;
-    text-align: center;
-    margin-bottom: 1cm;
-  }
+	/* Print header */
+	.print-header {
+		display: block !important;
+		text-align: center;
+		margin-bottom: 1cm;
+	}
 
-  /* Remove decorative elements */
-  .card {
-    border: 1px solid #ccc;
-    box-shadow: none;
-    border-radius: 0;
-  }
+	/* Remove decorative elements */
+	.card {
+		border: 1px solid #ccc;
+		box-shadow: none;
+		border-radius: 0;
+	}
 
-  a { text-decoration: none; color: inherit; }
+	a {
+		text-decoration: none;
+		color: inherit;
+	}
 }
 ```
 
@@ -1165,6 +1251,7 @@ export const load = async ({ params, locals, parent }) => {
 4. - [ ] `pnpm check`
 
 **Commit:**
+
 ```
 git commit -m "M6e: trip cloning, checklist templates, parking lot, OG metadata, print view"
 ```
@@ -1203,6 +1290,7 @@ git commit -m "M6e: trip cloning, checklist templates, parking lot, OG metadata,
 4. - [ ] Manual smoke test on mobile device (or preview at 375px): create trip → add phase → add day → add item with times → navigate days → view parking lot → clone trip
 
 **Commit:**
+
 ```
 git commit -m "M6f: E2E tests for polish features, full regression passing"
 ```
@@ -1211,34 +1299,34 @@ git commit -m "M6f: E2E tests for polish features, full regression passing"
 
 ## Resolved Decisions
 
-| Decision | Resolution | Rationale |
-|---|---|---|
-| Dark mode | **Skipped** | Not worth the effort for v1. Token prep already in place from M6c CSS custom properties. |
-| OCR agenda import | **Backlogged** | Not in spec. Added to SPEC_BACKLOG.md for a future milestone. |
-| Day navigation UX | **Swipe + arrows** | Both touch swipe gestures AND arrow buttons for full mobile-native feel. |
+| Decision                    | Resolution                        | Rationale                                                                                      |
+| --------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Dark mode                   | **Skipped**                       | Not worth the effort for v1. Token prep already in place from M6c CSS custom properties.       |
+| OCR agenda import           | **Backlogged**                    | Not in spec. Added to SPEC_BACKLOG.md for a future milestone.                                  |
+| Day navigation UX           | **Swipe + arrows**                | Both touch swipe gestures AND arrow buttons for full mobile-native feel.                       |
 | Recommendations/parking lot | **Decided during implementation** | Inline sections vs. standalone pages will be chosen based on how the data looks on real trips. |
-| Desktop debt scope | **Full sub-milestone (M6c)** | Touches the layout shell used by every page — better to ship as a cohesive unit. |
+| Desktop debt scope          | **Full sub-milestone (M6c)**      | Touches the layout shell used by every page — better to ship as a cohesive unit.               |
 
 ---
 
 ## Acceptance Criteria Mapping
 
-| Spec Feature | Sub-milestone | Acceptance |
-|---|---|---|
-| Trip cloning with per-category checklist | M6e Task 1 | Clone creates new trip with selected phases/items |
-| Google Places autofill on item create | M6d Tasks 1–3 | Autocomplete works, place details fill location fields |
-| AeroDataBox flight number lookup | M6d Tasks 4–6 | Flight number returns departure/arrival/times/timezones |
-| Checklist templates (packing, grocery, to-book) | M6e Task 2 | Template picker populates checklist items |
-| Recommendations / saved-options sidebar | ~~M6e Task 4~~ | **Already implemented** — archive has "What we considered" section |
-| Phase/trip parking lot views | M6e Task 3 | Parking lot page shows items by scope |
-| OG metadata for archive | M6e Task 5 | Shared archive link shows rich preview |
-| Print-friendly itinerary | M6e Task 6 | `Ctrl+P` produces clean printout |
-| Day navigation (swipe + arrows) | M6b Task 5 | Arrows navigate between days, swipe works on touch |
-| App icon artwork refresh | M6c Task 5 | Home screen icon shows Waypoint brand |
-| Start/end times saving | M6a Task 1 | Times persist through create/edit cycle |
-| Today sort order | M6a Task 2 | Morning items sort first for next day |
-| Keyboard/nav overlap | M6a Task 3 | Bottom nav hidden when keyboard is open |
-| Desktop responsive layout | M6c Tasks 3–4 | SideRail at ≥900px, brand panel on login |
+| Spec Feature                                    | Sub-milestone  | Acceptance                                                         |
+| ----------------------------------------------- | -------------- | ------------------------------------------------------------------ |
+| Trip cloning with per-category checklist        | M6e Task 1     | Clone creates new trip with selected phases/items                  |
+| Google Places autofill on item create           | M6d Tasks 1–3  | Autocomplete works, place details fill location fields             |
+| AeroDataBox flight number lookup                | M6d Tasks 4–6  | Flight number returns departure/arrival/times/timezones            |
+| Checklist templates (packing, grocery, to-book) | M6e Task 2     | Template picker populates checklist items                          |
+| Recommendations / saved-options sidebar         | ~~M6e Task 4~~ | **Already implemented** — archive has "What we considered" section |
+| Phase/trip parking lot views                    | M6e Task 3     | Parking lot page shows items by scope                              |
+| OG metadata for archive                         | M6e Task 5     | Shared archive link shows rich preview                             |
+| Print-friendly itinerary                        | M6e Task 6     | `Ctrl+P` produces clean printout                                   |
+| Day navigation (swipe + arrows)                 | M6b Task 5     | Arrows navigate between days, swipe works on touch                 |
+| App icon artwork refresh                        | M6c Task 5     | Home screen icon shows Waypoint brand                              |
+| Start/end times saving                          | M6a Task 1     | Times persist through create/edit cycle                            |
+| Today sort order                                | M6a Task 2     | Morning items sort first for next day                              |
+| Keyboard/nav overlap                            | M6a Task 3     | Bottom nav hidden when keyboard is open                            |
+| Desktop responsive layout                       | M6c Tasks 3–4  | SideRail at ≥900px, brand panel on login                           |
 
 ---
 

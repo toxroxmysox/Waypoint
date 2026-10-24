@@ -85,12 +85,18 @@ export function mapsUrl(
 	const text = item.location_address || item.location_name;
 	if (app === 'apple') {
 		const label = item.location_name || item.location_address;
-		if (hasCoords) return `https://maps.apple.com/?ll=${c!.lat},${c!.lng}` + (label ? `&q=${encodeURIComponent(label)}` : '');
+		if (hasCoords)
+			return (
+				`https://maps.apple.com/?ll=${c!.lat},${c!.lng}` +
+				(label ? `&q=${encodeURIComponent(label)}` : '')
+			);
 		return text ? `https://maps.apple.com/?q=${encodeURIComponent(text)}` : '';
 	}
 	const base = 'https://www.google.com/maps/search/?api=1&query=';
 	if (item.google_place_id) {
-		const q = encodeURIComponent(item.location_name || item.location_address || item.google_place_id);
+		const q = encodeURIComponent(
+			item.location_name || item.location_address || item.google_place_id
+		);
 		return `${base}${q}&query_place_id=${encodeURIComponent(item.google_place_id)}`;
 	}
 	if (hasCoords) return `${base}${c!.lat},${c!.lng}`;

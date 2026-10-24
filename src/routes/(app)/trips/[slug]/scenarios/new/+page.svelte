@@ -18,14 +18,22 @@
 	const v = untrack(
 		() =>
 			(form && 'values' in form ? form.values : undefined) as
-				| { title: string; pitch: string; date_start: string; date_end: string; budget_per_person: string }
+				| {
+						title: string;
+						pitch: string;
+						date_start: string;
+						date_end: string;
+						budget_per_person: string;
+				  }
 				| undefined
 	);
 	let title = $state(v?.title ?? f?.title ?? '');
 	let pitch = $state(v?.pitch ?? f?.pitch ?? '');
 	let dateStart = $state(v?.date_start ?? f?.dateStart ?? '');
 	let dateEnd = $state(v?.date_end ?? f?.dateEnd ?? '');
-	let budget = $state(v?.budget_per_person ?? (f?.budgetPerPerson ? String(f.budgetPerPerson) : ''));
+	let budget = $state(
+		v?.budget_per_person ?? (f?.budgetPerPerson ? String(f.budgetPerPerson) : '')
+	);
 	let sketch = $state<PhaseSketchSegment[]>(f?.sketch ? [...f.sketch] : []);
 	let selectedKeystones = $state<Set<string>>(new Set(f?.keystones ?? []));
 	let newKeystones = $state('');
@@ -49,7 +57,7 @@
 
 <NavBar title={f ? 'Fork this scenario' : 'New scenario'} back backHref="/trips/{data.trip.slug}" />
 
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-10">
+<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-10 md-desktop:max-w-2xl">
 	<form
 		method="POST"
 		action="?/create"
@@ -64,17 +72,17 @@
 	>
 		{#if f}
 			<input type="hidden" name="fork_of" value={f.id} />
-			<p class="text-moss mb-3 font-mono text-[11px]">⑂ forking “{f.title}” — tweak anything.</p>
+			<p class="mb-3 font-mono text-[11px] text-moss">⑂ forking “{f.title}” — tweak anything.</p>
 		{/if}
 
 		{#if form?.error}
-			<p bind:this={alertEl} role="alert" class="text-error-deep mb-3 text-sm">{form.error}</p>
+			<p bind:this={alertEl} role="alert" class="mb-3 text-sm text-error-deep">{form.error}</p>
 		{/if}
 
 		<!-- Title first — the only required field. -->
 		<Card>
 			<div class="p-4">
-				<label for="sc-title" class="text-ink-soft block text-xs font-semibold">The pitch</label>
+				<label for="sc-title" class="block text-xs font-semibold text-ink-soft">The pitch</label>
 				<input
 					id="sc-title"
 					name="title"
@@ -83,53 +91,80 @@
 					maxlength="120"
 					placeholder="e.g. Thailand, north → islands"
 					data-testid="sc-title"
-					class="border-line bg-surface text-ink font-display mt-1 block w-full rounded-md border px-3 py-2 text-base"
+					class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 font-display text-base text-ink"
 				/>
-				<label for="sc-pitch" class="text-ink-soft mt-3 block text-xs font-semibold">One-liner (optional)</label>
+				<label for="sc-pitch" class="mt-3 block text-xs font-semibold text-ink-soft"
+					>One-liner (optional)</label
+				>
 				<input
 					id="sc-pitch"
 					name="pitch"
 					bind:value={pitch}
 					maxlength="200"
 					placeholder="What's the idea in a sentence?"
-					class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+					class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 				/>
 			</div>
 		</Card>
 
 		<!-- Everything below is optional — the group fleshes it out over time. -->
-		<p class="text-ink-muted mt-4 mb-1.5 px-0.5 text-[9.5px] font-bold tracking-[0.12em] uppercase">
+		<p class="mt-4 mb-1.5 px-0.5 text-[9.5px] font-bold tracking-[0.12em] text-ink-muted uppercase">
 			Optional — fill in what you know
 		</p>
 
 		<Card>
 			<div class="space-y-4 p-4">
 				<div>
-					<p class="text-ink-soft text-xs font-semibold">When</p>
+					<p class="text-xs font-semibold text-ink-soft">When</p>
 					<div class="mt-1 flex items-end gap-3">
 						<div class="min-w-0 flex-1">
-							<label for="sc-start" class="text-ink-muted block text-[11px]">Start</label>
-							<input type="date" id="sc-start" name="date_start" bind:value={dateStart} class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-2.5 py-1.5 text-sm" />
+							<label for="sc-start" class="block text-[11px] text-ink-muted">Start</label>
+							<input
+								type="date"
+								id="sc-start"
+								name="date_start"
+								bind:value={dateStart}
+								class="mt-1 block w-full min-w-0 rounded-md border border-line bg-surface px-2.5 py-1.5 text-sm text-ink"
+							/>
 						</div>
 						<div class="min-w-0 flex-1">
-							<label for="sc-end" class="text-ink-muted block text-[11px]">End</label>
-							<input type="date" id="sc-end" name="date_end" bind:value={dateEnd} class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-2.5 py-1.5 text-sm" />
+							<label for="sc-end" class="block text-[11px] text-ink-muted">End</label>
+							<input
+								type="date"
+								id="sc-end"
+								name="date_end"
+								bind:value={dateEnd}
+								class="mt-1 block w-full min-w-0 rounded-md border border-line bg-surface px-2.5 py-1.5 text-sm text-ink"
+							/>
 						</div>
 					</div>
-					<p class="text-ink-muted mt-1 text-[11px]">Both dates are needed to win the vote — but you can pitch without them.</p>
+					<p class="mt-1 text-[11px] text-ink-muted">
+						Both dates are needed to win the vote — but you can pitch without them.
+					</p>
 				</div>
 
 				<div>
-					<label for="sc-budget" class="text-ink-soft text-xs font-semibold">Budget per person</label>
+					<label for="sc-budget" class="text-xs font-semibold text-ink-soft"
+						>Budget per person</label
+					>
 					<div class="mt-1 flex items-center gap-1.5">
-						<span class="text-ink-muted text-sm">~$</span>
-						<input id="sc-budget" name="budget_per_person" bind:value={budget} inputmode="numeric" placeholder="rough, USD" class="border-line bg-surface text-ink w-32 rounded-md border px-2.5 py-1.5 text-sm" />
+						<span class="text-sm text-ink-muted">~$</span>
+						<input
+							id="sc-budget"
+							name="budget_per_person"
+							bind:value={budget}
+							inputmode="numeric"
+							placeholder="rough, USD"
+							class="w-32 rounded-md border border-line bg-surface px-2.5 py-1.5 text-sm text-ink"
+						/>
 					</div>
 				</div>
 
 				<div>
-					<p class="text-ink-soft text-xs font-semibold">The shape of it</p>
-					<p class="text-ink-muted mt-0.5 mb-2 text-[11px]">Sketch the legs — a name and how many nights.</p>
+					<p class="text-xs font-semibold text-ink-soft">The shape of it</p>
+					<p class="mt-0.5 mb-2 text-[11px] text-ink-muted">
+						Sketch the legs — a name and how many nights.
+					</p>
 					<SketchEditor bind:segments={sketch} {dateStart} {dateEnd} />
 				</div>
 			</div>
@@ -138,8 +173,8 @@
 		<!-- Keystones — anchor ideas. Pick from existing, or quick-create new ones. -->
 		<Card>
 			<div class="p-4">
-				<p class="text-ink-soft text-xs font-semibold">Anchor ideas</p>
-				<p class="text-ink-muted mt-0.5 text-[11px]">The must-dos that make this pitch worth it.</p>
+				<p class="text-xs font-semibold text-ink-soft">Anchor ideas</p>
+				<p class="mt-0.5 text-[11px] text-ink-muted">The must-dos that make this pitch worth it.</p>
 				{#if data.ideas.length > 0}
 					<div class="mt-1" data-testid="keystone-picker">
 						{#each data.ideas as idea, i (idea.id)}
@@ -158,20 +193,29 @@
 				{#each [...selectedKeystones] as id (id)}
 					<input type="hidden" name="keystone" value={id} />
 				{/each}
-				<label for="sc-newk" class="text-ink-muted mt-3 block text-[11px]">Add new anchors (one per line)</label>
+				<label for="sc-newk" class="mt-3 block text-[11px] text-ink-muted"
+					>Add new anchors (one per line)</label
+				>
 				<textarea
 					id="sc-newk"
 					name="new_keystones"
 					bind:value={newKeystones}
 					rows="2"
 					placeholder="Doi Suthep sunrise&#10;Street-food crawl"
-					class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-2.5 py-1.5 text-sm"
+					class="mt-1 block w-full rounded-md border border-line bg-surface px-2.5 py-1.5 text-sm text-ink"
 				></textarea>
 			</div>
 		</Card>
 
 		<div class="mt-4 flex gap-2">
-			<Button type="submit" variant="moss" size="md" class="flex-1" disabled={submitting || !title.trim()} loading={submitting}>
+			<Button
+				type="submit"
+				variant="moss"
+				size="md"
+				class="flex-1"
+				disabled={submitting || !title.trim()}
+				loading={submitting}
+			>
 				{submitting ? 'Pitching…' : f ? 'Pitch this fork' : 'Pitch it'}
 			</Button>
 			<Button href="/trips/{data.trip.slug}" variant="ghost" size="md">Cancel</Button>

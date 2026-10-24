@@ -21,9 +21,9 @@
 
 <NavBar title="Flights" subtitle="Auto · read-only" back backHref={listsBase} />
 
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8">
+<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 md-desktop:max-w-2xl">
 	<!-- Lens banner -->
-	<div class="border-sky bg-sky-tint mb-3.5 flex gap-3 rounded-xl border px-3.5 py-3">
+	<div class="mb-3.5 flex gap-3 rounded-xl border border-sky bg-sky-tint px-3.5 py-3">
 		<span class="mt-0.5 shrink-0">
 			<svg width="15" height="15" viewBox="0 0 20 20" fill="none">
 				<path
@@ -34,8 +34,8 @@
 				/>
 			</svg>
 		</span>
-		<p class="text-ink-soft text-[12px] leading-relaxed">
-			<strong class="text-sky font-bold">A lens over your itinerary.</strong> Every flight you've added,
+		<p class="text-[12px] leading-relaxed text-ink-soft">
+			<strong class="font-bold text-sky">A lens over your itinerary.</strong> Every flight you've added,
 			in departure order, with who's on board. Read-only — edit a flight from its own card.
 		</p>
 	</div>
@@ -55,7 +55,9 @@
 								{/each}
 							</span>
 							{#if row.assignees.length > MAX_BUBBLES}
-								<span class="text-ink-soft ml-1 text-[11px] font-semibold">+{row.assignees.length - MAX_BUBBLES}</span>
+								<span class="ml-1 text-[11px] font-semibold text-ink-soft"
+									>+{row.assignees.length - MAX_BUBBLES}</span
+								>
 							{/if}
 						</span>
 					{/snippet}
@@ -64,19 +66,21 @@
 						title={row.title}
 						{subline}
 						href={withOrigin(`/trips/${data.trip.slug}/items/${row.id}`, page.url.pathname)}
-						trailing={rowTrailing({ people: row.assignees.length }) === 'people' ? trailing : undefined}
+						trailing={rowTrailing({ people: row.assignees.length }) === 'people'
+							? trailing
+							: undefined}
 						divider={i < data.rows.length - 1}
 					/>
 				{/each}
 			</div>
 		</Card>
 	{:else}
-		<p class="text-ink-muted font-display mt-6 px-1 text-sm italic">
+		<p class="mt-6 px-1 font-display text-sm text-ink-muted italic">
 			No flights yet. Add a flight to your itinerary and it shows up here.
 		</p>
 	{/if}
 
-	<div class="text-ink-muted mt-3 flex items-center gap-1.5 px-1">
+	<div class="mt-3 flex items-center gap-1.5 px-1 text-ink-muted">
 		<svg width="14" height="14" viewBox="0 0 20 20" fill="none">
 			<path
 				d="M10 3a7 7 0 1 0 7 7M10 3v0a7 7 0 0 1 7 7M14 3v3h3"

@@ -8,22 +8,26 @@
 ## Decision
 
 ### `waypoint.vandenwarsen.com` becomes canonical
+
 The app serves at `waypoint.vandenwarsen.com` (more on-brand than `app.`). `app.vandenwarsen.com` becomes a **permanent, path+query-preserving 301 → `waypoint.`**. The build bakes `PUBLIC_APP_URL=https://waypoint.vandenwarsen.com` and `PUBLIC_PB_URL=https://waypoint.vandenwarsen.com/pb`.
 
 ### Why not the alternatives
+
 - **Keep `app.` canonical, `waypoint.` a vanity alias** (the issue's literal framing). Rejected: Scott wants `waypoint.` to be the address users actually see.
-- **Truly serve at both hosts** (rebuild with a *relative* `PUBLIC_PB_URL=/pb`). Rejected: yields two independent login sessions (auth cookie is host-scoped) for no real gain, and is a code change vs. a config flip.
+- **Truly serve at both hosts** (rebuild with a _relative_ `PUBLIC_PB_URL=/pb`). Rejected: yields two independent login sessions (auth cookie is host-scoped) for no real gain, and is a code change vs. a config flip.
 
 ## Cutover runbook (one-time, manual — order matters)
+
 The risk is a window where the app's baked host ≠ the host that serves it (→ cross-origin PB calls). Avoid it by sequencing:
 
-1. **Cloudflare Tunnel:** add `waypoint.vandenwarsen.com` as a public hostname → `http://waypoint:8080` (same target as `app.`). Now it *can* serve. (Don't point users yet — PB URL is still baked to `app.`.)
+1. **Cloudflare Tunnel:** add `waypoint.vandenwarsen.com` as a public hostname → `http://waypoint:8080` (same target as `app.`). Now it _can_ serve. (Don't point users yet — PB URL is still baked to `app.`.)
 2. **Rebuild + redeploy** (`docs/DEPLOY_RUNBOOK.md`) with the build args flipped to `waypoint.` (`PUBLIC_APP_URL` + `PUBLIC_PB_URL`). The app now self-references `waypoint.` same-origin.
 3. **Immediately flip the Cloudflare redirect:** remove the `waypoint.→app.` rule; add `app.→waypoint.` (301, **preserve path + query** — old invite links are `app.../invite/<code>`). `waypoint.` now serves; `app.` redirects.
 
 Optionally fold a `RESEND_FROM → waypoint@vandenwarsen.com` change into step 2's rebuild (mail still sends from the apex per ADR-0019 — `waypoint.` as the app host does not change the mail domain).
 
 ## Consequences
+
 - **Code-free:** the canonical URL is build args + Cloudflare config; the in-image Caddyfile is host-agnostic (`:8080 {…}`) and serves either host unchanged. No repo logic change.
 - **One-time re-login:** auth cookies are host-scoped, so existing `app.` sessions are dropped at cutover — sign in again at `waypoint.`.
 - **`app.` redirect is PERMANENT, not temporary:** invite/OTP emails already delivered embed `app.vandenwarsen.com` (built from the old `PUBLIC_APP_URL`); the redirect must live indefinitely and preserve path/query so those links keep working.

@@ -17,8 +17,11 @@
 	import { toast } from '$lib/shell/stores/toast';
 	import type { Phase, Trip } from '$lib/types';
 
-	let { trip, phases, form }: { trip: Trip; phases: Phase[]; form: Record<string, unknown> | null } =
-		$props();
+	let {
+		trip,
+		phases,
+		form
+	}: { trip: Trip; phases: Phase[]; form: Record<string, unknown> | null } = $props();
 
 	const tripStart = $derived(toDay(String(trip.start_date)));
 	const tripEnd = $derived(toDay(String(trip.end_date)));
@@ -166,7 +169,9 @@
 	}
 	function onGridPointerMove(e: PointerEvent) {
 		if (dragBoundaryIndex == null) return;
-		const cell = document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-day]') as HTMLElement | null;
+		const cell = document
+			.elementFromPoint(e.clientX, e.clientY)
+			?.closest('[data-day]') as HTMLElement | null;
 		if (!cell) return;
 		const day = Number(cell.getAttribute('data-day'));
 		if (!day) return;
@@ -208,37 +213,69 @@
 </script>
 
 <!-- hidden forms: JS-driven gestures submit these; enhance re-runs load on success -->
-<form bind:this={createForm} method="POST" action="?/create" class="hidden"
-	use:enhance={() => async ({ result, update }) => { if (result.type === 'success') toast.show('Phase added'); await update(); }}>
+<form
+	bind:this={createForm}
+	method="POST"
+	action="?/create"
+	class="hidden"
+	use:enhance={() =>
+		async ({ result, update }) => {
+			if (result.type === 'success') toast.show('Phase added');
+			await update();
+		}}
+>
 	<input type="hidden" name="name" value={fCreateName} />
 	<input type="hidden" name="start_date" value={fCreateStart} />
 </form>
-<form bind:this={moveForm} method="POST" action="?/moveStart" class="hidden"
-	use:enhance={() => async ({ update }) => { await update(); }}>
+<form
+	bind:this={moveForm}
+	method="POST"
+	action="?/moveStart"
+	class="hidden"
+	use:enhance={() =>
+		async ({ update }) => {
+			await update();
+		}}
+>
 	<input type="hidden" name="phase_id" value={fMoveId} />
 	<input type="hidden" name="start_date" value={fMoveStart} />
 </form>
-<form bind:this={renameForm} method="POST" action="?/rename" class="hidden"
-	use:enhance={() => async ({ update }) => { await update(); }}>
+<form
+	bind:this={renameForm}
+	method="POST"
+	action="?/rename"
+	class="hidden"
+	use:enhance={() =>
+		async ({ update }) => {
+			await update();
+		}}
+>
 	<input type="hidden" name="phase_id" value={fRenameId} />
 	<input type="hidden" name="name" value={fRenameName} />
 </form>
-<form bind:this={deleteForm} method="POST" action="?/delete" class="hidden"
-	use:enhance={() => async ({ result, update }) => {
-		if (result.type === 'success') toast.show('Phase removed');
-		else if (result.type === 'failure' && result.data?.error) toast.show(String(result.data.error));
-		await update();
-	}}>
+<form
+	bind:this={deleteForm}
+	method="POST"
+	action="?/delete"
+	class="hidden"
+	use:enhance={() =>
+		async ({ result, update }) => {
+			if (result.type === 'success') toast.show('Phase removed');
+			else if (result.type === 'failure' && result.data?.error)
+				toast.show(String(result.data.error));
+			await update();
+		}}
+>
 	<input type="hidden" name="phase_id" value={fDeleteId} />
 </form>
 
-<div class="select-none px-1 pt-1 pb-2">
+<div class="px-1 pt-1 pb-2 select-none">
 	{#if saveError}
-		<p role="alert" class="text-error-deep mb-3 text-sm">{saveError}</p>
+		<p role="alert" class="mb-3 text-sm text-error-deep">{saveError}</p>
 	{/if}
 
 	<!-- hint -->
-	<p class="text-ink-muted mb-3 text-[11.5px] leading-[1.45]">
+	<p class="mb-3 text-[11.5px] leading-[1.45] text-ink-muted">
 		Drag a route handle to move a boundary. Tap a day to split. Tap a name to rename.
 	</p>
 
@@ -248,22 +285,25 @@
 			{#if editingId === row.id && editingSurface === 'pill'}
 				<!-- svelte-ignore a11y_autofocus -->
 				<input
-					class="text-ink font-display rounded-lg border-[1.5px] bg-white px-2.5 py-1 text-sm outline-none"
+					class="rounded-lg border-[1.5px] bg-white px-2.5 py-1 font-display text-sm text-ink outline-none"
 					style="border-color:{bg(row.palette)};"
 					bind:value={draft}
 					autofocus
 					enterkeyhint="done"
 					onblur={commitRename}
-					onkeydown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') cancelRename(); }}
+					onkeydown={(e) => {
+						if (e.key === 'Enter') commitRename();
+						if (e.key === 'Escape') cancelRename();
+					}}
 				/>
 			{:else}
 				<button
 					type="button"
-					class="border-line shadow-card flex items-center gap-1.5 rounded-[20px] border bg-white px-2.5 py-1"
+					class="flex items-center gap-1.5 rounded-[20px] border border-line bg-white px-2.5 py-1 shadow-card"
 					onclick={() => beginRename(row.id, row.name, 'pill')}
 				>
 					<span class="h-[7px] w-[7px] rounded-full" style="background:{bg(row.palette)};"></span>
-					<span class="font-display text-ink text-[13px] font-semibold">{row.name}</span>
+					<span class="font-display text-[13px] font-semibold text-ink">{row.name}</span>
 				</button>
 			{/if}
 		{/each}
@@ -271,14 +311,14 @@
 
 	<!-- month header -->
 	<div class="mb-3 flex items-baseline justify-between">
-		<h3 class="font-display text-ink text-base font-semibold">{model.monthTitle}</h3>
-		<span class="text-ink-muted font-mono text-[11px]">{model.rangeLabel}</span>
+		<h3 class="font-display text-base font-semibold text-ink">{model.monthTitle}</h3>
+		<span class="font-mono text-[11px] text-ink-muted">{model.rangeLabel}</span>
 	</div>
 
 	<!-- weekday header -->
 	<div class="mb-1.5 grid grid-cols-7 gap-[5px]">
 		{#each WEEKDAYS as wd, i (i)}
-			<span class="text-ink-muted text-center text-[9px] font-bold tracking-[0.1em]">{wd}</span>
+			<span class="text-center text-[9px] font-bold tracking-[0.1em] text-ink-muted">{wd}</span>
 		{/each}
 	</div>
 
@@ -304,11 +344,17 @@
 					{@const next = paletteFor(cell.phaseIndex)}
 					<div
 						data-day={cell.tripDay}
-						class="border-line relative aspect-square overflow-hidden rounded-[9px] border"
+						class="relative aspect-square overflow-hidden rounded-[9px] border border-line"
 						style="background:linear-gradient(135deg, var(--color-{prev}-tint) 0 50%, var(--color-{next}-tint) 50% 100%);"
 					>
-						<span class="text-clay absolute top-[5px] left-[6px] font-mono text-[11px] font-semibold">{cell.date.slice(8, 10)}</span>
-						{#if cell.monthTag}<span class="text-clay absolute top-[5px] right-[5px] text-[7px] font-bold tracking-[0.08em]">{cell.monthTag}</span>{/if}
+						<span
+							class="absolute top-[5px] left-[6px] font-mono text-[11px] font-semibold text-clay"
+							>{cell.date.slice(8, 10)}</span
+						>
+						{#if cell.monthTag}<span
+								class="absolute top-[5px] right-[5px] text-[7px] font-bold tracking-[0.08em] text-clay"
+								>{cell.monthTag}</span
+							>{/if}
 						<!-- route handle: drag to move this boundary. data-handle carries the phase
 						     index; the grid wrapper reads it on pointerdown and owns the drag. -->
 						<div
@@ -319,9 +365,22 @@
 							aria-valuemax={totalDays}
 							tabindex="0"
 							data-handle={cell.phaseIndex}
-							class="border-line shadow-elevated absolute top-1/2 left-1/2 z-[6] flex h-7 w-[50px] -translate-x-1/2 -translate-y-1/2 cursor-grab touch-none items-center justify-center rounded-[14px] border bg-white transition-transform {dragBoundaryIndex === cell.phaseIndex ? 'shadow-dropdown scale-110' : ''}"
+							class="absolute top-1/2 left-1/2 z-[6] flex h-7 w-[50px] -translate-x-1/2 -translate-y-1/2 cursor-grab touch-none items-center justify-center rounded-[14px] border border-line bg-white shadow-elevated transition-transform {dragBoundaryIndex ===
+							cell.phaseIndex
+								? 'scale-110 shadow-dropdown'
+								: ''}"
 						>
-							<svg width="30" height="14" viewBox="0 0 30 14" fill="none" stroke="var(--color-clay)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<svg
+								width="30"
+								height="14"
+								viewBox="0 0 30 14"
+								fill="none"
+								stroke="var(--color-clay)"
+								stroke-width="1.6"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								aria-hidden="true"
+							>
 								<line x1="6" y1="7" x2="24" y2="7" stroke-dasharray="2.5 2.5" />
 								<polyline points="9 3.5 5 7 9 10.5" />
 								<polyline points="21 3.5 25 7 21 10.5" />
@@ -333,14 +392,23 @@
 					<button
 						type="button"
 						data-day={cell.tripDay}
-						class="border-line relative aspect-square cursor-copy overflow-hidden rounded-[9px] border"
+						class="relative aspect-square cursor-copy overflow-hidden rounded-[9px] border border-line"
 						style="background:{tint(pal)};"
 						aria-label="Split at {fmtShort(cell.date)}"
 						onclick={() => splitAt(cell.tripDay)}
 					>
-						<span class="absolute top-[5px] left-[6px] font-mono text-[11px] font-semibold" style="color:{textColor(pal)};">{cell.date.slice(8, 10)}</span>
-						{#if cell.monthTag}<span class="text-clay absolute top-[5px] right-[5px] text-[7px] font-bold tracking-[0.08em]">{cell.monthTag}</span>{/if}
-						<span class="absolute right-1 bottom-1 flex h-[15px] w-[15px] items-center justify-center rounded-full text-[8px] font-bold text-white" style="background:{bg(pal)};">{cell.phaseIndex + 1}</span>
+						<span
+							class="absolute top-[5px] left-[6px] font-mono text-[11px] font-semibold"
+							style="color:{textColor(pal)};">{cell.date.slice(8, 10)}</span
+						>
+						{#if cell.monthTag}<span
+								class="absolute top-[5px] right-[5px] text-[7px] font-bold tracking-[0.08em] text-clay"
+								>{cell.monthTag}</span
+							>{/if}
+						<span
+							class="absolute right-1 bottom-1 flex h-[15px] w-[15px] items-center justify-center rounded-full text-[8px] font-bold text-white"
+							style="background:{bg(pal)};">{cell.phaseIndex + 1}</span
+						>
 					</button>
 				{/if}
 			{/each}
@@ -348,42 +416,97 @@
 	</div>
 
 	<!-- phase list -->
-	<div class="border-line mt-3.5 border-t">
+	<div class="mt-3.5 border-t border-line">
 		{#each rows as row (row.id)}
 			<div class="flex items-center gap-3 py-[11px]">
-				<span class="h-[11px] w-[11px] shrink-0 rounded-[3px]" style="background:{bg(row.palette)};"></span>
+				<span class="h-[11px] w-[11px] shrink-0 rounded-[3px]" style="background:{bg(row.palette)};"
+				></span>
 				<div class="min-w-0 flex-1">
 					{#if editingId === row.id && editingSurface === 'list'}
 						<!-- svelte-ignore a11y_autofocus -->
-						<input class="text-ink font-display w-full rounded-lg border-[1.5px] bg-white px-2 py-1 text-[15px] outline-none"
+						<input
+							class="w-full rounded-lg border-[1.5px] bg-white px-2 py-1 font-display text-[15px] text-ink outline-none"
 							style="border-color:{bg(row.palette)};"
-							bind:value={draft} autofocus enterkeyhint="done" onblur={commitRename}
-							onkeydown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') cancelRename(); }} />
+							bind:value={draft}
+							autofocus
+							enterkeyhint="done"
+							onblur={commitRename}
+							onkeydown={(e) => {
+								if (e.key === 'Enter') commitRename();
+								if (e.key === 'Escape') cancelRename();
+							}}
+						/>
 					{:else}
-						<button type="button" class="font-display text-ink block truncate text-left text-[15px] font-semibold" onclick={() => beginRename(row.id, row.name, 'list')}>{row.name}</button>
+						<button
+							type="button"
+							class="block truncate text-left font-display text-[15px] font-semibold text-ink"
+							onclick={() => beginRename(row.id, row.name, 'list')}>{row.name}</button
+						>
 					{/if}
-					<p class="text-ink-muted font-mono text-[11.5px]">Days {row.dayStart}–{row.dayEnd} · {fmtShort(row.start)}–{fmtShort(row.end)}</p>
+					<p class="font-mono text-[11.5px] text-ink-muted">
+						Days {row.dayStart}–{row.dayEnd} · {fmtShort(row.start)}–{fmtShort(row.end)}
+					</p>
 				</div>
-				<span class="font-mono text-[13px] font-semibold" style="color:{textColor(row.palette)};">{row.days}d</span>
+				<span class="font-mono text-[13px] font-semibold" style="color:{textColor(row.palette)};"
+					>{row.days}d</span
+				>
 				{#if rows.length > 1}
-					<button type="button" class="text-ink-muted hover:text-clay active:text-clay shrink-0 p-1" aria-label="Remove {row.name}" onclick={() => deletePhase(row.id)}>
-						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /></svg>
+					<button
+						type="button"
+						class="shrink-0 p-1 text-ink-muted hover:text-clay active:text-clay"
+						aria-label="Remove {row.name}"
+						onclick={() => deletePhase(row.id)}
+					>
+						<svg
+							width="15"
+							height="15"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							><path
+								d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"
+							/></svg
+						>
 					</button>
 				{/if}
 			</div>
 			{#if row.index < rows.length - 1}
-				<div class="text-ink-soft flex items-center gap-2 border-y border-dashed border-line py-[7px] pl-[23px] text-[9.5px] font-bold tracking-[0.18em]">
-					<svg width="18" height="10" viewBox="0 0 30 14" fill="none" stroke="var(--color-clay)" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="7" x2="24" y2="7" stroke-dasharray="2.5 2.5" /><polyline points="9 3.5 5 7 9 10.5" /><polyline points="21 3.5 25 7 21 10.5" /></svg>
+				<div
+					class="flex items-center gap-2 border-y border-dashed border-line py-[7px] pl-[23px] text-[9.5px] font-bold tracking-[0.18em] text-ink-soft"
+				>
+					<svg
+						width="18"
+						height="10"
+						viewBox="0 0 30 14"
+						fill="none"
+						stroke="var(--color-clay)"
+						stroke-width="1.6"
+						stroke-linecap="round"
+						aria-hidden="true"
+						><line x1="6" y1="7" x2="24" y2="7" stroke-dasharray="2.5 2.5" /><polyline
+							points="9 3.5 5 7 9 10.5"
+						/><polyline points="21 3.5 25 7 21 10.5" /></svg
+					>
 					TRAVEL DAY
-					<span class="text-clay ml-auto font-mono text-[10px] font-normal tracking-normal">{fmtShort(rows[row.index + 1].start)}</span>
+					<span class="ml-auto font-mono text-[10px] font-normal tracking-normal text-clay"
+						>{fmtShort(rows[row.index + 1].start)}</span
+					>
 				</div>
 			{/if}
 		{/each}
 	</div>
 
 	<!-- summary -->
-	<div class="border-line mt-3 flex items-center justify-between border-t pt-3">
-		<span class="text-ink-muted text-[11.5px]">{rows.length} phase{rows.length === 1 ? '' : 's'} · {travelDayCount} travel day{travelDayCount === 1 ? '' : 's'} · {totalDays} days</span>
+	<div class="mt-3 flex items-center justify-between border-t border-line pt-3">
+		<span class="text-[11.5px] text-ink-muted"
+			>{rows.length} phase{rows.length === 1 ? '' : 's'} · {travelDayCount} travel day{travelDayCount ===
+			1
+				? ''
+				: 's'} · {totalDays} days</span
+		>
 		<Button variant="ghost" size="sm" href="/trips/{trip.slug}">Done</Button>
 	</div>
 </div>

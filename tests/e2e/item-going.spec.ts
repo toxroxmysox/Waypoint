@@ -58,7 +58,10 @@ test.describe('Are you going? (#440)', () => {
 
 	test.beforeAll(async () => {
 		const owner = await bypass(EMAILS.owner);
-		const fx = await pb(owner.token, 'POST', '/api/dev/rules-fixture', { emails: EMAILS, slug: SLUG });
+		const fx = await pb(owner.token, 'POST', '/api/dev/rules-fixture', {
+			emails: EMAILS,
+			slug: SLUG
+		});
 		const day = (
 			await pb(
 				owner.token,
@@ -79,11 +82,15 @@ test.describe('Are you going? (#440)', () => {
 		itemId = item.id;
 	});
 
-	test('answer Going, change to Not going, see the struck bubble on the day page', async ({ browser }) => {
+	test('answer Going, change to Not going, see the struck bubble on the day page', async ({
+		browser
+	}) => {
 		const { ctx, page } = await devLogin(browser, EMAILS.traveler);
 		try {
 			await page.goto(`${BASE}/trips/${SLUG}/items/${itemId}`, { waitUntil: 'networkidle' });
-			await expect(page.getByRole('heading', { name: TITLE }).filter({ visible: true }).first()).toBeVisible({
+			await expect(
+				page.getByRole('heading', { name: TITLE }).filter({ visible: true }).first()
+			).toBeVisible({
 				timeout: 10000
 			});
 			await page.waitForLoadState('networkidle');
@@ -102,14 +109,22 @@ test.describe('Are you going? (#440)', () => {
 
 			// Survives a reload.
 			await page.reload({ waitUntil: 'networkidle' });
-			await expect(vis(page, '[data-testid="going-answer"]').first()).toContainText("You're not going");
+			await expect(vis(page, '[data-testid="going-answer"]').first()).toContainText(
+				"You're not going"
+			);
 
 			// Day page: a struck bubble after the going one, and no "+ Me" chip.
 			await page.goto(`${BASE}/trips/${SLUG}/days/${dayId}`, { waitUntil: 'networkidle' });
-			await expect(page.getByText(TITLE).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
+			await expect(page.getByText(TITLE).filter({ visible: true }).first()).toBeVisible({
+				timeout: 10000
+			});
 			await page.waitForLoadState('networkidle');
-			await expect(page.locator('[aria-label$=", not going"]').filter({ visible: true }).first()).toBeVisible();
-			await expect(page.getByText('+ Me', { exact: true }).filter({ visible: true })).toHaveCount(0);
+			await expect(
+				page.locator('[aria-label$=", not going"]').filter({ visible: true }).first()
+			).toBeVisible();
+			await expect(page.getByText('+ Me', { exact: true }).filter({ visible: true })).toHaveCount(
+				0
+			);
 		} finally {
 			await ctx.close();
 		}
@@ -119,7 +134,9 @@ test.describe('Are you going? (#440)', () => {
 		const { ctx, page } = await devLogin(browser, EMAILS.viewer);
 		try {
 			await page.goto(`${BASE}/trips/${SLUG}/items/${itemId}`, { waitUntil: 'networkidle' });
-			await expect(page.getByRole('heading', { name: TITLE }).filter({ visible: true }).first()).toBeVisible({
+			await expect(
+				page.getByRole('heading', { name: TITLE }).filter({ visible: true }).first()
+			).toBeVisible({
 				timeout: 10000
 			});
 			await page.waitForLoadState('networkidle');

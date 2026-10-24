@@ -3,7 +3,17 @@
 	import { enhance } from '$app/forms';
 	import { itemMenuEntries } from '$lib/itinerary/item-actions';
 	import { getFieldConfig } from '$lib/itinerary/item-fields';
-	import { addLine, bookingControls, detailsRows, goingView, itemTimeText, itemTypeLine, newestFirst, votesView, tripModeView } from '$lib/itinerary/item-page';
+	import {
+		addLine,
+		bookingControls,
+		detailsRows,
+		goingView,
+		itemTimeText,
+		itemTypeLine,
+		newestFirst,
+		votesView,
+		tripModeView
+	} from '$lib/itinerary/item-page';
 	import { applyGoing } from '$lib/itinerary/assignment';
 	import { invalidateAll } from '$app/navigation';
 	import { bookingWords, needsBooking } from '$lib/itinerary/booking-projection';
@@ -61,7 +71,11 @@
 	const typeLine = $derived(itemTypeLine(data.item.type, data.item.subtype));
 	const timeText = $derived(itemTimeText(data.item, data.itemDay?.date));
 	const heroDocs = $derived(
-		data.documents.map((d) => ({ id: d.id, label: documentLabel(d.caption, d.file), href: d.file_href }))
+		data.documents.map((d) => ({
+			id: d.id,
+			label: documentLabel(d.caption, d.file),
+			href: d.file_href
+		}))
 	);
 	// #439 — Trip Mode: trip-local "now", re-anchored to the server on reload and ticked
 	// every 30s (the Now page's pattern) so the NOW line counts down and appears at the start.
@@ -74,7 +88,10 @@
 	// The tick only matters in Trip Mode (the NOW line); Planning Mode never reads `now`.
 	$effect(() => {
 		if (chromeMode() !== 'trip') return;
-		const id = setInterval(() => (now = new Date(clockBase.server + (Date.now() - clockBase.at))), 30_000);
+		const id = setInterval(
+			() => (now = new Date(clockBase.server + (Date.now() - clockBase.at))),
+			30_000
+		);
 		return () => clearInterval(id);
 	});
 	// Comment dates are timestamps → the viewer's local day, so render them only on
@@ -102,7 +119,9 @@
 		})
 	);
 	// Log payment under the Hero replaces the Details row, never duplicates it.
-	const rows = $derived(tm.logPaymentUnderHero ? allRows.filter((r) => r.key !== 'payment') : allRows);
+	const rows = $derived(
+		tm.logPaymentUnderHero ? allRows.filter((r) => r.key !== 'payment') : allRows
+	);
 	// #440 — "Are you going?". The answer is written by the caller's own endpoint
 	// (self-only server-side); the Hero flips at once from a local mirror (applyGoing),
 	// snaps back if the write fails, and the loader's value takes over after invalidate.
@@ -116,7 +135,12 @@
 	});
 	const heroItem = $derived(goingOverride ? { ...data.item, ...goingOverride } : data.item);
 	const going = $derived(
-		goingView({ item: heroItem, members: data.members, myMemberId: data.membership.id, role: data.membership.role })
+		goingView({
+			item: heroItem,
+			members: data.members,
+			myMemberId: data.membership.id,
+			role: data.membership.role
+		})
 	);
 	async function answerGoing(state: 'going' | 'not_going') {
 		if (goingPending || !going.canAnswer) return;
@@ -148,12 +172,16 @@
 	);
 	// #437 — the ⋯ menu's entries are a projection of the same permissions. An idea
 	// shows "Add to a day" in the body, so the menu drops its duplicate Move (#500).
-	const menuEntries = $derived(itemMenuEntries({ ...can, canMove: can.canMove && !votesFace.showAddToDay }));
+	const menuEntries = $derived(
+		itemMenuEntries({ ...can, canMove: can.canMove && !votesFace.showAddToDay })
+	);
 	let voteRowOpen = $state(false);
 	// #462 — a meal is reserved: "Reserve ↗" / "Mark reserved".
 	const bookWords = $derived(bookingWords(data.item.type));
 	const votersByValue = $derived(
-		votePills(data.votes, data.membership.id, (id) => memberDisplayName(data.members.find((m) => m.id === id)))
+		votePills(data.votes, data.membership.id, (id) =>
+			memberDisplayName(data.members.find((m) => m.id === id))
+		)
 			.filter((p) => p.count > 0)
 			.map((p) => ({ value: p.value, label: p.label, names: p.names }))
 	);
@@ -198,13 +226,16 @@
 </script>
 
 {#snippet bookingActions()}
-	<span class="pointer-events-auto relative z-10 inline-flex flex-wrap items-center gap-x-1" data-testid="hero-booking-actions">
+	<span
+		class="pointer-events-auto relative z-10 inline-flex flex-wrap items-center gap-x-1"
+		data-testid="hero-booking-actions"
+	>
 		{#if booking.bookHref}
 			<a
 				href={booking.bookHref}
 				target="_blank"
 				rel="noopener noreferrer"
-				class="text-ink hover:bg-surface-2 active:bg-surface-2 inline-flex min-h-11 items-center rounded-md px-3 text-sm font-semibold"
+				class="inline-flex min-h-11 items-center rounded-md px-3 text-sm font-semibold text-ink hover:bg-surface-2 active:bg-surface-2"
 				data-testid="book-link"
 			>
 				{bookWords.book} ↗<span class="sr-only"> (opens in a new tab)</span>
@@ -213,7 +244,7 @@
 		<button
 			type="button"
 			onclick={() => (markBookedOpen = true)}
-			class="text-ink hover:bg-surface-2 active:bg-surface-2 inline-flex min-h-11 items-center rounded-md px-3 text-sm font-semibold"
+			class="inline-flex min-h-11 items-center rounded-md px-3 text-sm font-semibold text-ink hover:bg-surface-2 active:bg-surface-2"
 			data-testid="mark-booked-open"
 		>
 			{bookWords.mark}
@@ -222,47 +253,56 @@
 {/snippet}
 
 {#snippet detailsBody()}
-	<dl class="divide-line mt-1 divide-y" data-testid="item-details">
+	<dl class="mt-1 divide-y divide-line" data-testid="item-details">
 		{#each rows as row (row.key)}
 			{#if row.href}
 				<!-- The link sits in the dd (dl allows only div/dt/dd children) and stretches
 				     over the whole row, so the full row stays the tap target. -->
 				<div
-					class="hover:bg-surface-2 active:bg-surface-2 relative flex min-h-11 items-center justify-between gap-3 py-2"
+					class="relative flex min-h-11 items-center justify-between gap-3 py-2 hover:bg-surface-2 active:bg-surface-2"
 					data-detail={row.key}
 				>
-					<dt class="text-ink-muted shrink-0 text-xs font-semibold tracking-wide uppercase">{row.label}</dt>
-					<dd class="text-ink flex min-w-0 items-center gap-2 text-sm font-medium">
+					<dt class="shrink-0 text-xs font-semibold tracking-wide text-ink-muted uppercase">
+						{row.label}
+					</dt>
+					<dd class="flex min-w-0 items-center gap-2 text-sm font-medium text-ink">
 						<a
 							href={row.href}
 							target={row.external ? '_blank' : undefined}
 							rel={row.external ? 'noopener noreferrer' : undefined}
-							class="truncate after:absolute after:inset-0"
-						>{row.value}</a>
-						{#if row.hint}<span class="text-ink-muted shrink-0 text-xs font-normal">{row.hint}</span>{/if}
-						<span class="text-ink-muted shrink-0" aria-hidden="true">{row.external ? '↗' : '›'}</span>
+							class="truncate after:absolute after:inset-0">{row.value}</a
+						>
+						{#if row.hint}<span class="shrink-0 text-xs font-normal text-ink-muted">{row.hint}</span
+							>{/if}
+						<span class="shrink-0 text-ink-muted" aria-hidden="true"
+							>{row.external ? '↗' : '›'}</span
+						>
 					</dd>
 				</div>
 			{:else}
 				<div class="flex min-h-11 items-center justify-between gap-3 py-2" data-detail={row.key}>
-					<dt class="text-ink-muted shrink-0 text-xs font-semibold tracking-wide uppercase">{row.label}</dt>
-					<dd class="text-ink min-w-0 text-sm font-medium">{row.value}</dd>
+					<dt class="shrink-0 text-xs font-semibold tracking-wide text-ink-muted uppercase">
+						{row.label}
+					</dt>
+					<dd class="min-w-0 text-sm font-medium text-ink">{row.value}</dd>
 				</div>
 			{/if}
 		{/each}
 	</dl>
 	{#if votesFace.face === 'row'}
-		<div class="border-line border-t" data-testid="item-your-vote">
+		<div class="border-t border-line" data-testid="item-your-vote">
 			<dl class="flex min-h-11 items-center justify-between gap-3 py-2">
-				<dt class="text-ink-muted shrink-0 text-xs font-semibold tracking-wide uppercase">Your vote</dt>
-				<dd class="text-ink flex min-w-0 items-center gap-2 text-sm font-medium">
+				<dt class="shrink-0 text-xs font-semibold tracking-wide text-ink-muted uppercase">
+					Your vote
+				</dt>
+				<dd class="flex min-w-0 items-center gap-2 text-sm font-medium text-ink">
 					<span>{votesFace.rowText}</span>
 					<span class="text-ink-muted" aria-hidden="true">·</span>
 					<button
 						type="button"
 						onclick={() => (voteRowOpen = !voteRowOpen)}
 						aria-expanded={voteRowOpen}
-						class="text-ink-soft hover:text-ink active:text-ink min-h-11 px-1 text-sm font-semibold underline"
+						class="min-h-11 px-1 text-sm font-semibold text-ink-soft underline hover:text-ink active:text-ink"
 						data-testid="your-vote-change"
 					>
 						change
@@ -287,7 +327,13 @@
 {/snippet}
 
 {#snippet goingAnswer()}
-	<GoingAnswer line={going.line} mine={going.mine} pending={goingPending} failed={goingFailed} onanswer={answerGoing} />
+	<GoingAnswer
+		line={going.line}
+		mine={going.mine}
+		pending={goingPending}
+		failed={goingFailed}
+		onanswer={answerGoing}
+	/>
 {/snippet}
 
 <NavBar title={data.trip.title} back {backHref}>
@@ -295,8 +341,11 @@
 		<div class="flex items-center gap-1">
 			{#if can.canEdit}
 				<a
-					href={withOrigin(`/trips/${data.trip.slug}/items/${data.item.id}/edit`, page.url.pathname)}
-					class="text-ink-soft hover:text-ink active:text-ink active:bg-surface-2 flex h-11 items-center rounded-md px-3 text-sm font-semibold"
+					href={withOrigin(
+						`/trips/${data.trip.slug}/items/${data.item.id}/edit`,
+						page.url.pathname
+					)}
+					class="flex h-11 items-center rounded-md px-3 text-sm font-semibold text-ink-soft hover:text-ink active:bg-surface-2 active:text-ink"
 				>
 					Edit
 				</a>
@@ -313,10 +362,12 @@
 	{/snippet}
 </NavBar>
 
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-3xl flex-1 px-4 pt-4 pb-8">
+<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 md-desktop:max-w-3xl">
 	<!-- Desktop (D13): two columns. Left = the Hero, votes, description, Details, Goals.
 	     Right = Documents, Checklist, Comments. One column on phones, in that order. -->
-	<div class="space-y-4 md-desktop:grid md-desktop:grid-cols-2 md-desktop:items-start md-desktop:gap-4 md-desktop:space-y-0">
+	<div
+		class="space-y-4 md-desktop:grid md-desktop:grid-cols-2 md-desktop:items-start md-desktop:gap-4 md-desktop:space-y-0"
+	>
 		<div class="min-w-0 space-y-4" data-testid="item-col-main">
 			<!-- #438 — the Hero is the header: icon + title, type in words, the place (opens Maps),
 			     the time, codes, documents, status, Going. Planning Mode: not live, no accent.
@@ -339,7 +390,7 @@
 			{#if tm.logPaymentUnderHero}
 				<a
 					href={payHref}
-					class="border-line bg-surface text-ink hover:bg-surface-2 active:bg-surface-2 flex min-h-11 items-center justify-center rounded-lg border px-4 text-sm font-semibold"
+					class="flex min-h-11 items-center justify-center rounded-lg border border-line bg-surface px-4 text-sm font-semibold text-ink hover:bg-surface-2 active:bg-surface-2"
 					data-testid="log-payment-hero"
 				>
 					Log payment
@@ -348,7 +399,9 @@
 
 			{#if votesFace.face === 'pills'}
 				<section class="space-y-2 px-1" data-testid="item-votes" aria-labelledby="{uid}-votes-h">
-					<h2 id="{uid}-votes-h" class="font-display text-ink text-base font-semibold">What do you think?</h2>
+					<h2 id="{uid}-votes-h" class="font-display text-base font-semibold text-ink">
+						What do you think?
+					</h2>
 					<!-- #406 — someone else's idea: a quick web search for what it is. -->
 					{#if data.item.created_by !== data.membership.id}
 						<WhatIsLink title={data.item.title} place={data.trip.location_summary} />
@@ -363,22 +416,28 @@
 						unvoteAction={voteActions.unvote}
 					/>
 					{#if data.votes.length > 0}
-						<ul class="text-ink-soft space-y-0.5 text-sm" data-testid="item-voters">
+						<ul class="space-y-0.5 text-sm text-ink-soft" data-testid="item-voters">
 							{#each votersByValue as g (g.value)}
-								<li><span class="text-ink font-semibold">{g.label}</span> · {g.names.join(', ')}</li>
+								<li>
+									<span class="font-semibold text-ink">{g.label}</span> · {g.names.join(', ')}
+								</li>
 							{/each}
 						</ul>
 					{/if}
 					{#if votesFace.showAddToDay}
 						<div data-testid="add-to-day">
-							<Button variant="moss" size="md" class="w-full" onclick={() => (moveSheetOpen = true)}>Add to a day</Button>
+							<Button variant="moss" size="md" class="w-full" onclick={() => (moveSheetOpen = true)}
+								>Add to a day</Button
+							>
 						</div>
 					{/if}
 				</section>
 			{/if}
 
 			{#if data.item.description}
-				<p class="text-ink-soft px-1 text-sm whitespace-pre-wrap" data-testid="item-description">{data.item.description}</p>
+				<p class="px-1 text-sm whitespace-pre-wrap text-ink-soft" data-testid="item-description">
+					{data.item.description}
+				</p>
 			{/if}
 
 			<!-- One Details card (D12). The payment row is its own row and never depends on the
@@ -388,9 +447,22 @@
 					{#if tm.planDetails}
 						<!-- #439 — Trip Mode: planning facts fold away; Log payment is under the Hero. -->
 						<details class="group p-4 pb-2" data-testid="plan-details">
-							<summary class="text-ink-muted hover:text-ink flex min-h-11 cursor-pointer list-none items-center justify-between text-xs font-semibold tracking-wide uppercase [&::-webkit-details-marker]:hidden">
+							<summary
+								class="flex min-h-11 cursor-pointer list-none items-center justify-between text-xs font-semibold tracking-wide text-ink-muted uppercase hover:text-ink [&::-webkit-details-marker]:hidden"
+							>
 								Plan details
-								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transition-transform group-open:rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+								<svg
+									width="16"
+									height="16"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									class="transition-transform group-open:rotate-90"
+									aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg
+								>
 							</summary>
 							{@render detailsBody()}
 						</details>
@@ -410,15 +482,27 @@
 				<Card>
 					<div class="p-4">
 						<SectionH>Goals</SectionH>
-						<div class="mt-2 -mx-1">
+						<div class="-mx-1 mt-2">
 							{#each data.linkedGoals as goal (goal.id)}
 								<a
 									href="/trips/{data.trip.slug}/goals/{goal.id}"
-									class="hover:bg-surface-2 active:bg-surface-2 flex min-h-11 items-center gap-2 rounded-md px-1 py-2"
+									class="flex min-h-11 items-center gap-2 rounded-md px-1 py-2 hover:bg-surface-2 active:bg-surface-2"
 								>
-									<span class="text-ink-soft shrink-0" aria-hidden="true">✦</span>
-									<span class="text-ink min-w-0 flex-1 truncate text-sm font-medium">{goal.title}</span>
-									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-ink-muted shrink-0">
+									<span class="shrink-0 text-ink-soft" aria-hidden="true">✦</span>
+									<span class="min-w-0 flex-1 truncate text-sm font-medium text-ink"
+										>{goal.title}</span
+									>
+									<svg
+										width="16"
+										height="16"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										class="shrink-0 text-ink-muted"
+									>
 										<path d="m9 18 6-6-6-6" />
 									</svg>
 								</a>
@@ -443,16 +527,16 @@
 			{/if}
 
 			{#if form?.uploadError}
-				<p class="text-clay px-1 text-sm">{form.uploadError}</p>
+				<p class="px-1 text-sm text-clay">{form.uploadError}</p>
 			{/if}
 
 			<!-- Inline item checklist — ledger (ADR-0003 grocery case · #55) -->
 			{#if data.checklist}
 				<div>
 					<div class="mb-2.5 flex items-center justify-between px-0.5">
-						<h2 class="font-display text-ink text-base font-semibold">{data.checklist.title}</h2>
-						<span class="text-ink-muted font-mono text-xs tabular-nums">
-							<span class="text-ink font-semibold">{doneCount}</span>/{data.tasks.length}
+						<h2 class="font-display text-base font-semibold text-ink">{data.checklist.title}</h2>
+						<span class="font-mono text-xs text-ink-muted tabular-nums">
+							<span class="font-semibold text-ink">{doneCount}</span>/{data.tasks.length}
 						</span>
 					</div>
 
@@ -468,17 +552,29 @@
 						readonly={!can.canEditChecklist}
 					/>
 
-					<div class="text-ink-muted mt-3 flex items-center gap-1.5 px-1">
+					<div class="mt-3 flex items-center gap-1.5 px-1 text-ink-muted">
 						<svg width="13" height="13" viewBox="0 0 20 20" fill="none">
-							<path d="M10 2L11.5 7L16 8L11.5 9L10 14L8.5 9L4 8L8.5 7L10 2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+							<path
+								d="M10 2L11.5 7L16 8L11.5 9L10 14L8.5 9L4 8L8.5 7L10 2z"
+								stroke="currentColor"
+								stroke-width="1.4"
+								stroke-linejoin="round"
+							/>
 						</svg>
-						<span class="font-display text-[11px] italic">This list lives on the item — it travels with it.</span>
+						<span class="font-display text-[11px] italic"
+							>This list lives on the item — it travels with it.</span
+						>
 					</div>
 
 					{#if can.canEditChecklist}
 						<form method="POST" action="?/deleteChecklist" use:enhance class="mt-2 px-1">
 							<input type="hidden" name="checklist_id" value={data.checklist.id} />
-							<button type="submit" class="text-ink-muted hover:text-clay active:text-clay min-h-11 text-xs"> Remove checklist </button>
+							<button
+								type="submit"
+								class="min-h-11 text-xs text-ink-muted hover:text-clay active:text-clay"
+							>
+								Remove checklist
+							</button>
 						</form>
 					{/if}
 				</div>
@@ -487,7 +583,7 @@
 			<!-- Empty Documents / Checklist shrink to one line (D12). -->
 			{#if adds.length > 0}
 				<div
-					class="border-line text-ink-soft flex items-center justify-center gap-1 rounded-lg border border-dashed px-2"
+					class="flex items-center justify-center gap-1 rounded-lg border border-dashed border-line px-2 text-ink-soft"
 					data-testid="item-add-line"
 				>
 					{#each adds as kind, i (kind)}
@@ -496,13 +592,16 @@
 							<button
 								type="button"
 								onclick={() => (docsOpen = true)}
-								class="hover:text-ink active:text-ink min-h-11 px-3 text-sm font-semibold"
+								class="min-h-11 px-3 text-sm font-semibold hover:text-ink active:text-ink"
 							>
 								+ Document
 							</button>
 						{:else}
 							<form method="POST" action="?/attachChecklist" use:enhance class="inline">
-								<button type="submit" class="hover:text-ink active:text-ink min-h-11 px-3 text-sm font-semibold">
+								<button
+									type="submit"
+									class="min-h-11 px-3 text-sm font-semibold hover:text-ink active:text-ink"
+								>
 									+ Checklist
 								</button>
 							</form>
@@ -517,14 +616,17 @@
 					<SectionH>Comments</SectionH>
 
 					{#if form?.commentError}
-						<p class="text-clay text-sm">{form.commentError}</p>
+						<p class="text-sm text-clay">{form.commentError}</p>
 					{/if}
 
 					<form
 						method="POST"
 						action="?/addComment"
 						use:enhance={({ cancel }) => {
-							if (!commentText.trim()) { cancel(); return; }
+							if (!commentText.trim()) {
+								cancel();
+								return;
+							}
 							const optimistic: Comment = {
 								id: `opt-${Date.now()}`,
 								trip: data.trip.id,
@@ -534,7 +636,8 @@
 								comment_text: commentText.trim(),
 								status: 'approved',
 								created: new Date().toISOString(),
-								author_name: data.membership?.display_name || data.membership?.placeholder_name || 'You',
+								author_name:
+									data.membership?.display_name || data.membership?.placeholder_name || 'You',
 								author_role: data.membership?.role || '',
 								// Own avatar resolves on reload (membership isn't avatar-enriched here).
 								author_avatar: ''
@@ -558,39 +661,47 @@
 							rows="2"
 							placeholder="Add a comment…"
 							maxlength="5000"
-							class="border-line bg-surface text-ink min-h-11 flex-1 resize-none rounded-md border px-3 py-2 text-sm"
+							class="min-h-11 flex-1 resize-none rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 						></textarea>
 						<button
 							type="submit"
 							disabled={commentSubmitting || !commentText.trim()}
-							class="bg-moss text-paper min-h-11 self-end rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-40"
+							class="min-h-11 self-end rounded-md bg-moss px-4 py-2 text-sm font-semibold text-paper disabled:opacity-40"
 						>
 							Post
 						</button>
 					</form>
 
 					{#if allComments.length === 0}
-						<p class="text-ink-muted text-sm">No comments yet.</p>
+						<p class="text-sm text-ink-muted">No comments yet.</p>
 					{:else}
 						<div class="space-y-3" data-testid="item-comments">
 							{#each allComments as c (c.id)}
 								<div class="flex gap-2">
-									<Avatar img={c.author_avatar} initial={c.author_name || 'Unknown'} alt={c.author_name || 'Unknown'} size={28} />
+									<Avatar
+										img={c.author_avatar}
+										initial={c.author_name || 'Unknown'}
+										alt={c.author_name || 'Unknown'}
+										size={28}
+									/>
 									<div class="min-w-0 flex-1">
 										<div class="flex flex-wrap items-baseline gap-1.5">
-											<span class="text-ink text-sm font-semibold">{c.author_name || 'Unknown'}</span>
+											<span class="text-sm font-semibold text-ink"
+												>{c.author_name || 'Unknown'}</span
+											>
 											{#if c.author_role}
-												<span class="text-ink-muted text-[11px]">{titleCase(c.author_role)}</span>
+												<span class="text-[11px] text-ink-muted">{titleCase(c.author_role)}</span>
 											{/if}
 											{#if mounted}
-												<span class="text-ink-muted text-[11px]">
+												<span class="text-[11px] text-ink-muted">
 													{new Date(c.created.replace(' ', 'T')).toLocaleDateString('en-US', {
-														month: 'short', day: 'numeric'
+														month: 'short',
+														day: 'numeric'
 													})}
 												</span>
 											{/if}
 										</div>
-										<p class="text-ink-soft mt-0.5 text-sm whitespace-pre-wrap">{c.comment_text}</p>
+										<p class="mt-0.5 text-sm whitespace-pre-wrap text-ink-soft">{c.comment_text}</p>
 									</div>
 								</div>
 							{/each}

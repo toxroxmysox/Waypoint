@@ -71,21 +71,34 @@
 		{#if collapsible}
 			<details class="group" {open}>
 				<summary
-					class="border-line bg-surface flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-lg border px-4 py-2.5 [&::-webkit-details-marker]:hidden"
+					class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-lg border border-line bg-surface px-4 py-2.5 [&::-webkit-details-marker]:hidden"
 					data-ideas-toggle
 				>
 					<span>
-						<span class="text-ink-soft block text-sm font-semibold">{heading} · <span class="font-mono">{ideas.length}</span></span>
-						<span class="text-ink-muted block text-xs">{subheading}</span>
+						<span class="block text-sm font-semibold text-ink-soft"
+							>{heading} · <span class="font-mono">{ideas.length}</span></span
+						>
+						<span class="block text-xs text-ink-muted">{subheading}</span>
 					</span>
-					<svg class="text-ink-muted shrink-0 transition-transform group-open:rotate-180" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg>
+					<svg
+						class="shrink-0 text-ink-muted transition-transform group-open:rotate-180"
+						width="16"
+						height="16"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg
+					>
 				</summary>
 				<div class="mt-3">{@render body()}</div>
 			</details>
 		{:else}
 			<div class="px-1">
-				<p class="text-ink-soft text-sm font-semibold">{heading}</p>
-				<p class="text-ink-muted text-xs">{subheading}</p>
+				<p class="text-sm font-semibold text-ink-soft">{heading}</p>
+				<p class="text-xs text-ink-muted">{subheading}</p>
 			</div>
 			{@render body()}
 		{/if}
@@ -93,43 +106,50 @@
 {/if}
 
 {#snippet body()}
-		<div class="space-y-3">
-			{#each groups as group (group.type)}
-				<section class="space-y-1.5" aria-label={group.label}>
-					<IdeaGroupHeading type={group.type} />
-					{#each group.items as item (item.id)}
-						<div class="flex items-center gap-2">
-							<div class="min-w-0 flex-1">
-								<IdeaCard {item} tripSlug={slug} votes={votesById[item.id] ?? []} {members} {myMemberId} {canVote} />
-							</div>
-							{#if canPromote}
-								<form
-									method="POST"
-									action="?/promoteIdea"
-									class="shrink-0"
-									use:enhance={() => {
-										promoting = item.id;
-										return async ({ update }) => {
-											// reset:false re-runs load() (ideas/feed re-derive) WITHOUT
-											// remounting the page — never window.location.reload (wipes $state).
-											await update({ reset: false });
-											promoting = null;
-										};
-									}}
-								>
-									<input type="hidden" name="item_id" value={item.id} />
-									<button
-										type="submit"
-										disabled={promoting === item.id}
-										class="border-line bg-surface text-ink hover:bg-surface-2 active:bg-surface-2 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border px-4 text-xs font-semibold whitespace-nowrap disabled:opacity-40"
-									>
-										{promoting === item.id ? 'Adding…' : 'Do this'}
-									</button>
-								</form>
-							{/if}
+	<div class="space-y-3">
+		{#each groups as group (group.type)}
+			<section class="space-y-1.5" aria-label={group.label}>
+				<IdeaGroupHeading type={group.type} />
+				{#each group.items as item (item.id)}
+					<div class="flex items-center gap-2">
+						<div class="min-w-0 flex-1">
+							<IdeaCard
+								{item}
+								tripSlug={slug}
+								votes={votesById[item.id] ?? []}
+								{members}
+								{myMemberId}
+								{canVote}
+							/>
 						</div>
-					{/each}
-				</section>
-			{/each}
-		</div>
+						{#if canPromote}
+							<form
+								method="POST"
+								action="?/promoteIdea"
+								class="shrink-0"
+								use:enhance={() => {
+									promoting = item.id;
+									return async ({ update }) => {
+										// reset:false re-runs load() (ideas/feed re-derive) WITHOUT
+										// remounting the page — never window.location.reload (wipes $state).
+										await update({ reset: false });
+										promoting = null;
+									};
+								}}
+							>
+								<input type="hidden" name="item_id" value={item.id} />
+								<button
+									type="submit"
+									disabled={promoting === item.id}
+									class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-line bg-surface px-4 text-xs font-semibold whitespace-nowrap text-ink hover:bg-surface-2 active:bg-surface-2 disabled:opacity-40"
+								>
+									{promoting === item.id ? 'Adding…' : 'Do this'}
+								</button>
+							</form>
+						{/if}
+					</div>
+				{/each}
+			</section>
+		{/each}
+	</div>
 {/snippet}

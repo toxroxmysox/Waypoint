@@ -3,7 +3,7 @@
 	import ArchiveDaySection from '$lib/portability/components/ArchiveDaySection.svelte';
 	import ConsideredRows from '$lib/portability/components/ConsideredRows.svelte';
 	import { formatCalendarDate } from '$lib/shell/format';
-	
+
 	let { data } = $props();
 
 	// Pre-publish window: token is valid but the story isn't live yet (#171).
@@ -31,17 +31,22 @@
 	{:else}
 		<title>{data.trip.title} — Trip Archive</title>
 		<meta property="og:title" content={data.trip.title} />
-		<meta property="og:description" content="{data.trip.location_summary ? data.trip.location_summary + ' · ' : ''}{dateRange}" />
+		<meta
+			property="og:description"
+			content="{data.trip.location_summary ? data.trip.location_summary + ' · ' : ''}{dateRange}"
+		/>
 		<meta property="og:type" content="article" />
 		<meta property="og:url" content={page.url.href} />
 	{/if}
 </svelte:head>
 
 {#if 'pending' in data}
-	<main class="mx-auto flex min-h-dvh w-full max-w-md flex-col items-center justify-center px-6 text-center">
-		<p class="font-display text-ink text-2xl font-semibold italic">Waypoint</p>
+	<main
+		class="mx-auto flex min-h-dvh w-full max-w-md flex-col items-center justify-center px-6 text-center"
+	>
+		<p class="font-display text-2xl font-semibold text-ink italic">Waypoint</p>
 		<svg
-			class="text-moss-soft mt-8"
+			class="mt-8 text-moss-soft"
 			width="44"
 			height="44"
 			viewBox="0 0 24 24"
@@ -55,146 +60,179 @@
 			<circle cx="12" cy="12" r="9" />
 			<polyline points="12 7 12 12 15 14" />
 		</svg>
-		<h1 class="font-display text-ink mt-6 text-3xl font-semibold tracking-tight">
+		<h1 class="mt-6 font-display text-3xl font-semibold tracking-tight text-ink">
 			This trip's story is still being written
 		</h1>
 		{#if publishDateLabel}
-			<p class="text-ink-soft mt-3 text-base">
+			<p class="mt-3 text-base text-ink-soft">
 				<strong class="text-ink">{data.tripTitle}</strong> publishes on
 				<span class="whitespace-nowrap">{publishDateLabel}</span>. Check back then — the full
 				itinerary and highlights will be waiting for you here.
 			</p>
 		{:else}
-			<p class="text-ink-soft mt-3 text-base">
-				<strong class="text-ink">{data.tripTitle}</strong> isn't published yet. Check back later —
-				the full itinerary and highlights will be waiting for you here.
+			<p class="mt-3 text-base text-ink-soft">
+				<strong class="text-ink">{data.tripTitle}</strong> isn't published yet. Check back later — the
+				full itinerary and highlights will be waiting for you here.
 			</p>
 		{/if}
-		<p class="text-ink-muted mt-6 text-sm">Bookmark this page so it's easy to find.</p>
+		<p class="mt-6 text-sm text-ink-muted">Bookmark this page so it's easy to find.</p>
 	</main>
 {:else}
 	<main class="mx-auto w-full max-w-2xl px-4 pb-16">
 		<header class="py-10 text-center">
-		<h1 class="text-ink text-3xl font-bold tracking-tight">{data.trip.title}</h1>
-		{#if data.trip.location_summary}
-			<p class="text-ink-muted mt-2 font-serif text-lg italic">{data.trip.location_summary}</p>
-		{/if}
-		<p class="text-ink-muted mt-2 text-sm">{dateRange}</p>
-		{#if data.trip.photo_album_url}
-			<a
-				href={data.trip.photo_album_url}
-				target="_blank"
-				rel="noopener noreferrer"
-				class="bg-ink text-paper mt-4 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium"
-			>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-					<circle cx="8.5" cy="8.5" r="1.5" />
-					<polyline points="21 15 16 10 5 21" />
-				</svg>
-				View Photos
-			</a>
-		{/if}
-	</header>
+			<h1 class="text-3xl font-bold tracking-tight text-ink">{data.trip.title}</h1>
+			{#if data.trip.location_summary}
+				<p class="mt-2 font-serif text-lg text-ink-muted italic">{data.trip.location_summary}</p>
+			{/if}
+			<p class="mt-2 text-sm text-ink-muted">{dateRange}</p>
+			{#if data.trip.photo_album_url}
+				<a
+					href={data.trip.photo_album_url}
+					target="_blank"
+					rel="noopener noreferrer"
+					class="mt-4 inline-flex items-center gap-2 rounded-lg bg-ink px-4 py-2 text-sm font-medium text-paper"
+				>
+					<svg
+						width="16"
+						height="16"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
+						<rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+						<circle cx="8.5" cy="8.5" r="1.5" />
+						<polyline points="21 15 16 10 5 21" />
+					</svg>
+					View Photos
+				</a>
+			{/if}
+		</header>
 
-	{#if data.budgetSummary}
-		<!-- Opt-in budget summary (#243): aggregate total + rough per-person ONLY.
+		{#if data.budgetSummary}
+			<!-- Opt-in budget summary (#243): aggregate total + rough per-person ONLY.
 		     Never itemized expenses or who-owes-whom (those stay members-only). -->
-		<div class="bg-surface border-border mb-6 rounded-xl border p-5 text-center">
-			<p class="text-ink-muted text-[10px] font-bold tracking-[0.14em] uppercase">What the trip cost</p>
-			<div class="mt-3 flex items-center justify-center gap-8">
-				<div>
-					<p class="text-ink text-2xl font-bold">${data.budgetSummary.total.toLocaleString()}</p>
-					<p class="text-ink-muted text-xs">total</p>
-				</div>
-				<div class="bg-border h-10 w-px"></div>
-				<div>
-					<p class="text-ink text-2xl font-bold">${data.budgetSummary.perPerson.toLocaleString()}</p>
-					<p class="text-ink-muted text-xs">≈ per person</p>
+			<div class="border-border mb-6 rounded-xl border bg-surface p-5 text-center">
+				<p class="text-[10px] font-bold tracking-[0.14em] text-ink-muted uppercase">
+					What the trip cost
+				</p>
+				<div class="mt-3 flex items-center justify-center gap-8">
+					<div>
+						<p class="text-2xl font-bold text-ink">${data.budgetSummary.total.toLocaleString()}</p>
+						<p class="text-xs text-ink-muted">total</p>
+					</div>
+					<div class="bg-border h-10 w-px"></div>
+					<div>
+						<p class="text-2xl font-bold text-ink">
+							${data.budgetSummary.perPerson.toLocaleString()}
+						</p>
+						<p class="text-xs text-ink-muted">≈ per person</p>
+					</div>
 				</div>
 			</div>
+		{/if}
+
+		<div class="space-y-4">
+			{#each data.days as day (day.id)}
+				{@const dayItems = data.doneItems.filter((i) => i.day === day.id)}
+				<ArchiveDaySection {day} items={dayItems} phases={data.phases} />
+			{/each}
 		</div>
-	{/if}
 
-	<div class="space-y-4">
-		{#each data.days as day (day.id)}
-			{@const dayItems = data.doneItems.filter((i) => i.day === day.id)}
-			<ArchiveDaySection {day} items={dayItems} phases={data.phases} />
-		{/each}
-	</div>
-
-	{#if data.consideredItems.length > 0}
-		<div class="mt-10">
-			<button
-				type="button"
-				onclick={() => (showConsidered = !showConsidered)}
-				class="text-ink-muted flex w-full items-center gap-2 text-sm font-medium"
-			>
-				<svg
-					width="16"
-					height="16"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					class="transition-transform"
-					class:rotate-90={showConsidered}
+		{#if data.consideredItems.length > 0}
+			<div class="mt-10">
+				<button
+					type="button"
+					onclick={() => (showConsidered = !showConsidered)}
+					class="flex w-full items-center gap-2 text-sm font-medium text-ink-muted"
 				>
-					<path d="m9 18 6-6-6-6" />
-				</svg>
-				What we considered ({data.consideredItems.length} items)
-			</button>
+					<svg
+						width="16"
+						height="16"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						class="transition-transform"
+						class:rotate-90={showConsidered}
+					>
+						<path d="m9 18 6-6-6-6" />
+					</svg>
+					What we considered ({data.consideredItems.length} items)
+				</button>
 
-			{#if showConsidered}
-				<div class="mt-3">
-					<ConsideredRows items={data.consideredItems} phases={data.phases} />
-				</div>
-			{/if}
-		</div>
-	{/if}
+				{#if showConsidered}
+					<div class="mt-3">
+						<ConsideredRows items={data.consideredItems} phases={data.phases} />
+					</div>
+				{/if}
+			</div>
+		{/if}
 
-	<section class="border-line/60 mt-12 rounded-2xl border bg-surface/60 p-6 text-center">
-		<h2 class="font-display text-ink text-xl font-semibold tracking-tight">
-			Want to do this trip yourself?
-		</h2>
-		<p class="text-ink-soft mx-auto mt-2 max-w-md text-sm">
-			Download this plan as a template — the itinerary, phases, and days, with the
-			group's private details (who paid, bookings, costs) left out. Import it into
-			Waypoint to start your own trip from it.
-		</p>
-		<div class="mt-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
-			<a
-				href="{page.url.pathname}/export"
-				download
-				class="bg-ink text-paper inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium"
-			>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-					<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-					<polyline points="7 10 12 15 17 10" />
-					<line x1="12" y1="15" x2="12" y2="3" />
-				</svg>
-				Use as template
-			</a>
-			<a
-				href="/trips/import"
-				class="text-ink-soft hover:text-ink active:text-ink inline-flex items-center justify-center gap-1.5 text-sm font-medium underline-offset-2 hover:underline active:underline"
-			>
-				Import into Waypoint
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-					<line x1="5" y1="12" x2="19" y2="12" />
-					<polyline points="12 5 19 12 12 19" />
-				</svg>
-			</a>
-		</div>
-		<p class="text-ink-muted mx-auto mt-3 max-w-md text-xs">
-			You'll sign in (or create a free account) to import — the new trip is yours.
-		</p>
-	</section>
+		<section class="mt-12 rounded-2xl border border-line/60 bg-surface/60 p-6 text-center">
+			<h2 class="font-display text-xl font-semibold tracking-tight text-ink">
+				Want to do this trip yourself?
+			</h2>
+			<p class="mx-auto mt-2 max-w-md text-sm text-ink-soft">
+				Download this plan as a template — the itinerary, phases, and days, with the group's private
+				details (who paid, bookings, costs) left out. Import it into Waypoint to start your own trip
+				from it.
+			</p>
+			<div class="mt-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
+				<a
+					href="{page.url.pathname}/export"
+					download
+					class="inline-flex items-center justify-center gap-2 rounded-lg bg-ink px-5 py-2.5 text-sm font-medium text-paper"
+				>
+					<svg
+						width="16"
+						height="16"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+						<polyline points="7 10 12 15 17 10" />
+						<line x1="12" y1="15" x2="12" y2="3" />
+					</svg>
+					Use as template
+				</a>
+				<a
+					href="/trips/import"
+					class="inline-flex items-center justify-center gap-1.5 text-sm font-medium text-ink-soft underline-offset-2 hover:text-ink hover:underline active:text-ink active:underline"
+				>
+					Import into Waypoint
+					<svg
+						width="14"
+						height="14"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<line x1="5" y1="12" x2="19" y2="12" />
+						<polyline points="12 5 19 12 12 19" />
+					</svg>
+				</a>
+			</div>
+			<p class="mx-auto mt-3 max-w-md text-xs text-ink-muted">
+				You'll sign in (or create a free account) to import — the new trip is yours.
+			</p>
+		</section>
 
-	<footer class="text-ink-muted mt-12 border-t border-border/30 pt-6 text-center text-xs">
-		Built with Waypoint
-	</footer>
+		<footer class="border-border/30 mt-12 border-t pt-6 text-center text-xs text-ink-muted">
+			Built with Waypoint
+		</footer>
 	</main>
 {/if}

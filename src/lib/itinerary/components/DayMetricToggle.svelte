@@ -11,7 +11,7 @@
 </script>
 
 <div
-	class="border-line bg-surface inline-flex items-center gap-0.5 rounded-full border p-0.5"
+	class="inline-flex items-center gap-0.5 rounded-full border border-line bg-surface p-0.5"
 	role="group"
 	aria-label="Day metric"
 >

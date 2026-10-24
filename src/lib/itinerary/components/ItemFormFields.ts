@@ -50,4 +50,3 @@ export interface ItemFormContext {
 	tripStartDate: string;
 	tripEndDate: string;
 }
-

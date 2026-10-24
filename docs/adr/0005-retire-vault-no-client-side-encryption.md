@@ -24,7 +24,7 @@ That narrow marginal protection doesn't justify the cost (lossy-if-password-forg
 gate, decrypt-on-view, and a net-new binary-encryption path the text-only Vault never had). The
 decisive point came from dogfood feedback: a new app hasn't **earned the trust** for users to put a
 passport or password into it over a tried-and-true tool (LastPass/1Password) — so the encrypted store
-loses a security-trust contest it was built to win. The execution-critical artifacts people *will*
+loses a security-trust contest it was built to win. The execution-critical artifacts people _will_
 store — train tickets, hotel/tour confirmations, boarding passes — need availability (offline at the
 gate), not secrecy. Plain, membership-gated, service-worker-cached files serve that directly.
 

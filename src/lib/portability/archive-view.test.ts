@@ -4,24 +4,71 @@ import type { Trip, Phase, Day, Item, Expense } from '$lib/types';
 
 function makeTrip(): Trip {
 	return {
-		id: 'trip1', collectionId: '', collectionName: 'trips', created: '', updated: '',
-		slug: 't', title: 'Trip', start_date: '2026-06-01', end_date: '2026-06-07',
-		timezone: 'UTC', location_summary: '', countries: [], cover_image: '', photo_album_url: '',
-		archive_enabled: true, archive_publish_after_days: 7, archive_publish_at: '',
-		archive_show_budget: false, public_share_token: 'tok',
-		auto_approve_suggestions: true, ai_access: true, created_by: 'u', archived: true, notes: ''
+		id: 'trip1',
+		collectionId: '',
+		collectionName: 'trips',
+		created: '',
+		updated: '',
+		slug: 't',
+		title: 'Trip',
+		start_date: '2026-06-01',
+		end_date: '2026-06-07',
+		timezone: 'UTC',
+		location_summary: '',
+		countries: [],
+		cover_image: '',
+		photo_album_url: '',
+		archive_enabled: true,
+		archive_publish_after_days: 7,
+		archive_publish_at: '',
+		archive_show_budget: false,
+		public_share_token: 'tok',
+		auto_approve_suggestions: true,
+		ai_access: true,
+		created_by: 'u',
+		archived: true,
+		notes: ''
 	} as Trip;
 }
 
 function makeItem(o: Partial<Item>): Item {
 	return {
-		id: 'i', trip: 'trip1', phase: '', day: 'd1', type: 'lodging', subtype: '', title: 'Hotel',
-		description: '', location_name: '', location_address: '', location_coords: null, google_place_id: '',
-		start_time: '', end_time: '', start_tz: '', end_tz: '', end_date: '', status: 'done',
-		booked: true, booked_by: 'mem1', paid_by: '', confirmation_codes: [{ label: 'PNR', value: 'ABC' }],
-		reservation_url: 'https://secret', free_cancellation: false, cost_estimate_usd: 999, cost_actual_usd: 999,
-		assigned_to: ['mem1'], sort_order: 0, parent_item: '', requires_booking: true, created_by: '',
-		collectionId: '', collectionName: 'items', created: '', updated: '', ...o
+		id: 'i',
+		trip: 'trip1',
+		phase: '',
+		day: 'd1',
+		type: 'lodging',
+		subtype: '',
+		title: 'Hotel',
+		description: '',
+		location_name: '',
+		location_address: '',
+		location_coords: null,
+		google_place_id: '',
+		start_time: '',
+		end_time: '',
+		start_tz: '',
+		end_tz: '',
+		end_date: '',
+		status: 'done',
+		booked: true,
+		booked_by: 'mem1',
+		paid_by: '',
+		confirmation_codes: [{ label: 'PNR', value: 'ABC' }],
+		reservation_url: 'https://secret',
+		free_cancellation: false,
+		cost_estimate_usd: 999,
+		cost_actual_usd: 999,
+		assigned_to: ['mem1'],
+		sort_order: 0,
+		parent_item: '',
+		requires_booking: true,
+		created_by: '',
+		collectionId: '',
+		collectionName: 'items',
+		created: '',
+		updated: '',
+		...o
 	} as Item;
 }
 
@@ -98,9 +145,19 @@ describe('buildArchiveView planned-leak guard (#240 — Grill Resolution #16)', 
 
 function makeExpense(amount: number): Expense {
 	return {
-		id: 'e', trip: 'trip1', paid_by: 'm1', amount_usd: amount, description: '', date: '2026-06-01',
-		category: 'food', linked_item: null, split_mode: 'equal', split_data: { members: [] },
-		created_by: '', created: '', updated: ''
+		id: 'e',
+		trip: 'trip1',
+		paid_by: 'm1',
+		amount_usd: amount,
+		description: '',
+		date: '2026-06-01',
+		category: 'food',
+		linked_item: null,
+		split_mode: 'equal',
+		split_data: { members: [] },
+		created_by: '',
+		created: '',
+		updated: ''
 	} as Expense;
 }
 

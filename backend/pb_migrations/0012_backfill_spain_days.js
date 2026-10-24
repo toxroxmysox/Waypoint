@@ -45,14 +45,9 @@ migrate(
 			const endStr = trip.getString('end_date').substring(0, 10);
 			if (!startStr || !endStr) continue;
 
-			const existing = app.findRecordsByFilter(
-				'days',
-				'trip = {:tripId}',
-				'+date',
-				0,
-				0,
-				{ tripId: trip.id }
-			);
+			const existing = app.findRecordsByFilter('days', 'trip = {:tripId}', '+date', 0, 0, {
+				tripId: trip.id
+			});
 			const haveDate = new Set();
 			for (const d of existing) haveDate.add(d.getString('date').substring(0, 10));
 

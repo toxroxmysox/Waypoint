@@ -90,7 +90,7 @@
 -->
 <BottomSheet bind:open={asking} {title} swallowBack={false}>
 	<div class="space-y-4">
-		<p class="text-ink-soft text-sm">{body}</p>
+		<p class="text-sm text-ink-soft">{body}</p>
 		<!--
 			Keeping the work is the primary button and the destructive one is the
 			marked-but-quieter option, matching how the app renders every other
@@ -106,7 +106,7 @@
 			-->
 			<button
 				type="button"
-				class="hit-44 border-error/40 text-error hover:bg-error/10 active:bg-error/10 w-full rounded-md border px-4 py-2 text-sm font-semibold transition-colors"
+				class="hit-44 w-full rounded-md border border-error/40 px-4 py-2 text-sm font-semibold text-error transition-colors hover:bg-error/10 active:bg-error/10"
 				onclick={leave}
 			>
 				{leaveLabel}

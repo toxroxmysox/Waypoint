@@ -27,7 +27,11 @@ describe('scrub', () => {
 });
 
 describe('result', () => {
-	const cards: Card[] = Array.from({ length: 60 }, (_, i) => ({ emoji: '•', title: `c${i}`, lines: [] }));
+	const cards: Card[] = Array.from({ length: 60 }, (_, i) => ({
+		emoji: '•',
+		title: `c${i}`,
+		lines: []
+	}));
 
 	it('caps at 50 cards and says how many more', () => {
 		const r = result('Things', cards);
@@ -44,7 +48,12 @@ describe('result', () => {
 
 describe('offTrip', () => {
 	it('shows only name, dates and the notice', () => {
-		const trip = { id: 't', title: 'Private', start_date: '2026-11-01 00:00:00.000Z', end_date: '2026-11-03 00:00:00.000Z' } as Trip;
+		const trip = {
+			id: 't',
+			title: 'Private',
+			start_date: '2026-11-01 00:00:00.000Z',
+			end_date: '2026-11-03 00:00:00.000Z'
+		} as Trip;
 		const r = offTrip(trip);
 		expect(r.structuredContent.heading).toBe('Private');
 		expect(r.content[0].text).toContain('AI access is turned off for this trip by its owner.');

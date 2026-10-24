@@ -47,9 +47,9 @@
 			class="absolute inset-0 rounded-lg after:absolute after:inset-0"
 			aria-label={item.title}
 		></a>
-		<p class="text-ink truncate text-sm font-semibold" title={item.title}>{item.title}</p>
+		<p class="truncate text-sm font-semibold text-ink" title={item.title}>{item.title}</p>
 		{#if sub}
-			<p class="text-ink-muted mt-0.5 truncate text-xs" data-idea-sub>{sub}</p>
+			<p class="mt-0.5 truncate text-xs text-ink-muted" data-idea-sub>{sub}</p>
 		{/if}
 		<div class="mt-1.5 flex items-center justify-between gap-2">
 			<div class="relative z-10 w-fit">
@@ -69,5 +69,12 @@
 	</div>
 	<!-- Going bubbles + struck not-going (ADR-0011 / #440) — child of the bordered
 	     card (#231); padding on the row collapses it when empty. -->
-	<AssigneeStacks itemTitle={item.title} assignedTo={item.assigned_to} notGoing={item.not_going ?? []} {members} size={18} class="relative z-10 mb-2 px-3" />
+	<AssigneeStacks
+		itemTitle={item.title}
+		assignedTo={item.assigned_to}
+		notGoing={item.not_going ?? []}
+		{members}
+		size={18}
+		class="relative z-10 mb-2 px-3"
+	/>
 </Card>

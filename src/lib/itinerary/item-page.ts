@@ -22,8 +22,19 @@ export function itemTypeLine(type: ItemType, subtype: string | undefined): strin
  * a multi-day stay reads `Thu Oct 1–Sat Oct 3 · 2 nights`). The place is the
  * Hero's own line, so none is passed to `rowSub`.
  */
-export function itemTimeText(item: Omit<RowItemFields, 'location_name'>, dayDate: string | undefined): string {
-	return rowSub({ type: item.type, start_time: item.start_time, end_time: item.end_time, end_date: item.end_date }, { dayDate });
+export function itemTimeText(
+	item: Omit<RowItemFields, 'location_name'>,
+	dayDate: string | undefined
+): string {
+	return rowSub(
+		{
+			type: item.type,
+			start_time: item.start_time,
+			end_time: item.end_time,
+			end_date: item.end_date
+		},
+		{ dayDate }
+	);
 }
 
 export interface GoingView {
@@ -86,7 +97,12 @@ const usd = (n: number) => `$${n.toFixed(2)}`;
  * expense is linked, else `Log payment` for roles that may log one.
  */
 export function detailsRows(p: {
-	item: { type?: string; cost_estimate_usd?: number; reservation_url?: string; free_cancellation?: boolean };
+	item: {
+		type?: string;
+		cost_estimate_usd?: number;
+		reservation_url?: string;
+		free_cancellation?: boolean;
+	};
 	phaseName?: string;
 	paid: { isPaid: boolean; total: number; count: number };
 	canLogPayment: boolean;
@@ -116,7 +132,8 @@ export function detailsRows(p: {
 			external: true
 		});
 	}
-	if (p.item.free_cancellation) rows.push({ key: 'cancellation', label: 'Cancellation', value: 'Free cancellation' });
+	if (p.item.free_cancellation)
+		rows.push({ key: 'cancellation', label: 'Cancellation', value: 'Free cancellation' });
 	if (p.phaseName) rows.push({ key: 'phase', label: 'Phase', value: p.phaseName });
 	return rows;
 }
@@ -148,7 +165,7 @@ const stamp = (c: string) => new Date(c.replace(' ', 'T')).getTime();
 export function newestFirst<T extends { created: string }>(comments: T[]): T[] {
 	return comments
 		.map((c, i) => ({ c, i, t: stamp(c.created) }))
-		.sort((a, b) => (b.t - a.t) || a.i - b.i)
+		.sort((a, b) => b.t - a.t || a.i - b.i)
 		.map((x) => x.c);
 }
 
@@ -179,7 +196,11 @@ export function parseMarkBooked(fd: FormData): { code: string; logPayment: boole
  * (amount from the estimate; payer and split are the form's own defaults). Unticked:
  * null, stay put. Booked and paid are separate facts (ADR-0014): this only navigates.
  */
-export function markBookedDestination(slug: string, item: PrefillItem, logPayment: boolean): string | null {
+export function markBookedDestination(
+	slug: string,
+	item: PrefillItem,
+	logPayment: boolean
+): string | null {
 	return logPayment ? logPaymentHref(slug, item) : null;
 }
 
@@ -198,7 +219,12 @@ export function votesView(p: {
 	// An idea is status = unplanned (CONTEXT.md), whether or not it has a day. Considered,
 	// planned and done items get the quiet row (considered: ruled, same as planned).
 	const idea = p.item.status === 'unplanned';
-	const labels: Record<string, string> = { love: 'Love', like: 'Like', flexible: 'Flexible', dislike: 'Pass' };
+	const labels: Record<string, string> = {
+		love: 'Love',
+		like: 'Like',
+		flexible: 'Flexible',
+		dislike: 'Pass'
+	};
 	return {
 		face: idea ? 'pills' : p.canVote ? 'row' : 'none',
 		showAddToDay: idea && p.canMove,
@@ -223,8 +249,14 @@ export function tripModeView(p: {
 	now: Date;
 	paid: { isPaid: boolean };
 	canLogPayment: boolean;
-}): { live: HeroStatus | null; started: boolean; logPaymentUnderHero: boolean; planDetails: boolean } {
-	if (!p.tripMode) return { live: null, started: false, logPaymentUnderHero: false, planDetails: false };
+}): {
+	live: HeroStatus | null;
+	started: boolean;
+	logPaymentUnderHero: boolean;
+	planDetails: boolean;
+} {
+	if (!p.tripMode)
+		return { live: null, started: false, logPaymentUnderHero: false, planDetails: false };
 	const idea = p.item.status === 'unplanned';
 	const start = p.item.start_time ? new Date(p.item.start_time.replace(' ', 'T')).getTime() : NaN;
 	let started: boolean;
@@ -234,8 +266,11 @@ export function tripModeView(p: {
 	// A start-only item has no end to count to; Now keeps it "now" only on its own day
 	// (until the next start), so a past day's start-only item is never live here.
 	const startOnlyPastDay =
-		!p.item.end_time && !!p.item.start_time && p.item.start_time.substring(0, 10) < p.now.toISOString().substring(0, 10);
-	const live = started && p.item.status !== 'done' && !startOnlyPastDay ? heroStatus(p.item, p.now) : null;
+		!p.item.end_time &&
+		!!p.item.start_time &&
+		p.item.start_time.substring(0, 10) < p.now.toISOString().substring(0, 10);
+	const live =
+		started && p.item.status !== 'done' && !startOnlyPastDay ? heroStatus(p.item, p.now) : null;
 	return {
 		live,
 		started,

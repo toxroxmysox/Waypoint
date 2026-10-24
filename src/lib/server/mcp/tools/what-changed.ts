@@ -9,7 +9,8 @@ import { loadMembers, memberName } from './get-trip';
 import type { ToolDef } from './types';
 
 /** Wall clock in `tz` for an instant, as `YYYY-MM-DD HH:MM`. */
-const localStamp = (instant: Date, tz: string) => tripNow(tz, instant).toISOString().slice(0, 16).replace('T', ' ');
+const localStamp = (instant: Date, tz: string) =>
+	tripNow(tz, instant).toISOString().slice(0, 16).replace('T', ' ');
 
 /** The UTC instant of trip-local midnight starting `ymd`. */
 function localMidnight(ymd: string, tz: string): Date {
@@ -32,7 +33,10 @@ export function resolveSince(since: string, now: Date, tz = 'UTC'): Date {
 	if (s === 'last week') return new Date(now.getTime() - 7 * 86_400_000);
 	if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return localMidnight(s, tz);
 	const t = Date.parse(since);
-	if (Number.isNaN(t)) throw new Error(`Use an ISO date/time, YYYY-MM-DD, "yesterday" or "last week" (got "${since}").`);
+	if (Number.isNaN(t))
+		throw new Error(
+			`Use an ISO date/time, YYYY-MM-DD, "yesterday" or "last week" (got "${since}").`
+		);
 	return new Date(t);
 }
 
@@ -50,14 +54,22 @@ const SOURCES: Source[] = [
 		filterTrip: 'trip',
 		fields: 'id,type,title,created,updated,created_by',
 		by: 'created_by',
-		card: (r) => ({ emoji: EMOJI[r.type as keyof typeof EMOJI] ?? '•', title: r.title as string, lines: [`id: ${r.id}`] })
+		card: (r) => ({
+			emoji: EMOJI[r.type as keyof typeof EMOJI] ?? '•',
+			title: r.title as string,
+			lines: [`id: ${r.id}`]
+		})
 	},
 	{
 		collection: 'expenses',
 		filterTrip: 'trip',
 		fields: 'id,description,amount_usd,created,updated,created_by',
 		by: 'created_by',
-		card: (r) => ({ emoji: '💵', title: (r.description as string) || 'Expense', lines: [`$${r.amount_usd}`] })
+		card: (r) => ({
+			emoji: '💵',
+			title: (r.description as string) || 'Expense',
+			lines: [`$${r.amount_usd}`]
+		})
 	},
 	{
 		collection: 'trip_goals',
@@ -71,7 +83,11 @@ const SOURCES: Source[] = [
 		filterTrip: 'trip',
 		fields: 'id,thought,created,updated,author',
 		by: 'author',
-		card: (r) => ({ emoji: '📸', title: 'Memory', lines: [(r.thought as string) || '(photo only)'] })
+		card: (r) => ({
+			emoji: '📸',
+			title: 'Memory',
+			lines: [(r.thought as string) || '(photo only)']
+		})
 	},
 	{
 		collection: 'suggestions',
@@ -90,7 +106,11 @@ const SOURCES: Source[] = [
 		collection: 'days',
 		filterTrip: 'trip',
 		fields: 'id,date,notes,created,updated',
-		card: (r) => ({ emoji: '📝', title: `Day notes · ${formatDayDate(toDateOnly(r.date as string))}`, lines: [stripHtml(r.notes as string)] })
+		card: (r) => ({
+			emoji: '📝',
+			title: `Day notes · ${formatDayDate(toDateOnly(r.date as string))}`,
+			lines: [stripHtml(r.notes as string)]
+		})
 	}
 ];
 
@@ -98,8 +118,12 @@ async function changes(ctx: McpContext, tripId: string, since: string, names: Ma
 	const pb = ctx.pb;
 	const lists = await Promise.all(
 		SOURCES.map(async (src) => {
-			let filter = pb.filter(`${src.filterTrip} = {:t} && (created >= {:s} || updated >= {:s})`, { t: tripId, s: since });
-			if (src.collection === 'suggestions') filter += ' && target_type = "comment" && status = "approved"';
+			let filter = pb.filter(`${src.filterTrip} = {:t} && (created >= {:s} || updated >= {:s})`, {
+				t: tripId,
+				s: since
+			});
+			if (src.collection === 'suggestions')
+				filter += ' && target_type = "comment" && status = "approved"';
 			if (src.collection === 'days') filter += ' && notes != ""';
 			const rows = await pb
 				.collection(src.collection)
@@ -109,7 +133,14 @@ async function changes(ctx: McpContext, tripId: string, since: string, names: Ma
 				const added = (r.created as string) >= since;
 				const who = src.by && added ? names.get(r[src.by] as string) : undefined;
 				// A day row always exists; its notes can only have been edited.
-				const tag = src.collection === 'days' ? 'edited' : added ? (who ? `added by ${who}` : 'added') : 'edited';
+				const tag =
+					src.collection === 'days'
+						? 'edited'
+						: added
+							? who
+								? `added by ${who}`
+								: 'added'
+							: 'edited';
 				return { ...src.card(r), tag, at: (added ? r.created : r.updated) as string };
 			});
 		})
@@ -136,7 +167,14 @@ export const whatChanged: ToolDef = {
 		const members: TripMember[] = await loadMembers(ctx, t.trip.id);
 		const names = new Map(members.map((m) => [m.id, memberName(m)]));
 		const rows = await changes(ctx, t.trip.id, at, names);
-		const cards: Card[] = rows.map(({ at: when, ...c }) => ({ ...c, lines: [...c.lines, localStamp(new Date(when.replace(' ', 'T')), tz)] }));
-		return result(`Changes since ${localStamp(sinceAt, tz)} · ${t.trip.title} (deletions aren't tracked)`, cards, cards.length ? {} : { note: 'Nothing changed.' });
+		const cards: Card[] = rows.map(({ at: when, ...c }) => ({
+			...c,
+			lines: [...c.lines, localStamp(new Date(when.replace(' ', 'T')), tz)]
+		}));
+		return result(
+			`Changes since ${localStamp(sinceAt, tz)} · ${t.trip.title} (deletions aren't tracked)`,
+			cards,
+			cards.length ? {} : { note: 'Nothing changed.' }
+		);
 	}
 };

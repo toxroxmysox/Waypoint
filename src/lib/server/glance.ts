@@ -3,10 +3,15 @@ import { timingSafeEqual, createHash } from 'node:crypto';
 
 export type GlanceTrip = { id: string; start: string; end: string };
 
-const dayNum = (d: string) => Math.floor(Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 86400000);
+const dayNum = (d: string) =>
+	Math.floor(Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 86400000);
 
 /** Trips overlapping today's year; days = distinct dates from Jan 1 through today (inclusive) covered by any trip. */
-export function computeGlance(trips: GlanceTrip[], itemCountByTrip: Map<string, number>, today: string) {
+export function computeGlance(
+	trips: GlanceTrip[],
+	itemCountByTrip: Map<string, number>,
+	today: string
+) {
 	const year = +today.slice(0, 4);
 	const yStart = `${year}-01-01`;
 	const yEnd = `${year}-12-31`;

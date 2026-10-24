@@ -46,7 +46,9 @@
 			return async ({ result, update }) => {
 				saving = false;
 				if (result.type === 'failure' || result.type === 'error') {
-					failed = (result.type === 'failure' && (result.data as { bookError?: string })?.bookError) || `Couldn't mark this ${words.done.toLowerCase()}. Try again.`;
+					failed =
+						(result.type === 'failure' && (result.data as { bookError?: string })?.bookError) ||
+						`Couldn't mark this ${words.done.toLowerCase()}. Try again.`;
 					return;
 				}
 				open = false;
@@ -58,11 +60,11 @@
 		class="space-y-4"
 		data-testid="mark-booked-form"
 	>
-		<p class="text-ink-soft text-sm">{title}</p>
+		<p class="text-sm text-ink-soft">{title}</p>
 
 		<div>
-			<label for="{uid}-code" class="text-ink-soft mb-1 block text-sm font-medium">
-				Confirmation code <span class="text-ink-muted font-normal">(optional)</span>
+			<label for="{uid}-code" class="mb-1 block text-sm font-medium text-ink-soft">
+				Confirmation code <span class="font-normal text-ink-muted">(optional)</span>
 			</label>
 			<input
 				id="{uid}-code"
@@ -71,24 +73,30 @@
 				autocomplete="off"
 				autocapitalize="characters"
 				maxlength="200"
-				class="border-line bg-surface text-ink min-h-11 w-full rounded-md border px-3 py-2 font-mono text-base"
+				class="min-h-11 w-full rounded-md border border-line bg-surface px-3 py-2 font-mono text-base text-ink"
 			/>
 		</div>
 
 		<label class="flex min-h-11 cursor-pointer items-center gap-3">
-			<input type="checkbox" name="log_payment" class="accent-moss h-5 w-5 shrink-0" />
-			<span class="text-ink text-sm font-medium">Log what I paid next</span>
+			<input type="checkbox" name="log_payment" class="h-5 w-5 shrink-0 accent-moss" />
+			<span class="text-sm font-medium text-ink">Log what I paid next</span>
 		</label>
 
 		{#if failed || error}
-			<p role="alert" class="text-clay text-sm">{failed || error}</p>
+			<p role="alert" class="text-sm text-clay">{failed || error}</p>
 		{/if}
 
 		<div class="flex gap-2">
 			<Button type="submit" variant="moss" size="md" class="min-h-11 flex-1" disabled={saving}>
 				{saving ? 'Saving…' : 'Save'}
 			</Button>
-			<Button type="button" variant="outline" size="md" class="min-h-11 flex-1" onclick={() => (open = false)}>
+			<Button
+				type="button"
+				variant="outline"
+				size="md"
+				class="min-h-11 flex-1"
+				onclick={() => (open = false)}
+			>
 				Cancel
 			</Button>
 		</div>

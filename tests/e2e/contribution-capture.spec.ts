@@ -79,7 +79,10 @@ test.describe('#252 easy capture — idea/plan fork sheet', () => {
 			// lifecycle, so the inline "Capture ideas" link in the stats card is replaced
 			// by the wrap-up banner (#239); the FAB persists in every lifecycle state.
 			await expect(
-				owner.page.getByRole('button', { name: /add idea or plan/i }).filter({ visible: true }).first()
+				owner.page
+					.getByRole('button', { name: /add idea or plan/i })
+					.filter({ visible: true })
+					.first()
 			).toBeVisible({ timeout: 10000 });
 		} finally {
 			await owner.ctx.close();
@@ -108,10 +111,16 @@ test.describe('#252 easy capture — idea/plan fork sheet', () => {
 				await fab.click();
 				// The fork: both choices present.
 				await expect(
-					owner.page.getByRole('button', { name: /add an idea/i }).filter({ visible: true }).first()
+					owner.page
+						.getByRole('button', { name: /add an idea/i })
+						.filter({ visible: true })
+						.first()
 				).toBeVisible();
 				await expect(
-					owner.page.getByRole('link', { name: /plan it for a day/i }).filter({ visible: true }).first()
+					owner.page
+						.getByRole('link', { name: /plan it for a day/i })
+						.filter({ visible: true })
+						.first()
 				).toBeVisible();
 				// Close the sheet before the next surface (Escape).
 				await owner.page.keyboard.press('Escape');
@@ -127,7 +136,9 @@ test.describe('#252 easy capture — idea/plan fork sheet', () => {
 		const ideaTitle = `Captured idea ${Date.now()}`;
 		const owner = await devLogin(browser, EMAILS.owner);
 		try {
-			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/phases/${ids.phaseId}`, { waitUntil: 'networkidle' });
+			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/phases/${ids.phaseId}`, {
+				waitUntil: 'networkidle'
+			});
 			await owner.page
 				.getByRole('button', { name: /add idea or plan/i })
 				.filter({ visible: true })
@@ -140,14 +151,13 @@ test.describe('#252 easy capture — idea/plan fork sheet', () => {
 				.click();
 
 			// The idea mini-form: required title + phase picker (≥1 option) + type.
-			const titleField = owner.page.getByLabel('Idea', { exact: true }).filter({ visible: true }).first();
+			const titleField = owner.page
+				.getByLabel('Idea', { exact: true })
+				.filter({ visible: true })
+				.first();
 			await expect(titleField).toBeVisible();
-			await expect(
-				owner.page.getByLabel(/phase/i).filter({ visible: true }).first()
-			).toBeVisible();
-			await expect(
-				owner.page.getByLabel(/type/i).filter({ visible: true }).first()
-			).toBeVisible();
+			await expect(owner.page.getByLabel(/phase/i).filter({ visible: true }).first()).toBeVisible();
+			await expect(owner.page.getByLabel(/type/i).filter({ visible: true }).first()).toBeVisible();
 
 			await titleField.fill(ideaTitle);
 			// Phase is pre-seeded to the current phase; submit.
@@ -162,13 +172,19 @@ test.describe('#252 easy capture — idea/plan fork sheet', () => {
 				timeout: 10000
 			});
 			await expect(
-				owner.page.getByText(/added to/i).filter({ visible: true }).first()
+				owner.page
+					.getByText(/added to/i)
+					.filter({ visible: true })
+					.first()
 			).toBeVisible({ timeout: 10000 });
 
 			// The idea now lives in this phase's parking lot as a real (auto-approved)
 			// unplanned item — a linked card with the title.
 			await expect(
-				owner.page.getByRole('link', { name: new RegExp(ideaTitle, 'i') }).filter({ visible: true }).first()
+				owner.page
+					.getByRole('link', { name: new RegExp(ideaTitle, 'i') })
+					.filter({ visible: true })
+					.first()
 			).toBeVisible({ timeout: 10000 });
 		} finally {
 			await owner.ctx.close();
@@ -197,7 +213,9 @@ test.describe('#252 easy capture — idea/plan fork sheet', () => {
 		const ideaTitle = `Traveler captured ${Date.now()}`;
 		const traveler = await devLogin(browser, EMAILS.traveler);
 		try {
-			await traveler.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/phases/${ids.phaseId}`, { waitUntil: 'networkidle' });
+			await traveler.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/phases/${ids.phaseId}`, {
+				waitUntil: 'networkidle'
+			});
 			await traveler.page
 				.getByRole('button', { name: /add idea or plan/i })
 				.filter({ visible: true })
@@ -224,7 +242,10 @@ test.describe('#252 easy capture — idea/plan fork sheet', () => {
 				timeout: 10000
 			});
 			await expect(
-				traveler.page.getByText(/sent for review.*pending in/i).filter({ visible: true }).first()
+				traveler.page
+					.getByText(/sent for review.*pending in/i)
+					.filter({ visible: true })
+					.first()
 			).toBeVisible({ timeout: 10000 });
 		} finally {
 			await traveler.ctx.close();

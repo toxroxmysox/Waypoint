@@ -22,8 +22,8 @@ a member back to the Doc / Sheet / Splitwise / group-text stack. Public front do
 - **Four panel lenses:** novice (Scott's mother — no hidden gestures), power, code (route/graph
   mechanics), designer (IA coherence).
 - **Code is source of truth.** `routes.json` (37 pages + 7 endpoints) + `edges.json` (full nav graph)
-  + 4 Mermaid diagrams + a **44-scenario task-path suite** walked through the real graph + 12 dogfood
-  screenshots (375px, live active-trip states).
+  - 4 Mermaid diagrams + a **44-scenario task-path suite** walked through the real graph + 12 dogfood
+    screenshots (375px, live active-trip states).
 - **Two passes:** a descriptive map (WP-A), then a blind multi-agent **fleet deep-review** (WP-B) that
   re-verified every WP-A finding and ran 6 architectural explorations.
 
@@ -40,7 +40,7 @@ a member back to the Doc / Sheet / Splitwise / group-text stack. Public front do
   (10 unowned-seam proposals), **empty-states** (the trip-home teaching state is unreachable dead
   code), **terminology** (2 avoid-list violations), **desktop** (2 of ~24 routes have purpose-built
   rail; no mode toggle at iPad-landscape).
-- **Doc hygiene:** live-doc lies fixed inline — CONTEXT.md (trip status is *derived*, not a stored
+- **Doc hygiene:** live-doc lies fixed inline — CONTEXT.md (trip status is _derived_, not a stored
   field (D6); nav roster; mode-switch labels; new Assignment + Ghost Card terms), SPEC §Offline
   corrected, CARD_CONTENT_SPEC card-avatar reversal.
 
@@ -50,16 +50,17 @@ Every WP-A + WP-B finding carries a disposition — **0 open in both findings fi
 
 **6 PRDs (feature/planned)** + 3 ADRs:
 
-| PRD | Issue | Doc | ADR |
-|---|---|---|---|
-| Replanning doors + weighted Now | #166 | `TRIP_REPLANNING_PRD.md` | — |
-| Trip Wrap-up + closeout/publish | #195 | `TRIP_WRAPUP_PRD.md` | — |
-| Contribution loop (votable Ghost Cards) | #202 | `TRIP_CONTRIBUTION_PRD.md` | 0009 |
-| Offline (read-only active trip) | #203 | `OFFLINE_PRD.md` | 0010 |
-| Item Assignment (card avatars) | #210 | `ITEM_ASSIGNMENT_PRD.md` | 0011 |
-| Trip-Mode Money + booked-moment capture | #211 | `TRIP_MONEY_PRD.md` | — |
+| PRD                                     | Issue | Doc                        | ADR  |
+| --------------------------------------- | ----- | -------------------------- | ---- |
+| Replanning doors + weighted Now         | #166  | `TRIP_REPLANNING_PRD.md`   | —    |
+| Trip Wrap-up + closeout/publish         | #195  | `TRIP_WRAPUP_PRD.md`       | —    |
+| Contribution loop (votable Ghost Cards) | #202  | `TRIP_CONTRIBUTION_PRD.md` | 0009 |
+| Offline (read-only active trip)         | #203  | `OFFLINE_PRD.md`           | 0010 |
+| Item Assignment (card avatars)          | #210  | `ITEM_ASSIGNMENT_PRD.md`   | 0011 |
+| Trip-Mode Money + booked-moment capture | #211  | `TRIP_MONEY_PRD.md`        | —    |
 
 **25 direct issues** (bug / enhancement / refactor + afk):
+
 - **#167–180** (14) — activation tz, mode toggle (900–1279px), quick-add eject, `+error.svelte`,
   moveItem desync, clone, export round-trip, role matrix, settings-by-role, inbox edit-and-approve,
   nav paper-cuts, auth gaps, account/bell.

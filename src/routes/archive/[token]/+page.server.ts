@@ -15,9 +15,7 @@ export const load: PageServerLoad = async ({ params }) => {
 	try {
 		trip = await pb
 			.collection('trips')
-			.getFirstListItem<Trip>(
-				pb.filter('public_share_token = {:token}', { token: params.token })
-			);
+			.getFirstListItem<Trip>(pb.filter('public_share_token = {:token}', { token: params.token }));
 	} catch {
 		error(404, 'Archive not found');
 	}

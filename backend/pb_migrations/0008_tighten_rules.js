@@ -3,8 +3,10 @@
 migrate(
 	(app) => {
 		const memberCheck = '@request.auth.id != "" && trip_members_via_trip.user ?= @request.auth.id';
-		const memberCheckViaTrip = '@request.auth.id != "" && trip.trip_members_via_trip.user ?= @request.auth.id';
-		const memberCheckViaItemTrip = '@request.auth.id != "" && item.trip.trip_members_via_trip.user ?= @request.auth.id';
+		const memberCheckViaTrip =
+			'@request.auth.id != "" && trip.trip_members_via_trip.user ?= @request.auth.id';
+		const memberCheckViaItemTrip =
+			'@request.auth.id != "" && item.trip.trip_members_via_trip.user ?= @request.auth.id';
 
 		// trips: must be a member to list/view/update/delete
 		const trips = app.findCollectionByNameOrId('trips');

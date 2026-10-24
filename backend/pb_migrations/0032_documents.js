@@ -30,10 +30,24 @@ migrate(
 			type: 'base',
 			name: 'documents',
 			fields: [
-				{ type: 'relation', name: 'trip', required: true, collectionId: trips.id, maxSelect: 1, cascadeDelete: true },
+				{
+					type: 'relation',
+					name: 'trip',
+					required: true,
+					collectionId: trips.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				},
 				// Nullable item relation. cascadeDelete so deleting an item destroys
 				// its documents (PRD — paired with a count-naming delete confirmation).
-				{ type: 'relation', name: 'item', required: false, collectionId: items.id, maxSelect: 1, cascadeDelete: true },
+				{
+					type: 'relation',
+					name: 'item',
+					required: false,
+					collectionId: items.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				},
 				{
 					type: 'file',
 					name: 'file',
@@ -58,7 +72,13 @@ migrate(
 					protected: true
 				},
 				{ type: 'text', name: 'caption', required: false, max: 500 },
-				{ type: 'relation', name: 'uploaded_by', required: true, collectionId: tripMembers.id, maxSelect: 1 },
+				{
+					type: 'relation',
+					name: 'uploaded_by',
+					required: true,
+					collectionId: tripMembers.id,
+					maxSelect: 1
+				},
 				// System timestamps. The app sorts documents newest-first ('-created')
 				// on the aggregate + item-detail surfaces and renders relative upload
 				// times — both require these autodate fields to exist.

@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-	isStrippableImage,
-	isHeic,
-	outputFormatFor,
-	renameExtension
-} from './strip-exif';
+import { isStrippableImage, isHeic, outputFormatFor, renameExtension } from './strip-exif';
 
 // The DOM re-encode (reencodeStripMetadata) needs a real <canvas>; the unit test
 // project runs in node, so we cover the pure decision logic that GUARANTEES the

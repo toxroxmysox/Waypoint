@@ -59,7 +59,9 @@ function mostRecentByTime(items: Item[], now: Date): Item | null {
 	if (started.length === 0) return null;
 	return started
 		.slice()
-		.sort((a, b) => parseDateTime(b.start_time).getTime() - parseDateTime(a.start_time).getTime())[0];
+		.sort(
+			(a, b) => parseDateTime(b.start_time).getTime() - parseDateTime(a.start_time).getTime()
+		)[0];
 }
 
 export interface CurrentPhaseInput {
@@ -110,11 +112,7 @@ export function currentPhaseId(input: CurrentPhaseInput): string {
  * today's later items first, then the forward (later-day) window. Chained transit
  * legs are skipped so a connecting flight resolves to the eventual destination.
  */
-function nextArrivingItem(
-	transit: Item,
-	todayItems: Item[],
-	forwardItems: Item[]
-): Item | null {
+function nextArrivingItem(transit: Item, todayItems: Item[], forwardItems: Item[]): Item | null {
 	const transitStart = parseDateTime(transit.start_time).getTime();
 
 	// Today's items strictly after the transit leg, earliest-first.

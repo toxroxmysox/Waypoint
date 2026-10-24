@@ -3,10 +3,19 @@ import { readFileSync, writeFileSync } from 'node:fs';
 
 const dir = new URL('./', import.meta.url).pathname;
 const data = JSON.parse(readFileSync(dir + 'findings-v2.json', 'utf8'));
-const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const esc = (s) =>
+	String(s ?? '')
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;');
 
 const sevColor = { P1: '#b4552d', P2: '#b08d3e', P3: '#7a8a7a' };
-const verdictColor = { confirmed: '#4a7c59', amended: '#b08d3e', refuted: '#b4552d', unverified: '#8a857c' };
+const verdictColor = {
+	confirmed: '#4a7c59',
+	amended: '#b08d3e',
+	refuted: '#b4552d',
+	unverified: '#8a857c'
+};
 
 const counts = { confirmed: 0, amended: 0, refuted: 0 };
 data.v1_verdicts.forEach((v) => counts[v.verdict] !== undefined && counts[v.verdict]++);
@@ -157,4 +166,6 @@ document.getElementById('nclear').addEventListener('click', () => { Object.value
 </body></html>`;
 
 writeFileSync(dir + 'index.html', html);
-console.log(`wrote v2/index.html (${(html.length / 1024).toFixed(0)} KB): ${data.v1_verdicts.length} verdicts, ${data.new_findings.length} new findings, ${data.explorations.length} explorations`);
+console.log(
+	`wrote v2/index.html (${(html.length / 1024).toFixed(0)} KB): ${data.v1_verdicts.length} verdicts, ${data.new_findings.length} new findings, ${data.explorations.length} explorations`
+);

@@ -24,7 +24,7 @@
 	<!-- #133: tombstone variant. A muted dashed ring with a user-minus glyph —
 	     unmistakably "no longer on the trip", and not an initials chip. -->
 	<span
-		class="border-ink-muted/40 text-ink-muted bg-ink-muted/10 inline-flex items-center justify-center rounded-full border border-dashed select-none"
+		class="inline-flex items-center justify-center rounded-full border border-dashed border-ink-muted/40 bg-ink-muted/10 text-ink-muted select-none"
 		style="width:{size}px;height:{size}px;"
 		aria-label={alt ? `${alt} (removed)` : 'Removed member'}
 		title={alt ? `${alt} (removed)` : 'Removed member'}
@@ -53,14 +53,14 @@
 		height={size}
 		loading="lazy"
 		decoding="async"
-		class="border-line inline-block rounded-full border object-cover"
+		class="inline-block rounded-full border border-line object-cover"
 		style="width:{size}px;height:{size}px;"
 	/>
 {:else}
 	<span
 		class="inline-flex items-center justify-center rounded-full font-semibold select-none {placeholder
-			? 'border-ink-muted text-ink-muted border border-dashed bg-transparent'
-			: 'bg-moss-tint text-moss border-moss/20 border'}"
+			? 'border border-dashed border-ink-muted bg-transparent text-ink-muted'
+			: 'border border-moss/20 bg-moss-tint text-moss'}"
 		style="width:{size}px;height:{size}px;font-size:{fontSize}px;line-height:1;"
 		aria-label={alt || letter}
 	>

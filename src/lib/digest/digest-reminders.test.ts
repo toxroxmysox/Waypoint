@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { composeReminders, remindersFor, hasReminders, daysBetween, type ReminderItem } from './digest-reminders';
+import {
+	composeReminders,
+	remindersFor,
+	hasReminders,
+	daysBetween,
+	type ReminderItem
+} from './digest-reminders';
 import { renderDigestEmail } from './digest-email';
 
 const item = (o: Partial<ReminderItem>): ReminderItem => ({
@@ -39,7 +45,9 @@ describe('booking reminders (#522)', () => {
 		expect(composeReminders({ ...trip, today: '2026-10-30', items }).booking).toEqual([]);
 	});
 	it('nothing on an archived trip', () => {
-		expect(hasReminders(composeReminders({ ...trip, archived: true, today: '2026-10-31', items }))).toBe(false);
+		expect(
+			hasReminders(composeReminders({ ...trip, archived: true, today: '2026-10-31', items }))
+		).toBe(false);
 	});
 });
 
@@ -73,7 +81,10 @@ describe('pre-trip brief + closeout (#522)', () => {
 	it('closeout exactly 3 days after the trip ends, not when dateless', () => {
 		expect(composeReminders({ ...trip, today: '2026-11-23', items }).closeout).toBe(true);
 		expect(composeReminders({ ...trip, today: '2026-11-24', items }).closeout).toBe(false);
-		expect(composeReminders({ tripStart: '', tripEnd: '', archived: false, today: '2026-11-23', items }).closeout).toBe(false);
+		expect(
+			composeReminders({ tripStart: '', tripEnd: '', archived: false, today: '2026-11-23', items })
+				.closeout
+		).toBe(false);
 	});
 });
 
@@ -112,7 +123,9 @@ describe('renderDigestEmail with reminders (#522)', () => {
 		});
 		expect(out.subject).toBe('Wrapping up Japan');
 		expect(out.text).toContain('Time to wrap up Japan.');
-		expect(out.text).toContain('Or for all your trips in your profile: https://app.example.com/account');
+		expect(out.text).toContain(
+			'Or for all your trips in your profile: https://app.example.com/account'
+		);
 		expect(out.html).toContain('href="https://app.example.com/account"');
 		expect(out.text).toContain('https://app.example.com/trips/japan/closeout');
 	});
@@ -133,7 +146,9 @@ describe('renderDigestEmail with reminders (#522)', () => {
 		const out = renderDigestEmail({
 			recipientName: '',
 			appUrl: 'https://app.example.com',
-			sections: [{ tripTitle: 'Japan', tripSlug: 'japan', diff: { ...empty, removed: [{ title: 'Bar' }] } }]
+			sections: [
+				{ tripTitle: 'Japan', tripSlug: 'japan', diff: { ...empty, removed: [{ title: 'Bar' }] } }
+			]
 		});
 		expect(out.subject).toBe('What changed on Japan');
 		expect(out.text).not.toContain('Still to book');

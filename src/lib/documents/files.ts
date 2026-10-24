@@ -15,7 +15,8 @@ export const ALLOWED_MIME_TYPES = [
 
 // `accept` attribute for the native file picker. Extensions cover the cases
 // where the OS reports an empty/odd MIME (notably HEIC on some platforms).
-export const FILE_ACCEPT = 'application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif,.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif';
+export const FILE_ACCEPT =
+	'application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif,.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif';
 
 // 20 MB cap (PRD), in bytes.
 export const MAX_FILE_BYTES = 20 * 1024 * 1024;

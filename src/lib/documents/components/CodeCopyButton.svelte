@@ -25,12 +25,35 @@
 	type="button"
 	onclick={copy}
 	data-testid="code-copy"
-	class="text-ink-soft hover:text-ink active:text-ink focus-visible:ring-ink-muted/40 -mr-3 flex h-11 w-11 shrink-0 items-center justify-center self-center rounded-lg focus-visible:ring-2 focus-visible:outline-none"
+	class="-mr-3 flex h-11 w-11 shrink-0 items-center justify-center self-center rounded-lg text-ink-soft hover:text-ink focus-visible:ring-2 focus-visible:ring-ink-muted/40 focus-visible:outline-none active:text-ink"
 >
 	{#if copied}
-		<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+		<svg
+			width="18"
+			height="18"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="2.5"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+			aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg
+		>
 	{:else}
-		<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="13" height="13" x="9" y="9" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+		<svg
+			width="18"
+			height="18"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="2"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+			aria-hidden="true"
+			><rect width="13" height="13" x="9" y="9" rx="2" /><path
+				d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+			/></svg
+		>
 	{/if}
 	<span class="sr-only">Copy code {code.label} {code.value}</span>
 </button>

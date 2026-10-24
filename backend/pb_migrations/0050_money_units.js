@@ -42,10 +42,30 @@ migrate(
 			type: 'base',
 			name: 'money_units',
 			fields: [
-				{ type: 'relation', name: 'trip', required: true, collectionId: trips.id, maxSelect: 1, cascadeDelete: true },
-				{ type: 'relation', name: 'members', required: true, collectionId: tripMembers.id, minSelect: 1, maxSelect: 999 },
+				{
+					type: 'relation',
+					name: 'trip',
+					required: true,
+					collectionId: trips.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				},
+				{
+					type: 'relation',
+					name: 'members',
+					required: true,
+					collectionId: tripMembers.id,
+					minSelect: 1,
+					maxSelect: 999
+				},
 				{ type: 'number', name: 'budget_usd', required: false, min: 0 },
-				{ type: 'relation', name: 'created_by', required: true, collectionId: tripMembers.id, maxSelect: 1 }
+				{
+					type: 'relation',
+					name: 'created_by',
+					required: true,
+					collectionId: tripMembers.id,
+					maxSelect: 1
+				}
 			],
 			indexes: ['CREATE INDEX idx_money_units_trip ON money_units (trip)'],
 			listRule: MEMBER_VIA_TRIP,

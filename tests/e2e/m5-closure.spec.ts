@@ -46,7 +46,10 @@ test.describe('M5 Closure', () => {
 		await page.goto(`${BASE}/trips/${slug}/closeout`, { waitUntil: 'networkidle' });
 		await page.waitForURL('**/closeout');
 
-		const progress = page.getByText(/Day \d+ of \d+/).filter({ visible: true }).first();
+		const progress = page
+			.getByText(/Day \d+ of \d+/)
+			.filter({ visible: true })
+			.first();
 		await expect(progress).toBeVisible({ timeout: 5000 });
 	});
 
@@ -80,7 +83,9 @@ test.describe('M5 Closure', () => {
 			!process.env.PB_ADMIN_EMAIL,
 			'Set PB_ADMIN_EMAIL + PB_ADMIN_PASSWORD to exercise the public archive route'
 		);
-		const response = await page.goto(`${BASE}/archive/nonexistent-token-12345`, { waitUntil: 'networkidle' });
+		const response = await page.goto(`${BASE}/archive/nonexistent-token-12345`, {
+			waitUntil: 'networkidle'
+		});
 		expect(response?.status()).toBe(404);
 	});
 });

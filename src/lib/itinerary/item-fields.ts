@@ -43,7 +43,16 @@ const itemFieldConfig: Record<ItemType, FieldVisibility> = {
 	},
 	activity: {
 		subtype: true,
-		subtypes: ['tour', 'museum', 'outdoor', 'entertainment', 'shopping', 'nightlife', 'spa', 'other'],
+		subtypes: [
+			'tour',
+			'museum',
+			'outdoor',
+			'entertainment',
+			'shopping',
+			'nightlife',
+			'spa',
+			'other'
+		],
 		location: true,
 		times: true,
 		endDate: true,
@@ -200,4 +209,3 @@ export function buildEmptyFormData(type: ItemType): ItemFormData {
 		linked_goal_ids: []
 	};
 }
-

@@ -111,7 +111,8 @@ test.describe('Paid-Moment affordance + prefilled add-expense (#265)', () => {
 			status: 'planned'
 		});
 		itemId = created.data.id;
-		if (!itemId) throw new Error(`item seed failed: ${created.status} ${JSON.stringify(created.data)}`);
+		if (!itemId)
+			throw new Error(`item seed failed: ${created.status} ${JSON.stringify(created.data)}`);
 	});
 
 	test('0 linked expenses → item shows "Log payment" (derived, not booked)', async ({
@@ -124,7 +125,10 @@ test.describe('Paid-Moment affordance + prefilled add-expense (#265)', () => {
 
 			// Derived paid state = false (no linked expense) → the affordance is "Log payment".
 			await expect(
-				page.getByRole('link', { name: /log payment/i }).filter({ visible: true }).first()
+				page
+					.getByRole('link', { name: /log payment/i })
+					.filter({ visible: true })
+					.first()
 			).toBeVisible({ timeout: 10000 });
 			// And NOT the paid summary.
 			await expect(page.getByText(/^Paid \$/).filter({ visible: true })).toHaveCount(0);
@@ -167,9 +171,9 @@ test.describe('Paid-Moment affordance + prefilled add-expense (#265)', () => {
 				.first()
 				.click();
 
-			await expect(
-				page.getByText(ITEM_TITLE).filter({ visible: true }).first()
-			).toBeVisible({ timeout: 10000 });
+			await expect(page.getByText(ITEM_TITLE).filter({ visible: true }).first()).toBeVisible({
+				timeout: 10000
+			});
 		} finally {
 			await ctx.close();
 		}
@@ -208,9 +212,9 @@ test.describe('Paid-Moment affordance + prefilled add-expense (#265)', () => {
 			await page.goto(`${BASE}/trips/${SLUG}/items/${itemId}`, { waitUntil: 'networkidle' });
 			// The item is already paid, so a viewer sees the read-only "Paid $X" summary
 			// (a plain link-out) but must NEVER get the write affordance.
-			await expect(
-				page.getByText(ITEM_TITLE).filter({ visible: true }).first()
-			).toBeVisible({ timeout: 10000 });
+			await expect(page.getByText(ITEM_TITLE).filter({ visible: true }).first()).toBeVisible({
+				timeout: 10000
+			});
 			await expect(
 				page.getByRole('link', { name: /log payment/i }).filter({ visible: true })
 			).toHaveCount(0);

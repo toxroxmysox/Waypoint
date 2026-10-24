@@ -61,14 +61,11 @@ migrate(
 			//
 			// Update rule = null: invites are immutable; to "change role" or
 			// "extend expiry", revoke and re-invite.
-			listRule:
-				'@request.auth.id != "" && trip.trip_members_via_trip.user ?= @request.auth.id',
-			viewRule:
-				'@request.auth.id != "" && trip.trip_members_via_trip.user ?= @request.auth.id',
+			listRule: '@request.auth.id != "" && trip.trip_members_via_trip.user ?= @request.auth.id',
+			viewRule: '@request.auth.id != "" && trip.trip_members_via_trip.user ?= @request.auth.id',
 			createRule: null,
 			updateRule: null,
-			deleteRule:
-				'@request.auth.id != "" && trip.trip_members_via_trip.user ?= @request.auth.id'
+			deleteRule: '@request.auth.id != "" && trip.trip_members_via_trip.user ?= @request.auth.id'
 		});
 
 		app.save(collection);

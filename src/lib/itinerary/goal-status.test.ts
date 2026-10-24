@@ -28,7 +28,9 @@ describe('deriveGoalStatus — has links (most-mature wins, manual ignored)', ()
 
 	it('honors the total order regardless of input ordering', () => {
 		// done beats everything
-		expect(deriveGoalStatus(['considered', 'unplanned', 'planned', 'done'], 'considered')).toBe('done');
+		expect(deriveGoalStatus(['considered', 'unplanned', 'planned', 'done'], 'considered')).toBe(
+			'done'
+		);
 		// planned beats unplanned + considered
 		expect(deriveGoalStatus(['unplanned', 'considered', 'planned'], 'considered')).toBe('planned');
 		// unplanned beats considered

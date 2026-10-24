@@ -10,16 +10,28 @@ migrate(
 			type: 'base',
 			name: 'items',
 			fields: [
-				{ type: 'relation', name: 'trip', required: true, collectionId: trips.id, maxSelect: 1, cascadeDelete: true },
+				{
+					type: 'relation',
+					name: 'trip',
+					required: true,
+					collectionId: trips.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				},
 				{ type: 'relation', name: 'phase', collectionId: phases.id, maxSelect: 1 },
 				{ type: 'relation', name: 'day', collectionId: days.id, maxSelect: 1 },
-				{ type: 'select', name: 'slot', values: ['morning', 'afternoon', 'evening', 'anytime'], maxSelect: 1 },
+				{
+					type: 'select',
+					name: 'slot',
+					values: ['morning', 'afternoon', 'evening', 'anytime'],
+					maxSelect: 1
+				},
 				{
 					type: 'select',
 					name: 'type',
 					required: true,
 					values: ['lodging', 'transportation', 'activity', 'meal', 'note', 'checklist'],
-					maxSelect: 1,
+					maxSelect: 1
 				},
 				{ type: 'text', name: 'subtype', max: 50 },
 				{ type: 'text', name: 'title', required: true, min: 1, max: 300 },
@@ -47,21 +59,21 @@ migrate(
 					type: 'select',
 					name: 'parking_lot_scope',
 					values: ['none', 'trip', 'phase', 'day'],
-					maxSelect: 1,
+					maxSelect: 1
 				},
-				{ type: 'relation', name: 'created_by', collectionId: tripMembers.id, maxSelect: 1 },
+				{ type: 'relation', name: 'created_by', collectionId: tripMembers.id, maxSelect: 1 }
 			],
 			indexes: [
 				'CREATE INDEX idx_items_trip_day_slot ON items (trip, day, slot)',
 				'CREATE INDEX idx_items_trip_phase ON items (trip, phase)',
-				'CREATE INDEX idx_items_trip_type ON items (trip, type)',
+				'CREATE INDEX idx_items_trip_type ON items (trip, type)'
 			],
 			// Permissive rules initially; tightened in 0008
 			listRule: '@request.auth.id != ""',
 			viewRule: '@request.auth.id != ""',
 			createRule: '@request.auth.id != ""',
 			updateRule: '@request.auth.id != ""',
-			deleteRule: '@request.auth.id != ""',
+			deleteRule: '@request.auth.id != ""'
 		});
 
 		app.save(collection);
@@ -72,7 +84,7 @@ migrate(
 			new RelationField({
 				name: 'parent_item',
 				collectionId: items.id,
-				maxSelect: 1,
+				maxSelect: 1
 			})
 		);
 		app.save(items);

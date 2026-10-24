@@ -31,7 +31,6 @@
 	let busy = $state(false);
 </script>
 
-
 <BottomSheet bind:open title="On which day?">
 	<form
 		method="POST"
@@ -61,12 +60,15 @@
 				name="day_id"
 				value={row.dayId}
 				disabled={busy}
-				class="border-line bg-surface hover:bg-surface-2 flex min-h-12 w-full items-center justify-between rounded-lg border px-4 text-left"
+				class="flex min-h-12 w-full items-center justify-between rounded-lg border border-line bg-surface px-4 text-left hover:bg-surface-2"
 			>
-				<span class="text-ink font-medium">
-					{row.label}{#if row.travel}<span class="text-ink-muted ml-1.5 text-xs" aria-label="travel day">⇄</span>{/if}
+				<span class="font-medium text-ink">
+					{row.label}{#if row.travel}<span
+							class="ml-1.5 text-xs text-ink-muted"
+							aria-label="travel day">⇄</span
+						>{/if}
 				</span>
-				<span class="text-ink-muted text-sm">{row.fullness}</span>
+				<span class="text-sm text-ink-muted">{row.fullness}</span>
 			</button>
 		{/each}
 	</form>

@@ -1,7 +1,7 @@
 # PRD — Documents (artifacts) + Vault retirement
 
 > Status: **Ready-for-agent.** v4. Architecture grilled 2026-06-07; design pass grilled against this PRD
-> 2026-06-07 (the "Documents (artifacts)" handoff, direction *The Ledger*).
+> 2026-06-07 (the "Documents (artifacts)" handoff, direction _The Ledger_).
 > Scope: a new Documents domain (file/image artifacts) that **replaces** the retired Vault module.
 > Source backlog: `SPEC_BACKLOG.md` → Documents (NEW domain), Vault (module).
 > Glossary terms touched: [[Document]], [[Trip Documents]], [[Vault]] (retired) in `CONTEXT.md`.
@@ -22,7 +22,7 @@ plan is in Waypoint but the artifact you actually need to show is in an email yo
 native file storage is entirely unused; there is no way to attach a file to anything.
 
 Separately, the shipped **Vault** (client-side-encrypted text store) solves a problem the app doesn't
-have yet: it protects sensitive text against the operator with a *trip-shared* password — no protection
+have yet: it protects sensitive text against the operator with a _trip-shared_ password — no protection
 from fellow members, and redundant with PB membership rules against everyone else. Dogfood feedback: a
 new app hasn't earned the trust for users to store passports/passwords in it over LastPass. It occupies
 a primary nav slot for a feature nobody trusts.
@@ -55,18 +55,19 @@ existing `confirmation_codes` field — Documents do not duplicate them.
 
 New `documents` collection:
 
-| Field | Type | Notes |
-|-------|------|-------|
-| `trip` | relation → trips | required, `cascadeDelete: true` |
-| `item` | relation → items | **nullable**; set = item-scoped, null = trip-scoped; cascade delete (see note) |
-| `file` | file | PB native file field, single file |
-| `caption` | text | optional — label for pasted screenshots with no filename |
-| `uploaded_by` | relation → trip_members | required |
+| Field         | Type                    | Notes                                                                          |
+| ------------- | ----------------------- | ------------------------------------------------------------------------------ |
+| `trip`        | relation → trips        | required, `cascadeDelete: true`                                                |
+| `item`        | relation → items        | **nullable**; set = item-scoped, null = trip-scoped; cascade delete (see note) |
+| `file`        | file                    | PB native file field, single file                                              |
+| `caption`     | text                    | optional — label for pasted screenshots with no filename                       |
+| `uploaded_by` | relation → trip_members | required                                                                       |
 
 **Constraints:**
+
 - **Types:** PDF + images only (`jpg`, `png`, `webp`, `heic`) via PB `mimeTypes`. Not a general file
   store — reject docx/zip/etc.
-- **HEIC caveat:** iPhone *photos* are HEIC, which most browsers won't render and PB won't transcode.
+- **HEIC caveat:** iPhone _photos_ are HEIC, which most browsers won't render and PB won't transcode.
   Allow HEIC upload; preview falls back to a download link. No transcoding in v4. (Clipboard paste
   yields PNG — unaffected.)
 - **Size:** 20 MB per file cap.
@@ -92,7 +93,7 @@ New `documents` collection:
   offline" pin.
 - **Planning mode:** cache-on-view (runtime caching) — sufficient for non-execution browsing.
 - **Implementation note (not solved here):** PB serves protected files with a short-lived file token;
-  the SW must fetch with a valid token while online, but caches the *bytes*, so token expiry is
+  the SW must fetch with a valid token while online, but caches the _bytes_, so token expiry is
   irrelevant once cached.
 - **Offline cue = visible tick, truthfully sourced.** A small download-tick glyph (moss, ~85% opacity)
   trails a row's meta line when that file **is actually in the offline cache** — the row checks
@@ -164,7 +165,7 @@ The app already ships a desktop shell: `SideRail` (nav) + content + route-aware 
 ## Open / deferred
 
 - **Storage budget on the Fly volume** — no count cap in v4; monitor and revisit if it grows.
-- ~~Aggregate view design pass~~ — **done** (handoff *The Ledger*; grilled into this PRD 2026-06-07).
+- ~~Aggregate view design pass~~ — **done** (handoff _The Ledger_; grilled into this PRD 2026-06-07).
 - **Documents in the Public Archive** — out of v4 scope; revisit with the Trip Memory grill (archive
   currently shares plan only).
 - **Content-based scope suggestion** & **live desktop preview pane** — both deferred this grill (see
@@ -174,25 +175,25 @@ The app already ships a desktop shell: `SideRail` (nav) + content + route-aware 
 
 ### Architecture grill (2026-06-07)
 
-| # | Decision |
-|---|----------|
-| Q1 | Parent scope = {Item \| Trip}, no Phase. |
-| Q2 | One `documents` collection with a discriminator — later collapsed: no encryption at all. |
-| Q3–Q5 | No encryption; Vault retired & renamed to Documents; artifacts only (text codes stay on items). |
-| Q6 | New collection (not evolving `vault_entries`, which is deleted); PDF+images, no count cap; 1 file/record, many per item. |
-| Q7 | Offline = automatic precache of active trip; cache-on-view for planning. |
-| Q8 | Direct upload for non-viewers, no review queue; delete = uploader or owner/co_owner. |
-| Q9 | Aggregate grouped by Item Type + Trip-level section; per-item Documents section; lightbox/native-PDF preview. |
+| #     | Decision                                                                                                                 |
+| ----- | ------------------------------------------------------------------------------------------------------------------------ |
+| Q1    | Parent scope = {Item \| Trip}, no Phase.                                                                                 |
+| Q2    | One `documents` collection with a discriminator — later collapsed: no encryption at all.                                 |
+| Q3–Q5 | No encryption; Vault retired & renamed to Documents; artifacts only (text codes stay on items).                          |
+| Q6    | New collection (not evolving `vault_entries`, which is deleted); PDF+images, no count cap; 1 file/record, many per item. |
+| Q7    | Offline = automatic precache of active trip; cache-on-view for planning.                                                 |
+| Q8    | Direct upload for non-viewers, no review queue; delete = uploader or owner/co_owner.                                     |
+| Q9    | Aggregate grouped by Item Type + Trip-level section; per-item Documents section; lightbox/native-PDF preview.            |
 
 ### Design grill — handoff vs PRD (2026-06-07)
 
-| # | Decision |
-|---|----------|
-| D1 | **Cut content-based scope suggestion** (no OCR). Scope defaults by **entry point**: item section → that item; aggregate → whole trip. Clipboard paste is first-class in both. |
-| D2 | **Two input affordances only — Upload + Paste.** Single native file picker (OS provides camera/library/files); **no bespoke camera/scanner**. |
-| D3 | **Conform to existing `AppShell` triple-pane.** Single-column Ledger at all widths; **no tablet masonry, no in-content anchor rail**. Right pane (`ContextRail`) shows a Documents **summary**; preview stays lightbox/native at every width (**no live in-pane preview** in v4). |
-| D4 | Trip-level add: **reuse `FAB.svelte`** in Planning; central nav **Add** in Trip Mode. Trip-level group renders **first**. |
-| D5 | **Offline cue = truthful visible tick** (checks Cache Storage). Present = available offline; absent = not cached. **No "syncing" state.** |
-| D6 | **Unsupported type → hard reject** (no "store anyway"); **size cap → 20 MB**; drop the custom Photos-permission screen (native picker owns it); keep too-large error + in-row progress. |
-| D7 | **Cascade delete kept**, paired with a delete-confirmation that **names the document count** ("Delete this flight and its 2 documents?"). |
-| D8 | Within-group sort **newest first**; lightbox toolbar Save/Open/Delete + **Share via Web Share API where supported**. |
+| #   | Decision                                                                                                                                                                                                                                                                          |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | **Cut content-based scope suggestion** (no OCR). Scope defaults by **entry point**: item section → that item; aggregate → whole trip. Clipboard paste is first-class in both.                                                                                                     |
+| D2  | **Two input affordances only — Upload + Paste.** Single native file picker (OS provides camera/library/files); **no bespoke camera/scanner**.                                                                                                                                     |
+| D3  | **Conform to existing `AppShell` triple-pane.** Single-column Ledger at all widths; **no tablet masonry, no in-content anchor rail**. Right pane (`ContextRail`) shows a Documents **summary**; preview stays lightbox/native at every width (**no live in-pane preview** in v4). |
+| D4  | Trip-level add: **reuse `FAB.svelte`** in Planning; central nav **Add** in Trip Mode. Trip-level group renders **first**.                                                                                                                                                         |
+| D5  | **Offline cue = truthful visible tick** (checks Cache Storage). Present = available offline; absent = not cached. **No "syncing" state.**                                                                                                                                         |
+| D6  | **Unsupported type → hard reject** (no "store anyway"); **size cap → 20 MB**; drop the custom Photos-permission screen (native picker owns it); keep too-large error + in-row progress.                                                                                           |
+| D7  | **Cascade delete kept**, paired with a delete-confirmation that **names the document count** ("Delete this flight and its 2 documents?").                                                                                                                                         |
+| D8  | Within-group sort **newest first**; lightbox toolbar Save/Open/Delete + **Share via Web Share API where supported**.                                                                                                                                                              |

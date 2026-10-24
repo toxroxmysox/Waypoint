@@ -23,9 +23,13 @@ test.describe('Now Hero (#428)', () => {
 	});
 
 	test.beforeEach(async ({ page, context }) => {
-		await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE }).catch(() => {});
+		await context
+			.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE })
+			.catch(() => {});
 		await page.setViewportSize({ width: 375, height: 812 });
-		await page.goto(`${BASE}/api/dev/login?email=${encodeURIComponent(process.env.E2E_TEST_EMAIL!)}`);
+		await page.goto(
+			`${BASE}/api/dev/login?email=${encodeURIComponent(process.env.E2E_TEST_EMAIL!)}`
+		);
 		await page.waitForURL(/\/(trips|claim)/, { timeout: 15000 });
 		await page.goto(`${BASE}/trips/${SLUG}/now`, { waitUntil: 'networkidle' });
 	});
@@ -35,7 +39,9 @@ test.describe('Now Hero (#428)', () => {
 		await expect(hero).toHaveCount(1);
 		await expect(hero.getByRole('heading', { name: 'Dinner at The Immigrant' })).toBeVisible();
 		await expect(hero.getByTestId('hero-place')).toContainText('1 Main St, Kohler, WI 53044');
-		await expect(hero.getByTestId('hero-status')).toHaveText(/NOW · until \d{1,2}:\d{2}[ap] · (5\d|4\d)m left/);
+		await expect(hero.getByTestId('hero-status')).toHaveText(
+			/NOW · until \d{1,2}:\d{2}[ap] · (5\d|4\d)m left/
+		);
 		await expect(hero.getByTestId('code-row')).toHaveCount(2);
 		await expect(hero.getByTestId('hero-booked')).toBeVisible();
 		await expect(hero.getByTestId('hero-going')).toContainText('Kim');
@@ -53,12 +59,18 @@ test.describe('Now Hero (#428)', () => {
 		expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('IMM-48213');
 	});
 
-	test('owner skips from the Hero ⋯: the Hero goes and the replace-it strip opens', async ({ page }) => {
+	test('owner skips from the Hero ⋯: the Hero goes and the replace-it strip opens', async ({
+		page
+	}) => {
 		const hero = page.locator('[data-hero]').filter({ visible: true });
 		await hero.getByRole('button', { name: 'Item actions' }).click();
 		await page.getByRole('menuitem', { name: /Skip/ }).click();
 		await page.getByRole('button', { name: 'Skip', exact: true }).filter({ visible: true }).click();
-		await expect(page.locator('[data-hero]').filter({ visible: true })).toHaveCount(0, { timeout: 7000 });
-		await expect(page.locator('section[aria-label="Ideas for now"]:visible').first()).toBeVisible({ timeout: 7000 });
+		await expect(page.locator('[data-hero]').filter({ visible: true })).toHaveCount(0, {
+			timeout: 7000
+		});
+		await expect(page.locator('section[aria-label="Ideas for now"]:visible').first()).toBeVisible({
+			timeout: 7000
+		});
 	});
 });

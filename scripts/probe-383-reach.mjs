@@ -218,17 +218,14 @@ try {
 		console.log(`\n1. BACK PRESS AFTER A TAP — delay sweep, cpu ${cpu}x\n`);
 		for (const d of [0, 20, 40, 60, 80, 120, 160, 220, 300, 400]) {
 			const { ctx, page } = await fresh({ cpu });
-			await page.evaluate(
-				async (delay) => {
-					const as = [...document.querySelectorAll('nav a')].filter(
-						(a) => a.getBoundingClientRect().width > 0
-					);
-					as[3].click();
-					await new Promise((r) => setTimeout(r, delay));
-					history.back();
-				},
-				d
-			);
+			await page.evaluate(async (delay) => {
+				const as = [...document.querySelectorAll('nav a')].filter(
+					(a) => a.getBoundingClientRect().width > 0
+				);
+				as[3].click();
+				await new Promise((r) => setTimeout(r, delay));
+				history.back();
+			}, d);
 			line(`back ${d}ms after tap`, await verdict(page));
 			await ctx.close();
 		}
@@ -239,17 +236,14 @@ try {
 		console.log(`\n2. DOUBLE-TAP TWO LINKS — delay sweep, cpu ${cpu}x\n`);
 		for (const d of [0, 20, 40, 60, 80, 120, 160, 220, 300]) {
 			const { ctx, page } = await fresh({ cpu });
-			await page.evaluate(
-				async (delay) => {
-					const as = [...document.querySelectorAll('nav a')].filter(
-						(a) => a.getBoundingClientRect().width > 0
-					);
-					as[2].click();
-					await new Promise((r) => setTimeout(r, delay));
-					as[3].click();
-				},
-				d
-			);
+			await page.evaluate(async (delay) => {
+				const as = [...document.querySelectorAll('nav a')].filter(
+					(a) => a.getBoundingClientRect().width > 0
+				);
+				as[2].click();
+				await new Promise((r) => setTimeout(r, delay));
+				as[3].click();
+			}, d);
 			line(`2nd tap ${d}ms after 1st`, await verdict(page));
 			await ctx.close();
 		}
@@ -311,7 +305,8 @@ try {
 		);
 	if (wedges.length) {
 		console.log(`REACHABLE — ${wedges.length}/${rows.length} runs wedged:`);
-		for (const w of wedges) console.log(`  * ${w.name}  (${w.hung ? 'callback HUNG' : 'callback settled'})`);
+		for (const w of wedges)
+			console.log(`  * ${w.name}  (${w.hung ? 'callback HUNG' : 'callback settled'})`);
 	} else {
 		console.log(`NOT reproduced in ${rows.length} runs.`);
 	}

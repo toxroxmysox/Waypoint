@@ -32,14 +32,16 @@
 {#if band}
 	<a
 		href={withOrigin(`/trips/${tripSlug}/items/${item.id}`, page.url.pathname)}
-		class="bg-surface-2 border-line hover:bg-line/40 active:bg-line/40 relative block min-h-[44px] rounded-lg border py-2 pr-3 transition-colors"
+		class="relative block min-h-[44px] rounded-lg border border-line bg-surface-2 py-2 pr-3 transition-colors hover:bg-line/40 active:bg-line/40"
 		style="padding-left:{titleLeft}px;"
 		data-span-band={item.id}
 	>
 		<span class="absolute top-1/2 -translate-y-1/2" style="left:{(RAIL.column - RAIL.icon) / 2}px;">
 			<MonoTypeIcon type={item.type} sub={item.subtype} size={24} />
 		</span>
-		<span class="text-ink block truncate text-sm leading-5 font-semibold" data-span="title">{item.title}</span>
-		<span class="text-ink-soft block truncate text-xs leading-4" data-span="text">{band.text}</span>
+		<span class="block truncate text-sm leading-5 font-semibold text-ink" data-span="title"
+			>{item.title}</span
+		>
+		<span class="block truncate text-xs leading-4 text-ink-soft" data-span="text">{band.text}</span>
 	</a>
 {/if}

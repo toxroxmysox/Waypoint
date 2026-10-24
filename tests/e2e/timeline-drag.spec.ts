@@ -42,7 +42,8 @@ async function seedFixture(): Promise<void> {
 	});
 	if (!res.ok) throw new Error(`seed-visual-trip failed (${res.status}): ${await res.text()}`);
 	const { days } = (await res.json()) as { days: { id: string; itemCount: number }[] };
-	if (days[0]?.itemCount !== 3) throw new Error(`fixture day 1 should hold 3 items, got ${days[0]?.itemCount}`);
+	if (days[0]?.itemCount !== 3)
+		throw new Error(`fixture day 1 should hold 3 items, got ${days[0]?.itemCount}`);
 	dayId = days[0].id;
 }
 
@@ -201,9 +202,13 @@ test.describe('Day timeline whole-card drag (#353)', () => {
 			await swipe(page, cdp, from, { x: from.x, y: from.y - 220 });
 			await page.waitForTimeout(300);
 
-			expect(await page.evaluate(() => window.scrollY), 'the swipe must scroll').toBeGreaterThan(40);
+			expect(await page.evaluate(() => window.scrollY), 'the swipe must scroll').toBeGreaterThan(
+				40
+			);
 			expect(await order(page), 'a swipe must not reorder anything').toEqual(before);
-			await expect(page.locator('#dnd-action-dragged-el'), 'no drag may have started').toHaveCount(0);
+			await expect(page.locator('#dnd-action-dragged-el'), 'no drag may have started').toHaveCount(
+				0
+			);
 		} finally {
 			await ctx.close();
 		}
@@ -237,7 +242,9 @@ test.describe('Day timeline whole-card drag (#353)', () => {
 		}
 	});
 
-	test('the rail prints start on top and end on the bottom; untimed gets a node and no time (#420)', async ({ browser }) => {
+	test('the rail prints start on top and end on the bottom; untimed gets a node and no time (#420)', async ({
+		browser
+	}) => {
 		const { ctx, page } = await openDay(browser);
 		try {
 			await expect(cards(page).nth(0).locator('[data-rail="time-top"]')).toHaveText('9:00a');
@@ -247,7 +254,9 @@ test.describe('Day timeline whole-card drag (#353)', () => {
 				cards(page).nth(2).locator('[data-rail="node"]'),
 				'an untimed item keeps its icon node'
 			).toHaveCount(1);
-			await expect(cards(page).nth(2).locator('[data-rail="time-top"], [data-rail="time-bottom"]')).toHaveCount(0);
+			await expect(
+				cards(page).nth(2).locator('[data-rail="time-top"], [data-rail="time-bottom"]')
+			).toHaveCount(0);
 		} finally {
 			await ctx.close();
 		}

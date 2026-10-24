@@ -40,9 +40,15 @@ describe('validateNewPhaseStart', () => {
 		expect(validateNewPhaseStart('2027-04-21', tripStart, tripEnd, starts)).toBeNull();
 	});
 	it('rejects the trip start, the trip end, and an existing boundary', () => {
-		expect(validateNewPhaseStart('2027-04-17', tripStart, tripEnd, starts)).toMatch(/after the trip begins/);
-		expect(validateNewPhaseStart('2027-04-24', tripStart, tripEnd, starts)).toMatch(/before the trip ends/);
-		expect(validateNewPhaseStart('2027-04-19', tripStart, tripEnd, starts)).toMatch(/already starts/);
+		expect(validateNewPhaseStart('2027-04-17', tripStart, tripEnd, starts)).toMatch(
+			/after the trip begins/
+		);
+		expect(validateNewPhaseStart('2027-04-24', tripStart, tripEnd, starts)).toMatch(
+			/before the trip ends/
+		);
+		expect(validateNewPhaseStart('2027-04-19', tripStart, tripEnd, starts)).toMatch(
+			/already starts/
+		);
 	});
 });
 
@@ -54,13 +60,21 @@ describe('validateMovePhaseStart', () => {
 		{ id: 'krabi', start: '2027-04-21', end: '2027-04-24', order: 2 }
 	];
 	it('lets a middle phase move strictly between its neighbours’ starts', () => {
-		expect(validateMovePhaseStart('khao', '2027-04-20', tiled, '2027-04-17', '2027-04-24')).toBeNull();
+		expect(
+			validateMovePhaseStart('khao', '2027-04-20', tiled, '2027-04-17', '2027-04-24')
+		).toBeNull();
 	});
 	it('rejects moving onto or past a neighbour boundary', () => {
-		expect(validateMovePhaseStart('khao', '2027-04-17', tiled, '2027-04-17', '2027-04-24')).toMatch(/between/);
-		expect(validateMovePhaseStart('khao', '2027-04-21', tiled, '2027-04-17', '2027-04-24')).toMatch(/between/);
+		expect(validateMovePhaseStart('khao', '2027-04-17', tiled, '2027-04-17', '2027-04-24')).toMatch(
+			/between/
+		);
+		expect(validateMovePhaseStart('khao', '2027-04-21', tiled, '2027-04-17', '2027-04-24')).toMatch(
+			/between/
+		);
 	});
 	it('forbids moving the first phase off the trip start', () => {
-		expect(validateMovePhaseStart('trip', '2027-04-18', tiled, '2027-04-17', '2027-04-24')).toMatch(/first phase/);
+		expect(validateMovePhaseStart('trip', '2027-04-18', tiled, '2027-04-17', '2027-04-24')).toMatch(
+			/first phase/
+		);
 	});
 });

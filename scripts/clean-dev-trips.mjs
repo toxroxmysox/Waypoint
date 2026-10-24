@@ -129,8 +129,7 @@ async function main() {
 		const t = raw.trim();
 		if (t) testEmails.add(t);
 	}
-	const isTestEmail = (email) =>
-		!!email && (testEmails.has(email) || email.endsWith('@e2e.test'));
+	const isTestEmail = (email) => !!email && (testEmails.has(email) || email.endsWith('@e2e.test'));
 
 	// Map user id → email so we can match trips by owner.
 	const users = await fetchAll('users', token, 'id,email');
@@ -155,7 +154,9 @@ async function main() {
 	console.log(`\nFound ${targets.length} test trip(s) of ${trips.length} total:\n`);
 	for (const t of targets) {
 		const why = t.reason === 'slug' ? `slug:${t.slug}` : `owner:${t.ownerEmail}`;
-		console.log(`  ${DRY_RUN ? '[would delete]' : '[delete]'} ${t.id}  ${(t.slug || '—').padEnd(24)} ${why}`);
+		console.log(
+			`  ${DRY_RUN ? '[would delete]' : '[delete]'} ${t.id}  ${(t.slug || '—').padEnd(24)} ${why}`
+		);
 	}
 
 	if (DRY_RUN) {
@@ -174,7 +175,9 @@ async function main() {
 			console.error(`  ✗ failed to delete ${t.id} (${t.slug}): ${err.message}`);
 		}
 	}
-	console.log(`\nDeleted ${ok} trip(s)${failed ? `, ${failed} failed` : ''} (children cascade automatically).`);
+	console.log(
+		`\nDeleted ${ok} trip(s)${failed ? `, ${failed} failed` : ''} (children cascade automatically).`
+	);
 	if (failed) exit(1);
 }
 

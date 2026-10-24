@@ -3,7 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-06-19
 **Deciders:** Scott
-**Context:** `docs/TRIP_MONEY_PRD.md` (Trip-Mode Money, #211) → Grill Resolutions parts B & C; issues #229 (paid-moment capture) and #228 (reusable prefilled add-expense), grilled together 2026-06-19. The PRD's original design — and the CONTEXT.md [[Expense]] entry — specified capture at the **booked moment**: flipping an item's `booked` flag would raise a dismissible "log what you paid" toast prefilled from the item. Scott's steer reopened it: *"booking isn't always the right signal, only sometimes."* For the big line items the feature exists to capture (group lodging, flights, car), `booked` ≠ money-left-account — a reservation can hold-now/charge-later, or be deposit-then-balance — so a booked-fired toast mostly mis-captures and trains the user to dismiss it.
+**Context:** `docs/TRIP_MONEY_PRD.md` (Trip-Mode Money, #211) → Grill Resolutions parts B & C; issues #229 (paid-moment capture) and #228 (reusable prefilled add-expense), grilled together 2026-06-19. The PRD's original design — and the CONTEXT.md [[Expense]] entry — specified capture at the **booked moment**: flipping an item's `booked` flag would raise a dismissible "log what you paid" toast prefilled from the item. Scott's steer reopened it: _"booking isn't always the right signal, only sometimes."_ For the big line items the feature exists to capture (group lodging, flights, car), `booked` ≠ money-left-account — a reservation can hold-now/charge-later, or be deposit-then-balance — so a booked-fired toast mostly mis-captures and trains the user to dismiss it.
 
 ## Decision
 
@@ -30,7 +30,7 @@ Shown on any payable item (every [[Item Type]] except `note`) with no linked exp
 
 - **Booked-flip toast (the original #211 design).** Rejected: mis-captures the big line items, trains dismissal, and conflates reservation with payment. This ADR reverses it.
 - **A stored `paid` / `prepaid` flag on the item.** Rejected: redundant with the linked Expense (the real source of truth), adds a field to migrate and sync, and can't represent deposit-then-balance. The linked-Expense predicate subsumes it.
-- **Per-row capture on the booking Smart List** (wire `?/book` to return the item, consume `result`). Rejected: the list is a *batch* booking sweep; a capture prompt per book recreates the dismissal-training problem this ADR exists to kill. The list gets only a quiet footer link to the expenses page instead.
+- **Per-row capture on the booking Smart List** (wire `?/book` to return the item, consume `result`). Rejected: the list is a _batch_ booking sweep; a capture prompt per book recreates the dismissal-training problem this ADR exists to kill. The list gets only a quiet footer link to the expenses page instead.
 - **Auto-creating the Expense on the money event.** Rejected (also a PRD non-goal): capture always opens an editable, dismissible prefill — never a silent write.
 
 ## Consequences
@@ -39,5 +39,5 @@ Shown on any payable item (every [[Item Type]] except `note`) with no linked exp
 - **#228 is the enabler:** the reusable prefilled add-expense (URL params `amount` / `description` / `date` / `linked_item`; `initial*` props that don't touch `isEdit`). #229 builds the affordance + state flip on top.
 - **The pre-trip / on-trip split (#227) keys off `expense.date`, not `booked`.** The user sets the date (defaults to today, backfilled when logging a prepaid item late) — so classifying prepaid vs on-trip spend depends on the date, not on any booking signal.
 - **`?/book` is unchanged** — it still returns `{ success: true }` with no item payload; nothing now depends on it returning the item.
-- **Placement of the affordance is deferred** to a Claude Design push (card / Trip-Mode surfacing); the build's functional home is the item detail page. This ADR fixes the *trigger model*, not the pixels.
+- **Placement of the affordance is deferred** to a Claude Design push (card / Trip-Mode surfacing); the build's functional home is the item detail page. This ADR fixes the _trigger model_, not the pixels.
 - **Quick-split presets** (one-tap whole-group / solo) are split out to their own non-blocking issue; the defined-unit preset rides #230.

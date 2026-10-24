@@ -40,10 +40,18 @@ test.describe('Inline item checklist (#48 primitive · #55 ledger)', () => {
 		const dayHref = await dayLinks.first().getAttribute('href');
 		await dayLinks.first().click();
 
-		await page.getByRole('link', { name: /^Add item$/i }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('link', { name: /^Add item$/i })
+			.filter({ visible: true })
+			.first()
+			.click();
 		await page.waitForURL(/\/items\/new/);
 		await page.locator('input[name="title"]:visible').first().fill('Grocery run');
-		await page.getByRole('button', { name: /create|save/i }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('button', { name: /create|save/i })
+			.filter({ visible: true })
+			.first()
+			.click();
 		await page.waitForURL(new RegExp(dayHref!.replace(/\//g, '\\/')), { timeout: 10000 });
 
 		// --- Open the item detail ---
@@ -55,7 +63,10 @@ test.describe('Inline item checklist (#48 primitive · #55 ledger)', () => {
 		// The trip layout is a dual tree (mobile + desktop, one CSS-hidden), so scope
 		// every control to the visible subtree to avoid strict-mode violations.
 		// No checklist yet → the attach affordance is offered.
-		const addChecklist = page.getByRole('button', { name: '+ Checklist', exact: true }).filter({ visible: true }).first();
+		const addChecklist = page
+			.getByRole('button', { name: '+ Checklist', exact: true })
+			.filter({ visible: true })
+			.first();
 		await expect(addChecklist).toBeVisible();
 		await addChecklist.click();
 
@@ -67,14 +78,24 @@ test.describe('Inline item checklist (#48 primitive · #55 ledger)', () => {
 		await expect(page.getByText('Apples').filter({ visible: true }).first()).toBeVisible();
 
 		// Check it off → the ledger checkbox flips to "Uncheck task".
-		await page.getByRole('button', { name: 'Check task' }).filter({ visible: true }).first().click();
-		await expect(page.getByRole('button', { name: 'Uncheck task' }).filter({ visible: true }).first()).toBeVisible();
+		await page
+			.getByRole('button', { name: 'Check task' })
+			.filter({ visible: true })
+			.first()
+			.click();
+		await expect(
+			page.getByRole('button', { name: 'Uncheck task' }).filter({ visible: true }).first()
+		).toBeVisible();
 
 		// Assign via the ⋯ overflow → member sheet → Done. Opened while the
 		// check-off may still be saving: its form success runs invalidateAll(),
 		// which resets page.state in place — BottomSheet must not read that as a
 		// back press and close itself (it did, deterministically, from 2026-10-02).
-		await page.getByRole('button', { name: 'Assign or remove task' }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('button', { name: 'Assign or remove task' })
+			.filter({ visible: true })
+			.first()
+			.click();
 		await expect(page.getByRole('heading', { name: 'Assign a member' })).toBeVisible();
 		await page.waitForLoadState('networkidle');
 		await expect(page.getByRole('heading', { name: 'Assign a member' })).toBeVisible();

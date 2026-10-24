@@ -25,7 +25,7 @@ A pending suggestion and the item it may become are **different records**: the s
 ## Consequences
 
 - **Three parallel vote collections** now exist (`votes`, `goal_votes`, `suggestion_votes`) that look alike. This ADR exists so a future reader doesn't "consolidate" them and reintroduce the rule-branching the separation avoids — same caution as ADR-0004.
-- A **copy-on-promote** step lives in the suggestion-approve hook — the one place votes cross a collection boundary. This is distinct from ADR-0004's "votes do not roll up a link": that forbids *continuous* cross-layer flow; this is a *one-time* transfer at the approve transition.
+- A **copy-on-promote** step lives in the suggestion-approve hook — the one place votes cross a collection boundary. This is distinct from ADR-0004's "votes do not roll up a link": that forbids _continuous_ cross-layer flow; this is a _one-time_ transfer at the approve transition.
 - `suggestion_votes` carries the goal-style rule that **a member cannot vote on a suggestion they authored** (authorship is the implicit endorsement); scoped to this collection.
 - **Append-only**: a new migration adds `suggestion_votes`; `votes` and `goal_votes` are never touched. Reversing to inert ghosts or a polymorphic table later is a data migration — non-trivial but not catastrophic.
-- Pending suggestions become visible to the whole group, which **redefines SPEC §6's Gate 1**: approval now gates whether a suggestion becomes a *real, votable item*, not whether the group can *see* it. Recorded in the PRD.
+- Pending suggestions become visible to the whole group, which **redefines SPEC §6's Gate 1**: approval now gates whether a suggestion becomes a _real, votable item_, not whether the group can _see_ it. Recorded in the PRD.

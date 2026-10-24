@@ -253,7 +253,11 @@ export const actions: Actions = {
 						// the clone's range); items.pb.js refuses one that doesn't.
 						end_date:
 							!isParked && item.end_date
-								? sanitizeItemSpan(dayDateById.get(placement.day), shiftDate(item.end_date), endDate)
+								? sanitizeItemSpan(
+										dayDateById.get(placement.day),
+										shiftDate(item.end_date),
+										endDate
+									)
 								: '',
 						status: placement.status,
 						booked: false,

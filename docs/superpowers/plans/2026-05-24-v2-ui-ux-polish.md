@@ -15,21 +15,25 @@
 ### Modified files (by work package)
 
 **WP-1 (Server Errors):**
+
 - `src/routes/(app)/trips/[slug]/parking-lot/+page.server.ts` — fix 500
 - `src/routes/(app)/trips/[slug]/closeout/+page.server.ts` — fix 500
 
 **WP-2 (Design Tokens):**
+
 - `src/routes/layout.css` — add shadow tokens, z-index tokens, fix ink-muted
 - `src/routes/(app)/trips/[slug]/closeout/+page.svelte` — replace off-brand colors
 - ~6 files with `text-clay` error banners → `text-error`
 - All components using `disabled:opacity-50` → `disabled:opacity-40`
 
 **WP-3 (Accessibility):**
+
 - `src/routes/+layout.svelte` — skip-link, route change focus management
 - All interactive elements — focus-visible rings
 - Heading hierarchy fixes across routes
 
 **WP-4 (Touch & Interaction):**
+
 - `src/lib/components/ui/NavBar.svelte` — 44px back button
 - `src/lib/components/ui/NotificationBell.svelte` — 44px touch target
 - `src/lib/components/ui/Card.svelte` — press feedback
@@ -37,42 +41,51 @@
 - `src/routes/layout.css` — `touch-action: manipulation`
 
 **WP-5 (Typography):**
+
 - `src/lib/components/ui/NavBar.svelte` — Fraunces h1
 - Various components — tabular-nums, truncation tooltips
 
 **WP-6 (Toast):**
+
 - `src/lib/components/ui/Toast.svelte` — NEW
 - `src/lib/stores/toast.ts` — NEW
 - Integration into ~10 form action handlers
 
 **WP-7 (Button Loading):**
+
 - `src/lib/components/ui/Button.svelte` — loading prop + spinner
 
 **WP-8 (Skeleton Loading):**
+
 - `src/lib/components/ui/TripCardSkeleton.svelte` — NEW
 - `src/lib/components/ui/DayItemSkeleton.svelte` — NEW
 - `src/lib/components/ui/ExpenseRowSkeleton.svelte` — NEW
 - `src/lib/components/ui/MemberCardSkeleton.svelte` — NEW
 
 **WP-9 (Animation & Motion):**
+
 - `src/lib/components/ui/BottomSheet.svelte` — exit animation
 - `src/routes/layout.css` — reduced-motion media queries
 - Route transition logic in layout files
 
 **WP-10 (Desktop Layout):**
+
 - `src/lib/components/ui/AppShell.svelte` — 3-pane layout
 - `src/lib/components/ui/SideRail.svelte` — expanded 240px state
 - `src/lib/components/ui/ContextRail.svelte` — NEW
 
 **WP-11 (Form UX):**
+
 - Form components — required field indicators, blur validation
 - `src/lib/components/ui/NavBar.svelte` — explicit backHref
 
 **WP-12 (Performance):**
+
 - All `<img>` elements — lazy loading, dimensions
 - `src/app.html` — font preload links
 
 **WP-13 (Minor Polish):**
+
 - `src/lib/components/ui/Card.svelte` — hex validation
 - Various — CTA audit, tab overflow, bottom padding
 
@@ -85,6 +98,7 @@
 ### Task 1: Fix `/parking-lot` 500 error
 
 **Files:**
+
 - Debug: `src/routes/(app)/trips/[slug]/parking-lot/+page.server.ts`
 - Debug: `src/routes/(app)/trips/[slug]/+layout.server.ts`
 
@@ -99,6 +113,7 @@ Navigate to a test trip's `/parking-lot` route in the browser. Check the termina
 - [ ] **Step 2: Read the server file and identify the crash point**
 
 Read `src/routes/(app)/trips/[slug]/parking-lot/+page.server.ts`. The load function calls `parent()` to get trip/phases data. Check:
+
 1. Does it destructure fields from `parent()` that don't exist?
 2. Does the PocketBase filter query have a syntax error?
 3. Is it accessing a property on a potentially undefined value?
@@ -106,6 +121,7 @@ Read `src/routes/(app)/trips/[slug]/parking-lot/+page.server.ts`. The load funct
 - [ ] **Step 3: Fix the root cause**
 
 The fix depends on what Step 2 reveals. Common patterns:
+
 - If parent data field missing: align destructuring with what `+layout.server.ts` actually returns
 - If PocketBase query fails: fix the filter string or add error handling
 - If undefined access: add null checks
@@ -131,6 +147,7 @@ Expected: clean output, no errors.
 ### Task 2: Fix `/closeout` 500 error
 
 **Files:**
+
 - Debug: `src/routes/(app)/trips/[slug]/closeout/+page.server.ts`
 
 - [ ] **Step 1: Reproduce the error**
@@ -140,6 +157,7 @@ Navigate to a test trip's `/closeout` route. Check terminal for stack trace. Thi
 - [ ] **Step 2: Read the server file and identify the crash point**
 
 Read `src/routes/(app)/trips/[slug]/closeout/+page.server.ts`. Check:
+
 1. Does it enforce a trip state (e.g., trip must be in "completed" mode)?
 2. Does it query collections that may return empty results and then access properties without null checks?
 3. Does the role check (`owner`/`co_owner`) crash if membership is missing?
@@ -172,6 +190,7 @@ git commit -m "v2-WP1: fix 500 errors on /parking-lot and /closeout routes"
 ### Task 3: Darken `ink-muted` for WCAG AA compliance
 
 **Files:**
+
 - Modify: `src/routes/layout.css`
 - Test: visual verification across the app
 
@@ -180,7 +199,7 @@ git commit -m "v2-WP1: fix 500 errors on /parking-lot and /closeout routes"
 In `src/routes/layout.css`, change `--color-ink-muted`:
 
 ```css
---color-ink-muted: #67625A;
+--color-ink-muted: #67625a;
 ```
 
 Finalized value: 4.74:1 contrast on `#F6F2EA` paper — WCAG AA compliant, stays warm, reads as clearly subordinate to `ink-soft` (#4C4A44) and `ink` (#1C1B18).
@@ -196,6 +215,7 @@ Expected: clean. This is a CSS-only change — no TS impact.
 - [ ] **Step 3: Visual verify**
 
 Start dev server, check these contexts:
+
 - NavBar subtitle ("Chengdu, China" below page title)
 - Trip card metadata (date range, location)
 - Day view empty state ("Nothing scheduled.")
@@ -210,6 +230,7 @@ The text should still read as "secondary" but be noticeably more legible than be
 ### Task 4: Add shadow token scale
 
 **Files:**
+
 - Modify: `src/routes/layout.css`
 
 - [ ] **Step 1: Update shadow token block in `@theme` with finalized 5-level scale**
@@ -217,11 +238,11 @@ The text should still read as "secondary" but be noticeably more legible than be
 In `src/routes/layout.css`, replace/update the shadow token block:
 
 ```css
---shadow-card:     0 1px 2px rgba(28,27,24, 0.04);
---shadow-elevated: 0 1px 2px rgba(28,27,24, 0.05), 0 4px 10px rgba(28,27,24, 0.06);
---shadow-dropdown: 0 2px 4px rgba(28,27,24, 0.05), 0 8px 20px rgba(28,27,24, 0.09);
---shadow-overlay:  0 -2px 8px rgba(28,27,24, 0.05), 0 -12px 40px rgba(28,27,24, 0.13);
---shadow-modal:    0 4px 12px rgba(28,27,24, 0.10), 0 24px 60px rgba(28,27,24, 0.20);
+--shadow-card: 0 1px 2px rgba(28, 27, 24, 0.04);
+--shadow-elevated: 0 1px 2px rgba(28, 27, 24, 0.05), 0 4px 10px rgba(28, 27, 24, 0.06);
+--shadow-dropdown: 0 2px 4px rgba(28, 27, 24, 0.05), 0 8px 20px rgba(28, 27, 24, 0.09);
+--shadow-overlay: 0 -2px 8px rgba(28, 27, 24, 0.05), 0 -12px 40px rgba(28, 27, 24, 0.13);
+--shadow-modal: 0 4px 12px rgba(28, 27, 24, 0.1), 0 24px 60px rgba(28, 27, 24, 0.2);
 ```
 
 Element mapping: card→`shadow-card`, FAB→`shadow-elevated`, dropdown→`shadow-dropdown`, bottom sheet→`shadow-overlay`, modal→`shadow-modal`.
@@ -239,6 +260,7 @@ In browser devtools, confirm `shadow-elevated`, `shadow-dropdown`, `shadow-overl
 ### Task 5: Add z-index token scale
 
 **Files:**
+
 - Modify: `src/routes/layout.css`
 
 - [ ] **Step 1: Add z-index tokens to `@theme`**
@@ -262,6 +284,7 @@ grep -rn 'z-[0-9]' src/lib/components/ src/routes/ --include='*.svelte' | grep -
 ```
 
 Replace each with the appropriate token:
+
 - `z-40` on BottomNav → `z-nav`
 - `z-50` on BottomSheet → `z-modal`
 - `z-50` on modals → `z-modal`
@@ -273,15 +296,16 @@ Replace each with the appropriate token:
 ### Task 6: Fix error banner colors (clay → error)
 
 **Files:**
+
 - Modify: `src/routes/layout.css` — add error tokens
 - Find all files with `text-clay` + error context
 
 - [ ] **Step 0: Add error token hex values to `@theme` in `layout.css`**
 
 ```css
---color-error:      #B33A3A;
---color-error-tint: #F5E0DE;
---color-error-deep: #8E2A2A;
+--color-error: #b33a3a;
+--color-error-tint: #f5e0de;
+--color-error-deep: #8e2a2a;
 ```
 
 - [ ] **Step 1: Find all error-colored elements using clay**
@@ -295,6 +319,7 @@ Filter results to only error contexts (error banners, validation messages). Skip
 - [ ] **Step 2: Replace error uses of clay with error token**
 
 For each error banner pattern:
+
 - `text-clay` → `text-error-deep`
 - `bg-clay/10` → `bg-error/10`
 - `border-clay/30` → `border-error/30`
@@ -332,23 +357,24 @@ pnpm check
 ### Task 7: Fix closeout off-brand colors
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/closeout/+page.svelte`
 
 - [ ] **Step 1: Replace all off-brand Tailwind colors**
 
 Read the closeout page and replace:
 
-| Find | Replace |
-|------|---------|
-| `bg-green-500` | `bg-moss` |
-| `bg-green-50` | `bg-moss-tint` |
-| `text-green-600` | `text-moss` |
-| `text-green-700` | `text-moss` |
-| `bg-amber-50` | `bg-gold-tint` |
-| `text-amber-600` | `text-gold` |
-| `text-amber-700` | `text-gold` |
+| Find                | Replace              |
+| ------------------- | -------------------- |
+| `bg-green-500`      | `bg-moss`            |
+| `bg-green-50`       | `bg-moss-tint`       |
+| `text-green-600`    | `text-moss`          |
+| `text-green-700`    | `text-moss`          |
+| `bg-amber-50`       | `bg-gold-tint`       |
+| `text-amber-600`    | `text-gold`          |
+| `text-amber-700`    | `text-gold`          |
 | `hover:bg-gray-100` | `hover:bg-surface-2` |
-| `border-border` | `border-line` |
+| `border-border`     | `border-line`        |
 
 - [ ] **Step 2: Visual verify**
 
@@ -359,6 +385,7 @@ Navigate to `/closeout` and confirm the color scheme now uses design tokens — 
 ### Task 8: Standardize disabled opacity
 
 **Files:**
+
 - Find all files with `opacity-50` in disabled context
 
 - [ ] **Step 1: Find and replace disabled opacity**
@@ -372,11 +399,10 @@ Replace all `disabled:opacity-50` with `disabled:opacity-40`.
 The main hit is `Button.svelte`:
 
 ```svelte
-// Before
-const base = 'inline-flex items-center justify-center font-semibold border transition-colors disabled:opacity-50 disabled:pointer-events-none';
-
-// After
-const base = 'inline-flex items-center justify-center font-semibold border transition-colors disabled:opacity-40 disabled:pointer-events-none';
+// Before const base = 'inline-flex items-center justify-center font-semibold border
+transition-colors disabled:opacity-50 disabled:pointer-events-none'; // After const base =
+'inline-flex items-center justify-center font-semibold border transition-colors disabled:opacity-40
+disabled:pointer-events-none';
 ```
 
 - [ ] **Step 2: Commit WP-2**
@@ -396,6 +422,7 @@ git commit -m "v2-WP2: design token refinements — ink-muted AA, shadow scale, 
 ### Task 9: Global `touch-action: manipulation`
 
 **Files:**
+
 - Modify: `src/routes/layout.css`
 
 - [ ] **Step 1: Add touch-action to html**
@@ -419,6 +446,7 @@ This eliminates the 300ms tap delay on all touch targets.
 ### Task 10: Fix NavBar back button touch target
 
 **Files:**
+
 - Modify: `src/lib/components/ui/NavBar.svelte`
 
 - [ ] **Step 1: Increase back button to 44px**
@@ -442,6 +470,7 @@ Change the button classes:
 ### Task 11: Fix NotificationBell touch target
 
 **Files:**
+
 - Modify: `src/lib/components/ui/NotificationBell.svelte`
 
 - [ ] **Step 1: Increase bell button to 44px**
@@ -471,6 +500,7 @@ class="... shadow-dropdown ..."
 ### Task 12: Fix Card press feedback
 
 **Files:**
+
 - Modify: `src/lib/components/ui/Card.svelte`
 
 - [ ] **Step 1: Increase active scale and add tint**
@@ -478,11 +508,10 @@ class="... shadow-dropdown ..."
 Read Card.svelte. Find the interactive computed class:
 
 ```svelte
-// Before
-const interactive = $derived(href || onclick ? 'hover:shadow-card-strong active:scale-[0.997]' : '');
-
-// After
-const interactive = $derived(href || onclick ? 'hover:shadow-card-strong active:scale-[0.98] active:bg-surface-2 transition-transform duration-100' : '');
+// Before const interactive = $derived(href || onclick ? 'hover:shadow-card-strong
+active:scale-[0.997]' : ''); // After const interactive = $derived(href || onclick ?
+'hover:shadow-card-strong active:scale-[0.98] active:bg-surface-2 transition-transform duration-100'
+: '');
 ```
 
 The 2% scale is visible but not dramatic. The `bg-surface-2` tint gives a warm pressed-paper feel.
@@ -492,6 +521,7 @@ The 2% scale is visible but not dramatic. The `bg-surface-2` tint gives a warm p
 ### Task 13: Fix SideRail nav item sizing
 
 **Files:**
+
 - Modify: `src/lib/components/ui/SideRail.svelte`
 
 - [ ] **Step 1: Increase label size and item height**
@@ -529,6 +559,7 @@ git commit -m "v2-WP4: touch targets 44px, card press feedback, global touch-act
 ### Task 14: Add Button loading state
 
 **Files:**
+
 - Modify: `src/lib/components/ui/Button.svelte`
 
 - [ ] **Step 1: Add loading prop and spinner**
@@ -540,7 +571,7 @@ Read Button.svelte. Add a `loading` prop and spinner SVG:
 	// Add to existing props:
 	let {
 		// ... existing props
-		loading = false,
+		loading = false
 		// ... rest
 	}: {
 		// ... existing types
@@ -561,11 +592,7 @@ Add a spinner component inline (14px rotating ring using `currentColor`):
 		xmlns="http://www.w3.org/2000/svg"
 	>
 		<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />
-		<path
-			class="opacity-75"
-			fill="currentColor"
-			d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-		/>
+		<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
 	</svg>
 {/snippet}
 ```
@@ -573,12 +600,7 @@ Add a spinner component inline (14px rotating ring using `currentColor`):
 In the button element, add loading behavior. Show spinner alongside label (not replacing it) to keep button width locked:
 
 ```svelte
-<button
-	class={buttonClasses}
-	disabled={disabled || loading}
-	aria-busy={loading}
-	{...restProps}
->
+<button class={buttonClasses} disabled={disabled || loading} aria-busy={loading} {...restProps}>
 	{#if loading}
 		{@render spinner()}
 	{/if}
@@ -620,6 +642,7 @@ git commit -m "v2-WP7: button loading state with spinner, disabled + aria-busy"
 ### Task 15: Add focus-visible rings globally
 
 **Files:**
+
 - Modify: `src/routes/layout.css`
 
 - [ ] **Step 1: Add global focus-visible style**
@@ -648,6 +671,7 @@ Tab through the trip list, day view, and expense pages. Every link, button, and 
 ### Task 16: Add skip-link
 
 **Files:**
+
 - Modify: `src/routes/+layout.svelte`
 
 - [ ] **Step 1: Add visually-hidden skip link**
@@ -657,7 +681,7 @@ At the very top of the layout's markup (before any nav), add:
 ```svelte
 <a
 	href="#main-content"
-	class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-overlay focus:rounded-md focus:bg-moss focus:px-4 focus:py-2 focus:text-white"
+	class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-overlay focus:rounded-md focus:bg-moss focus:px-4 focus:py-2 focus:text-white"
 >
 	Skip to main content
 </a>
@@ -684,6 +708,7 @@ Reload the page, press Tab. The skip link should appear at top-left, styled as a
 ### Task 17: Fix heading hierarchy
 
 **Files:**
+
 - Multiple route pages — audit all heading levels
 
 - [ ] **Step 1: Find heading level violations**
@@ -693,12 +718,14 @@ grep -rn '<h[1-6]' src/routes/ --include='*.svelte' | sort
 ```
 
 Known issues from V2_SPEC.md:
+
 - Trip list: `h3` should be `h2` (or add visually-hidden `h1`)
 - Day view: `h1→h2→h4` skip — change `h4` to `h3`
 
 - [ ] **Step 2: Fix each violation**
 
 For the day view `h4` → `h3`:
+
 ```svelte
 <!-- Before -->
 <h4 class="...">
@@ -718,6 +745,7 @@ Install axe-core or use browser devtools accessibility audit to confirm no headi
 ### Task 18: Add `aria-live` regions
 
 **Files:**
+
 - Modify: form error containers across the app
 - Modify: `src/routes/+layout.svelte` — route announcer
 
@@ -806,6 +834,7 @@ git commit -m "v2-WP3: accessibility — focus-visible rings, skip-link, heading
 ### Task 19: NavBar h1 to Fraunces
 
 **Files:**
+
 - Modify: `src/lib/components/ui/NavBar.svelte`
 
 - [ ] **Step 1: Change h1 font to Fraunces with letter-spacing**
@@ -814,10 +843,15 @@ Read NavBar.svelte. Find the h1:
 
 ```svelte
 <!-- Before -->
-<h1 class="text-ink truncate text-base font-semibold leading-tight">{title}</h1>
+<h1 class="truncate text-base leading-tight font-semibold text-ink">{title}</h1>
 
 <!-- After -->
-<h1 class="text-ink truncate font-display text-lg font-semibold leading-tight" style="letter-spacing: -0.2px">{title}</h1>
+<h1
+	class="truncate font-display text-lg leading-tight font-semibold text-ink"
+	style="letter-spacing: -0.2px"
+>
+	{title}
+</h1>
 ```
 
 Changes: `font-display` adds Fraunces, `text-lg` (18px) from `text-base` (16px), inline letter-spacing -0.2px (finalized).
@@ -845,6 +879,7 @@ Check NavBar on: day view ("Thu, May 21"), item detail ("Group Dinner"), section
 ### Task 20: Add tabular-nums to expense amounts
 
 **Files:**
+
 - Find: expense-related components with numeric displays
 
 - [ ] **Step 1: Find expense number displays**
@@ -872,6 +907,7 @@ Apply to: expense row amounts, budget totals, balance displays, split amounts.
 ### Task 21: Add truncation tooltips
 
 **Files:**
+
 - Find: elements using `truncate` class
 
 - [ ] **Step 1: Find truncated elements**
@@ -909,6 +945,7 @@ git commit -m "v2-WP5: typography — Fraunces NavBar h1, tabular-nums expenses,
 ### Task 22: Add `prefers-reduced-motion` support
 
 **Files:**
+
 - Modify: `src/routes/layout.css`
 - Modify: any component with CSS animations
 
@@ -941,6 +978,7 @@ This is a broad-stroke approach that respects the user preference while keeping 
 ### Task 23: Add BottomSheet exit animation
 
 **Files:**
+
 - Modify: `src/lib/components/ui/BottomSheet.svelte`
 
 - [ ] **Step 1: Add slide-down exit animation**
@@ -953,7 +991,11 @@ Replace the instant close with an animated exit. In Svelte 5, use the `transitio
 <script lang="ts">
 	import { fly } from 'svelte/transition';
 
-	let { open = false, onclose, children }: {
+	let {
+		open = false,
+		onclose,
+		children
+	}: {
 		open: boolean;
 		onclose?: () => void;
 		children: import('svelte').Snippet;
@@ -972,7 +1014,7 @@ Replace the instant close with an animated exit. In Svelte 5, use the `transitio
 
 		<!-- Sheet -->
 		<div
-			class="absolute bottom-0 left-0 right-0 rounded-t-xl bg-surface shadow-overlay"
+			class="absolute right-0 bottom-0 left-0 rounded-t-xl bg-surface shadow-overlay"
 			transition:fly={{ y: '100%', duration: 250, easing: cubicOut }}
 		>
 			{@render children()}
@@ -990,6 +1032,7 @@ The exit animation is automatically ~60% of entrance duration when using Svelte 
 ### Task 24: Add page transition animations
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/+layout.svelte` or relevant route layouts
 - Modify: `src/routes/+layout.svelte` — global transition hook
 
@@ -1065,9 +1108,7 @@ Wrap all transition values in a motion check — use fade at 120ms instead of di
 	import { prefersReducedMotion } from '$lib/utils/motion';
 
 	const transitionIn = $derived(
-		prefersReducedMotion()
-			? { duration: 120 }
-			: { x: direction * 80, duration: 240, delay: 120 }
+		prefersReducedMotion() ? { duration: 120 } : { x: direction * 80, duration: 240, delay: 120 }
 	);
 </script>
 ```
@@ -1091,6 +1132,7 @@ git commit -m "v2-WP9: animation — reduced-motion support, BottomSheet exit an
 ### Task 25: Create toast store
 
 **Files:**
+
 - Create: `src/lib/stores/toast.ts`
 
 - [ ] **Step 1: Write the toast store**
@@ -1151,6 +1193,7 @@ export const toast = createToastStore();
 ### Task 26: Create Toast component
 
 **Files:**
+
 - Create: `src/lib/components/ui/Toast.svelte`
 
 - [ ] **Step 1: Write the Toast component**
@@ -1182,18 +1225,26 @@ export const toast = createToastStore();
 
 <!-- Mobile: above BottomNav -->
 <div
-	class="fixed bottom-20 left-1/2 z-overlay -translate-x-1/2 md-desktop:bottom-auto md-desktop:left-auto md-desktop:right-4 md-desktop:top-16 md-desktop:translate-x-0"
+	class="fixed bottom-20 left-1/2 z-overlay -translate-x-1/2 md-desktop:top-16 md-desktop:right-4 md-desktop:bottom-auto md-desktop:left-auto md-desktop:translate-x-0"
 	role="status"
 	aria-live="polite"
 >
 	{#each toasts as t (t.id)}
 		<div
-			class="flex items-center gap-2 rounded-[14px] border px-3 py-2.5 shadow-dropdown {variantStyles[t.variant]}"
+			class="flex items-center gap-2 rounded-[14px] border px-3 py-2.5 shadow-dropdown {variantStyles[
+				t.variant
+			]}"
 			in:fly={{ y: 20, duration: 250 }}
 			out:fly={{ y: 20, duration: 150 }}
 			animate:flip={{ duration: 200 }}
 		>
-			<svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+			<svg
+				class="h-4 w-4 shrink-0"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+			>
 				<path d={variantIcons[t.variant]} stroke-linecap="round" stroke-linejoin="round" />
 			</svg>
 			<span class="text-sm font-medium">{t.message}</span>
@@ -1202,7 +1253,13 @@ export const toast = createToastStore();
 				onclick={() => toast.dismiss(t.id)}
 				aria-label="Dismiss"
 			>
-				<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<svg
+					class="h-3.5 w-3.5"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+				>
 					<path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" />
 				</svg>
 			</button>
@@ -1218,6 +1275,7 @@ export const toast = createToastStore();
 ### Task 27: Mount Toast in root layout
 
 **Files:**
+
 - Modify: `src/routes/+layout.svelte`
 
 - [ ] **Step 1: Add Toast component to root layout**
@@ -1237,6 +1295,7 @@ export const toast = createToastStore();
 ### Task 28: Integrate toast into form actions
 
 **Files:**
+
 - Modify: ~10 form action handlers across the app
 
 - [ ] **Step 1: Find all form success handlers**
@@ -1266,6 +1325,7 @@ For each form that creates/edits/deletes an entity, add a toast after the succes
 ```
 
 Key integration points:
+
 - Trip create → "Trip created"
 - Item create/edit/delete → "Item added" / "Item updated" / "Item deleted"
 - Expense create/edit/delete → "Expense added" / "Expense updated" / "Expense deleted"
@@ -1290,6 +1350,7 @@ git commit -m "v2-WP6: toast system — success/error/info variants, auto-dismis
 ### Task 29: Create shared shimmer animation
 
 **Files:**
+
 - Modify: `src/routes/layout.css`
 
 - [ ] **Step 1: Add shimmer keyframes**
@@ -1325,20 +1386,21 @@ The shimmer uses paper → surface-2 → paper (warm, not gray). The `prefers-re
 ### Task 30: Create TripCardSkeleton
 
 **Files:**
+
 - Create: `src/lib/components/ui/TripCardSkeleton.svelte`
 
 - [ ] **Step 1: Write the skeleton**
 
 ```svelte
 <div class="flex rounded-lg border border-line bg-surface p-4 shadow-card" aria-hidden="true">
-	<div class="mr-3 w-1 self-stretch rounded-full skeleton-shimmer"></div>
+	<div class="skeleton-shimmer mr-3 w-1 self-stretch rounded-full"></div>
 	<div class="flex-1 space-y-2.5">
-		<div class="h-5 w-3/5 rounded skeleton-shimmer"></div>
-		<div class="h-3.5 w-2/5 rounded skeleton-shimmer"></div>
-		<div class="h-3.5 w-1/3 rounded skeleton-shimmer"></div>
+		<div class="skeleton-shimmer h-5 w-3/5 rounded"></div>
+		<div class="skeleton-shimmer h-3.5 w-2/5 rounded"></div>
+		<div class="skeleton-shimmer h-3.5 w-1/3 rounded"></div>
 		<div class="flex gap-2">
-			<div class="h-5 w-16 rounded-full skeleton-shimmer"></div>
-			<div class="h-5 w-12 rounded-full skeleton-shimmer"></div>
+			<div class="skeleton-shimmer h-5 w-16 rounded-full"></div>
+			<div class="skeleton-shimmer h-5 w-12 rounded-full"></div>
 		</div>
 	</div>
 </div>
@@ -1349,6 +1411,7 @@ The shimmer uses paper → surface-2 → paper (warm, not gray). The `prefers-re
 ### Task 31: Create DayItemSkeleton
 
 **Files:**
+
 - Create: `src/lib/components/ui/DayItemSkeleton.svelte`
 
 - [ ] **Step 1: Write the skeleton**
@@ -1359,13 +1422,13 @@ The shimmer uses paper → surface-2 → paper (warm, not gray). The `prefers-re
 </script>
 
 <div class="space-y-3" aria-hidden="true">
-	<div class="h-4 w-24 rounded skeleton-shimmer"></div>
+	<div class="skeleton-shimmer h-4 w-24 rounded"></div>
 	{#each Array(count) as _}
 		<div class="flex items-center gap-3 rounded-lg border border-line bg-surface p-3 shadow-card">
-			<div class="h-9 w-9 rounded-full skeleton-shimmer"></div>
+			<div class="skeleton-shimmer h-9 w-9 rounded-full"></div>
 			<div class="flex-1 space-y-1.5">
-				<div class="h-4 w-3/5 rounded skeleton-shimmer"></div>
-				<div class="h-3 w-2/5 rounded skeleton-shimmer"></div>
+				<div class="skeleton-shimmer h-4 w-3/5 rounded"></div>
+				<div class="skeleton-shimmer h-3 w-2/5 rounded"></div>
 			</div>
 		</div>
 	{/each}
@@ -1377,6 +1440,7 @@ The shimmer uses paper → surface-2 → paper (warm, not gray). The `prefers-re
 ### Task 32: Create ExpenseRowSkeleton
 
 **Files:**
+
 - Create: `src/lib/components/ui/ExpenseRowSkeleton.svelte`
 
 - [ ] **Step 1: Write the skeleton**
@@ -1389,12 +1453,12 @@ The shimmer uses paper → surface-2 → paper (warm, not gray). The `prefers-re
 <div class="space-y-2" aria-hidden="true">
 	{#each Array(count) as _}
 		<div class="flex items-center gap-3 rounded-lg border border-line bg-surface px-4 py-3">
-			<div class="h-8 w-8 rounded-full skeleton-shimmer"></div>
+			<div class="skeleton-shimmer h-8 w-8 rounded-full"></div>
 			<div class="flex-1 space-y-1.5">
-				<div class="h-4 w-2/5 rounded skeleton-shimmer"></div>
-				<div class="h-3 w-1/3 rounded skeleton-shimmer"></div>
+				<div class="skeleton-shimmer h-4 w-2/5 rounded"></div>
+				<div class="skeleton-shimmer h-3 w-1/3 rounded"></div>
 			</div>
-			<div class="h-4 w-16 rounded skeleton-shimmer"></div>
+			<div class="skeleton-shimmer h-4 w-16 rounded"></div>
 		</div>
 	{/each}
 </div>
@@ -1405,6 +1469,7 @@ The shimmer uses paper → surface-2 → paper (warm, not gray). The `prefers-re
 ### Task 33: Create MemberCardSkeleton
 
 **Files:**
+
 - Create: `src/lib/components/ui/MemberCardSkeleton.svelte`
 
 - [ ] **Step 1: Write the skeleton**
@@ -1417,12 +1482,12 @@ The shimmer uses paper → surface-2 → paper (warm, not gray). The `prefers-re
 <div class="space-y-3" aria-hidden="true">
 	{#each Array(count) as _}
 		<div class="flex items-center gap-3 rounded-lg border border-line bg-surface p-4">
-			<div class="h-10 w-10 rounded-full skeleton-shimmer"></div>
+			<div class="skeleton-shimmer h-10 w-10 rounded-full"></div>
 			<div class="flex-1 space-y-1.5">
-				<div class="h-4 w-2/5 rounded skeleton-shimmer"></div>
-				<div class="h-3 w-3/5 rounded skeleton-shimmer"></div>
+				<div class="skeleton-shimmer h-4 w-2/5 rounded"></div>
+				<div class="skeleton-shimmer h-3 w-3/5 rounded"></div>
 			</div>
-			<div class="h-5 w-14 rounded-full skeleton-shimmer"></div>
+			<div class="skeleton-shimmer h-5 w-14 rounded-full"></div>
 		</div>
 	{/each}
 </div>
@@ -1433,6 +1498,7 @@ The shimmer uses paper → surface-2 → paper (warm, not gray). The `prefers-re
 ### Task 34: Wire skeletons into list views
 
 **Files:**
+
 - Modify: trip list page, day view page, expense list page, member list page
 
 - [ ] **Step 1: Find the list rendering locations**
@@ -1480,6 +1546,7 @@ git commit -m "v2-WP8: skeleton loading — trip cards, day items, expense rows,
 ### Task 35: Add image optimization attributes
 
 **Files:**
+
 - All files with `<img>` elements
 
 - [ ] **Step 1: Find all img elements**
@@ -1494,10 +1561,10 @@ For each `<img>`:
 
 ```svelte
 <!-- Before -->
-<img src={url} alt={alt} />
+<img src={url} {alt} />
 
 <!-- After -->
-<img src={url} alt={alt} loading="lazy" decoding="async" width={width} height={height} />
+<img src={url} {alt} loading="lazy" decoding="async" {width} {height} />
 ```
 
 For above-fold images (hero, logo), use `loading="eager"` instead.
@@ -1505,7 +1572,7 @@ For above-fold images (hero, logo), use `loading="eager"` instead.
 If width/height aren't known at build time, add a CSS aspect ratio:
 
 ```svelte
-<img src={url} alt={alt} loading="lazy" decoding="async" class="aspect-video w-full object-cover" />
+<img src={url} {alt} loading="lazy" decoding="async" class="aspect-video w-full object-cover" />
 ```
 
 ---
@@ -1513,6 +1580,7 @@ If width/height aren't known at build time, add a CSS aspect ratio:
 ### Task 36: Add font preloading
 
 **Files:**
+
 - Modify: `src/app.html`
 
 - [ ] **Step 1: Find the font file paths**
@@ -1550,6 +1618,7 @@ git commit -m "v2-WP12: image lazy loading + font preloading"
 ### Task 37: Add required field indicators
 
 **Files:**
+
 - All form pages with required fields
 
 - [ ] **Step 1: Find form label patterns**
@@ -1577,6 +1646,7 @@ For each required field label, add a red asterisk:
 ### Task 38: Add inline blur validation
 
 **Files:**
+
 - Form pages with email inputs, required fields, date ranges
 
 - [ ] **Step 1: Add blur validation to email fields**
@@ -1629,6 +1699,7 @@ function validateRequired(e: FocusEvent) {
 ### Task 39: Add focus-to-first-error after submission
 
 **Files:**
+
 - Form pages using `use:enhance`
 
 - [ ] **Step 1: Add auto-focus on form errors**
@@ -1656,6 +1727,7 @@ function handleSubmit() {
 ### Task 40: Replace `history.back()` with explicit backHref
 
 **Files:**
+
 - Modify: `src/lib/components/ui/NavBar.svelte`
 - Modify: all NavBar consumers
 
@@ -1702,6 +1774,7 @@ git commit -m "v2-WP11: form UX — required indicators, blur validation, focus-
 ### Task 41: Bump md-desktop content width
 
 **Files:**
+
 - Modify: content wrapper components/layouts
 
 - [ ] **Step 1: Find content width constraints**
@@ -1727,6 +1800,7 @@ class="mx-auto max-w-2xl ..."
 ### Task 42: Expand SideRail for lg-desktop
 
 **Files:**
+
 - Modify: `src/lib/components/ui/SideRail.svelte`
 
 - [ ] **Step 1: Add expanded state for lg-desktop**
@@ -1734,22 +1808,27 @@ class="mx-auto max-w-2xl ..."
 Read SideRail.svelte. Add responsive width and content:
 
 ```svelte
-<nav class="fixed left-0 top-0 h-full w-[72px] lg-desktop:w-60 border-r border-line bg-surface flex flex-col items-center lg-desktop:items-stretch z-nav">
+<nav
+	class="fixed top-0 left-0 z-nav flex h-full w-[72px] flex-col items-center border-r border-line bg-surface lg-desktop:w-60 lg-desktop:items-stretch"
+>
 	<!-- Logo -->
 	<div class="flex h-14 items-center justify-center lg-desktop:justify-start lg-desktop:px-4">
-		<span class="text-lg font-display font-bold text-moss">W</span>
+		<span class="font-display text-lg font-bold text-moss">W</span>
 	</div>
 
 	<!-- Trip name (lg-desktop only) -->
-	<div class="hidden lg-desktop:block px-4 pb-4 border-b border-line">
-		<h2 class="font-display text-sm font-semibold text-ink truncate" title={tripName}>
+	<div class="hidden border-b border-line px-4 pb-4 lg-desktop:block">
+		<h2 class="truncate font-display text-sm font-semibold text-ink" title={tripName}>
 			{tripName}
 		</h2>
 	</div>
 
 	<!-- Nav items -->
 	{#each navItems as item}
-		<a href={item.href} class="flex items-center gap-3 w-14 lg-desktop:w-full py-2.5 lg-desktop:px-4 ...">
+		<a
+			href={item.href}
+			class="flex w-14 items-center gap-3 py-2.5 lg-desktop:w-full lg-desktop:px-4 ..."
+		>
 			<svelte:component this={item.icon} class="h-5 w-5" />
 			<span class="text-[11px] lg-desktop:text-sm lg-desktop:font-medium">
 				{item.label}
@@ -1758,10 +1837,15 @@ Read SideRail.svelte. Add responsive width and content:
 	{/each}
 
 	<!-- Phase list (lg-desktop only) -->
-	<div class="hidden lg-desktop:block mt-4 px-4 space-y-1">
+	<div class="mt-4 hidden space-y-1 px-4 lg-desktop:block">
 		{#each phases as phase}
-			<div class="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm {phase.active ? 'bg-moss-tint text-moss' : 'text-ink-soft hover:bg-surface-2'}">
-				<span class="h-2.5 w-2.5 rounded-full" style="background: {phase.color}" aria-hidden="true"></span>
+			<div
+				class="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm {phase.active
+					? 'bg-moss-tint text-moss'
+					: 'text-ink-soft hover:bg-surface-2'}"
+			>
+				<span class="h-2.5 w-2.5 rounded-full" style="background: {phase.color}" aria-hidden="true"
+				></span>
 				<span class="truncate">{phase.name}</span>
 			</div>
 		{/each}
@@ -1776,8 +1860,8 @@ Read SideRail.svelte. Add responsive width and content:
 For the md-desktop (72px) state, add the truncated trip name:
 
 ```svelte
-<div class="hidden md-desktop:block lg-desktop:hidden text-center px-1 pb-2">
-	<span class="text-[10px] text-ink-muted truncate block" title={tripName}>
+<div class="hidden px-1 pb-2 text-center md-desktop:block lg-desktop:hidden">
+	<span class="block truncate text-[10px] text-ink-muted" title={tripName}>
 		{tripName}
 	</span>
 </div>
@@ -1788,6 +1872,7 @@ For the md-desktop (72px) state, add the truncated trip name:
 ### Task 43: Create ContextRail component
 
 **Files:**
+
 - Create: `src/lib/components/ui/ContextRail.svelte`
 
 - [ ] **Step 1: Write the ContextRail shell**
@@ -1801,7 +1886,9 @@ For the md-desktop (72px) state, add the truncated trip name:
 	const currentRoute = $derived(page.route.id ?? '');
 </script>
 
-<aside class="hidden lg-desktop:block fixed right-0 top-0 h-full w-80 border-l border-line bg-surface overflow-y-auto p-4">
+<aside
+	class="fixed top-0 right-0 hidden h-full w-80 overflow-y-auto border-l border-line bg-surface p-4 lg-desktop:block"
+>
 	{#if children}
 		{@render children()}
 	{:else}
@@ -1817,6 +1904,7 @@ The ContextRail is a shell — each route passes its own content via snippet. Th
 ### Task 44: Update AppShell for 3-pane layout
 
 **Files:**
+
 - Modify: `src/lib/components/ui/AppShell.svelte`
 
 - [ ] **Step 1: Add lg-desktop grid layout**
@@ -1826,10 +1914,10 @@ Read AppShell.svelte. Update the desktop layout:
 ```svelte
 <!-- Desktop layout -->
 <div class="hidden md-desktop:block">
-	<SideRail {slug} {role} tripName={tripName} phases={phases} />
+	<SideRail {slug} {role} {tripName} {phases} />
 
 	<!-- Content area adjusts margin based on SideRail width -->
-	<div class="ml-[72px] lg-desktop:ml-60 lg-desktop:mr-80">
+	<div class="ml-[72px] lg-desktop:mr-80 lg-desktop:ml-60">
 		<div class="mx-auto max-w-2xl px-4 py-6">
 			{@render children()}
 		</div>
@@ -1885,6 +1973,7 @@ git commit -m "v2-WP10a: 3-pane layout shell — expanded SideRail, ContextRail,
 ### Task 45: Wire ContextRail content per route
 
 **Files:**
+
 - Modify: itinerary route — item preview card or day summary
 - Modify: expenses route — spending summary
 - Modify: members route — role overview
@@ -1906,11 +1995,11 @@ Content: selected item preview (title, type, time, notes) + day-at-a-glance (ite
 			</div>
 		{/if}
 		<div class="space-y-1">
-			<h4 class="text-xs font-semibold uppercase tracking-wide text-ink-muted">Day at a Glance</h4>
+			<h4 class="text-xs font-semibold tracking-wide text-ink-muted uppercase">Day at a Glance</h4>
 			<!-- item count by type (activity, transport, meal, accommodation) -->
 		</div>
 		<div class="space-y-1">
-			<h4 class="text-xs font-semibold uppercase tracking-wide text-ink-muted">Up Next</h4>
+			<h4 class="text-xs font-semibold tracking-wide text-ink-muted uppercase">Up Next</h4>
 			<!-- next item card -->
 		</div>
 	</div>
@@ -1925,15 +2014,15 @@ Content: budget vs actual (total spend vs trip budget) + top categories (ranked 
 {#snippet contextContent()}
 	<div class="space-y-5">
 		<div class="space-y-1">
-			<h4 class="text-xs font-semibold uppercase tracking-wide text-ink-muted">Budget</h4>
+			<h4 class="text-xs font-semibold tracking-wide text-ink-muted uppercase">Budget</h4>
 			<!-- budget bar: actual / total, over/under indicator -->
 		</div>
 		<div class="space-y-1">
-			<h4 class="text-xs font-semibold uppercase tracking-wide text-ink-muted">Top Categories</h4>
+			<h4 class="text-xs font-semibold tracking-wide text-ink-muted uppercase">Top Categories</h4>
 			<!-- top 3–4 categories with amounts -->
 		</div>
 		<div class="space-y-1">
-			<h4 class="text-xs font-semibold uppercase tracking-wide text-ink-muted">Who Owes Whom</h4>
+			<h4 class="text-xs font-semibold tracking-wide text-ink-muted uppercase">Who Owes Whom</h4>
 			<!-- simplified debt list from split algorithm -->
 		</div>
 	</div>
@@ -1948,11 +2037,11 @@ Content: role overview (count by role: owner, co_owner, member) + recent activit
 {#snippet contextContent()}
 	<div class="space-y-5">
 		<div class="space-y-1">
-			<h4 class="text-xs font-semibold uppercase tracking-wide text-ink-muted">Roles</h4>
+			<h4 class="text-xs font-semibold tracking-wide text-ink-muted uppercase">Roles</h4>
 			<!-- owner / co-owner / member count chips -->
 		</div>
 		<div class="space-y-2">
-			<h4 class="text-xs font-semibold uppercase tracking-wide text-ink-muted">Recent Activity</h4>
+			<h4 class="text-xs font-semibold tracking-wide text-ink-muted uppercase">Recent Activity</h4>
 			<!-- last 5 trip_log entries with member avatar + action text -->
 		</div>
 	</div>
@@ -1976,6 +2065,7 @@ git commit -m "v2-WP10b: ContextRail content — day summary, spending breakdown
 ### Task 46: Card accent color hex validation
 
 **Files:**
+
 - Modify: `src/lib/components/ui/Card.svelte`
 
 - [ ] **Step 1: Add hex validation**
@@ -2001,6 +2091,7 @@ const accentStyle = $derived(
 ### Task 47: Audit and demote competing CTAs
 
 **Files:**
+
 - Various screens with multiple primary buttons
 
 - [ ] **Step 1: Find screens with multiple primary buttons**
@@ -2030,6 +2121,7 @@ Change the less-important button's variant:
 ### Task 48: Add `touch-action: pan-x` on tab containers
 
 **Files:**
+
 - Find: horizontal tab/scroll containers
 
 - [ ] **Step 1: Find tab containers**
@@ -2053,6 +2145,7 @@ grep -rn 'overflow-x\|scroll.*horizontal\|tab.*container' src/ --include='*.svel
 ### Task 49: Standardize bottom padding
 
 **Files:**
+
 - Find: pages with inconsistent bottom padding
 
 - [ ] **Step 1: Find bottom padding values**
@@ -2064,6 +2157,7 @@ grep -rn 'pb-[0-9]\|pb-\[' src/routes/ --include='*.svelte' | grep -v node_modul
 - [ ] **Step 2: Standardize to consistent values**
 
 Create a consistent pattern:
+
 - Pages with FAB + BottomNav: `pb-32` (128px — clears both)
 - Pages with BottomNav only: `pb-20` (80px)
 - Desktop (no BottomNav): `pb-8` (32px)
@@ -2087,6 +2181,7 @@ git commit -m "v2-WP13: minor polish — hex validation, CTA audit, tab touch-ac
 ### Task 50: Generate brand asset files
 
 **Files:**
+
 - Create: `static/brand/` — all SVG and PNG assets
 - Create: `src/lib/icons/` — nav icon components
 - Modify: `src/app.html` — favicon wiring
@@ -2095,6 +2190,7 @@ git commit -m "v2-WP13: minor polish — hex validation, CTA audit, tab touch-ac
 - [ ] **Step 1: Create mark variants**
 
 Generate and place SVG files in `static/brand/`:
+
 - `star-mark.svg` — primary mark (colored)
 - `star-mark-inverse.svg` — white version for dark backgrounds
 - `star-mark-outline.svg` — stroke-only version
@@ -2107,6 +2203,7 @@ Generate and place SVG files in `static/brand/`:
 - `static/brand/favicon-32.png` — PNG export at 32px
 
 Wire favicon into `src/app.html`:
+
 ```html
 <link rel="icon" href="/brand/favicon.svg" type="image/svg+xml" />
 <link rel="icon" href="/brand/favicon-32.png" sizes="32x32" />
@@ -2115,9 +2212,11 @@ Wire favicon into `src/app.html`:
 - [ ] **Step 3: Create app icon set**
 
 Standard icons:
+
 - `app-icon.svg`, `app-icon-512.png`, `app-icon-192.png`, `apple-touch-icon.png` (180px)
 
 Variant icons:
+
 - `app-icon-ink.svg`, `app-icon-ink-512.png` — ink-colored version
 - `app-icon-maskable.svg`, `app-icon-maskable-512.png` — safe zone inset for Android adaptive icons
 
@@ -2134,8 +2233,15 @@ In `src/lib/icons/`, create `StarIcons.svelte` (or individual files) with 8 navi
 
 ```svelte
 <!-- Example: ItineraryIcon.svelte -->
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-  <!-- star-system path data -->
+<svg
+	viewBox="0 0 24 24"
+	fill="none"
+	stroke="currentColor"
+	stroke-width="1.6"
+	stroke-linecap="round"
+	stroke-linejoin="round"
+>
+	<!-- star-system path data -->
 </svg>
 ```
 
@@ -2145,11 +2251,16 @@ In `static/manifest.json`, reference the correct icon sizes:
 
 ```json
 {
-  "icons": [
-    { "src": "/brand/app-icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/brand/app-icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/brand/app-icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
-  ]
+	"icons": [
+		{ "src": "/brand/app-icon-192.png", "sizes": "192x192", "type": "image/png" },
+		{ "src": "/brand/app-icon-512.png", "sizes": "512x512", "type": "image/png" },
+		{
+			"src": "/brand/app-icon-maskable-512.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "maskable"
+		}
+	]
 }
 ```
 
@@ -2177,6 +2288,7 @@ pnpm test:e2e
 - [ ] **Step 2: Visual walkthrough**
 
 Walk through every major route on mobile (375px) and desktop (1440px):
+
 - Trip list
 - Trip overview
 - Day view (navigate between days)
@@ -2206,39 +2318,39 @@ git commit -m "v2: mark all work packages complete"
 
 All 10 design items from the handoff are now incorporated into this plan. Values below are finalized — do not substitute unless the handoff is explicitly revised.
 
-| Handoff Item | Work Package | Finalized value |
-|--------------|-------------|-----------------|
-| 1. Three-pane layout | WP-10 (Tasks 41–45) | 900px / 1280px breakpoints; 72px / 240px SideRail; 320px ContextRail |
-| 2. Toast component | WP-6 (Tasks 25–28) | `py-2.5 px-3`, `rounded-[14px]`, `shadow-dropdown`, 3/5/4s |
-| 3. Skeleton screens | WP-8 (Tasks 29–34) | Warm shimmer (paper→surface-2→paper), 4 component types |
-| 4. Page transitions | WP-9 (Task 24) | 240ms / 280ms / 180ms; fade fallback for reduced-motion |
-| 5. Shadow scale | WP-2 (Task 4) | 5-level scale with exact rgba values in Task 4 |
-| 6. ink-muted color | WP-2 (Task 3) | `#67625A` (4.74:1) |
-| 7. Error states | WP-2 (Tasks 6–7) | `#B33A3A` / `#F5E0DE` / `#8E2A2A`; banner + inline field specs |
-| 8. Button loading | WP-7 (Task 14) | 14px spinner, `opacity-[0.72]`, width-locked |
-| 9. NavBar redesign | WP-5 (Task 19) | Fraunces 18px/600/-0.2px h1; Inter 500 13px subtitle |
-| 10. Card press + phases | WP-4 (Tasks 12–13) + WP-3 | `scale-[0.98]+bg-surface-2`; PhaseChip with monogram letter |
-| Brand assets | WP-14 (Task 50) | Star System mark; Fraunces 500 wordmark / -0.02em |
+| Handoff Item            | Work Package              | Finalized value                                                      |
+| ----------------------- | ------------------------- | -------------------------------------------------------------------- |
+| 1. Three-pane layout    | WP-10 (Tasks 41–45)       | 900px / 1280px breakpoints; 72px / 240px SideRail; 320px ContextRail |
+| 2. Toast component      | WP-6 (Tasks 25–28)        | `py-2.5 px-3`, `rounded-[14px]`, `shadow-dropdown`, 3/5/4s           |
+| 3. Skeleton screens     | WP-8 (Tasks 29–34)        | Warm shimmer (paper→surface-2→paper), 4 component types              |
+| 4. Page transitions     | WP-9 (Task 24)            | 240ms / 280ms / 180ms; fade fallback for reduced-motion              |
+| 5. Shadow scale         | WP-2 (Task 4)             | 5-level scale with exact rgba values in Task 4                       |
+| 6. ink-muted color      | WP-2 (Task 3)             | `#67625A` (4.74:1)                                                   |
+| 7. Error states         | WP-2 (Tasks 6–7)          | `#B33A3A` / `#F5E0DE` / `#8E2A2A`; banner + inline field specs       |
+| 8. Button loading       | WP-7 (Task 14)            | 14px spinner, `opacity-[0.72]`, width-locked                         |
+| 9. NavBar redesign      | WP-5 (Task 19)            | Fraunces 18px/600/-0.2px h1; Inter 500 13px subtitle                 |
+| 10. Card press + phases | WP-4 (Tasks 12–13) + WP-3 | `scale-[0.98]+bg-surface-2`; PhaseChip with monogram letter          |
+| Brand assets            | WP-14 (Task 50)           | Star System mark; Fraunces 500 wordmark / -0.02em                    |
 
 ---
 
 ## Estimated Effort
 
-| Session | Work Package(s) | Estimated Time |
-|---------|-----------------|---------------|
-| 1 | WP-1: Server Errors | 30–45 min |
-| 2 | WP-2: Design Tokens | 45–60 min |
-| 3 | WP-5 + WP-4: Typography + Touch | 45–60 min |
-| 4 | WP-7: Button Loading | 20–30 min |
-| 5 | WP-3: Accessibility | 60–90 min |
-| 6 | WP-9: Animation | 45–60 min |
-| 7 | WP-6: Toast System | 60–90 min |
-| 8 | WP-8: Skeleton Loading | 45–60 min |
-| 9 | WP-14: Brand Assets | 45–60 min |
-| 10–11 | WP-10: Desktop Layout | 90–120 min |
-| 12 | WP-12: Performance | 30–45 min |
-| 13 | WP-11: Form UX | 45–60 min |
-| 14 | WP-13: Minor Polish | 30–45 min |
-| — | Final Verification | 30 min |
+| Session | Work Package(s)                 | Estimated Time |
+| ------- | ------------------------------- | -------------- |
+| 1       | WP-1: Server Errors             | 30–45 min      |
+| 2       | WP-2: Design Tokens             | 45–60 min      |
+| 3       | WP-5 + WP-4: Typography + Touch | 45–60 min      |
+| 4       | WP-7: Button Loading            | 20–30 min      |
+| 5       | WP-3: Accessibility             | 60–90 min      |
+| 6       | WP-9: Animation                 | 45–60 min      |
+| 7       | WP-6: Toast System              | 60–90 min      |
+| 8       | WP-8: Skeleton Loading          | 45–60 min      |
+| 9       | WP-14: Brand Assets             | 45–60 min      |
+| 10–11   | WP-10: Desktop Layout           | 90–120 min     |
+| 12      | WP-12: Performance              | 30–45 min      |
+| 13      | WP-11: Form UX                  | 45–60 min      |
+| 14      | WP-13: Minor Polish             | 30–45 min      |
+| —       | Final Verification              | 30 min         |
 
 **Total: ~11–15 sessions, 11–16 hours**

@@ -47,26 +47,30 @@
 
 <!-- #244: the "Today" sub-tab is the merged Now view at /now (not the old /today,
      which now redirects there). "Next 3 days" stays on this /today/upcoming route. -->
-<SubTabs tabs={[
-	{ id: 'today', label: 'Today', href: `/trips/${data.trip.slug}/now` },
-	{ id: 'upcoming', label: 'Next 3 Days', href: `/trips/${data.trip.slug}/today/upcoming` }
-]} />
+<SubTabs
+	tabs={[
+		{ id: 'today', label: 'Today', href: `/trips/${data.trip.slug}/now` },
+		{ id: 'upcoming', label: 'Next 3 Days', href: `/trips/${data.trip.slug}/today/upcoming` }
+	]}
+/>
 
 <!-- #84: reserve the home-indicator safe area so the fixed bottom nav doesn't clip the last items -->
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-[calc(2rem+env(safe-area-inset-bottom))] space-y-6">
+<main
+	class="mx-auto w-full max-w-lg flex-1 space-y-6 px-4 pt-4 pb-[calc(2rem+env(safe-area-inset-bottom))] md-desktop:max-w-2xl"
+>
 	{#if tripMode.timeline.upcomingDays.length === 0}
 		<Card>
 			<div class="p-6 text-center">
-				<p class="text-ink-muted text-sm">No upcoming days within the next 3 days.</p>
+				<p class="text-sm text-ink-muted">No upcoming days within the next 3 days.</p>
 			</div>
 		</Card>
 	{:else}
 		{#each tripMode.timeline.upcomingDays as group (group.day.id)}
 			{@const gaps = freeTimeGaps(group.items)}
 			<section class="space-y-2">
-				<h2 class="font-display text-ink text-lg font-semibold">{dayLabel(group.day.date)}</h2>
+				<h2 class="font-display text-lg font-semibold text-ink">{dayLabel(group.day.date)}</h2>
 				{#if group.items.length === 0}
-					<p class="text-ink-muted text-sm">Nothing scheduled.</p>
+					<p class="text-sm text-ink-muted">Nothing scheduled.</p>
 				{:else}
 					<!-- #429: the day page's rail + Card in Trip Mode: no cost, no overlap, no accent. -->
 					<div class="space-y-2">

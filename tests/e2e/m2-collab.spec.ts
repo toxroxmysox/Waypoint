@@ -98,13 +98,26 @@ test.describe('M2 Collaboration', () => {
 			await page.goto(`${BASE}/trips/${tripSlug}/items/new`, { waitUntil: 'networkidle' });
 
 			// The "You're a traveler" notice should be visible since auto_approve=false.
-			await expect(page.getByText(/traveler/i).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
+			await expect(
+				page
+					.getByText(/traveler/i)
+					.filter({ visible: true })
+					.first()
+			).toBeVisible({ timeout: 10000 });
 			// Notice text contains "suggestion" — first visible since the submit button also matches /suggestion/i.
-			await expect(page.getByText(/suggestion/i).filter({ visible: true }).first()).toBeVisible();
+			await expect(
+				page
+					.getByText(/suggestion/i)
+					.filter({ visible: true })
+					.first()
+			).toBeVisible();
 
 			// The submit button should say "Submit suggestion" not "Create item".
 			await expect(
-				page.getByRole('button', { name: /submit suggestion/i }).filter({ visible: true }).first()
+				page
+					.getByRole('button', { name: /submit suggestion/i })
+					.filter({ visible: true })
+					.first()
 			).toBeVisible();
 		} finally {
 			await ctx.close();
@@ -131,7 +144,10 @@ test.describe('M2 Collaboration', () => {
 		try {
 			await page.goto(`${BASE}/trips/${tripSlug}`, { waitUntil: 'networkidle' });
 			await expect(
-				page.getByRole('button', { name: /notifications/i }).filter({ visible: true }).first()
+				page
+					.getByRole('button', { name: /notifications/i })
+					.filter({ visible: true })
+					.first()
 			).toBeVisible({ timeout: 10000 });
 		} finally {
 			await ctx.close();

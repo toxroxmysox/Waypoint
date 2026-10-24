@@ -65,26 +65,26 @@
 </NavBar>
 <SubTabs tabs={moneyTabs(data.trip.slug)} />
 
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-24">
+<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-24 md-desktop:max-w-2xl">
 	<div class="mb-5">
 		<div class="flex items-center justify-between gap-3">
-			<h1 class="text-ink text-lg font-semibold">Groups</h1>
+			<h1 class="text-lg font-semibold text-ink">Groups</h1>
 			{#if data.moneyUnits.length > 0}
 				<Button variant="outline" size="sm" onclick={openCreate}>New group</Button>
 			{/if}
 		</div>
-		<p class="text-ink-muted mt-1 text-sm">
+		<p class="mt-1 text-sm text-ink-muted">
 			Group people who share a card. Settle-up nets across the group — splits never change.
 		</p>
 	</div>
 
 	{#if data.moneyUnits.length === 0}
 		<div class="flex flex-col items-center justify-center py-14 text-center">
-			<div class="text-ink-muted mb-2 text-3xl">&amp;</div>
-			<p class="font-display text-ink-soft text-base italic">No groups yet.</p>
-			<p class="text-ink-muted mx-auto mt-2 max-w-xs text-sm">
-				If two of you share a card, group them — one payment settles you both, instead of
-				settling every pair.
+			<div class="mb-2 text-3xl text-ink-muted">&amp;</div>
+			<p class="font-display text-base text-ink-soft italic">No groups yet.</p>
+			<p class="mx-auto mt-2 max-w-xs text-sm text-ink-muted">
+				If two of you share a card, group them — one payment settles you both, instead of settling
+				every pair.
 			</p>
 			<div class="mt-5">
 				<Button variant="primary" size="md" onclick={openCreate}>New group</Button>
@@ -97,8 +97,8 @@
 					<div class="p-4">
 						<div class="flex items-start justify-between gap-3">
 							<div class="min-w-0">
-								<p class="text-ink truncate text-sm font-medium">{unitLabel(unit)}</p>
-								<p class="text-ink-muted mt-0.5 text-xs">
+								<p class="truncate text-sm font-medium text-ink">{unitLabel(unit)}</p>
+								<p class="mt-0.5 text-xs text-ink-muted">
 									{#if unit.budget_usd}
 										<span class="font-mono">${unit.budget_usd.toFixed(2)}</span> budget (custom)
 									{:else}
@@ -108,7 +108,9 @@
 							</div>
 							{#if confirming?.id !== unit.id}
 								<div class="flex flex-shrink-0 items-center gap-3 text-xs font-medium">
-									<button type="button" class="text-moss" onclick={() => openEdit(unit)}>Edit</button>
+									<button type="button" class="text-moss" onclick={() => openEdit(unit)}
+										>Edit</button
+									>
 									{#if iAmIn(unit)}
 										<button
 											type="button"
@@ -131,8 +133,8 @@
 
 						{#if confirming?.id === unit.id}
 							{@const isDelete = confirming.action === 'delete'}
-							<div class="border-line mt-3 border-t pt-3">
-								<p class="text-ink-soft text-sm">
+							<div class="mt-3 border-t border-line pt-3">
+								<p class="text-sm text-ink-soft">
 									{#if isDelete}
 										Delete this group for everyone? This can't be undone.
 									{:else}
@@ -158,14 +160,14 @@
 											type="submit"
 											class="{isDelete
 												? 'bg-clay text-paper'
-												: 'bg-surface-2 text-ink border-line border'} rounded-md px-3 py-1.5 text-sm font-medium"
+												: 'border border-line bg-surface-2 text-ink'} rounded-md px-3 py-1.5 text-sm font-medium"
 										>
 											{isDelete ? 'Delete' : 'Leave'}
 										</button>
 									</form>
 									<button
 										type="button"
-										class="text-ink-muted px-3 py-1.5 text-sm font-medium"
+										class="px-3 py-1.5 text-sm font-medium text-ink-muted"
 										onclick={() => (confirming = null)}
 									>
 										Cancel

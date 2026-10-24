@@ -21,7 +21,13 @@ describe('getNavConfig — trip nav (#244)', () => {
 	it('planning nav is unchanged (5 tabs)', () => {
 		const cfg = getNavConfig('spain-2025', 'planning');
 		expect(cfg.accent).toBe('moss');
-		expect(cfg.tabs.map((t) => t.id)).toEqual(['itinerary', 'money', 'members', 'documents', 'more']);
+		expect(cfg.tabs.map((t) => t.id)).toEqual([
+			'itinerary',
+			'money',
+			'members',
+			'documents',
+			'more'
+		]);
 	});
 });
 
@@ -86,4 +92,3 @@ describe('resolveChromeMode (#197 B-011)', () => {
 		expect(resolveChromeMode(`${P}/documents`, true, 'planning')).toBe('planning');
 	});
 });
-

@@ -49,7 +49,7 @@
 		/>
 	</svg>
 	<span
-		class="text-ink-soft absolute inset-0 flex items-center justify-center font-mono font-semibold tabular-nums"
+		class="absolute inset-0 flex items-center justify-center font-mono font-semibold text-ink-soft tabular-nums"
 		style="font-size:{countSize}px;"
 	>
 		{done}

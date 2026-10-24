@@ -29,7 +29,10 @@ export const actions: Actions = {
 		// dateless; setting both promotes it (the PB update hook seeds Phase 1 +
 		// days). Clearing dates on a dated trip is rejected below (one-way).
 		if ((startDate && !endDate) || (!startDate && endDate)) {
-			return fail(400, { error: 'Set both dates, or leave both empty.', field: startDate ? 'end_date' : 'start_date' });
+			return fail(400, {
+				error: 'Set both dates, or leave both empty.',
+				field: startDate ? 'end_date' : 'start_date'
+			});
 		}
 		if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
 			return fail(400, { error: 'Start date must be before end date.', field: 'start_date' });
@@ -45,7 +48,9 @@ export const actions: Actions = {
 
 			const membership = await locals.pb
 				.collection('trip_members')
-				.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`);
+				.getFirstListItem<TripMember>(
+					`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`
+				);
 			if (membership.role !== 'owner' && membership.role !== 'co_owner') {
 				return fail(403, { error: 'Only trip owners can change settings.' });
 			}
@@ -85,7 +90,9 @@ export const actions: Actions = {
 
 			const membership = await locals.pb
 				.collection('trip_members')
-				.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`);
+				.getFirstListItem<TripMember>(
+					`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`
+				);
 			if (membership.role !== 'owner' && membership.role !== 'co_owner') {
 				return fail(403, { error: 'Only trip owners can delete the trip.' });
 			}
@@ -113,7 +120,9 @@ export const actions: Actions = {
 
 			const membership = await locals.pb
 				.collection('trip_members')
-				.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`);
+				.getFirstListItem<TripMember>(
+					`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`
+				);
 
 			await locals.pb.collection('trip_members').update(membership.id, {
 				digest_opt_out: !digestOn
@@ -142,7 +151,9 @@ export const actions: Actions = {
 
 			const membership = await locals.pb
 				.collection('trip_members')
-				.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`);
+				.getFirstListItem<TripMember>(
+					`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`
+				);
 			if (membership.role !== 'owner' && membership.role !== 'co_owner') {
 				return fail(403, { archiveError: 'Only trip owners can change archive settings.' });
 			}
@@ -178,7 +189,9 @@ export const actions: Actions = {
 
 			const membership = await locals.pb
 				.collection('trip_members')
-				.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`);
+				.getFirstListItem<TripMember>(
+					`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`
+				);
 			if (membership.role !== 'owner' && membership.role !== 'co_owner') {
 				return fail(403, { error: 'Only trip owners can archive a trip.' });
 			}

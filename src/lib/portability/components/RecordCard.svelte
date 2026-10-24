@@ -39,12 +39,21 @@
 
 	<Card class="relative h-full {timed ? 'min-h-[62px]' : ''}">
 		<div class="p-3">
-			<h4 class="text-ink line-clamp-2 text-sm leading-5 font-semibold" data-card="title">{item.title}</h4>
+			<h4 class="line-clamp-2 text-sm leading-5 font-semibold text-ink" data-card="title">
+				{item.title}
+			</h4>
 			{#if fields.meta}
-				<p class="text-ink-muted mt-0.5 truncate text-[12px] leading-4" data-card="meta">{fields.meta}</p>
+				<p class="mt-0.5 truncate text-[12px] leading-4 text-ink-muted" data-card="meta">
+					{fields.meta}
+				</p>
 			{/if}
 			{#if body}
-				<p class="text-ink-soft mt-1.5 text-xs leading-5 whitespace-pre-line" data-card="description">{body}</p>
+				<p
+					class="mt-1.5 text-xs leading-5 whitespace-pre-line text-ink-soft"
+					data-card="description"
+				>
+					{body}
+				</p>
 			{/if}
 		</div>
 	</Card>

@@ -92,7 +92,11 @@ const INSTRUMENT = () => {
 		push('history.back()', { by: (new Error().stack || '').split('\n')[2]?.trim().slice(0, 90) });
 		return bk();
 	};
-	window.addEventListener('popstate', (e) => push('popstate(capture)', { state: JSON.stringify(e.state ?? null).slice(0, 80) }), true);
+	window.addEventListener(
+		'popstate',
+		(e) => push('popstate(capture)', { state: JSON.stringify(e.state ?? null).slice(0, 80) }),
+		true
+	);
 	window.addEventListener('popstate', () => push('popstate(bubble)', {}), false);
 
 	// Watch the attribute that ends up intercepting pointer events. An init script
@@ -105,7 +109,10 @@ const INSTRUMENT = () => {
 				if (m.attributeName === 'data-transition')
 					push('attr', { value: document.documentElement.dataset.transition ?? '(removed)' });
 			}
-		}).observe(document.documentElement, { attributes: true, attributeFilter: ['data-transition'] });
+		}).observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ['data-transition']
+		});
 		return true;
 	};
 	if (!watchAttr()) document.addEventListener('readystatechange', watchAttr, { once: true });
@@ -116,7 +123,15 @@ const INSTRUMENT = () => {
 	document.startViewTransition = (cb) => {
 		const id = ++n;
 		const s = performance.now();
-		const rec = { id, capture: null, window: null, cbEnd: null, ready: 'pending', updateDone: 'pending', finished: 'pending' };
+		const rec = {
+			id,
+			capture: null,
+			window: null,
+			cbEnd: null,
+			ready: 'pending',
+			updateDone: 'pending',
+			finished: 'pending'
+		};
 		window.__vt.push(rec);
 		push('startViewTransition', { id });
 		const t = orig(async () => {
@@ -185,11 +200,15 @@ try {
 	console.log(`-> seeded trip ${seed.slug}`);
 
 	console.log(`-> vite dev on :${APP_PORT}`);
-	launch('pnpm', ['exec', 'vite', 'dev', '--host', '127.0.0.1', '--port', String(APP_PORT), '--strictPort'], {
-		PUBLIC_PB_URL: PB_URL,
-		PB_INTERNAL_URL: PB_URL,
-		WAYPOINT_DEV_MODE: 'true'
-	});
+	launch(
+		'pnpm',
+		['exec', 'vite', 'dev', '--host', '127.0.0.1', '--port', String(APP_PORT), '--strictPort'],
+		{
+			PUBLIC_PB_URL: PB_URL,
+			PB_INTERNAL_URL: PB_URL,
+			WAYPOINT_DEV_MODE: 'true'
+		}
+	);
 	await waitFor(`${APP_URL}/`, 90_000, () => true);
 
 	const browser = await chromium.launch();
@@ -203,7 +222,9 @@ try {
 	await page.addInitScript(INSTRUMENT);
 	page.on('pageerror', (e) => console.log('  [pageerror]', e.message));
 
-	await page.goto(`${APP_URL}/api/dev/login?email=${encodeURIComponent(EMAIL)}`, { waitUntil: 'networkidle' });
+	await page.goto(`${APP_URL}/api/dev/login?email=${encodeURIComponent(EMAIL)}`, {
+		waitUntil: 'networkidle'
+	});
 	await page.goto(`${APP_URL}/trips/${seed.slug}/now`, { waitUntil: 'networkidle' });
 	await page.waitForTimeout(600);
 	await page.evaluate(() => {
@@ -231,10 +252,14 @@ try {
 	const d = await page.evaluate(DUMP);
 	const dead = d.hits.every((h) => h === 'html' || h === 'null');
 	console.log(`\n=== AFTER THE FLOW ===`);
-	console.log(`path=${d.path}  data-transition=${d.attr ?? '(none)'}  hit-test=${d.hits.join(',')}  ${dead ? 'PAGE IS DEAD' : 'page is clickable'}`);
+	console.log(
+		`path=${d.path}  data-transition=${d.attr ?? '(none)'}  hit-test=${d.hits.join(',')}  ${dead ? 'PAGE IS DEAD' : 'page is clickable'}`
+	);
 	console.log('\ntransitions:');
 	for (const v of d.vt)
-		console.log(`  #${v.id} capture=${v.capture ?? '-'}ms callbackReturned=${v.window ?? 'NEVER'}ms cbEnd=${v.cbEnd ?? 'NEVER (hung)'} finished=${v.finished} updateDone=${v.updateDone}`);
+		console.log(
+			`  #${v.id} capture=${v.capture ?? '-'}ms callbackReturned=${v.window ?? 'NEVER'}ms cbEnd=${v.cbEnd ?? 'NEVER (hung)'} finished=${v.finished} updateDone=${v.updateDone}`
+		);
 	console.log('\nordered event log:');
 	for (const e of d.log) {
 		const { t, kind, ...rest } = e;
@@ -268,14 +293,22 @@ try {
 		await page.evaluate(() => history.back());
 		await page.waitForTimeout(900);
 		const after = new URL(page.url()).pathname;
-		const st = await page.evaluate(() => JSON.stringify(history.state && history.state.sheet ? { sheet: history.state.sheet } : {}));
-		console.log(`   back ${i + 1}: ${before} -> ${after} ${after === before ? '  *** DEAD TAP ***' : ''} (${Date.now() - t}ms, state=${st})`);
+		const st = await page.evaluate(() =>
+			JSON.stringify(history.state && history.state.sheet ? { sheet: history.state.sheet } : {})
+		);
+		console.log(
+			`   back ${i + 1}: ${before} -> ${after} ${after === before ? '  *** DEAD TAP ***' : ''} (${Date.now() - t}ms, state=${st})`
+		);
 		seen.push(after);
 	}
 	const p2 = await page.evaluate(DUMP);
 	console.log('   history events during phase 2:');
-	for (const e of p2.log.filter((x) => x.kind.startsWith('history') || x.kind.startsWith('popstate') || x.kind === 'pushState'))
-		console.log(`     ${String(e.t).padStart(6)}ms  ${e.kind.padEnd(20)} ${JSON.stringify({ ...e, t: undefined, kind: undefined })}`);
+	for (const e of p2.log.filter(
+		(x) => x.kind.startsWith('history') || x.kind.startsWith('popstate') || x.kind === 'pushState'
+	))
+		console.log(
+			`     ${String(e.t).padStart(6)}ms  ${e.kind.padEnd(20)} ${JSON.stringify({ ...e, t: undefined, kind: undefined })}`
+		);
 
 	// ── PHASE 3: page.goBack() vs in-page history.back(), FRESH context ──────
 	// Phase 2 reused phase 1's history, so its back presses walked entries from
@@ -293,7 +326,9 @@ try {
 		});
 		const p2 = await c2.newPage();
 		await p2.addInitScript(INSTRUMENT);
-		await p2.goto(`${APP_URL}/api/dev/login?email=${encodeURIComponent(EMAIL)}`, { waitUntil: 'networkidle' });
+		await p2.goto(`${APP_URL}/api/dev/login?email=${encodeURIComponent(EMAIL)}`, {
+			waitUntil: 'networkidle'
+		});
 		await p2.goto(`${APP_URL}/trips/${seed.slug}`, { waitUntil: 'networkidle' });
 		await p2.goto(`${APP_URL}/trips/${seed.slug}/now`, { waitUntil: 'networkidle' });
 		await p2.waitForTimeout(400);
@@ -316,7 +351,9 @@ try {
 			}
 			await p2.waitForTimeout(900);
 			const after = new URL(p2.url()).pathname;
-			console.log(`  [${mode}] back ${i + 1}: ${before} -> ${after} (${Date.now() - t}ms)${after === before ? '  *** URL UNCHANGED ***' : ''}${note}`);
+			console.log(
+				`  [${mode}] back ${i + 1}: ${before} -> ${after} (${Date.now() - t}ms)${after === before ? '  *** URL UNCHANGED ***' : ''}${note}`
+			);
 		}
 		await c2.close();
 	}
@@ -328,9 +365,15 @@ try {
 	// click on it waits for visibility until the 30s test timeout.
 	console.log('\n-> PHASE 4: the spec locator, counted');
 	{
-		const c3 = await browser.newContext({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
+		const c3 = await browser.newContext({
+			viewport: { width: 375, height: 812 },
+			hasTouch: true,
+			isMobile: true
+		});
 		const p3 = await c3.newPage();
-		await p3.goto(`${APP_URL}/api/dev/login?email=${encodeURIComponent(EMAIL)}`, { waitUntil: 'networkidle' });
+		await p3.goto(`${APP_URL}/api/dev/login?email=${encodeURIComponent(EMAIL)}`, {
+			waitUntil: 'networkidle'
+		});
 		await p3.goto(`${APP_URL}/trips/${seed.slug}/now`, { waitUntil: 'networkidle' });
 		await p3.waitForTimeout(400);
 		await p3.locator('[aria-label="Add"]:visible').first().click();
@@ -338,13 +381,17 @@ try {
 
 		const panels = await p3.locator('[data-sheet-panel]').count();
 		const panelsVisible = await p3.locator('[data-sheet-panel]').filter({ visible: true }).count();
-		const choices = p3.locator('[data-sheet-panel] a, [data-sheet-panel] button').filter({ hasText: /expense|item|idea|note/i });
+		const choices = p3
+			.locator('[data-sheet-panel] a, [data-sheet-panel] button')
+			.filter({ hasText: /expense|item|idea|note/i });
 		const n = await choices.count();
 		console.log(`   [data-sheet-panel]: ${panels} total, ${panelsVisible} visible`);
 		console.log(`   spec's choice locator matches: ${n}`);
 		for (let i = 0; i < n; i++) {
 			const el = choices.nth(i);
-			console.log(`     #${i} visible=${await el.isVisible()} text=${JSON.stringify((await el.innerText()).replace(/\s+/g, ' ').trim().slice(0, 40))}`);
+			console.log(
+				`     #${i} visible=${await el.isVisible()} text=${JSON.stringify((await el.innerText()).replace(/\s+/g, ' ').trim().slice(0, 40))}`
+			);
 		}
 		await c3.close();
 	}

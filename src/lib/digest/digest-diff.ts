@@ -154,7 +154,10 @@ export function composeTripDiff(prev: DigestSnapshot, items: DigestSourceItem[])
 	}
 
 	// Stable, readable ordering: scheduled first (by day), ideas last, ties by title.
-	const byDayThenTitle = (a: { dayDate: string; title: string }, b: { dayDate: string; title: string }) => {
+	const byDayThenTitle = (
+		a: { dayDate: string; title: string },
+		b: { dayDate: string; title: string }
+	) => {
 		const da = a.dayDate === '' ? '9999-99-99' : a.dayDate;
 		const db = b.dayDate === '' ? '9999-99-99' : b.dayDate;
 		return da < db ? -1 : da > db ? 1 : a.title.localeCompare(b.title);

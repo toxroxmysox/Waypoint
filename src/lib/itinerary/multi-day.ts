@@ -102,11 +102,17 @@ export function spanBandText(
 
 	if (phase === 'first') {
 		const lead = join(startWord, start);
-		return { phase, text: lodging ? `${lead} · ${nights} ${nights === 1 ? 'night' : 'nights'}` : lead };
+		return {
+			phase,
+			text: lodging ? `${lead} · ${nights} ${nights === 1 ? 'night' : 'nights'}` : lead
+		};
 	}
 	if (phase === 'last') return { phase, text: join(endWord, end ? `by ${end}` : '') };
 	const weekday = formatCalendarDate(range.end, { weekday: 'short' });
 	const idx = daysBetween(range.start, targetDate);
 	const count = lodging ? `Night ${idx + 1} of ${nights}` : `Day ${idx + 1} of ${nights + 1}`;
-	return { phase, text: `${count} · ${endWord.toLowerCase()} ${join(weekday, end ? `by ${end}` : '')}` };
+	return {
+		phase,
+		text: `${count} · ${endWord.toLowerCase()} ${join(weekday, end ? `by ${end}` : '')}`
+	};
 }

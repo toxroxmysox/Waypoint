@@ -21,7 +21,13 @@ const PARENT: Record<string, string> = {
 
 export function pbLoader(pb: PocketBase): RecordLoader {
 	const get = (collection: string, id: string) =>
-		id ? pb.collection(collection).getOne(id, { requestKey: null }).then((r) => r as Record<string, unknown>).catch(() => null) : Promise.resolve(null);
+		id
+			? pb
+					.collection(collection)
+					.getOne(id, { requestKey: null })
+					.then((r) => r as Record<string, unknown>)
+					.catch(() => null)
+			: Promise.resolve(null);
 	return {
 		get,
 		async tripIdOf(collection, record) {
@@ -40,11 +46,13 @@ export function pbLoader(pb: PocketBase): RecordLoader {
 			});
 		},
 		async phases(tripId) {
-			return pb.collection('phases').getFullList<{ id: string; name: string; start_date: string; order: number }>({
-				filter: pb.filter('trip = {:t}', { t: tripId }),
-				fields: 'id,name,start_date,order',
-				requestKey: null
-			});
+			return pb
+				.collection('phases')
+				.getFullList<{ id: string; name: string; start_date: string; order: number }>({
+					filter: pb.filter('trip = {:t}', { t: tripId }),
+					fields: 'id,name,start_date,order',
+					requestKey: null
+				});
 		}
 	};
 }
@@ -64,12 +72,18 @@ export async function loadSnapshot(pb: PocketBase, trip: Trip): Promise<CascadeS
 	};
 }
 
-export async function loadLabels(ctx: McpContext, tripId: string, snapshot?: CascadeSnapshot): Promise<Labels> {
+export async function loadLabels(
+	ctx: McpContext,
+	tripId: string,
+	snapshot?: CascadeSnapshot
+): Promise<Labels> {
 	const pb = ctx.pb;
 	const byTrip = { filter: pb.filter('trip = {:t}', { t: tripId }), requestKey: null };
 	const [members, phases, days] = await Promise.all([
 		loadMembers(ctx, tripId),
-		snapshot ? snapshot.phases : pb.collection('phases').getFullList({ ...byTrip, fields: 'id,name' }),
+		snapshot
+			? snapshot.phases
+			: pb.collection('phases').getFullList({ ...byTrip, fields: 'id,name' }),
 		snapshot ? snapshot.days : pb.collection('days').getFullList({ ...byTrip, fields: 'id,date' })
 	]);
 	return {

@@ -6,10 +6,14 @@ migrate(
 	(app) => {
 		const users = app.findCollectionByNameOrId('users');
 		if (!users.fields.getByName('search_engine')) {
-			users.fields.add(new SelectField({ name: 'search_engine', maxSelect: 1, values: ['google', 'duckduckgo'] }));
+			users.fields.add(
+				new SelectField({ name: 'search_engine', maxSelect: 1, values: ['google', 'duckduckgo'] })
+			);
 		}
 		if (!users.fields.getByName('maps_app')) {
-			users.fields.add(new SelectField({ name: 'maps_app', maxSelect: 1, values: ['google', 'apple'] }));
+			users.fields.add(
+				new SelectField({ name: 'maps_app', maxSelect: 1, values: ['google', 'apple'] })
+			);
 		}
 		app.save(users);
 	},

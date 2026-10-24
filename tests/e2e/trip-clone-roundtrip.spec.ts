@@ -16,7 +16,12 @@ const SRC_SLUG = 'e2e-clone-src';
 
 type Rec = Record<string, unknown> & { id: string };
 
-async function pb<T = Rec>(method: string, path: string, token: string, body?: unknown): Promise<{ status: number; data: T }> {
+async function pb<T = Rec>(
+	method: string,
+	path: string,
+	token: string,
+	body?: unknown
+): Promise<{ status: number; data: T }> {
 	const res = await fetch(`${PB}${path}`, {
 		method,
 		headers: { 'Content-Type': 'application/json', Authorization: token },
@@ -28,7 +33,11 @@ async function pb<T = Rec>(method: string, path: string, token: string, body?: u
 
 async function list(collection: string, filter: string, token: string, sort = ''): Promise<Rec[]> {
 	const q = `perPage=500&filter=${encodeURIComponent(filter)}${sort ? `&sort=${sort}` : ''}`;
-	const { data } = await pb<{ items: Rec[] }>('GET', `/api/collections/${collection}/records?${q}`, token);
+	const { data } = await pb<{ items: Rec[] }>(
+		'GET',
+		`/api/collections/${collection}/records?${q}`,
+		token
+	);
 	return data?.items ?? [];
 }
 
@@ -101,7 +110,10 @@ test.describe('Trip clone round-trip (#411)', () => {
 				['start_date', start],
 				['end_date', end],
 				['include_phases', 'on'],
-				...['lodging', 'transportation', 'flight', 'activity', 'meal', 'note'].map((t) => ['include_item_types', t])
+				...['lodging', 'transportation', 'flight', 'activity', 'meal', 'note'].map((t) => [
+					'include_item_types',
+					t
+				])
 			]).toString(),
 			// x-sveltekit-action: the action answers with its JSON result (redirect or failure).
 			headers: {
@@ -124,7 +136,9 @@ test.describe('Trip clone round-trip (#411)', () => {
 		expect(idea!.phase).toBe(phases[1].id);
 		const srcStay = (await list('items', `trip = "${tripId}" && end_date != ""`, token))[0];
 		const stay = items.find((i) => i.title === srcStay.title);
-		expect(day(stay?.end_date), 'spanning stay keeps its shifted span').toBe(plus(day(srcStay.end_date), 30));
+		expect(day(stay?.end_date), 'spanning stay keeps its shifted span').toBe(
+			plus(day(srcStay.end_date), 30)
+		);
 		expect(phases.map((p) => [day(p.start_date), day(p.end_date), Number(p.order)])).toEqual([
 			[start, plus(srcBoundary, 30), 0],
 			[plus(srcBoundary, 30), end, 1]

@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { completedRedirect, createPending, getPending, issueCode, takeCode, type OAuthClient } from './pending';
+import {
+	completedRedirect,
+	createPending,
+	getPending,
+	issueCode,
+	takeCode,
+	type OAuthClient
+} from './pending';
 
 const client: OAuthClient = {
 	client_id: 'https://claude.ai/oauth/mcp-oauth-client-metadata',
@@ -52,9 +59,21 @@ describe('authorization codes', () => {
 describe('sweep', () => {
 	it('drops expired pending requests when a new one is created', () => {
 		vi.useFakeTimers();
-		const old = createPending({ client: { client_id: 'c', redirect_uris: [] }, redirect_uri: 'r', state: '', code_challenge: 'x', resource: '' });
+		const old = createPending({
+			client: { client_id: 'c', redirect_uris: [] },
+			redirect_uri: 'r',
+			state: '',
+			code_challenge: 'x',
+			resource: ''
+		});
 		vi.advanceTimersByTime(16 * 60_000);
-		createPending({ client: { client_id: 'c', redirect_uris: [] }, redirect_uri: 'r', state: '', code_challenge: 'x', resource: '' });
+		createPending({
+			client: { client_id: 'c', redirect_uris: [] },
+			redirect_uri: 'r',
+			state: '',
+			code_challenge: 'x',
+			resource: ''
+		});
 		expect(getPending(old.id)).toBeUndefined();
 		vi.useRealTimers();
 	});
@@ -64,7 +83,13 @@ describe('completed requests', () => {
 	it('a finished request keeps its redirect for 2 minutes, then forgets it', async () => {
 		vi.useFakeTimers();
 		const { completeAuthorize } = await import('./authorize');
-		const p = createPending({ client: { client_id: 'c', redirect_uris: ['https://x.example/cb'] }, redirect_uri: 'https://x.example/cb', state: 's', code_challenge: 'x', resource: '' });
+		const p = createPending({
+			client: { client_id: 'c', redirect_uris: ['https://x.example/cb'] },
+			redirect_uri: 'https://x.example/cb',
+			state: 's',
+			code_challenge: 'x',
+			resource: ''
+		});
 		const url = completeAuthorize(p, 'u1', 'https://app.example');
 		expect(getPending(p.id)).toBeUndefined();
 		expect(completedRedirect(p.id)).toBe(url);

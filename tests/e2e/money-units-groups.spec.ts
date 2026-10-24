@@ -64,11 +64,24 @@ test.describe('#332 Money Units — Groups sub-tab', () => {
 	// until exactly 2 are checked before submitting (the hidden members field is derived
 	// from checkbox state — submitting before it flushes would fail the ≥2 guard).
 	async function createUnit(page: import('@playwright/test').Page) {
-		await page.getByRole('button', { name: 'New group', exact: true }).filter({ visible: true }).first().click();
-		await expect(page.getByText(/who shares a card/i).filter({ visible: true }).first()).toBeVisible({ timeout: 5000 });
+		await page
+			.getByRole('button', { name: 'New group', exact: true })
+			.filter({ visible: true })
+			.first()
+			.click();
+		await expect(
+			page
+				.getByText(/who shares a card/i)
+				.filter({ visible: true })
+				.first()
+		).toBeVisible({ timeout: 5000 });
 		await page.locator('input[type="checkbox"]:visible:not(:checked)').first().check();
 		await expect(page.locator('input[type="checkbox"]:visible:checked')).toHaveCount(2);
-		await page.getByRole('button', { name: 'Create group', exact: true }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('button', { name: 'Create group', exact: true })
+			.filter({ visible: true })
+			.first()
+			.click();
 	}
 
 	test('groups tab renders with the 3-tab nav + teaching empty state', async ({ browser }) => {
@@ -76,12 +89,24 @@ test.describe('#332 Money Units — Groups sub-tab', () => {
 		try {
 			await page.setViewportSize({ width: 375, height: 812 });
 			await page.goto(GROUPS, { waitUntil: 'networkidle' }); // 'New group' opens a client-side sheet
-			await expect(page.getByText(/no groups yet/i).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
+			await expect(
+				page
+					.getByText(/no groups yet/i)
+					.filter({ visible: true })
+					.first()
+			).toBeVisible({ timeout: 10000 });
 			// The three money sub-tabs are all present.
 			for (const label of ['Expenses', 'Budget', 'Groups']) {
-				await expect(page.getByRole('link', { name: label, exact: true }).filter({ visible: true }).first()).toBeVisible();
+				await expect(
+					page.getByRole('link', { name: label, exact: true }).filter({ visible: true }).first()
+				).toBeVisible();
 			}
-			await expect(page.getByRole('button', { name: 'New group', exact: true }).filter({ visible: true }).first()).toBeVisible();
+			await expect(
+				page
+					.getByRole('button', { name: 'New group', exact: true })
+					.filter({ visible: true })
+					.first()
+			).toBeVisible();
 			// No horizontal overflow at 375px.
 			const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
 			const viewportWidth = await page.evaluate(() => window.innerWidth);
@@ -96,25 +121,71 @@ test.describe('#332 Money Units — Groups sub-tab', () => {
 		try {
 			await page.setViewportSize({ width: 375, height: 812 });
 			await page.goto(GROUPS, { waitUntil: 'networkidle' }); // 'New group' opens a client-side sheet
-			await expect(page.getByText(/no groups yet/i).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
+			await expect(
+				page
+					.getByText(/no groups yet/i)
+					.filter({ visible: true })
+					.first()
+			).toBeVisible({ timeout: 10000 });
 
 			// Create.
 			await createUnit(page);
-			await expect(page.getByText(/even-share budget/i).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
+			await expect(
+				page
+					.getByText(/even-share budget/i)
+					.filter({ visible: true })
+					.first()
+			).toBeVisible({ timeout: 10000 });
 
 			// Edit → custom budget.
-			await page.getByRole('button', { name: 'Edit', exact: true }).filter({ visible: true }).first().click();
-			await expect(page.getByText(/who shares a card/i).filter({ visible: true }).first()).toBeVisible({ timeout: 5000 });
+			await page
+				.getByRole('button', { name: 'Edit', exact: true })
+				.filter({ visible: true })
+				.first()
+				.click();
+			await expect(
+				page
+					.getByText(/who shares a card/i)
+					.filter({ visible: true })
+					.first()
+			).toBeVisible({ timeout: 5000 });
 			await page.locator('input[name="budget_usd"]:visible').first().fill('200');
-			await page.getByRole('button', { name: 'Save changes', exact: true }).filter({ visible: true }).first().click();
-			await expect(page.getByText(/\(custom\)/i).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
+			await page
+				.getByRole('button', { name: 'Save changes', exact: true })
+				.filter({ visible: true })
+				.first()
+				.click();
+			await expect(
+				page
+					.getByText(/\(custom\)/i)
+					.filter({ visible: true })
+					.first()
+			).toBeVisible({ timeout: 10000 });
 			await expect(page.getByText('$200.00').filter({ visible: true }).first()).toBeVisible();
 
 			// Leave a 2-member unit → drops below 2 → dissolves → empty state.
-			await page.getByRole('button', { name: 'Leave', exact: true }).filter({ visible: true }).first().click();
-			await expect(page.getByText(/leave this group/i).filter({ visible: true }).first()).toBeVisible({ timeout: 5000 });
-			await page.getByRole('button', { name: 'Leave', exact: true }).filter({ visible: true }).first().click();
-			await expect(page.getByText(/no groups yet/i).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
+			await page
+				.getByRole('button', { name: 'Leave', exact: true })
+				.filter({ visible: true })
+				.first()
+				.click();
+			await expect(
+				page
+					.getByText(/leave this group/i)
+					.filter({ visible: true })
+					.first()
+			).toBeVisible({ timeout: 5000 });
+			await page
+				.getByRole('button', { name: 'Leave', exact: true })
+				.filter({ visible: true })
+				.first()
+				.click();
+			await expect(
+				page
+					.getByText(/no groups yet/i)
+					.filter({ visible: true })
+					.first()
+			).toBeVisible({ timeout: 10000 });
 		} finally {
 			await ctx.close();
 		}
@@ -125,16 +196,44 @@ test.describe('#332 Money Units — Groups sub-tab', () => {
 		try {
 			await page.setViewportSize({ width: 375, height: 812 });
 			await page.goto(GROUPS, { waitUntil: 'networkidle' }); // 'New group' opens a client-side sheet
-			await expect(page.getByText(/no groups yet/i).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
+			await expect(
+				page
+					.getByText(/no groups yet/i)
+					.filter({ visible: true })
+					.first()
+			).toBeVisible({ timeout: 10000 });
 
 			await createUnit(page);
-			await expect(page.getByText(/even-share budget/i).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
+			await expect(
+				page
+					.getByText(/even-share budget/i)
+					.filter({ visible: true })
+					.first()
+			).toBeVisible({ timeout: 10000 });
 
 			// Delete → confirm → gone.
-			await page.getByRole('button', { name: 'Delete', exact: true }).filter({ visible: true }).first().click();
-			await expect(page.getByText(/delete this group for everyone/i).filter({ visible: true }).first()).toBeVisible({ timeout: 5000 });
-			await page.getByRole('button', { name: 'Delete', exact: true }).filter({ visible: true }).first().click();
-			await expect(page.getByText(/no groups yet/i).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
+			await page
+				.getByRole('button', { name: 'Delete', exact: true })
+				.filter({ visible: true })
+				.first()
+				.click();
+			await expect(
+				page
+					.getByText(/delete this group for everyone/i)
+					.filter({ visible: true })
+					.first()
+			).toBeVisible({ timeout: 5000 });
+			await page
+				.getByRole('button', { name: 'Delete', exact: true })
+				.filter({ visible: true })
+				.first()
+				.click();
+			await expect(
+				page
+					.getByText(/no groups yet/i)
+					.filter({ visible: true })
+					.first()
+			).toBeVisible({ timeout: 10000 });
 		} finally {
 			await ctx.close();
 		}

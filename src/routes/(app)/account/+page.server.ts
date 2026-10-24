@@ -42,7 +42,9 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const memberships = await locals.pb
 		.collection('trip_members')
 		.getFullList({
-			filter: locals.pb.filter('user = {:u} && removed_at = "" && trip.archived = false', { u: user.id }),
+			filter: locals.pb.filter('user = {:u} && removed_at = "" && trip.archived = false', {
+				u: user.id
+			}),
 			sort: '-trip.start_date',
 			fields: 'id,digest_opt_out,expand.trip.title',
 			expand: 'trip'

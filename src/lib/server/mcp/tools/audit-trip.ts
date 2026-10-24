@@ -42,13 +42,21 @@ export const auditTripTool: ToolDef = {
 				requestKey: null
 			})
 		]);
-		const gaps = auditTrip({ trip: t.trip, days, items, codeDocs, tasks }).sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind));
+		const gaps = auditTrip({ trip: t.trip, days, items, codeDocs, tasks }).sort(
+			(a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind)
+		);
 		const cards: Card[] = gaps.map((g) => ({
 			emoji: LABEL[g.kind].emoji,
 			title: g.title,
 			tag: LABEL[g.kind].tag,
-			lines: [g.date ? formatDayDate(g.date) : '', g.itemId ? `id: ${g.itemId}` : ''].filter(Boolean)
+			lines: [g.date ? formatDayDate(g.date) : '', g.itemId ? `id: ${g.itemId}` : ''].filter(
+				Boolean
+			)
 		}));
-		return result(`What's missing · ${t.trip.title}`, cards, cards.length ? {} : { note: 'Nothing missing that Waypoint can see.' });
+		return result(
+			`What's missing · ${t.trip.title}`,
+			cards,
+			cards.length ? {} : { note: 'Nothing missing that Waypoint can see.' }
+		);
 	}
 };

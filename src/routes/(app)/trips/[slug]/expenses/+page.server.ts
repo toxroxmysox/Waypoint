@@ -1,6 +1,13 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Expense, Settlement, TripMember, Item, TripBudget, MoneyUnitRecord } from '$lib/types';
+import type {
+	Expense,
+	Settlement,
+	TripMember,
+	Item,
+	TripBudget,
+	MoneyUnitRecord
+} from '$lib/types';
 
 export const load: PageServerLoad = async ({ parent, locals, url }) => {
 	const { trip, membership } = await parent();
@@ -52,7 +59,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		spentByCategory[cat] = (spentByCategory[cat] ?? 0) + exp.amount_usd;
 	}
 
-	const filterItem = filterItemId ? items.find((i) => i.id === filterItemId) ?? null : null;
+	const filterItem = filterItemId ? (items.find((i) => i.id === filterItemId) ?? null) : null;
 
 	return {
 		trip,
@@ -105,7 +112,9 @@ export const actions: Actions = {
 
 			const membership = await locals.pb
 				.collection('trip_members')
-				.getFirstListItem(`trip = "${trip.id}" && user = "${locals.pb.authStore.record?.id}" && removed_at = ""`);
+				.getFirstListItem(
+					`trip = "${trip.id}" && user = "${locals.pb.authStore.record?.id}" && removed_at = ""`
+				);
 
 			await locals.pb.collection('expenses').create({
 				trip: trip.id,
@@ -134,8 +143,10 @@ export const actions: Actions = {
 		const amount = parseFloat(fd.get('amount_usd')?.toString() || '0');
 		const note = fd.get('note')?.toString().trim() || '';
 
-		if (!fromMember || !toMember) return fail(400, { recordSettlement: { error: 'Both parties are required.' } });
-		if (!amount || amount <= 0) return fail(400, { recordSettlement: { error: 'Amount must be positive.' } });
+		if (!fromMember || !toMember)
+			return fail(400, { recordSettlement: { error: 'Both parties are required.' } });
+		if (!amount || amount <= 0)
+			return fail(400, { recordSettlement: { error: 'Amount must be positive.' } });
 
 		try {
 			const trip = await locals.pb
@@ -144,7 +155,9 @@ export const actions: Actions = {
 
 			const membership = await locals.pb
 				.collection('trip_members')
-				.getFirstListItem(`trip = "${trip.id}" && user = "${locals.pb.authStore.record?.id}" && removed_at = ""`);
+				.getFirstListItem(
+					`trip = "${trip.id}" && user = "${locals.pb.authStore.record?.id}" && removed_at = ""`
+				);
 
 			await locals.pb.collection('settlements').create({
 				trip: trip.id,
@@ -176,7 +189,8 @@ export const actions: Actions = {
 		const splitMode = fd.get('split_mode')?.toString() || 'equal';
 		const splitDataRaw = fd.get('split_data')?.toString() || '';
 
-		if (!amount || amount <= 0) return fail(400, { updateExpense: { error: 'Amount is required.' } });
+		if (!amount || amount <= 0)
+			return fail(400, { updateExpense: { error: 'Amount is required.' } });
 		if (!description) return fail(400, { updateExpense: { error: 'Description is required.' } });
 		if (!date) return fail(400, { updateExpense: { error: 'Date is required.' } });
 		if (!paidBy) return fail(400, { updateExpense: { error: 'Paid by is required.' } });

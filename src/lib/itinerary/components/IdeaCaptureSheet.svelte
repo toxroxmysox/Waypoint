@@ -86,17 +86,30 @@
 			<!-- Primary: scheduling is the lead action (#347). -->
 			<a
 				href={planHref}
-				class="border-line hover:bg-surface-2 active:bg-surface-2 flex w-full items-center gap-3 rounded-lg border px-3 py-3 text-left transition-colors"
+				class="flex w-full items-center gap-3 rounded-lg border border-line px-3 py-3 text-left transition-colors hover:bg-surface-2 active:bg-surface-2"
 				onclick={() => (open = false)}
 			>
-				<div class="bg-clay-tint text-clay flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
+				<div
+					class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-clay-tint text-clay"
+				>
+					<svg
+						width="20"
+						height="20"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
+						<path
+							d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"
+						/>
 					</svg>
 				</div>
 				<div class="min-w-0">
-					<p class="text-ink text-sm font-semibold">Plan it for a day</p>
-					<p class="text-ink-muted text-xs">Schedule it with times, booking, the works</p>
+					<p class="text-sm font-semibold text-ink">Plan it for a day</p>
+					<p class="text-xs text-ink-muted">Schedule it with times, booking, the works</p>
 				</div>
 			</a>
 
@@ -104,17 +117,30 @@
 			     smaller icon + text — but still a real, tappable control. -->
 			<button
 				type="button"
-				class="border-line hover:bg-surface-2 active:bg-surface-2 flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors"
+				class="flex w-full items-center gap-2.5 rounded-lg border border-line px-3 py-2 text-left transition-colors hover:bg-surface-2 active:bg-surface-2"
 				onclick={() => (mode = 'idea')}
 			>
-				<div class="bg-moss-tint text-moss flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z" />
+				<div
+					class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-moss-tint text-moss"
+				>
+					<svg
+						width="16"
+						height="16"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
+						<path
+							d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"
+						/>
 					</svg>
 				</div>
 				<div class="min-w-0">
-					<p class="text-ink text-[13px] font-semibold">Add an idea</p>
-					<p class="text-ink-muted text-[11px]">Drop it in a phase's parking lot — no day needed</p>
+					<p class="text-[13px] font-semibold text-ink">Add an idea</p>
+					<p class="text-[11px] text-ink-muted">Drop it in a phase's parking lot — no day needed</p>
 				</div>
 			</button>
 		</div>
@@ -142,11 +168,11 @@
 			class="space-y-3"
 		>
 			{#if ideaError}
-				<p role="alert" class="text-error-deep text-sm">{ideaError}</p>
+				<p role="alert" class="text-sm text-error-deep">{ideaError}</p>
 			{/if}
 
 			<div>
-				<label for="idea-cap-title" class="text-ink-soft block text-sm font-medium">Idea</label>
+				<label for="idea-cap-title" class="block text-sm font-medium text-ink-soft">Idea</label>
 				<input
 					id="idea-cap-title"
 					name="title"
@@ -154,35 +180,35 @@
 					required
 					bind:value={title}
 					placeholder="e.g. Sunset kayak tour"
-					class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+					class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 				/>
 			</div>
 
 			{#if !forming}
 				<div>
-					<label for="idea-cap-phase" class="text-ink-soft block text-sm font-medium">Phase</label>
+					<label for="idea-cap-phase" class="block text-sm font-medium text-ink-soft">Phase</label>
 					<select
 						id="idea-cap-phase"
 						name="phase"
 						required
 						bind:value={phaseId}
-						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+						class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 					>
 						{#each phases as p (p.id)}
 							<option value={p.id}>{p.name}</option>
 						{/each}
 					</select>
-					<p class="text-ink-muted mt-1 text-xs">Every idea lives in a phase.</p>
+					<p class="mt-1 text-xs text-ink-muted">Every idea lives in a phase.</p>
 				</div>
 			{/if}
 
 			<div>
-				<label for="idea-cap-type" class="text-ink-soft block text-sm font-medium">Type</label>
+				<label for="idea-cap-type" class="block text-sm font-medium text-ink-soft">Type</label>
 				<select
 					id="idea-cap-type"
 					name="type"
 					bind:value={type}
-					class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+					class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 				>
 					{#each ideaTypes as t (t)}
 						<option value={t}>{titleCase(t)}</option>
@@ -191,11 +217,23 @@
 			</div>
 
 			<div class="flex items-center gap-2 pt-1">
-				<Button type="submit" variant="moss" size="md" disabled={submitting || !title.trim() || (!forming && !phaseId)} class="flex-1">
+				<Button
+					type="submit"
+					variant="moss"
+					size="md"
+					disabled={submitting || !title.trim() || (!forming && !phaseId)}
+					class="flex-1"
+				>
 					{submitting ? 'Sending…' : 'Add idea'}
 				</Button>
 				{#if !forming}
-					<Button type="button" variant="ghost" size="md" disabled={submitting} onclick={() => (mode = 'fork')}>
+					<Button
+						type="button"
+						variant="ghost"
+						size="md"
+						disabled={submitting}
+						onclick={() => (mode = 'fork')}
+					>
 						Back
 					</Button>
 				{/if}

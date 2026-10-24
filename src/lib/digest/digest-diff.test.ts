@@ -28,7 +28,9 @@ describe('buildSignature', () => {
 
 	it('changes when a content field changes', () => {
 		const base = buildSignature({ type: 'activity', start_time: '2026-06-05 09:00:00.000Z' });
-		expect(buildSignature({ type: 'activity', start_time: '2026-06-05 10:00:00.000Z' })).not.toBe(base);
+		expect(buildSignature({ type: 'activity', start_time: '2026-06-05 10:00:00.000Z' })).not.toBe(
+			base
+		);
 		expect(buildSignature({ type: 'activity', location_name: 'Pier 3' })).not.toBe(base);
 		expect(buildSignature({ type: 'activity', booked: true })).not.toBe(base);
 		expect(buildSignature({ type: 'activity', cost_estimate_usd: 40 })).not.toBe(base);
@@ -41,7 +43,9 @@ describe('buildSignature', () => {
 	});
 
 	it('treats unset cost as 0 (PB number fields cannot store null)', () => {
-		expect(buildSignature({ cost_estimate_usd: null })).toBe(buildSignature({ cost_estimate_usd: 0 }));
+		expect(buildSignature({ cost_estimate_usd: null })).toBe(
+			buildSignature({ cost_estimate_usd: 0 })
+		);
 	});
 });
 

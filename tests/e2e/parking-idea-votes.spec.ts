@@ -123,12 +123,20 @@ test.describe('Parking-lot idea votes on the day page (#394)', () => {
 // with the earlier sort order. Serial: each test leaves the vote state it found.
 // ---------------------------------------------------------------------------
 const orderOf = async (page: import('@playwright/test').Page, scope: string) =>
-	page.locator(`${scope} p[title]`).filter({ hasText: /Kohler Design|Sheboygan lakefront/ }).allTextContents();
+	page
+		.locator(`${scope} p[title]`)
+		.filter({ hasText: /Kohler Design|Sheboygan lakefront/ })
+		.allTextContents();
 
 // Tap and wait for the write to land: a second tap while the first is in flight is
 // cancelled by design (double-tap guard), so a test must not outrun the round-trip.
-const tap = async (page: import('@playwright/test').Page, pill: import('@playwright/test').Locator) => {
-	const wrote = page.waitForResponse((r) => r.request().method() === 'POST' && /\?\/(vote|unvote)/.test(r.url()));
+const tap = async (
+	page: import('@playwright/test').Page,
+	pill: import('@playwright/test').Locator
+) => {
+	const wrote = page.waitForResponse(
+		(r) => r.request().method() === 'POST' && /\?\/(vote|unvote)/.test(r.url())
+	);
 	const refreshed = page.waitForResponse((r) => /__data\.json\?.*invalidated/.test(r.url()));
 	await pill.click();
 	await wrote;
@@ -187,7 +195,9 @@ test.describe('Tap-to-vote pills on ideas (#425)', () => {
 		await ctx.close();
 	});
 
-	test('persisted: a reload keeps my vote (it was written, not just painted)', async ({ browser }) => {
+	test('persisted: a reload keeps my vote (it was written, not just painted)', async ({
+		browser
+	}) => {
 		const { ctx, page } = await openDay(browser, 375);
 		await page.waitForLoadState('networkidle');
 		await page.locator('button[aria-expanded]:visible', { hasText: '2 ideas' }).click();
@@ -198,7 +208,9 @@ test.describe('Tap-to-vote pills on ideas (#425)', () => {
 		await ctx.close();
 	});
 
-	test('dragging an idea among the ideas changes nothing: no write, same order', async ({ browser }) => {
+	test('dragging an idea among the ideas changes nothing: no write, same order', async ({
+		browser
+	}) => {
 		const { ctx, page } = await openDay(browser, 768);
 		await page.waitForLoadState('networkidle');
 		await page.locator('button[aria-expanded]:visible', { hasText: '2 ideas' }).click();
@@ -224,7 +236,10 @@ test.describe('Tap-to-vote pills on ideas (#425)', () => {
 		const { ctx, page } = await openDay(browser, 1280);
 		await page.waitForLoadState('networkidle');
 		const rail = page.locator('h3:visible', { hasText: 'Ideas' }).locator('xpath=..');
-		const kohler = rail.locator(`p[title="${IDEA}"]`).locator('xpath=..').locator('[data-vote-pills]');
+		const kohler = rail
+			.locator(`p[title="${IDEA}"]`)
+			.locator('xpath=..')
+			.locator('[data-vote-pills]');
 		await expect(kohler).toHaveAttribute('aria-label', '1 love, your vote love');
 		await kohler.locator('[data-vote="love"]').hover();
 		await expect(kohler.locator('[data-vote-tip]')).toContainText('Love: You');

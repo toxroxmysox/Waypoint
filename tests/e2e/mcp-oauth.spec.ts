@@ -73,7 +73,12 @@ test('authorize rejects an unregistered redirect_uri without redirecting', async
 
 test('authorize without PKCE redirects back with invalid_request', async () => {
 	const res = await fetch(
-		authorizeUrl({ response_type: 'code', client_id: CLIENT_ID, redirect_uri: REDIRECT_URI, state: 's' }),
+		authorizeUrl({
+			response_type: 'code',
+			client_id: CLIENT_ID,
+			redirect_uri: REDIRECT_URI,
+			state: 's'
+		}),
 		{ redirect: 'manual' }
 	);
 	expect(res.status).toBe(303);
@@ -116,8 +121,15 @@ test('email step: code field pattern, carried req, no web session cookie', async
 	const res = await fetch(`${BASE}/oauth/authorize?/requestOTP`, {
 		method: 'POST',
 		// A browser's plain form post accepts HTML; SvelteKit answers JSON otherwise.
-		headers: { 'content-type': 'application/x-www-form-urlencoded', origin: BASE, accept: 'text/html' },
-		body: new URLSearchParams({ req, email: `oauth-probe-${Date.now().toString(36)}@e2e.test` }).toString()
+		headers: {
+			'content-type': 'application/x-www-form-urlencoded',
+			origin: BASE,
+			accept: 'text/html'
+		},
+		body: new URLSearchParams({
+			req,
+			email: `oauth-probe-${Date.now().toString(36)}@e2e.test`
+		}).toString()
 	});
 	const step2 = await res.text();
 	expect(res.status).toBe(200);
@@ -159,14 +171,22 @@ test('full flow: code → tokens → MCP → refresh rotation → replay revokes
 	expect(init.json.result.serverInfo.name).toBe('waypoint');
 
 	// Refresh rotates.
-	const r1 = await tokenRequest({ grant_type: 'refresh_token', refresh_token: refresh, client_id: CLIENT_ID });
+	const r1 = await tokenRequest({
+		grant_type: 'refresh_token',
+		refresh_token: refresh,
+		client_id: CLIENT_ID
+	});
 	expect(r1.status).toBe(200);
 	expect(r1.json.token_type).toBe('Bearer');
 	expect(r1.json.refresh_token).not.toBe(refresh);
 	expect((await rpc(r1.json.access_token, 'tools/list')).status).toBe(200);
 
 	// Replaying the old refresh token revokes the connection's tokens.
-	const replay = await tokenRequest({ grant_type: 'refresh_token', refresh_token: refresh, client_id: CLIENT_ID });
+	const replay = await tokenRequest({
+		grant_type: 'refresh_token',
+		refresh_token: refresh,
+		client_id: CLIENT_ID
+	});
 	expect(replay.json.error).toBe('invalid_grant');
 	expect((await rpc(r1.json.access_token, 'tools/list')).status).toBe(401);
 });
@@ -180,7 +200,13 @@ test('token endpoint ignores the web session cookie', async () => {
 	const { token, record } = await bypass.json();
 	const cookie = `pb_auth=${encodeURIComponent(JSON.stringify({ token, model: record }))}`;
 	const res = await tokenRequest(
-		{ grant_type: 'authorization_code', code: 'nope', client_id: CLIENT_ID, redirect_uri: REDIRECT_URI, code_verifier: 'x'.repeat(43) },
+		{
+			grant_type: 'authorization_code',
+			code: 'nope',
+			client_id: CLIENT_ID,
+			redirect_uri: REDIRECT_URI,
+			code_verifier: 'x'.repeat(43)
+		},
 		{ cookie }
 	);
 	expect(res.status).toBe(400);
@@ -201,15 +227,27 @@ test('a second post of the code form after sign-in lands on the same callback, n
 		})
 	);
 	const req = reqIdFrom(await page.text());
-	const first = await fetch(`${BASE}/oauth/authorize/dev?req=${encodeURIComponent(req)}&email=${encodeURIComponent('rules-owner@e2e.test')}`, {
-		redirect: 'manual'
-	});
+	const first = await fetch(
+		`${BASE}/oauth/authorize/dev?req=${encodeURIComponent(req)}&email=${encodeURIComponent('rules-owner@e2e.test')}`,
+		{
+			redirect: 'manual'
+		}
+	);
 	expect(first.status).toBe(303);
 	const again = await fetch(`${BASE}/oauth/authorize?/verifyOTP`, {
 		method: 'POST',
 		redirect: 'manual',
-		headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'text/html', origin: BASE },
-		body: new URLSearchParams({ req, otpId: 'x', email: 'rules-owner@e2e.test', code: '123456' }).toString()
+		headers: {
+			'content-type': 'application/x-www-form-urlencoded',
+			accept: 'text/html',
+			origin: BASE
+		},
+		body: new URLSearchParams({
+			req,
+			otpId: 'x',
+			email: 'rules-owner@e2e.test',
+			code: '123456'
+		}).toString()
 	});
 	expect(again.status).toBe(303);
 	expect(again.headers.get('location')).toBe(first.headers.get('location'));

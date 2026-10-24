@@ -145,7 +145,9 @@
 				<button
 					type="submit"
 					aria-pressed={pill.mine}
-					aria-label="{pill.label}, {pill.count}{pill.names.length ? `: ${pill.names.join(', ')}` : ''}"
+					aria-label="{pill.label}, {pill.count}{pill.names.length
+						? `: ${pill.names.join(', ')}`
+						: ''}"
 					data-vote={pill.value}
 					class="-mt-2 flex min-h-[44px] min-w-[44px] items-center justify-center"
 					onpointerenter={(e) => (tip = e.pointerType === 'mouse' ? i : null)}
@@ -169,7 +171,7 @@
 	{/each}
 	{#if tip !== null}
 		<span
-			class="bg-ink text-paper pointer-events-none absolute bottom-full left-0 z-30 mb-0.5 w-max max-w-[16rem] rounded-md px-2 py-1 text-xs shadow-card-strong"
+			class="pointer-events-none absolute bottom-full left-0 z-30 mb-0.5 w-max max-w-[16rem] rounded-md bg-ink px-2 py-1 text-xs text-paper shadow-card-strong"
 			aria-hidden="true"
 			data-vote-tip
 		>

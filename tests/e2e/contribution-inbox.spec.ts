@@ -69,7 +69,10 @@ test.describe('#251 Inbox tabs + vote tallies', () => {
 			// All three tabs present (scope to the visible subtree).
 			for (const label of ['Pending', 'Approved', 'Rejected']) {
 				await expect(
-					owner.page.getByRole('tab', { name: new RegExp(label, 'i') }).filter({ visible: true }).first()
+					owner.page
+						.getByRole('tab', { name: new RegExp(label, 'i') })
+						.filter({ visible: true })
+						.first()
 				).toBeVisible({ timeout: 10000 });
 			}
 
@@ -84,7 +87,10 @@ test.describe('#251 Inbox tabs + vote tallies', () => {
 
 			// The Pending tab count is ≥ 3 (three seeded pending suggestions).
 			await expect(
-				owner.page.getByRole('tab', { name: /pending/i }).filter({ visible: true }).first()
+				owner.page
+					.getByRole('tab', { name: /pending/i })
+					.filter({ visible: true })
+					.first()
 			).toContainText(/\(([3-9]|\d{2,})\)/);
 
 			// #444 — the Pending tab shows tap-to-vote pills, not a tally line: the voted
@@ -97,10 +103,22 @@ test.describe('#251 Inbox tabs + vote tallies', () => {
 			).toHaveAttribute('aria-label', /^Like, 1/);
 
 			// Switching tabs renders the other panels without error.
-			await owner.page.getByRole('tab', { name: /approved/i }).filter({ visible: true }).first().click();
-			await owner.page.getByRole('tab', { name: /rejected/i }).filter({ visible: true }).first().click();
+			await owner.page
+				.getByRole('tab', { name: /approved/i })
+				.filter({ visible: true })
+				.first()
+				.click();
+			await owner.page
+				.getByRole('tab', { name: /rejected/i })
+				.filter({ visible: true })
+				.first()
+				.click();
 			// Back to Pending — the voted card is visible again.
-			await owner.page.getByRole('tab', { name: /pending/i }).filter({ visible: true }).first().click();
+			await owner.page
+				.getByRole('tab', { name: /pending/i })
+				.filter({ visible: true })
+				.first()
+				.click();
 			await expect(votedCard).toBeVisible();
 		} finally {
 			await owner.ctx.close();
@@ -136,7 +154,9 @@ test.describe('#251 Inbox tabs + vote tallies', () => {
 		}
 	});
 
-	test('a member can vote a pending idea from the Inbox (tap-to-vote pills)', async ({ browser }) => {
+	test('a member can vote a pending idea from the Inbox (tap-to-vote pills)', async ({
+		browser
+	}) => {
 		const owner = await devLogin(browser, EMAILS.owner);
 		try {
 			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/inbox`, { waitUntil: 'networkidle' });
@@ -157,7 +177,9 @@ test.describe('#251 Inbox tabs + vote tallies', () => {
 	test('Inbox stays owner/co_owner-only: traveler gets 403', async ({ browser }) => {
 		const traveler = await devLogin(browser, EMAILS.traveler);
 		try {
-			const res = await traveler.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/inbox`, { waitUntil: 'networkidle' });
+			const res = await traveler.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/inbox`, {
+				waitUntil: 'networkidle'
+			});
 			// SvelteKit error(403) renders the branded error boundary with a 403 status.
 			expect(res?.status()).toBe(403);
 		} finally {

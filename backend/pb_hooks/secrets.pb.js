@@ -25,10 +25,14 @@ onRecordEnrich((e) => {
 		if (auth) {
 			try {
 				role = e.app
-					.findFirstRecordByFilter('trip_members', 'trip = {:t} && user = {:u} && removed_at = ""', {
-						t: e.record.getString('trip'),
-						u: auth.id
-					})
+					.findFirstRecordByFilter(
+						'trip_members',
+						'trip = {:t} && user = {:u} && removed_at = ""',
+						{
+							t: e.record.getString('trip'),
+							u: auth.id
+						}
+					)
 					.getString('role');
 			} catch (_) {}
 		}
@@ -44,10 +48,14 @@ onRecordEnrich((e) => {
 		if (auth) {
 			try {
 				role = e.app
-					.findFirstRecordByFilter('trip_members', 'trip = {:t} && user = {:u} && removed_at = ""', {
-						t: e.record.id,
-						u: auth.id
-					})
+					.findFirstRecordByFilter(
+						'trip_members',
+						'trip = {:t} && user = {:u} && removed_at = ""',
+						{
+							t: e.record.id,
+							u: auth.id
+						}
+					)
 					.getString('role');
 			} catch (_) {}
 		}

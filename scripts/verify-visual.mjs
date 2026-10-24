@@ -296,7 +296,8 @@ for (const width of widths) {
 		// Name from the UNRESOLVED route: record ids are regenerated on every
 		// run, so resolved names would never diff against the previous run's.
 		// Braces are stripped — they're shell brace-expansion in zsh/bash.
-		const stem = (route.replace(/^\//, '').replace(/[^a-zA-Z0-9-]+/g, '_') || 'root') + (tag ? `-${tag}` : '');
+		const stem =
+			(route.replace(/^\//, '').replace(/[^a-zA-Z0-9-]+/g, '_') || 'root') + (tag ? `-${tag}` : '');
 		for (const sel of clicks) {
 			if (sel.startsWith('scroll:')) {
 				await page

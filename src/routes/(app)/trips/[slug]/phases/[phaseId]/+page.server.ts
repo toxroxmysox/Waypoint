@@ -6,7 +6,12 @@ import { summarizeDays } from '$lib/itinerary/day-card';
 import { withAvatarUrls } from '$lib/collaboration/member-avatar';
 import { parkingLotCards } from '$lib/itinerary/parking-lot-cards';
 import { retilePhases, validateMovePhaseStart, toDay } from '$lib/itinerary/phase-tiling';
-import { phaseArrival, phaseDeparture, phaseStaying, dayMenuRows } from '$lib/itinerary/phase-logistics';
+import {
+	phaseArrival,
+	phaseDeparture,
+	phaseStaying,
+	dayMenuRows
+} from '$lib/itinerary/phase-logistics';
 import { formatCalendarDate } from '$lib/shell/format';
 import { planIdeaOnDay } from '$lib/server/plan-idea';
 
@@ -135,7 +140,9 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const canPlanIds =
 		membership.role === 'viewer'
 			? []
-			: unplanned.filter((it) => canPrivileged || it.created_by === membership.id).map((it) => it.id);
+			: unplanned
+					.filter((it) => canPrivileged || it.created_by === membership.id)
+					.map((it) => it.id);
 	const voted = new Set(myVotes.map((v) => v.item));
 	// "Rate N" = this viewer's unvoted ideas (the parking lot it sits over).
 	const unratedCount = unplanned.filter((it) => !it.day && !voted.has(it.id)).length;
@@ -190,7 +197,9 @@ export const actions: Actions = {
 		try {
 			// Only this phase's still-unplanned ideas: a stale tab must not move an
 			// item someone already planned (and Undo would then invent a state).
-			const idea = await locals.pb.collection('items').getOne<Item>(itemId, { fields: 'id,phase,day,status' });
+			const idea = await locals.pb
+				.collection('items')
+				.getOne<Item>(itemId, { fields: 'id,phase,day,status' });
 			if (idea.phase !== params.phaseId || idea.status !== 'unplanned' || idea.day) {
 				return fail(409, { error: 'That idea is already planned.' });
 			}
@@ -200,7 +209,9 @@ export const actions: Actions = {
 			}
 			const prev = await planIdeaOnDay(locals.pb, itemId, dayId);
 			const dayLabel = `${formatCalendarDate(day.date, { weekday: 'short' })} ${formatCalendarDate(day.date, { day: 'numeric' })}`;
-			return { planned: { itemId, dayLabel, prevDay: prev.prevDay, prevSortOrder: prev.prevSortOrder } };
+			return {
+				planned: { itemId, dayLabel, prevDay: prev.prevDay, prevSortOrder: prev.prevSortOrder }
+			};
 		} catch (err: unknown) {
 			const status = failStatus(err);
 			if (status === 404) return fail(404, { error: 'That idea no longer exists.' });
@@ -217,7 +228,9 @@ export const actions: Actions = {
 		const day = data.get('day')?.toString() ?? '';
 		const sortOrder = Number(data.get('sort_order')?.toString() ?? '0') || 0;
 		try {
-			await locals.pb.collection('items').update(itemId, { status: 'unplanned', day, sort_order: sortOrder });
+			await locals.pb
+				.collection('items')
+				.update(itemId, { status: 'unplanned', day, sort_order: sortOrder });
 			return { unplanned: true };
 		} catch (err: unknown) {
 			const status = failStatus(err);
@@ -281,7 +294,9 @@ export const actions: Actions = {
 
 		const membership = await locals.pb
 			.collection('trip_members')
-			.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`);
+			.getFirstListItem<TripMember>(
+				`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`
+			);
 
 		const data = await request.formData();
 		const title = data.get('title')?.toString().trim();
@@ -393,7 +408,9 @@ export const actions: Actions = {
 		try {
 			membership = await locals.pb
 				.collection('trip_members')
-				.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`);
+				.getFirstListItem<TripMember>(
+					`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`
+				);
 		} catch {
 			return fail(403, { error: 'Not a member of this trip.' });
 		}
@@ -402,7 +419,10 @@ export const actions: Actions = {
 			// Upsert: change an existing vote, else create one. The unique
 			// (suggestion, member) index forbids duplicates either way.
 			const existing = await locals.pb.collection('suggestion_votes').getFullList({
-				filter: locals.pb.filter('suggestion = {:s} && member = {:m}', { s: suggestionId, m: membership.id }),
+				filter: locals.pb.filter('suggestion = {:s} && member = {:m}', {
+					s: suggestionId,
+					m: membership.id
+				}),
 				fields: 'id'
 			});
 			if (existing.length > 0) {
@@ -453,7 +473,9 @@ export const actions: Actions = {
 			});
 			if (!res.ok) {
 				const err = await res.json().catch(() => ({}));
-				return fail(res.status, { reviewError: (err as { message?: string }).message || 'Failed to approve.' });
+				return fail(res.status, {
+					reviewError: (err as { message?: string }).message || 'Failed to approve.'
+				});
 			}
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : 'Failed to approve.';
@@ -478,11 +500,17 @@ export const actions: Actions = {
 			const res = await fetch(`${PB_BASE}/api/suggestions/review`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-				body: JSON.stringify({ suggestion_id: suggestionId, action: 'reject', review_note: reviewNote })
+				body: JSON.stringify({
+					suggestion_id: suggestionId,
+					action: 'reject',
+					review_note: reviewNote
+				})
 			});
 			if (!res.ok) {
 				const err = await res.json().catch(() => ({}));
-				return fail(res.status, { reviewError: (err as { message?: string }).message || 'Failed to reject.' });
+				return fail(res.status, {
+					reviewError: (err as { message?: string }).message || 'Failed to reject.'
+				});
 			}
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : 'Failed to reject.';

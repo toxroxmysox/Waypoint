@@ -61,29 +61,32 @@
 </NavBar>
 
 <main
-	class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-[calc(2rem+env(safe-area-inset-bottom))] space-y-4"
+	class="mx-auto w-full max-w-lg flex-1 space-y-4 px-4 pt-4 pb-[calc(2rem+env(safe-area-inset-bottom))] md-desktop:max-w-2xl"
 >
 	<!-- #230 / ADR-0015 — auto-scoped UNIT glance. Shown only when the viewer is in a
 	     declared multi-member Money Unit ("are my wife and I on budget?"). Unit budget =
 	     custom override OR the even share; unit spent = Σ the unit members' shares. Sits
 	     above the per-person figures; deep-links to expenses to manage the unit. -->
 	{#if data.unitScope.isUnit}
-		<a href={expensesHref} class="border-moss/30 bg-moss-tint block rounded-lg border p-4">
+		<a href={expensesHref} class="block rounded-lg border border-moss/30 bg-moss-tint p-4">
 			<div class="flex items-center justify-between">
-				<p class="text-moss text-xs font-medium uppercase tracking-wide">
+				<p class="text-xs font-medium tracking-wide text-moss uppercase">
 					{data.unitScope.label}
 				</p>
-				<span class="text-moss/70 text-[11px]">{data.unitScope.customBudget ? 'custom budget' : 'even-share budget'}</span>
+				<span class="text-[11px] text-moss/70"
+					>{data.unitScope.customBudget ? 'custom budget' : 'even-share budget'}</span
+				>
 			</div>
 			{#if data.unitScope.budget == null}
-				<p class="font-display text-ink mt-1.5 text-2xl font-semibold">
-					${fmt(data.unitScope.spent)} <span class="text-ink-muted text-sm font-normal">spent</span>
+				<p class="mt-1.5 font-display text-2xl font-semibold text-ink">
+					${fmt(data.unitScope.spent)} <span class="text-sm font-normal text-ink-muted">spent</span>
 				</p>
 			{:else}
-				<p class="font-display text-ink mt-1.5 text-2xl font-semibold">
-					{signedLeft(data.unitScope.left ?? 0)} <span class="text-ink-muted text-sm font-normal">left</span>
+				<p class="mt-1.5 font-display text-2xl font-semibold text-ink">
+					{signedLeft(data.unitScope.left ?? 0)}
+					<span class="text-sm font-normal text-ink-muted">left</span>
 				</p>
-				<p class="text-ink-muted mt-1 text-xs">
+				<p class="mt-1 text-xs text-ink-muted">
 					${fmt(data.unitScope.budget)} budget − ${fmt(data.unitScope.spent)} spent
 				</p>
 			{/if}
@@ -94,14 +97,14 @@
 		<!-- NO BUDGET (PRD A3): show what I've consumed, omit "left". -->
 		<Card>
 			<div class="p-5 text-center">
-				<p class="text-ink-muted text-xs font-medium uppercase tracking-wide">My spend so far</p>
-				<p class="font-display text-ink mt-2 text-4xl font-semibold">${fmt(g.myShare)}</p>
-				<p class="text-ink-muted mt-2 text-sm">
+				<p class="text-xs font-medium tracking-wide text-ink-muted uppercase">My spend so far</p>
+				<p class="mt-2 font-display text-4xl font-semibold text-ink">${fmt(g.myShare)}</p>
+				<p class="mt-2 text-sm text-ink-muted">
 					No budget set yet — set one to see how much you have left.
 				</p>
 				<a
 					href={budgetHref}
-					class="text-accent mt-3 inline-block text-sm font-medium underline underline-offset-2"
+					class="mt-3 inline-block text-sm font-medium text-accent underline underline-offset-2"
 				>
 					Set a budget →
 				</a>
@@ -114,21 +117,23 @@
 				<div class="p-5 text-center">
 					<div class="flex items-center justify-center gap-2">
 						<Pill variant="trip" size="sm">You</Pill>
-						<p class="text-ink-muted text-xs font-medium uppercase tracking-wide">
-							Left to spend
-						</p>
+						<p class="text-xs font-medium tracking-wide text-ink-muted uppercase">Left to spend</p>
 					</div>
 					<p
-						class="font-display mt-2 text-5xl font-semibold {g.overBudget ? 'text-error' : 'text-ink'}"
+						class="mt-2 font-display text-5xl font-semibold {g.overBudget
+							? 'text-error'
+							: 'text-ink'}"
 					>
 						{g.n1PerDay != null ? perDay(g.n1PerDay) : signedLeft(g.n1LeftToSpend ?? 0)}
 					</p>
 					{#if g.n1PerDay != null}
-						<p class="text-ink-muted mt-1 text-sm">for {daysLabel}</p>
+						<p class="mt-1 text-sm text-ink-muted">for {daysLabel}</p>
 					{/if}
-					<p class="text-ink-soft mt-3 font-mono text-sm">
+					<p class="mt-3 font-mono text-sm text-ink-soft">
 						{signedLeft(g.n1LeftToSpend ?? 0)} left
-						<span class="text-ink-muted">· ${fmt(g.myBudget)} budget − ${fmt(g.myShare)} my share</span>
+						<span class="text-ink-muted"
+							>· ${fmt(g.myBudget)} budget − ${fmt(g.myShare)} my share</span
+						>
 					</p>
 				</div>
 			</Card>
@@ -139,16 +144,16 @@
 		<a href="#remaining-planned" class="block">
 			<Card>
 				<div class="p-5 text-center">
-					<p class="text-ink-muted text-xs font-medium uppercase tracking-wide">
+					<p class="text-xs font-medium tracking-wide text-ink-muted uppercase">
 						Left for unplanned
 					</p>
-					<p class="font-display text-ink mt-2 text-3xl font-semibold">
+					<p class="mt-2 font-display text-3xl font-semibold text-ink">
 						{g.n2PerDay != null ? perDay(g.n2PerDay) : signedLeft(g.n2LeftForUnplanned ?? 0)}
 					</p>
 					{#if g.n2PerDay != null}
-						<p class="text-ink-muted mt-1 text-sm">for {daysLabel}</p>
+						<p class="mt-1 text-sm text-ink-muted">for {daysLabel}</p>
 					{/if}
-					<p class="text-ink-soft mt-3 font-mono text-sm">
+					<p class="mt-3 font-mono text-sm text-ink-soft">
 						{signedLeft(g.n2LeftForUnplanned ?? 0)} left
 						<span class="text-ink-muted">· after ${fmt(g.myRemainingPlanned)} still planned</span>
 					</p>
@@ -163,23 +168,23 @@
 	{#if Math.abs(data.myBalance) >= 0.5}
 		<a href={expensesHref} class="block">
 			<div
-				class="border-line bg-surface flex items-center justify-between rounded-lg border px-4 py-3"
+				class="flex items-center justify-between rounded-lg border border-line bg-surface px-4 py-3"
 			>
-				<span class="text-ink-soft text-sm">
+				<span class="text-sm text-ink-soft">
 					{#if data.myBalance > 0}
 						You're owed <span class="font-mono text-ink">${fmt(data.myBalance)}</span>
 					{:else}
 						You owe <span class="font-mono text-ink">${fmt(-data.myBalance)}</span>
 					{/if}
 				</span>
-				<span class="text-accent text-sm font-medium">Settle →</span>
+				<span class="text-sm font-medium text-accent">Settle →</span>
 			</div>
 		</a>
 	{/if}
 
 	<!-- Honest caveat (#227): "my share" reflects only LOGGED expenses. A logging gap,
 	     not a model flaw. -->
-	<p class="text-ink-muted px-1 text-center text-xs">
+	<p class="px-1 text-center text-xs text-ink-muted">
 		Reflects logged expenses only — a cash spend nobody entered isn't counted yet.
 	</p>
 
@@ -188,10 +193,10 @@
 	{#if data.remainingPlannedItems.length > 0}
 		<section id="remaining-planned" class="scroll-mt-4 space-y-2">
 			<div class="flex items-baseline justify-between px-1">
-				<h2 class="text-ink-soft text-[11px] font-medium uppercase tracking-wide">
+				<h2 class="text-[11px] font-medium tracking-wide text-ink-soft uppercase">
 					Still planned ({data.remainingPlannedItems.length})
 				</h2>
-				<span class="text-ink-muted font-mono text-[11px]">
+				<span class="font-mono text-[11px] text-ink-muted">
 					${fmt(g.remainingPlannedTotal)} total · ${fmt(g.myRemainingPlanned)} you
 				</span>
 			</div>
@@ -202,7 +207,9 @@
 							{#if item.flight}<FlightSubLine sub={item.flight} />{/if}
 						{/snippet}
 						{#snippet cost()}
-							<span class="text-ink-soft font-mono text-sm">${fmt(item.cost_estimate_usd ?? 0)}</span>
+							<span class="font-mono text-sm text-ink-soft"
+								>${fmt(item.cost_estimate_usd ?? 0)}</span
+							>
 						{/snippet}
 						<Row
 							type={item.type}
@@ -211,13 +218,15 @@
 							sub={item.sub}
 							subline={item.flight ? subline : undefined}
 							href={withOrigin(`/trips/${slug}/items/${item.id}`, page.url.pathname)}
-							trailing={rowTrailing({ cost: item.cost_estimate_usd ?? 0 }) === 'cost' ? cost : undefined}
+							trailing={rowTrailing({ cost: item.cost_estimate_usd ?? 0 }) === 'cost'
+								? cost
+								: undefined}
 							divider={i < data.remainingPlannedItems.length - 1}
 						/>
 					{/each}
 				</div>
 			</Card>
-			<p class="text-ink-muted px-1 text-center text-[11px]">
+			<p class="px-1 text-center text-[11px] text-ink-muted">
 				These estimates aren't spent yet — booking or logging one moves it out of this list.
 			</p>
 		</section>

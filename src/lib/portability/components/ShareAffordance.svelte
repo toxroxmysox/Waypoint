@@ -54,7 +54,8 @@
 	let confirmReopen = $state(false);
 
 	const statusLine = $derived.by(() => {
-		if (status.status === 'live') return { text: 'Live now — anyone with the link can view it.', tone: 'live' };
+		if (status.status === 'live')
+			return { text: 'Live now — anyone with the link can view it.', tone: 'live' };
 		if (status.status === 'scheduled') {
 			const d = new Date(`${status.date}T00:00:00`).toLocaleDateString('en-US', {
 				month: 'long',
@@ -69,10 +70,13 @@
 	const isPublic = $derived(status.status === 'live' || status.status === 'scheduled');
 </script>
 
-<section class="border-line bg-surface shadow-card overflow-hidden rounded-lg border" aria-label="Share this trip's record">
-	<div class="border-line border-b px-4 py-3">
-		<p class="text-ink-muted text-[9.5px] font-bold tracking-[0.14em] uppercase">Share</p>
-		<p class="text-ink mt-1 flex items-center gap-2 text-sm font-semibold">
+<section
+	class="overflow-hidden rounded-lg border border-line bg-surface shadow-card"
+	aria-label="Share this trip's record"
+>
+	<div class="border-b border-line px-4 py-3">
+		<p class="text-[9.5px] font-bold tracking-[0.14em] text-ink-muted uppercase">Share</p>
+		<p class="mt-1 flex items-center gap-2 text-sm font-semibold text-ink">
 			<span
 				class="inline-block size-2 shrink-0 rounded-full {statusLine.tone === 'live'
 					? 'bg-moss'
@@ -88,12 +92,15 @@
 	{#if isPublic && url}
 		<!-- Copyable ABSOLUTE link. data-testid for the e2e critical path. -->
 		<div class="flex items-center gap-2 px-4 py-3">
-			<code class="text-ink-soft bg-surface-2 min-w-0 flex-1 truncate rounded-md px-2.5 py-2 text-xs" data-testid="share-url">{url}</code>
+			<code
+				class="min-w-0 flex-1 truncate rounded-md bg-surface-2 px-2.5 py-2 text-xs text-ink-soft"
+				data-testid="share-url">{url}</code
+			>
 			<button
 				type="button"
 				onclick={copyLink}
 				data-testid="share-copy"
-				class="bg-ink text-paper shrink-0 rounded-md px-3 py-2 text-xs font-semibold"
+				class="shrink-0 rounded-md bg-ink px-3 py-2 text-xs font-semibold text-paper"
 			>
 				{copied ? 'Copied!' : 'Copy link'}
 			</button>
@@ -101,35 +108,62 @@
 	{/if}
 
 	{#if canManage}
-		<div class="border-line border-t px-4 py-3">
+		<div class="border-t border-line px-4 py-3">
 			{#if !editing}
 				<div class="flex flex-wrap items-center gap-2">
 					<button
 						type="button"
 						onclick={() => (editing = true)}
 						data-testid="share-manage"
-						class="border-line text-ink hover:bg-surface-2 active:bg-surface-2 rounded-md border px-3 py-1.5 text-xs font-semibold"
+						class="rounded-md border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:bg-surface-2 active:bg-surface-2"
 					>
 						{isPublic ? 'Change sharing' : 'Publish record'}
 					</button>
 					{#if isPublic}
-						<form method="POST" action="?/publishRecord" use:enhance={() => async ({ update }) => update({ reset: false })}>
+						<form
+							method="POST"
+							action="?/publishRecord"
+							use:enhance={() =>
+								async ({ update }) =>
+									update({ reset: false })}
+						>
 							<input type="hidden" name="disable" value="on" />
-							<button type="submit" class="text-ink-muted hover:text-ink active:text-ink px-2 py-1.5 text-xs font-medium">
+							<button
+								type="submit"
+								class="px-2 py-1.5 text-xs font-medium text-ink-muted hover:text-ink active:text-ink"
+							>
 								Disable sharing
 							</button>
 						</form>
 					{/if}
 				</div>
 			{:else}
-				<form method="POST" action="?/publishRecord" use:enhance={() => async ({ update }) => {
-					editing = false;
-					await update({ reset: false });
-				}}>
-					<PublishControl bind:publish bind:publishDate={editDate} bind:showBudget={editBudget} showBudgetToggle={true} {today} />
+				<form
+					method="POST"
+					action="?/publishRecord"
+					use:enhance={() =>
+						async ({ update }) => {
+							editing = false;
+							await update({ reset: false });
+						}}
+				>
+					<PublishControl
+						bind:publish
+						bind:publishDate={editDate}
+						bind:showBudget={editBudget}
+						showBudgetToggle={true}
+						{today}
+					/>
 					<div class="mt-3 flex items-center gap-2">
-						<button type="submit" class="bg-ink text-paper rounded-md px-3 py-1.5 text-xs font-semibold">Save</button>
-						<button type="button" onclick={() => (editing = false)} class="text-ink-muted px-2 py-1.5 text-xs">Cancel</button>
+						<button
+							type="submit"
+							class="rounded-md bg-ink px-3 py-1.5 text-xs font-semibold text-paper">Save</button
+						>
+						<button
+							type="button"
+							onclick={() => (editing = false)}
+							class="px-2 py-1.5 text-xs text-ink-muted">Cancel</button
+						>
 					</div>
 				</form>
 			{/if}
@@ -137,25 +171,35 @@
 
 		<!-- Reopen — low-emphasis; closed isn't a trap. Behind a confirm. Clears the
 		     publish date server-side so a reopened trip isn't left publicly exposed. -->
-		<div class="border-line border-t px-4 py-3">
+		<div class="border-t border-line px-4 py-3">
 			{#if !confirmReopen}
 				<button
 					type="button"
 					onclick={() => (confirmReopen = true)}
 					data-testid="reopen-trip"
-					class="text-ink-muted hover:text-ink active:text-ink text-xs font-medium"
+					class="text-xs font-medium text-ink-muted hover:text-ink active:text-ink"
 				>
 					Reopen this trip
 				</button>
 			{:else}
 				<div class="space-y-2">
-					<p class="text-ink-soft text-xs">
-						Reopening returns the trip to its editable state and <strong>pauses public sharing</strong>
+					<p class="text-xs text-ink-soft">
+						Reopening returns the trip to its editable state and <strong
+							>pauses public sharing</strong
+						>
 						until you close out again. Continue?
 					</p>
 					<form method="POST" action="?/reopenTrip" use:enhance class="flex items-center gap-2">
-						<button type="submit" class="bg-clay text-paper rounded-md px-3 py-1.5 text-xs font-semibold">Reopen trip</button>
-						<button type="button" onclick={() => (confirmReopen = false)} class="text-ink-muted px-2 py-1.5 text-xs">Cancel</button>
+						<button
+							type="submit"
+							class="rounded-md bg-clay px-3 py-1.5 text-xs font-semibold text-paper"
+							>Reopen trip</button
+						>
+						<button
+							type="button"
+							onclick={() => (confirmReopen = false)}
+							class="px-2 py-1.5 text-xs text-ink-muted">Cancel</button
+						>
 					</form>
 				</div>
 			{/if}

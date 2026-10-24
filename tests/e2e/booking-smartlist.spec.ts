@@ -15,7 +15,9 @@ test.describe('Booking Smart List (#50)', () => {
 		await page.waitForURL(`${BASE}/trips`, { timeout: 10000 });
 	});
 
-	test('a planned lodging item projects into Booking and checking marks it booked', async ({ page }) => {
+	test('a planned lodging item projects into Booking and checking marks it booked', async ({
+		page
+	}) => {
 		const stamp = Date.now().toString(36);
 		const tripSlug = `e2e-booking-${stamp}`;
 
@@ -35,23 +37,43 @@ test.describe('Booking Smart List (#50)', () => {
 		const dayLinks = page.locator(`a[href^="/trips/${tripSlug}/days/"]:visible`);
 		await expect(dayLinks.first()).toBeVisible({ timeout: 5000 });
 		await dayLinks.first().click();
-		await page.getByRole('link', { name: /^Add item$/i }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('link', { name: /^Add item$/i })
+			.filter({ visible: true })
+			.first()
+			.click();
 		await page.waitForURL(/\/items\/new/);
 
-		await page.getByRole('button', { name: 'Lodging', exact: true }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('button', { name: 'Lodging', exact: true })
+			.filter({ visible: true })
+			.first()
+			.click();
 		await page.locator('input[name="title"]:visible').first().fill('Grand Hotel');
-		await page.getByRole('button', { name: /create|save/i }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('button', { name: /create|save/i })
+			.filter({ visible: true })
+			.first()
+			.click();
 		await page.waitForURL(/\/days\//, { timeout: 10000 });
 
 		// --- Booking smart list shows the unbooked lodging row ---
 		await page.goto(`${BASE}/trips/${tripSlug}/lists/booking`, { waitUntil: 'networkidle' });
 		await expect(page.getByText('Grand Hotel').filter({ visible: true }).first()).toBeVisible();
-		await expect(page.getByText('A lens over your itinerary.').filter({ visible: true }).first()).toBeVisible();
+		await expect(
+			page.getByText('A lens over your itinerary.').filter({ visible: true }).first()
+		).toBeVisible();
 
 		// --- Check the row → item booked, row leaves the projection ---
-		await page.getByRole('button', { name: 'Mark booked' }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('button', { name: 'Mark booked' })
+			.filter({ visible: true })
+			.first()
+			.click();
 		await expect(page.getByText('Grand Hotel')).toHaveCount(0, { timeout: 5000 });
-		await expect(page.getByText('All booked. Nothing left to reserve.').filter({ visible: true }).first()).toBeVisible();
+		await expect(
+			page.getByText('All booked. Nothing left to reserve.').filter({ visible: true }).first()
+		).toBeVisible();
 
 		// --- The source item is now booked (pill on its detail) ---
 		await page.goto(`${BASE}/trips/${tripSlug}/lists`, { waitUntil: 'networkidle' });

@@ -9,7 +9,9 @@ onRecordValidate((e) => {
 	const by = r.getString('checked_by');
 	const isNew = r.isNew();
 	const changed =
-		isNew || by !== r.original().getString('checked_by') || r.getString('item') !== r.original().getString('item');
+		isNew ||
+		by !== r.original().getString('checked_by') ||
+		r.getString('item') !== r.original().getString('item');
 	if (by && changed) {
 		let ok = false;
 		try {

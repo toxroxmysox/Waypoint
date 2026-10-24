@@ -30,7 +30,12 @@ async function seedFormingTrip(): Promise<string> {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json', Authorization: token },
 		// No dates → forming. created_by → the after-create hook adds the owner member.
-		body: JSON.stringify({ slug, title: 'E2E Scenario Trip', timezone: 'UTC', created_by: auth.record.id })
+		body: JSON.stringify({
+			slug,
+			title: 'E2E Scenario Trip',
+			timezone: 'UTC',
+			created_by: auth.record.id
+		})
 	}).then((r) => {
 		if (!r.ok) throw new Error('trip create failed');
 	});
@@ -54,7 +59,9 @@ test.describe('#337 candidate scenarios', () => {
 		try {
 			// The forming home leads with the scenario board — empty → "Pitch the first scenario".
 			await page.goto(`${BASE}/trips/${slug}`, { waitUntil: 'networkidle' });
-			await expect(page.getByTestId('scenario-empty').filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
+			await expect(
+				page.getByTestId('scenario-empty').filter({ visible: true }).first()
+			).toBeVisible({ timeout: 10000 });
 
 			// --- PITCH a scenario WITH dates (promotable) + a two-leg sketch. ------
 			// AppShell renders mobile + desktop variants into the DOM (one hidden by
@@ -64,11 +71,20 @@ test.describe('#337 candidate scenarios', () => {
 			await page.locator('input[name="date_start"]').first().fill('2027-09-01');
 			await page.locator('input[name="date_end"]').first().fill('2027-09-08'); // 7 nights
 			// Sketch: two legs.
-			await page.getByRole('button', { name: /add a leg/i }).first().click();
+			await page
+				.getByRole('button', { name: /add a leg/i })
+				.first()
+				.click();
 			await page.locator('input[placeholder*="Leg name"]').first().fill('Reykjavik');
-			await page.getByRole('button', { name: /add a leg/i }).first().click();
+			await page
+				.getByRole('button', { name: /add a leg/i })
+				.first()
+				.click();
 			await page.locator('input[placeholder*="Leg name"]').nth(1).fill('Highlands');
-			await page.getByRole('button', { name: /pitch it/i }).first().click();
+			await page
+				.getByRole('button', { name: /pitch it/i })
+				.first()
+				.click();
 
 			// Lands on the detail sheet.
 			await page.waitForURL(new RegExp(`/trips/${slug}/scenarios/[^/]+$`), { timeout: 10000 });
@@ -79,14 +95,19 @@ test.describe('#337 candidate scenarios', () => {
 			await expect(page.getByTestId('vote-love').first()).toHaveAttribute('aria-pressed', 'true');
 			await page.getByTestId('point-input').first().fill('Cheapest flights that week');
 			await page.getByRole('button', { name: /^add$/i }).first().click();
-			await expect(page.getByText('Cheapest flights that week').first()).toBeVisible({ timeout: 8000 });
+			await expect(page.getByText('Cheapest flights that week').first()).toBeVisible({
+				timeout: 8000
+			});
 
 			// --- FORK it → a second scenario, pre-filled. -------------------------
 			await page.getByTestId('fork-scenario').first().click();
 			await page.waitForURL(/\/scenarios\/new\?fork=/, { timeout: 10000 });
 			// Retitle the fork and pitch it (dates carry over from the source).
 			await page.getByTestId('sc-title').first().fill('Northern loop — but longer');
-			await page.getByRole('button', { name: /pitch this fork/i }).first().click();
+			await page
+				.getByRole('button', { name: /pitch this fork/i })
+				.first()
+				.click();
 			await page.waitForURL(new RegExp(`/trips/${slug}/scenarios/[^/]+$`), { timeout: 10000 });
 
 			// Back on the board there are now two candidates.
@@ -102,11 +123,15 @@ test.describe('#337 candidate scenarios', () => {
 			// Promotion redirects home — the trip is now dated (board retired → the
 			// normal planning overview with Overview/Phases/Lists/Goals sub-tabs).
 			await page.waitForURL(new RegExp(`/trips/${slug}$`), { timeout: 15000 });
-			await expect(page.getByRole('link', { name: 'Phases', exact: true }).first()).toBeVisible({ timeout: 10000 });
+			await expect(page.getByRole('link', { name: 'Phases', exact: true }).first()).toBeVisible({
+				timeout: 10000
+			});
 			await expect(page.getByTestId('scenario-board')).toHaveCount(0);
 
 			// The itinerary shows the phases laid out from the sketch.
-			await expect(page.getByText('Reykjavik', { exact: true }).first()).toBeVisible({ timeout: 10000 });
+			await expect(page.getByText('Reykjavik', { exact: true }).first()).toBeVisible({
+				timeout: 10000
+			});
 			await expect(page.getByText('Highlands', { exact: true }).first()).toBeVisible();
 
 			// --- DECISION record is readable forever (More → How we decided). -----

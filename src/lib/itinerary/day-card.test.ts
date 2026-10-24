@@ -101,10 +101,18 @@ describe('summarizeDay — stay line: Night N of M (#426)', () => {
 	});
 
 	it('middle day reads Night 2 of 3 (was blank before #426)', () => {
-		const h3 = item({ id: 'h3', type: 'lodging', day: 'd1', end_date: '2026-06-21 00:00:00.000Z', title: 'The American Club' });
+		const h3 = item({
+			id: 'h3',
+			type: 'lodging',
+			day: 'd1',
+			end_date: '2026-06-21 00:00:00.000Z',
+			title: 'The American Club'
+		});
 		const four = [...days, { id: 'd4', date: '2026-06-21 00:00:00.000Z' }] as Day[];
 		const s = summarizeDay([h3], four, four[1]).stays;
-		expect(s).toEqual([{ kind: 'staying', name: 'The American Club', text: 'Night 2 of 3 · The American Club' }]);
+		expect(s).toEqual([
+			{ kind: 'staying', name: 'The American Club', text: 'Night 2 of 3 · The American Club' }
+		]);
 	});
 
 	it('check-out day reads Check-out · Name, never a night count', () => {
@@ -114,7 +122,12 @@ describe('summarizeDay — stay line: Night N of M (#426)', () => {
 	});
 
 	it('a blank lodging title drops the separator', () => {
-		const bare = item({ id: 'h', type: 'lodging', day: 'd1', end_date: '2026-06-20 00:00:00.000Z' });
+		const bare = item({
+			id: 'h',
+			type: 'lodging',
+			day: 'd1',
+			end_date: '2026-06-20 00:00:00.000Z'
+		});
 		expect(summarizeDay([bare], days, days[0]).stays[0]?.text).toBe('Night 1 of 2');
 		expect(summarizeDay([bare], days, days[2]).stays[0]?.text).toBe('Check-out');
 	});
@@ -124,20 +137,49 @@ describe('summarizeDay — stay line: Night N of M (#426)', () => {
 	});
 
 	it('ignores non-lodging multi-day items', () => {
-		const train = item({ id: 't', type: 'transportation', day: 'd1', end_date: '2026-06-20 00:00:00.000Z' });
+		const train = item({
+			id: 't',
+			type: 'transportation',
+			day: 'd1',
+			end_date: '2026-06-20 00:00:00.000Z'
+		});
 		expect(summarizeDay([train], days, days[0]).stays).toEqual([]);
 	});
 
 	it('two lodgings checking in the same day emit two lines', () => {
-		const a = item({ id: 'ha', type: 'lodging', day: 'd1', end_date: '2026-06-19 00:00:00.000Z', title: 'Hotel A' });
-		const b = item({ id: 'hb', type: 'lodging', day: 'd1', end_date: '2026-06-20 00:00:00.000Z', title: 'Hotel B' });
+		const a = item({
+			id: 'ha',
+			type: 'lodging',
+			day: 'd1',
+			end_date: '2026-06-19 00:00:00.000Z',
+			title: 'Hotel A'
+		});
+		const b = item({
+			id: 'hb',
+			type: 'lodging',
+			day: 'd1',
+			end_date: '2026-06-20 00:00:00.000Z',
+			title: 'Hotel B'
+		});
 		const stays = summarizeDay([a, b], days, days[0]).stays;
 		expect(stays.map((s) => s.text)).toEqual(['Night 1 of 1 · Hotel A', 'Night 1 of 2 · Hotel B']);
 	});
 
 	it('two lodgings checking out the same day emit two lines', () => {
-		const a = item({ id: 'xa', type: 'lodging', day: 'd1', end_date: '2026-06-19 00:00:00.000Z', title: 'Place A' });
-		const b = item({ id: 'xb', type: 'lodging', day: 'd1', end_date: '2026-06-19 00:00:00.000Z', title: 'Place B' });
+		const a = item({
+			id: 'xa',
+			type: 'lodging',
+			day: 'd1',
+			end_date: '2026-06-19 00:00:00.000Z',
+			title: 'Place A'
+		});
+		const b = item({
+			id: 'xb',
+			type: 'lodging',
+			day: 'd1',
+			end_date: '2026-06-19 00:00:00.000Z',
+			title: 'Place B'
+		});
 		const stays = summarizeDay([a, b], days, days[1]).stays;
 		expect(stays.map((s) => s.kind)).toEqual(['check-out', 'check-out']);
 	});
@@ -154,7 +196,10 @@ describe('summarizeDay — needsBookingCount (#426)', () => {
 		expect(summarizeDay(items, days, days[0]).needsBookingCount).toBe(2);
 	});
 	it('is 0 when everything bookable is booked, and for an empty day', () => {
-		expect(summarizeDay([item({ booked: true, requires_booking: true })], days, days[0]).needsBookingCount).toBe(0);
+		expect(
+			summarizeDay([item({ booked: true, requires_booking: true })], days, days[0])
+				.needsBookingCount
+		).toBe(0);
 		expect(summarizeDay([], days, days[0]).needsBookingCount).toBe(0);
 	});
 });
@@ -189,7 +234,12 @@ describe('summarizeDay — leadTitle (#355)', () => {
 
 	it('weaves untimed items by sort_order the same way the timeline does', () => {
 		const items = [
-			item({ id: 'timed', title: 'Tee time', start_time: '2026-06-18 09:00:00.000Z', sort_order: 2 }),
+			item({
+				id: 'timed',
+				title: 'Tee time',
+				start_time: '2026-06-18 09:00:00.000Z',
+				sort_order: 2
+			}),
 			item({ id: 'untimed', title: 'Pack clubs', start_time: '', sort_order: 1 })
 		];
 		expect(summarizeDay(items, days, days[0]).leadTitle).toBe('Pack clubs');

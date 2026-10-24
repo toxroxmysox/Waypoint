@@ -42,7 +42,7 @@
 	let imgFailed = $state(false);
 </script>
 
-<div class="border-line bg-surface overflow-hidden rounded-xl border">
+<div class="overflow-hidden rounded-xl border border-line bg-surface">
 	{#if photoUrl && renderable && !imgFailed}
 		<img
 			src={photoUrl}
@@ -54,9 +54,18 @@
 	{:else if photoUrl}
 		<a
 			href="{photoUrl}?download=1"
-			class="bg-paper text-ink-muted hover:text-ink active:text-ink flex items-center justify-center gap-2 px-3 py-6 text-xs"
+			class="flex items-center justify-center gap-2 bg-paper px-3 py-6 text-xs text-ink-muted hover:text-ink active:text-ink"
 		>
-			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+			<svg
+				width="14"
+				height="14"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.75"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
 				<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
 				<polyline points="7 10 12 15 17 10" />
 				<line x1="12" y1="15" x2="12" y2="3" />
@@ -71,21 +80,30 @@
 			<Avatar departed alt={name} size={24} />
 		{/if}
 		<div class="min-w-0 flex-1">
-			<p class="text-ink-muted text-[11px] font-medium">
+			<p class="text-[11px] font-medium text-ink-muted">
 				{mine ? 'You' : name}
 			</p>
 			{#if memory.thought}
-				<p class="text-ink mt-0.5 text-sm leading-snug">{memory.thought}</p>
+				<p class="mt-0.5 text-sm leading-snug text-ink">{memory.thought}</p>
 			{/if}
 		</div>
 		{#if mine && editable}
 			<button
 				type="button"
 				onclick={() => onEdit?.()}
-				class="text-ink-muted hover:text-ink active:text-ink shrink-0 p-1"
+				class="shrink-0 p-1 text-ink-muted hover:text-ink active:text-ink"
 				aria-label="Edit your memory"
 			>
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+				<svg
+					width="14"
+					height="14"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.75"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
 					<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
 				</svg>
 			</button>

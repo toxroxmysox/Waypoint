@@ -12,7 +12,14 @@ const change: PlannedChange = {
 	outcome: 'saved',
 	title: 'Lunch'
 };
-const base = { userId: 'u1', connectionId: 'c1', tripId: 'porto', quote: 'call it Lunch at Taberna', changes: [change], cascade: null };
+const base = {
+	userId: 'u1',
+	connectionId: 'c1',
+	tripId: 'porto',
+	quote: 'call it Lunch at Taberna',
+	changes: [change],
+	cascade: null
+};
 
 describe('proposal store', () => {
 	it('saves and takes back a proposal', () => {
@@ -40,12 +47,19 @@ describe('proposal store', () => {
 
 describe('staleFields', () => {
 	it('lists only the fields changed since the preview', () => {
-		expect(staleFields(change, { title: 'Brunch', start_time: '2026-11-03 09:00:00.000Z' })).toEqual(['title']);
+		expect(
+			staleFields(change, { title: 'Brunch', start_time: '2026-11-03 09:00:00.000Z' })
+		).toEqual(['title']);
 	});
 	it('treats a deleted record as all fields stale', () => {
 		expect(staleFields(change, null)).toEqual(['title', 'start_time']);
 	});
-	it('ignores PB\'s own formatting of an empty value', () => {
-		expect(staleFields({ ...change, before: { title: '', start_time: '' } }, { title: '', start_time: '' })).toEqual([]);
+	it("ignores PB's own formatting of an empty value", () => {
+		expect(
+			staleFields(
+				{ ...change, before: { title: '', start_time: '' } },
+				{ title: '', start_time: '' }
+			)
+		).toEqual([]);
 	});
 });

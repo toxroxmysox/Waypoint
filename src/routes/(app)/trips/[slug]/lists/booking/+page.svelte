@@ -20,18 +20,21 @@
 
 <NavBar title="Booking" subtitle="Auto · read-only" back backHref={listsBase} />
 
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8">
+<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 md-desktop:max-w-2xl">
 	<!-- Lens banner -->
-	<div class="border-gold bg-gold-tint mb-3.5 flex gap-3 rounded-xl border px-3.5 py-3">
+	<div class="mb-3.5 flex gap-3 rounded-xl border border-gold bg-gold-tint px-3.5 py-3">
 		<span class="mt-0.5 shrink-0">
 			<svg width="15" height="15" viewBox="0 0 20 20" fill="none">
-				<path d="M10 2L11.5 7L16 8L11.5 9L10 14L8.5 9L4 8L8.5 7L10 2z" fill="var(--color-gold-deep)" />
+				<path
+					d="M10 2L11.5 7L16 8L11.5 9L10 14L8.5 9L4 8L8.5 7L10 2z"
+					fill="var(--color-gold-deep)"
+				/>
 			</svg>
 		</span>
-		<p class="text-ink-soft text-[12px] leading-relaxed">
-			<strong class="text-gold-deep font-bold">A lens over your itinerary.</strong> These rows are planned items
-			that still need a reservation. Check one to mark it <strong class="text-ink">booked</strong> — it then leaves
-			this list.
+		<p class="text-[12px] leading-relaxed text-ink-soft">
+			<strong class="font-bold text-gold-deep">A lens over your itinerary.</strong> These rows are
+			planned items that still need a reservation. Check one to mark it
+			<strong class="text-ink">booked</strong> — it then leaves this list.
 		</p>
 	</div>
 
@@ -58,15 +61,23 @@
 			</div>
 		</Card>
 	{:else}
-		<p class="text-ink-muted font-display mt-6 px-1 text-sm italic">
+		<p class="mt-6 px-1 font-display text-sm text-ink-muted italic">
 			All booked. Nothing left to reserve.
 		</p>
 	{/if}
 
-	<div class="text-ink-muted mt-3 flex items-center gap-1.5 px-1">
+	<div class="mt-3 flex items-center gap-1.5 px-1 text-ink-muted">
 		<svg width="14" height="14" viewBox="0 0 20 20" fill="none">
-			<path d="M10 3a7 7 0 1 0 7 7M10 3v0a7 7 0 0 1 7 7M14 3v3h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+			<path
+				d="M10 3a7 7 0 1 0 7 7M10 3v0a7 7 0 0 1 7 7M14 3v3h3"
+				stroke="currentColor"
+				stroke-width="1.5"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			/>
 		</svg>
-		<span class="font-display text-[11px] italic">Updates automatically as you plan. Nothing to add by hand.</span>
+		<span class="font-display text-[11px] italic"
+			>Updates automatically as you plan. Nothing to add by hand.</span
+		>
 	</div>
 </main>

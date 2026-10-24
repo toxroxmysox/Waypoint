@@ -56,8 +56,7 @@ migrate(
 			try {
 				const body = n.getString('body');
 				if (body.indexOf('@') === -1) continue;
-				const isJoin =
-					n.getString('type') === 'member_joined' || / joined the trip$/.test(body);
+				const isJoin = n.getString('type') === 'member_joined' || / joined the trip$/.test(body);
 				if (!isJoin) continue;
 				n.set('body', 'Someone joined the trip');
 				app.saveNoValidate(n);
@@ -96,7 +95,9 @@ migrate(
 		}
 
 		// Always logged: on a re-run "rewrote 0 …, 0 …" is the proof it was a no-op.
-		report('rewrote ' + notifsDone + ' notification bodies, ' + tombstonesDone + ' tombstone names');
+		report(
+			'rewrote ' + notifsDone + ' notification bodies, ' + tombstonesDone + ' tombstone names'
+		);
 	},
 	(app) => {
 		// No-op: the scrubbed addresses are not restorable, by design.

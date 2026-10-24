@@ -15,7 +15,19 @@ import { tripBrief } from './trip-brief';
 import { whatChanged } from './what-changed';
 import type { ToolDef } from './types';
 
-export const TOOLS: ToolDef[] = [listTrips, getTrip, getDay, search, getItem, getMoney, auditTripTool, whatChanged, getLists, getMemories, tripBrief];
+export const TOOLS: ToolDef[] = [
+	listTrips,
+	getTrip,
+	getDay,
+	search,
+	getItem,
+	getMoney,
+	auditTripTool,
+	whatChanged,
+	getLists,
+	getMemories,
+	tripBrief
+];
 
 /** #503 — the write surface; registered only while MCP_WRITES is on. */
 export const WRITE_TOOLS: ToolDef[] = [describe, proposeChanges, commitChanges, revertChangeTool];

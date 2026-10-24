@@ -20,7 +20,14 @@ migrate(
 			updateRule: null,
 			deleteRule: 'user = @request.auth.id',
 			fields: [
-				{ type: 'relation', name: 'user', required: true, collectionId: users.id, maxSelect: 1, cascadeDelete: true },
+				{
+					type: 'relation',
+					name: 'user',
+					required: true,
+					collectionId: users.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				},
 				{ type: 'text', name: 'client_id', required: true, max: 500 },
 				{ type: 'text', name: 'client_name', required: false, max: 200 },
 				{ type: 'date', name: 'last_used_at', required: false },
@@ -40,8 +47,21 @@ migrate(
 			updateRule: null,
 			deleteRule: null,
 			fields: [
-				{ type: 'relation', name: 'connection', required: true, collectionId: connections.id, maxSelect: 1, cascadeDelete: true },
-				{ type: 'select', name: 'kind', required: true, maxSelect: 1, values: ['access', 'refresh'] },
+				{
+					type: 'relation',
+					name: 'connection',
+					required: true,
+					collectionId: connections.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				},
+				{
+					type: 'select',
+					name: 'kind',
+					required: true,
+					maxSelect: 1,
+					values: ['access', 'refresh']
+				},
 				{ type: 'text', name: 'hash', required: true, max: 64 },
 				{ type: 'date', name: 'expires_at', required: true },
 				{ type: 'autodate', name: 'created', onCreate: true }

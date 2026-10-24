@@ -217,7 +217,13 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 			// (null when the trip has no decision; the section renders nothing).
 			recordDecision,
 			// Forming-only keys, absent here (shape consistency — see forming branch).
-			formingIdeas: [] as { id: string; type: ItemType; subtype: string; title: string; place: string }[],
+			formingIdeas: [] as {
+				id: string;
+				type: ItemType;
+				subtype: string;
+				title: string;
+				place: string;
+			}[],
 			board: undefined as ScenarioBoardData | undefined,
 			availabilitySummary: undefined as AvailabilitySummary | undefined,
 			canPitch: false,
@@ -225,9 +231,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 			share: {
 				// Absolute URL so it pastes into a group text as a working link (no
 				// hand-assembled domain). "" token → not yet shareable (Publish mints it).
-				url: trip.public_share_token
-					? `${url.origin}/archive/${trip.public_share_token}`
-					: '',
+				url: trip.public_share_token ? `${url.origin}/archive/${trip.public_share_token}` : '',
 				status,
 				archiveEnabled: trip.archive_enabled,
 				// Pre-seed the date control on re-edit: a scheduled record carries its date.
@@ -287,9 +291,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 	if (lifecycle === 'wrap-up') {
 		const [expenses, settlements] = await Promise.all([
 			locals.pb.collection('expenses').getFullList<Expense>({ filter: `trip = "${trip.id}"` }),
-			locals.pb
-				.collection('settlements')
-				.getFullList<Settlement>({ filter: `trip = "${trip.id}"` })
+			locals.pb.collection('settlements').getFullList<Settlement>({ filter: `trip = "${trip.id}"` })
 		]);
 		balanceOwed = simplifyDebts(expenses, settlements).length > 0;
 	}
@@ -314,7 +316,13 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		canManage: false,
 		recordDecision: null as RecordDecision,
 		// Forming-only keys, absent here (shape consistency — see forming branch).
-		formingIdeas: [] as { id: string; type: ItemType; subtype: string; title: string; place: string }[],
+		formingIdeas: [] as {
+			id: string;
+			type: ItemType;
+			subtype: string;
+			title: string;
+			place: string;
+		}[],
 		board: undefined as ScenarioBoardData | undefined,
 		availabilitySummary: undefined as AvailabilitySummary | undefined,
 		canPitch: false,
@@ -367,13 +375,17 @@ export const actions: Actions = {
 		try {
 			const trip = await locals.pb
 				.collection('trips')
-				.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }), { fields: 'id' });
+				.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }), {
+					fields: 'id'
+				});
 			await locals.pb.collection('trips').update(trip.id, { notes });
 			return { success: true };
 		} catch (err: unknown) {
 			const status = (err as { status?: number })?.status;
 			const message = err instanceof Error ? err.message : "Couldn't save notes.";
-			return fail(typeof status === 'number' && status >= 400 && status < 600 ? status : 500, { error: message });
+			return fail(typeof status === 'number' && status >= 400 && status < 600 ? status : 500, {
+				error: message
+			});
 		}
 	},
 

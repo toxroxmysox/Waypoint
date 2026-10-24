@@ -6,7 +6,7 @@
 
 ## The thesis
 
-v2–v4 built the app. Every capability the Map calls 🔴-gap has now shipped — Money Units (`0050`), Trip Memory (`0058`), Email Digest (`0060/0061`), soft-trip / optional dates (`0062`), Scenarios + Decisions (`0063–0066`), Availability (`0067`). The frontier is no longer *what the app does*. It's that a friend who installs it to their home screen can still tell it's a website: taps don't respond, sheets don't drag, navigation feels dead, a mis-tap eats a half-typed expense.
+v2–v4 built the app. Every capability the Map calls 🔴-gap has now shipped — Money Units (`0050`), Trip Memory (`0058`), Email Digest (`0060/0061`), soft-trip / optional dates (`0062`), Scenarios + Decisions (`0063–0066`), Availability (`0067`). The frontier is no longer _what the app does_. It's that a friend who installs it to their home screen can still tell it's a website: taps don't respond, sheets don't drag, navigation feels dead, a mis-tap eats a half-typed expense.
 
 **v5 closes exactly that gap and nothing else.** No new capability. No schema. The one rule for scope creep here: if it needs a migration, it isn't v5.
 
@@ -14,12 +14,12 @@ v2–v4 built the app. Every capability the Map calls 🔴-gap has now shipped �
 
 ## Wave 0 — Hotfix (ships alone, does not wait for the milestone)
 
-| # | What | Mode |
-|---|---|---|
+| #        | What                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Mode |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
 | **#379** | ~~P1 — page goes tap-dead after closing any BottomSheet.~~ **NOT A DEFECT — closed 2026-08-03.** The ghost overlay only appears in a hidden tab: Svelte 5 completes transitions from a `requestAnimationFrame` loop, and the browser pane runs at `visibilityState: hidden` with **0 rAF ticks/s**, so the outro never completes while the WAAPI animations still reach their end state off the document timeline. Foreground users were never affected. Shipped a regression guard instead. | done |
-| **#380** | ✅ **SHIPPED 2026-08-03.** FAB occluded the last scroll row. Measured at 375px: 40×56px overlap with the last day card. `FAB.svelte` now emits its own 4.5rem inset in normal flow — one component fix covering all six consumers. Re-measured: 32px clear gap. | done |
+| **#380** | ✅ **SHIPPED 2026-08-03.** FAB occluded the last scroll row. Measured at 375px: 40×56px overlap with the last day card. `FAB.svelte` now emits its own 4.5rem inset in normal flow — one component fix covering all six consumers. Re-measured: 32px clear gap.                                                                                                                                                                                                                              | done |
 
-**#379 outcome:** no app change. Every load-bearing claim in the issue was disproved — only ONE sheet instance mounts (each dual-render copy has its own `$state`, so the hidden copy never opens), the ghost wrapper is in the *visible* tree, and all animations reported `playState: 'finished'`. A guard spec written at `reducedMotion: 'no-preference'` against a production build **passed on unfixed code**. The real variable is tab visibility. Full evidence on the issue.
+**#379 outcome:** no app change. Every load-bearing claim in the issue was disproved — only ONE sheet instance mounts (each dual-render copy has its own `$state`, so the hidden copy never opens), the ghost wrapper is in the _visible_ tree, and all animations reported `playState: 'finished'`. A guard spec written at `reducedMotion: 'no-preference'` against a production build **passed on unfixed code**. The real variable is tab visibility. Full evidence on the issue.
 
 **Consequence for Wave 2:** the portal refactor is no longer a bug fix, so judge it on its own merits when the sheet work starts — it is still the better mount for drag-to-dismiss (#365) and the dirty guard (#370), just not urgent.
 
@@ -34,12 +34,14 @@ v2–v4 built the app. Every capability the Map calls 🔴-gap has now shipped �
 Cheapest work in the milestone, zero decisions, the highest felt-value-per-line in the set. This is what makes the app respond.
 
 **1a · Press & hit targets** — one PR, one pass over the control layer
+
 - **#369** — Tailwind v4 compiles `hover:` inside `@media (hover: hover)`, so **every hover style in the app is inert on iPhone**, and `Button`/`BottomNav`/NavBar-back have no `active:` state. Zero authored press feedback on the primary surface. Add `active:` states, manage `-webkit-tap-highlight-color`. (`Card`/`FAB` already do it right — copy them.)
 - **#366** — sub-44pt targets: sheet/toast/banner dismiss X, `Button` sm/md, DayNav arrows, lightbox toolbar. Extend hit areas without changing visuals.
 
 Same files (`Button`, `BottomSheet`, `Toast`, `DayNav`, `NavBar`) — batching them is what keeps Wave 2 and Wave 3 from fighting merge seams later.
 
 **1b · Forms & keyboard** — one PR, independent files
+
 - **#368** — `inputmode="decimal"` on 9 amount fields, `enterkeyhint` app-wide.
 - **#374** — OTP auto-submit on the 6th digit (login, join, invite).
 - **#375** — server-action failures: `scrollIntoView` + focus the `role=alert`; reuse the existing `validate-form.ts` focus path where the server names a field.
@@ -50,11 +52,11 @@ Same files (`Button`, `BottomSheet`, `Toast`, `DayNav`, `NavBar`) — batching t
 
 Four issues touch one file. Do not parallelize this — dispatch it as a single chained session.
 
-1. **Portal refactor** (#379 option 2) — single body-level overlay outlet owned by the root layout. Kills the dual-render hang class for *all* overlays, and gives the drag work a sane mount.
+1. **Portal refactor** (#379 option 2) — single body-level overlay outlet owned by the root layout. Kills the dual-render hang class for _all_ overlays, and gives the drag work a sane mount.
 2. **#373** — `overscroll-contain` on sheet content, body scroll-lock while any sheet/lightbox is open.
 3. **#365** — grabber handle + drag-to-dismiss. An open sheet swallows back/edge-swipe (decision 3 below).
 4. **#370** — dirty guard. A half-typed expense currently dies on one mis-tap above the sheet, while page-hosted forms got full `beforeNavigate` protection. The most daily-driven form in the app has the least.
-5. **#367** — replace `confirm()` in the item-form unsaved-changes guards with the in-app dialog built in step 4. Ordered last because it *consumes* #370's pattern.
+5. **#367** — replace `confirm()` in the item-form unsaved-changes guards with the in-app dialog built in step 4. Ordered last because it _consumes_ #370's pattern.
 
 Sheets are the modal on mobile per house rule, so one component fix lifts every flow in the app.
 
@@ -63,14 +65,14 @@ Sheets are the modal on mobile per house rule, so one component fix lifts every 
 ## Wave 3 — Navigation model (afk, but verify as a set)
 
 - **#361** — back chevron becomes hierarchical "up". Deletes `nav-depth.ts` + the #235 `markReplaceNavigation` machinery; `backHref` becomes mandatory on every NavBar `back` call site. Wide blast radius, but the audit verified `backHref` is already present everywhere — this is mostly a delete. **Closes the long-standing #349 complaint.**
-- **#362** — skip `startViewTransition` on `navigation.type === 'popstate'`, ending the double animation on iOS swipe-back. Verify the drill-up pairing *after* #361 lands.
+- **#362** — skip `startViewTransition` on `navigation.type === 'popstate'`, ending the double animation on iOS swipe-back. Verify the drill-up pairing _after_ #361 lands.
 - **#378** — DayNav swipe needs the axis-dominance guard `SwipeDeck` already has; today a diagonal scroll jumps days.
 
 ---
 
 ## Wave 4 — Perceived performance
 
-- **#363** — *the single biggest "feels unpolished" gap in the sweep.* Blocking server `load` everywhere, `navigating` referenced nowhere, and the VT wrapper freezes the screen for the whole round-trip. **Scoped to the global bar only** (decision 2 below); skeletons deferred to a future issue.
+- **#363** — _the single biggest "feels unpolished" gap in the sweep._ Blocking server `load` everywhere, `navigating` referenced nowhere, and the VT wrapper freezes the screen for the whole round-trip. **Scoped to the global bar only** (decision 2 below); skeletons deferred to a future issue.
 - **#364** — optimistic checklist toggle. Highest-frequency interaction in the app; every tap is dead for the full tunnel latency. Sweep the other round-tripping toggles (votes, item status) in the same pass.
 - **#372** — resume revalidation on `visibilitychange` after >60s hidden. Decided in (decision 1 below).
 
@@ -87,12 +89,12 @@ Sheets are the modal on mobile per house rule, so one component fix lifts every 
 
 ## Not in v5 (parallel tracks, don't let them slip in)
 
-| Track | Why separate |
-|---|---|
-| **#348** — can't assign on create (`Failed to fetch`) | Live bug, unrelated theme. PM statically narrowed it to the redirect-destination load, not the write. Needs a clean isolated :8097 repro — do it when nothing else is mid-flight. |
-| **#359** — lint debt (439 prettier, 753 eslint) | Infra. Blocks promoting CI's `lint` job to a hard gate. ~500 of 753 are goja-runtime idioms in `pb_hooks` that need scoping, not fixing. Own PR, any time. |
-| **#352** — invite a past co-traveler without their email | `feature` + a real **privacy** dimension (discoverability of past co-travelers). Needs a grill before any schema. Post-v5. |
-| **SPEC_BACKLOG frontier** | Goal→"Plan this", tri-state booking pill, self-leave UI, receipt-on-expense, Weather, Calendar webcal, Maps deep-link, IA merges. Post-v5 — v5 explicitly ships no new capability. |
+| Track                                                    | Why separate                                                                                                                                                                       |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **#348** — can't assign on create (`Failed to fetch`)    | Live bug, unrelated theme. PM statically narrowed it to the redirect-destination load, not the write. Needs a clean isolated :8097 repro — do it when nothing else is mid-flight.  |
+| **#359** — lint debt (439 prettier, 753 eslint)          | Infra. Blocks promoting CI's `lint` job to a hard gate. ~500 of 753 are goja-runtime idioms in `pb_hooks` that need scoping, not fixing. Own PR, any time.                         |
+| **#352** — invite a past co-traveler without their email | `feature` + a real **privacy** dimension (discoverability of past co-travelers). Needs a grill before any schema. Post-v5.                                                         |
+| **SPEC_BACKLOG frontier**                                | Goal→"Plan this", tri-state booking pill, self-leave UI, receipt-on-expense, Weather, Calendar webcal, Maps deep-link, IA merges. Post-v5 — v5 explicitly ships no new capability. |
 
 **Board hygiene:** ✅ done 2026-08-03 — three merged branches pruned local + remote; `main` is the only branch.
 
@@ -104,7 +106,7 @@ Full contracts are on each issue as a comment; these are the one-liners.
 
 1. **#372 — resume-freshness is IN.** `visibilitychange` → `invalidateAll()` when the document was hidden longer than **60s**. Silent, keeps scroll, no gesture. Under 60s (app-switch blink) do nothing. Pull-to-refresh explicitly rejected.
 
-2. **#363 — the global bar ONLY; skeletons deferred.** 2px top bar off `navigating`, ~150ms delay, above the view-transition snapshot. A plain 2px moss (`--color-accent`) bar — **no logo, no brand mark** (considered and rejected: nav feedback fires on every tap and should stay near-subliminal). Streamed loads + per-route skeletons are a *future* issue, not this one.
+2. **#363 — the global bar ONLY; skeletons deferred.** 2px top bar off `navigating`, ~150ms delay, above the view-transition snapshot. A plain 2px moss (`--color-accent`) bar — **no logo, no brand mark** (considered and rejected: nav feedback fires on every tap and should stay near-subliminal). Streamed loads + per-route skeletons are a _future_ issue, not this one.
 
 3. **#365 — yes, an open sheet swallows back/edge-swipe.** Push a history entry on open, close on popstate, pop it on any other dismissal. Must not trigger a page view transition (see #362).
 

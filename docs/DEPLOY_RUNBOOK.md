@@ -8,15 +8,15 @@ Shared infra facts (SSH, layout, Caddy, backups) are canonical in `homeserver-st
 
 ## Facts (constant)
 
-| | |
-|---|---|
-| Box (Tailscale) | `vandenwarsen@100.82.71.103` (tailnet only; MagicDNS `basecamp`) |
-| Stack dir | `/volume1/docker/stacks/waypoint/` |
-| Build context | `./repo` (app source; `image: waypoint:local`) |
-| Data (DO NOT TOUCH) | `./data` → container `/data` · secrets `./waypoint.env` (chmod 600) |
-| Container | `waypoint` @ `100.82.71.103:8091` → internal `:8080`; public `app.vandenwarsen.com` (CF Tunnel) |
-| No git on NAS | source ships via `git archive <sha> | ssh | tar` |
-| PB admin creds | `$PB_ADMIN_EMAIL` / `$PB_ADMIN_PASSWORD` — env vars **inside** the container |
+|                     |                                                                                                 |
+| ------------------- | ----------------------------------------------------------------------------------------------- | --- | ---- |
+| Box (Tailscale)     | `vandenwarsen@100.82.71.103` (tailnet only; MagicDNS `basecamp`)                                |
+| Stack dir           | `/volume1/docker/stacks/waypoint/`                                                              |
+| Build context       | `./repo` (app source; `image: waypoint:local`)                                                  |
+| Data (DO NOT TOUCH) | `./data` → container `/data` · secrets `./waypoint.env` (chmod 600)                             |
+| Container           | `waypoint` @ `100.82.71.103:8091` → internal `:8080`; public `app.vandenwarsen.com` (CF Tunnel) |
+| No git on NAS       | source ships via `git archive <sha>                                                             | ssh | tar` |
+| PB admin creds      | `$PB_ADMIN_EMAIL` / `$PB_ADMIN_PASSWORD` — env vars **inside** the container                    |
 
 ## 0. Bump the version (before you pick the SHA)
 
@@ -34,6 +34,7 @@ VERSION=$(git show "$SHA:package.json" | node -p "JSON.parse(require('fs').readF
 git tag -l "v$VERSION"                                  # must print nothing: a tag already exists = you forgot to bump
 pnpm check && pnpm test:unit                            # main must be green before it ships
 ```
+
 First connection of a session may need the host key: prepend
 `ssh -o StrictHostKeyChecking=accept-new vandenwarsen@100.82.71.103 …` once.
 
@@ -54,6 +55,7 @@ curl -s -X POST http://localhost:8090/api/backups \
 '"'"''
 # Expect HTTP 204. Confirm: ls -la /volume1/docker/stacks/waypoint/data/backups/
 ```
+
 (`<SHA>` → the short commit. Backups live at `data/backups/` on the box.)
 
 ## 1b. Count, and dry-run any data migration (before shipping)
@@ -62,7 +64,7 @@ Record row counts for every collection via the admin API (same TOKEN trick as st
 
 **v3.2 (#503/#411) — duplicate phase starts.** #411's tiling hooks assume no two phases of a trip share a `start_date` (review M2). Before shipping v3.2, dry-run on live (admin API, read-only): list phases sorted by `trip,start_date` and look for any trip with two rows on the same day. Expect 0. Anything else is a hard stop: surface the trips to Scott; fix by hand, never by script.
 
-**v3.2.1 (#506) — viewers in expense splits.** Run `PUBLIC_PB_URL=http://127.0.0.1:8091/pb node scripts/audit-viewer-splits.mjs` on basecamp (read-only). It lists every expense that names a current viewer as payer or in its split, with a proposed fix each. Hard stop: surface the list to Scott; nothing is rewritten without his OK. The new hook only blocks *changing* a split to include a viewer, so un-fixed rows still save on unrelated edits.
+**v3.2.1 (#506) — viewers in expense splits.** Run `PUBLIC_PB_URL=http://127.0.0.1:8091/pb node scripts/audit-viewer-splits.mjs` on basecamp (read-only). It lists every expense that names a current viewer as payer or in its split, with a proposed fix each. Hard stop: surface the list to Scott; nothing is rewritten without his OK. The new hook only blocks _changing_ a split to include a viewer, so un-fixed rows still save on unrelated edits.
 
 **v3.2.1 (#519) — cross-trip relations.** New validate hooks check only changed fields, so existing rows are untouched. No dry-run needed.
 
@@ -81,6 +83,7 @@ echo remote files: \$(find repo_incoming_$SHORT -type f | wc -l) && ls repo_inco
 git ls-tree -r --name-only "$SHA" | wc -l        # must equal the remote file count
 ssh vandenwarsen@100.82.71.103 "cd /volume1/docker/stacks/waypoint && mv repo repo_prev_<oldsha> && mv repo_incoming_$SHORT repo"
 ```
+
 `repo_prev_<oldsha>` is the same-host rollback of the source. Also copy the backup zip out of `data/` (`predeploy_copies/`). The NAS has no `unzip`; check the zip with `python3 -c "import zipfile; print(zipfile.ZipFile('<zip>').testzip())"` (`None` = intact).
 
 ## 3. Rebuild + restart
@@ -118,6 +121,7 @@ curl -s -XPOST https://app.vandenwarsen.com/oauth/token -d grant_type=refresh_to
 curl -s https://app.vandenwarsen.com/.well-known/oauth-authorization-server | grep -o '"client_id_metadata_document_supported":true'
 curl -s -o /dev/null -w '%{http_code}\n' -XPOST https://app.vandenwarsen.com/mcp   # want 401
 ```
+
 `curl -s https://app.vandenwarsen.com/_app/version.json` must report the new version, which proves the build without logging in.
 Then load `https://app.vandenwarsen.com` and **send yourself an OTP** to confirm end-to-end login. The Profile page footer must read `Waypoint {version}` (anything else means a stale build or a cached shell).
 
@@ -127,6 +131,7 @@ Then load `https://app.vandenwarsen.com` and **send yourself an OTP** to confirm
 git tag -a "v$VERSION" "$SHA" -m "Waypoint $VERSION"   # the exact SHA that shipped
 git push origin "v$VERSION"
 ```
+
 No tag for a failed or rolled-back deploy: `v{version}` marks what was live.
 
 ## 5. Rollback (if verify fails)
@@ -139,6 +144,7 @@ cd /volume1/docker/stacks/waypoint &&
 mv repo repo_broken && mv repo_prev_<oldsha> repo &&
 docker compose up -d --build'
 ```
+
 The migration is append-only + idempotent, so a forward re-deploy is usually safer than a restore;
 restore from the backup only if data looks wrong.
 

@@ -530,7 +530,7 @@
 		<div
 			bind:this={panelEl}
 			data-sheet-panel
-			class="relative w-full max-w-lg rounded-t-xl bg-surface shadow-card-strong max-h-[85vh] overflow-y-auto overscroll-contain z-overlay"
+			class="relative z-overlay max-h-[85vh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-xl bg-surface shadow-card-strong"
 			style="transform: translateY({dragY}px)"
 			onclick={(e) => e.stopPropagation()}
 			onkeydown={(e) => e.stopPropagation()}
@@ -562,7 +562,7 @@
 					<h2 class="font-display text-base font-semibold text-ink">{title}</h2>
 					<button
 						type="button"
-						class="text-ink-muted hover:text-ink active:text-ink hit-44 p-1"
+						class="hit-44 p-1 text-ink-muted hover:text-ink active:text-ink"
 						onclick={() => requestClose()}
 						aria-label="Close"
 					>
@@ -589,21 +589,21 @@
 			-->
 			{#if confirmingDiscard}
 				<div
-					class="border-line bg-error-tint/70 flex items-center justify-between gap-3 border-b px-4 py-3"
+					class="flex items-center justify-between gap-3 border-b border-line bg-error-tint/70 px-4 py-3"
 					role="alert"
 				>
-					<p class="text-ink text-sm font-medium">{discardLabel}</p>
+					<p class="text-sm font-medium text-ink">{discardLabel}</p>
 					<div class="flex shrink-0 items-center gap-3">
 						<button
 							type="button"
-							class="hit-44 text-error active:text-error-deep text-xs font-semibold"
+							class="hit-44 text-xs font-semibold text-error active:text-error-deep"
 							onclick={discardAndClose}
 						>
 							Discard
 						</button>
 						<button
 							type="button"
-							class="hit-44 text-ink-muted active:text-ink text-xs"
+							class="hit-44 text-xs text-ink-muted active:text-ink"
 							onclick={() => (confirmingDiscard = false)}
 						>
 							Keep editing

@@ -19,7 +19,18 @@ import type { PollDay } from '$lib/ideation/availability-poll.server';
 const SOFT_COOKIE = 'wp_poll_soft';
 
 const MONTHS_SHORT = [
-	'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'
+	'JAN',
+	'FEB',
+	'MAR',
+	'APR',
+	'MAY',
+	'JUN',
+	'JUL',
+	'AUG',
+	'SEP',
+	'OCT',
+	'NOV',
+	'DEC'
 ];
 function mondayIndex(day: string): number {
 	return (new Date(day + 'T00:00:00.000Z').getUTCDay() + 6) % 7;
@@ -128,7 +139,9 @@ export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
 		tripTitle: lookup.trip_title || '',
 		role: lookup.role || '',
 		me: lookup.me ?? null,
-		respondents: (lookup.respondents ?? []).filter((r) => !lookup.me || r.member_id !== lookup.me.member_id),
+		respondents: (lookup.respondents ?? []).filter(
+			(r) => !lookup.me || r.member_id !== lookup.me.member_id
+		),
 		poll: { weeks }
 	};
 };
@@ -174,7 +187,8 @@ export const actions: Actions = {
 					return fail(400, { needName: true });
 				}
 				return fail(res.status === 429 ? 429 : 400, {
-					error: res.status === 429 ? 'Too many saves — give it a moment.' : msg || 'Could not save.'
+					error:
+						res.status === 429 ? 'Too many saves — give it a moment.' : msg || 'Could not save.'
 				});
 			}
 			// Set the soft_token cookie (httpOnly; the SvelteKit server owns it).

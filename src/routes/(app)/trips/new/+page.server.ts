@@ -8,15 +8,17 @@ export const load: PageServerLoad = async () => {
 };
 
 function toSlug(title: string): string {
-	return title
-		.toLowerCase()
-		.replace(/[^a-z0-9\s-]/g, '')
-		.replace(/\s+/g, '-')
-		.replace(/-+/g, '-')
-		.replace(/^-|-$/g, '')
-		// trips.slug max is 100; leave room for the hook's collision suffix.
-		.slice(0, 80)
-		.replace(/-$/, '');
+	return (
+		title
+			.toLowerCase()
+			.replace(/[^a-z0-9\s-]/g, '')
+			.replace(/\s+/g, '-')
+			.replace(/-+/g, '-')
+			.replace(/^-|-$/g, '')
+			// trips.slug max is 100; leave room for the hook's collision suffix.
+			.slice(0, 80)
+			.replace(/-$/, '')
+	);
 }
 
 type SameName = {
@@ -50,8 +52,7 @@ export const actions: Actions = {
 		const startDate = data.get('start_date')?.toString();
 		const endDate = data.get('end_date')?.toString();
 		const timezone =
-			data.get('timezone')?.toString().trim() ||
-			Intl.DateTimeFormat().resolvedOptions().timeZone;
+			data.get('timezone')?.toString().trim() || Intl.DateTimeFormat().resolvedOptions().timeZone;
 		const locationSummary = data.get('location_summary')?.toString().trim() || '';
 
 		// #375 — `field` names the control the client should focus; it never
@@ -61,7 +62,10 @@ export const actions: Actions = {
 		// creates a dateless (forming) trip; the PB hook skips phase/day seeding
 		// and the promotion (first date-set) seeds them later. Both or neither.
 		if ((startDate && !endDate) || (!startDate && endDate)) {
-			return fail(400, { error: 'Set both dates, or leave both empty.', field: startDate ? 'end_date' : 'start_date' });
+			return fail(400, {
+				error: 'Set both dates, or leave both empty.',
+				field: startDate ? 'end_date' : 'start_date'
+			});
 		}
 		if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
 			return fail(400, { error: 'Start date must be before end date.', field: 'start_date' });
@@ -81,7 +85,12 @@ export const actions: Actions = {
 				return fail(409, {
 					duplicate: mine
 						? { kind: 'mine' as const, ...mine }
-						: { kind: 'co_traveler' as const, ...coTraveler!, requested: false, alreadyRequested: false },
+						: {
+								kind: 'co_traveler' as const,
+								...coTraveler!,
+								requested: false,
+								alreadyRequested: false
+							},
 					values: formValues(data)
 				});
 			}
@@ -114,7 +123,8 @@ export const actions: Actions = {
 			if (isRedirect(err)) throw err;
 			console.error('[trips/new] create failed:', err);
 			// A PB field rejection is deterministic — name the field, don't say "try again".
-			const fields = (err as { response?: { data?: Record<string, { message?: string }> } }).response?.data;
+			const fields = (err as { response?: { data?: Record<string, { message?: string }> } })
+				.response?.data;
 			const field = fields && Object.keys(fields)[0];
 			if (field && fields[field]?.message) {
 				return fail(400, { error: `${field.replace(/_/g, ' ')}: ${fields[field].message}`, field });

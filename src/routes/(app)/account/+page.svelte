@@ -70,7 +70,7 @@
 
 <NavBar title="Profile" back backHref="/trips" />
 
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-6 pb-24 space-y-6">
+<main class="mx-auto w-full max-w-lg flex-1 space-y-6 px-4 pt-6 pb-24 md-desktop:max-w-2xl">
 	<!-- Avatar -->
 	<Card>
 		<div class="flex flex-col items-center gap-4 p-6">
@@ -83,7 +83,7 @@
 			</div>
 
 			{#if form?.avatarError}
-				<p role="alert" class="text-error-deep text-center text-sm">{form.avatarError}</p>
+				<p role="alert" class="text-center text-sm text-error-deep">{form.avatarError}</p>
 			{/if}
 
 			<div class="flex items-center gap-2">
@@ -148,11 +148,13 @@
 					class="flex flex-col items-center gap-2"
 				>
 					<input type="file" name="avatar" accept={ACCEPT} class="text-sm" />
-					<button type="submit" class="text-moss text-sm font-semibold underline">Upload photo</button>
+					<button type="submit" class="text-sm font-semibold text-moss underline"
+						>Upload photo</button
+					>
 				</form>
 			</noscript>
 
-			<p class="text-ink-muted text-center text-[12px]">JPEG, PNG, or WebP · cropped to a circle</p>
+			<p class="text-center text-[12px] text-ink-muted">JPEG, PNG, or WebP · cropped to a circle</p>
 		</div>
 	</Card>
 
@@ -172,7 +174,7 @@
 			class="space-y-3 p-4"
 		>
 			<div>
-				<label for="name" class="text-ink-soft block text-sm font-medium">Display name</label>
+				<label for="name" class="block text-sm font-medium text-ink-soft">Display name</label>
 				<input
 					type="text"
 					id="name"
@@ -180,11 +182,11 @@
 					required
 					maxlength="100"
 					value={data.profile.name}
-					class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+					class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 				/>
-				<p class="text-ink-muted mt-1 text-[12px]">Shown to people you travel with.</p>
+				<p class="mt-1 text-[12px] text-ink-muted">Shown to people you travel with.</p>
 				{#if nameError}
-					<p role="alert" class="text-error-deep mt-1 text-[12px]">{nameError}</p>
+					<p role="alert" class="mt-1 text-[12px] text-error-deep">{nameError}</p>
 				{/if}
 			</div>
 			<div class="flex justify-end">
@@ -208,27 +210,29 @@
 			}}
 			class="space-y-3 p-4"
 		>
-			<h2 class="text-ink text-sm font-semibold">Open links in</h2>
+			<h2 class="text-sm font-semibold text-ink">Open links in</h2>
 			<div class="grid grid-cols-2 gap-3">
 				<div>
-					<label for="search_engine" class="text-ink-soft block text-sm font-medium">Web search</label>
+					<label for="search_engine" class="block text-sm font-medium text-ink-soft"
+						>Web search</label
+					>
 					<select
 						id="search_engine"
 						name="search_engine"
 						bind:value={searchEngine}
-						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+						class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 					>
 						<option value="google">Google</option>
 						<option value="duckduckgo">DuckDuckGo</option>
 					</select>
 				</div>
 				<div>
-					<label for="maps_app" class="text-ink-soft block text-sm font-medium">Maps</label>
+					<label for="maps_app" class="block text-sm font-medium text-ink-soft">Maps</label>
 					<select
 						id="maps_app"
 						name="maps_app"
 						bind:value={mapsApp}
-						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+						class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 					>
 						<option value="google">Google Maps</option>
 						<option value="apple">Apple Maps</option>
@@ -236,7 +240,7 @@
 				</div>
 			</div>
 			{#if form?.linkDefaultsError}
-				<p role="alert" class="text-error-deep text-[12px]">{form.linkDefaultsError}</p>
+				<p role="alert" class="text-[12px] text-error-deep">{form.linkDefaultsError}</p>
 			{/if}
 			<div class="flex justify-end">
 				<Button type="submit" variant="ghost" size="sm" loading={savingLinks}>Save</Button>
@@ -260,24 +264,32 @@
 			class="space-y-3 p-4"
 		>
 			<div>
-				<h2 class="text-ink text-sm font-semibold">Daily trip emails</h2>
-				<p class="text-ink-muted mt-0.5 text-[12px]">A morning email when a trip changes, plus booking and pre-trip reminders.</p>
+				<h2 class="text-sm font-semibold text-ink">Daily trip emails</h2>
+				<p class="mt-0.5 text-[12px] text-ink-muted">
+					A morning email when a trip changes, plus booking and pre-trip reminders.
+				</p>
 			</div>
 			{#if data.tripEmails.length === 0}
-				<p class="text-ink-muted text-sm">No current trips.</p>
+				<p class="text-sm text-ink-muted">No current trips.</p>
 			{:else}
 				<ul class="space-y-1" data-trip-emails>
 					{#each data.tripEmails as t (t.id)}
 						<li>
 							<label class="flex min-h-11 items-center gap-3">
-								<input type="checkbox" name="on" value={t.id} bind:checked={emailOn[t.id]} class="border-line h-4 w-4 rounded" />
-								<span class="text-ink text-sm">{t.title}</span>
+								<input
+									type="checkbox"
+									name="on"
+									value={t.id}
+									bind:checked={emailOn[t.id]}
+									class="h-4 w-4 rounded border-line"
+								/>
+								<span class="text-sm text-ink">{t.title}</span>
 							</label>
 						</li>
 					{/each}
 				</ul>
 				{#if form?.tripEmailsError}
-					<p role="alert" class="text-error-deep text-[12px]">{form.tripEmailsError}</p>
+					<p role="alert" class="text-[12px] text-error-deep">{form.tripEmailsError}</p>
 				{/if}
 				<div class="flex justify-end">
 					<Button type="submit" variant="ghost" size="sm" loading={savingEmails}>Save</Button>

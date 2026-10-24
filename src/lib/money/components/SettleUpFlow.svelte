@@ -81,14 +81,27 @@
 {#if step === 'list'}
 	{#if debts.length === 0}
 		<div class="flex flex-col items-center py-8 text-center">
-			<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-moss mb-2">
+			<svg
+				width="32"
+				height="32"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				class="mb-2 text-moss"
+			>
 				<path d="M20 6 9 17l-5-5" />
 			</svg>
 			<p class="font-display text-base font-semibold text-moss">All squared up!</p>
-			<p class="text-sm text-ink-muted mt-1">No payments needed.</p>
+			<p class="mt-1 text-sm text-ink-muted">No payments needed.</p>
 		</div>
 	{:else}
-		<p class="text-sm text-ink-muted mb-4">{debts.length} {debts.length === 1 ? 'payment' : 'payments'} needed to settle all debts</p>
+		<p class="mb-4 text-sm text-ink-muted">
+			{debts.length}
+			{debts.length === 1 ? 'payment' : 'payments'} needed to settle all debts
+		</p>
 		<div class="space-y-2">
 			{#each debts as debt, i (i)}
 				{@const iOwe = debt.from === membershipId}
@@ -104,20 +117,25 @@
 								{partyLabel(debt.from)} owes {partyLabel(debt.to)}
 							{/if}
 						</p>
-						<p class="font-mono text-lg font-semibold {iOwe ? 'text-accent' : owedToMe ? 'text-moss' : 'text-ink'}">
+						<p
+							class="font-mono text-lg font-semibold {iOwe
+								? 'text-accent'
+								: owedToMe
+									? 'text-moss'
+									: 'text-ink'}"
+						>
 							${fmt(debt.amount)}
 						</p>
 					</div>
 					<Button
 						variant={iOwe ? 'primary' : 'ghost'}
 						size="sm"
-						onclick={() => startRecordPayment(debt)}
-					>Record Payment</Button>
+						onclick={() => startRecordPayment(debt)}>Record Payment</Button
+					>
 				</div>
 			{/each}
 		</div>
 	{/if}
-
 {:else if step === 'record' && selectedDebt}
 	<form
 		method="POST"
@@ -136,16 +154,30 @@
 	>
 		<div class="mb-4 flex items-center justify-center gap-3">
 			<div class="text-center">
-				<div class="flex h-10 w-10 items-center justify-center rounded-full bg-surface-2 mx-auto text-sm font-semibold text-ink">
+				<div
+					class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-surface-2 text-sm font-semibold text-ink"
+				>
 					{memberName(selectedDebt.from).charAt(0)}
 				</div>
 				<p class="mt-1 text-xs text-ink-muted">{partyLabel(selectedDebt.from)}</p>
 			</div>
-			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-ink-muted">
+			<svg
+				width="20"
+				height="20"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				class="text-ink-muted"
+			>
 				<path d="M5 12h14M12 5l7 7-7 7" />
 			</svg>
 			<div class="text-center">
-				<div class="flex h-10 w-10 items-center justify-center rounded-full bg-surface-2 mx-auto text-sm font-semibold text-ink">
+				<div
+					class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-surface-2 text-sm font-semibold text-ink"
+				>
 					{memberName(selectedDebt.to).charAt(0)}
 				</div>
 				<p class="mt-1 text-xs text-ink-muted">{partyLabel(selectedDebt.to)}</p>
@@ -153,7 +185,8 @@
 		</div>
 
 		<div class="mb-4">
-			<label for="settle-amount" class="mb-1 block text-xs font-medium text-ink-muted">Amount</label>
+			<label for="settle-amount" class="mb-1 block text-xs font-medium text-ink-muted">Amount</label
+			>
 			<input
 				id="settle-amount"
 				name="amount_usd"
@@ -167,7 +200,9 @@
 		</div>
 
 		<div class="mb-4">
-			<label for="settle-note" class="mb-1 block text-xs font-medium text-ink-muted">Note (optional)</label>
+			<label for="settle-note" class="mb-1 block text-xs font-medium text-ink-muted"
+				>Note (optional)</label
+			>
 			<input
 				id="settle-note"
 				name="note"
@@ -182,23 +217,39 @@
 		<input type="hidden" name="to_member" value={selectedDebt.to} />
 
 		{#if formProp?.recordSettlement && 'error' in (formProp.recordSettlement as Record<string, unknown>)}
-			<p role="alert" class="mb-3 text-sm text-error">{(formProp.recordSettlement as Record<string, string>).error}</p>
+			<p role="alert" class="mb-3 text-sm text-error">
+				{(formProp.recordSettlement as Record<string, string>).error}
+			</p>
 		{/if}
 
 		<div class="flex gap-2">
-			<Button variant="ghost" size="md" class="flex-1" onclick={() => (step = 'list')}>
-				Back
-			</Button>
-			<Button type="submit" variant="primary" size="md" class="flex-1" disabled={submitting} loading={submitting}>
+			<Button variant="ghost" size="md" class="flex-1" onclick={() => (step = 'list')}>Back</Button>
+			<Button
+				type="submit"
+				variant="primary"
+				size="md"
+				class="flex-1"
+				disabled={submitting}
+				loading={submitting}
+			>
 				{submitting ? 'Recording...' : 'Confirm Payment'}
 			</Button>
 		</div>
 	</form>
-
 {:else if step === 'confirmed' && selectedDebt}
 	<div class="flex flex-col items-center py-6 text-center">
 		<div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-moss-tint">
-			<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-moss">
+			<svg
+				width="24"
+				height="24"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2.5"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				class="text-moss"
+			>
 				<path d="M20 6 9 17l-5-5" />
 			</svg>
 		</div>

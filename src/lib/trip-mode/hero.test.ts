@@ -17,7 +17,9 @@ describe('goingPeople (#440): going first, then struck not-going; no answer neve
 		]);
 	});
 	it('a member with no answer (in neither list) does not appear', () => {
-		expect(goingPeople({ assigned_to: ['m1'], not_going: [] }, ms).map((p) => p.memberId)).toEqual(['m1']);
+		expect(goingPeople({ assigned_to: ['m1'], not_going: [] }, ms).map((p) => p.memberId)).toEqual([
+			'm1'
+		]);
 	});
 	it('departed and unknown ids drop; names resolve', () => {
 		const r = goingPeople({ assigned_to: ['m4', 'zz', 'm1'], not_going: ['m4'] }, ms);
@@ -35,14 +37,19 @@ describe('heroStatus (the NOW line)', () => {
 	const item = { start_time: at('13:00'), end_time: at('16:00') };
 
 	it('reads until + time left', () => {
-		expect(heroStatus(item, now('15:05'))).toEqual({ label: 'NOW', text: 'until 4:00p · 55m left' });
+		expect(heroStatus(item, now('15:05'))).toEqual({
+			label: 'NOW',
+			text: 'until 4:00p · 55m left'
+		});
 	});
 	it('counts hours and minutes', () => {
 		expect(heroStatus(item, now('14:55'))?.text).toBe('until 4:00p · 1h 5m left');
 		expect(heroStatus(item, now('14:00'))?.text).toBe('until 4:00p · 2h left');
 	});
 	it('says < 1m in the last minute', () => {
-		expect(heroStatus(item, new Date('2026-10-15T15:59:40Z'))?.text).toBe('until 4:00p · < 1m left');
+		expect(heroStatus(item, new Date('2026-10-15T15:59:40Z'))?.text).toBe(
+			'until 4:00p · < 1m left'
+		);
 	});
 	it('is null once the end has arrived (end exclusive)', () => {
 		expect(heroStatus(item, now('16:00'))).toBeNull();
@@ -68,11 +75,18 @@ describe('heroStatus (the NOW line)', () => {
 describe('mapsUrl', () => {
 	it('prefers the place id', () => {
 		expect(
-			mapsUrl({ google_place_id: 'P1', location_name: 'A B', location_address: 'x', location_coords: { lat: 1, lng: 2 } })
+			mapsUrl({
+				google_place_id: 'P1',
+				location_name: 'A B',
+				location_address: 'x',
+				location_coords: { lat: 1, lng: 2 }
+			})
 		).toContain('query_place_id=P1');
 	});
 	it('then coords', () => {
-		expect(mapsUrl({ location_coords: { lat: 1, lng: 2 }, location_address: 'x' })).toContain('query=1,2');
+		expect(mapsUrl({ location_coords: { lat: 1, lng: 2 }, location_address: 'x' })).toContain(
+			'query=1,2'
+		);
 	});
 	it('then the address, then nothing', () => {
 		expect(mapsUrl({ location_address: '1 Main St' })).toContain('query=1%20Main%20St');
@@ -83,12 +97,17 @@ describe('mapsUrl', () => {
 
 describe('mapsUrl in Apple Maps (#510)', () => {
 	it('coords, labelled with the name', () => {
-		expect(mapsUrl({ google_place_id: 'P1', location_name: 'A B', location_coords: { lat: 1, lng: 2 } }, 'apple')).toBe(
-			'https://maps.apple.com/?ll=1,2&q=A%20B'
-		);
+		expect(
+			mapsUrl(
+				{ google_place_id: 'P1', location_name: 'A B', location_coords: { lat: 1, lng: 2 } },
+				'apple'
+			)
+		).toBe('https://maps.apple.com/?ll=1,2&q=A%20B');
 	});
 	it('then the address, then nothing', () => {
-		expect(mapsUrl({ location_address: '1 Main St' }, 'apple')).toBe('https://maps.apple.com/?q=1%20Main%20St');
+		expect(mapsUrl({ location_address: '1 Main St' }, 'apple')).toBe(
+			'https://maps.apple.com/?q=1%20Main%20St'
+		);
 		expect(mapsUrl({}, 'apple')).toBe('');
 	});
 	it('unset or google stays Google', () => {

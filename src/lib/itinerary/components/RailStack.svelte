@@ -40,30 +40,59 @@
 	const rule = $derived(past ? 'bg-line' : 'bg-ink-muted/40');
 </script>
 
-<div class="pointer-events-none absolute top-0 bottom-0 left-0" style="width:{RAIL.column}px;" data-rail="stack">
+<div
+	class="pointer-events-none absolute top-0 bottom-0 left-0"
+	style="width:{RAIL.column}px;"
+	data-rail="stack"
+>
 	{#if labels.top}
-		<div class="{rule} absolute top-0 left-0 h-px" style="width:{edge}px;" data-rail="leader-top"></div>
+		<div
+			class="{rule} absolute top-0 left-0 h-px"
+			style="width:{edge}px;"
+			data-rail="leader-top"
+		></div>
 		<span
-			class="absolute inset-x-[3px] text-center font-mono text-[11px] leading-[11px] {redTop ? 'text-error' : 'text-ink-muted'}"
+			class="absolute inset-x-[3px] text-center font-mono text-[11px] leading-[11px] {redTop
+				? 'text-error'
+				: 'text-ink-muted'}"
 			style="top:{RAIL.rulePad}px;"
 			data-rail="time-top">{labels.top}</span
 		>
 	{/if}
 	{#if labels.bottom}
-		<div class="{rule} absolute bottom-0 left-0 h-px" style="width:{edge}px;" data-rail="leader-bottom"></div>
+		<div
+			class="{rule} absolute bottom-0 left-0 h-px"
+			style="width:{edge}px;"
+			data-rail="leader-bottom"
+		></div>
 		<span
-			class="absolute inset-x-[3px] text-center font-mono text-[11px] leading-[11px] {redBottom ? 'text-error' : 'text-ink-muted'}"
+			class="absolute inset-x-[3px] text-center font-mono text-[11px] leading-[11px] {redBottom
+				? 'text-error'
+				: 'text-ink-muted'}"
 			style="bottom:{RAIL.rulePad}px;"
 			data-rail="time-bottom">{labels.bottom}</span
 		>
 	{/if}
 	{#if segs.top}
-		<div class="{rule} absolute w-px" style="left:{RAIL.column / 2 - 0.5}px;top:{segs.top.top}px;height:{segs.top.length}px;" data-rail="seg-top"></div>
+		<div
+			class="{rule} absolute w-px"
+			style="left:{RAIL.column / 2 - 0.5}px;top:{segs.top.top}px;height:{segs.top.length}px;"
+			data-rail="seg-top"
+		></div>
 	{/if}
 	{#if segs.bottom}
-		<div class="{rule} absolute w-px" style="left:{RAIL.column / 2 - 0.5}px;top:{segs.bottom.top}px;height:{segs.bottom.length}px;" data-rail="seg-bottom"></div>
+		<div
+			class="{rule} absolute w-px"
+			style="left:{RAIL.column / 2 - 0.5}px;top:{segs.bottom.top}px;height:{segs.bottom.length}px;"
+			data-rail="seg-bottom"
+		></div>
 	{/if}
 	<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" data-rail="node">
-		<MonoTypeIcon type={item.type} sub={item.subtype} size={24} variant={past ? 'outlined' : shape === 'untimed' ? 'dashed' : 'plain'} />
+		<MonoTypeIcon
+			type={item.type}
+			sub={item.subtype}
+			size={24}
+			variant={past ? 'outlined' : shape === 'untimed' ? 'dashed' : 'plain'}
+		/>
 	</div>
 </div>

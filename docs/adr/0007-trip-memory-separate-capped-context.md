@@ -15,7 +15,7 @@ bounded contexts** — a [[Memory]] is not a [[Document]] and not a flavor of on
 
 Further, Trip Memory is governed by a **hard cap built into its data model**: **one photo and one
 thought, per trip member, per day** (a unique `(day, author)` index). The cap is not a UI nicety — it
-is the architectural boundary that defines what Trip Memory *is*.
+is the architectural boundary that defines what Trip Memory _is_.
 
 Two coupled calls, one ADR because they share a single rationale (apply "earn the right to compete
 before replacing" to experiential capture):
@@ -25,21 +25,21 @@ before replacing" to experiential capture):
 
 ## Why
 
-**Both are images in PocketBase — so why two collections?** Because "image in PB" is the *only* thing
+**Both are images in PocketBase — so why two collections?** Because "image in PB" is the _only_ thing
 they share, and it's an implementation detail. On every axis that carries domain meaning they are
 opposites:
 
-| Axis | **Document** | **Memory** |
-|------|--------------|------------|
-| Role | Reference — retrieved to *show* (boarding pass at a gate) | Experiential — revisited to *remember* |
-| Lifecycle | Created pre/during, consumed **during** (execution) | Created during, consumed **after** (reminiscence) |
-| Offline | Precached for the active trip — needed offline, under pressure | None — never execution-critical |
-| Organization | Grouped by **Item Type** (boarding passes, vouchers) | Grouped by **Day** (the experiential timeline) |
-| Audience | Trip members (execution) | Trip members (reminiscence) — **never** public |
-| Scale | A handful | Capped: ≤ one per member per day |
-| File types | PDF + images | Images only |
+| Axis         | **Document**                                                   | **Memory**                                        |
+| ------------ | -------------------------------------------------------------- | ------------------------------------------------- |
+| Role         | Reference — retrieved to _show_ (boarding pass at a gate)      | Experiential — revisited to _remember_            |
+| Lifecycle    | Created pre/during, consumed **during** (execution)            | Created during, consumed **after** (reminiscence) |
+| Offline      | Precached for the active trip — needed offline, under pressure | None — never execution-critical                   |
+| Organization | Grouped by **Item Type** (boarding passes, vouchers)           | Grouped by **Day** (the experiential timeline)    |
+| Audience     | Trip members (execution)                                       | Trip members (reminiscence) — **never** public    |
+| Scale        | A handful                                                      | Capped: ≤ one per member per day                  |
+| File types   | PDF + images                                                   | Images only                                       |
 
-Merging them forces a discriminator and then immediately *re-splits* on offline behavior, grouping,
+Merging them forces a discriminator and then immediately _re-splits_ on offline behavior, grouping,
 permissions, file-type rules, and public-archive exposure — i.e. the "shared" collection is shared in
 name only. Concretely, conflation produces wrong behavior: vacation photos would precache for offline
 (wasteful) and surface in the Trip Documents aggregate **mixed in with boarding passes, grouped by
@@ -50,7 +50,7 @@ item type** — visibly wrong. The Documents grill already rejected the same DRY
 before it becomes a photo manager (Apple Photos) or a journaling app (Day One) — full-roll import,
 albums, filters, tags, moods, multi-note-per-day feeds. Waypoint hasn't earned the right to compete
 with those, exactly as it hasn't earned the right to replace WhatsApp for messaging (the messaging
-scope decision). The cap makes that boundary **physically unreachable**: you *cannot* become Apple
+scope decision). The cap makes that boundary **physically unreachable**: you _cannot_ become Apple
 Photos when the model holds one photo per member per day. The product's restraint is enforced by the
 schema, not by discipline. Waypoint's unique, defensible value isn't storage or editing — it's
 **context**: the curated highlight bound to the shared itinerary and reviewed together at closeout,
@@ -80,7 +80,7 @@ Public Archive at all. The Public Archive stays plan-only.
 - **New bounded context** in `CONTEXT.md` (Trip Memory, #6) with its own `memories` collection. The
   glossary gains [[Memory]] and [[Note Before Bed]]; [[Public Archive]] is clarified as plain-only.
 - **The cap is load-bearing and easy to relax, hard to reverse-engineer back in.** Loosening "one per
-  day" later is a constraint change; a future "living record" product can build *on* memories without
+  day" later is a constraint change; a future "living record" product can build _on_ memories without
   re-deciding what a memory is. Tightening an uncapped store later would be the painful direction —
   which is why the tight default is the right hard-to-reverse call now.
 - **Two upload paths share one latent concern: HEIC.** Both Documents and Memory accept HEIC and can't

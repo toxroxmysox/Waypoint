@@ -9,7 +9,9 @@ import { WRITABLE, BLOCKED_COLLECTIONS } from '../../src/lib/server/mcp/writes/r
 // why its form-only rules are safe for generic writes.
 test('every PB collection is classified', async () => {
 	const su = await superuser();
-	const res = await fetch(`${E2E_PB_BASE}/api/collections?perPage=500`, { headers: { Authorization: su } });
+	const res = await fetch(`${E2E_PB_BASE}/api/collections?perPage=500`, {
+		headers: { Authorization: su }
+	});
 	expect(res.ok).toBe(true);
 	const { items } = (await res.json()) as { items: { name: string; system: boolean }[] };
 	const unclassified = items

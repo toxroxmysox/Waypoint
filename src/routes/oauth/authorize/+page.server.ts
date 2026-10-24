@@ -24,7 +24,8 @@ export const load: PageServerLoad = async ({ url }) => {
 	const client = await resolveClient(client_id);
 	// Bad client or redirect_uri: show an error, never redirect (open-redirect rule).
 	if ('error' in client) error(400, client.error);
-	if (!client.redirect_uris.includes(redirect_uri)) error(400, 'This app sent an unregistered redirect address.');
+	if (!client.redirect_uris.includes(redirect_uri))
+		error(400, 'This app sent an unregistered redirect address.');
 
 	const back = (err: string, desc: string): never => {
 		const u = new URL(redirect_uri);
@@ -34,11 +35,13 @@ export const load: PageServerLoad = async ({ url }) => {
 		redirect(303, u.toString());
 	};
 	if (q.get('response_type') !== 'code') back('unsupported_response_type', 'code only');
-	if (q.get('code_challenge_method') !== 'S256' || !q.get('code_challenge')) back('invalid_request', 'PKCE S256 required');
+	if (q.get('code_challenge_method') !== 'S256' || !q.get('code_challenge'))
+		back('invalid_request', 'PKCE S256 required');
 	// #512 — RFC 8707: Waypoint serves one resource, its MCP endpoint. Absent is
 	// fine (older clients); anything else is a token meant for someone else.
 	const resource = q.get('resource') ?? '';
-	if (resource && resource.replace(/\/$/, '') !== `${url.origin}/mcp`) back('invalid_target', `resource must be ${url.origin}/mcp`);
+	if (resource && resource.replace(/\/$/, '') !== `${url.origin}/mcp`)
+		back('invalid_target', `resource must be ${url.origin}/mcp`);
 
 	const pending = createPending({
 		client,
@@ -89,7 +92,13 @@ export const actions: Actions = {
 		try {
 			await pb.collection('users').authWithOTP(otpId, code);
 		} catch {
-			return fail(400, { req, appName, otpId, email, error: 'Invalid or expired code. Try again.' });
+			return fail(400, {
+				req,
+				appName,
+				otpId,
+				email,
+				error: 'Invalid or expired code. Try again.'
+			});
 		}
 		redirect(303, completeAuthorize(pending, pb.authStore.record!.id, url.origin));
 	}

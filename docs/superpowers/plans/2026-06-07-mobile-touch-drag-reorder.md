@@ -4,7 +4,7 @@
 
 **Goal:** Replace the broken native HTML5 drag-and-drop in the day timeline with `svelte-dnd-action` so drag-to-reorder, eject-to-parking, and pull-from-parking all work on iOS touch.
 
-**Architecture:** The day page mounts two `dndzone`s — the timeline and the parking lot — of the same drag type so items move between them. Drag is **handle-only** (the existing grip icon) via svelte-dnd-action's `dragDisabled` toggle pattern, so card taps still open detail and vertical swipes still scroll. The orchestrator component owns the two `items` arrays and translates `consider`/`finalize` events into the existing PocketBase form actions (`reorder` / `pullToPlan` / `pushToParking`). Untimed items reorder freely; timed items are pinned to their clock time (an in-timeline drop snaps back) but may be dragged *out* to the parking lot, which strips their time.
+**Architecture:** The day page mounts two `dndzone`s — the timeline and the parking lot — of the same drag type so items move between them. Drag is **handle-only** (the existing grip icon) via svelte-dnd-action's `dragDisabled` toggle pattern, so card taps still open detail and vertical swipes still scroll. The orchestrator component owns the two `items` arrays and translates `consider`/`finalize` events into the existing PocketBase form actions (`reorder` / `pullToPlan` / `pushToParking`). Untimed items reorder freely; timed items are pinned to their clock time (an in-timeline drop snaps back) but may be dragged _out_ to the parking lot, which strips their time.
 
 **Tech Stack:** SvelteKit (Svelte 5 runes), `svelte-dnd-action`, PocketBase, Vitest. Milestone: [#2 Phase sub-tab redesign](https://github.com/toxroxmysox/Waypoint/milestone/2). Covers **#60** (touch-drag foundation) + **#87** (eject/pull via per-phase day divider). PRD: `docs/PHASE_REDESIGN_PRD.md`.
 
@@ -19,6 +19,7 @@ ordered build for this session is here. Where they disagree, this wins.
 ### Scope of THIS session (#60 — touch-drag foundation)
 
 WIRED:
+
 - `resolveDrop()` — complete pure deep module, **all 6 branches**, Vitest every branch.
   The single source of drag semantics. Components/actions are thin around it.
 - `buildTimelineFlat()` — flat 1:1 list, reuses `buildTimeline` (→ `orderDayItems`,
@@ -33,6 +34,7 @@ WIRED:
 - Wires the #126 inert handle + pull-up affordances in `ParkingLotSection`.
 
 DEFERRED to #87/#88 (flagged in handoff):
+
 - The collapsed **"Parking lot · N"** day divider (tap-to-expand).
 - **Per-phase** drop-target splitting on boundary days (one droppable per phase).
   This session passes the day's full phase-id set to `resolveDrop`; the parking
@@ -48,31 +50,32 @@ DEFERRED to #87/#88 (flagged in handoff):
 ```ts
 type Zone = 'timeline' | 'parking';
 interface DropContext {
-  source: Zone;
-  target: Zone;
-  item: { phase: string; start_time: string }; // the moved item
-  before: number | null;   // neighbor sort_order at drop pos
-  after: number | null;
-  dayPhases: string[];     // phase ids the TARGET day belongs to
+	source: Zone;
+	target: Zone;
+	item: { phase: string; start_time: string }; // the moved item
+	before: number | null; // neighbor sort_order at drop pos
+	after: number | null;
+	dayPhases: string[]; // phase ids the TARGET day belongs to
 }
 type DropAction =
-  | { kind: 'reorder';  before: number | null; after: number | null }
-  | { kind: 'pull';     before: number | null; after: number | null }
-  | { kind: 'push' }
-  | { kind: 'reject' }
-  | { kind: 'snapback' };
+	| { kind: 'reorder'; before: number | null; after: number | null }
+	| { kind: 'pull'; before: number | null; after: number | null }
+	| { kind: 'push' }
+	| { kind: 'reject' }
+	| { kind: 'snapback' };
 ```
 
-| source   | target   | condition                          | action     | meaning                          |
-|----------|----------|------------------------------------|------------|----------------------------------|
-| timeline | parking  | —                                  | `push`     | eject → unschedule (strip time)  |
-| parking  | timeline | `item.phase ∈ dayPhases`           | `pull`     | schedule idea at drop position   |
-| parking  | timeline | `item.phase ∉ dayPhases`           | `reject`   | phase is sticky — refuse pull    |
-| timeline | timeline | `item.start_time` truthy (timed)   | `snapback` | clock pins it — revert reorder   |
-| timeline | timeline | untimed                            | `reorder`  | reorder by `sort_order`          |
-| parking  | parking  | —                                  | `reorder`  | (module complete; UI defers #88) |
+| source   | target   | condition                        | action     | meaning                          |
+| -------- | -------- | -------------------------------- | ---------- | -------------------------------- |
+| timeline | parking  | —                                | `push`     | eject → unschedule (strip time)  |
+| parking  | timeline | `item.phase ∈ dayPhases`         | `pull`     | schedule idea at drop position   |
+| parking  | timeline | `item.phase ∉ dayPhases`         | `reject`   | phase is sticky — refuse pull    |
+| timeline | timeline | `item.start_time` truthy (timed) | `snapback` | clock pins it — revert reorder   |
+| timeline | timeline | untimed                          | `reorder`  | reorder by `sort_order`          |
+| parking  | parking  | —                                | `reorder`  | (module complete; UI defers #88) |
 
 ### Build order (TDD)
+
 1. `resolveDrop` + test (all branches).
 2. `buildTimelineFlat` + test (append to `timeline.test.ts`).
 3. `neighborsForMove` + test (new `drag-reorder.ts`).
@@ -104,7 +107,7 @@ Split guidance: **#60** = Tasks 0–7 + 10 (infra, reorder, snapback, callout, `
 
 `svelte-dnd-action` requires the **direct children** of a `dndzone` to map 1:1 to the bound `items` array. Today the timeline interleaves Morning/Afternoon/Evening **divider** rows between items (`insertDividers` in `timeline.ts`), which would break that 1:1 mapping.
 
-**Resolution chosen:** dividers move *inside* each draggable item wrapper — when an item begins a new time slot, its slot label renders above its card within the same dndzone child. The flat `items` array stays 1:1 with DOM children; divider labels are cosmetic and re-derive on every render. A new `buildTimelineFlat()` returns each item plus its `anchored` flag and an optional `slotLabel`.
+**Resolution chosen:** dividers move _inside_ each draggable item wrapper — when an item begins a new time slot, its slot label renders above its card within the same dndzone child. The flat `items` array stays 1:1 with DOM children; divider labels are cosmetic and re-derive on every render. A new `buildTimelineFlat()` returns each item plus its `anchored` flag and an optional `slotLabel`.
 
 **Alternative if vetoed:** drop slot dividers from the day timeline entirely (simpler, but a visual regression). If you prefer this, delete Task 1's `slotLabel` logic and render no labels.
 
@@ -113,10 +116,12 @@ Split guidance: **#60** = Tasks 0–7 + 10 (infra, reorder, snapback, callout, `
 ## File Structure
 
 **Create:**
+
 - `src/lib/itinerary/drag-reorder.ts` — pure helpers: `neighborsForMove()` (compute before/after `sort_order` for a moved item from a flat ordered list).
 - `src/lib/itinerary/drag-reorder.test.ts` — Vitest for the above.
 
 **Modify:**
+
 - `package.json` — add `svelte-dnd-action`.
 - `src/lib/itinerary/timeline.ts` — add `buildTimelineFlat()` (flat ordered items + `anchored` + `slotLabel`).
 - `src/lib/itinerary/timeline.test.ts` — add tests for `buildTimelineFlat()` (create file if absent).
@@ -135,6 +140,7 @@ Split guidance: **#60** = Tasks 0–7 + 10 (infra, reorder, snapback, callout, `
 ## Task 0: Install svelte-dnd-action
 
 **Files:**
+
 - Modify: `package.json`
 
 - [ ] **Step 1: Install**
@@ -161,6 +167,7 @@ git commit -m "build: add svelte-dnd-action for touch DnD (#60)"
 `svelte-dnd-action` needs a flat array. This returns the same display order as `buildTimeline()` (timed items by time, untimed by `sort_order`, interleaved) but without separate divider entries — instead each item carries an optional `slotLabel`.
 
 **Files:**
+
 - Modify: `src/lib/itinerary/timeline.ts`
 - Test: `src/lib/itinerary/timeline.test.ts`
 
@@ -284,6 +291,7 @@ git commit -m "feat: buildTimelineFlat for flat dnd list with slot labels (#60)"
 After a drop, svelte-dnd-action gives the new flat order. To persist via the existing `reorder` action we need the moved item's neighbors' `sort_order` values.
 
 **Files:**
+
 - Create: `src/lib/itinerary/drag-reorder.ts`
 - Test: `src/lib/itinerary/drag-reorder.test.ts`
 
@@ -373,6 +381,7 @@ git commit -m "feat: neighborsForMove helper for dnd reorder (#60)"
 ## Task 3: Server actions — strip time on park, accept drop position on pull
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/days/[dayId]/+page.server.ts`
 
 - [ ] **Step 1: Strip time in `pushToParking`**
@@ -380,13 +389,13 @@ git commit -m "feat: neighborsForMove helper for dnd reorder (#60)"
 Replace the `update` call inside `pushToParking` (currently sets `day`, `status`, `sort_order`) with:
 
 ```typescript
-			await locals.pb.collection('items').update(itemId, {
-				day: '',
-				status: 'unplanned',
-				sort_order: 0,
-				start_time: '',
-				end_time: ''
-			});
+await locals.pb.collection('items').update(itemId, {
+	day: '',
+	status: 'unplanned',
+	sort_order: 0,
+	start_time: '',
+	end_time: ''
+});
 ```
 
 - [ ] **Step 2: Honor drop position in `pullToPlan`**
@@ -394,49 +403,49 @@ Replace the `update` call inside `pushToParking` (currently sets `day`, `status`
 Replace the body of `pullToPlan` (after the `itemId` guard) with a position-aware version that reuses `insertBetween` / `rebalance`:
 
 ```typescript
-		const beforeRaw = data.get('before_order')?.toString();
-		const afterRaw = data.get('after_order')?.toString();
-		const before = beforeRaw && !isNaN(Number(beforeRaw)) ? Number(beforeRaw) : null;
-		const after = afterRaw && !isNaN(Number(afterRaw)) ? Number(afterRaw) : null;
+const beforeRaw = data.get('before_order')?.toString();
+const afterRaw = data.get('after_order')?.toString();
+const before = beforeRaw && !isNaN(Number(beforeRaw)) ? Number(beforeRaw) : null;
+const after = afterRaw && !isNaN(Number(afterRaw)) ? Number(afterRaw) : null;
 
-		let newOrder: number | null;
-		if (before === null && after === null) {
-			// No position info — append to end (legacy behavior).
-			const tail = await locals.pb.collection('items').getFullList({
-				filter: `day = "${params.dayId}"`,
-				sort: '-sort_order',
-				fields: 'sort_order'
-			});
-			newOrder = tail.length > 0 ? Number(tail[0].sort_order) + GAP : GAP;
-		} else {
-			newOrder = insertBetween(before, after);
-		}
+let newOrder: number | null;
+if (before === null && after === null) {
+	// No position info — append to end (legacy behavior).
+	const tail = await locals.pb.collection('items').getFullList({
+		filter: `day = "${params.dayId}"`,
+		sort: '-sort_order',
+		fields: 'sort_order'
+	});
+	newOrder = tail.length > 0 ? Number(tail[0].sort_order) + GAP : GAP;
+} else {
+	newOrder = insertBetween(before, after);
+}
 
-		try {
-			if (newOrder === null) {
-				// Gap collapsed — rebalance the day then place the item at the end.
-				const dayItems = await locals.pb.collection('items').getFullList<Item>({
-					filter: `day = "${params.dayId}"`,
-					sort: 'sort_order',
-					fields: 'id,sort_order'
-				});
-				const updates = rebalance([...dayItems.map((i) => i.id), itemId]);
-				await Promise.all(
-					updates.map((u) => locals.pb.collection('items').update(u.id, { sort_order: u.sort_order }))
-				);
-				await locals.pb.collection('items').update(itemId, { day: params.dayId, status: 'planned' });
-			} else {
-				await locals.pb.collection('items').update(itemId, {
-					day: params.dayId,
-					status: 'planned',
-					sort_order: newOrder
-				});
-			}
-			return { success: true };
-		} catch (err: unknown) {
-			const message = err instanceof Error ? err.message : 'Failed to add item to day.';
-			return fail(500, { error: message });
-		}
+try {
+	if (newOrder === null) {
+		// Gap collapsed — rebalance the day then place the item at the end.
+		const dayItems = await locals.pb.collection('items').getFullList<Item>({
+			filter: `day = "${params.dayId}"`,
+			sort: 'sort_order',
+			fields: 'id,sort_order'
+		});
+		const updates = rebalance([...dayItems.map((i) => i.id), itemId]);
+		await Promise.all(
+			updates.map((u) => locals.pb.collection('items').update(u.id, { sort_order: u.sort_order }))
+		);
+		await locals.pb.collection('items').update(itemId, { day: params.dayId, status: 'planned' });
+	} else {
+		await locals.pb.collection('items').update(itemId, {
+			day: params.dayId,
+			status: 'planned',
+			sort_order: newOrder
+		});
+	}
+	return { success: true };
+} catch (err: unknown) {
+	const message = err instanceof Error ? err.message : 'Failed to add item to day.';
+	return fail(500, { error: message });
+}
 ```
 
 Confirm `insertBetween` is imported at the top of the file (alongside `GAP`, `rebalance`). If not, add it:
@@ -462,6 +471,7 @@ git commit -m "feat: park strips time, pull honors drop position (#60)"
 ## Task 4: `.no-callout` utility + suppress iOS callout on cards
 
 **Files:**
+
 - Modify: `src/routes/layout.css`
 - Modify: `src/lib/itinerary/components/TimelineItemCard.svelte`
 - Modify: `src/lib/itinerary/components/ParkingLotSection.svelte`
@@ -520,6 +530,7 @@ git commit -m "fix: suppress iOS long-press callout on item cards (#60)"
 The handle currently sits inside the `<Card href>` `<a>`, so pressing it also navigates. Move it to a sibling of the `<Card>` so the handle and the link are separate hit targets.
 
 **Files:**
+
 - Modify: `src/lib/itinerary/components/TimelineItemCard.svelte`
 
 - [ ] **Step 1: Restructure the card to put the handle beside the link**
@@ -556,9 +567,9 @@ Replace the markup (the `<div class="group relative …">…</div>` block) so th
 	} = $props();
 </script>
 
-<div class="group relative flex items-stretch gap-1 no-callout" class:opacity-90={overlapping}>
+<div class="group no-callout relative flex items-stretch gap-1" class:opacity-90={overlapping}>
 	{#if anchored && item.start_time}
-		<div class="text-ink-muted absolute -left-16 top-3 hidden text-xs font-mono md-desktop:block">
+		<div class="absolute top-3 -left-16 hidden font-mono text-xs text-ink-muted md-desktop:block">
 			{formatTime(item.start_time)}
 		</div>
 	{/if}
@@ -566,11 +577,20 @@ Replace the markup (the `<div class="group relative …">…</div>` block) so th
 	{#if draggable}
 		<button
 			type="button"
-			class="text-line flex shrink-0 cursor-grab touch-none items-center px-1"
+			class="flex shrink-0 cursor-grab touch-none items-center px-1 text-line"
 			aria-label="Drag to reorder"
-			onpointerdown={(e) => { e.stopPropagation(); onHandlePointerDown(e); }}
-			onmousedown={(e) => { e.stopPropagation(); onHandlePointerDown(e); }}
-			ontouchstart={(e) => { e.stopPropagation(); onHandlePointerDown(e); }}
+			onpointerdown={(e) => {
+				e.stopPropagation();
+				onHandlePointerDown(e);
+			}}
+			onmousedown={(e) => {
+				e.stopPropagation();
+				onHandlePointerDown(e);
+			}}
+			ontouchstart={(e) => {
+				e.stopPropagation();
+				onHandlePointerDown(e);
+			}}
 		>
 			<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
 				<circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" />
@@ -582,26 +602,36 @@ Replace the markup (the `<div class="group relative …">…</div>` block) so th
 
 	<div class="min-w-0 flex-1">
 		<Card href="/trips/{tripSlug}/items/{item.id}">
-			<div class="flex items-start gap-3 p-3" class:border-l-2={overlapping} class:border-gold={overlapping}>
+			<div
+				class="flex items-start gap-3 p-3"
+				class:border-l-2={overlapping}
+				class:border-gold={overlapping}
+			>
 				<TypeIcon type={item.type} sub={item.subtype} size={32} />
 				<div class="min-w-0 flex-1">
 					<div class="flex items-center gap-2">
-						<h4 class="text-ink truncate text-sm font-semibold">{item.title}</h4>
+						<h4 class="truncate text-sm font-semibold text-ink">{item.title}</h4>
 						{#if item.booked}
 							<Pill variant="booked" size="sm">Booked</Pill>
 						{/if}
 					</div>
 					{#if item.start_time || item.location_name}
-						<p class="text-ink-muted mt-0.5 text-[12px]">
+						<p class="mt-0.5 text-[12px] text-ink-muted">
 							{#if item.start_time}
-								<span class="font-mono">{formatTime(item.start_time)}{item.end_time ? ` – ${formatTime(item.end_time)}` : ''}</span>
+								<span class="font-mono"
+									>{formatTime(item.start_time)}{item.end_time
+										? ` – ${formatTime(item.end_time)}`
+										: ''}</span
+								>
 							{/if}
 							{#if item.start_time && item.location_name}<span class="text-line">·</span>{/if}
 							{#if item.location_name}{item.location_name}{/if}
 						</p>
 					{/if}
 					{#if item.subtype}
-						<p class="text-ink-muted mt-1 text-[11px] uppercase tracking-wide">{titleCase(item.subtype)}</p>
+						<p class="mt-1 text-[11px] tracking-wide text-ink-muted uppercase">
+							{titleCase(item.subtype)}
+						</p>
 					{/if}
 					{#if votes.length}
 						<div class="mt-1.5">
@@ -636,6 +666,7 @@ git commit -m "refactor: grip handle is a sibling of the card link (#60)"
 Rewrite `DragDropTimeline.svelte` to own both zones' `items` arrays, the per-zone `dragDisabled` flags, the consider/finalize handlers, and the hidden persistence forms. It exposes everything the child renderers need through the existing `children` snippet.
 
 **Files:**
+
 - Modify: `src/lib/itinerary/components/DragDropTimeline.svelte`
 
 - [ ] **Step 1: Replace the component**
@@ -659,25 +690,33 @@ Rewrite `DragDropTimeline.svelte` to own both zones' `items` arrays, the per-zon
 		parkingLotItems?: Item[];
 		tripSlug: string;
 		dayId: string;
-		children: Snippet<[{
-			timelineItems: Item[];
-			parkingItems: Item[];
-			timelineDragDisabled: boolean;
-			parkingDragDisabled: boolean;
-			startDrag: () => void;
-			onTimelineConsider: (e: CustomEvent<DndEvent<Item>>) => void;
-			onTimelineFinalize: (e: CustomEvent<DndEvent<Item>>) => void;
-			onParkingConsider: (e: CustomEvent<DndEvent<Item>>) => void;
-			onParkingFinalize: (e: CustomEvent<DndEvent<Item>>) => void;
-		}]>;
+		children: Snippet<
+			[
+				{
+					timelineItems: Item[];
+					parkingItems: Item[];
+					timelineDragDisabled: boolean;
+					parkingDragDisabled: boolean;
+					startDrag: () => void;
+					onTimelineConsider: (e: CustomEvent<DndEvent<Item>>) => void;
+					onTimelineFinalize: (e: CustomEvent<DndEvent<Item>>) => void;
+					onParkingConsider: (e: CustomEvent<DndEvent<Item>>) => void;
+					onParkingFinalize: (e: CustomEvent<DndEvent<Item>>) => void;
+				}
+			]
+		>;
 	} = $props();
 
 	// Local working copies that svelte-dnd-action mutates during drag. Re-seed
 	// from server truth whenever the page data changes (after a form action).
 	let timelineItems = $state<Item[]>([]);
 	let parkingItems = $state<Item[]>([]);
-	$effect(() => { timelineItems = [...dayItems]; });
-	$effect(() => { parkingItems = [...parkingLotItems]; });
+	$effect(() => {
+		timelineItems = [...dayItems];
+	});
+	$effect(() => {
+		parkingItems = [...parkingLotItems];
+	});
 
 	let timelineDragDisabled = $state(true);
 	let parkingDragDisabled = $state(true);
@@ -840,6 +879,7 @@ git commit -m "feat: dnd orchestrator with two zones + form persistence (#60)"
 ## Task 7: Apply `dndzone` in DayTimeline
 
 **Files:**
+
 - Modify: `src/lib/itinerary/components/DayTimeline.svelte`
 
 - [ ] **Step 1: Replace the component**
@@ -875,9 +915,7 @@ git commit -m "feat: dnd orchestrator with two zones + form persistence (#60)"
 		onFinalize?: (e: CustomEvent) => void;
 	} = $props();
 
-	const flatById = $derived(
-		new Map(buildTimelineFlat(items).map((e) => [e.item.id, e]))
-	);
+	const flatById = $derived(new Map(buildTimelineFlat(items).map((e) => [e.item.id, e])));
 	const overlaps = $derived(detectOverlaps(items));
 	const FLIP_MS = 150;
 </script>
@@ -885,7 +923,7 @@ git commit -m "feat: dnd orchestrator with two zones + form persistence (#60)"
 {#if items.length === 0}
 	<a
 		href="/trips/{tripSlug}/items/new?day={dayId}"
-		class="border-line text-ink-muted hover:border-ink-muted hover:text-ink-soft block rounded-lg border border-dashed px-3 py-2 text-xs"
+		class="block rounded-lg border border-dashed border-line px-3 py-2 text-xs text-ink-muted hover:border-ink-muted hover:text-ink-soft"
 	>
 		Empty. Tap to add one.
 	</a>
@@ -901,9 +939,11 @@ git commit -m "feat: dnd orchestrator with two zones + form persistence (#60)"
 			<div animate:flip={{ duration: FLIP_MS }}>
 				{#if meta?.slotLabel}
 					<div class="flex items-center gap-3 py-1">
-						<div class="border-line flex-1 border-t"></div>
-						<span class="text-ink-muted text-[11px] font-medium uppercase tracking-wider">{meta.slotLabel}</span>
-						<div class="border-line flex-1 border-t"></div>
+						<div class="flex-1 border-t border-line"></div>
+						<span class="text-[11px] font-medium tracking-wider text-ink-muted uppercase"
+							>{meta.slotLabel}</span
+						>
+						<div class="flex-1 border-t border-line"></div>
 					</div>
 				{/if}
 				<TimelineItemCard
@@ -923,6 +963,7 @@ git commit -m "feat: dnd orchestrator with two zones + form persistence (#60)"
 ```
 
 Notes:
+
 - `items` is bound by reference; svelte-dnd-action reorders it through `onConsider`/`onFinalize` (which the parent owns).
 - The `{#each}` is keyed by `item.id` (svelte-dnd-action requirement) and animated with `flip`.
 - Every draggable child is a single `<div>` containing the optional slot label + card — preserving the 1:1 child↔item mapping (Assumption A1).
@@ -939,6 +980,7 @@ git commit -m "feat: DayTimeline renders a dndzone with slot labels (#60)"
 ## Task 8: Parking zone — always a drop target, draggable items
 
 **Files:**
+
 - Modify: `src/lib/itinerary/components/ParkingLotSection.svelte`
 
 Add an optional drag mode. When `dndEnabled`, the section becomes a `dndzone` (always rendered by the caller, even when empty) and its cards expose drag handles.
@@ -979,12 +1021,14 @@ Add an optional drag mode. When `dndEnabled`, the section becomes a `dndzone` (a
 		onFinalize?: (e: CustomEvent) => void;
 	} = $props();
 
-	const unplannedItems = $derived(dndEnabled ? items : items.filter((i) => i.status === 'unplanned'));
+	const unplannedItems = $derived(
+		dndEnabled ? items : items.filter((i) => i.status === 'unplanned')
+	);
 	const FLIP_MS = 150;
 </script>
 
 {#if !dndEnabled && unplannedItems.length === 0}
-	<p class="text-ink-muted text-sm italic">No parking lot items.</p>
+	<p class="text-sm text-ink-muted italic">No parking lot items.</p>
 {:else if dndEnabled}
 	<section
 		class="min-h-[3rem] space-y-1.5 rounded-lg"
@@ -996,11 +1040,20 @@ Add an optional drag mode. When `dndEnabled`, the section becomes a `dndzone` (a
 			<div animate:flip={{ duration: FLIP_MS }} class="no-callout flex items-stretch gap-1">
 				<button
 					type="button"
-					class="text-line flex shrink-0 cursor-grab touch-none items-center px-1"
+					class="flex shrink-0 cursor-grab touch-none items-center px-1 text-line"
 					aria-label="Drag to reorder"
-					onpointerdown={(e) => { e.stopPropagation(); startDrag(); }}
-					onmousedown={(e) => { e.stopPropagation(); startDrag(); }}
-					ontouchstart={(e) => { e.stopPropagation(); startDrag(); }}
+					onpointerdown={(e) => {
+						e.stopPropagation();
+						startDrag();
+					}}
+					onmousedown={(e) => {
+						e.stopPropagation();
+						startDrag();
+					}}
+					ontouchstart={(e) => {
+						e.stopPropagation();
+						startDrag();
+					}}
 				>
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
 						<circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" />
@@ -1013,9 +1066,9 @@ Add an optional drag mode. When `dndEnabled`, the section becomes a `dndzone` (a
 						<div class="flex items-center gap-3 px-3 py-2">
 							<TypeIcon type={item.type} size={18} />
 							<div class="min-w-0 flex-1">
-								<p class="text-ink truncate text-sm" title={item.title}>{item.title}</p>
+								<p class="truncate text-sm text-ink" title={item.title}>{item.title}</p>
 								{#if item.location_name}
-									<p class="text-ink-muted truncate text-xs">{item.location_name}</p>
+									<p class="truncate text-xs text-ink-muted">{item.location_name}</p>
 								{/if}
 								{#if votesByItem[item.id]?.length}
 									<div class="mt-1.5">
@@ -1023,7 +1076,7 @@ Add an optional drag mode. When `dndEnabled`, the section becomes a `dndzone` (a
 									</div>
 								{/if}
 							</div>
-							<span class="bg-paper text-ink-muted shrink-0 rounded px-1.5 py-0.5 text-[11px]">
+							<span class="shrink-0 rounded bg-paper px-1.5 py-0.5 text-[11px] text-ink-muted">
 								{titleCase(item.type)}
 							</span>
 						</div>
@@ -1032,7 +1085,9 @@ Add an optional drag mode. When `dndEnabled`, the section becomes a `dndzone` (a
 			</div>
 		{/each}
 		{#if unplannedItems.length === 0}
-			<p class="text-ink-muted px-2 py-3 text-center text-xs italic">Drag an item here to unschedule it.</p>
+			<p class="px-2 py-3 text-center text-xs text-ink-muted italic">
+				Drag an item here to unschedule it.
+			</p>
 		{/if}
 	</section>
 {:else}
@@ -1042,9 +1097,9 @@ Add an optional drag mode. When `dndEnabled`, the section becomes a `dndzone` (a
 				<div class="flex items-center gap-3 px-3 py-2">
 					<TypeIcon type={item.type} size={18} />
 					<div class="min-w-0 flex-1">
-						<p class="text-ink truncate text-sm" title={item.title}>{item.title}</p>
+						<p class="truncate text-sm text-ink" title={item.title}>{item.title}</p>
 						{#if item.location_name}
-							<p class="text-ink-muted truncate text-xs">{item.location_name}</p>
+							<p class="truncate text-xs text-ink-muted">{item.location_name}</p>
 						{/if}
 						{#if votesByItem[item.id]?.length}
 							<div class="mt-1.5">
@@ -1052,7 +1107,7 @@ Add an optional drag mode. When `dndEnabled`, the section becomes a `dndzone` (a
 							</div>
 						{/if}
 					</div>
-					<span class="bg-paper text-ink-muted shrink-0 rounded px-1.5 py-0.5 text-[11px]">
+					<span class="shrink-0 rounded bg-paper px-1.5 py-0.5 text-[11px] text-ink-muted">
 						{titleCase(item.type)}
 					</span>
 				</div>
@@ -1076,6 +1131,7 @@ git commit -m "feat: parking lot drag mode with persistent empty drop target (#6
 ## Task 9: Wire the day page
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/days/[dayId]/+page.svelte`
 
 - [ ] **Step 1: Replace the DragDropTimeline block**
@@ -1083,57 +1139,67 @@ git commit -m "feat: parking lot drag mode with persistent empty drop target (#6
 Replace the existing `<DragDropTimeline …>` snippet block (the one wiring `onDragStart`/`onDropParking` etc.) with the new prop surface. The mobile parking section now **always renders** (remove the `length > 0` gate) so it's a drop target when empty:
 
 ```svelte
-	<DragDropTimeline
-		dayItems={data.dayItems}
-		parkingLotItems={data.parkingLotItems}
-		tripSlug={data.trip.slug}
-		dayId={data.day.id}
-	>
-		{#snippet children({ timelineItems, parkingItems, timelineDragDisabled, parkingDragDisabled, startDrag, onTimelineConsider, onTimelineFinalize, onParkingConsider, onParkingFinalize })}
-			<!-- Items -->
-			<section class="space-y-1.5">
-				<SectionH>
-					{#snippet right()}
-						<a
-							href="/trips/{data.trip.slug}/items/new?day={data.day.id}"
-							class="text-ink-muted hover:text-ink-soft"
-							aria-label="Add item"
-						>
-							+ Add
-						</a>
-					{/snippet}
-					Items
-				</SectionH>
+<DragDropTimeline
+	dayItems={data.dayItems}
+	parkingLotItems={data.parkingLotItems}
+	tripSlug={data.trip.slug}
+	dayId={data.day.id}
+>
+	{#snippet children({
+		timelineItems,
+		parkingItems,
+		timelineDragDisabled,
+		parkingDragDisabled,
+		startDrag,
+		onTimelineConsider,
+		onTimelineFinalize,
+		onParkingConsider,
+		onParkingFinalize
+	})}
+		<!-- Items -->
+		<section class="space-y-1.5">
+			<SectionH>
+				{#snippet right()}
+					<a
+						href="/trips/{data.trip.slug}/items/new?day={data.day.id}"
+						class="text-ink-muted hover:text-ink-soft"
+						aria-label="Add item"
+					>
+						+ Add
+					</a>
+				{/snippet}
+				Items
+			</SectionH>
 
-				<DayTimeline
-					items={timelineItems}
-					tripSlug={data.trip.slug}
-					dayId={data.day.id}
-					votesByItem={data.votesByItem}
-					members={data.members}
-					dragDisabled={timelineDragDisabled}
-					{startDrag}
-					onConsider={onTimelineConsider}
-					onFinalize={onTimelineFinalize}
-				/>
-			</section>
+			<DayTimeline
+				items={timelineItems}
+				tripSlug={data.trip.slug}
+				dayId={data.day.id}
+				votesByItem={data.votesByItem}
+				members={data.members}
+				dragDisabled={timelineDragDisabled}
+				{startDrag}
+				onConsider={onTimelineConsider}
+				onFinalize={onTimelineFinalize}
+			/>
+		</section>
 
-			<!-- Parking lot (mobile/tablet) — always rendered as a drop target -->
-			<section class="space-y-1.5 lg-desktop:hidden">
-				<SectionH>Parking Lot</SectionH>
-				<ParkingLotSection
-					items={parkingItems}
-					phases={data.dayPhases}
-					tripSlug={data.trip.slug}
-					dndEnabled={true}
-					dragDisabled={parkingDragDisabled}
-					{startDrag}
-					onConsider={onParkingConsider}
-					onFinalize={onParkingFinalize}
-				/>
-			</section>
-		{/snippet}
-	</DragDropTimeline>
+		<!-- Parking lot (mobile/tablet) — always rendered as a drop target -->
+		<section class="space-y-1.5 lg-desktop:hidden">
+			<SectionH>Parking Lot</SectionH>
+			<ParkingLotSection
+				items={parkingItems}
+				phases={data.dayPhases}
+				tripSlug={data.trip.slug}
+				dndEnabled={true}
+				dragDisabled={parkingDragDisabled}
+				{startDrag}
+				onConsider={onParkingConsider}
+				onFinalize={onParkingFinalize}
+			/>
+		</section>
+	{/snippet}
+</DragDropTimeline>
 ```
 
 (Renamed the section header from "Ideas" to "Parking Lot" to reconcile the naming split — finding #2 from the parking-lot audit.)
@@ -1168,6 +1234,7 @@ Run: `./backend/start.sh` (separate shell) and `pnpm dev`. Use preview tools; re
 - [ ] **Step 2: Verify each gesture on a day with both timed and untimed items**
 
 Check, capturing a screenshot/snapshot for each:
+
 - Drag handle on an **untimed** item → reorder within the day → order persists after reload.
 - Drag an untimed item **down into the Parking Lot** → it moves to parking; the timeline loses it.
 - Drag a **timed** item into the Parking Lot → it parks AND its time is gone (reopen detail: no start/end time).
@@ -1202,4 +1269,7 @@ git commit -m "docs: log iOS native-DnD learning + new files (#60)"
 - **Type consistency:** `neighborsForMove` returns `{before, after}` (Task 2) consumed in Task 6; `buildTimelineFlat` returns `{item, anchored, slotLabel}` (Task 1) consumed in Task 7; `startDrag`/`onConsider`/`onFinalize` prop names consistent across Tasks 6–9.
 - **Known risk:** svelte-dnd-action global `DndEvent` type — if `pnpm check` can't find it, import it explicitly (noted in Task 6 Step 1). If the handle `pointerdown` doesn't start the drag on iOS, fall back to `touchstart` only (already wired) and confirm `touch-action: none` on the handle.
 - **Reorder action reused unchanged** — no test changes needed there; new logic is unit-tested in Tasks 1–2.
+
+```
+
 ```

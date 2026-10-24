@@ -19,7 +19,7 @@
 - Clock format: `6:30p`, `10:30a`. The colon stays; the space and the "m" go.
 - Text forms: start only `9:30p`; range `10:00a–12:00p` (en dash, no spaces); deadline `by 4:30p`; untimed omitted; flights `2:05p → 4:20p`. In text, an end time never appears without `by`.
 - Rail: start on the top edge, end on the bottom edge, an end-only item shows a plain end label with **no `by`**, untimed shows no time.
-- Date prefix: `Thu Oct 1 · 6:30p` (no comma; ` · ` separator). Calendar-day dates format with `timeZone: 'UTC'`.
+- Date prefix: `Thu Oct 1 · 6:30p` (no comma; `·` separator). Calendar-day dates format with `timeZone: 'UTC'`.
 - Icon sizes: 16px bare glyph; 24px disc with 16px glyph; 40px disc with 26px glyph. Variants: dashed (untimed), accent-filled (Hero).
 - Node: monochrome, ink-soft glyph on surface-2 with a `line` ring; dashed when untimed.
 - Bubble: neutral initials; not going = diagonal strike, **no opacity**, letter ≥ 4.5:1; accessible name `Kevin, not going`.
@@ -33,7 +33,7 @@
 - Stored shapes: `'YYYY-MM-DD HH:MM:SS.sssZ'`, ISO `'…THH:MM…'` and bare `'HH:MM'` all format the same wall clock, never shifted by the machine zone (Task 2 test, plus a `TZ=America/Detroit` run).
 - Date prefix west of UTC: `'2026-10-01 00:00:00.000Z'` must read `Thu Oct 1`, not `Wed Sep 30` (Task 2 test under `TZ=America/Detroit`).
 - An end-only item never loses `by` in text, even with a date prefix or as a flight (Task 2 tests).
-- An untimed item with a date prefix reads as the date alone, with no dangling ` · ` (Task 2 test).
+- An untimed item with a date prefix reads as the date alone, with no dangling `·` (Task 2 test).
 
 ## Rulings
 
@@ -55,10 +55,12 @@
 ### Task 1: The time-shape classifier
 
 **Files:**
+
 - Modify: `src/lib/itinerary/timeline.ts` (add the type, interface and function above `itemAnchorTime`; re-express `isAnchored`)
 - Test: `src/lib/itinerary/timeline.test.ts` (new `describe('timeShape')`)
 
 **Interfaces:**
+
 - Produces:
   - `export type TimeShape = 'untimed' | 'start-only' | 'range' | 'end-only';`
   - `export interface TimeFields { start_time?: string; end_time?: string }`
@@ -79,15 +81,17 @@
 ### Task 2: The time grammar (clock, text forms, rail labels, date prefix)
 
 **Files:**
+
 - Modify: `src/lib/shell/format.ts` (append; import `timeShape`, `TimeFields` from `$lib/itinerary/timeline`)
 - Test: `src/lib/shell/format.test.ts`
 
 **Interfaces:**
+
 - Consumes: `timeShape(item: TimeFields): TimeShape` (Task 1).
 - Produces:
   - `export function formatClock(t: string): string` — `'6:30p'`; `''` for `''`. Same input parsing as `formatTime` (date part optional, `T` or space separator, wall clock taken from the string, no `Date`).
   - `export function formatDayDate(date: string): string` — `'Thu Oct 1'` from `'YYYY-MM-DD'` or a stored `'YYYY-MM-DD 00:00:00.000Z'` / ISO string; `''` for `''`. Uses `timeZone: 'UTC'`; joins weekday, month, day with single spaces (Intl's `en-US` output has a comma, so build from parts).
-  - `export function formatTimeText(item: TimeFields & { type?: string }, opts?: { date?: string }): string` — text form by `timeShape`; a `type === 'flight'` range uses ` → `; with `opts.date`, prefix `formatDayDate(date)` and ` · ` (date alone when untimed).
+  - `export function formatTimeText(item: TimeFields & { type?: string }, opts?: { date?: string }): string` — text form by `timeShape`; a `type === 'flight'` range uses `→`; with `opts.date`, prefix `formatDayDate(date)` and `·` (date alone when untimed).
   - `export function railTimeLabels(item: TimeFields): { top: string; bottom: string }` — `top` = start clock (range, start-only), `bottom` = end clock (range, end-only), never `by`; `''` where absent.
 
 - [ ] **Step 1: Write the failing tests** — `describe('time grammar (#419, D5/D11)')`:
@@ -104,11 +108,13 @@
 ### Task 3: Monochrome type icon
 
 **Files:**
+
 - Create: `src/lib/ui/TypeGlyph.svelte` (the seven glyph `<svg>` branches moved verbatim out of `TypeIcon.svelte`)
 - Modify: `src/lib/ui/TypeIcon.svelte` (render `<TypeGlyph type={type} size={glyphSize} />` inside its span; nothing else changes)
 - Create: `src/lib/ui/MonoTypeIcon.svelte`
 
 **Interfaces:**
+
 - Produces:
   - `TypeGlyph.svelte` props `{ type: ItemType; size: number }` — bare `<svg>` in `currentColor`, `aria-hidden="true"`.
   - `MonoTypeIcon.svelte` props `{ type: ItemType; size: 16 | 24 | 40; variant?: 'plain' | 'dashed' | 'filled'; label?: string }`
@@ -124,9 +130,11 @@
 ### Task 4: Neutral initials bubble
 
 **Files:**
+
 - Create: `src/lib/ui/PersonBubble.svelte`
 
 **Interfaces:**
+
 - Produces: `PersonBubble.svelte` props `{ name: string; initial?: string; notGoing?: boolean; size?: number }` (default `size` 20; `initial` defaults to the first letter of `name`, upper-cased).
   - Going: surface-2 fill, ink-soft letter (8.36:1), 1px inset `line` ring, 2px surface border so stacked bubbles separate.
   - Not going: same bubble, ink-muted letter (5.71:1), a 1.5px ink-soft diagonal strike (−45°) across it; never opacity.
@@ -140,6 +148,7 @@
 ### Task 5: gold-deep token
 
 **Files:**
+
 - Modify: `src/routes/layout.css:51` → `--color-gold-deep: #745a1c;`
 - Modify: `docs/design-system.md` — gold-deep row to `#745a1c` with its ratios and "retuned from `#8a6f24`, D10"; add `MonoTypeIcon`, `TypeGlyph` and `PersonBubble` rows to the Primitives table, and note `TypeIcon` as the legacy coloured icon.
 
@@ -150,6 +159,7 @@
 ### Task 6: Delete the orphaned Today components
 
 **Files:**
+
 - Delete: `src/lib/trip-mode/components/TodayItemCard.svelte`, `src/lib/trip-mode/components/TodayTimeline.svelte`
 - Modify: `src/routes/(app)/trips/[slug]/now/+page.svelte` (the auto-scroll comment that cites `TodayTimeline`)
 - Modify: `CONTEXT.md` (Today entry: "orphaned code" → deleted in #419); `docs/CARD_SYSTEM.md` §1 Dead code (note the deletion)

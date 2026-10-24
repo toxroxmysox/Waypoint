@@ -12,14 +12,16 @@
 	});
 </script>
 
-<nav class="border-line bg-paper/95 sticky top-[calc(57px+var(--edge-top))] z-dropdown flex gap-1 overflow-x-auto border-b px-4 backdrop-blur touch-pan-x">
+<nav
+	class="sticky top-[calc(57px+var(--edge-top))] z-dropdown flex touch-pan-x gap-1 overflow-x-auto border-b border-line bg-paper/95 px-4 backdrop-blur"
+>
 	{#each tabs as tab (tab.id)}
 		{@const active = activeId === tab.id}
 		<a
 			href={tab.href}
-			class="-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-[13px] font-semibold transition duration-75 active:opacity-60 {active
+			class="-mb-px border-b-2 px-3 py-2 text-[13px] font-semibold whitespace-nowrap transition duration-75 active:opacity-60 {active
 				? 'border-ink text-ink'
-				: 'text-ink-muted hover:text-ink-soft active:text-ink-soft border-transparent'}"
+				: 'border-transparent text-ink-muted hover:text-ink-soft active:text-ink-soft'}"
 		>
 			{tab.label}
 		</a>

@@ -85,7 +85,9 @@ test.describe('#404 goal capture keeps commas', () => {
 			await traveler.page.waitForLoadState('networkidle');
 			await traveler.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/goals`, { waitUntil: 'networkidle' });
 			const row = traveler.page
-				.locator('div.relative', { has: traveler.page.getByRole('link', { name: 'Kayak, then lunch' }) })
+				.locator('div.relative', {
+					has: traveler.page.getByRole('link', { name: 'Kayak, then lunch' })
+				})
 				.filter({ visible: true });
 			await expect(row.locator('[data-goal-kicker]')).not.toHaveText('');
 		} finally {

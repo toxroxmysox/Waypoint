@@ -35,7 +35,7 @@
 	{#each groups as group (group.type)}
 		<div data-considered-group={group.type}>
 			<IdeaGroupHeading type={group.type} />
-			<div class="border-line bg-surface shadow-card rounded-lg border px-4">
+			<div class="rounded-lg border border-line bg-surface px-4 shadow-card">
 				{#each group.items as item, i (item.id)}
 					{@const content = rowContent(item, { phaseName: phaseName.get(item.phase) })}
 					{#snippet subline()}

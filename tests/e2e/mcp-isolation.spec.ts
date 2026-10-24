@@ -20,8 +20,14 @@ const AI_OFF = 'AI access is turned off for this trip by its owner.';
  * Valid args for each tool, aimed at `trip`. `scoped` = takes a trip. `mutates`
  * (#503 write tools) = refused, not served, on an AI-off trip and for a viewer.
  */
-function argsFor(name: string, trip: string): { args: Record<string, unknown>; scoped: boolean; mutates?: true; errors?: true } {
-	const table: Record<string, { args: Record<string, unknown>; scoped: boolean; mutates?: true; errors?: true }> = {
+function argsFor(
+	name: string,
+	trip: string
+): { args: Record<string, unknown>; scoped: boolean; mutates?: true; errors?: true } {
+	const table: Record<
+		string,
+		{ args: Record<string, unknown>; scoped: boolean; mutates?: true; errors?: true }
+	> = {
 		list_trips: { args: {}, scoped: false },
 		get_trip: { args: { trip }, scoped: true },
 		get_day: { args: { trip, date: 'today' }, scoped: true },
@@ -36,7 +42,18 @@ function argsFor(name: string, trip: string): { args: Record<string, unknown>; s
 		describe: { args: { trip }, scoped: true },
 		// Proposes only (writes nothing); its preview shows a planted email's old value, which must be scrubbed.
 		propose_changes: {
-			args: { trip, quote: 'tidy the note', ops: [{ action: 'update', collection: 'items', id: seed.items.overlapA, data: { description: 'Booked' } }] },
+			args: {
+				trip,
+				quote: 'tidy the note',
+				ops: [
+					{
+						action: 'update',
+						collection: 'items',
+						id: seed.items.overlapA,
+						data: { description: 'Booked' }
+					}
+				]
+			},
 			scoped: true,
 			mutates: true
 		},
@@ -50,11 +67,13 @@ function argsFor(name: string, trip: string): { args: Record<string, unknown>; s
 	return row;
 }
 
-const dump = (r: { text: string; structured: unknown }) => `${r.text}\n${JSON.stringify(r.structured ?? {})}`;
+const dump = (r: { text: string; structured: unknown }) =>
+	`${r.text}\n${JSON.stringify(r.structured ?? {})}`;
 
 test.beforeAll(async () => {
 	seed = await seedMcpTrips();
-	for (const who of ['owner', 'viewer', 'outsider'] as const) tokens[who] = (await connect(MCP_EMAILS[who])).access;
+	for (const who of ['owner', 'viewer', 'outsider'] as const)
+		tokens[who] = (await connect(MCP_EMAILS[who])).access;
 	const r = await rpc(tokens.owner, 'tools/list');
 	toolNames = (r.json.result.tools as { name: string }[]).map((t) => t.name);
 });
@@ -62,13 +81,41 @@ test.beforeAll(async () => {
 /** Every tool on the current trip, plus searches aimed at each planted shape, as the owner. */
 async function ownerSweep(): Promise<string> {
 	const out: string[] = [];
-	for (const name of toolNames) out.push(dump(await callTool(tokens.owner, name, argsFor(name, seed.trips.current).args)));
-	for (const id of Object.values(seed.items)) out.push(dump(await callTool(tokens.owner, 'get_item', { item: id })));
-	for (const q of ['example', 'mailto', 'villa', 'bistro', 'pack', 'chat', 'mem', 'aim', 'tap', 'Abby', 'Kim', 'miradouro', 'pdf', 'files']) {
+	for (const name of toolNames)
+		out.push(dump(await callTool(tokens.owner, name, argsFor(name, seed.trips.current).args)));
+	for (const id of Object.values(seed.items))
+		out.push(dump(await callTool(tokens.owner, 'get_item', { item: id })));
+	for (const q of [
+		'example',
+		'mailto',
+		'villa',
+		'bistro',
+		'pack',
+		'chat',
+		'mem',
+		'aim',
+		'tap',
+		'Abby',
+		'Kim',
+		'miradouro',
+		'pdf',
+		'files'
+	]) {
 		out.push(dump(await callTool(tokens.owner, 'search', { query: q })));
 	}
-	out.push(dump(await callTool(tokens.owner, 'get_day', { trip: seed.trips.current, date: seed.dates.start })));
-	out.push(dump(await callTool(tokens.owner, 'get_memories', { trip: seed.trips.current, date: seed.dates.start })));
+	out.push(
+		dump(
+			await callTool(tokens.owner, 'get_day', { trip: seed.trips.current, date: seed.dates.start })
+		)
+	);
+	out.push(
+		dump(
+			await callTool(tokens.owner, 'get_memories', {
+				trip: seed.trips.current,
+				date: seed.dates.start
+			})
+		)
+	);
 	return out.join('\n');
 }
 
@@ -80,7 +127,8 @@ test('every tool is covered by the sweep', () => {
 test('no email and no photo in any output', async () => {
 	const all = await ownerSweep();
 	expect(all.match(EMAIL)?.[0] ?? null).toBeNull();
-	for (const e of PLANTED_EMAILS) expect(all.toLowerCase()).not.toContain(e.toLowerCase().split('@')[1]);
+	for (const e of PLANTED_EMAILS)
+		expect(all.toLowerCase()).not.toContain(e.toLowerCase().split('@')[1]);
 	expect(all).not.toContain('/api/files/');
 	expect(all).not.toContain(seed.photoName);
 	expect(all).not.toContain('casa-confirmation');
@@ -156,5 +204,5 @@ test('trip_brief without a trip briefs the trip happening now', async () => {
 	const r = await callTool(tokens.viewer, 'trip_brief');
 	expect(r.isError).toBeFalsy();
 	// Other spec files seed their own "now" trips into the same PB; any of them is right.
-	expect(r.structured.heading).toContain("E2E MCP Porto");
+	expect(r.structured.heading).toContain('E2E MCP Porto');
 });

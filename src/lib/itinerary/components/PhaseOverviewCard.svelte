@@ -36,7 +36,10 @@
 	const ideasLabel = $derived(`${ideaCount} idea${ideaCount === 1 ? '' : 's'}`);
 </script>
 
-<article class="border-line bg-surface rounded-lg border p-4 shadow-card" data-phase-card={phase.id}>
+<article
+	class="rounded-lg border border-line bg-surface p-4 shadow-card"
+	data-phase-card={phase.id}
+>
 	<LevelHeader
 		title={phase.name}
 		place={phase.location}
@@ -48,23 +51,29 @@
 	>
 		{#snippet notes()}
 			{#if phase.notes}
-				<a href="/trips/{tripSlug}/phases/{phase.id}" class="text-ink-soft block text-sm whitespace-pre-wrap" tabindex="-1">{phase.notes}</a>
+				<a
+					href="/trips/{tripSlug}/phases/{phase.id}"
+					class="block text-sm whitespace-pre-wrap text-ink-soft"
+					tabindex="-1">{phase.notes}</a
+				>
 			{/if}
 		{/snippet}
 	</LevelHeader>
 
 	{#if ideaCount > 0}
-		<div class="border-line mt-3 border-t pt-2">
+		<div class="mt-3 border-t border-line pt-2">
 			{#if unratedCount > 0}
 				<a
-					href="/trips/{tripSlug}/swipe/{phase.id}?from={encodeURIComponent(`/trips/${tripSlug}/phases`)}"
+					href="/trips/{tripSlug}/swipe/{phase.id}?from={encodeURIComponent(
+						`/trips/${tripSlug}/phases`
+					)}"
 					class="flex min-h-11 items-center justify-between gap-2 text-sm"
 				>
 					<span class="text-ink-soft">{ideasLabel} · {unratedCount} to rate</span>
-					<span class="text-moss font-semibold">Swipe ›</span>
+					<span class="font-semibold text-moss">Swipe ›</span>
 				</a>
 			{:else}
-				<p class="text-ink-muted flex min-h-11 items-center text-sm">{ideasLabel} · all rated</p>
+				<p class="flex min-h-11 items-center text-sm text-ink-muted">{ideasLabel} · all rated</p>
 			{/if}
 		</div>
 	{/if}

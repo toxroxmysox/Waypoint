@@ -35,10 +35,16 @@ async function pb(t: string, method: string, path: string, body?: unknown) {
 		headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
 		body: body === undefined ? undefined : JSON.stringify(body)
 	});
-	return { status: res.status, json: (await res.json().catch(() => ({}))) as Record<string, unknown> };
+	return {
+		status: res.status,
+		json: (await res.json().catch(() => ({}))) as Record<string, unknown>
+	};
 }
 
-async function devLogin(browser: Browser, email: string): Promise<{ page: Page; close: () => Promise<void> }> {
+async function devLogin(
+	browser: Browser,
+	email: string
+): Promise<{ page: Page; close: () => Promise<void> }> {
 	const ctx = await browser.newContext({ viewport: { width: 375, height: 812 } });
 	const page = await ctx.newPage();
 	await page.goto(`${BASE}/api/dev/login?email=${encodeURIComponent(email)}`);
@@ -77,13 +83,25 @@ test('owner turns AI Access off and on', async ({ browser }) => {
 	const save = page.getByRole('button', { name: 'Save changes' }).filter({ visible: true });
 	await box.uncheck();
 	await save.click();
-	await expect.poll(async () => (await pb(ownerToken, 'GET', `/api/collections/trips/records/${tripId}`)).json.ai_access).toBe(false);
+	await expect
+		.poll(
+			async () =>
+				(await pb(ownerToken, 'GET', `/api/collections/trips/records/${tripId}`)).json.ai_access
+		)
+		.toBe(false);
 
 	await page.reload({ waitUntil: 'networkidle' });
-	await expect(page.getByLabel('AI can read this trip').filter({ visible: true })).not.toBeChecked();
+	await expect(
+		page.getByLabel('AI can read this trip').filter({ visible: true })
+	).not.toBeChecked();
 	await page.getByLabel('AI can read this trip').filter({ visible: true }).check();
 	await page.getByRole('button', { name: 'Save changes' }).filter({ visible: true }).click();
-	await expect.poll(async () => (await pb(ownerToken, 'GET', `/api/collections/trips/records/${tripId}`)).json.ai_access).toBe(true);
+	await expect
+		.poll(
+			async () =>
+				(await pb(ownerToken, 'GET', `/api/collections/trips/records/${tripId}`)).json.ai_access
+		)
+		.toBe(true);
 	await close();
 });
 
@@ -107,10 +125,17 @@ test('new trips default on', async ({ browser }) => {
 	await page.goto(`${BASE}/trips/new`, { waitUntil: 'networkidle' });
 	const title = `E2E AI new ${Date.now().toString(36)}`;
 	await page.getByLabel('Trip name').filter({ visible: true }).fill(title);
-	await page.getByRole('button', { name: /create/i }).filter({ visible: true }).first().click();
-	await page.waitForURL((u) => /^\/trips\/[^/]+$/.test(u.pathname) && !u.pathname.endsWith('/new'), {
-		timeout: 15000
-	});
+	await page
+		.getByRole('button', { name: /create/i })
+		.filter({ visible: true })
+		.first()
+		.click();
+	await page.waitForURL(
+		(u) => /^\/trips\/[^/]+$/.test(u.pathname) && !u.pathname.endsWith('/new'),
+		{
+			timeout: 15000
+		}
+	);
 	const list = await pb(
 		ownerToken,
 		'GET',
@@ -124,7 +149,9 @@ test('new trips default on', async ({ browser }) => {
 
 test('traveler cannot change AI Access', async () => {
 	const travelerToken = await token(EMAILS.traveler);
-	const res = await pb(travelerToken, 'PATCH', `/api/collections/trips/records/${tripId}`, { ai_access: false });
+	const res = await pb(travelerToken, 'PATCH', `/api/collections/trips/records/${tripId}`, {
+		ai_access: false
+	});
 	expect([400, 403]).toContain(res.status);
 	const after = await pb(ownerToken, 'GET', `/api/collections/trips/records/${tripId}`);
 	expect(after.json.ai_access).toBe(true);
@@ -139,7 +166,8 @@ test('owner turns AI changes off while reading stays on', async ({ browser }) =>
 	const read = () => page.getByLabel('AI can read this trip').filter({ visible: true });
 	const write = () => page.getByLabel('AI can make changes').filter({ visible: true });
 	const save = () => page.getByRole('button', { name: 'Save changes' }).filter({ visible: true });
-	const trip = async () => (await pb(ownerToken, 'GET', `/api/collections/trips/records/${tripId}`)).json;
+	const trip = async () =>
+		(await pb(ownerToken, 'GET', `/api/collections/trips/records/${tripId}`)).json;
 
 	await expect(read()).toBeChecked();
 	await expect(write()).toBeChecked();
@@ -176,7 +204,12 @@ test('traveler sees neither AI switch as editable', async ({ browser }) => {
 	await page.goto(`${BASE}/trips/${SLUG}/settings`, { waitUntil: 'networkidle' });
 	await expect(page.getByLabel('AI can read this trip').filter({ visible: true })).toHaveCount(0);
 	await expect(page.getByLabel('AI can make changes').filter({ visible: true })).toHaveCount(0);
-	const res = await pb(await token(EMAILS.traveler), 'PATCH', `/api/collections/trips/records/${tripId}`, { ai_write: false });
+	const res = await pb(
+		await token(EMAILS.traveler),
+		'PATCH',
+		`/api/collections/trips/records/${tripId}`,
+		{ ai_write: false }
+	);
 	expect([400, 403]).toContain(res.status);
 	await close();
 });

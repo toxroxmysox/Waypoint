@@ -64,7 +64,7 @@ describe('rebalance', () => {
 		expect(result).toEqual([
 			{ id: 'a', sort_order: GAP },
 			{ id: 'b', sort_order: GAP * 2 },
-			{ id: 'c', sort_order: GAP * 3 },
+			{ id: 'c', sort_order: GAP * 3 }
 		]);
 	});
 

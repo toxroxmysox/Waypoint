@@ -125,7 +125,9 @@ for (const u of users) {
 	if (u.email) userIdByEmail.set(String(u.email).toLowerCase(), u.id);
 }
 
-log(`  ${members.length} active memberships across ${new Set(members.map((m) => m.trip)).size} trips`);
+log(
+	`  ${members.length} active memberships across ${new Set(members.map((m) => m.trip)).size} trips`
+);
 log(`  ${users.length} users\n`);
 
 const tripLabel = (m) => {
@@ -226,7 +228,8 @@ function section(title, rows, render) {
 section(
 	'A. same user with >1 active membership on one trip',
 	findings.duplicateUser,
-	(r) => `${r.tripLabel} — user ${r.user} x${r.count} (${r.memberIds.join(', ')}) roles=${r.roles.join('/')}`
+	(r) =>
+		`${r.tripLabel} — user ${r.user} x${r.count} (${r.memberIds.join(', ')}) roles=${r.roles.join('/')}`
 );
 section(
 	'B. same placeholder_email with >1 active row on one trip',

@@ -53,8 +53,18 @@ describe('parkingLotCards — merge', () => {
 		const cards = parkingLotCards(items, suggestions, { phaseId: 'p1', viewerRole: 'owner' });
 
 		expect(cards).toHaveLength(4);
-		expect(cards.filter((c) => c.kind === 'item').map((c) => c.id).sort()).toEqual(['i1', 'i2']);
-		expect(cards.filter((c) => c.kind === 'ghost').map((c) => c.id).sort()).toEqual(['s1', 's2']);
+		expect(
+			cards
+				.filter((c) => c.kind === 'item')
+				.map((c) => c.id)
+				.sort()
+		).toEqual(['i1', 'i2']);
+		expect(
+			cards
+				.filter((c) => c.kind === 'ghost')
+				.map((c) => c.id)
+				.sort()
+		).toEqual(['s1', 's2']);
 	});
 
 	it('tags each card kind item|ghost and exposes its source row', () => {
@@ -161,7 +171,10 @@ describe('parkingLotCards — vote-stack attachment', () => {
 
 describe('parkingLotCards — sort', () => {
 	it('orders by aggregate vote score descending, across items AND ghosts', () => {
-		const items = [makeItem({ id: 'i-lo', sort_order: 0 }), makeItem({ id: 'i-mid', sort_order: 1 })];
+		const items = [
+			makeItem({ id: 'i-lo', sort_order: 0 }),
+			makeItem({ id: 'i-mid', sort_order: 1 })
+		];
 		const suggestions = [makeSuggestion({ id: 's-hi' })];
 
 		const cards = parkingLotCards(items, suggestions, {
@@ -177,7 +190,10 @@ describe('parkingLotCards — sort', () => {
 
 	it('breaks score ties by sort_order, putting equal-score items ahead of ghosts', () => {
 		// All zero score → tiebreak only. Items keep their drag order; ghosts trail.
-		const items = [makeItem({ id: 'i-b', sort_order: 20 }), makeItem({ id: 'i-a', sort_order: 10 })];
+		const items = [
+			makeItem({ id: 'i-b', sort_order: 20 }),
+			makeItem({ id: 'i-a', sort_order: 10 })
+		];
 		const suggestions = [makeSuggestion({ id: 's1' })];
 
 		const cards = parkingLotCards(items, suggestions, { phaseId: 'p1', viewerRole: 'owner' });
@@ -206,7 +222,9 @@ describe('parkingLotCards — audience (all members see ghosts)', () => {
 		const suggestions = [makeSuggestion({ id: 's1' })];
 
 		const perRole = ROLES.map((viewerRole) =>
-			parkingLotCards(items, suggestions, { phaseId: 'p1', viewerRole }).map((c) => `${c.kind}:${c.id}`)
+			parkingLotCards(items, suggestions, { phaseId: 'p1', viewerRole }).map(
+				(c) => `${c.kind}:${c.id}`
+			)
 		);
 
 		// Every role sees the identical merged list — read-only-but-can-see. The

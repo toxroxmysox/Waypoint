@@ -233,7 +233,8 @@ export const actions: Actions = {
 			const task = await locals.pb.collection('tasks').getOne<Task>(taskId);
 			const checklist = await locals.pb.collection('checklists').getOne<Checklist>(task.checklist);
 			// Trip Mode only surfaces trip/phase-scoped lists; reject item-scoped tasks.
-			if (checklist.trip !== trip.id || checklist.item) return fail(403, { error: 'Not authorized.' });
+			if (checklist.trip !== trip.id || checklist.item)
+				return fail(403, { error: 'Not authorized.' });
 			await locals.pb.collection('tasks').update(taskId, { checked: !task.checked });
 			return { success: true };
 		} catch (err: unknown) {

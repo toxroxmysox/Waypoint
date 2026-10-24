@@ -100,9 +100,7 @@ onRecordUpdateRequest((e) => {
 	if (rawMembers) for (let i = 0; i < rawMembers.length; i++) memberIds.push('' + rawMembers[i]);
 
 	if (memberIds.indexOf('' + callerMember.id) === -1) {
-		throw new ForbiddenError(
-			'Only a member of this money unit (or an owner/co-owner) can edit it'
-		);
+		throw new ForbiddenError('Only a member of this money unit (or an owner/co-owner) can edit it');
 	}
 
 	e.next();

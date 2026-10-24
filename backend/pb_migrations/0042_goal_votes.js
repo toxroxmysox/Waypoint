@@ -36,9 +36,29 @@ migrate(
 			type: 'base',
 			name: 'goal_votes',
 			fields: [
-				{ type: 'relation', name: 'goal', required: true, collectionId: tripGoals.id, maxSelect: 1, cascadeDelete: true },
-				{ type: 'relation', name: 'member', required: true, collectionId: tripMembers.id, maxSelect: 1, cascadeDelete: true },
-				{ type: 'select', name: 'value', required: true, maxSelect: 1, values: ['love', 'like', 'flexible', 'dislike'] }
+				{
+					type: 'relation',
+					name: 'goal',
+					required: true,
+					collectionId: tripGoals.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				},
+				{
+					type: 'relation',
+					name: 'member',
+					required: true,
+					collectionId: tripMembers.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				},
+				{
+					type: 'select',
+					name: 'value',
+					required: true,
+					maxSelect: 1,
+					values: ['love', 'like', 'flexible', 'dislike']
+				}
 			],
 			indexes: [
 				'CREATE UNIQUE INDEX idx_goal_votes_goal_member ON goal_votes (goal, member)',

@@ -8,7 +8,12 @@ import type { TimeFields } from '$lib/itinerary/timeline';
 import { needsBooking } from '$lib/itinerary/booking-projection';
 import type { Day, Item } from '$lib/types';
 import type { ItemStatus, ItemType } from '$lib/itinerary/types';
-import { arrivalKey, arrivalLabel, departureKey, type FlightItemInput } from '$lib/itinerary/flights-lineup';
+import {
+	arrivalKey,
+	arrivalLabel,
+	departureKey,
+	type FlightItemInput
+} from '$lib/itinerary/flights-lineup';
 import { flightPlaceLine } from '$lib/itinerary/flight-place';
 
 const SEP = ' · ';
@@ -33,14 +38,20 @@ export interface RowItemFields extends TimeFields {
  * `Thu Oct 1–Sat Oct 3 · 2 nights · Place`. The place is the location, else the
  * phase name. Empty parts are omitted; '' when nothing is known.
  */
-export function rowSub(item: RowItemFields, ctx: { dayDate?: string; phaseName?: string } = {}): string {
+export function rowSub(
+	item: RowItemFields,
+	ctx: { dayDate?: string; phaseName?: string } = {}
+): string {
 	const start = dateOnly(ctx.dayDate);
 	const end = dateOnly(item.end_date);
 	const place = item.location_name?.trim() || ctx.phaseName?.trim() || '';
 	const parts: string[] = [];
 	const nights = daysBetween(start, end);
 	if (start && end && nights > 0) {
-		parts.push(`${formatDayDate(start)}–${formatDayDate(end)}`, `${nights} night${nights === 1 ? '' : 's'}`);
+		parts.push(
+			`${formatDayDate(start)}–${formatDayDate(end)}`,
+			`${nights} night${nights === 1 ? '' : 's'}`
+		);
 	} else {
 		parts.push(formatTimeText(item, { date: start }));
 	}
@@ -75,7 +86,12 @@ export interface FlightSub {
  * Split a flight into the four parts of its sub-line. `departure` / `arrival` are
  * the lineup's keys: 'YYYY-MM-DD HH:MM', a bare 'YYYY-MM-DD', or ''.
  */
-export function flightSub(input: { departure: string; arrival: string; from: string; to: string }): FlightSub {
+export function flightSub(input: {
+	departure: string;
+	arrival: string;
+	from: string;
+	to: string;
+}): FlightSub {
 	const depDate = dateOnly(input.departure);
 	const arrDate = dateOnly(input.arrival);
 	const depClock = formatClock(input.departure);
@@ -86,7 +102,12 @@ export function flightSub(input: { departure: string; arrival: string; from: str
 		: arrDate && arrDate !== depDate
 			? formatDayDate(arrDate)
 			: '';
-	return { date: formatDayDate(depDate), dep: depClock, arr, route: flightRoute(input.from, input.to) };
+	return {
+		date: formatDayDate(depDate),
+		dep: depClock,
+		arr,
+		route: flightRoute(input.from, input.to)
+	};
 }
 
 export type FlightDrop = 'arr' | 'dep' | 'date';
@@ -126,7 +147,11 @@ export type RowTrailingKind = 'chip' | 'cost' | 'people' | 'chevron';
  * The one value in the trailing slot: a chip (an open loop or a confirmation)
  * beats a cost, which beats people bubbles; with none, the chevron says "opens".
  */
-export function rowTrailing(input: { chip?: string; cost?: number; people?: number }): RowTrailingKind {
+export function rowTrailing(input: {
+	chip?: string;
+	cost?: number;
+	people?: number;
+}): RowTrailingKind {
 	if (input.chip) return 'chip';
 	if ((input.cost ?? 0) > 0) return 'cost';
 	if ((input.people ?? 0) > 0) return 'people';
@@ -135,7 +160,11 @@ export function rowTrailing(input: { chip?: string; cost?: number; people?: numb
 
 // --- One call per item ------------------------------------------------------
 /** The fields `rowContent` reads; any Item satisfies it. */
-export type RowContentItem = RowItemFields & { description?: string; title?: string; flight_number?: string };
+export type RowContentItem = RowItemFields & {
+	description?: string;
+	title?: string;
+	flight_number?: string;
+};
 
 /**
  * What a Row shows under the title: a flight's four parts (the Row fits them to
@@ -157,7 +186,11 @@ export function rowContent(
 	// #435 — the number leads the route only for flights whose title lacks it.
 	const placed = {
 		...flight,
-		route: flightPlaceLine({ title: item.title ?? '', flight_number: item.flight_number, route: flight.route })
+		route: flightPlaceLine({
+			title: item.title ?? '',
+			flight_number: item.flight_number,
+			route: flight.route
+		})
 	};
 	return { sub: fitFlightSub(placed, Number.POSITIVE_INFINITY).text, flight: placed };
 }

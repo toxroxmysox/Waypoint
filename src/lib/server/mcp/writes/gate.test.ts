@@ -3,7 +3,8 @@ import { writesEnabled, assertCanWrite } from './gate';
 import { tripRef } from '../context';
 import type { Trip } from '$lib/types';
 
-const trip = (over: Partial<Trip> = {}) => ({ id: 't1', title: 'Porto', ai_access: true, ai_write: true, ...over }) as Trip;
+const trip = (over: Partial<Trip> = {}) =>
+	({ id: 't1', title: 'Porto', ai_access: true, ai_write: true, ...over }) as Trip;
 
 describe('writesEnabled — MCP_WRITES server switch', () => {
 	it('is on by default', () => expect(writesEnabled({})).toBe(true));
@@ -19,7 +20,9 @@ describe('assertCanWrite', () => {
 		expect(tripRef(trip(), 'traveler', 'm1').canWrite).toBe(true);
 	});
 	it('refuses a viewer', () => {
-		expect(() => assertCanWrite(tripRef(trip(), 'viewer', 'm1'))).toThrow("Viewers can't change this trip.");
+		expect(() => assertCanWrite(tripRef(trip(), 'viewer', 'm1'))).toThrow(
+			"Viewers can't change this trip."
+		);
 	});
 	it('refuses when AI changes are off', () => {
 		expect(() => assertCanWrite(tripRef(trip({ ai_write: false }), 'owner', 'm1'))).toThrow(

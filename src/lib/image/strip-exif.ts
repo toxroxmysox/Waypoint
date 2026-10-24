@@ -133,9 +133,7 @@ export async function reencodeStripMetadata(file: File, opts: StripOptions = {})
 		ctx.drawImage(bitmap, 0, 0, width, height);
 
 		const { mime, ext: outExt } = outputFormatFor(file);
-		const blob = await new Promise<Blob | null>((resolve) =>
-			canvas.toBlob(resolve, mime, quality)
-		);
+		const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, mime, quality));
 		if (!blob) throw new Error('Image encoding failed.');
 
 		return new File([blob], renameExtension(file.name, outExt), {
@@ -170,17 +168,13 @@ async function decode(file: File): Promise<CanvasImageSource & { width: number; 
 }
 
 /** <img>-element decode fallback (mirrors AvatarCropper's loader). */
-function decodeViaImg(
-	file: File
-): Promise<CanvasImageSource & { width: number; height: number }> {
+function decodeViaImg(file: File): Promise<CanvasImageSource & { width: number; height: number }> {
 	return new Promise((resolve, reject) => {
 		const url = URL.createObjectURL(file);
 		const img = new Image();
 		img.onload = () => {
 			URL.revokeObjectURL(url);
-			resolve(
-				Object.assign(img, { width: img.naturalWidth, height: img.naturalHeight })
-			);
+			resolve(Object.assign(img, { width: img.naturalWidth, height: img.naturalHeight }));
 		};
 		img.onerror = () => {
 			URL.revokeObjectURL(url);

@@ -1,11 +1,6 @@
 <script lang="ts">
 	import Button from '$lib/ui/Button.svelte';
-	import {
-		coverScale,
-		cropToWebp,
-		maxOffset,
-		type CropView
-	} from '$lib/account/avatar-crop';
+	import { coverScale, cropToWebp, maxOffset, type CropView } from '$lib/account/avatar-crop';
 
 	// Sheet *content* only — the parent owns the BottomSheet and its open state
 	// (the proven two-layer bind pattern). This component mounts fresh each time
@@ -142,7 +137,10 @@
 </script>
 
 {#if loadError}
-	<p role="alert" class="text-error-deep bg-error/10 border-error/20 mb-4 rounded-md border p-3 text-sm">
+	<p
+		role="alert"
+		class="mb-4 rounded-md border border-error/20 bg-error/10 p-3 text-sm text-error-deep"
+	>
 		{loadError}
 	</p>
 {/if}
@@ -169,7 +167,7 @@
 				style="width:{dispW}px;height:{dispH}px;transform:translate(-50%,-50%) translate({offsetX}px,{offsetY}px);"
 			/>
 			<div
-				class="pointer-events-none absolute inset-0 rounded-full ring-1 ring-inset ring-black/10"
+				class="pointer-events-none absolute inset-0 rounded-full ring-1 ring-black/10 ring-inset"
 				aria-hidden="true"
 			></div>
 		{:else}
@@ -179,7 +177,16 @@
 
 	<label class="flex w-full max-w-[280px] items-center gap-3">
 		<span class="text-ink-muted" aria-hidden="true">
-			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+			<svg
+				width="16"
+				height="16"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg
+			>
 		</span>
 		<span class="sr-only">Zoom</span>
 		<input
@@ -190,11 +197,20 @@
 			value={zoom}
 			oninput={onZoom}
 			disabled={!img}
-			class="accent-moss h-1 flex-1 cursor-pointer"
+			class="h-1 flex-1 cursor-pointer accent-moss"
 			aria-label="Zoom"
 		/>
 		<span class="text-ink-muted" aria-hidden="true">
-			<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+			<svg
+				width="22"
+				height="22"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg
+			>
 		</span>
 	</label>
 

@@ -6,13 +6,13 @@ Run these in order. Each step assumes the previous succeeded. Stop and surface a
 
 ## Prerequisites
 
-| Tool | Version | Install |
-|---|---|---|
-| Node.js | 20.x LTS or newer | https://nodejs.org or `brew install node` |
-| pnpm | 9.x | `npm i -g pnpm` |
-| Git | any modern | already installed on macOS/Linux |
-| PocketBase | latest stable | https://pocketbase.io/docs/ — single binary |
-| Caddy (later) | 2.x | `brew install caddy` (only when deploying) |
+| Tool          | Version           | Install                                     |
+| ------------- | ----------------- | ------------------------------------------- |
+| Node.js       | 20.x LTS or newer | https://nodejs.org or `brew install node`   |
+| pnpm          | 9.x               | `npm i -g pnpm`                             |
+| Git           | any modern        | already installed on macOS/Linux            |
+| PocketBase    | latest stable     | https://pocketbase.io/docs/ — single binary |
+| Caddy (later) | 2.x               | `brew install caddy` (only when deploying)  |
 
 ---
 
@@ -33,6 +33,7 @@ pnpm create svelte@latest .
 ```
 
 Choices:
+
 - Skeleton project
 - TypeScript: Yes
 - ESLint: Yes
@@ -64,6 +65,7 @@ pnpm add -D @types/node
 ```
 
 Component primitives — pick one, install later when starting M1 UI:
+
 - `pnpm add bits-ui` (recommended, shadcn-svelte's primitives)
 - or `pnpm add @melt-ui/svelte`
 
@@ -82,6 +84,7 @@ cd ..
 ```
 
 First run (before `.env.local` exists):
+
 ```bash
 cd backend && ./pocketbase serve
 ```
@@ -160,11 +163,11 @@ Real values go in `.env.local`. Never commit them.
 
 **M2 additions:**
 
-| Variable | Required for | Notes |
-|---|---|---|
-| `RESEND_API_KEY` | M2b invite emails | Free tier: 3000/mo. Get from resend.com → API Keys. |
-| `RESEND_FROM` | M2b invite emails | Must be a verified domain. Recommendation: `trips@scottvandenwarsen.com`. |
-| `WAYPOINT_DEV_MODE` | Dev/test only | Set `true` locally to enable `/api/dev/login` bypass and `rules-fixture` endpoint. Never `true` in production. |
+| Variable            | Required for      | Notes                                                                                                          |
+| ------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------- |
+| `RESEND_API_KEY`    | M2b invite emails | Free tier: 3000/mo. Get from resend.com → API Keys.                                                            |
+| `RESEND_FROM`       | M2b invite emails | Must be a verified domain. Recommendation: `trips@scottvandenwarsen.com`.                                      |
+| `WAYPOINT_DEV_MODE` | Dev/test only     | Set `true` locally to enable `/api/dev/login` bypass and `rules-fixture` endpoint. Never `true` in production. |
 
 **E2E test accounts:**
 
@@ -184,11 +187,13 @@ E2E_TEST_EMAILS=rules-owner@e2e.test,rules-coowner@e2e.test,rules-traveler@e2e.t
 Two terminals:
 
 **Terminal 1 — backend:**
+
 ```bash
 ./backend/start.sh
 ```
 
 **Terminal 2 — frontend:**
+
 ```bash
 pnpm dev
 ```
@@ -223,6 +228,7 @@ Refer to `docs/SPEC.md` §6 M1 for the full feature checklist and acceptance cri
 ## Production deployment (deferred to M4)
 
 When you're ready:
+
 1. Provision server (home box or Hetzner CX22)
 2. Install Caddy + systemd unit for PocketBase
 3. Point DNS for `trips.scottvandenwarsen.com` to server IP

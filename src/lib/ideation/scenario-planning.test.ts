@@ -67,11 +67,20 @@ describe('addDays', () => {
 
 describe('sketchTotalDays', () => {
 	it('sums segment days', () => {
-		expect(sketchTotalDays([{ name: 'A', days: 3 }, { name: 'B', days: 4 }])).toBe(7);
+		expect(
+			sketchTotalDays([
+				{ name: 'A', days: 3 },
+				{ name: 'B', days: 4 }
+			])
+		).toBe(7);
 	});
 	it('treats non-positive / missing counts as 0', () => {
 		expect(
-			sketchTotalDays([{ name: 'A', days: 0 }, { name: 'B', days: -2 }, { name: 'C' } as PhaseSketchSegment])
+			sketchTotalDays([
+				{ name: 'A', days: 0 },
+				{ name: 'B', days: -2 },
+				{ name: 'C' } as PhaseSketchSegment
+			])
 		).toBe(0);
 	});
 });
@@ -150,9 +159,9 @@ describe('normalizeSketchToWindow', () => {
 	});
 
 	it('a single-segment sketch becomes exactly the window', () => {
-		expect(normalizeSketchToWindow([{ name: 'Solo', days: 2 }], '2027-11-06', '2027-11-17')).toEqual([
-			{ name: 'Solo', days: 11 }
-		]);
+		expect(
+			normalizeSketchToWindow([{ name: 'Solo', days: 2 }], '2027-11-06', '2027-11-17')
+		).toEqual([{ name: 'Solo', days: 11 }]);
 	});
 
 	it('an empty sketch stays empty', () => {

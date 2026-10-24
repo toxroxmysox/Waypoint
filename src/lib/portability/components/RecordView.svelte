@@ -79,18 +79,35 @@
 
 <div class="space-y-6">
 	<!-- Closed marker — the trip is visibly a finished record, not a live trip. -->
-	<section class="border-line bg-surface shadow-card overflow-hidden rounded-lg border" aria-label="Closed trip record">
+	<section
+		class="overflow-hidden rounded-lg border border-line bg-surface shadow-card"
+		aria-label="Closed trip record"
+	>
 		<div class="px-4 py-3">
-			<p class="text-ink-muted flex items-center gap-1.5 text-[9.5px] font-bold tracking-[0.14em] uppercase">
-				<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+			<p
+				class="flex items-center gap-1.5 text-[9.5px] font-bold tracking-[0.14em] text-ink-muted uppercase"
+			>
+				<svg
+					width="11"
+					height="11"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2.5"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
 					<rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
 					<path d="M7 11V7a5 5 0 0 1 10 0v4" />
 				</svg>
 				Trip closed
 			</p>
-			<p class="text-ink mt-1 text-sm font-semibold">This trip is wrapped up</p>
-			<p class="text-ink-soft font-mono mt-0.5 text-[12px]">{dateRange}</p>
-			<p class="text-ink-muted mt-1.5 text-xs">A read-only record of what happened. Reopen it (below) to edit again.</p>
+			<p class="mt-1 text-sm font-semibold text-ink">This trip is wrapped up</p>
+			<p class="mt-0.5 font-mono text-[12px] text-ink-soft">{dateRange}</p>
+			<p class="mt-1.5 text-xs text-ink-muted">
+				A read-only record of what happened. Reopen it (below) to edit again.
+			</p>
 		</div>
 	</section>
 
@@ -99,24 +116,39 @@
 		     the record's origin story. Read-only; deep-links to the full "How we decided"
 		     record for the weighing detail. Rendered only when a decision exists. -->
 		<section
-			class="border-line bg-surface shadow-card overflow-hidden rounded-lg border"
+			class="overflow-hidden rounded-lg border border-line bg-surface shadow-card"
 			aria-label="How this trip came together"
 		>
 			<div class="p-4">
-				<p class="text-ink-muted text-[9.5px] font-bold tracking-[0.14em] uppercase">
+				<p class="text-[9.5px] font-bold tracking-[0.14em] text-ink-muted uppercase">
 					How this trip came together
 				</p>
-				<p class="text-ink mt-2 text-sm">
-					Chose <span class="font-semibold">{decision.chosenTitle}</span>{#if decision.otherTitles.length > 0}<span class="text-ink-soft">, over {othersPhrase(decision.otherTitles)}</span>{/if}{#if decidedOn(decision.decidedAt)}<span class="text-ink-soft"> — {decidedOn(decision.decidedAt)}</span>{/if}.
+				<p class="mt-2 text-sm text-ink">
+					Chose <span class="font-semibold">{decision.chosenTitle}</span
+					>{#if decision.otherTitles.length > 0}<span class="text-ink-soft"
+							>, over {othersPhrase(decision.otherTitles)}</span
+						>{/if}{#if decidedOn(decision.decidedAt)}<span class="text-ink-soft">
+							— {decidedOn(decision.decidedAt)}</span
+						>{/if}.
 				</p>
-				<p class="text-ink-muted mt-1 text-xs">Chosen by {decision.chooserName}.</p>
+				<p class="mt-1 text-xs text-ink-muted">Chosen by {decision.chooserName}.</p>
 				{#if decisionHref}
 					<a
 						href={decisionHref}
-						class="text-moss mt-2.5 inline-flex items-center gap-1 text-xs font-semibold"
+						class="mt-2.5 inline-flex items-center gap-1 text-xs font-semibold text-moss"
 					>
 						How we decided
-						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+						<svg
+							width="12"
+							height="12"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg
+						>
 					</a>
 				{/if}
 			</div>
@@ -137,17 +169,21 @@
 	{#if record.budgetSummary}
 		<!-- Opt-in budget summary (#243): aggregate total + rough per-person only. This is
 		     the SAME summary outsiders see — never itemized expenses or who-owes-whom. -->
-		<div class="border-line bg-surface shadow-card rounded-lg border p-5 text-center">
-			<p class="text-ink-muted text-[9.5px] font-bold tracking-[0.14em] uppercase">What the trip cost (public)</p>
+		<div class="rounded-lg border border-line bg-surface p-5 text-center shadow-card">
+			<p class="text-[9.5px] font-bold tracking-[0.14em] text-ink-muted uppercase">
+				What the trip cost (public)
+			</p>
 			<div class="mt-3 flex items-center justify-center gap-8">
 				<div>
-					<p class="text-ink text-2xl font-bold">${record.budgetSummary.total.toLocaleString()}</p>
-					<p class="text-ink-muted text-xs">total</p>
+					<p class="text-2xl font-bold text-ink">${record.budgetSummary.total.toLocaleString()}</p>
+					<p class="text-xs text-ink-muted">total</p>
 				</div>
-				<div class="bg-line h-10 w-px"></div>
+				<div class="h-10 w-px bg-line"></div>
 				<div>
-					<p class="text-ink text-2xl font-bold">${record.budgetSummary.perPerson.toLocaleString()}</p>
-					<p class="text-ink-muted text-xs">≈ per person</p>
+					<p class="text-2xl font-bold text-ink">
+						${record.budgetSummary.perPerson.toLocaleString()}
+					</p>
+					<p class="text-xs text-ink-muted">≈ per person</p>
 				</div>
 			</div>
 		</div>
@@ -155,9 +191,11 @@
 
 	<!-- The record: done items, day by day (reusing the public archive's sanitized view). -->
 	<div class="space-y-1.5">
-		<div class="text-ink-muted px-0.5 text-[9.5px] font-bold tracking-[0.14em] uppercase">What we did</div>
+		<div class="px-0.5 text-[9.5px] font-bold tracking-[0.14em] text-ink-muted uppercase">
+			What we did
+		</div>
 		{#if record.days.length === 0}
-			<p class="text-ink-muted px-1 text-sm">No itinerary days to show.</p>
+			<p class="px-1 text-sm text-ink-muted">No itinerary days to show.</p>
 		{:else}
 			<div class="space-y-4">
 				{#each record.days as day (day.id)}
@@ -173,9 +211,20 @@
 			<button
 				type="button"
 				onclick={() => (showConsidered = !showConsidered)}
-				class="text-ink-muted flex w-full items-center gap-2 text-sm font-medium"
+				class="flex w-full items-center gap-2 text-sm font-medium text-ink-muted"
 			>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transition-transform" class:rotate-90={showConsidered}>
+				<svg
+					width="16"
+					height="16"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					class="transition-transform"
+					class:rotate-90={showConsidered}
+				>
 					<path d="m9 18 6-6-6-6" />
 				</svg>
 				What we considered ({record.consideredItems.length})

@@ -41,10 +41,7 @@ export interface ItemPaidSummary {
  * filters to the item's linked expenses and folds their amounts. `isPaid` is the
  * ≥1-linked predicate the affordance flips on; `total` is the "Paid $X" figure.
  */
-export function paidSummaryForItem(
-	expenses: LinkedExpenseLike[],
-	itemId: string
-): ItemPaidSummary {
+export function paidSummaryForItem(expenses: LinkedExpenseLike[], itemId: string): ItemPaidSummary {
 	if (!itemId) return { count: 0, total: 0, isPaid: false };
 	let count = 0;
 	let total = 0;

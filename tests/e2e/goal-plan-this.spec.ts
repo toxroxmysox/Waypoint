@@ -74,7 +74,9 @@ test.describe('#263 Goal → "Plan this"', () => {
 		const owner = await devLogin(browser, EMAILS.owner);
 		try {
 			// The goal detail surfaces the "Plan this" affordance.
-			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/goals/${ids.goalId}`, { waitUntil: 'networkidle' });
+			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/goals/${ids.goalId}`, {
+				waitUntil: 'networkidle'
+			});
 			const planThis = owner.page
 				.getByRole('link', { name: /plan this/i })
 				.filter({ visible: true })
@@ -83,7 +85,9 @@ test.describe('#263 Goal → "Plan this"', () => {
 
 			// It routes to the composer carrying the goal id.
 			await planThis.click();
-			await owner.page.waitForURL(new RegExp(`/items/new\\?goal=${ids.goalId}`), { timeout: 10000 });
+			await owner.page.waitForURL(new RegExp(`/items/new\\?goal=${ids.goalId}`), {
+				timeout: 10000
+			});
 
 			// Title is pre-filled from the goal ("Test Goal"). Target the visible tree.
 			const titleField = owner.page.locator('input[name="title"]:visible').first();
@@ -125,10 +129,9 @@ test.describe('#263 Goal → "Plan this"', () => {
 
 		// Ground truth: the goal now links the new item (goal-side `items` relation).
 		const ownerToken = await token(EMAILS.owner);
-		const goalRes = await fetch(
-			`${PB_BASE}/api/collections/trip_goals/records/${ids.goalId}`,
-			{ headers: { Authorization: `Bearer ${ownerToken}` } }
-		);
+		const goalRes = await fetch(`${PB_BASE}/api/collections/trip_goals/records/${ids.goalId}`, {
+			headers: { Authorization: `Bearer ${ownerToken}` }
+		});
 		const goalRec = (await goalRes.json()) as { items: string[] };
 		expect(Array.isArray(goalRec.items)).toBe(true);
 		expect(goalRec.items.length).toBeGreaterThan(0);

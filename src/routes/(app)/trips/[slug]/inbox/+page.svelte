@@ -19,16 +19,31 @@
 		{ id: 'rejected', label: 'Rejected' }
 	];
 	const tabItems = $derived<InboxSuggestion[]>(
-		activeTab === 'pending' ? data.pending : activeTab === 'approved' ? data.approved : data.rejected
+		activeTab === 'pending'
+			? data.pending
+			: activeTab === 'approved'
+				? data.approved
+				: data.rejected
 	);
 
-	const rejectForm = $derived((form?.reject ?? null) as { success?: boolean; error?: string } | null);
-	const approveForm = $derived((form?.approve ?? null) as { success?: boolean; error?: string } | null);
-	const actionError = $derived(rejectForm?.error ?? approveForm?.error ?? (form?.error as string | undefined) ?? '');
+	const rejectForm = $derived(
+		(form?.reject ?? null) as { success?: boolean; error?: string } | null
+	);
+	const approveForm = $derived(
+		(form?.approve ?? null) as { success?: boolean; error?: string } | null
+	);
+	const actionError = $derived(
+		rejectForm?.error ?? approveForm?.error ?? (form?.error as string | undefined) ?? ''
+	);
 
 	// #251 — per-option vote glyphs for the compact tally (Approved / Rejected tabs;
 	// the Pending tab uses the tap-to-vote pills on the pending idea card, #444).
-	const TALLY_GLYPH: Record<VoteValue, string> = { love: '♥', like: '+', flexible: '~', dislike: '–' };
+	const TALLY_GLYPH: Record<VoteValue, string> = {
+		love: '♥',
+		like: '+',
+		flexible: '~',
+		dislike: '–'
+	};
 
 	function payloadSummary(s: Suggestion): string {
 		const p = s.payload;
@@ -52,26 +67,35 @@
 </script>
 
 <NavBar title="Inbox" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}" />
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-5">
+<main class="mx-auto w-full max-w-lg flex-1 space-y-5 px-4 pt-4 pb-8 md-desktop:max-w-2xl">
 	{#if actionError}
-		<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">{actionError}</div>
+		<div
+			role="alert"
+			class="rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error-deep"
+		>
+			{actionError}
+		</div>
 	{/if}
 
 	<!-- #251 — tab bar. Each tab shows its count; owner/co_owner-only (the loader
 	     403s travelers/viewers, unchanged). -->
-	<div class="border-line flex gap-1 border-b" role="tablist" aria-label="Suggestion queue">
+	<div class="flex gap-1 border-b border-line" role="tablist" aria-label="Suggestion queue">
 		{#each tabs as t (t.id)}
-			{@const count = (t.id === 'pending' ? data.pending : t.id === 'approved' ? data.approved : data.rejected).length}
+			{@const count = (
+				t.id === 'pending' ? data.pending : t.id === 'approved' ? data.approved : data.rejected
+			).length}
 			<button
 				type="button"
 				role="tab"
 				aria-selected={activeTab === t.id}
 				onclick={() => (activeTab = t.id)}
 				class="-mb-px border-b-2 px-3 py-2 text-sm font-semibold transition-colors
-					{activeTab === t.id ? 'border-moss text-ink' : 'border-transparent text-ink-muted hover:text-ink-soft active:text-ink-soft'}"
+					{activeTab === t.id
+					? 'border-moss text-ink'
+					: 'border-transparent text-ink-muted hover:text-ink-soft active:text-ink-soft'}"
 			>
 				{t.label}
-				<span class="text-ink-muted font-mono text-xs">({count})</span>
+				<span class="font-mono text-xs text-ink-muted">({count})</span>
 			</button>
 		{/each}
 	</div>
@@ -79,8 +103,9 @@
 	<section class="space-y-3" role="tabpanel">
 		{#if tabItems.length === 0}
 			<Card>
-				<p class="text-ink-muted p-4 text-sm">
-					{#if activeTab === 'pending'}No pending suggestions.{:else if activeTab === 'approved'}Nothing approved yet.{:else}Nothing rejected.{/if}
+				<p class="p-4 text-sm text-ink-muted">
+					{#if activeTab === 'pending'}No pending suggestions.{:else if activeTab === 'approved'}Nothing
+						approved yet.{:else}Nothing rejected.{/if}
 				</p>
 			</Card>
 		{:else}
@@ -98,16 +123,23 @@
 						review="inbox"
 						tripSlug={data.trip.slug}
 						place={data.trip.location_summary}
-						actions={{ approve: '?/approve', reject: '?/reject', vote: '?/voteGhost', unvote: '?/unvoteGhost' }}
+						actions={{
+							approve: '?/approve',
+							reject: '?/reject',
+							vote: '?/voteGhost',
+							unvote: '?/unvoteGhost'
+						}}
 					/>
 				{:else}
 					{@const tally = tallyVotes(s.votes)}
 					<Card>
-						<div class="p-4 space-y-3">
+						<div class="space-y-3 p-4">
 							<div class="flex items-start justify-between gap-2">
 								<div class="min-w-0">
-									<p class="text-ink text-sm font-semibold truncate">{s.payload?.title ?? '(no title)'}</p>
-									<p class="text-ink-muted text-xs">{payloadSummary(s)}</p>
+									<p class="truncate text-sm font-semibold text-ink">
+										{s.payload?.title ?? '(no title)'}
+									</p>
+									<p class="text-xs text-ink-muted">{payloadSummary(s)}</p>
 								</div>
 								{#if activeTab === 'approved'}
 									<Pill variant="booked" size="sm">Approved</Pill>
@@ -117,15 +149,18 @@
 							</div>
 
 							<div class="flex flex-wrap items-center justify-between gap-2">
-								<div class="text-ink-muted text-xs">
-									Suggested by <span class="text-ink-soft font-medium">{s.author_name || 'Unknown'}</span>
-									{#if s.created} · {formatDate(s.created)}{/if}
+								<div class="text-xs text-ink-muted">
+									Suggested by <span class="font-medium text-ink-soft"
+										>{s.author_name || 'Unknown'}</span
+									>
+									{#if s.created}
+										· {formatDate(s.created)}{/if}
 								</div>
 								<!-- #251 — vote tally on the history tabs. Compact per-option counts;
 								     total in the aria label. "No votes" when none were cast. -->
 								{#if tally.total > 0}
 									<div
-										class="text-ink-soft flex items-center gap-2 text-xs"
+										class="flex items-center gap-2 text-xs text-ink-soft"
 										aria-label="{tally.total} {tally.total === 1 ? 'vote' : 'votes'}"
 									>
 										{#each ['love', 'like', 'flexible', 'dislike'] as const as opt (opt)}
@@ -137,14 +172,15 @@
 										{/each}
 									</div>
 								{:else}
-									<span class="text-ink-muted text-xs">No votes</span>
+									<span class="text-xs text-ink-muted">No votes</span>
 								{/if}
 							</div>
 
 							{#if activeTab === 'rejected' && s.review_note}
 								<!-- #250 — the reviewer's note, retained on the Rejected tab. -->
-								<div class="border-clay/30 bg-clay/5 text-ink-soft rounded-md border p-2.5 text-xs">
-									<span class="text-ink-muted">Note:</span> {s.review_note}
+								<div class="rounded-md border border-clay/30 bg-clay/5 p-2.5 text-xs text-ink-soft">
+									<span class="text-ink-muted">Note:</span>
+									{s.review_note}
 								</div>
 							{/if}
 						</div>

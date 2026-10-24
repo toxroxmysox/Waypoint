@@ -19,7 +19,12 @@
 	// and the next-phase hop keeps that origin.
 	const phasesHref = $derived(resolveBack(page.url, `/trips/${data.trip.slug}/phases`));
 	const nextHref = $derived(
-		data.nextPhase ? withOrigin(`/trips/${data.trip.slug}/swipe/${data.nextPhase.id}`, page.url.searchParams.get('from')) : ''
+		data.nextPhase
+			? withOrigin(
+					`/trips/${data.trip.slug}/swipe/${data.nextPhase.id}`,
+					page.url.searchParams.get('from')
+				)
+			: ''
 	);
 
 	// tablet+ uses a centered modal for detail; mobile uses a bottom sheet.
@@ -65,7 +70,8 @@
 	class="hidden"
 	use:enhance={() =>
 		async ({ result }) => {
-			if (result.type === 'failure') toast.show('Vote did not save — check your connection.', 'error');
+			if (result.type === 'failure')
+				toast.show('Vote did not save — check your connection.', 'error');
 		}}
 >
 	<input type="hidden" name="item" value="" />
@@ -81,16 +87,16 @@
 	<input type="hidden" name="item" value="" />
 </form>
 
-<div class="bg-paper flex min-h-[100dvh] flex-col">
+<div class="flex min-h-[100dvh] flex-col bg-paper">
 	<div
 		class="mx-auto flex w-full max-w-md flex-1 flex-col md-desktop:my-6 md-desktop:max-h-[760px] md-desktop:max-w-md md-desktop:overflow-hidden md-desktop:rounded-xl md-desktop:border md-desktop:border-line md-desktop:bg-surface md-desktop:shadow-modal"
 	>
 		{#if data.cards.length === 0}
 			<!-- empty / drain-to-empty: the phase has no unvoted items -->
 			<div class="flex flex-1 flex-col items-center justify-center px-6 text-center">
-				<div class="text-moss mb-4 text-4xl" aria-hidden="true">✓</div>
-				<h1 class="font-display text-ink mb-2 text-2xl italic">All caught up.</h1>
-				<p class="text-ink-soft mb-6 max-w-xs text-sm">
+				<div class="mb-4 text-4xl text-moss" aria-hidden="true">✓</div>
+				<h1 class="mb-2 font-display text-2xl text-ink italic">All caught up.</h1>
+				<p class="mb-6 max-w-xs text-sm text-ink-soft">
 					Nothing left to rate in {data.phase.name}.
 				</p>
 				<div class="flex w-full max-w-[280px] flex-col gap-2.5">
@@ -130,10 +136,12 @@
 							: 'Unplanned'}
 					>
 						{#if card.description}
-							<p class="text-ink-soft text-sm leading-relaxed">{card.description}</p>
+							<p class="text-sm leading-relaxed text-ink-soft">{card.description}</p>
 						{/if}
 						{#if data.nameByMember[card.created_by]}
-							<p class="text-ink-muted text-[13px]">Added by {data.nameByMember[card.created_by]}</p>
+							<p class="text-[13px] text-ink-muted">
+								Added by {data.nameByMember[card.created_by]}
+							</p>
 						{/if}
 						{#if card.created_by !== data.membership?.id}
 							<WhatIsLink title={card.title} place={data.trip.location_summary} />
@@ -146,11 +154,20 @@
 						<!-- compass rose of your personal spread -->
 						<div class="relative mb-4 h-[180px] w-[210px]">
 							<span
-								class="text-moss absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+								class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-moss"
 								aria-hidden="true"
 							>
-								<svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.2">
-									<path d="M12 2 L13.6 10.4 L22 12 L13.6 13.6 L12 22 L10.4 13.6 L2 12 L10.4 10.4 Z" />
+								<svg
+									viewBox="0 0 24 24"
+									width="36"
+									height="36"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="1.2"
+								>
+									<path
+										d="M12 2 L13.6 10.4 L22 12 L13.6 13.6 L12 22 L10.4 13.6 L2 12 L10.4 10.4 Z"
+									/>
 								</svg>
 							</span>
 							{#each [{ v: 'love', pos: 'top-0 left-1/2 -translate-x-1/2' }, { v: 'like', pos: 'top-1/2 right-0 -translate-y-1/2' }, { v: 'flexible', pos: 'bottom-0 left-1/2 -translate-x-1/2' }, { v: 'dislike', pos: 'top-1/2 left-0 -translate-y-1/2' }] as const as arm (arm.v)}
@@ -160,16 +177,18 @@
 											arm.v
 										].btn}"
 									>
-										<span aria-hidden="true" class="mr-1">{VOTE_META[arm.v].glyph}</span>{spread[arm.v]}
+										<span aria-hidden="true" class="mr-1">{VOTE_META[arm.v].glyph}</span>{spread[
+											arm.v
+										]}
 									</span>
-									<span class="text-ink-muted text-[10px] font-semibold tracking-wide uppercase"
+									<span class="text-[10px] font-semibold tracking-wide text-ink-muted uppercase"
 										>{VOTE_META[arm.v].label}</span
 									>
 								</div>
 							{/each}
 						</div>
-						<div class="font-display text-ink mb-2 text-2xl italic">Deck cleared.</div>
-						<p class="text-ink-soft mb-5 max-w-[250px] text-sm leading-relaxed">
+						<div class="mb-2 font-display text-2xl text-ink italic">Deck cleared.</div>
+						<p class="mb-5 max-w-[250px] text-sm leading-relaxed text-ink-soft">
 							You rated {rated}
 							{rated === 1 ? 'item' : 'items'}. Your votes stay blind to everyone else.
 						</p>

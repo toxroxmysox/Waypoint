@@ -25,7 +25,13 @@ describe('normalizeCodes', () => {
 // A minimal fake PocketBase that records create/delete calls and serves a fixed
 // existing set scoped to the item filter.
 function fakePb(existing: { id: string; item: string; code_label: string; code_value: string }[]) {
-	const created: { code_label: string; code_value: string; item: string; trip: string; kind: string }[] = [];
+	const created: {
+		code_label: string;
+		code_value: string;
+		item: string;
+		trip: string;
+		kind: string;
+	}[] = [];
 	const deleted: string[] = [];
 	const pb = {
 		collection() {

@@ -10,7 +10,15 @@ import { memberName } from './get-trip';
 import type { ToolDef } from './types';
 
 const SEARCH_CAP = 25;
-const ITEM_TYPES = ['lodging', 'transportation', 'activity', 'meal', 'note', 'checklist', 'flight'] as const;
+const ITEM_TYPES = [
+	'lodging',
+	'transportation',
+	'activity',
+	'meal',
+	'note',
+	'checklist',
+	'flight'
+] as const;
 const ITEM_STATUSES = ['planned', 'done', 'considered', 'unplanned'] as const;
 
 interface SearchArgs {
@@ -40,7 +48,9 @@ function inTrips(pb: PocketBase, field: string, ids: string[]): string {
 /** Every word of `q` appears in at least one of `fields` ("Lucerne hotel" ≠ one literal phrase). */
 function textMatch(pb: PocketBase, fields: string[], q: string): string {
 	const words = q.split(/\s+/).filter(Boolean);
-	return words.map((w) => `(${fields.map((f) => pb.filter(`${f} ~ {:w}`, { w })).join(' || ')})`).join(' && ');
+	return words
+		.map((w) => `(${fields.map((f) => pb.filter(`${f} ~ {:w}`, { w })).join(' || ')})`)
+		.join(' && ');
 }
 
 export const search: ToolDef = {
@@ -66,8 +76,15 @@ export const search: ToolDef = {
 	async run(ctx, a: SearchArgs) {
 		const q = a.query?.trim() ?? '';
 		const itemOnly = a.type !== undefined || a.status !== undefined || a.booked !== undefined;
-		const anyFilter = itemOnly || a.country || a.from || a.to || a.min_cost !== undefined || a.max_cost !== undefined;
-		if (!q && !anyFilter && !a.trip) throw new Error('Give a query, a filter, or a trip to search.');
+		const anyFilter =
+			itemOnly ||
+			a.country ||
+			a.from ||
+			a.to ||
+			a.min_cost !== undefined ||
+			a.max_cost !== undefined;
+		if (!q && !anyFilter && !a.trip)
+			throw new Error('Give a query, a filter, or a trip to search.');
 
 		const scope: TripRef[] = a.trip ? [await resolveTrip(ctx, a.trip)] : await myTrips(ctx);
 		// Searching inside one AI-off trip reads like any other tool on it.
@@ -75,7 +92,12 @@ export const search: ToolDef = {
 		const open = scope.filter((t) => t.open);
 		const skipped = scope
 			.filter((t) => !t.open)
-			.map((t) => ({ title: t.trip.title, start_date: t.trip.start_date, end_date: t.trip.end_date, notice: AI_OFF_NOTICE }));
+			.map((t) => ({
+				title: t.trip.title,
+				start_date: t.trip.start_date,
+				end_date: t.trip.end_date,
+				notice: AI_OFF_NOTICE
+			}));
 		if (!open.length) return done('Search', [], skipped);
 
 		const ids = open.map((t) => t.trip.id);
@@ -89,12 +111,18 @@ export const search: ToolDef = {
 				q ? searchDayNotes(ctx, a, q, ids, titleOf) : [],
 				q && !country ? searchCodes(ctx, q, ids, titleOf) : [],
 				!country ? searchExpenses(ctx, a, q, ids, titleOf) : [],
-				q && !country && !a.from && !a.to && a.min_cost === undefined && a.max_cost === undefined ? searchGoals(ctx, q, ids, titleOf) : []
+				q && !country && !a.from && !a.to && a.min_cost === undefined && a.max_cost === undefined
+					? searchGoals(ctx, q, ids, titleOf)
+					: []
 			]);
 			cards.push(...notes, ...codes, ...expenses, ...goals);
 		}
 		cards.sort((x, y) => y.sortKey.localeCompare(x.sortKey));
-		return done(`Search${q ? `: "${q}"` : ''}`, cards.map(({ sortKey: _s, ...c }) => c), skipped);
+		return done(
+			`Search${q ? `: "${q}"` : ''}`,
+			cards.map(({ sortKey: _s, ...c }) => c),
+			skipped
+		);
 	}
 };
 
@@ -120,7 +148,20 @@ async function searchItems(
 	const filter = and(
 		inTrips(pb, 'trip', ids),
 		// phase.name/location: "the hotel in Lucerne" names the phase, not the item.
-		q && textMatch(pb, ['title', 'description', 'location_name', 'location_address', 'flight_number', 'phase.name', 'phase.location'], q),
+		q &&
+			textMatch(
+				pb,
+				[
+					'title',
+					'description',
+					'location_name',
+					'location_address',
+					'flight_number',
+					'phase.name',
+					'phase.location'
+				],
+				q
+			),
 		a.type && pb.filter('type = {:v}', { v: a.type }),
 		a.status && pb.filter('status = {:v}', { v: a.status }),
 		a.booked !== undefined && pb.filter('booked = {:v}', { v: a.booked }),
@@ -148,7 +189,13 @@ async function searchItems(
 	});
 }
 
-async function searchDayNotes(ctx: McpContext, a: SearchArgs, q: string, ids: string[], titleOf: Map<string, string>) {
+async function searchDayNotes(
+	ctx: McpContext,
+	a: SearchArgs,
+	q: string,
+	ids: string[],
+	titleOf: Map<string, string>
+) {
 	const pb = ctx.pb;
 	const days = await pb.collection('days').getFullList<Day>({
 		filter: and(
@@ -169,10 +216,19 @@ async function searchDayNotes(ctx: McpContext, a: SearchArgs, q: string, ids: st
 	}));
 }
 
-async function searchCodes(ctx: McpContext, q: string, ids: string[], titleOf: Map<string, string>) {
+async function searchCodes(
+	ctx: McpContext,
+	q: string,
+	ids: string[],
+	titleOf: Map<string, string>
+) {
 	const pb = ctx.pb;
 	const docs = await pb.collection('documents').getFullList({
-		filter: and(inTrips(pb, 'trip', ids), pb.filter('kind = "code"'), textMatch(pb, ['code_label', 'code_value'], q)),
+		filter: and(
+			inTrips(pb, 'trip', ids),
+			pb.filter('kind = "code"'),
+			textMatch(pb, ['code_label', 'code_value'], q)
+		),
 		fields: 'id,trip,item,code_label,code_value,expand.item.title,expand.item.id',
 		expand: 'item',
 		requestKey: null
@@ -181,12 +237,20 @@ async function searchCodes(ctx: McpContext, q: string, ids: string[], titleOf: M
 		emoji: '🔖',
 		title: (d.expand?.item?.title as string) ?? 'Confirmation code',
 		tag: titleOf.get(d.trip),
-		lines: [`${d.code_label || 'Code'}: ${d.code_value}`, d.item ? `id: ${d.item}` : ''].filter(Boolean),
+		lines: [`${d.code_label || 'Code'}: ${d.code_value}`, d.item ? `id: ${d.item}` : ''].filter(
+			Boolean
+		),
 		sortKey: '0001'
 	}));
 }
 
-async function searchExpenses(ctx: McpContext, a: SearchArgs, q: string, ids: string[], titleOf: Map<string, string>) {
+async function searchExpenses(
+	ctx: McpContext,
+	a: SearchArgs,
+	q: string,
+	ids: string[],
+	titleOf: Map<string, string>
+) {
 	const pb = ctx.pb;
 	if (!q && !a.from && !a.to && a.min_cost === undefined && a.max_cost === undefined) return [];
 	const rows = await pb.collection('expenses').getFullList<Expense>({
@@ -198,7 +262,8 @@ async function searchExpenses(ctx: McpContext, a: SearchArgs, q: string, ids: st
 			a.from && pb.filter('date >= {:v}', { v: `${a.from} 00:00:00.000Z` }),
 			a.to && pb.filter('date <= {:v}', { v: `${a.to} 23:59:59.999Z` })
 		),
-		fields: 'id,trip,amount_usd,description,date,category,expand.paid_by.display_name,expand.paid_by.placeholder_name,expand.paid_by.expand.user.name',
+		fields:
+			'id,trip,amount_usd,description,date,category,expand.paid_by.display_name,expand.paid_by.placeholder_name,expand.paid_by.expand.user.name',
 		expand: 'paid_by.user',
 		requestKey: null
 	});
@@ -210,14 +275,21 @@ async function searchExpenses(ctx: McpContext, a: SearchArgs, q: string, ids: st
 			tag: titleOf.get(e.trip),
 			lines: [
 				`$${e.amount_usd.toFixed(2).replace(/\.00$/, '')} · ${e.category}`,
-				[formatDayDate(toDateOnly(e.date)), payer ? `paid by ${memberName(payer)}` : ''].filter(Boolean).join(' · ')
+				[formatDayDate(toDateOnly(e.date)), payer ? `paid by ${memberName(payer)}` : '']
+					.filter(Boolean)
+					.join(' · ')
 			],
 			sortKey: toDateOnly(e.date)
 		};
 	});
 }
 
-async function searchGoals(ctx: McpContext, q: string, ids: string[], titleOf: Map<string, string>) {
+async function searchGoals(
+	ctx: McpContext,
+	q: string,
+	ids: string[],
+	titleOf: Map<string, string>
+) {
 	const pb = ctx.pb;
 	const goals = await pb.collection('trip_goals').getFullList<TripGoal>({
 		filter: and(inTrips(pb, 'trip', ids), textMatch(pb, ['title', 'description'], q)),

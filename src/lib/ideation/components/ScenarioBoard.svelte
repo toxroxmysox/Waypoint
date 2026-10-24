@@ -24,17 +24,27 @@
 <section class="space-y-2" data-testid="scenario-board">
 	{#if count > 0}
 		<div class="flex items-center justify-between px-0.5">
-			<span class="text-ink-muted font-mono text-[11px] tracking-[0.08em] uppercase">
+			<span class="font-mono text-[11px] tracking-[0.08em] text-ink-muted uppercase">
 				Scenarios · {count} candidate{count === 1 ? '' : 's'}
 			</span>
 			{#if canPitch}
 				<button
 					type="button"
 					onclick={onpitch}
-					class="text-moss hover:text-ink active:text-ink inline-flex items-center gap-1 text-xs font-semibold"
+					class="inline-flex items-center gap-1 text-xs font-semibold text-moss hover:text-ink active:text-ink"
 					data-testid="pitch-scenario"
 				>
-					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+					<svg
+						width="13"
+						height="13"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg
+					>
 					New scenario
 				</button>
 			{/if}
@@ -52,19 +62,17 @@
 		<!-- Empty state — the forming home's front door (spec §Surface). -->
 		<Card strong accent="var(--color-moss)">
 			<div class="p-6 text-center" data-testid="scenario-empty">
-				<p class="font-display text-ink text-lg italic">Pitch the first scenario.</p>
-				<p class="text-ink-muted mx-auto mt-1.5 max-w-xs text-sm">
-					A scenario is a take on the trip — where, when, roughly how much. Float one and
-					the group weighs in; the winner sets the dates.
+				<p class="font-display text-lg text-ink italic">Pitch the first scenario.</p>
+				<p class="mx-auto mt-1.5 max-w-xs text-sm text-ink-muted">
+					A scenario is a take on the trip — where, when, roughly how much. Float one and the group
+					weighs in; the winner sets the dates.
 				</p>
 				{#if canPitch}
 					<div class="mt-4" data-testid="pitch-first">
-						<Button variant="moss" size="md" onclick={onpitch}>
-							Pitch a scenario
-						</Button>
+						<Button variant="moss" size="md" onclick={onpitch}>Pitch a scenario</Button>
 					</div>
 				{:else}
-					<p class="text-ink-muted mt-3 text-xs">
+					<p class="mt-3 text-xs text-ink-muted">
 						Anyone on the trip can pitch one — check back as ideas land.
 					</p>
 				{/if}

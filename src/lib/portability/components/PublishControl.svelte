@@ -57,10 +57,17 @@
 				: 'border-line bg-surface hover:bg-surface-2 active:bg-surface-2'}"
 		>
 			<span class="flex items-center gap-2">
-				<input type="radio" name="publish" value="off" checked={!publish} onchange={() => (publish = false)} class="sr-only" />
-				<span class="text-ink text-sm font-semibold">Keep private</span>
+				<input
+					type="radio"
+					name="publish"
+					value="off"
+					checked={!publish}
+					onchange={() => (publish = false)}
+					class="sr-only"
+				/>
+				<span class="text-sm font-semibold text-ink">Keep private</span>
 			</span>
-			<span class="text-ink-muted text-xs">Only members can see the record.</span>
+			<span class="text-xs text-ink-muted">Only members can see the record.</span>
 		</label>
 		<label
 			class="flex cursor-pointer flex-col gap-0.5 rounded-lg border p-3 {publish
@@ -68,10 +75,17 @@
 				: 'border-line bg-surface hover:bg-surface-2 active:bg-surface-2'}"
 		>
 			<span class="flex items-center gap-2">
-				<input type="radio" name="publish" value="on" checked={publish} onchange={selectPublish} class="sr-only" />
-				<span class="text-ink text-sm font-semibold">Publish</span>
+				<input
+					type="radio"
+					name="publish"
+					value="on"
+					checked={publish}
+					onchange={selectPublish}
+					class="sr-only"
+				/>
+				<span class="text-sm font-semibold text-ink">Publish</span>
 			</span>
-			<span class="text-ink-muted text-xs">Anyone with the link can view it.</span>
+			<span class="text-xs text-ink-muted">Anyone with the link can view it.</span>
 		</label>
 	</div>
 
@@ -79,7 +93,7 @@
 		<!-- name="publish" is sent by the radio above; the hidden mirror is unnecessary,
 		     but the date field only matters when publishing. -->
 		<div class="space-y-1.5">
-			<label for="publish_date" class="text-ink-soft block text-sm font-medium">
+			<label for="publish_date" class="block text-sm font-medium text-ink-soft">
 				When should it go live?
 			</label>
 			<input
@@ -87,24 +101,30 @@
 				id="publish_date"
 				name="publish_date"
 				bind:value={publishDate}
-				class="border-line bg-surface text-ink focus:border-moss w-full rounded-lg border px-3 py-2 text-sm focus:outline-none"
+				class="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-moss focus:outline-none"
 			/>
-			<p class="text-ink-muted text-xs">
-				Today means it publishes now. A future date schedules it — visitors see a friendly
-				"coming soon" page until then.
+			<p class="text-xs text-ink-muted">
+				Today means it publishes now. A future date schedules it — visitors see a friendly "coming
+				soon" page until then.
 			</p>
 		</div>
 
 		{#if showBudgetToggle}
 			<!-- Opt-in public budget summary (#243). Default off. Summary only — never
 			     itemized expenses or who-owes-whom. -->
-			<label class="border-line bg-surface flex items-start gap-2.5 rounded-lg border p-3">
-				<input type="checkbox" name="show_budget" checked={showBudget} onchange={(e) => (showBudget = e.currentTarget.checked)} class="mt-0.5" />
+			<label class="flex items-start gap-2.5 rounded-lg border border-line bg-surface p-3">
+				<input
+					type="checkbox"
+					name="show_budget"
+					checked={showBudget}
+					onchange={(e) => (showBudget = e.currentTarget.checked)}
+					class="mt-0.5"
+				/>
 				<span class="min-w-0">
-					<span class="text-ink block text-sm font-medium">Include budget summary</span>
-					<span class="text-ink-muted block text-xs">
-						Shows the trip total and rough per-person cost only — never individual expenses
-						or who owes whom.
+					<span class="block text-sm font-medium text-ink">Include budget summary</span>
+					<span class="block text-xs text-ink-muted">
+						Shows the trip total and rough per-person cost only — never individual expenses or who
+						owes whom.
 					</span>
 				</span>
 			</label>

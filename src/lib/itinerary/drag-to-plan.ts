@@ -1,7 +1,12 @@
 // Drag-to-plan derivation (#445; spec stories 26-30, 83). Pure: which timeline
 // slot an idea offers while it is dragged, what the target says, whether the day
 // accepts the idea at all, and the rail's Up next rows. No DOM, no I/O.
-import { freeTimeGaps, freeTimeLabel, type FreeGap, type CardItemFields } from '$lib/itinerary/card-anatomy';
+import {
+	freeTimeGaps,
+	freeTimeLabel,
+	type FreeGap,
+	type CardItemFields
+} from '$lib/itinerary/card-anatomy';
 import { resolveDrop } from '$lib/itinerary/drag-reorder';
 import type { DayCardSummary } from '$lib/itinerary/day-card';
 
@@ -36,7 +41,10 @@ export function canPlanOnDay(ideaPhase: string, dayPhaseIds: string[]): boolean 
 }
 
 /** The day's title: its notes, else its first item (+ N more), else "Nothing planned yet". */
-export function dayHeadline(day: { notes?: string }, summary: Pick<DayCardSummary, 'itemCount' | 'leadTitle'>): string {
+export function dayHeadline(
+	day: { notes?: string },
+	summary: Pick<DayCardSummary, 'itemCount' | 'leadTitle'>
+): string {
 	const notes = day.notes?.trim();
 	if (notes) return notes;
 	if (!summary.leadTitle) return 'Nothing planned yet';

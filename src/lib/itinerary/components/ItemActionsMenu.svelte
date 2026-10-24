@@ -74,7 +74,7 @@
 			aria-label="Item actions"
 			aria-haspopup="menu"
 			aria-expanded={menuOpen}
-			class="text-ink-soft hover:text-ink active:text-ink active:bg-surface-2 -mr-2 flex h-11 w-11 items-center justify-center rounded-full transition duration-75"
+			class="-mr-2 flex h-11 w-11 items-center justify-center rounded-full text-ink-soft transition duration-75 hover:text-ink active:bg-surface-2 active:text-ink"
 		>
 			<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
 				<circle cx="5" cy="12" r="1.75" />
@@ -90,11 +90,11 @@
 				role="menu"
 				aria-label="Item actions"
 				onkeydown={onMenuKeydown}
-				class="border-line bg-surface shadow-card-strong z-dropdown absolute top-full right-0 mt-1 w-56 overflow-hidden rounded-lg border py-1"
+				class="absolute top-full right-0 z-dropdown mt-1 w-56 overflow-hidden rounded-lg border border-line bg-surface py-1 shadow-card-strong"
 			>
 				{#each entries as entry (entry.id)}
 					{#if entry.id === 'divider'}
-						<div role="separator" class="bg-line my-1 h-px"></div>
+						<div role="separator" class="my-1 h-px bg-line"></div>
 					{:else}
 						<button
 							type="button"

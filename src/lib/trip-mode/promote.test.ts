@@ -203,7 +203,7 @@ describe('promotePlacement — sort_order round-trips the placement', () => {
 // don't fork): the server action is `computeMovePatch({ newDay: '' })`. These pin
 // the contract the Door 2 actions depend on so a change to computeMovePatch that
 // would break skip is caught here, next to Door 1's pure tests.
-describe('skip semantics — computeMovePatch({ newDay: \'\' }) (Door 2)', () => {
+describe("skip semantics — computeMovePatch({ newDay: '' }) (Door 2)", () => {
 	it('a planned today item → unplanned, day cleared, time stripped, sort reset', () => {
 		const patch = computeMovePatch({ currentStatus: 'planned', newDay: '', newPhase: 'phaseA' });
 		expect(patch.status).toBe('unplanned');
@@ -218,7 +218,7 @@ describe('skip semantics — computeMovePatch({ newDay: \'\' }) (Door 2)', () =>
 		expect(patch.phase).toBe('phaseA');
 	});
 
-	it('a skipped item NEVER becomes considered — that verdict is Closeout\'s, not skip\'s', () => {
+	it("a skipped item NEVER becomes considered — that verdict is Closeout's, not skip's", () => {
 		const patch = computeMovePatch({ currentStatus: 'planned', newDay: '', newPhase: 'phaseA' });
 		expect(patch.status).not.toBe('considered');
 		expect(patch.status).toBe('unplanned');

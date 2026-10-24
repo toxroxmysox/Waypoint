@@ -24,12 +24,13 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		if (found) upcomingDayIds.push(found.id);
 	}
 
-	const items = upcomingDayIds.length > 0
-		? await locals.pb.collection('items').getFullList<Item>({
-				filter: upcomingDayIds.map((id) => `day = "${id}"`).join(' || '),
-				sort: 'day,start_time,sort_order'
-			})
-		: [];
+	const items =
+		upcomingDayIds.length > 0
+			? await locals.pb.collection('items').getFullList<Item>({
+					filter: upcomingDayIds.map((id) => `day = "${id}"`).join(' || '),
+					sort: 'day,start_time,sort_order'
+				})
+			: [];
 
 	// #268 / ADR-0016 — the Trip Mode card renders `item.confirmation_codes`, which now
 	// live as `kind: 'code'` Documents. Re-source them onto the cards.
@@ -54,5 +55,10 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		)
 	]);
 
-	return { items, members: withAvatarUrls(locals.pb, members), docCountByItem, now: now.toISOString() };
+	return {
+		items,
+		members: withAvatarUrls(locals.pb, members),
+		docCountByItem,
+		now: now.toISOString()
+	};
 };

@@ -138,7 +138,10 @@ export const actions: Actions = {
 			const resolvedType = type || (item['type'] as string);
 
 			if (booked && (resolvedType === 'meal' || resolvedType === 'note')) {
-				return fail(400, { error: `${resolvedType} items cannot be marked as booked.`, field: 'booked' });
+				return fail(400, {
+					error: `${resolvedType} items cannot be marked as booked.`,
+					field: 'booked'
+				});
 			}
 
 			// Status logic: only override to planned/unplanned based on day presence;

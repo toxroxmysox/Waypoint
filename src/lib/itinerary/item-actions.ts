@@ -84,9 +84,7 @@ export function skipDestination(mode: TripViewMode, slug: string): string | null
 }
 
 /** One row of the item page's ⋯ menu (#437). */
-export type ItemMenuEntry =
-	| { id: 'move' | 'skip' | 'delete'; label: string }
-	| { id: 'divider' };
+export type ItemMenuEntry = { id: 'move' | 'skip' | 'delete'; label: string } | { id: 'divider' };
 
 /**
  * #437 — what the ⋯ menu lists, from the #416 permissions: Move to another day,
@@ -94,7 +92,9 @@ export type ItemMenuEntry =
  * list means the page renders no ⋯ at all. The divider only appears when
  * something precedes Delete.
  */
-export function itemMenuEntries(p: Pick<ItemPermissions, 'canMove' | 'canSkip' | 'canDelete'>): ItemMenuEntry[] {
+export function itemMenuEntries(
+	p: Pick<ItemPermissions, 'canMove' | 'canSkip' | 'canDelete'>
+): ItemMenuEntry[] {
 	const entries: ItemMenuEntry[] = [];
 	if (p.canMove) entries.push({ id: 'move', label: 'Move to another day' });
 	if (p.canSkip) entries.push({ id: 'skip', label: 'Skip…' });

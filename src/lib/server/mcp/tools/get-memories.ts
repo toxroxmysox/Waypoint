@@ -21,7 +21,13 @@ export const getMemories: ToolDef = {
 		if (!t.open) return offTrip(t.trip);
 		const pb = ctx.pb;
 		let filter = pb.filter('trip = {:t} && thought != ""', { t: t.trip.id });
-		if (date) filter += ' && ' + pb.filter('day.date >= {:a} && day.date <= {:b}', { a: `${date} 00:00:00.000Z`, b: `${date} 23:59:59.999Z` });
+		if (date)
+			filter +=
+				' && ' +
+				pb.filter('day.date >= {:a} && day.date <= {:b}', {
+					a: `${date} 00:00:00.000Z`,
+					b: `${date} 23:59:59.999Z`
+				});
 		// ADR-0024 §5: `photo` is never requested.
 		const [rows, members] = await Promise.all([
 			pb.collection('memories').getFullList({
@@ -42,6 +48,10 @@ export const getMemories: ToolDef = {
 				tag: name.get(r.author as string) ?? 'member',
 				lines: [r.thought as string]
 			}));
-		return result(`Memories · ${t.trip.title}`, cards, cards.length ? {} : { note: 'No written memories yet.' });
+		return result(
+			`Memories · ${t.trip.title}`,
+			cards,
+			cards.length ? {} : { note: 'No written memories yet.' }
+		);
 	}
 };

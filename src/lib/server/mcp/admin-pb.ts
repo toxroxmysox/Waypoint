@@ -30,7 +30,11 @@ export async function adminPb(): Promise<PocketBase> {
 }
 
 /** #512 — drop expired clients; past the cap, the oldest go first. */
-export function pruneUserCache(m: Map<string, { pb: PocketBase; exp: number }>, now = Date.now(), cap = MAX_USERS): void {
+export function pruneUserCache(
+	m: Map<string, { pb: PocketBase; exp: number }>,
+	now = Date.now(),
+	cap = MAX_USERS
+): void {
 	for (const [k, v] of m) if (v.exp <= now) m.delete(k);
 	for (const k of m.keys()) {
 		if (m.size < cap) break;

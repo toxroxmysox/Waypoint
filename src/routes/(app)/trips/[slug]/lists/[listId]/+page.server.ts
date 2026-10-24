@@ -31,19 +31,30 @@ export const load: PageServerLoad = async ({ params, parent, locals }) => {
 };
 
 async function getTrip(locals: App.Locals, slug: string) {
-	return locals.pb.collection('trips').getFirstListItem(locals.pb.filter('slug = {:slug}', { slug }));
+	return locals.pb
+		.collection('trips')
+		.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug }));
 }
 
 async function isViewer(locals: App.Locals, tripId: string): Promise<boolean> {
 	const membership = await locals.pb
 		.collection('trip_members')
-		.getFirstListItem<TripMember>(`trip = "${tripId}" && user = "${locals.user!.id}" && removed_at = ""`);
+		.getFirstListItem<TripMember>(
+			`trip = "${tripId}" && user = "${locals.user!.id}" && removed_at = ""`
+		);
 	return membership.role === 'viewer';
 }
 
 // Load the parent checklist for this route and assert it owns the given task.
-async function loadChecklist(locals: App.Locals, tripId: string, listId: string): Promise<Checklist | null> {
-	const checklist = await locals.pb.collection('checklists').getOne<Checklist>(listId).catch(() => null);
+async function loadChecklist(
+	locals: App.Locals,
+	tripId: string,
+	listId: string
+): Promise<Checklist | null> {
+	const checklist = await locals.pb
+		.collection('checklists')
+		.getOne<Checklist>(listId)
+		.catch(() => null);
 	if (!checklist || checklist.trip !== tripId || checklist.item) return null;
 	return checklist;
 }
@@ -51,7 +62,8 @@ async function loadChecklist(locals: App.Locals, tripId: string, listId: string)
 export const actions: Actions = {
 	addTask: async ({ request, params, locals }) => {
 		const trip = await getTrip(locals, params.slug);
-		if (await isViewer(locals, trip.id)) return fail(403, { error: 'Viewers cannot modify lists.' });
+		if (await isViewer(locals, trip.id))
+			return fail(403, { error: 'Viewers cannot modify lists.' });
 
 		const checklist = await loadChecklist(locals, trip.id, params.listId);
 		if (!checklist) return fail(404, { error: 'List not found.' });
@@ -81,7 +93,8 @@ export const actions: Actions = {
 
 	toggleTask: async ({ request, params, locals }) => {
 		const trip = await getTrip(locals, params.slug);
-		if (await isViewer(locals, trip.id)) return fail(403, { error: 'Viewers cannot modify lists.' });
+		if (await isViewer(locals, trip.id))
+			return fail(403, { error: 'Viewers cannot modify lists.' });
 
 		const data = await request.formData();
 		const taskId = data.get('task_id')?.toString();
@@ -99,7 +112,8 @@ export const actions: Actions = {
 
 	assignTask: async ({ request, params, locals }) => {
 		const trip = await getTrip(locals, params.slug);
-		if (await isViewer(locals, trip.id)) return fail(403, { error: 'Viewers cannot modify lists.' });
+		if (await isViewer(locals, trip.id))
+			return fail(403, { error: 'Viewers cannot modify lists.' });
 
 		const data = await request.formData();
 		const taskId = data.get('task_id')?.toString();
@@ -112,7 +126,9 @@ export const actions: Actions = {
 			if (assignee) {
 				const member = await locals.pb
 					.collection('trip_members')
-					.getFirstListItem<TripMember>(`id = "${assignee}" && trip = "${trip.id}" && removed_at = ""`)
+					.getFirstListItem<TripMember>(
+						`id = "${assignee}" && trip = "${trip.id}" && removed_at = ""`
+					)
 					.catch(() => null);
 				if (!member) return fail(400, { error: 'Invalid assignee.' });
 			}
@@ -125,7 +141,8 @@ export const actions: Actions = {
 
 	deleteTask: async ({ request, params, locals }) => {
 		const trip = await getTrip(locals, params.slug);
-		if (await isViewer(locals, trip.id)) return fail(403, { error: 'Viewers cannot modify lists.' });
+		if (await isViewer(locals, trip.id))
+			return fail(403, { error: 'Viewers cannot modify lists.' });
 
 		const data = await request.formData();
 		const taskId = data.get('task_id')?.toString();
@@ -143,7 +160,8 @@ export const actions: Actions = {
 
 	rename: async ({ request, params, locals }) => {
 		const trip = await getTrip(locals, params.slug);
-		if (await isViewer(locals, trip.id)) return fail(403, { error: 'Viewers cannot modify lists.' });
+		if (await isViewer(locals, trip.id))
+			return fail(403, { error: 'Viewers cannot modify lists.' });
 
 		const checklist = await loadChecklist(locals, trip.id, params.listId);
 		if (!checklist) return fail(404, { error: 'List not found.' });
@@ -162,7 +180,8 @@ export const actions: Actions = {
 
 	deleteList: async ({ params, locals }) => {
 		const trip = await getTrip(locals, params.slug);
-		if (await isViewer(locals, trip.id)) return fail(403, { error: 'Viewers cannot modify lists.' });
+		if (await isViewer(locals, trip.id))
+			return fail(403, { error: 'Viewers cannot modify lists.' });
 
 		const checklist = await loadChecklist(locals, trip.id, params.listId);
 		if (!checklist) return fail(404, { error: 'List not found.' });

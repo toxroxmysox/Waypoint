@@ -144,10 +144,13 @@ export const actions: Actions = {
 		if (!current) return fail(400, { error: 'That invite is no longer available.', code });
 		if (current.needs_choice) redirect(303, `/invite/${code}`);
 		try {
-			const res = await locals.pb.send<{ trip_id: string; trip_slug?: string }>('/api/invites/accept', {
-				method: 'POST',
-				body: { code }
-			});
+			const res = await locals.pb.send<{ trip_id: string; trip_slug?: string }>(
+				'/api/invites/accept',
+				{
+					method: 'POST',
+					body: { code }
+				}
+			);
 			redirect(303, res.trip_slug ? `/trips/${res.trip_slug}` : '/trips');
 		} catch (err) {
 			if (isRedirect(err)) throw err;

@@ -39,9 +39,7 @@ export function promotedDisplayOrder(dayItems: Item[], promoted: Item, now: Date
 	// The day's existing items in canonical display order, excluding multi-day
 	// banners (they never carry day `sort_order`) and the promoted idea itself
 	// (it may already be in the array if the caller attached it first).
-	const ordered = orderDayItems(
-		dayItems.filter((i) => !isMultiDay(i) && i.id !== promoted.id)
-	);
+	const ordered = orderDayItems(dayItems.filter((i) => !isMultiDay(i) && i.id !== promoted.id));
 
 	// Insert after the last item that has already started (at/before now). Untimed
 	// items (no start_time) count as "not yet anchored" → they sit after the

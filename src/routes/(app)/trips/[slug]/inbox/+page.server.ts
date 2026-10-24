@@ -107,13 +107,18 @@ export const actions: Actions = {
 		try {
 			membership = await locals.pb
 				.collection('trip_members')
-				.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`);
+				.getFirstListItem<TripMember>(
+					`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`
+				);
 		} catch {
 			return fail(403, { error: 'Not a member of this trip.' });
 		}
 		try {
 			const existing = await locals.pb.collection('suggestion_votes').getFullList({
-				filter: locals.pb.filter('suggestion = {:s} && member = {:m}', { s: suggestionId, m: membership.id }),
+				filter: locals.pb.filter('suggestion = {:s} && member = {:m}', {
+					s: suggestionId,
+					m: membership.id
+				}),
 				fields: 'id'
 			});
 			if (existing.length > 0) {
@@ -160,11 +165,17 @@ export const actions: Actions = {
 					'Content-Type': 'application/json',
 					Authorization: `Bearer ${token}`
 				},
-				body: JSON.stringify({ suggestion_id: suggestionId, action: 'reject', review_note: reviewNote })
+				body: JSON.stringify({
+					suggestion_id: suggestionId,
+					action: 'reject',
+					review_note: reviewNote
+				})
 			});
 			if (!res.ok) {
 				const err = await res.json().catch(() => ({}));
-				return fail(res.status, { reject: { error: (err as { message?: string }).message || 'Failed to reject.' } });
+				return fail(res.status, {
+					reject: { error: (err as { message?: string }).message || 'Failed to reject.' }
+				});
 			}
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : 'Failed to reject suggestion.';
@@ -192,7 +203,9 @@ export const actions: Actions = {
 			});
 			if (!res.ok) {
 				const err = await res.json().catch(() => ({}));
-				return fail(res.status, { approve: { error: (err as { message?: string }).message || 'Failed to approve.' } });
+				return fail(res.status, {
+					approve: { error: (err as { message?: string }).message || 'Failed to approve.' }
+				});
 			}
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : 'Failed to approve suggestion.';

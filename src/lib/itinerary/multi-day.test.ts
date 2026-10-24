@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { toDateOnly, isMultiDay, itemDateRange, spanningItemsForDate, nightInfo, sortSpans } from './multi-day';
+import {
+	toDateOnly,
+	isMultiDay,
+	itemDateRange,
+	spanningItemsForDate,
+	nightInfo,
+	sortSpans
+} from './multi-day';
 import type { Item, Day } from '$lib/types';
 
 const days = [
@@ -56,11 +63,15 @@ describe('spanningItemsForDate', () => {
 	});
 	it('ignores non-multi-day items', () => {
 		expect(spanningItemsForDate([hotel({ end_date: '' })], days, '2026-06-18')).toHaveLength(0);
-	});	it('orders bands chronologically, whatever order the query returned', () => {
+	});
+	it('orders bands chronologically, whatever order the query returned', () => {
 		const later = hotel({ id: 'later', day: 'd9', title: 'B&B' });
 		const earlier = hotel({ id: 'earlier', day: 'd8', title: 'Rental car' });
 		const ids = (xs: Item[]) => xs.map((i) => i.id);
-		expect(ids(spanningItemsForDate([later, earlier], days, '2026-06-20'))).toEqual(['earlier', 'later']);
+		expect(ids(spanningItemsForDate([later, earlier], days, '2026-06-20'))).toEqual([
+			'earlier',
+			'later'
+		]);
 	});
 });
 

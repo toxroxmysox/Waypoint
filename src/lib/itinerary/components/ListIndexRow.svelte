@@ -31,23 +31,28 @@
 
 <a
 	{href}
-	class="hover:bg-surface-2 active:bg-surface-2 flex items-center gap-3 px-[15px] py-[13px] {divider ? 'border-line border-b' : ''}"
+	class="flex items-center gap-3 px-[15px] py-[13px] hover:bg-surface-2 active:bg-surface-2 {divider
+		? 'border-b border-line'
+		: ''}"
 >
 	{#if phaseName}
 		<PhaseChip name={phaseName} size={20} />
 	{:else}
 		<span
-			class="border-line bg-surface-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border"
+			class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-line bg-surface-2"
 		>
 			<svg width="14" height="14" viewBox="0 0 20 20" fill="none">
-				<path d="M10 2L11.5 7L16 8L11.5 9L10 14L8.5 9L4 8L8.5 7L10 2z" fill="var(--color-ink-soft)" />
+				<path
+					d="M10 2L11.5 7L16 8L11.5 9L10 14L8.5 9L4 8L8.5 7L10 2z"
+					fill="var(--color-ink-soft)"
+				/>
 			</svg>
 		</span>
 	{/if}
 
 	<div class="min-w-0 flex-1">
-		<div class="text-ink truncate text-[14.5px] leading-tight font-semibold">{title}</div>
-		<div class="text-ink-muted mt-0.5 text-[11px] tracking-wide">
+		<div class="truncate text-[14.5px] leading-tight font-semibold text-ink">{title}</div>
+		<div class="mt-0.5 text-[11px] tracking-wide text-ink-muted">
 			{phaseName ?? 'Whole trip'}
 		</div>
 	</div>
@@ -56,7 +61,7 @@
 		<span class="flex shrink-0 items-center">
 			{#each shown as a, i (i)}
 				<span
-					class="ring-surface inline-flex rounded-full ring-[1.5px]"
+					class="inline-flex rounded-full ring-[1.5px] ring-surface"
 					style="margin-left:{i === 0 ? 0 : -6}px;"
 				>
 					<Avatar img={a.img} initial={a.initial} alt={a.name} size={19} />
@@ -64,7 +69,7 @@
 			{/each}
 			{#if extra > 0}
 				<span
-					class="border-line bg-surface-2 text-ink-muted ring-surface inline-flex h-[19px] w-[19px] items-center justify-center rounded-full border text-[7px] font-bold ring-[1.5px]"
+					class="inline-flex h-[19px] w-[19px] items-center justify-center rounded-full border border-line bg-surface-2 text-[7px] font-bold text-ink-muted ring-[1.5px] ring-surface"
 					style="margin-left:-6px;"
 				>
 					+{extra}

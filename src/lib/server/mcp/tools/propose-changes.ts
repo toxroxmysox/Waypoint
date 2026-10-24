@@ -16,10 +16,17 @@ import type { ToolDef } from './types';
 
 const op = z.object({
 	action: z.enum(['create', 'update']),
-	collection: z.string().describe('Collection name from describe, e.g. items, expenses, phases, trips'),
+	collection: z
+		.string()
+		.describe('Collection name from describe, e.g. items, expenses, phases, trips'),
 	id: z.string().optional().describe('Record id (update)'),
-	ref: z.string().optional().describe('Name for this new record, so a later op can use "$ref:<name>"'),
-	data: z.record(z.string(), z.unknown()).describe('Fields to set. Dates YYYY-MM-DD, times HH:MM (24h), trip-local')
+	ref: z
+		.string()
+		.optional()
+		.describe('Name for this new record, so a later op can use "$ref:<name>"'),
+	data: z
+		.record(z.string(), z.unknown())
+		.describe('Fields to set. Dates YYYY-MM-DD, times HH:MM (24h), trip-local')
 });
 
 export const proposeChanges: ToolDef = {
@@ -44,7 +51,9 @@ export const proposeChanges: ToolDef = {
 
 		const changes = await compileOps(pbLoader(ctx.pb), ref, ops ?? [], ctx.user.id);
 		const touchesDates = changes.some(
-			(c) => (c.collection === 'trips' && ('start_date' in c.after || 'end_date' in c.after)) || (c.collection === 'phases' && 'start_date' in c.after)
+			(c) =>
+				(c.collection === 'trips' && ('start_date' in c.after || 'end_date' in c.after)) ||
+				(c.collection === 'phases' && 'start_date' in c.after)
 		);
 		const snapshot = touchesDates ? await loadSnapshot(ctx.pb, ref.trip) : undefined;
 		const cascade = snapshot ? cascadeFor(changes, snapshot) : null;
@@ -54,16 +63,25 @@ export const proposeChanges: ToolDef = {
 			userId: ctx.user.id,
 			connectionId: ctx.connectionId,
 			tripId: ref.trip.id,
-			quote: quote.trim().length > QUOTE_MAX ? `${quote.trim().slice(0, QUOTE_MAX - 1)}…` : quote.trim(),
+			quote:
+				quote.trim().length > QUOTE_MAX ? `${quote.trim().slice(0, QUOTE_MAX - 1)}…` : quote.trim(),
 			changes,
 			cascade
 		});
 		const outcome = outcomeLine(changes);
 		const cards = previewCards(changes, cascade, ref.trip, labels);
-		const calendar = cascade?.tripBefore && cascade.tripAfter ? { before: cascade.tripBefore, after: cascade.tripAfter } : undefined;
+		const calendar =
+			cascade?.tripBefore && cascade.tripAfter
+				? { before: cascade.tripBefore, after: cascade.tripAfter }
+				: undefined;
 		const n = changes.length;
 		return result(`Preview: ${n} change${n === 1 ? '' : 's'} to ${ref.trip.title}`, cards, {
-			proposal: { id: proposal.id, quote: proposal.quote, outcome, ...(calendar ? { calendar } : {}) },
+			proposal: {
+				id: proposal.id,
+				quote: proposal.quote,
+				outcome,
+				...(calendar ? { calendar } : {})
+			},
 			note:
 				`“${proposal.quote}” → ${outcome}.` +
 				(calendar ? ` Dates: ${rangeText(calendar.before)} → ${rangeText(calendar.after)}.` : '') +

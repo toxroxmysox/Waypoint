@@ -63,7 +63,7 @@
 							<button
 								type="button"
 								onclick={() => ((planningId = itemId), (planOpen = true))}
-								class="hit-44 border-moss/30 text-moss hover:bg-moss-tint rounded-full border px-2.5 py-0.5 text-xs font-semibold"
+								class="hit-44 rounded-full border border-moss/30 px-2.5 py-0.5 text-xs font-semibold text-moss hover:bg-moss-tint"
 							>
 								Do this
 							</button>
@@ -80,7 +80,15 @@
 					</div>
 				{:else}
 					<!-- #248 — a pending suggestion: dotted, votable, in its type group. -->
-					<GhostCard suggestion={card.suggestion} votes={card.votes} {members} {myMemberId} canVote={canVoteGhosts} canReview={canReviewGhosts} {place} />
+					<GhostCard
+						suggestion={card.suggestion}
+						votes={card.votes}
+						{members}
+						{myMemberId}
+						canVote={canVoteGhosts}
+						canReview={canReviewGhosts}
+						{place}
+					/>
 				{/if}
 			{/each}
 		</section>

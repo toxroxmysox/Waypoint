@@ -25,14 +25,17 @@
 		last_used_at: string;
 	}
 
-	let { connections, aiChanges = [] }: { connections: Connection[]; aiChanges?: AiChange[] } = $props();
+	let { connections, aiChanges = [] }: { connections: Connection[]; aiChanges?: AiChange[] } =
+		$props();
 	let pending = $state('');
 
 	// #503 — created is a real instant: show it in the viewer's zone, as "9:40 am".
 	const when = (d: string) => {
 		const t = new Date(d.replace(' ', 'T'));
 		const day = t.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-		const clock = t.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toLowerCase();
+		const clock = t
+			.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+			.toLowerCase();
 		return `${day}, ${clock}`;
 	};
 
@@ -44,19 +47,23 @@
 
 <Card>
 	<section class="space-y-3 p-4">
-		<h2 class="text-ink text-sm font-semibold">Connected apps</h2>
+		<h2 class="text-sm font-semibold text-ink">Connected apps</h2>
 		{#if connections.length === 0}
-			<p class="text-ink-muted text-sm">
+			<p class="text-sm text-ink-muted">
 				No AI assistants connected. Add Waypoint as a connector in Claude to ask about your trips.
 			</p>
 		{:else}
-			<ul class="divide-line divide-y">
+			<ul class="divide-y divide-line">
 				{#each connections as c (c.id)}
 					<li class="flex items-center justify-between gap-3 py-2">
 						<div class="min-w-0">
-							<p class="text-ink truncate text-sm font-medium">{c.client_name || 'AI assistant'}</p>
-							<p class="text-ink-muted text-[12px]">
-								Connected {formatCalendarDate(c.created.slice(0, 10), { month: 'short', day: 'numeric', year: 'numeric' })}
+							<p class="truncate text-sm font-medium text-ink">{c.client_name || 'AI assistant'}</p>
+							<p class="text-[12px] text-ink-muted">
+								Connected {formatCalendarDate(c.created.slice(0, 10), {
+									month: 'short',
+									day: 'numeric',
+									year: 'numeric'
+								})}
 								· {c.last_used_at ? `Last used ${ago(c.last_used_at)}` : 'Not used yet'}
 							</p>
 						</div>
@@ -73,7 +80,9 @@
 							}}
 						>
 							<input type="hidden" name="id" value={c.id} />
-							<Button type="submit" variant="ghost" size="sm" loading={pending === c.id}>Disconnect</Button>
+							<Button type="submit" variant="ghost" size="sm" loading={pending === c.id}
+								>Disconnect</Button
+							>
 						</form>
 					</li>
 				{/each}
@@ -81,19 +90,21 @@
 		{/if}
 
 		{#if aiChanges.length}
-			<details class="border-line border-t pt-3">
-				<summary class="text-ink cursor-pointer text-sm font-medium">Recent AI changes</summary>
-				<ul class="divide-line mt-2 divide-y">
+			<details class="border-t border-line pt-3">
+				<summary class="cursor-pointer text-sm font-medium text-ink">Recent AI changes</summary>
+				<ul class="mt-2 divide-y divide-line">
 					{#each aiChanges as a (a.id)}
 						<li class="flex items-center justify-between gap-3 py-2">
 							<div class="min-w-0">
-								<p class="text-ink text-sm">“{a.quote}”</p>
-								<p class="text-ink-muted text-[12px]">
-									{a.trip ? `${a.trip} · ` : ''}{a.count} change{a.count === 1 ? '' : 's'} · {when(a.created)}
+								<p class="text-sm text-ink">“{a.quote}”</p>
+								<p class="text-[12px] text-ink-muted">
+									{a.trip ? `${a.trip} · ` : ''}{a.count} change{a.count === 1 ? '' : 's'} · {when(
+										a.created
+									)}
 								</p>
 							</div>
 							{#if a.reverted}
-								<span class="text-ink-muted shrink-0 text-[12px]">Undone</span>
+								<span class="shrink-0 text-[12px] text-ink-muted">Undone</span>
 							{:else}
 								<form
 									method="POST"
@@ -104,14 +115,18 @@
 											pending = '';
 											if (result.type === 'success') {
 												const skipped = (result.data?.skipped as string[] | undefined) ?? [];
-												toast.show(skipped.length ? `Undone. Left as is: ${skipped.join('; ')}` : 'Undone');
+												toast.show(
+													skipped.length ? `Undone. Left as is: ${skipped.join('; ')}` : 'Undone'
+												);
 											}
 											await update();
 										};
 									}}
 								>
 									<input type="hidden" name="id" value={a.id} />
-									<Button type="submit" variant="ghost" size="sm" loading={pending === a.id}>Revert</Button>
+									<Button type="submit" variant="ghost" size="sm" loading={pending === a.id}
+										>Revert</Button
+									>
 								</form>
 							{/if}
 						</li>

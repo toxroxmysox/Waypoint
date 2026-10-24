@@ -20,11 +20,16 @@ cronAdd('email_digest', '0 * * * *', () => {
 		const core = require(`${__hooks}/digest-core.js`);
 		const summary = core.runDigest($app, {});
 		const line =
-			'digest.pb.js: cron run — checked=' + summary.trips_checked +
-			' baselined=' + summary.baselined.length +
-			' emails=' + summary.emails.length +
-			' updated=' + summary.trips_updated.length +
-			' errors=' + summary.errors.length;
+			'digest.pb.js: cron run — checked=' +
+			summary.trips_checked +
+			' baselined=' +
+			summary.baselined.length +
+			' emails=' +
+			summary.emails.length +
+			' updated=' +
+			summary.trips_updated.length +
+			' errors=' +
+			summary.errors.length;
 		console.log(line);
 		try {
 			$app.logger().info(line, 'errors', summary.errors.join('; '));

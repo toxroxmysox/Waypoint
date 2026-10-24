@@ -31,7 +31,7 @@ tombstoned. This makes ADR-0008's stated intent true in code.
   `tasks.assignee`. **Votes** (`votes.member`, `goal_votes.member`) are always dropped on
   removal, so a vote-only member is zero-ref → purged.
 - **One-time backfill.** A migration purges existing zero-ref tombstones using the
-  *same* reference check as the hook (single source of truth). It mutates real trips, so
+  _same_ reference check as the hook (single source of truth). It mutates real trips, so
   it is idempotent and verified on a snapshot before deploy.
 - **UX — distinct dialog.** When the Remove dialog opens for a zero-ref member, the
   keep/reassign/cascade disposition picker is skipped in favour of a "Delete permanently
@@ -66,19 +66,19 @@ re-confirmed (as decided above). Three refinements:
 
 1. **The reference set MUST also cover `expenses.split_data` (JSON) — no FK protects it.** The set
    above is FK-only and is therefore incomplete. `split_data` embeds member ids — `{members:[ids]}`
-   for an equal split and `{amounts:{memberId:n}}` (keyed by member id) for by_amount. A member who is
-   *only* a split participant (someone else paid; they owe a share) is genuinely referenced yet
+   for an equal split and `{amounts:{memberId:n}}` (keyed by member id) for by*amount. A member who is
+   \_only* a split participant (someone else paid; they owe a share) is genuinely referenced yet
    invisible to every FK check. The purge check scans each trip expense's `split_data` for the member
    id; a hit → tombstone. Without this, a member owed money inside a split could be hard-deleted →
-   orphaned id → broken `debt-simplify` balances. *(The inverse gap exists in ADR-0008's reassign
-   disposition, which rewrites `paid_by`/`created_by` but not `split_data` — tracked as #259.)*
+   orphaned id → broken `debt-simplify` balances. _(The inverse gap exists in ADR-0008's reassign
+   disposition, which rewrites `paid_by`/`created_by` but not `split_data` — tracked as #259.)_
 2. **Drift-proofing replaces trusting the hand-list.** The FK list is a single source-of-truth
    constant; a schema-introspection test enumerates every collection whose relation field targets
    `trip_members` and fails if one isn't in the constant — so a future member-relation migration goes
    RED in CI until the purge check is updated. (The hand-list already drifted: #238's original body
    omitted `expenses.created_by`, `settlements.created_by`, `items.paid_by`, `items.booked_by`,
    `tasks.assignee`, and all of `split_data`.)
-3. **One-time backfill deferred OUT of the AFK build.** Purging *existing* zero-ref tombstones
+3. **One-time backfill deferred OUT of the AFK build.** Purging _existing_ zero-ref tombstones
    hard-deletes real production rows — a real-data mutation that cannot run unattended (PM hard-stop:
    dry-run + eyeball + sign-off). #238 ships forward behavior only (new removals auto-purge). The
    backfill is a separate HITL dry-run, deprioritised (one dogfood trip's tombstones; harmless).

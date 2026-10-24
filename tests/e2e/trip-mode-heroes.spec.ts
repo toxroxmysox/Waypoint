@@ -25,12 +25,16 @@ test.describe('Now: several Heroes (#430)', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await page.setViewportSize({ width: 375, height: 812 });
-		await page.goto(`${BASE}/api/dev/login?email=${encodeURIComponent(process.env.E2E_TEST_EMAIL!)}`);
+		await page.goto(
+			`${BASE}/api/dev/login?email=${encodeURIComponent(process.env.E2E_TEST_EMAIL!)}`
+		);
 		await page.waitForURL(/\/(trips|claim)/, { timeout: 15000 });
 		await page.goto(`${BASE}/trips/${SLUG}/now`, { waitUntil: 'networkidle' });
 	});
 
-	test("every ongoing item is a Hero: the viewer's first, then the rest by start", async ({ page }) => {
+	test("every ongoing item is a Hero: the viewer's first, then the rest by start", async ({
+		page
+	}) => {
 		const heroes = page.locator('[data-hero]').filter({ visible: true });
 		await expect(heroes).toHaveCount(3);
 		await expect(heroes.nth(0).getByRole('heading')).toHaveText('Dinner at The Immigrant');
@@ -53,7 +57,9 @@ test.describe('Now: several Heroes (#430)', () => {
 		await expect(page.getByText(/overlap/i).filter({ visible: true })).toHaveCount(0);
 	});
 
-	test('each Hero has its own Skip: skipping the second removes only that Hero', async ({ page }) => {
+	test('each Hero has its own Skip: skipping the second removes only that Hero', async ({
+		page
+	}) => {
 		const heroes = page.locator('[data-hero]').filter({ visible: true });
 		await heroes.nth(1).getByRole('button', { name: 'Item actions' }).click();
 		await page.getByRole('menuitem', { name: /Skip/ }).click();

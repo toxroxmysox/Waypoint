@@ -3,7 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-06-13
 **Deciders:** Scott
-**Context:** `docs/ITEM_ASSIGNMENT_PRD.md` (Item Assignment, issue #210); audit #116 (WP-A-017). `CARD_CONTENT_SPEC.md` (grilled 2026-06-10) fixed the item card's avatars to a single meaning — **reactors/voters** ("Card avatars stay votes-only … never assignees — *one avatar meaning per card*"), with assignees (`assigned_to`) rendered **detail-only**. The Item Assignment work needs "who's doing this item" legible on the card itself (the day view's whole job), and chose [[Assignment]] (`assigned_to`) as the primitive.
+**Context:** `docs/ITEM_ASSIGNMENT_PRD.md` (Item Assignment, issue #210); audit #116 (WP-A-017). `CARD_CONTENT_SPEC.md` (grilled 2026-06-10) fixed the item card's avatars to a single meaning — **reactors/voters** ("Card avatars stay votes-only … never assignees — _one avatar meaning per card_"), with assignees (`assigned_to`) rendered **detail-only**. The Item Assignment work needs "who's doing this item" legible on the card itself (the day view's whole job), and chose [[Assignment]] (`assigned_to`) as the primitive.
 
 ## Decision
 
@@ -18,8 +18,8 @@ Item-card avatars denote **assignees** (`assigned_to`) on every item-card surfac
 ## Considered and rejected
 
 - **Status quo — votes-only on cards, assignees detail-only** (CARD_CONTENT_SPEC as written). Rejected: defeats the day-view "who's doing what" goal that motivates the whole feature.
-- **Coexist — assignee avatars *and* vote avatars in separate slots on the card.** Rejected: two avatar meanings on one card is the exact ambiguity the original spec eliminated, and it's clutter at 375px.
-- **Lifecycle-keyed — parking-lot cards keep vote avatars, planned cards show assignee avatars.** Considered (it preserves "one meaning per card" *per context*); rejected for a single global rule — a meaning that flips by card type is harder to learn than "card avatars are always assignees."
+- **Coexist — assignee avatars _and_ vote avatars in separate slots on the card.** Rejected: two avatar meanings on one card is the exact ambiguity the original spec eliminated, and it's clutter at 375px.
+- **Lifecycle-keyed — parking-lot cards keep vote avatars, planned cards show assignee avatars.** Considered (it preserves "one meaning per card" _per context_); rejected for a single global rule — a meaning that flips by card type is harder to learn than "card avatars are always assignees."
 
 ## Consequences
 
@@ -27,18 +27,18 @@ Item-card avatars denote **assignees** (`assigned_to`) on every item-card surfac
 - **Vote display on cards becomes an icon + count pill** across parking-lot and planned surfaces — a contained change in the reactor/vote-stack rendering. Item **detail** keeps the avatar stacks.
 - **`assigned_to` graduates from detail-only to card-rendered.** Card loaders that lack the roster must expand assignees and attach avatars (the existing `member-avatar` helper). Assignee avatars appear only when the trip has **>1 member**, mirroring the existing capture rule.
 - **Purely a rendering reassignment** — `votes`/`goal_votes` and `voting.ts` are untouched; **ADR-0004 stands**. No schema change.
-- Doesn't preclude a future richer treatment (e.g. a combined affordance) — it only fixes the card avatar's *meaning* to assignment now.
+- Doesn't preclude a future richer treatment (e.g. a combined affordance) — it only fixes the card avatar's _meaning_ to assignment now.
 
 ## Amendment (2026-07-10, #350)
 
-The card vote pill's **single-glyph count** (`VoteCountPill`, a thumbs-up + total) miscommunicated a mixed tally as unanimous approval — a lone "3" read as "3 approvals" regardless of whether those were loves or passes. **The pill now shows per-sentiment glyph+count groups** (`VoteSentimentPill`), non-zero only, using the same vocabulary as `VoteStacks` — ♥ love / + like / ~ flexible / – pass. A card with one love reads `♥ 1`, not a thumbs-up. This **amends, not reverses, the decision above**: votes stay *off* the card avatars (avatars still mean assignees), and no numeric weighted score is ever shown. Component renamed `VoteCountPill.svelte` → `VoteSentimentPill.svelte`.
+The card vote pill's **single-glyph count** (`VoteCountPill`, a thumbs-up + total) miscommunicated a mixed tally as unanimous approval — a lone "3" read as "3 approvals" regardless of whether those were loves or passes. **The pill now shows per-sentiment glyph+count groups** (`VoteSentimentPill`), non-zero only, using the same vocabulary as `VoteStacks` — ♥ love / + like / ~ flexible / – pass. A card with one love reads `♥ 1`, not a thumbs-up. This **amends, not reverses, the decision above**: votes stay _off_ the card avatars (avatars still mean assignees), and no numeric weighted score is ever shown. Component renamed `VoteCountPill.svelte` → `VoteSentimentPill.svelte`.
 
 ## Amendment (2026-10-03, card system D3 + D4 — Scott)
 
 Two clarifications from the card-system redesign (`docs/CARD_SYSTEM.md`, decisions D3 and D4):
 
 1. **The avatars mean "who's going", nothing more (D4).** The people in `assigned_to` are the ones going on or doing the item. They are not the ones who book it, pay for it, or are responsible for it. The original wording ("doing / responsible for") is narrowed to participation. The avatar slot keeps its single meaning and is shown on planning day cards and trip-mode cards.
-2. **Votes leave the day page (D3).** This ADR moved votes to a per-sentiment count pill on parking-lot *and planned* cards. Votes now show only where ideas are weighed and moved: the phase planning context (the phase's parking lot), pending suggestions, and the swipe deck. Planned cards and the day page's parking lot show no votes. Item detail keeps the who-voted-what stacks. Whether trip mode's "Ideas for now" strip keeps votes is still open.
+2. **Votes leave the day page (D3).** This ADR moved votes to a per-sentiment count pill on parking-lot _and planned_ cards. Votes now show only where ideas are weighed and moved: the phase planning context (the phase's parking lot), pending suggestions, and the swipe deck. Planned cards and the day page's parking lot show no votes. Item detail keeps the who-voted-what stacks. Whether trip mode's "Ideas for now" strip keeps votes is still open.
 
 The core decision stands: **card avatars mean assignment, never votes.**
 

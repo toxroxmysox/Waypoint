@@ -114,7 +114,10 @@ test.describe('#250 reject ghost → note + archive', () => {
 			await expect(ghost).toBeVisible({ timeout: 10000 });
 
 			// Open the reject affordance → reveals the required note field.
-			await ghost.getByRole('button', { name: /^reject$/i }).first().click();
+			await ghost
+				.getByRole('button', { name: /^reject$/i })
+				.first()
+				.click();
 			const noteField = ghost.getByLabel(/reason for rejecting/i).first();
 			await expect(noteField).toBeVisible();
 
@@ -143,7 +146,9 @@ test.describe('#250 reject ghost → note + archive', () => {
 			headers: { Authorization: `Bearer ${travelerToken}` }
 		});
 		const notifs = (await notifRes.json()) as { items: Array<{ type: string; body: string }> };
-		const rejNotif = notifs.items.find((n) => n.type === 'suggestion_rejected' && n.body.includes(note));
+		const rejNotif = notifs.items.find(
+			(n) => n.type === 'suggestion_rejected' && n.body.includes(note)
+		);
 		expect(rejNotif).toBeTruthy();
 
 		// No group rejection noise: the co_owner did NOT get a suggestion_rejected.
@@ -152,9 +157,9 @@ test.describe('#250 reject ghost → note + archive', () => {
 			headers: { Authorization: `Bearer ${coOwnerToken}` }
 		});
 		const coNotifs = (await coNotifRes.json()) as { items: Array<{ type: string; body: string }> };
-		expect(coNotifs.items.some((n) => n.type === 'suggestion_rejected' && n.body.includes(note))).toBe(
-			false
-		);
+		expect(
+			coNotifs.items.some((n) => n.type === 'suggestion_rejected' && n.body.includes(note))
+		).toBe(false);
 	});
 	// #444 — Reject from the Suggestion's edit view keeps the one-line note rule.
 	test('edit view: Reject needs a note, then archives the suggestion', async ({ browser }) => {
@@ -174,7 +179,9 @@ test.describe('#250 reject ghost → note + archive', () => {
 
 		const owner = await devLogin(browser, EMAILS.owner);
 		try {
-			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/items/new?suggestion=${suggestion_id}`, { waitUntil: 'networkidle' });
+			await owner.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/items/new?suggestion=${suggestion_id}`, {
+				waitUntil: 'networkidle'
+			});
 			await owner.page
 				.getByRole('button', { name: /^reject$/i })
 				.filter({ visible: true })
@@ -198,7 +205,8 @@ test.describe('#250 reject ghost → note + archive', () => {
 			`${PB_BASE}/api/suggestions/list?trip_id=${ids.tripId}&status=rejected`,
 			{ headers: { Authorization: `Bearer ${ownerToken}` } }
 		);
-		const rejected = ((await res.json()) as { items: Array<{ id: string; review_note: string }> }).items;
+		const rejected = ((await res.json()) as { items: Array<{ id: string; review_note: string }> })
+			.items;
 		expect(rejected.find((s) => s.id === suggestion_id)?.review_note).toBe(note);
 	});
 });

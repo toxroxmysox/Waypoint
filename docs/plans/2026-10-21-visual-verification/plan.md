@@ -13,6 +13,7 @@
 **Intent sources:** `docs/adr/0003-visual-baselines-macos-local.md`; glossary `CONTEXT.md` (no new terms); `CLAUDE.md` "Visual verification".
 
 **Run:**
+
 - `pnpm test:visual`
 - `pnpm test:e2e:clean`
 - `pnpm test:unit --run`
@@ -44,11 +45,13 @@ These need `.env.local` with `WAYPOINT_DEV_MODE` and `E2E_TEST_EMAIL`. On the fi
 ### Task 1: Strict reporter
 
 **Files:**
+
 - Create: `tests/e2e/strict-reporter.ts`
 - Create: `tests/strict-reporter/fixture.config.ts`, `tests/strict-reporter/fixtures.spec.ts`, `tests/strict-reporter/run.mjs`
 - Modify: `playwright.config.ts` (`reporter: [['list'], ['./tests/e2e/strict-reporter.ts'], ['html', { open: 'never' }]]`)
 
 **Interfaces:**
+
 - Produces: a default-export Playwright `Reporter`.
   - `onTestEnd` collects tests whose `test.outcome()` is `'skipped'` or `'flaky'`.
   - `onEnd` prints `STRICT: N skipped (K allowed), M flaky`, then one line per test: `<file>:<line> <title> — <skip reason | flaky after R retries>`.
@@ -80,11 +83,13 @@ These need `.env.local` with `WAYPOINT_DEV_MODE` and `E2E_TEST_EMAIL`. On the fi
 ### Task 2: Detroit default, exact Playwright pin, `visual` project scaffold
 
 **Files:**
+
 - Modify: `playwright.config.ts`, `vite.config.ts` (vitest `test.env`), `package.json`, `scripts/e2e-isolated.sh`
 - Create: `scripts/visual-update.sh`, `scripts/aria-update.sh`
 - Create: `tests/visual/visual-fixture.ts`, `tests/visual/smoke.spec.ts`, `src/lib/shell/default-tz.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - **`playwright.config.ts`:**
     - `process.env.TZ ??= 'America/Detroit'` before anything else, and `use.timezoneId: process.env.TZ`.
@@ -117,14 +122,17 @@ These need `.env.local` with `WAYPOINT_DEV_MODE` and `E2E_TEST_EMAIL`. On the fi
     - e2e test: add an `allowed-skip` annotation and skip it.
 
   Done = both exit 0, and every UTC pin or allowance links a filed issue. Loop cap: two passes over the reds. After that, stop and report.
+
 - [ ] **Step 6:** Commit.
 
 ### Task 3: Geometry helpers
 
 **Files:**
+
 - Create: `tests/e2e/helpers/geometry.ts`, `tests/visual/geometry-helpers.spec.ts`
 
 **Interfaces:**
+
 - Produces the following. Every failure throws an `Error` with plain text that names the element as `tag#id.class`, the measured value, and the cause.
   - **`visibleOnly(locator: Locator): Promise<Locator>`**
     - Returns `locator.filter({ visible: true })`.
@@ -156,10 +164,12 @@ These need `.env.local` with `WAYPOINT_DEV_MODE` and `E2E_TEST_EMAIL`. On the fi
 ### Task 4: DayNav pin and the five-surface ARIA + geometry sweep
 
 **Files:**
+
 - Create: `tests/e2e/helpers/a11y.ts`; add dev dependency `@axe-core/playwright` (exact version)
 - Create: `tests/visual/daynav-hit-area.spec.ts`, `tests/visual/surfaces.spec.ts`, `tests/visual/__snapshots__/**/*.aria.yml` (generated)
 
 **Interfaces:**
+
 - Consumes: `test`, `expect`, `trip` from `tests/visual/visual-fixture.ts`; all four helpers from `tests/e2e/helpers/geometry.ts`.
 - Produces: `expectNoA11yViolations(page: Page, opts?: { exclude?: Record<string, string> }): Promise<void>` in `tests/e2e/helpers/a11y.ts`. Runs `new AxeBuilder({ page }).withTags(['wcag2a','wcag2aa']).disableRules(Object.keys(exclude))`, fails on violations with impact `serious` or `critical`, and prints one text line per violation: `<rule id> (<impact>) <target selector> — <help>`. `exclude` maps rule id → `#N` of a filed issue; a value without `#\d+` throws.
 
@@ -188,6 +198,7 @@ These need `.env.local` with `WAYPOINT_DEV_MODE` and `E2E_TEST_EMAIL`. On the fi
   - `expectNoA11yViolations(page, { exclude: <per-surface known rules> })`
 
   Put the ARIA assertion in its own test tagged `@aria` (`test('<surface> structure', { tag: '@aria' }, …)`) and the geometry + axe checks in a separate untagged test, so `test:aria:update` touches only ARIA files.
+
 - [ ] **Step 5:** Run `pnpm test:visual` twice. The first run writes the 5 missing `.aria.yml` files (`updateSnapshots: 'missing'`); never pass `-u`/`--update-snapshots`. Read each one: it must list the surface's real headings and controls, with no timestamps. The second run → PASS. App failures from geometry get filed as `Geometry: …` issues, and that assertion is annotated `allowed-skip` and skipped. Existing serious/critical axe violations get one `A11y: <rule id>` issue per rule and an `exclude` entry with that issue number.
 - [ ] **Step 6: Determinism check (Review Focus 1).** Run `pnpm test:visual` three times in a row.
   - Expected: all pass, and `git status --porcelain tests/visual/__snapshots__` stays empty.
@@ -198,9 +209,11 @@ These need `.env.local` with `WAYPOINT_DEV_MODE` and `E2E_TEST_EMAIL`. On the fi
 ### Task 5: BottomSheet dismissal: static check and three hosts
 
 **Files:**
+
 - Create: `src/lib/ui/bottom-sheet-hosts.test.ts`, `tests/e2e/sheet-dismissal.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `visibleOnly` (Task 3).
 
 - [ ] **Step 1: Static test.** Write `every BottomSheet host leaves Escape and backdrop to BottomSheet`.
@@ -222,16 +235,19 @@ These need `.env.local` with `WAYPOINT_DEV_MODE` and `E2E_TEST_EMAIL`. On the fi
   4. Assert the dialog is hidden.
   5. Assert `page.url()` equals the recorded URL.
   6. Assert a control under the former overlay receives a click.
+
 - [ ] **Step 4:** `pnpm test:e2e:clean tests/e2e/sheet-dismissal.spec.ts` → 9 passed.
 - [ ] **Step 5:** Commit.
 
 ### Task 6: Smaller `verify:visual` and the `visual-reviewer` agent
 
 **Files:**
+
 - Modify: `scripts/verify-visual.mjs` (flags and its header comment)
 - Create: `.claude/agents/visual-reviewer.md`
 
 **Interfaces:**
+
 - Produces:
   - **`verify:visual`:**
     - Defaults: `--widths 375`, viewport only.
@@ -260,10 +276,12 @@ These need `.env.local` with `WAYPOINT_DEV_MODE` and `E2E_TEST_EMAIL`. On the fi
 ### Task 7: Docs and the static token estimate
 
 **Files:**
+
 - Create: `scripts/transcript-tokens.mjs`, `docs/plans/2026-10-21-visual-verification/token-estimate.md`
 - Modify: `CLAUDE.md` ("Visual verification", "Integrating and shipping"), `.wolf/cerebrum.md` (local, gitignored)
 
 **Interfaces:**
+
 - Produces: `node scripts/transcript-tokens.mjs <dir-or-files…>` prints one JSON line per transcript plus a total line: `{"file":…,"turns":N,"images":N,"imageTurnsHeld":N}`.
   - Only real `type:"image"` content blocks are counted, deduplicated by their `tool_use_id`/message uuid. A raw grep double-counts.
   - `imageTurnsHeld` = the sum, over images, of the assistant turns after the image until the session ends or the next compaction boundary.
@@ -284,6 +302,7 @@ These need `.env.local` with `WAYPOINT_DEV_MODE` and `E2E_TEST_EMAIL`. On the fi
   8. axe: serious/critical violations fail `pnpm test:visual`; exclusions only by rule id with a filed issue.
 
   Then add the browser-pane rule: use `read_page` / `get_page_text` first, take a screenshot only when appearance is the question, and never trust timing or animation without `document.visibilityState` plus an rAF tick count, or a Playwright rerun.
+
 - [ ] **Step 4: "Integrating and shipping".** Add: a PR that changes `tests/visual/__snapshots__` lists every changed snapshot in its body. A PNG baseline change needs Scott's sweep sign-off before merge.
 - [ ] **Step 5: Cerebrum.** Add a dated entry pointing each of the five scars at its guard:
   - hit area → `expectHitTarget`
@@ -293,6 +312,7 @@ These need `.env.local` with `WAYPOINT_DEV_MODE` and `E2E_TEST_EMAIL`. On the fi
   - #379 → the browser-pane rule
 
   It is local and not committed.
+
 - [ ] **Step 6:** Commit. Post the `token-estimate.md` summary table as a comment on #540.
 
 ## Done check (whole branch)

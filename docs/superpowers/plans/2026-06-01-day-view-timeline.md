@@ -13,6 +13,7 @@
 ### Task 1: Timeline interleaving logic
 
 **Files:**
+
 - Create: `src/lib/itinerary/timeline.ts`
 - Create: `src/lib/itinerary/timeline.test.ts`
 
@@ -29,21 +30,49 @@ import type { TimelineEntry } from './timeline';
 import type { Item } from '$lib/types';
 import type { RecordModel } from 'pocketbase';
 
-const base: Omit<Item, 'id' | 'sort_order' | 'start_time' | 'end_time' | 'title' | 'type' | 'status'> & Partial<RecordModel> = {
-	trip: 't', phase: 'p', day: 'd', subtype: '', description: '',
-	location_name: '', location_address: '', location_coords: null,
-	google_place_id: '', start_tz: '', end_tz: '', booked: false,
-	booked_by: '', paid_by: '', confirmation_codes: [], reservation_url: '',
-	free_cancellation: false, cost_estimate_usd: 0, cost_actual_usd: 0,
-	assigned_to: [], parent_item: '', created_by: '',
-	collectionId: '', collectionName: 'items', created: '', updated: '',
+const base: Omit<
+	Item,
+	'id' | 'sort_order' | 'start_time' | 'end_time' | 'title' | 'type' | 'status'
+> &
+	Partial<RecordModel> = {
+	trip: 't',
+	phase: 'p',
+	day: 'd',
+	subtype: '',
+	description: '',
+	location_name: '',
+	location_address: '',
+	location_coords: null,
+	google_place_id: '',
+	start_tz: '',
+	end_tz: '',
+	booked: false,
+	booked_by: '',
+	paid_by: '',
+	confirmation_codes: [],
+	reservation_url: '',
+	free_cancellation: false,
+	cost_estimate_usd: 0,
+	cost_actual_usd: 0,
+	assigned_to: [],
+	parent_item: '',
+	created_by: '',
+	collectionId: '',
+	collectionName: 'items',
+	created: '',
+	updated: ''
 };
 
 function makeItem(overrides: Partial<Item> & { id: string }): Item {
 	return {
 		...base,
-		sort_order: 0, start_time: '', end_time: '', title: '', type: 'activity', status: 'planned',
-		...overrides,
+		sort_order: 0,
+		start_time: '',
+		end_time: '',
+		title: '',
+		type: 'activity',
+		status: 'planned',
+		...overrides
 	} as Item;
 }
 
@@ -54,11 +83,23 @@ describe('buildTimeline', () => {
 
 	it('sorts anchored items by start_time', () => {
 		const items = [
-			makeItem({ id: 'b', title: 'Lunch', start_time: '2026-06-15 12:00:00.000Z', sort_order: 200 }),
-			makeItem({ id: 'a', title: 'Breakfast', start_time: '2026-06-15 08:00:00.000Z', sort_order: 100 }),
+			makeItem({
+				id: 'b',
+				title: 'Lunch',
+				start_time: '2026-06-15 12:00:00.000Z',
+				sort_order: 200
+			}),
+			makeItem({
+				id: 'a',
+				title: 'Breakfast',
+				start_time: '2026-06-15 08:00:00.000Z',
+				sort_order: 100
+			})
 		];
 		const timeline = buildTimeline(items);
-		const itemEntries = timeline.filter((e): e is TimelineEntry & { kind: 'item' } => e.kind === 'item');
+		const itemEntries = timeline.filter(
+			(e): e is TimelineEntry & { kind: 'item' } => e.kind === 'item'
+		);
 		expect(itemEntries.map((e) => e.item.id)).toEqual(['a', 'b']);
 	});
 
@@ -67,7 +108,7 @@ describe('buildTimeline', () => {
 			makeItem({ id: 'anchor1', start_time: '2026-06-15 09:00:00.000Z', sort_order: 100 }),
 			makeItem({ id: 'untimed1', sort_order: 150 }),
 			makeItem({ id: 'untimed2', sort_order: 200 }),
-			makeItem({ id: 'anchor2', start_time: '2026-06-15 14:00:00.000Z', sort_order: 300 }),
+			makeItem({ id: 'anchor2', start_time: '2026-06-15 14:00:00.000Z', sort_order: 300 })
 		];
 		const timeline = buildTimeline(items);
 		const itemIds = timeline.filter((e) => e.kind === 'item').map((e) => (e as any).item.id);
@@ -78,7 +119,7 @@ describe('buildTimeline', () => {
 		const items = [
 			makeItem({ id: 'c', sort_order: 300 }),
 			makeItem({ id: 'a', sort_order: 100 }),
-			makeItem({ id: 'b', sort_order: 200 }),
+			makeItem({ id: 'b', sort_order: 200 })
 		];
 		const timeline = buildTimeline(items);
 		const itemIds = timeline.filter((e) => e.kind === 'item').map((e) => (e as any).item.id);
@@ -100,7 +141,7 @@ describe('buildTimeline', () => {
 	it('places untimed items before first anchor if sort_order is lower', () => {
 		const items = [
 			makeItem({ id: 'untimed', sort_order: 50 }),
-			makeItem({ id: 'anchor', start_time: '2026-06-15 10:00:00.000Z', sort_order: 100 }),
+			makeItem({ id: 'anchor', start_time: '2026-06-15 10:00:00.000Z', sort_order: 100 })
 		];
 		const timeline = buildTimeline(items);
 		const itemIds = timeline.filter((e) => e.kind === 'item').map((e) => (e as any).item.id);
@@ -110,7 +151,7 @@ describe('buildTimeline', () => {
 	it('places untimed items after last anchor if sort_order is higher', () => {
 		const items = [
 			makeItem({ id: 'anchor', start_time: '2026-06-15 10:00:00.000Z', sort_order: 100 }),
-			makeItem({ id: 'untimed', sort_order: 200 }),
+			makeItem({ id: 'untimed', sort_order: 200 })
 		];
 		const timeline = buildTimeline(items);
 		const itemIds = timeline.filter((e) => e.kind === 'item').map((e) => (e as any).item.id);
@@ -120,7 +161,7 @@ describe('buildTimeline', () => {
 	it('inserts time-slot dividers between morning/afternoon/evening', () => {
 		const items = [
 			makeItem({ id: 'morning', start_time: '2026-06-15 09:00:00.000Z', sort_order: 100 }),
-			makeItem({ id: 'evening', start_time: '2026-06-15 19:00:00.000Z', sort_order: 200 }),
+			makeItem({ id: 'evening', start_time: '2026-06-15 19:00:00.000Z', sort_order: 200 })
 		];
 		const timeline = buildTimeline(items);
 		const dividers = timeline.filter((e) => e.kind === 'divider');
@@ -131,7 +172,7 @@ describe('buildTimeline', () => {
 	it('does not insert divider if all items in same slot', () => {
 		const items = [
 			makeItem({ id: 'a', start_time: '2026-06-15 09:00:00.000Z', sort_order: 100 }),
-			makeItem({ id: 'b', start_time: '2026-06-15 10:00:00.000Z', sort_order: 200 }),
+			makeItem({ id: 'b', start_time: '2026-06-15 10:00:00.000Z', sort_order: 200 })
 		];
 		const timeline = buildTimeline(items);
 		const dividers = timeline.filter((e) => e.kind === 'divider');
@@ -143,8 +184,16 @@ describe('detectOverlaps', () => {
 	it('returns empty for non-overlapping items', () => {
 		const { detectOverlaps } = await import('./timeline');
 		const items = [
-			makeItem({ id: 'a', start_time: '2026-06-15 09:00:00.000Z', end_time: '2026-06-15 10:00:00.000Z' }),
-			makeItem({ id: 'b', start_time: '2026-06-15 11:00:00.000Z', end_time: '2026-06-15 12:00:00.000Z' }),
+			makeItem({
+				id: 'a',
+				start_time: '2026-06-15 09:00:00.000Z',
+				end_time: '2026-06-15 10:00:00.000Z'
+			}),
+			makeItem({
+				id: 'b',
+				start_time: '2026-06-15 11:00:00.000Z',
+				end_time: '2026-06-15 12:00:00.000Z'
+			})
 		];
 		expect(detectOverlaps(items)).toEqual(new Set());
 	});
@@ -152,8 +201,16 @@ describe('detectOverlaps', () => {
 	it('detects overlapping anchored items', () => {
 		const { detectOverlaps } = await import('./timeline');
 		const items = [
-			makeItem({ id: 'a', start_time: '2026-06-15 09:00:00.000Z', end_time: '2026-06-15 11:00:00.000Z' }),
-			makeItem({ id: 'b', start_time: '2026-06-15 10:00:00.000Z', end_time: '2026-06-15 12:00:00.000Z' }),
+			makeItem({
+				id: 'a',
+				start_time: '2026-06-15 09:00:00.000Z',
+				end_time: '2026-06-15 11:00:00.000Z'
+			}),
+			makeItem({
+				id: 'b',
+				start_time: '2026-06-15 10:00:00.000Z',
+				end_time: '2026-06-15 12:00:00.000Z'
+			})
 		];
 		const overlaps = detectOverlaps(items);
 		expect(overlaps.has('a')).toBe(true);
@@ -164,7 +221,7 @@ describe('detectOverlaps', () => {
 		const { detectOverlaps } = await import('./timeline');
 		const items = [
 			makeItem({ id: 'a', start_time: '2026-06-15 09:00:00.000Z' }),
-			makeItem({ id: 'b', start_time: '2026-06-15 09:30:00.000Z' }),
+			makeItem({ id: 'b', start_time: '2026-06-15 09:30:00.000Z' })
 		];
 		expect(detectOverlaps(items)).toEqual(new Set());
 	});
@@ -211,7 +268,7 @@ function getTimeSlot(dt: string): 'morning' | 'afternoon' | 'evening' {
 const SLOT_LABELS: Record<string, 'Morning' | 'Afternoon' | 'Evening'> = {
 	morning: 'Morning',
 	afternoon: 'Afternoon',
-	evening: 'Evening',
+	evening: 'Evening'
 };
 
 /**
@@ -330,6 +387,7 @@ git commit -m "feat(#32): add timeline interleaving logic with overlap detection
 ### Task 2: Sort-order gap operations
 
 **Files:**
+
 - Create: `src/lib/itinerary/sort-order.ts`
 - Create: `src/lib/itinerary/sort-order.test.ts`
 
@@ -398,7 +456,7 @@ describe('rebalance', () => {
 		expect(result).toEqual([
 			{ id: 'a', sort_order: GAP },
 			{ id: 'b', sort_order: GAP * 2 },
-			{ id: 'c', sort_order: GAP * 3 },
+			{ id: 'c', sort_order: GAP * 3 }
 		]);
 	});
 
@@ -475,6 +533,7 @@ git commit -m "feat(#32): add sort-order gap operations — insert, rebalance"
 ### Task 3: Server actions for reorder and parking lot
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/days/[dayId]/+page.server.ts`
 - Modify: `src/routes/(app)/trips/[slug]/items/new/+page.server.ts`
 
@@ -587,6 +646,7 @@ import { rebalance, insertBetween, GAP } from '$lib/itinerary/sort-order';
 ```
 
 Also add the import at the top of the file:
+
 ```ts
 import { rebalance, insertBetween, GAP } from '$lib/itinerary/sort-order';
 ```
@@ -596,27 +656,37 @@ import { rebalance, insertBetween, GAP } from '$lib/itinerary/sort-order';
 Add to the `load` function in the same file, after loading `items`:
 
 ```ts
-	// Load unplanned items for this trip's phases (parking lot)
-	const dayPhases = phasesForDay(day, phases);
-	const phaseIds = dayPhases.map((p) => p.id);
-	const parkingLotItems =
-		phaseIds.length > 0
-			? await locals.pb.collection('items').getFullList<Item>({
-					filter: `trip = "${trip.id}" && status = "unplanned" && (${phaseIds.map((id) => `phase = "${id}"`).join(' || ')})`,
-					sort: 'sort_order'
-				})
-			: [];
+// Load unplanned items for this trip's phases (parking lot)
+const dayPhases = phasesForDay(day, phases);
+const phaseIds = dayPhases.map((p) => p.id);
+const parkingLotItems =
+	phaseIds.length > 0
+		? await locals.pb.collection('items').getFullList<Item>({
+				filter: `trip = "${trip.id}" && status = "unplanned" && (${phaseIds.map((id) => `phase = "${id}"`).join(' || ')})`,
+				sort: 'sort_order'
+			})
+		: [];
 ```
 
 Update the return to include `parkingLotItems`:
+
 ```ts
-	return { day, dayItems: items, dayPhases, voteCounts, parkingLotItems, days: await locals.pb.collection('days').getFullList<Day>({ filter: `trip = "${trip.id}"`, sort: 'date' }) };
+return {
+	day,
+	dayItems: items,
+	dayPhases,
+	voteCounts,
+	parkingLotItems,
+	days: await locals.pb
+		.collection('days')
+		.getFullList<Day>({ filter: `trip = "${trip.id}"`, sort: 'date' })
+};
 ```
 
 Wait — `days` is already loaded via the parent layout. Check if we need to re-fetch. If parent already provides `days`, use that:
 
 ```ts
-	return { day, dayItems: items, dayPhases, voteCounts, parkingLotItems };
+return { day, dayItems: items, dayPhases, voteCounts, parkingLotItems };
 ```
 
 - [ ] **Step 3: Update item creation to use gap-based sort_order**
@@ -624,6 +694,7 @@ Wait — `days` is already loaded via the parent layout. Check if we need to re-
 In `src/routes/(app)/trips/[slug]/items/new/+page.server.ts`, update the sort_order calculation (~line 206-211):
 
 Replace:
+
 ```ts
 const existingItems = await locals.pb.collection('items').getFullList({
 	filter: `trip = "${trip.id}" && day = "${day}"`,
@@ -634,6 +705,7 @@ const nextSortOrder = existingItems.length > 0 ? Number(existingItems[0]['sort_o
 ```
 
 With:
+
 ```ts
 import { nextSortOrder as calcNextSortOrder } from '$lib/itinerary/sort-order';
 
@@ -659,6 +731,7 @@ git commit -m "feat(#32): add reorder/pullToPlan/pushToParking server actions, g
 ### Task 4: DayTimeline Svelte component
 
 **Files:**
+
 - Create: `src/lib/itinerary/components/DayTimeline.svelte`
 - Create: `src/lib/itinerary/components/TimelineItemCard.svelte`
 - Modify: `src/routes/(app)/trips/[slug]/days/[dayId]/+page.svelte`
@@ -682,7 +755,7 @@ In `src/lib/itinerary/components/TimelineItemCard.svelte`:
 		tripSlug,
 		anchored = false,
 		overlapping = false,
-		draggable = false,
+		draggable = false
 	}: {
 		item: Item;
 		tripSlug: string;
@@ -692,20 +765,21 @@ In `src/lib/itinerary/components/TimelineItemCard.svelte`:
 	} = $props();
 </script>
 
-<div
-	class="group relative"
-	class:opacity-90={overlapping}
->
+<div class="group relative" class:opacity-90={overlapping}>
 	{#if anchored && item.start_time}
-		<div class="text-ink-muted absolute -left-16 top-3 hidden text-xs font-mono md-desktop:block">
+		<div class="absolute top-3 -left-16 hidden font-mono text-xs text-ink-muted md-desktop:block">
 			{formatTime(item.start_time)}
 		</div>
 	{/if}
 
 	<Card href="/trips/{tripSlug}/items/{item.id}">
-		<div class="flex items-start gap-3 p-3" class:border-l-2={overlapping} class:border-gold={overlapping}>
+		<div
+			class="flex items-start gap-3 p-3"
+			class:border-l-2={overlapping}
+			class:border-gold={overlapping}
+		>
 			{#if draggable && !anchored}
-				<div class="text-line flex shrink-0 cursor-grab items-center" aria-label="Drag to reorder">
+				<div class="flex shrink-0 cursor-grab items-center text-line" aria-label="Drag to reorder">
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
 						<circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" />
 						<circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
@@ -716,22 +790,28 @@ In `src/lib/itinerary/components/TimelineItemCard.svelte`:
 			<TypeIcon type={item.type} sub={item.subtype} size={32} />
 			<div class="min-w-0 flex-1">
 				<div class="flex items-center gap-2">
-					<h4 class="text-ink truncate text-sm font-semibold">{item.title}</h4>
+					<h4 class="truncate text-sm font-semibold text-ink">{item.title}</h4>
 					{#if item.booked}
 						<Pill variant="booked" size="sm">Booked</Pill>
 					{/if}
 				</div>
 				{#if item.start_time || item.location_name}
-					<p class="text-ink-muted mt-0.5 text-[12px]">
+					<p class="mt-0.5 text-[12px] text-ink-muted">
 						{#if item.start_time}
-							<span class="font-mono">{formatTime(item.start_time)}{item.end_time ? ` – ${formatTime(item.end_time)}` : ''}</span>
+							<span class="font-mono"
+								>{formatTime(item.start_time)}{item.end_time
+									? ` – ${formatTime(item.end_time)}`
+									: ''}</span
+							>
 						{/if}
 						{#if item.start_time && item.location_name}<span class="text-line">·</span>{/if}
 						{#if item.location_name}{item.location_name}{/if}
 					</p>
 				{/if}
 				{#if item.subtype}
-					<p class="text-ink-muted mt-1 text-[11px] uppercase tracking-wide">{titleCase(item.subtype)}</p>
+					<p class="mt-1 text-[11px] tracking-wide text-ink-muted uppercase">
+						{titleCase(item.subtype)}
+					</p>
 				{/if}
 			</div>
 		</div>
@@ -753,7 +833,7 @@ In `src/lib/itinerary/components/DayTimeline.svelte`:
 	let {
 		items,
 		tripSlug,
-		dayId,
+		dayId
 	}: {
 		items: Item[];
 		tripSlug: string;
@@ -767,7 +847,7 @@ In `src/lib/itinerary/components/DayTimeline.svelte`:
 {#if timeline.length === 0}
 	<a
 		href="/trips/{tripSlug}/items/new?day={dayId}"
-		class="border-line text-ink-muted hover:border-ink-muted hover:text-ink-soft block rounded-lg border border-dashed px-3 py-2 text-xs"
+		class="block rounded-lg border border-dashed border-line px-3 py-2 text-xs text-ink-muted hover:border-ink-muted hover:text-ink-soft"
 	>
 		Empty. Tap to add one.
 	</a>
@@ -776,9 +856,11 @@ In `src/lib/itinerary/components/DayTimeline.svelte`:
 		{#each timeline as entry}
 			{#if entry.kind === 'divider'}
 				<div class="flex items-center gap-3 py-1">
-					<div class="border-line flex-1 border-t"></div>
-					<span class="text-ink-muted text-[11px] font-medium uppercase tracking-wider">{entry.label}</span>
-					<div class="border-line flex-1 border-t"></div>
+					<div class="flex-1 border-t border-line"></div>
+					<span class="text-[11px] font-medium tracking-wider text-ink-muted uppercase"
+						>{entry.label}</span
+					>
+					<div class="flex-1 border-t border-line"></div>
 				</div>
 			{:else if entry.kind === 'item'}
 				<TimelineItemCard
@@ -825,11 +907,7 @@ Replace the `<!-- Items -->` section with:
 		Items
 	</SectionH>
 
-	<DayTimeline
-		items={data.dayItems}
-		tripSlug={data.trip.slug}
-		dayId={data.day.id}
-	/>
+	<DayTimeline items={data.dayItems} tripSlug={data.trip.slug} dayId={data.day.id} />
 </section>
 
 <!-- Parking lot (mobile) -->
@@ -862,6 +940,7 @@ git commit -m "feat(#32): add DayTimeline component with time-slot dividers and 
 ### Task 5: Drag-and-drop interactions
 
 **Files:**
+
 - Create: `src/lib/itinerary/components/DragDropTimeline.svelte`
 - Modify: `src/lib/itinerary/components/DayTimeline.svelte`
 - Modify: `src/routes/(app)/trips/[slug]/days/[dayId]/+page.svelte`
@@ -884,7 +963,7 @@ This wrapper component handles drag state and drop zone logic. It wraps DayTimel
 		parkingLotItems = [],
 		tripSlug,
 		dayId,
-		children,
+		children
 	}: {
 		dayItems: Item[];
 		parkingLotItems?: Item[];
@@ -968,7 +1047,7 @@ This wrapper component handles drag state and drop zone logic. It wraps DayTimel
 	onDragOver: handleDragOver,
 	onDropTimeline: handleDropOnTimeline,
 	onDropParking: handleDropOnParking,
-	onDragEnd: reset,
+	onDragEnd: reset
 })}
 ```
 
@@ -1013,7 +1092,14 @@ Wrap the timeline and parking lot sections with `DragDropTimeline`:
 	tripSlug={data.trip.slug}
 	dayId={data.day.id}
 >
-	{#snippet children({ draggedItemId, onDragStart, onDragOver, onDropTimeline, onDropParking, onDragEnd })}
+	{#snippet children({
+		draggedItemId,
+		onDragStart,
+		onDragOver,
+		onDropTimeline,
+		onDropParking,
+		onDragEnd
+	})}
 		<section class="space-y-1.5">
 			<SectionH>Items</SectionH>
 			<DayTimeline
@@ -1035,7 +1121,11 @@ Wrap the timeline and parking lot sections with `DragDropTimeline`:
 				ondrop={() => onDropParking()}
 			>
 				<SectionH>Ideas</SectionH>
-				<ParkingLotSection items={data.parkingLotItems} phases={data.dayPhases} tripSlug={data.trip.slug} />
+				<ParkingLotSection
+					items={data.parkingLotItems}
+					phases={data.dayPhases}
+					tripSlug={data.trip.slug}
+				/>
 			</section>
 		{/if}
 	{/snippet}
@@ -1059,6 +1149,7 @@ git commit -m "feat(#32): add drag-and-drop for timeline reorder and parking lot
 ### Task 6: Desktop parking lot in ContextRail
 
 **Files:**
+
 - Modify: `src/lib/shell/components/ContextRail.svelte`
 - Modify: `src/routes/(app)/trips/[slug]/+layout.server.ts`
 
@@ -1089,7 +1180,7 @@ In `src/lib/shell/components/ContextRail.svelte`, add a new prop for parking lot
 
 	let {
 		// existing props...
-		parkingLotItems = [],
+		parkingLotItems = []
 	}: {
 		// existing types...
 		parkingLotItems?: Item[];
@@ -1101,9 +1192,9 @@ In `src/lib/shell/components/ContextRail.svelte`, add a new prop for parking lot
 
 <!-- Add inside the itinerary context section, after "Up Next": -->
 {#if isDayPage && parkingLotItems.length > 0}
-	<div class="border-line space-y-2 border-t px-5 py-4">
-		<h3 class="text-ink-soft text-xs font-semibold uppercase tracking-wider">Ideas</h3>
-		<ParkingLotSection items={parkingLotItems} phases={phases} tripSlug={slug} />
+	<div class="space-y-2 border-t border-line px-5 py-4">
+		<h3 class="text-xs font-semibold tracking-wider text-ink-soft uppercase">Ideas</h3>
+		<ParkingLotSection items={parkingLotItems} {phases} tripSlug={slug} />
 	</div>
 {/if}
 ```
@@ -1133,6 +1224,7 @@ git commit -m "feat(#32): show parking lot in ContextRail on desktop day pages"
 ### Task 7: Final verification and visual polish
 
 **Files:**
+
 - No new files — verification pass
 
 - [ ] **Step 1: Run all tests**
@@ -1140,6 +1232,7 @@ git commit -m "feat(#32): show parking lot in ContextRail on desktop day pages"
 ```bash
 pnpm vitest run
 ```
+
 Expected: All tests pass (including new timeline and sort-order tests).
 
 - [ ] **Step 2: Run type check**
@@ -1147,6 +1240,7 @@ Expected: All tests pass (including new timeline and sort-order tests).
 ```bash
 pnpm check
 ```
+
 Expected: 0 errors.
 
 - [ ] **Step 3: Grep for stale references**
@@ -1154,6 +1248,7 @@ Expected: 0 errors.
 ```bash
 grep -rn 'slotOrder\|itemsForSlot\|sortBySlotThenTime' src/ --include='*.ts' --include='*.svelte' | grep -v node_modules | grep -v '.svelte-kit'
 ```
+
 Expected: No results.
 
 - [ ] **Step 4: Verify E2E test still passes**
@@ -1161,6 +1256,7 @@ Expected: No results.
 ```bash
 pnpm test:e2e
 ```
+
 Expected: Existing E2E tests pass. (New E2E tests for drag interactions are noted in the issue but deferred — drag E2E requires complex touch simulation.)
 
 - [ ] **Step 5: Commit any final fixes**

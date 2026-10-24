@@ -38,9 +38,7 @@
 		typeof window !== 'undefined' && typeof navigator !== 'undefined' && !navigator.onLine
 	);
 
-	const sortedDays = $derived(
-		[...data.days].sort((a, b) => a.date.localeCompare(b.date))
-	);
+	const sortedDays = $derived([...data.days].sort((a, b) => a.date.localeCompare(b.date)));
 
 	const totalDays = $derived(sortedDays.length);
 	const currentDay = $derived(sortedDays[currentDayIndex]);
@@ -56,15 +54,11 @@
 	// Whether the step EXISTS at all — based on the trip having unplanned ideas at load,
 	// independent of in-session drops (so dropping the last idea doesn't yank the step
 	// out from under the user mid-review). Derived from the unfiltered set.
-	const hasIdeasStep = $derived(
-		canCurate && data.items.some((i) => i.status === 'unplanned')
-	);
+	const hasIdeasStep = $derived(canCurate && data.items.some((i) => i.status === 'unplanned'));
 
 	// After the day walk: the optional owner ideas step, then the summary.
 	const showIdeas = $derived(currentDayIndex >= totalDays && hasIdeasStep && !ideasReviewed);
-	const showSummary = $derived(
-		currentDayIndex >= totalDays && (!hasIdeasStep || ideasReviewed)
-	);
+	const showSummary = $derived(currentDayIndex >= totalDays && (!hasIdeasStep || ideasReviewed));
 
 	function itemsForDay(day: Day): Item[] {
 		return data.items.filter((i) => i.day === day.id);
@@ -84,9 +78,7 @@
 		);
 	});
 	const myPhotoSrc = $derived(
-		myMemoryForDay?.photo
-			? `/trips/${data.trip.slug}/memories/${myMemoryForDay.id}/photo`
-			: ''
+		myMemoryForDay?.photo ? `/trips/${data.trip.slug}/memories/${myMemoryForDay.id}/photo` : ''
 	);
 
 	// All travelers' memories for the day under review — the reminiscence moment
@@ -124,10 +116,20 @@
 	backHref="/trips/{data.trip.slug}"
 />
 
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8">
+<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 md-desktop:max-w-2xl">
 	{#if isOffline}
-		<div class="bg-surface border-border mt-8 rounded-xl border p-6 text-center">
-			<svg class="text-ink-muted mx-auto mb-3" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+		<div class="border-border mt-8 rounded-xl border bg-surface p-6 text-center">
+			<svg
+				class="mx-auto mb-3 text-ink-muted"
+				width="32"
+				height="32"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.5"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
 				<line x1="1" y1="1" x2="23" y2="23" />
 				<path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55" />
 				<path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39" />
@@ -136,19 +138,21 @@
 				<path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
 				<line x1="12" y1="20" x2="12.01" y2="20" />
 			</svg>
-			<h2 class="text-ink text-lg font-semibold">You're offline</h2>
-			<p class="text-ink-muted mt-1 text-sm">Closeout requires an internet connection. Please reconnect and try again.</p>
+			<h2 class="text-lg font-semibold text-ink">You're offline</h2>
+			<p class="mt-1 text-sm text-ink-muted">
+				Closeout requires an internet connection. Please reconnect and try again.
+			</p>
 		</div>
 	{:else if totalDays === 0}
-		<div class="bg-surface border-border mt-8 rounded-xl border p-6 text-center">
-			<p class="text-ink-muted text-sm">No days to review. This trip has no itinerary days.</p>
+		<div class="border-border mt-8 rounded-xl border bg-surface p-6 text-center">
+			<p class="text-sm text-ink-muted">No days to review. This trip has no itinerary days.</p>
 		</div>
 	{:else if !showSummary && !showIdeas}
 		<div class="mb-4">
 			<div class="flex items-center justify-between">
-				<p class="text-ink-muted text-sm font-medium">Day {currentDayIndex + 1} of {totalDays}</p>
+				<p class="text-sm font-medium text-ink-muted">Day {currentDayIndex + 1} of {totalDays}</p>
 			</div>
-			<div class="bg-surface-2 mt-2 h-1.5 w-full overflow-hidden rounded-full">
+			<div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
 				<div
 					class="h-full rounded-full bg-moss transition-all"
 					style="width: {((currentDayIndex + 1) / totalDays) * 100}%"
@@ -170,7 +174,7 @@
 		     trip renders the cards read-only — and NOTHING when there are none. -->
 		{#if dayMemories.length > 0 || canCaptureMemories}
 			<section class="mt-4 space-y-2" data-testid="closeout-memories">
-				<p class="text-ink-muted text-[11px] font-medium uppercase tracking-wide">Memories</p>
+				<p class="text-[11px] font-medium tracking-wide text-ink-muted uppercase">Memories</p>
 				{#each dayMemories as memory (memory.id)}
 					<MemoryCard
 						{memory}
@@ -185,14 +189,25 @@
 					<button
 						type="button"
 						onclick={() => (memorySheetOpen = true)}
-						class="border-line text-ink-soft hover:border-ink-muted active:border-ink-muted hover:text-ink active:text-ink flex w-full items-center justify-center gap-2 rounded-xl border border-dashed px-3 py-2.5 text-sm font-medium transition-colors"
+						class="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-line px-3 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:border-ink-muted hover:text-ink active:border-ink-muted active:text-ink"
 					>
-						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+						<svg
+							width="16"
+							height="16"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.75"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						>
 							<rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
 							<circle cx="8.5" cy="8.5" r="1.5" />
 							<polyline points="21 15 16 10 5 21" />
 						</svg>
-						{dayMemories.length === 0 ? 'No memories yet — add one for this day' : 'Add your memory for this day'}
+						{dayMemories.length === 0
+							? 'No memories yet — add one for this day'
+							: 'Add your memory for this day'}
 					</button>
 				{/if}
 			</section>
@@ -202,15 +217,15 @@
 			<button
 				type="button"
 				disabled={currentDayIndex === 0}
-				onclick={() => (currentDayIndex--)}
-				class="text-ink-muted rounded-lg px-4 py-2 text-sm font-medium hover:bg-surface-2 active:bg-surface-2 disabled:opacity-40"
+				onclick={() => currentDayIndex--}
+				class="rounded-lg px-4 py-2 text-sm font-medium text-ink-muted hover:bg-surface-2 active:bg-surface-2 disabled:opacity-40"
 			>
 				Previous
 			</button>
 			<button
 				type="button"
-				onclick={() => (currentDayIndex++)}
-				class="bg-ink text-paper rounded-lg px-4 py-2 text-sm font-medium"
+				onclick={() => currentDayIndex++}
+				class="rounded-lg bg-ink px-4 py-2 text-sm font-medium text-paper"
 			>
 				{isLastDay ? (hasIdeasStep ? 'Review ideas' : 'Review Summary') : 'Next Day'}
 			</button>
@@ -221,33 +236,42 @@
 		     recommendation) or drop (stays out of the record). Bulk "keep all". Travelers
 		     never reach this (canCurate-gated). Goals review is NOT built (killed). -->
 		<div class="mb-4">
-			<p class="text-ink text-lg font-semibold">Review your ideas</p>
-			<p class="text-ink-muted mt-1 text-sm">
-				Ideas you collected but didn't schedule. Keep the good ones as public
-				recommendations for anyone who asks "what'd you do?" — or drop them. Optional;
-				skip to publish as-is.
+			<p class="text-lg font-semibold text-ink">Review your ideas</p>
+			<p class="mt-1 text-sm text-ink-muted">
+				Ideas you collected but didn't schedule. Keep the good ones as public recommendations for
+				anyone who asks "what'd you do?" — or drop them. Optional; skip to publish as-is.
 			</p>
 		</div>
 
 		<div class="space-y-2" data-testid="ideas-review">
 			{#each unplannedIdeas as idea (idea.id)}
-				<div class="bg-surface border-border flex items-center gap-3 rounded-xl border px-4 py-3">
+				<div class="border-border flex items-center gap-3 rounded-xl border bg-surface px-4 py-3">
 					<span class="min-w-0 flex-1">
-						<span class="text-ink block truncate text-sm font-medium">{idea.title}</span>
+						<span class="block truncate text-sm font-medium text-ink">{idea.title}</span>
 						{#if idea.location_name}
-							<span class="text-ink-muted block truncate text-xs">{idea.location_name}</span>
+							<span class="block truncate text-xs text-ink-muted">{idea.location_name}</span>
 						{/if}
 					</span>
-					<form method="POST" action="?/keepIdea" use:enhance={() => async ({ update }) => update({ reset: false })}>
+					<form
+						method="POST"
+						action="?/keepIdea"
+						use:enhance={() =>
+							async ({ update }) =>
+								update({ reset: false })}
+					>
 						<input type="hidden" name="item_id" value={idea.id} />
-						<button type="submit" class="rounded-lg bg-moss-tint px-3 py-1.5 text-xs font-semibold text-moss">Keep</button>
+						<button
+							type="submit"
+							class="rounded-lg bg-moss-tint px-3 py-1.5 text-xs font-semibold text-moss"
+							>Keep</button
+						>
 					</form>
 					<!-- Drop = client-side dismissal; unplanned items are already excluded from
 					     the record, so no write is needed. -->
 					<button
 						type="button"
 						onclick={() => (droppedIds = [...droppedIds, idea.id])}
-						class="text-ink-muted hover:text-ink active:text-ink px-2 py-1.5 text-xs font-medium"
+						class="px-2 py-1.5 text-xs font-medium text-ink-muted hover:text-ink active:text-ink"
 					>
 						Drop
 					</button>
@@ -256,25 +280,31 @@
 		</div>
 
 		<div class="mt-5 flex items-center justify-between gap-2">
-			<form method="POST" action="?/keepAllIdeas" use:enhance={() => async ({ update }) => update({ reset: false })}>
+			<form
+				method="POST"
+				action="?/keepAllIdeas"
+				use:enhance={() =>
+					async ({ update }) =>
+						update({ reset: false })}
+			>
 				{#each unplannedIdeas as idea (idea.id)}
 					<input type="hidden" name="item_ids" value={idea.id} />
 				{/each}
-				<button type="submit" class="text-moss text-sm font-semibold">Keep all</button>
+				<button type="submit" class="text-sm font-semibold text-moss">Keep all</button>
 			</form>
 			<button
 				type="button"
 				onclick={() => (ideasReviewed = true)}
 				data-testid="ideas-continue"
-				class="bg-ink text-paper rounded-lg px-4 py-2 text-sm font-medium"
+				class="rounded-lg bg-ink px-4 py-2 text-sm font-medium text-paper"
 			>
 				Continue
 			</button>
 		</div>
 	{:else}
-		<div class="bg-surface border-border mt-4 rounded-xl border p-6">
-			<h2 class="text-ink text-lg font-semibold">Trip Closeout Summary</h2>
-			<p class="text-ink-muted mt-1 text-sm">Here's how your trip shook out.</p>
+		<div class="border-border mt-4 rounded-xl border bg-surface p-6">
+			<h2 class="text-lg font-semibold text-ink">Trip Closeout Summary</h2>
+			<p class="mt-1 text-sm text-ink-muted">Here's how your trip shook out.</p>
 
 			<div class="mt-4 space-y-2">
 				<div class="flex justify-between text-sm">
@@ -283,15 +313,15 @@
 				</div>
 				<div class="flex justify-between text-sm">
 					<span class="text-ink-muted">Skipped (stayed planned)</span>
-					<span class="text-ink-muted font-medium">{summary.planned}</span>
+					<span class="font-medium text-ink-muted">{summary.planned}</span>
 				</div>
 				<div class="flex justify-between text-sm">
 					<span class="text-ink-muted">Swapped (considered)</span>
 					<span class="font-medium text-gold">{summary.considered}</span>
 				</div>
 				<div class="border-border flex justify-between border-t pt-2 text-sm">
-					<span class="text-ink font-medium">Total items</span>
-					<span class="text-ink font-medium">{summary.total}</span>
+					<span class="font-medium text-ink">Total items</span>
+					<span class="font-medium text-ink">{summary.total}</span>
 				</div>
 			</div>
 
@@ -319,11 +349,11 @@
 					{#if canCurate}
 						<!-- Owner/co_owner final step: choose whether the public record publishes.
 						     Server re-enforces owner/co_owner before honoring these fields (#241). -->
-						<div class="border-line mb-4 rounded-xl border p-4">
-							<h3 class="text-ink text-sm font-semibold">Share the record</h3>
-							<p class="text-ink-muted mt-0.5 mb-3 text-xs">
-								Closing out finishes the trip's record. Choose whether to make it public —
-								you can change this any time.
+						<div class="mb-4 rounded-xl border border-line p-4">
+							<h3 class="text-sm font-semibold text-ink">Share the record</h3>
+							<p class="mt-0.5 mb-3 text-xs text-ink-muted">
+								Closing out finishes the trip's record. Choose whether to make it public — you can
+								change this any time.
 							</p>
 							<PublishControl
 								bind:publish
@@ -337,7 +367,7 @@
 					<button
 						type="submit"
 						disabled={finishing}
-						class="bg-ink text-paper w-full rounded-lg px-4 py-3 text-sm font-medium disabled:opacity-40"
+						class="w-full rounded-lg bg-ink px-4 py-3 text-sm font-medium text-paper disabled:opacity-40"
 					>
 						{#if finishing}
 							{canCurate ? 'Finishing…' : 'Submitting…'}
@@ -350,7 +380,7 @@
 				<button
 					type="button"
 					onclick={() => (currentDayIndex = totalDays - 1)}
-					class="text-ink-muted py-2 text-sm"
+					class="py-2 text-sm text-ink-muted"
 				>
 					Go back and review
 				</button>

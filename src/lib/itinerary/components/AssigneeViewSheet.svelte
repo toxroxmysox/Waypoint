@@ -25,20 +25,35 @@
 </script>
 
 <BottomSheet bind:open title="Who's on this">
-	<p class="text-ink-muted mb-3 text-[12.5px]">{itemTitle}</p>
+	<p class="mb-3 text-[12.5px] text-ink-muted">{itemTitle}</p>
 
 	<ul class="flex flex-col gap-0.5" aria-label="Going">
 		{#each going as m (m.id)}
 			<li class="flex items-center gap-3 rounded-[10px] px-2.5 py-2.5">
-				<PersonBubble name={memberDisplayName(m)} img={m.avatarUrl} placeholder={!m.user} departed={!!m.removed_at} size={32} />
-				<span class="text-ink flex-1 text-sm font-semibold">{memberDisplayName(m)}</span>
+				<PersonBubble
+					name={memberDisplayName(m)}
+					img={m.avatarUrl}
+					placeholder={!m.user}
+					departed={!!m.removed_at}
+					size={32}
+				/>
+				<span class="flex-1 text-sm font-semibold text-ink">{memberDisplayName(m)}</span>
 			</li>
 		{/each}
 		{#each notGoing as m (m.id)}
 			<li class="flex items-center gap-3 rounded-[10px] px-2.5 py-2.5">
-				<PersonBubble name={memberDisplayName(m)} img={m.avatarUrl} notGoing placeholder={!m.user} departed={!!m.removed_at} size={32} />
-				<span class="text-ink-muted flex-1 text-sm font-semibold line-through">{memberDisplayName(m)}</span>
-				<span class="text-ink-muted text-xs">Not going</span>
+				<PersonBubble
+					name={memberDisplayName(m)}
+					img={m.avatarUrl}
+					notGoing
+					placeholder={!m.user}
+					departed={!!m.removed_at}
+					size={32}
+				/>
+				<span class="flex-1 text-sm font-semibold text-ink-muted line-through"
+					>{memberDisplayName(m)}</span
+				>
+				<span class="text-xs text-ink-muted">Not going</span>
 			</li>
 		{/each}
 	</ul>

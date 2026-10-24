@@ -93,15 +93,15 @@ describe('getTripLifecycle', () => {
 		});
 
 		it('reopen: archived:false on a past-end trip re-derives to wrap-up (no special state)', () => {
-			expect(getTripLifecycle(trip('2026-06-01', '2026-06-05', false), new Date('2026-06-10'))).toBe(
-				'wrap-up'
-			);
+			expect(
+				getTripLifecycle(trip('2026-06-01', '2026-06-05', false), new Date('2026-06-10'))
+			).toBe('wrap-up');
 		});
 
 		it('reopen: archived:false on an in-range trip re-derives to active', () => {
-			expect(getTripLifecycle(trip('2026-06-01', '2026-06-10', false), new Date('2026-06-05'))).toBe(
-				'active'
-			);
+			expect(
+				getTripLifecycle(trip('2026-06-01', '2026-06-10', false), new Date('2026-06-05'))
+			).toBe('active');
 		});
 	});
 
@@ -178,7 +178,9 @@ describe('getTripLifecycle', () => {
 		it('ahead-of-UTC: active on first-day local morning before UTC catches up', () => {
 			// 2026-06-01 08:00 Tokyo == 2026-05-31 23:00Z (UTC still on the prior day)
 			const now = new Date('2026-05-31T23:00:00Z');
-			expect(getTripLifecycle(tzTrip('2026-06-01', '2026-06-05', 'Asia/Tokyo'), now)).toBe('active');
+			expect(getTripLifecycle(tzTrip('2026-06-01', '2026-06-05', 'Asia/Tokyo'), now)).toBe(
+				'active'
+			);
 		});
 
 		it('falls back to UTC when the timezone is invalid', () => {
@@ -213,7 +215,9 @@ describe('isTripActive (alias over getTripLifecycle === "active")', () => {
 	});
 
 	it('false for closed', () => {
-		expect(isTripActive(trip('2026-06-01', '2026-06-10', true), new Date('2026-06-05'))).toBe(false);
+		expect(isTripActive(trip('2026-06-01', '2026-06-10', true), new Date('2026-06-05'))).toBe(
+			false
+		);
 	});
 
 	it('false for a date-less trip', () => {

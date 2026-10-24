@@ -66,7 +66,13 @@
 	>
 		{#if shown}
 			<svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-				<path d="M2.5 6.2l2.3 2.3L9.5 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+				<path
+					d="M2.5 6.2l2.3 2.3L9.5 3.5"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				/>
 			</svg>
 		{/if}
 	</span>
@@ -79,9 +85,7 @@
 	</span>
 {/snippet}
 
-<div
-	class="flex items-center gap-3 py-3 {divider ? 'border-line border-b' : ''}"
->
+<div class="flex items-center gap-3 py-3 {divider ? 'border-b border-line' : ''}">
 	{#if readonly}
 		<div class="flex min-w-0 flex-1 items-center gap-3">
 			{@render face()}
@@ -91,7 +95,7 @@
 			<input type="hidden" name="task_id" value={taskId} />
 			<button
 				type="submit"
-				class="active:bg-surface-2 flex min-w-0 flex-1 items-center gap-3 rounded-md text-left transition-colors duration-75 select-none"
+				class="flex min-w-0 flex-1 items-center gap-3 rounded-md text-left transition-colors duration-75 select-none active:bg-surface-2"
 				aria-label={shown ? 'Uncheck task' : 'Check task'}
 			>
 				{@render face()}
@@ -104,11 +108,15 @@
 			<button
 				type="button"
 				onclick={onAssign}
-				class="text-ink-muted hover:text-ink-soft active:text-ink-soft hit-44 shrink-0 px-1 py-0.5"
+				class="hit-44 shrink-0 px-1 py-0.5 text-ink-muted hover:text-ink-soft active:text-ink-soft"
 				aria-label="Assign or remove task"
 			>
 				<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-					<circle cx="10" cy="4.5" r="1.4" /><circle cx="10" cy="10" r="1.4" /><circle cx="10" cy="15.5" r="1.4" />
+					<circle cx="10" cy="4.5" r="1.4" /><circle cx="10" cy="10" r="1.4" /><circle
+						cx="10"
+						cy="15.5"
+						r="1.4"
+					/>
 				</svg>
 			</button>
 		{/if}
@@ -117,7 +125,7 @@
 				<Avatar img={assigneeImg} initial={assigneeInitial} alt={assigneeAlt} size={24} />
 			</span>
 		{:else}
-			<span class="border-line h-6 w-6 shrink-0 rounded-full border-[1.5px] border-dashed"></span>
+			<span class="h-6 w-6 shrink-0 rounded-full border-[1.5px] border-dashed border-line"></span>
 		{/if}
 	{/if}
 </div>

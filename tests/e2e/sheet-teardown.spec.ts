@@ -96,7 +96,10 @@ test.describe('BottomSheet teardown (#379)', () => {
 						requestAnimationFrame(loop);
 					})
 			);
-			expect(rafTicks, 'page must be foreground/animating for this spec to mean anything').toBeGreaterThan(0);
+			expect(
+				rafTicks,
+				'page must be foreground/animating for this spec to mean anything'
+			).toBeGreaterThan(0);
 
 			// Open the Add Expense sheet, then close it via the X.
 			await page
@@ -104,7 +107,12 @@ test.describe('BottomSheet teardown (#379)', () => {
 				.filter({ visible: true })
 				.first()
 				.click();
-			await expect(page.getByText(/amount/i).filter({ visible: true }).first()).toBeVisible({
+			await expect(
+				page
+					.getByText(/amount/i)
+					.filter({ visible: true })
+					.first()
+			).toBeVisible({
 				timeout: 5000
 			});
 
@@ -112,9 +120,7 @@ test.describe('BottomSheet teardown (#379)', () => {
 
 			// The wrapper must actually LEAVE THE DOM. An `opacity: 0` wrapper still
 			// swallows taps, so a visibility assertion is not enough — count nodes.
-			await expect
-				.poll(async () => page.locator('.z-modal').count(), { timeout: 5000 })
-				.toBe(0);
+			await expect.poll(async () => page.locator('.z-modal').count(), { timeout: 5000 }).toBe(0);
 
 			// The real symptom: taps land again. Ask the document what is actually
 			// under the centre of the viewport — a ghost overlay answers here.
@@ -133,7 +139,12 @@ test.describe('BottomSheet teardown (#379)', () => {
 				.filter({ visible: true })
 				.first()
 				.click();
-			await expect(page.getByText(/amount/i).filter({ visible: true }).first()).toBeVisible({
+			await expect(
+				page
+					.getByText(/amount/i)
+					.filter({ visible: true })
+					.first()
+			).toBeVisible({
 				timeout: 5000
 			});
 		} finally {

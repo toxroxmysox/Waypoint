@@ -131,15 +131,15 @@ describe('decideStrategy', () => {
 	});
 
 	it('non-GET (mutation) → passthrough even for a navigation-shaped URL', () => {
-		const s = decideStrategy(req('/trips/paris-2026', { method: 'POST', mode: 'navigate' }), ORIGIN);
+		const s = decideStrategy(
+			req('/trips/paris-2026', { method: 'POST', mode: 'navigate' }),
+			ORIGIN
+		);
 		expect(s.kind).toBe('passthrough');
 	});
 
 	it('cross-origin → passthrough (we only manage our own caches)', () => {
-		const s = decideStrategy(
-			req('https://cdn.example.com/_app/immutable/x.js'),
-			ORIGIN
-		);
+		const s = decideStrategy(req('https://cdn.example.com/_app/immutable/x.js'), ORIGIN);
 		expect(s.kind).toBe('passthrough');
 	});
 

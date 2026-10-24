@@ -111,7 +111,11 @@ async function main() {
 	{
 		const r = await pb('POST', '/api/invites/create', {
 			token: tokens.traveler,
-			body: { trip_id: fixture.tripId, email: `traveler-invitee-${Date.now()}@e2e.test`, role: 'traveler' }
+			body: {
+				trip_id: fixture.tripId,
+				email: `traveler-invitee-${Date.now()}@e2e.test`,
+				role: 'traveler'
+			}
 		});
 		assert('traveler invites traveler', r.status === 200, { status: r.status });
 	}
@@ -119,14 +123,22 @@ async function main() {
 		fixture = await setupFixture();
 		const r = await pb('POST', '/api/invites/create', {
 			token: tokens.traveler,
-			body: { trip_id: fixture.tripId, email: `viewer-invitee-${Date.now()}@e2e.test`, role: 'viewer' }
+			body: {
+				trip_id: fixture.tripId,
+				email: `viewer-invitee-${Date.now()}@e2e.test`,
+				role: 'viewer'
+			}
 		});
 		assert('traveler invites viewer', r.status === 200, { status: r.status });
 	}
 	{
 		const r = await pb('POST', '/api/invites/create', {
 			token: tokens.traveler,
-			body: { trip_id: fixture.tripId, email: `coowner-bad-${Date.now()}@e2e.test`, role: 'co_owner' }
+			body: {
+				trip_id: fixture.tripId,
+				email: `coowner-bad-${Date.now()}@e2e.test`,
+				role: 'co_owner'
+			}
 		});
 		assert('traveler CANNOT invite co_owner', r.status === 403, { status: r.status });
 	}
@@ -219,11 +231,7 @@ async function main() {
 		assert('anon lookup of valid code → 200', r.status === 200, { status: r.status });
 		assert('lookup returns email', r.data?.email === 'fixture-invitee@e2e.test', r.data);
 		assert('lookup returns role', r.data?.role === 'viewer', r.data);
-		assert(
-			'lookup returns trip_title',
-			r.data?.trip_title === 'E2E Rules Test Trip',
-			r.data
-		);
+		assert('lookup returns trip_title', r.data?.trip_title === 'E2E Rules Test Trip', r.data);
 		assert('lookup returns expired=false', r.data?.expired === false, r.data);
 	}
 	{
@@ -322,25 +330,35 @@ async function main() {
 	console.log('\n[revoke: SPEC §3 gating via hook]');
 	fixture = await setupFixture();
 	{
-		const r = await pb('DELETE', `/api/collections/pending_invites/records/${fixture.pendingInviteId}`, {
-			token: tokens.viewer
-		});
+		const r = await pb(
+			'DELETE',
+			`/api/collections/pending_invites/records/${fixture.pendingInviteId}`,
+			{
+				token: tokens.viewer
+			}
+		);
 		assert('viewer CANNOT revoke (403)', r.status === 403, { status: r.status });
 	}
 	{
-		const r = await pb('DELETE', `/api/collections/pending_invites/records/${fixture.pendingInviteId}`, {
-			token: tokens.traveler
-		});
-		assert(
-			'traveler CANNOT revoke invite they did not send (403)',
-			r.status === 403,
-			{ status: r.status }
+		const r = await pb(
+			'DELETE',
+			`/api/collections/pending_invites/records/${fixture.pendingInviteId}`,
+			{
+				token: tokens.traveler
+			}
 		);
+		assert('traveler CANNOT revoke invite they did not send (403)', r.status === 403, {
+			status: r.status
+		});
 	}
 	{
-		const r = await pb('DELETE', `/api/collections/pending_invites/records/${fixture.pendingInviteId}`, {
-			token: tokens.co_owner
-		});
+		const r = await pb(
+			'DELETE',
+			`/api/collections/pending_invites/records/${fixture.pendingInviteId}`,
+			{
+				token: tokens.co_owner
+			}
+		);
 		assert('co_owner CAN revoke (204)', r.status === 204, { status: r.status });
 	}
 

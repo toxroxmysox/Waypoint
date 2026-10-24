@@ -15,10 +15,14 @@ test.beforeAll(async () => {
 	fx = await seedJapanTrip(SLUG);
 });
 
-test('trip header: span · phases, chips open Phase Detail, no Capture ideas', async ({ browser }) => {
+test('trip header: span · phases, chips open Phase Detail, no Capture ideas', async ({
+	browser
+}) => {
 	const { page, close } = await devLogin(browser, EMAILS.owner);
 	await page.goto(`${BASE}/trips/${SLUG}`, { waitUntil: 'networkidle' });
-	await expect(page.getByText('7 days · 6 nights · 2 phases').filter({ visible: true }).first()).toBeVisible();
+	await expect(
+		page.getByText('7 days · 6 nights · 2 phases').filter({ visible: true }).first()
+	).toBeVisible();
 	await expect(page.getByText('Capture ideas').filter({ visible: true })).toHaveCount(0);
 	const chips = page.getByRole('navigation', { name: /open$/ }).filter({ visible: true }).first();
 	await chips.getByRole('link', { name: /^Kanazawa/ }).click();
@@ -30,34 +34,50 @@ test('trip notes persist; viewer gets no edit', async ({ browser }) => {
 	const t = await devLogin(browser, EMAILS.traveler);
 	await t.page.goto(`${BASE}/trips/${SLUG}`, { waitUntil: 'networkidle' });
 	await t.page.getByRole('button', { name: 'Add trip notes' }).filter({ visible: true }).click();
-	await t.page.locator('textarea[name="notes"]').filter({ visible: true }).fill('JR passes ordered.');
+	await t.page
+		.locator('textarea[name="notes"]')
+		.filter({ visible: true })
+		.fill('JR passes ordered.');
 	await t.page.getByRole('button', { name: 'Save', exact: true }).filter({ visible: true }).click();
 	await expect(t.page.getByText('Notes saved')).toBeVisible();
 	await t.page.reload({ waitUntil: 'networkidle' });
-	await expect(t.page.getByText('JR passes ordered.').filter({ visible: true }).first()).toBeVisible();
+	await expect(
+		t.page.getByText('JR passes ordered.').filter({ visible: true }).first()
+	).toBeVisible();
 	await t.close();
 
 	const vw = await devLogin(browser, EMAILS.viewer);
 	await vw.page.goto(`${BASE}/trips/${SLUG}`, { waitUntil: 'networkidle' });
-	await expect(vw.page.getByText('JR passes ordered.').filter({ visible: true }).first()).toBeVisible();
-	await expect(vw.page.getByRole('button', { name: 'Edit notes' }).filter({ visible: true })).toHaveCount(0);
+	await expect(
+		vw.page.getByText('JR passes ordered.').filter({ visible: true }).first()
+	).toBeVisible();
+	await expect(
+		vw.page.getByRole('button', { name: 'Edit notes' }).filter({ visible: true })
+	).toHaveCount(0);
 	await vw.close();
 });
 
-test('itinerary: Compact rows by default, Details persists, phase cards open Phase Detail', async ({ browser }) => {
+test('itinerary: Compact rows by default, Details persists, phase cards open Phase Detail', async ({
+	browser
+}) => {
 	const { page, close } = await devLogin(browser, EMAILS.owner);
 	await page.goto(`${BASE}/trips/${SLUG}`, { waitUntil: 'networkidle' });
 	const main = page.locator('main').filter({ visible: true });
 
 	// Compact (default): one row per day with "N planned"; Mon 22 is a Travel Day.
-	const mon22 = main.locator(`a[href="/trips/${SLUG}/days/${fx.days['2027-11-22']}"][data-compact-day]`).first();
+	const mon22 = main
+		.locator(`a[href="/trips/${SLUG}/days/${fx.days['2027-11-22']}"][data-compact-day]`)
+		.first();
 	await expect(mon22).toContainText('1 planned');
 	await expect(mon22).toContainText('⇄');
 	await expect(main.locator('[data-compact-day]').first()).toContainText('0 planned');
 
 	// Each phase is a bordered card whose header opens Phase Detail.
 	const kanCard = main.locator(`[data-phase-card="${fx.kanazawa}"]`);
-	await expect(kanCard.locator('a[data-level-link]')).toHaveAttribute('href', `/trips/${SLUG}/phases/${fx.kanazawa}`);
+	await expect(kanCard.locator('a[data-level-link]')).toHaveAttribute(
+		'href',
+		`/trips/${SLUG}/phases/${fx.kanazawa}`
+	);
 
 	// No lists or Flights & stays on the Overview.
 	await expect(page.getByText('Flights & stays').filter({ visible: true })).toHaveCount(0);
@@ -66,10 +86,21 @@ test('itinerary: Compact rows by default, Details persists, phase cards open Pha
 	// Details → DayCards; the choice survives reload.
 	await main.getByRole('button', { name: 'Details' }).click();
 	await expect(main.locator('[data-compact-day]')).toHaveCount(0);
-	await expect(main.locator(`a[href="/trips/${SLUG}/days/${fx.days['2027-11-22']}"]`).filter({ hasText: / item/ }).first()).toBeVisible();
+	await expect(
+		main
+			.locator(`a[href="/trips/${SLUG}/days/${fx.days['2027-11-22']}"]`)
+			.filter({ hasText: / item/ })
+			.first()
+	).toBeVisible();
 	await page.reload({ waitUntil: 'networkidle' });
-	await expect(page.locator('main').filter({ visible: true }).locator('[data-compact-day]')).toHaveCount(0);
-	await page.locator('main').filter({ visible: true }).getByRole('button', { name: 'Compact' }).click();
+	await expect(
+		page.locator('main').filter({ visible: true }).locator('[data-compact-day]')
+	).toHaveCount(0);
+	await page
+		.locator('main')
+		.filter({ visible: true })
+		.getByRole('button', { name: 'Compact' })
+		.click();
 
 	await mon22.click();
 	await page.waitForURL(`${BASE}/trips/${SLUG}/days/${fx.days['2027-11-22']}`);
@@ -78,18 +109,34 @@ test('itinerary: Compact rows by default, Details persists, phase cards open Pha
 
 // #401 review — the trip header states its dates; long trip notes never push the
 // phase chips below the fold; an Overview phase card's notes open Phase Detail.
-test('trip header states dates; chips stay above the fold under long notes', async ({ browser }) => {
+test('trip header states dates; chips stay above the fold under long notes', async ({
+	browser
+}) => {
 	const owner = await token(EMAILS.owner);
-	const long = Array.from({ length: 12 }, (_, i) => `Paragraph ${i + 1}: rail passes, ryokan deposits, pocket wifi, yen.`).join('\n\n');
+	const long = Array.from(
+		{ length: 12 },
+		(_, i) => `Paragraph ${i + 1}: rail passes, ryokan deposits, pocket wifi, yen.`
+	).join('\n\n');
 	await pb(owner, 'PATCH', `/api/collections/trips/records/${fx.tripId}`, { notes: long });
-	await pb(owner, 'PATCH', `/api/collections/phases/records/${fx.tokyo}`, { notes: 'Rail pass starts here.' });
+	await pb(owner, 'PATCH', `/api/collections/phases/records/${fx.tokyo}`, {
+		notes: 'Rail pass starts here.'
+	});
 	const { page, close } = await devLogin(browser, EMAILS.owner);
 	await page.goto(`${BASE}/trips/${SLUG}`, { waitUntil: 'networkidle' });
-	await expect(page.getByText('Nov 18 – 24, 2027 · 7 days · 6 nights · 2 phases').filter({ visible: true }).first()).toBeVisible();
+	await expect(
+		page
+			.getByText('Nov 18 – 24, 2027 · 7 days · 6 nights · 2 phases')
+			.filter({ visible: true })
+			.first()
+	).toBeVisible();
 	const chips = page.getByRole('navigation', { name: /open$/ }).filter({ visible: true }).first();
 	await expect(chips.getByRole('link', { name: /^Kanazawa/ })).toBeInViewport();
 
-	await page.locator(`[data-phase-card="${fx.tokyo}"]`).filter({ visible: true }).getByText('Rail pass starts here.').click();
+	await page
+		.locator(`[data-phase-card="${fx.tokyo}"]`)
+		.filter({ visible: true })
+		.getByText('Rail pass starts here.')
+		.click();
 	await page.waitForURL(`${BASE}/trips/${SLUG}/phases/${fx.tokyo}`);
 	await close();
 });

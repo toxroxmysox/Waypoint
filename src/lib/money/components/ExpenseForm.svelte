@@ -92,39 +92,46 @@
 	// #273 — empty ADD anchors to the trip start (in-range) rather than today. Edit
 	// (expense.date) and explicit prefill (initialDate) still win; today is the last
 	// resort for a dateless trip.
-	let expenseDate = $state(untrack(() =>
-		expense?.date?.split(/[T ]/)[0] ??
-		(initialDate || tripStart || new Date().toISOString().split('T')[0])
-	));
-	let category = $state<ExpenseCategory>(untrack(() =>
-		(expense?.category as ExpenseCategory) ?? 'other'
-	));
+	let expenseDate = $state(
+		untrack(
+			() =>
+				expense?.date?.split(/[T ]/)[0] ??
+				(initialDate || tripStart || new Date().toISOString().split('T')[0])
+		)
+	);
+	let category = $state<ExpenseCategory>(
+		untrack(() => (expense?.category as ExpenseCategory) ?? 'other')
+	);
 	let paidBy = $state(untrack(() => expense?.paid_by ?? (initialPaidBy || membershipId)));
-	let splitMode = $state<'equal' | 'by_amount'>(untrack(() =>
-		(expense?.split_mode as 'equal' | 'by_amount') ?? initialSplitMode ?? 'equal'
-	));
+	let splitMode = $state<'equal' | 'by_amount'>(
+		untrack(() => (expense?.split_mode as 'equal' | 'by_amount') ?? initialSplitMode ?? 'equal')
+	);
 
-	let splitMembers = $state<Set<string>>(untrack(() => {
-		if (expense) {
-			const sd = expense.split_data as { members?: string[] } | null;
-			return new Set(sd?.members ?? members.map((m) => m.id));
-		}
-		// #229 prefill: an explicit initialSplitMembers (e.g. whole-group even split) seeds
-		// the checklist; otherwise default to everyone (the form's existing ADD default).
-		if (initialSplitMembers && initialSplitMembers.length > 0) {
-			return new Set(initialSplitMembers);
-		}
-		return new Set(members.map((m) => m.id));
-	}));
+	let splitMembers = $state<Set<string>>(
+		untrack(() => {
+			if (expense) {
+				const sd = expense.split_data as { members?: string[] } | null;
+				return new Set(sd?.members ?? members.map((m) => m.id));
+			}
+			// #229 prefill: an explicit initialSplitMembers (e.g. whole-group even split) seeds
+			// the checklist; otherwise default to everyone (the form's existing ADD default).
+			if (initialSplitMembers && initialSplitMembers.length > 0) {
+				return new Set(initialSplitMembers);
+			}
+			return new Set(members.map((m) => m.id));
+		})
+	);
 
-	let splitAmounts = $state<Record<string, string>>(untrack(() => {
-		if (expense) {
-			const sd = expense.split_data as { amounts?: Record<string, number> } | null;
-			const raw = sd?.amounts ?? {};
-			return Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, String(v)]));
-		}
-		return {};
-	}));
+	let splitAmounts = $state<Record<string, string>>(
+		untrack(() => {
+			if (expense) {
+				const sd = expense.split_data as { amounts?: Record<string, number> } | null;
+				const raw = sd?.amounts ?? {};
+				return Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, String(v)]));
+			}
+			return {};
+		})
+	);
 
 	let showMoreOptions = $state(untrack(() => isEdit));
 	let showSplitConfig = $state(untrack(() => isEdit));
@@ -139,9 +146,7 @@
 	// manual checkbox toggle de-highlights the chip automatically — the active preset
 	// never lies (acceptance #2).
 	let memberIds = $derived(members.map((m) => m.id));
-	let selectedPreset = $derived(
-		activePreset(splitMode, splitMembers, memberIds, membershipId)
-	);
+	let selectedPreset = $derived(activePreset(splitMode, splitMembers, memberIds, membershipId));
 
 	function applyPreset(preset: SplitPreset) {
 		splitMode = 'equal';
@@ -204,11 +209,22 @@
 		>
 			<span class="min-w-0">
 				<span class="block text-xs text-ink-muted">Linked item</span>
-				<span class="block truncate text-sm font-medium text-ink">{linkedItemTitle || 'View item'}</span>
+				<span class="block truncate text-sm font-medium text-ink"
+					>{linkedItemTitle || 'View item'}</span
+				>
 			</span>
 			<span class="flex flex-shrink-0 items-center gap-1 text-xs font-medium text-moss">
 				View item
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<svg
+					width="14"
+					height="14"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
 					<path d="m9 18 6-6-6-6" />
 				</svg>
 			</span>
@@ -216,7 +232,9 @@
 	{/if}
 
 	<div class="mb-4">
-		<label for="expense-amount" class="mb-1 block text-xs font-medium text-ink-muted">Amount (USD)</label>
+		<label for="expense-amount" class="mb-1 block text-xs font-medium text-ink-muted"
+			>Amount (USD)</label
+		>
 		<input
 			id="expense-amount"
 			name="amount_usd"
@@ -232,7 +250,9 @@
 	</div>
 
 	<div class="mb-4">
-		<label for="expense-desc" class="mb-1 block text-xs font-medium text-ink-muted">Description</label>
+		<label for="expense-desc" class="mb-1 block text-xs font-medium text-ink-muted"
+			>Description</label
+		>
 		<input
 			id="expense-desc"
 			name="description"
@@ -252,20 +272,26 @@
 			<button
 				type="button"
 				class="text-xs font-medium text-moss"
-				onclick={() => (showMoreOptions = true)}
-			>Change</button>
+				onclick={() => (showMoreOptions = true)}>Change</button
+			>
 		</div>
 
 		<div class="mb-4 flex items-center justify-between rounded-md bg-surface-2 px-3 py-2">
 			<span class="text-sm text-ink-soft">
 				Split <strong class="text-ink">{splitMode === 'equal' ? 'equally' : 'by amount'}</strong>
-				among <strong class="text-ink">{splitMode === 'equal' ? splitMembers.size : Object.keys(splitAmounts).filter(k => parseFloat(splitAmounts[k]) > 0).length}</strong>
+				among
+				<strong class="text-ink"
+					>{splitMode === 'equal'
+						? splitMembers.size
+						: Object.keys(splitAmounts).filter((k) => parseFloat(splitAmounts[k]) > 0)
+								.length}</strong
+				>
 			</span>
 			<button
 				type="button"
 				class="text-xs font-medium text-moss"
-				onclick={() => (showSplitConfig = !showSplitConfig)}
-			>Change</button>
+				onclick={() => (showSplitConfig = !showSplitConfig)}>Change</button
+			>
 		</div>
 	{/if}
 
@@ -276,9 +302,12 @@
 				{#each categories as cat (cat.value)}
 					<button
 						type="button"
-						class="rounded-full px-3 py-1 text-xs font-medium transition-colors {category === cat.value ? 'bg-ink text-paper' : 'bg-surface-2 text-ink-soft hover:bg-line active:bg-line'}"
-						onclick={() => (category = cat.value)}
-					>{cat.label}</button>
+						class="rounded-full px-3 py-1 text-xs font-medium transition-colors {category ===
+						cat.value
+							? 'bg-ink text-paper'
+							: 'bg-surface-2 text-ink-soft hover:bg-line active:bg-line'}"
+						onclick={() => (category = cat.value)}>{cat.label}</button
+					>
 				{/each}
 			</div>
 		</fieldset>
@@ -296,7 +325,9 @@
 		</div>
 
 		<div class="mb-4">
-			<label for="expense-paid-by" class="mb-1 block text-xs font-medium text-ink-muted">Paid by</label>
+			<label for="expense-paid-by" class="mb-1 block text-xs font-medium text-ink-muted"
+				>Paid by</label
+			>
 			<select
 				id="expense-paid-by"
 				bind:value={paidBy}
@@ -310,7 +341,7 @@
 	{/if}
 
 	{#if showSplitConfig}
-		<div class="mb-4 rounded-md border border-line p-3 space-y-3">
+		<div class="mb-4 space-y-3 rounded-md border border-line p-3">
 			<!-- #258 — one-tap quick-split presets. Active chip is derived from the live
 			     split state, so toggling a member off de-highlights it automatically. -->
 			<div>
@@ -319,35 +350,47 @@
 					<button
 						type="button"
 						aria-pressed={selectedPreset === 'whole_group'}
-						class="flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors {selectedPreset === 'whole_group' ? 'bg-ink text-paper' : 'bg-surface-2 text-ink-soft hover:bg-line active:bg-line'}"
-						onclick={() => applyPreset('whole_group')}
-					>Whole group</button>
+						class="flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors {selectedPreset ===
+						'whole_group'
+							? 'bg-ink text-paper'
+							: 'bg-surface-2 text-ink-soft hover:bg-line active:bg-line'}"
+						onclick={() => applyPreset('whole_group')}>Whole group</button
+					>
 					<button
 						type="button"
 						aria-pressed={selectedPreset === 'just_me'}
-						class="flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors {selectedPreset === 'just_me' ? 'bg-ink text-paper' : 'bg-surface-2 text-ink-soft hover:bg-line active:bg-line'}"
-						onclick={() => applyPreset('just_me')}
-					>Just me</button>
+						class="flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors {selectedPreset ===
+						'just_me'
+							? 'bg-ink text-paper'
+							: 'bg-surface-2 text-ink-soft hover:bg-line active:bg-line'}"
+						onclick={() => applyPreset('just_me')}>Just me</button
+					>
 				</div>
 			</div>
 
 			<div class="flex gap-2">
 				<button
 					type="button"
-					class="flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors {splitMode === 'equal' ? 'bg-ink text-paper' : 'bg-surface-2 text-ink-soft'}"
-					onclick={() => (splitMode = 'equal')}
-				>Equal</button>
+					class="flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors {splitMode ===
+					'equal'
+						? 'bg-ink text-paper'
+						: 'bg-surface-2 text-ink-soft'}"
+					onclick={() => (splitMode = 'equal')}>Equal</button
+				>
 				<button
 					type="button"
-					class="flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors {splitMode === 'by_amount' ? 'bg-ink text-paper' : 'bg-surface-2 text-ink-soft'}"
-					onclick={() => (splitMode = 'by_amount')}
-				>By Amount</button>
+					class="flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors {splitMode ===
+					'by_amount'
+						? 'bg-ink text-paper'
+						: 'bg-surface-2 text-ink-soft'}"
+					onclick={() => (splitMode = 'by_amount')}>By Amount</button
+				>
 			</div>
 
 			{#if splitMode === 'equal'}
 				<div class="space-y-1.5">
 					{#each members as member (member.id)}
-						<label class="flex items-center gap-2 cursor-pointer">
+						<label class="flex cursor-pointer items-center gap-2">
 							<input
 								type="checkbox"
 								checked={splitMembers.has(member.id)}
@@ -367,7 +410,7 @@
 				<div class="space-y-2">
 					{#each members as member (member.id)}
 						<div class="flex items-center gap-2">
-							<span class="min-w-[80px] text-sm text-ink truncate">{memberName(member.id)}</span>
+							<span class="min-w-[80px] truncate text-sm text-ink">{memberName(member.id)}</span>
 							<input
 								type="number"
 								inputmode="decimal"
@@ -376,17 +419,29 @@
 								placeholder="0.00"
 								value={splitAmounts[member.id] ?? ''}
 								oninput={(e) => {
-									splitAmounts = { ...splitAmounts, [member.id]: (e.target as HTMLInputElement).value };
+									splitAmounts = {
+										...splitAmounts,
+										[member.id]: (e.target as HTMLInputElement).value
+									};
 								}}
 								class="flex-1 rounded-md border border-line bg-surface px-2 py-1.5 font-mono text-sm text-ink placeholder:text-ink-muted/40 focus:border-moss focus:outline-none"
 							/>
 						</div>
 					{/each}
 					{#if true}
-						{@const allocated = Object.values(splitAmounts).reduce((s, v) => s + (parseFloat(v) || 0), 0)}
+						{@const allocated = Object.values(splitAmounts).reduce(
+							(s, v) => s + (parseFloat(v) || 0),
+							0
+						)}
 						{@const remaining = (parseFloat(amount) || 0) - allocated}
 						<p class="text-xs text-ink-muted">
-							Remaining: <span class="font-mono {remaining < -0.01 ? 'text-error' : remaining > 0.01 ? 'text-gold' : 'text-moss'}">${remaining.toFixed(2)}</span>
+							Remaining: <span
+								class="font-mono {remaining < -0.01
+									? 'text-error'
+									: remaining > 0.01
+										? 'text-gold'
+										: 'text-moss'}">${remaining.toFixed(2)}</span
+							>
 						</p>
 					{/if}
 				</div>
@@ -395,16 +450,19 @@
 	{/if}
 
 	{#if !isEdit && showMoreOptions}
-		<div class="mb-4 rounded-md border border-line p-3 space-y-3">
+		<div class="mb-4 space-y-3 rounded-md border border-line p-3">
 			<fieldset>
 				<legend class="mb-1.5 text-xs font-medium text-ink-muted">Category</legend>
 				<div class="flex flex-wrap gap-1.5">
 					{#each categories as cat (cat.value)}
 						<button
 							type="button"
-							class="rounded-full px-3 py-1 text-xs font-medium transition-colors {category === cat.value ? 'bg-ink text-paper' : 'bg-surface-2 text-ink-soft hover:bg-line active:bg-line'}"
-							onclick={() => (category = cat.value)}
-						>{cat.label}</button>
+							class="rounded-full px-3 py-1 text-xs font-medium transition-colors {category ===
+							cat.value
+								? 'bg-ink text-paper'
+								: 'bg-surface-2 text-ink-soft hover:bg-line active:bg-line'}"
+							onclick={() => (category = cat.value)}>{cat.label}</button
+						>
 					{/each}
 				</div>
 			</fieldset>
@@ -422,7 +480,9 @@
 			</div>
 
 			<div>
-				<label for="expense-paid-by" class="mb-1 block text-xs font-medium text-ink-muted">Paid by</label>
+				<label for="expense-paid-by" class="mb-1 block text-xs font-medium text-ink-muted"
+					>Paid by</label
+				>
 				<select
 					id="expense-paid-by"
 					bind:value={paidBy}
@@ -438,8 +498,8 @@
 		<button
 			type="button"
 			class="mb-4 text-xs font-medium text-moss"
-			onclick={() => (showMoreOptions = true)}
-		>More options (category, date, paid by)</button>
+			onclick={() => (showMoreOptions = true)}>More options (category, date, paid by)</button
+		>
 	{/if}
 
 	<input type="hidden" name="date" value={expenseDate} />
@@ -455,14 +515,25 @@
 	{/if}
 
 	{#if !isEdit && formProp?.addExpense && 'error' in (formProp.addExpense as Record<string, unknown>)}
-		<p role="alert" class="mb-3 text-sm text-error">{(formProp.addExpense as Record<string, string>).error}</p>
+		<p role="alert" class="mb-3 text-sm text-error">
+			{(formProp.addExpense as Record<string, string>).error}
+		</p>
 	{/if}
 	{#if isEdit && formProp?.updateExpense && 'error' in (formProp.updateExpense as Record<string, unknown>)}
-		<p role="alert" class="mb-3 text-sm text-error">{(formProp.updateExpense as Record<string, string>).error}</p>
+		<p role="alert" class="mb-3 text-sm text-error">
+			{(formProp.updateExpense as Record<string, string>).error}
+		</p>
 	{/if}
 
-	<Button type="submit" variant="primary" size="lg" class="w-full" disabled={submitting} loading={submitting}>
-		{submitting ? (isEdit ? 'Saving...' : 'Adding...') : (isEdit ? 'Save Changes' : 'Add Expense')}
+	<Button
+		type="submit"
+		variant="primary"
+		size="lg"
+		class="w-full"
+		disabled={submitting}
+		loading={submitting}
+	>
+		{submitting ? (isEdit ? 'Saving...' : 'Adding...') : isEdit ? 'Save Changes' : 'Add Expense'}
 	</Button>
 </form>
 
@@ -486,10 +557,19 @@
 		<input type="hidden" name="expense_id" value={expense.id} />
 
 		{#if formProp?.deleteExpense && 'error' in (formProp.deleteExpense as Record<string, unknown>)}
-			<p role="alert" class="mb-2 text-sm text-error">{(formProp.deleteExpense as Record<string, string>).error}</p>
+			<p role="alert" class="mb-2 text-sm text-error">
+				{(formProp.deleteExpense as Record<string, string>).error}
+			</p>
 		{/if}
 
-		<Button type="submit" variant="ghost" size="md" class="w-full text-error" disabled={deleting} loading={deleting}>
+		<Button
+			type="submit"
+			variant="ghost"
+			size="md"
+			class="w-full text-error"
+			disabled={deleting}
+			loading={deleting}
+		>
 			{deleting ? 'Deleting...' : 'Delete Expense'}
 		</Button>
 	</form>

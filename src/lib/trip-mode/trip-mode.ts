@@ -54,12 +54,14 @@ function groupItemsByDay(items: Item[], days: Day[]): DayGroup[] {
 		existing.push(item);
 		dayMap.set(item.day, existing);
 	}
-	return days
-		.filter((d) => dayMap.has(d.id))
-		// #81: order chronologically (timed by start_time, untimed woven by
-		// sort_order) to match the itinerary day view, which uses buildTimeline.
-		// sortBySortOrder alone rendered the "Next 3 Days" list out of order.
-		.map((d) => ({ day: d, items: orderLikeItinerary(dayMap.get(d.id)!) }));
+	return (
+		days
+			.filter((d) => dayMap.has(d.id))
+			// #81: order chronologically (timed by start_time, untimed woven by
+			// sort_order) to match the itinerary day view, which uses buildTimeline.
+			// sortBySortOrder alone rendered the "Next 3 Days" list out of order.
+			.map((d) => ({ day: d, items: orderLikeItinerary(dayMap.get(d.id)!) }))
+	);
 }
 
 function orderLikeItinerary(items: Item[]): Item[] {
@@ -68,9 +70,7 @@ function orderLikeItinerary(items: Item[]): Item[] {
 
 export function getTripModeState(items: Item[], days: Day[], now: Date): TripModeState {
 	const today = findToday(days, now);
-	const todayItems = today
-		? sortBySortOrder(items.filter((i) => i.day === today.id))
-		: [];
+	const todayItems = today ? sortBySortOrder(items.filter((i) => i.day === today.id)) : [];
 
 	const tomorrowDay = findTomorrow(days, now);
 	const tomorrowItems = tomorrowDay

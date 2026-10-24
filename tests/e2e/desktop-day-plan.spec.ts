@@ -41,9 +41,13 @@ test.describe('Desktop day page (#445)', () => {
 		await expect(cards.first()).toContainText(/\d+ items?/);
 	});
 
-	test('mouse: dragging a rail idea highlights the day as a drop target and plans it on drop', async ({ page }) => {
+	test('mouse: dragging a rail idea highlights the day as a drop target and plans it on drop', async ({
+		page
+	}) => {
 		await open(page);
-		const idea = page.locator('[data-rail-ideas]:visible [data-parking-zone]').getByRole('listitem', { name: 'The American Club' });
+		const idea = page
+			.locator('[data-rail-ideas]:visible [data-parking-zone]')
+			.getByRole('listitem', { name: 'The American Club' });
 		const target = page.locator('[data-day-timeline]:visible > div').first();
 		await expect(idea).toBeVisible();
 		const from = (await idea.boundingBox())!;
@@ -58,11 +62,18 @@ test.describe('Desktop day page (#445)', () => {
 		await page.mouse.move(from.x + from.width / 2 - 30, from.y + 18, { steps: 4 });
 		await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 20 });
 		await expect(page.locator('[data-drop-prompt]:visible')).toHaveText('Drop to plan');
-		await expect(page.locator('[data-day-timeline]:visible')).toHaveAttribute('data-plan-drop', 'true');
+		await expect(page.locator('[data-day-timeline]:visible')).toHaveAttribute(
+			'data-plan-drop',
+			'true'
+		);
 		await page.mouse.up();
 		await planned;
 		await page.reload({ waitUntil: 'networkidle' });
-		await expect(page.locator('[data-day-timeline]:visible').getByText('The American Club')).toBeVisible();
-		await expect(page.locator('[data-rail-ideas]:visible').getByText('The American Club')).toHaveCount(0);
+		await expect(
+			page.locator('[data-day-timeline]:visible').getByText('The American Club')
+		).toBeVisible();
+		await expect(
+			page.locator('[data-rail-ideas]:visible').getByText('The American Club')
+		).toHaveCount(0);
 	});
 });

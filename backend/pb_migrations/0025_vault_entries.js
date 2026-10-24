@@ -11,19 +11,30 @@ migrate(
 			type: 'base',
 			name: 'vault_entries',
 			fields: [
-				{ type: 'relation', name: 'trip', required: true, collectionId: trips.id, maxSelect: 1, cascadeDelete: true },
+				{
+					type: 'relation',
+					name: 'trip',
+					required: true,
+					collectionId: trips.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				},
 				{ type: 'text', name: 'encrypted_title', required: true, max: 5000 },
 				{ type: 'text', name: 'encrypted_body', required: true, max: 100000 },
-				{ type: 'relation', name: 'created_by', required: true, collectionId: tripMembers.id, maxSelect: 1 },
+				{
+					type: 'relation',
+					name: 'created_by',
+					required: true,
+					collectionId: tripMembers.id,
+					maxSelect: 1
+				}
 			],
-			indexes: [
-				'CREATE INDEX idx_vault_entries_trip ON vault_entries (trip)',
-			],
+			indexes: ['CREATE INDEX idx_vault_entries_trip ON vault_entries (trip)'],
 			listRule: MEMBER_VIA_TRIP,
 			viewRule: MEMBER_VIA_TRIP,
 			createRule: MEMBER_VIA_TRIP,
 			updateRule: MEMBER_VIA_TRIP + ' && created_by.user = @request.auth.id',
-			deleteRule: MEMBER_VIA_TRIP + ' && created_by.user = @request.auth.id',
+			deleteRule: MEMBER_VIA_TRIP + ' && created_by.user = @request.auth.id'
 		});
 
 		app.save(collection);

@@ -18,12 +18,19 @@ export const commitChanges: ToolDef = {
 	write: true,
 	mutates: true,
 	async run(ctx, { proposal_id }: { proposal_id: string }) {
-		const { changeId, changes, outcome, proposal, already, unrecorded } = await commitProposal(ctx, proposal_id);
+		const { changeId, changes, outcome, proposal, already, unrecorded } = await commitProposal(
+			ctx,
+			proposal_id
+		);
 		if (already) {
-			return result(ALREADY_SAVED, [{ emoji: '✅', title: ALREADY_SAVED, lines: [`“${proposal.quote}”`] }], {
-				change_id: changeId,
-				note: 'This preview was already saved; nothing more was written.'
-			});
+			return result(
+				ALREADY_SAVED,
+				[{ emoji: '✅', title: ALREADY_SAVED, lines: [`“${proposal.quote}”`] }],
+				{
+					change_id: changeId,
+					note: 'This preview was already saved; nothing more was written.'
+				}
+			);
 		}
 		const failed = changes.filter((c) => !c.committed);
 		const cards = changes.map((c) => ({
@@ -36,7 +43,9 @@ export const commitChanges: ToolDef = {
 			change_id: changeId,
 			note:
 				`“${proposal.quote}” — ${outcome || 'nothing saved'}.${failed.length ? ` ${failed.length} not sent.` : ''}` +
-				(unrecorded ? ' Saved, but not recorded for undo: change it back in the app if needed.' : ' Say “undo that” to revert.')
+				(unrecorded
+					? ' Saved, but not recorded for undo: change it back in the app if needed.'
+					: ' Say “undo that” to revert.')
 		});
 	}
 };

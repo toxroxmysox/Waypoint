@@ -16,7 +16,11 @@ describe('fillTokenOrigin', () => {
 	});
 
 	it('uses the PROTOCOL_HEADER / HOST_HEADER headers when configured', () => {
-		const r = req('POST', '/oauth/token', { host: 'localhost:3000', 'x-forwarded-proto': 'http', 'x-forwarded-host': 'tunnel.example' });
+		const r = req('POST', '/oauth/token', {
+			host: 'localhost:3000',
+			'x-forwarded-proto': 'http',
+			'x-forwarded-host': 'tunnel.example'
+		});
 		fillTokenOrigin(r, { PROTOCOL_HEADER: 'x-forwarded-proto', HOST_HEADER: 'x-forwarded-host' });
 		expect(r.headers.origin).toBe('http://tunnel.example');
 	});

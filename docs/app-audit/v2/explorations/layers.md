@@ -85,28 +85,28 @@ Every cold open mid-trip costs +1 tap and one disorientation beat before scenari
 Counting: from mode-appropriate trip home (planning = Overview, trip = Now) unless noted "cold".
 A tap = link/tab/button press; scroll/typing = 0. "Fork" = a wrong-guess point the novice lens hits.
 
-| # | §9 | Intent | Current path | Taps | Fork? |
-|---|----|--------|--------------|------|-------|
-| 1 | 1 | When is our flight? | Overview → day chip → flight item | 2 | Overview-vs-Phases fork; must guess the day |
-| 2 | 2 | Park an idea | Overview → Phases → phase → InlineQuickAdd | 3 | "Phases" label ≠ "ideas"; capture is L3 |
-| 3 | 10 | What does everyone want? | Overview → Goals | 1 | — |
-| 4 | 6/13 | What needs booking? | Overview → Lists → Booking | 2 | booking hidden under "Lists" |
-| 5 | 7 | Attach hotel PDF to item | day chip → item → Documents section | 3 | or Docs tab → sheet → re-scope select, also 3 |
-| 6 | 8 | Can we afford this? | Money → Budget sub-tab | 2 | Expenses-vs-Budget guess |
-| 7 | 9 | Plan day 3 of Paris | Overview → Paris day-3 chip | 1 | via Phases instead = 3 |
-| 8 | 11 | Several ideas, one city | Overview → Phases → city phase → quick-add ×N | 3 to first | same as #2 |
-| 9 | 16 | Discuss an idea | day chip → item → comment box | 2 | comments only on item detail (fine) |
-| 10 | 18 | What's next right now? | cold: trip card → (Overview w/ trip chrome) → Now | 2 cold / 0 warm | landing mismatch (§1) |
-| 11 | 19 | Find the boarding pass | Docs → document row | 2 | — |
-| 12 | 20 | Add dinner expense | ⊕ → Add expense → form | 2 | — |
-| 13 | 21 | Tonight fell through | pill → planning home → Phases → phase parking | 4 + mode exit | **D3 violation shape** — parking lot invisible in Trip Mode on phone (ContextRail desktop-only) |
-| 14 | 22 | Quick-add coffee today | ⊕ → Add to today → form | 2 | — |
-| 15 | 23 | Hotel address (ongoing) | Today → item card | 2 | — |
-| 16 | 24 | Tomorrow's plan | Today → Next 3 Days sub-tab | 2 | — |
-| 17 | 27 | Confirmation code | Today → item → codes (scroll) | 2 | — |
-| 18 | 30 | Budget so far, mid-trip | pill → Money → Budget | 3 + mode exit | no money surface in trip nav |
-| 19 | 31 | Who owes whom | Money → Settle Up button → sheet | 2 | below expense list fold |
-| 20 | 42 | Catch up on changes | bell → panel | 1 | bell absent on Members/Docs/days/items pages |
+| #   | §9   | Intent                   | Current path                                      | Taps            | Fork?                                                                                           |
+| --- | ---- | ------------------------ | ------------------------------------------------- | --------------- | ----------------------------------------------------------------------------------------------- |
+| 1   | 1    | When is our flight?      | Overview → day chip → flight item                 | 2               | Overview-vs-Phases fork; must guess the day                                                     |
+| 2   | 2    | Park an idea             | Overview → Phases → phase → InlineQuickAdd        | 3               | "Phases" label ≠ "ideas"; capture is L3                                                         |
+| 3   | 10   | What does everyone want? | Overview → Goals                                  | 1               | —                                                                                               |
+| 4   | 6/13 | What needs booking?      | Overview → Lists → Booking                        | 2               | booking hidden under "Lists"                                                                    |
+| 5   | 7    | Attach hotel PDF to item | day chip → item → Documents section               | 3               | or Docs tab → sheet → re-scope select, also 3                                                   |
+| 6   | 8    | Can we afford this?      | Money → Budget sub-tab                            | 2               | Expenses-vs-Budget guess                                                                        |
+| 7   | 9    | Plan day 3 of Paris      | Overview → Paris day-3 chip                       | 1               | via Phases instead = 3                                                                          |
+| 8   | 11   | Several ideas, one city  | Overview → Phases → city phase → quick-add ×N     | 3 to first      | same as #2                                                                                      |
+| 9   | 16   | Discuss an idea          | day chip → item → comment box                     | 2               | comments only on item detail (fine)                                                             |
+| 10  | 18   | What's next right now?   | cold: trip card → (Overview w/ trip chrome) → Now | 2 cold / 0 warm | landing mismatch (§1)                                                                           |
+| 11  | 19   | Find the boarding pass   | Docs → document row                               | 2               | —                                                                                               |
+| 12  | 20   | Add dinner expense       | ⊕ → Add expense → form                            | 2               | —                                                                                               |
+| 13  | 21   | Tonight fell through     | pill → planning home → Phases → phase parking     | 4 + mode exit   | **D3 violation shape** — parking lot invisible in Trip Mode on phone (ContextRail desktop-only) |
+| 14  | 22   | Quick-add coffee today   | ⊕ → Add to today → form                           | 2               | —                                                                                               |
+| 15  | 23   | Hotel address (ongoing)  | Today → item card                                 | 2               | —                                                                                               |
+| 16  | 24   | Tomorrow's plan          | Today → Next 3 Days sub-tab                       | 2               | —                                                                                               |
+| 17  | 27   | Confirmation code        | Today → item → codes (scroll)                     | 2               | —                                                                                               |
+| 18  | 30   | Budget so far, mid-trip  | pill → Money → Budget                             | 3 + mode exit   | no money surface in trip nav                                                                    |
+| 19  | 31   | Who owes whom            | Money → Settle Up button → sheet                  | 2               | below expense list fold                                                                         |
+| 20  | 42   | Catch up on changes      | bell → panel                                      | 1               | bell absent on Members/Docs/days/items pages                                                    |
 
 Reading: 13/20 are already ≤2 taps — the top-level navs work. The misses cluster in four places:
 **capture depth** (#2/#8: 3 taps to the parking lot), **glance depth** (#6: budget behind a sub-tab;
@@ -130,9 +130,9 @@ for information value.** Designer lens, P2 (shipped but split; the workaround is
 ### 3.2 Two-item sub-tab sets with a thin second destination
 
 - **Money: Expenses | Budget.** Budget already computes spent-vs-plan (budget/+page.svelte:118,141-158)
-  — it *is* the "can we afford this" answer — but it hides behind the second sub-tab while the landing
+  — it _is_ the "can we afford this" answer — but it hides behind the second sub-tab while the landing
   tab shows the raw ledger. Two pages share one dataset; the split is by record type, not by user
-  question. Charter scenario 8 (P) and 30 (N) both want plan-vs-actual *first*.
+  question. Charter scenario 8 (P) and 30 (N) both want plan-vs-actual _first_.
 - **Today: Today | Next 3 Days.** `today/upcoming` is 68 lines of read-only lookahead. A sub-tab
   navigation event for content that is naturally "keep scrolling past tonight." It also burns the
   SubTabs row in the mode where vertical space matters most (one-handed, on-trip).
@@ -144,7 +144,7 @@ A 2-item sub-tab whose second item is a glance, not a workspace, is a layer for 
 More (177 ln) is five links, three owner-gated. Cost: Inbox — the only place suggestions get
 reviewed — has exactly one inbound UI link, behind a tab named "More" (M4-adjacent; V2 risk: a
 member's suggestion rots unseen because the owner never opens the drawer). Settings/Clone/Export are
-genuinely rare-use and fine one layer down; the drawer's crime is hiding a *collaboration inbox*
+genuinely rare-use and fine one layer down; the drawer's crime is hiding a _collaboration inbox_
 among trip plumbing. Closeout's discoverability is D5's problem (pre-flagged P1, feature-sized —
 not re-litigated here; the flattened IA just must not block a wrap-up banner).
 
@@ -152,7 +152,7 @@ not re-litigated here; the flattened IA just must not block a wrap-up banner).
 
 - **Lists index** (162 ln): Overview already shows MiniListCard strips (trip-level at :108-117,
   per-phase at :163-171). The index adds create + the booking link. Borderline: it survives as a
-  sub-tab only because list-detail and booking need a stable parent; but its *content* is already
+  sub-tab only because list-detail and booking need a stable parent; but its _content_ is already
   duplicated upward. Cheapest win is surfacing the booking count upward, not deleting the page.
 - **Inbox** → a section/ribbon of the itinerary surface (suggestions are proto-items; review feeds
   `items/new?suggestion=`). Relocating the entry ≠ collaboration hub; it stays contextual (D1-safe).
@@ -162,7 +162,7 @@ not re-litigated here; the flattened IA just must not block a wrap-up banner).
 
 No shipped sheet hides primary content. The actual gap: **Trip Mode has no door to the parking lot
 on the phone** (#13). ContextRail carries phase-scoped ideas on desktop only (ContextRail.svelte:166-169).
-The AddSheet's three actions are all *create-new*; there is no *promote-existing*. SPEC_BACKLOG (Trip
+The AddSheet's three actions are all _create-new_; there is no _promote-existing_. SPEC_BACKLOG (Trip
 Mode, deferred v4): "Inline contextual parking lot" and "Ideas from Free Time" — documented-deferred,
 so cited not flagged — except D4 explicitly promotes the free-time door to a charter requirement, and
 D3 makes today-scoped replanning a Trip-Mode obligation. So: backlog citation for the timeline-inline
@@ -176,7 +176,7 @@ variant; charter requirement for the free-time/skip doors.
   (#159/#160 just shipped into it), not an index.
 - **Day view** — the timeline with DayNav/FAB; the day chips on Overview already flatten reaching it.
 - **Item detail** — deliberately the single deep page holding six concerns (votes, comments,
-  checklist, docs, goals, expense link). Flattening *above* it works **because** this page stays
+  checklist, docs, goals, expense link). Flattening _above_ it works **because** this page stays
   heavy; splitting it would re-add layers at the bottom. Item edit as a separate page is fine
   (ItemForm is form-action-based per project rules).
 - **Immersive surfaces** (goal capture, swipe decks) — intentional chrome suppression, not depth.
@@ -226,7 +226,7 @@ already in AppShell scope). Docs back-target chrome bug is a separate audit find
 
 **Settings (was More)** — a real page instead of a link hub: current settings form inline, plus rows
 for Clone, Export, Account (closes scenario 41's "where do I change my avatar from inside a trip"),
-and Closeout (status-gated row, *plus* whatever wrap-up banner D5's grill produces — this IA reserves
+and Closeout (status-gated row, _plus_ whatever wrap-up banner D5's grill produces — this IA reserves
 the top-of-Plan slot for it). Inbox row removed (entry moved to Plan ribbon).
 
 ### Trip mode — 4 tabs (same)
@@ -257,27 +257,27 @@ money/settings/members/docs:  tab → page → detail        (sub-tab layer gone
 trip:      tab → page → item detail                       (sub-tab layer gone)
 ```
 
-Sub-tabs survive only where destinations are genuinely parallel *collections* (Plan/Lists/Goals).
+Sub-tabs survive only where destinations are genuinely parallel _collections_ (Plan/Lists/Goals).
 Worst-case depth is unchanged (item edit is still 5 from /trips) — flattening targeted the common
 paths, not the maximum.
 
 ### Tap deltas (same 20 intents)
 
-| # | Intent | Now | After | Mechanism |
-|---|--------|-----|-------|-----------|
-| 1 | flight details | 2 + fork | 2, fork gone | one itinerary surface |
-| 2 | park an idea | 3 | 1–2 | quick-add on phase card |
-| 4 | needs booking | 2 | 1–2 | badge on Lists sub-tab |
-| 6 | afford this? | 2 + fork | 1 | budget header on Money |
-| 7 | plan Paris day 3 | 1 or 3 | 1 | no dual index |
-| 8 | ideas → one city | 3 | 1–2 | phase-card capture |
-| 10 | what's next (cold) | 2 | 1 | /now landing redirect |
-| 13 | tonight fell through | 4 + mode exit | 2, in-mode | ⊕ promote + free-time door |
-| 16 | tomorrow's plan | 2 | 1 | inline lookahead |
-| 18 | mid-trip budget | 3 + mode exit | 0–1 | Today header line |
-| 19 | settle up | 2 (below fold) | 2 (above fold) | section reorder |
-| 20 | catch up | 1 (patchy) | 1 (everywhere) | bell on Members/Docs |
-| — | 3,5,9,11,12,14,15,17 | ≤3 | unchanged | already at floor |
+| #   | Intent               | Now            | After          | Mechanism                  |
+| --- | -------------------- | -------------- | -------------- | -------------------------- |
+| 1   | flight details       | 2 + fork       | 2, fork gone   | one itinerary surface      |
+| 2   | park an idea         | 3              | 1–2            | quick-add on phase card    |
+| 4   | needs booking        | 2              | 1–2            | badge on Lists sub-tab     |
+| 6   | afford this?         | 2 + fork       | 1              | budget header on Money     |
+| 7   | plan Paris day 3     | 1 or 3         | 1              | no dual index              |
+| 8   | ideas → one city     | 3              | 1–2            | phase-card capture         |
+| 10  | what's next (cold)   | 2              | 1              | /now landing redirect      |
+| 13  | tonight fell through | 4 + mode exit  | 2, in-mode     | ⊕ promote + free-time door |
+| 16  | tomorrow's plan      | 2              | 1              | inline lookahead           |
+| 18  | mid-trip budget      | 3 + mode exit  | 0–1            | Today header line          |
+| 19  | settle up            | 2 (below fold) | 2 (above fold) | section reorder            |
+| 20  | catch up             | 1 (patchy)     | 1 (everywhere) | bell on Members/Docs       |
+| —   | 3,5,9,11,12,14,15,17 | ≤3             | unchanged      | already at floor           |
 
 ### Sequencing note (ship-bias)
 

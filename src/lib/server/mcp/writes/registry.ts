@@ -142,12 +142,24 @@ export const WRITABLE: Record<string, WritableSpec> = {
 	tasks: {
 		label: 'tasks on a list',
 		tripPath: 'checklist.trip',
-		fields: { checklist: 'list id', title: 'the task', checked: 'true when done', assignee: 'member id', order: 'number' }
+		fields: {
+			checklist: 'list id',
+			title: 'the task',
+			checked: 'true when done',
+			assignee: 'member id',
+			order: 'number'
+		}
 	},
 	checklist_items: {
 		label: 'checklist lines on an item',
 		tripPath: 'item.trip',
-		fields: { item: 'item id', text: 'the line', checked_by: 'member id', checked_at: 'YYYY-MM-DD', order: 'number' },
+		fields: {
+			item: 'item id',
+			text: 'the line',
+			checked_by: 'member id',
+			checked_at: 'YYYY-MM-DD',
+			order: 'number'
+		},
 		dateFields: ['checked_at']
 	},
 	expenses: {
@@ -162,7 +174,8 @@ export const WRITABLE: Record<string, WritableSpec> = {
 			paid_by: 'member id',
 			category: 'lodging | transportation | food | activity | other',
 			split_mode: 'equal | by_amount',
-			split_data: 'equal: {members: [ids]}; by_amount: {amounts: {memberId: number}} summing to amount_usd',
+			split_data:
+				'equal: {members: [ids]}; by_amount: {amounts: {memberId: number}} summing to amount_usd',
 			linked_item: 'item id'
 		}
 	},
@@ -171,7 +184,13 @@ export const WRITABLE: Record<string, WritableSpec> = {
 		tripPath: 'trip',
 		stamp: { created_by: 'member' },
 		dateFields: ['date'],
-		fields: { from_member: 'member id', to_member: 'member id', amount_usd: 'number, USD', date: 'YYYY-MM-DD', note: 'text' }
+		fields: {
+			from_member: 'member id',
+			to_member: 'member id',
+			amount_usd: 'number, USD',
+			date: 'YYYY-MM-DD',
+			note: 'text'
+		}
 	},
 	trip_budgets: {
 		label: 'the trip budget (owners)',
@@ -227,10 +246,12 @@ export const WRITABLE: Record<string, WritableSpec> = {
 		},
 		blockedFields: ['status'],
 		validate: (d, { action, trip }) => {
-			if (action === 'create' && dated(trip)) return 'This trip already has dates, so scenarios are closed.';
+			if (action === 'create' && dated(trip))
+				return 'This trip already has dates, so scenarios are closed.';
 			const s = d.date_start ? String(d.date_start) : '';
 			const e = d.date_end ? String(d.date_end) : '';
-			if (('date_start' in d || 'date_end' in d) && !!s !== !!e) return 'Give a scenario both dates, or neither.';
+			if (('date_start' in d || 'date_end' in d) && !!s !== !!e)
+				return 'Give a scenario both dates, or neither.';
 			if (s && e && s.slice(0, 10) > e.slice(0, 10)) return 'The scenario ends before it starts.';
 			if (negative(d.budget_per_person)) return 'A budget must be a positive number.';
 			return null;
@@ -255,7 +276,8 @@ export const WRITABLE: Record<string, WritableSpec> = {
 		stamp: { member: 'member' },
 		dateFields: ['day'],
 		fields: { day: 'YYYY-MM-DD', value: 'available | maybe' },
-		validate: (_d, { trip }) => (dated(trip) ? 'This trip already has dates, so the availability poll is closed.' : null)
+		validate: (_d, { trip }) =>
+			dated(trip) ? 'This trip already has dates, so the availability poll is closed.' : null
 	},
 	suggestion_votes: {
 		label: "the user's own vote on a suggestion (only one they state)",
@@ -275,8 +297,15 @@ export const WRITABLE: Record<string, WritableSpec> = {
 		tripPath: 'trip',
 		createOnly: true,
 		stamp: { uploaded_by: 'member' },
-		fields: { kind: 'code', code_label: 'e.g. Hotel booking ref', code_value: 'the code', caption: 'note', item: 'item id' },
-		validate: (d) => (d.kind !== 'code' ? "I can't upload files yet; I can save a code (kind: code)." : null)
+		fields: {
+			kind: 'code',
+			code_label: 'e.g. Hotel booking ref',
+			code_value: 'the code',
+			caption: 'note',
+			item: 'item id'
+		},
+		validate: (d) =>
+			d.kind !== 'code' ? "I can't upload files yet; I can save a code (kind: code)." : null
 	}
 };
 
@@ -348,7 +377,8 @@ export function blockedReason(collection: string, field?: string): string | null
 	}
 	if (field === undefined) return null;
 	if (REASONS[field] && BLOCKED_FIELDS.includes(field)) return REASONS[field];
-	if (AUTHOR.has(field)) return `Who made something is set by Waypoint; I can't change ${field.replace(/_/g, ' ')}.`;
+	if (AUTHOR.has(field))
+		return `Who made something is set by Waypoint; I can't change ${field.replace(/_/g, ' ')}.`;
 	if (BLOCKED_FIELDS.includes(field) || WRITABLE[collection].blockedFields?.includes(field)) {
 		return `I can't change ${field.replace(/_/g, ' ')} on ${collection.replace(/_/g, ' ')}.`;
 	}

@@ -40,7 +40,7 @@ The Overview's job is to show the hierarchy and let you jump to anything fast.
 - **Scope:** the planning-state Overview, including the active-trip Trip Mode button. Forming (scenario board), wrap-up (banner) and closed (record) are unchanged.
 - **Trip Notes are a stored field on trips**, appended by migration. Same editor as day notes. Included in portability, the MCP read, and the AI generic update op (extend the trips allowlist if needed). Added to the glossary.
 - **The guarantee of one tap without scrolling is the header's phase chips**, not the itinerary list, so it holds for any number of phases and with the welcome card shown.
-- **Compact / Details** replaces the Booked / Budget toggle *on the Overview only*. Phase Detail keeps Booked / Budget, and Details-mode day cards follow that shared preference.
+- **Compact / Details** replaces the Booked / Budget toggle _on the Overview only_. Phase Detail keeps Booked / Budget, and Details-mode day cards follow that shared preference.
 - **The Overview drops** whole-trip lists, per-phase lists, Flights & stays, and the Capture ideas link. This reverses the 2026-10-10 placement of Flights & stays below the itinerary.
 - **The sub-tabs stay** under the nav bar, above the trip header (as today).
 - **Phase notes show on the Overview's phase cards**, in full.

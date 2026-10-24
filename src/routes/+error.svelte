@@ -82,20 +82,20 @@
 	<meta name="robots" content="noindex" />
 </svelte:head>
 
-<main class="bg-paper text-ink flex min-h-dvh items-center justify-center p-6">
+<main class="flex min-h-dvh items-center justify-center bg-paper p-6 text-ink">
 	<div class="w-full max-w-md text-center">
-		<p class="font-display text-ink text-2xl font-semibold italic">Waypoint</p>
+		<p class="font-display text-2xl font-semibold text-ink italic">Waypoint</p>
 
-		<p class="text-moss-soft mt-10 font-mono text-sm font-medium tracking-wide uppercase">
+		<p class="mt-10 font-mono text-sm font-medium tracking-wide text-moss-soft uppercase">
 			{copy.eyebrow}
 		</p>
-		<h1 class="font-display text-ink mt-2 text-3xl font-semibold tracking-tight">
+		<h1 class="mt-2 font-display text-3xl font-semibold tracking-tight text-ink">
 			{copy.heading}
 		</h1>
-		<p class="text-ink-soft mt-3 text-base">{copy.body}</p>
+		<p class="mt-3 text-base text-ink-soft">{copy.body}</p>
 
 		{#if detail}
-			<p class="border-line text-ink-muted mt-5 rounded-md border bg-surface px-3 py-2 text-sm">
+			<p class="mt-5 rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink-muted">
 				{detail}
 			</p>
 		{/if}
@@ -106,7 +106,9 @@
 			{:else}
 				<Button href="/login" variant="moss" size="lg" class="w-full">Sign in</Button>
 			{/if}
-			<a href="/" class="text-ink-muted hover:text-ink-soft active:text-ink-soft text-sm">Go to the homepage</a>
+			<a href="/" class="text-sm text-ink-muted hover:text-ink-soft active:text-ink-soft"
+				>Go to the homepage</a
+			>
 		</div>
 	</div>
 </main>

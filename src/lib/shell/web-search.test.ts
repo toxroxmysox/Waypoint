@@ -3,7 +3,9 @@ import { whatIsQuery, whatIsSearchUrl } from './web-search';
 
 describe('whatIsSearchUrl (#406)', () => {
 	it('asks what the thing is, in the trip place', () => {
-		expect(whatIsQuery('Pastéis de Belém', 'Lisbon, Portugal')).toBe('what is Pastéis de Belém in Lisbon, Portugal');
+		expect(whatIsQuery('Pastéis de Belém', 'Lisbon, Portugal')).toBe(
+			'what is Pastéis de Belém in Lisbon, Portugal'
+		);
 	});
 	it('drops the place when the trip has none', () => {
 		expect(whatIsQuery(' Fado ', '  ')).toBe('what is Fado');

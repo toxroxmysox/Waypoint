@@ -48,7 +48,7 @@
 				placeholder="Leg name (e.g. Bangkok)"
 				bind:value={seg.name}
 				maxlength="60"
-				class="border-line bg-surface text-ink min-w-0 flex-1 rounded-md border px-2.5 py-1.5 text-sm"
+				class="min-w-0 flex-1 rounded-md border border-line bg-surface px-2.5 py-1.5 text-sm text-ink"
 			/>
 			<div class="flex items-center gap-1">
 				<input
@@ -57,15 +57,15 @@
 					min="1"
 					bind:value={seg.days}
 					aria-label="Nights for {seg.name || 'this leg'}"
-					class="border-line bg-surface text-ink w-16 rounded-md border px-2 py-1.5 text-center text-sm"
+					class="w-16 rounded-md border border-line bg-surface px-2 py-1.5 text-center text-sm text-ink"
 				/>
-				<span class="text-ink-muted text-xs">nt</span>
+				<span class="text-xs text-ink-muted">nt</span>
 			</div>
 			<button
 				type="button"
 				onclick={() => remove(i)}
 				aria-label="Remove {seg.name || 'leg'}"
-				class="text-ink-muted hover:text-clay active:text-clay px-1 text-lg leading-none"
+				class="px-1 text-lg leading-none text-ink-muted hover:text-clay active:text-clay"
 			>
 				×
 			</button>
@@ -76,16 +76,28 @@
 		<button
 			type="button"
 			onclick={add}
-			class="text-moss hover:text-ink active:text-ink inline-flex items-center gap-1 text-xs font-semibold"
+			class="inline-flex items-center gap-1 text-xs font-semibold text-moss hover:text-ink active:text-ink"
 		>
-			<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+			<svg
+				width="12"
+				height="12"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2.5"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg
+			>
 			Add a leg
 		</button>
 		{#if window > 0 && segments.length > 0}
-			<span class="text-ink-muted text-[11px]">
+			<span class="text-[11px] text-ink-muted">
 				{total} / {window} nights
 				{#if total !== window}
-					<button type="button" onclick={normalize} class="text-moss ml-1 font-semibold underline">fit to dates</button>
+					<button type="button" onclick={normalize} class="ml-1 font-semibold text-moss underline"
+						>fit to dates</button
+					>
 				{/if}
 			</span>
 		{/if}

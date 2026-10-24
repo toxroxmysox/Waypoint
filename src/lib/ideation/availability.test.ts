@@ -44,7 +44,10 @@ describe('canvasExtent (ADR-0023 Decision 5 — today → min/max painted ± 2 w
 
 	it('tolerates PB datetime-shaped days and is order-independent', () => {
 		const ext = canvasExtent(
-			[cell('b', '2027-08-01 00:00:00.000Z', 'maybe'), cell('a', '2027-05-01 00:00:00.000Z', 'available')],
+			[
+				cell('b', '2027-08-01 00:00:00.000Z', 'maybe'),
+				cell('a', '2027-05-01 00:00:00.000Z', 'available')
+			],
 			'2027-06-01'
 		);
 		expect(ext).toEqual({ start: '2027-04-17', end: '2027-08-15' });
@@ -124,9 +127,9 @@ describe('aggregateDayStatuses (ADR-0023 Decision 4 — green iff EVERY active m
 	});
 
 	it('single-member group: their sole available day is green', () => {
-		expect(aggregateDayStatuses([cell('a', '2027-06-01', 'available')], ['a']).get('2027-06-01')).toBe(
-			'green'
-		);
+		expect(
+			aggregateDayStatuses([cell('a', '2027-06-01', 'available')], ['a']).get('2027-06-01')
+		).toBe('green');
 	});
 
 	it('no active members: a stray cell still shows a response but never green', () => {
@@ -173,10 +176,7 @@ describe('rollupByDay (Group-mode counts + who)', () => {
 	});
 
 	it('excludes non-active members from counts', () => {
-		const cells = [
-			cell('a', '2027-06-01', 'available'),
-			cell('ghost', '2027-06-01', 'available')
-		];
+		const cells = [cell('a', '2027-06-01', 'available'), cell('ghost', '2027-06-01', 'available')];
 		const r = rollupByDay(cells, active, days).get('2027-06-01')!;
 		expect(r.availableCount).toBe(1);
 		expect(r.availableMembers).toEqual(['a']);
@@ -226,10 +226,7 @@ describe('windowStatus (ADR-0023 Decision 8 — colour a scenario window)', () =
 	});
 
 	it('tolerates PB datetime-shaped window bounds', () => {
-		const cells = [
-			cell('a', '2027-06-01', 'available'),
-			cell('b', '2027-06-01', 'available')
-		];
+		const cells = [cell('a', '2027-06-01', 'available'), cell('b', '2027-06-01', 'available')];
 		expect(
 			windowStatus(cells, active, '2027-06-01 00:00:00.000Z', '2027-06-01 00:00:00.000Z')
 		).toBe('green');

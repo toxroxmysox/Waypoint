@@ -26,18 +26,16 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 	});
 
 	// Fork pre-fill — copy the source scenario's shape (never its votes/points).
-	let fork:
-		| {
-				id: string;
-				title: string;
-				pitch: string;
-				dateStart: string;
-				dateEnd: string;
-				budgetPerPerson: number;
-				sketch: PhaseSketchSegment[];
-				keystones: string[];
-		  }
-		| null = null;
+	let fork: {
+		id: string;
+		title: string;
+		pitch: string;
+		dateStart: string;
+		dateEnd: string;
+		budgetPerPerson: number;
+		sketch: PhaseSketchSegment[];
+		keystones: string[];
+	} | null = null;
 	const forkId = url.searchParams.get('fork');
 	if (forkId) {
 		try {
@@ -91,20 +89,35 @@ export const actions: Actions = {
 
 			const data = await request.formData();
 			const title = data.get('title')?.toString().trim() || '';
-			if (!title) return fail(400, { error: 'Give your scenario a title.', values: readValues(data) });
-			if (title.length > 120) return fail(400, { error: 'Keep the title under 120 characters.', values: readValues(data) });
+			if (!title)
+				return fail(400, { error: 'Give your scenario a title.', values: readValues(data) });
+			if (title.length > 120)
+				return fail(400, {
+					error: 'Keep the title under 120 characters.',
+					values: readValues(data)
+				});
 
 			const pitch = data.get('pitch')?.toString().trim() || '';
-			if (pitch.length > 200) return fail(400, { error: 'Keep the pitch under 200 characters.', values: readValues(data) });
+			if (pitch.length > 200)
+				return fail(400, {
+					error: 'Keep the pitch under 200 characters.',
+					values: readValues(data)
+				});
 
 			const dateStart = data.get('date_start')?.toString() || '';
 			const dateEnd = data.get('date_end')?.toString() || '';
 			// Both-or-neither for dates at authoring (promotion re-checks both present).
 			if ((dateStart && !dateEnd) || (!dateStart && dateEnd)) {
-				return fail(400, { error: 'Set both dates, or leave both blank.', values: readValues(data) });
+				return fail(400, {
+					error: 'Set both dates, or leave both blank.',
+					values: readValues(data)
+				});
 			}
 			if (dateStart && dateEnd && new Date(dateStart) > new Date(dateEnd)) {
-				return fail(400, { error: 'The start date is after the end date.', values: readValues(data) });
+				return fail(400, {
+					error: 'The start date is after the end date.',
+					values: readValues(data)
+				});
 			}
 
 			const budgetRaw = data.get('budget_per_person')?.toString().trim() || '';
@@ -112,7 +125,10 @@ export const actions: Actions = {
 			if (budgetRaw) {
 				const n = Number(budgetRaw);
 				if (!Number.isFinite(n) || n < 0) {
-					return fail(400, { error: 'Budget must be a positive number.', values: readValues(data) });
+					return fail(400, {
+						error: 'Budget must be a positive number.',
+						values: readValues(data)
+					});
 				}
 				budget = Math.round(n);
 			}
@@ -129,7 +145,9 @@ export const actions: Actions = {
 							.map((s) => {
 								const seg = s as { name?: unknown; days?: unknown };
 								return {
-									name: String(seg.name ?? '').trim().slice(0, 60),
+									name: String(seg.name ?? '')
+										.trim()
+										.slice(0, 60),
 									days: Math.max(1, Math.round(Number(seg.days) || 1))
 								};
 							})
@@ -144,7 +162,10 @@ export const actions: Actions = {
 			}
 
 			// Keystones: existing idea ids the composer selected.
-			const existingKeystones = data.getAll('keystone').map((v) => v.toString()).filter(Boolean);
+			const existingKeystones = data
+				.getAll('keystone')
+				.map((v) => v.toString())
+				.filter(Boolean);
 
 			// Keystone quick-create: newline-separated titles → unplanned items via the
 			// shared ideas capture path (/api/suggestions/create). Auto-approved
@@ -152,7 +173,11 @@ export const actions: Actions = {
 			// queued traveler suggestion returns no id and simply isn't attached yet.
 			const quickCreated: string[] = [];
 			const quickRaw = data.get('new_keystones')?.toString() || '';
-			for (const line of quickRaw.split('\n').map((l) => l.trim()).filter(Boolean).slice(0, 10)) {
+			for (const line of quickRaw
+				.split('\n')
+				.map((l) => l.trim())
+				.filter(Boolean)
+				.slice(0, 10)) {
 				try {
 					const res = (await locals.pb.send('/api/suggestions/create', {
 						method: 'POST',
@@ -195,7 +220,9 @@ export const actions: Actions = {
 			redirect(303, `/trips/${params.slug}/scenarios/${created.id}`);
 		} catch (err: unknown) {
 			if (isRedirect(err)) throw err;
-			return fail(500, { error: err instanceof Error ? err.message : 'Failed to create the scenario.' });
+			return fail(500, {
+				error: err instanceof Error ? err.message : 'Failed to create the scenario.'
+			});
 		}
 	}
 };

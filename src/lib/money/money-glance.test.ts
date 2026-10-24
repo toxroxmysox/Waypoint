@@ -12,7 +12,8 @@ import type { Expense, TripBudget, BudgetCategory } from './types';
 // --- builders -------------------------------------------------------------
 
 function makeExpense(
-	overrides: Partial<Expense> & Pick<Expense, 'paid_by' | 'amount_usd' | 'split_mode' | 'split_data'>
+	overrides: Partial<Expense> &
+		Pick<Expense, 'paid_by' | 'amount_usd' | 'split_mode' | 'split_data'>
 ): Expense {
 	return {
 		id: 'exp-' + Math.random().toString(36).slice(2, 8),
@@ -71,7 +72,9 @@ describe('groupBudgetTotal', () => {
 	});
 
 	it('falls back to total when a per_day category has a null daily_amount', () => {
-		const b = makeBudget([cat({ category: 'food', mode: 'per_day', daily_amount: null, total: 250 })]);
+		const b = makeBudget([
+			cat({ category: 'food', mode: 'per_day', daily_amount: null, total: 250 })
+		]);
 		expect(groupBudgetTotal(b, 5)).toBe(250);
 	});
 
@@ -273,7 +276,9 @@ describe('moneyGlance', () => {
 	});
 
 	it('derives my budget from a per_day category (60/day x 5d / 2 members)', () => {
-		const budget = makeBudget([cat({ category: 'food', mode: 'per_day', daily_amount: 60, total: 0 })]);
+		const budget = makeBudget([
+			cat({ category: 'food', mode: 'per_day', daily_amount: 60, total: 0 })
+		]);
 		const g = moneyGlance([], budget, [], baseInput);
 		expect(g.groupBudgetTotal).toBe(300); // 60 x 5
 		expect(g.myBudget).toBe(150); // 300 / 2

@@ -7,24 +7,26 @@
 
 ## Locked decisions
 
-| Question | Decision | Why |
-|---|---|---|
-| Squash PocketBase migrations? | **No — keep all 49, change nothing.** | Restored DB already records every file in `_migrations`; they're no-ops on boot. Squashing orphans rows + diverges from data-backfill migrations (`0011/0012/0027`). Only legit for a clean-slate v2. |
-| `/data` disk | **HDD pool (btrfs RAID1) for now**, `chattr +C` (nodatacow). Monitor fsync; move to M.2 later if it bites. | 2-user write load is light. No hardware step. |
-| Sequencing | **Harden, then public cutover.** Phase 0 prereq PR closes the Critical security gaps before any public exposure. | Public OTP with no rate limiting / open admin UI is unsafe. |
-| Container shape | **Keep the single container** (PB + SvelteKit + internal Caddy). Expose `:8080` only. | It's the artifact already validated in prod; the internal Caddy does the `/pb` split the baked URL depends on. Don't rebuild the topology. |
-| Public ingress | **Cloudflare Tunnel (remote-managed/token) → `http://waypoint:8080`** over a shared `waypoint_net` docker network. Host-Caddy NOT in path. | TLS terminates at CF edge; tunnel is outbound-only (no inbound ports). cloudflared is its own container, so it reaches the app by **container name** over the shared net, not `localhost`. |
-| Freeze method | **`fly machine stop <id>`** to freeze writes. **NEVER `fly scale count 0`** — that destroys the Machine. | `machine stop` is reversible and preserves the volume. (Overrides the review agents, which suggested `scale count 0`.) |
+| Question                      | Decision                                                                                                                                   | Why                                                                                                                                                                                                   |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Squash PocketBase migrations? | **No — keep all 49, change nothing.**                                                                                                      | Restored DB already records every file in `_migrations`; they're no-ops on boot. Squashing orphans rows + diverges from data-backfill migrations (`0011/0012/0027`). Only legit for a clean-slate v2. |
+| `/data` disk                  | **HDD pool (btrfs RAID1) for now**, `chattr +C` (nodatacow). Monitor fsync; move to M.2 later if it bites.                                 | 2-user write load is light. No hardware step.                                                                                                                                                         |
+| Sequencing                    | **Harden, then public cutover.** Phase 0 prereq PR closes the Critical security gaps before any public exposure.                           | Public OTP with no rate limiting / open admin UI is unsafe.                                                                                                                                           |
+| Container shape               | **Keep the single container** (PB + SvelteKit + internal Caddy). Expose `:8080` only.                                                      | It's the artifact already validated in prod; the internal Caddy does the `/pb` split the baked URL depends on. Don't rebuild the topology.                                                            |
+| Public ingress                | **Cloudflare Tunnel (remote-managed/token) → `http://waypoint:8080`** over a shared `waypoint_net` docker network. Host-Caddy NOT in path. | TLS terminates at CF edge; tunnel is outbound-only (no inbound ports). cloudflared is its own container, so it reaches the app by **container name** over the shared net, not `localhost`.            |
+| Freeze method                 | **`fly machine stop <id>`** to freeze writes. **NEVER `fly scale count 0`** — that destroys the Machine.                                   | `machine stop` is reversible and preserves the volume. (Overrides the review agents, which suggested `scale count 0`.)                                                                                |
 
 ## Architecture
 
 **Now (Fly):** one container, 3 procs via `deploy/start.sh` — PocketBase 0.27.2 `serve --dir /data` `:8090`; SvelteKit SSR `:3000`; Caddy `:8080` (`/pb/*`→8090, else→3000). Fly volume `pb_data`→`/data`. `PUBLIC_PB_URL=https://app.vandenwarsen.com/pb` baked at build (same-origin, path-based). CI `deploy.yml` redeploys Fly on every push to `main`.
 
 **Target (NAS):**
+
 ```
 Internet → Cloudflare edge (TLS) → cloudflared container (NAS) ──waypoint_net──▶ http://waypoint:8080 (container Caddy) → /pb→PB, else→SvelteKit
                                                                                           └ /data bind-mounted to btrfs (nodatacow)
 ```
+
 cloudflared and the waypoint container share an **external `waypoint_net`** docker network, so the tunnel routes to the app by **container name** (`waypoint:8080`). NAS is amd64 (Pentium Gold 8505) → the pinned `linux_amd64` Caddy/PB binaries are correct; build natively on the NAS.
 
 **Current DNS chain (Cloudflare `vandenwarsen.com`):** `waypoint.vandenwarsen.com` (proxied ON) → CNAME `app.vandenwarsen.com` (proxied OFF) → CNAME `waypoint-trips.fly.dev`. The cutover repoints **`app.vandenwarsen.com`** (the baked hostname) at the tunnel; saving the tunnel's Public Hostname route auto-creates the proxied `app → <UUID>.cfargotunnel.com` CNAME, replacing the Fly one.
@@ -46,18 +48,22 @@ cloudflared and the waypoint container share an **external `waypoint_net`** dock
 Code changes that must land before cutover. **Do NOT redeploy Fly** — the NAS builds from this branch; Fly stays frozen on its current good image as the rollback target (rollback = `fly machine start` the existing machine, never a redeploy). Merge the branch to `main` only at cutover, together with the CI-disable + `fly.toml` removal. This removes any risk of an untested change hitting the live Fly app.
 
 ### 0.1 Pin the build (so NAS image == prod image)
+
 - [ ] Add `"packageManager": "pnpm@<exact-version>"` to `package.json` (corepack honors it; currently **absent**, so `corepack prepare pnpm@latest` floats).
 - [ ] Pin the base image by digest in **both** Dockerfile stages: `FROM node:22.x.y-slim@sha256:…`.
 - [ ] (Optional belt) Add `sha256sum -c` guards after the PB and Caddy `curl` downloads.
 
 ### 0.2 Security hardening — the env-agnostic parts only
+
 > **Rate limiting is NOT here** — it's IP-based and environment-specific (needs `CF-Connecting-IP` trusted-proxy on the NAS; an unconditional migration would also 429 dev/`test:rules`/e2e, which hammer one IP). It moves to **Phase 2** (NAS-only). See there for exact settings.
+
 - [ ] **Gate dev routes at the edge.** In `deploy/Caddyfile`, return 403 for `/pb/api/dev/*` so the `dev-auth.pb.js` bypass is unreachable regardless of env (already fail-closed on `WAYPOINT_DEV_MODE`; this removes the single-var blast radius).
 - [ ] **Edge body cap.** In `deploy/Caddyfile`, `request_body { max_size 21MB }` (just above the 20MB doc limit) so oversized uploads die at the proxy.
 - [ ] **Generic OTP error.** `src/routes/invite/[code]/+page.server.ts` (and the parallel `join/[token]` action) — return a static "Failed to send code" instead of raw `err.message`.
 - [ ] (Admin UI gating `/pb/_/*` is Phase 2.)
 
 ### 0.3 Fly CI — leave the branch UNMERGED pre-cutover
+
 - [ ] Keep Phase 0 on its branch (`chore/302-nas-migration-prereqs`); the NAS builds from this branch's commit. Because nothing lands on `main`, the Fly CI (`deploy.yml`, fires on push to `main`) never triggers — Fly stays frozen on its current good image.
 - [ ] At cutover (Phase 3): in one merge to `main`, include this branch **plus** deleting `deploy.yml` (else the merge itself redeploys Fly). `fly.toml` removal is Phase 4.
 
@@ -68,6 +74,7 @@ Code changes that must land before cutover. **Do NOT redeploy Fly** — the NAS 
 ## Phase 1 — NAS warm standby (no traffic yet)
 
 ### 1.1 Stand up the stack
+
 - [ ] `git clone` the repo into `/volume1/docker/stacks/waypoint/repo`, `git checkout <phase-0 merge commit>`.
 - [ ] Create `/volume1/docker/stacks/waypoint/waypoint.env` (`chmod 600`, **not** in git) — all values sourced from Fly secrets / your `.env.local` (Fly values aren't retrievable; `PB_ADMIN_*` may only exist on Fly — **confirm you have them**):
 
@@ -102,14 +109,14 @@ services:
     container_name: waypoint
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8088:8080"   # 127.0.0.1 only, for tailnet-admin Caddy host (→ /pb/_/). Public path is the tunnel, not this.
+      - '127.0.0.1:8088:8080' # 127.0.0.1 only, for tailnet-admin Caddy host (→ /pb/_/). Public path is the tunnel, not this.
     env_file:
       - ./waypoint.env
     volumes:
-      - /volume1/docker/stacks/waypoint/data:/data   # ONLY /data. Do NOT bind over pb_hooks/pb_migrations.
-    networks: [waypoint_net]     # shared with cloudflared → reachable as http://waypoint:8080
+      - /volume1/docker/stacks/waypoint/data:/data # ONLY /data. Do NOT bind over pb_hooks/pb_migrations.
+    networks: [waypoint_net] # shared with cloudflared → reachable as http://waypoint:8080
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8080/", "-o", "/dev/null"]
+      test: ['CMD', 'curl', '-fsS', 'http://localhost:8080/', '-o', '/dev/null']
       interval: 30s
       timeout: 5s
       retries: 3
@@ -117,7 +124,7 @@ services:
 
 networks:
   waypoint_net:
-    external: true              # create once: docker network create waypoint_net
+    external: true # create once: docker network create waypoint_net
 ```
 
 **cloudflared** (same stack, or `/volume1/docker/stacks/cloudflared/`). Token from CF dashboard → Zero Trust → Networks → Tunnels → Create (Docker connector). Route the Public Hostname `app.vandenwarsen.com` → Service URL `http://waypoint:8080`.
@@ -130,25 +137,28 @@ services:
     restart: unless-stopped
     command: tunnel --no-autoupdate run
     environment:
-      - TUNNEL_TOKEN=${TUNNEL_TOKEN}   # in .env, chmod 600, gitignored
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN} # in .env, chmod 600, gitignored
     networks: [waypoint_net]
 networks:
   waypoint_net:
     external: true
 ```
 
-- [ ] **Prep the data dir before first boot:** `docker network create waypoint_net` (once), `mkdir -p data && chattr +C data` (nodatacow — set on the empty dir *before* PB writes the SQLite files).
+- [ ] **Prep the data dir before first boot:** `docker network create waypoint_net` (once), `mkdir -p data && chattr +C data` (nodatacow — set on the empty dir _before_ PB writes the SQLite files).
 - [ ] **Check box load first:** the photo-import watchdog (icloudpd/immich-go) may still be running — `tail watchdog.log` / `uptime`. PB restore is light, but don't pile first-boot migration churn on a thrashing box.
 
 ### 1.1b First-boot validation on a THROWAWAY DB (before touching prod data)
+
 - [ ] Boot the stack with an empty `data/` (Tailscale-only, no tunnel): confirm `:8090/api/health` healthy, all 49 migrations apply, and hooks fire — create a trip → days/phase/owner auto-generate. This proves the image is sound independent of the data restore.
 - [ ] Tear down the throwaway DB (`docker compose down`, wipe `data/`, re-`chattr +C`).
 
 ### 1.2 Get the data over (consistent backup — see Data-Safety Appendix)
+
 - [ ] Trigger PB built-in backup on Fly (WAL-checkpoints + zips DB **and** `storage/` together), pull the zip, `shasum -a 256` it, `unzip -l` to confirm `data.db` + a non-empty `storage/` are present.
 - [ ] Unzip into the NAS `data/` dir (or restore via PB API). `chown -R` to the UID PB runs as in the container.
 
 ### 1.3 Build + verify on a throwaway subdomain
+
 - [ ] `docker compose build && docker compose up -d`.
 - [ ] Stand up the `cloudflared` container on `waypoint_net`; route a throwaway host `waypoint-test.vandenwarsen.com` → `http://waypoint:8080` (do **not** touch the prod hostname yet).
 - [ ] Through the test host: log in (OTP email arrives ⇒ SMTP good), open a known trip, confirm cover image + an uploaded document render, test Maps autocomplete + a flight lookup, open an archive/export link (⇒ `PB_ADMIN_*` good).
@@ -167,7 +177,7 @@ networks:
     - `{ label: "POST /api/collections/users/request-otp", audience: "", duration: 3600, maxRequests: 10 }`
     - `{ label: "POST /api/collections/users/auth-with-otp", audience: "", duration: 3600, maxRequests: 5 }`
   - `enabled = true`.
-  - Verify: from one IP, the 11th `request-otp` / 6th `auth-with-otp` in the hour → 429. From a *different* IP (e.g. phone off-wifi), not throttled — confirms per-IP keying works (so a simultaneous group invite from different devices is never blocked).
+  - Verify: from one IP, the 11th `request-otp` / 6th `auth-with-otp` in the hour → 429. From a _different_ IP (e.g. phone off-wifi), not throttled — confirms per-IP keying works (so a simultaneous group invite from different devices is never blocked).
 - [ ] Confirm `printenv | grep WAYPOINT` in the **running PB process** shows `WAYPOINT_DEV_MODE` unset (not just the file).
 - [ ] Tighten PB CORS/allowed-origins to `https://app.vandenwarsen.com`.
 - [ ] `chmod 600 waypoint.env`; restrict the `data/` dir perms (contains SMTP password in PB settings).
@@ -211,6 +221,7 @@ Only after cutover verified **and** the rollback window elapsed.
 **Backup (preferred — PB built-in):** it runs `PRAGMA wal_checkpoint(TRUNCATE)` then zips DB + storage consistently. Trigger via Admin UI → Settings → Backups, or `POST /pb/api/backups` with a superuser token. Pull via `fly ssh sftp get /data/backups/<name>.zip` or the authenticated API. **Never hot-`cp data.db`** (misses the WAL → stale/torn DB).
 
 **Verify before cutover:**
+
 ```bash
 # per-collection counts (compare NAS vs pre-freeze Fly)
 for t in users trips trip_members phases days items expenses settlements \
@@ -219,18 +230,21 @@ for t in users trips trip_members phases days items expenses settlements \
 done
 find /data/storage -type f | wc -l          # == Fly's count
 ```
+
 Plus: superuser login returns a token; a known trip's image + document actually render in the UI (proves DB row + blob + path align).
 
 **Traps + mitigations:**
+
 - `storage/` missed → silent broken links. → built-in backup bundles it; `unzip -l` to confirm.
 - WAL not checkpointed → stale DB. → built-in backup; or stop PB before any raw copy.
-- Backup mid-write. → PB's online backup is application-aware (read-only during the snapshot), so a *consistent* backup needs no stop; the `fly machine stop` freeze additionally guarantees no new writes for the *final* sync.
+- Backup mid-write. → PB's online backup is application-aware (read-only during the snapshot), so a _consistent_ backup needs no stop; the `fly machine stop` freeze additionally guarantees no new writes for the _final_ sync.
 - PB version mismatch → NAS **must** run 0.27.2 (pinned). A newer PB silently auto-migrates (one-way).
 - Bind-mount perms → `chown -R` data dir to PB's UID; test an upload post-restore.
 - btrfs CoW → `chattr +C` on `data/` before first write; never use a btrfs snapshot as the DB "backup."
 - Single zip = SPOF → keep ≥2 verified copies (NAS + laptop) before deleting anything on Fly.
 
 ## Open items needing Scott (can't derive from repo)
+
 1. **Do you have the prod `PB_ADMIN_EMAIL/PASSWORD` and SMTP/Resend creds?** Fly values aren't retrievable. Without `PB_ADMIN_*` the archive/export route 500s; without SMTP, OTP login is dead.
 2. **Is `app.vandenwarsen.com` proxied or DNS-only in Cloudflare today, and how is it pointed at Fly?** Sets cutover mechanics.
 3. **Which `pb_data` is the source of truth** — confirm it's the live Fly prod data (not a dev DB seeded with `admin@waypoint.dev`).

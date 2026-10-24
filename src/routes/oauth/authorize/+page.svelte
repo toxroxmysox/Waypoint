@@ -23,11 +23,13 @@
 
 <svelte:head><title>Connect to Waypoint</title></svelte:head>
 
-<div class="bg-paper text-ink flex min-h-dvh items-center justify-center p-4">
+<div class="flex min-h-dvh items-center justify-center bg-paper p-4 text-ink">
 	<div class="w-full max-w-sm">
 		<div class="mb-8 text-center">
-			<h1 class="font-display text-ink text-2xl font-semibold tracking-tight">Connect {appName} to Waypoint</h1>
-			<p class="text-ink-muted mt-2 text-sm">
+			<h1 class="font-display text-2xl font-semibold tracking-tight text-ink">
+				Connect {appName} to Waypoint
+			</h1>
+			<p class="mt-2 text-sm text-ink-muted">
 				{#if otpId}
 					Enter the 6-digit code sent to {email}
 				{:else}
@@ -37,7 +39,10 @@
 		</div>
 
 		{#if form?.error}
-			<div role="alert" class="border-error/30 bg-error/10 text-error-deep mb-4 rounded-md border p-3 text-sm">
+			<div
+				role="alert"
+				class="mb-4 rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error-deep"
+			>
 				{form.error}
 			</div>
 		{/if}
@@ -45,7 +50,7 @@
 		{#if !otpId}
 			<form method="POST" action="?/requestOTP" onsubmit={once}>
 				<input type="hidden" name="req" value={req} />
-				<label for="email" class="text-ink-soft block text-sm font-medium">Email</label>
+				<label for="email" class="block text-sm font-medium text-ink-soft">Email</label>
 				<input
 					type="email"
 					id="email"
@@ -54,7 +59,7 @@
 					required
 					autocomplete="email"
 					enterkeyhint="send"
-					class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+					class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 					placeholder="you@example.com"
 				/>
 				<Button type="submit" variant="moss" size="lg" class="mt-4 w-full">Send code</Button>
@@ -64,7 +69,7 @@
 				<input type="hidden" name="req" value={req} />
 				<input type="hidden" name="otpId" value={otpId} />
 				<input type="hidden" name="email" value={email} />
-				<label for="code" class="text-ink-soft block text-sm font-medium">Code</label>
+				<label for="code" class="block text-sm font-medium text-ink-soft">Code</label>
 				<input
 					type="text"
 					id="code"
@@ -76,7 +81,7 @@
 					maxlength="6"
 					pattern={'[0-9]{6}'}
 					use:otp.action={submitting}
-					class="border-line bg-surface text-ink font-mono mt-1 block w-full rounded-md border px-3 py-2 text-center text-2xl tracking-[0.5em]"
+					class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-center font-mono text-2xl tracking-[0.5em] text-ink"
 					placeholder="000000"
 				/>
 				<Button type="submit" variant="moss" size="lg" class="mt-4 w-full">Connect</Button>

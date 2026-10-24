@@ -97,10 +97,7 @@ describe('itemsWithCodes (#268 — codes sourced from kind:code Documents)', () 
 	});
 
 	it('omits items with no code docs — independent of whether they have a file', () => {
-		const out = itemsWithCodes(
-			[item('a', 'meal'), item('b', 'lodging')],
-			[codeDoc('b', 'C', 'X')]
-		);
+		const out = itemsWithCodes([item('a', 'meal'), item('b', 'lodging')], [codeDoc('b', 'C', 'X')]);
 		expect(out.map((e) => e.item_id)).toEqual(['b']);
 	});
 

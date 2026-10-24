@@ -8,13 +8,18 @@
 	];
 </script>
 
-<div class="border-line bg-surface inline-flex items-center gap-0.5 rounded-full border p-0.5" role="group" aria-label="Itinerary density">
+<div
+	class="inline-flex items-center gap-0.5 rounded-full border border-line bg-surface p-0.5"
+	role="group"
+	aria-label="Itinerary density"
+>
 	{#each options as opt (opt.value)}
 		<button
 			type="button"
 			onclick={() => itineraryDensity.set(opt.value)}
 			aria-pressed={$itineraryDensity === opt.value}
-			class="min-h-8 rounded-full px-3 text-[11px] font-semibold transition-colors {$itineraryDensity === opt.value
+			class="min-h-8 rounded-full px-3 text-[11px] font-semibold transition-colors {$itineraryDensity ===
+			opt.value
 				? 'bg-ink text-paper'
 				: 'text-ink-muted hover:text-ink-soft active:text-ink-soft'}"
 		>

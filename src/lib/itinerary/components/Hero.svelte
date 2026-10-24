@@ -105,7 +105,11 @@
 </script>
 
 <article
-	class="relative {bare ? '' : 'bg-surface rounded-xl border p-4'} {live ? 'shadow-card-strong' : bare ? '' : 'border-line shadow-card'}"
+	class="relative {bare ? '' : 'rounded-xl border bg-surface p-4'} {live
+		? 'shadow-card-strong'
+		: bare
+			? ''
+			: 'border-line shadow-card'}"
 	style={live ? 'border-color:var(--color-accent);border-width:2px;' : ''}
 	data-hero
 	data-live={live ? 'true' : 'false'}
@@ -121,12 +125,19 @@
 	{/if}
 
 	<div class="pointer-events-none relative flex items-start gap-3">
-		<MonoTypeIcon type={item.type} sub={item.subtype} size={40} variant={live ? 'filled' : 'plain'} />
+		<MonoTypeIcon
+			type={item.type}
+			sub={item.subtype}
+			size={40}
+			variant={live ? 'filled' : 'plain'}
+		/>
 		<div class="min-w-0 flex-1 pt-0.5">
 			{#if typeLine}
-				<p class="text-ink-muted text-[11px] font-semibold tracking-wide uppercase">{typeLine}</p>
+				<p class="text-[11px] font-semibold tracking-wide text-ink-muted uppercase">{typeLine}</p>
 			{/if}
-			<h2 class="text-ink font-display text-[22px] leading-tight font-semibold break-words">{item.title}</h2>
+			<h2 class="font-display text-[22px] leading-tight font-semibold break-words text-ink">
+				{item.title}
+			</h2>
 		</div>
 		{#if menu}
 			<div class="pointer-events-auto relative z-20 -mt-1 -mr-2 shrink-0">{@render menu()}</div>
@@ -140,35 +151,43 @@
 					href={maps}
 					target="_blank"
 					rel="noopener noreferrer"
-					class="hover:bg-surface-2 active:bg-surface-2 pointer-events-auto relative z-10 -mx-2 block min-h-11 rounded-lg px-2 py-1.5"
+					class="pointer-events-auto relative z-10 -mx-2 block min-h-11 rounded-lg px-2 py-1.5 hover:bg-surface-2 active:bg-surface-2"
 					data-testid="hero-place"
 				>
 					{#if item.location_name}
-						<span class="text-ink block text-base font-medium">{item.location_name}</span>
+						<span class="block text-base font-medium text-ink">{item.location_name}</span>
 					{/if}
 					{#if item.location_address}
-						<span class="text-ink-soft block text-sm">{item.location_address}</span>
+						<span class="block text-sm text-ink-soft">{item.location_address}</span>
 					{/if}
 					<span class="sr-only">Opens in Maps</span>
 				</a>
 			{:else}
 				<div data-testid="hero-place">
 					{#if item.location_name || placeExtra}
-						<p class="text-ink text-base font-medium">
-							{item.location_name}{#if placeExtra}<span class="text-ink-soft font-normal">{item.location_name ? ' · ' : ''}{placeExtra}</span>{/if}
+						<p class="text-base font-medium text-ink">
+							{item.location_name}{#if placeExtra}<span class="font-normal text-ink-soft"
+									>{item.location_name ? ' · ' : ''}{placeExtra}</span
+								>{/if}
 						</p>
 					{/if}
-					{#if item.location_address}<p class="text-ink-soft text-sm">{item.location_address}</p>{/if}
+					{#if item.location_address}<p class="text-sm text-ink-soft">
+							{item.location_address}
+						</p>{/if}
 				</div>
 			{/if}
 		{/if}
 
 		{#if status}
-			<p class="text-sm font-semibold tracking-wide" style="color:var(--color-accent);" data-testid="hero-status">
+			<p
+				class="text-sm font-semibold tracking-wide"
+				style="color:var(--color-accent);"
+				data-testid="hero-status"
+			>
 				<span class="uppercase">{status.label}</span> · {status.text}
 			</p>
 		{:else if timeText}
-			<p class="text-ink-soft font-mono text-sm" data-testid="hero-time">{timeText}</p>
+			<p class="font-mono text-sm text-ink-soft" data-testid="hero-time">{timeText}</p>
 		{/if}
 
 		{#if codes.length > 0}
@@ -186,11 +205,25 @@
 						href={d.href}
 						target="_blank"
 						rel="noopener noreferrer"
-						class="border-line bg-surface hover:border-ink-muted active:border-ink-muted flex min-h-11 items-center gap-3 rounded-lg border px-3 py-2"
+						class="flex min-h-11 items-center gap-3 rounded-lg border border-line bg-surface px-3 py-2 hover:border-ink-muted active:border-ink-muted"
 						data-testid="hero-doc"
 					>
-						<svg class="text-ink-soft shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
-						<span class="text-ink min-w-0 flex-1 truncate text-sm font-medium">{d.label}</span>
+						<svg
+							class="shrink-0 text-ink-soft"
+							width="18"
+							height="18"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.75"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+							><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline
+								points="14 2 14 8 20 8"
+							/></svg
+						>
+						<span class="min-w-0 flex-1 truncate text-sm font-medium text-ink">{d.label}</span>
 						<span class="sr-only">Opens in a new tab</span>
 					</a>
 				{/each}
@@ -204,14 +237,40 @@
 					{#if bookingActions}{@render bookingActions()}{/if}
 				{/if}
 				{#if done}
-					<span class="text-ink-soft inline-flex items-center gap-1 text-sm font-medium" data-testid="hero-done">
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg>
+					<span
+						class="inline-flex items-center gap-1 text-sm font-medium text-ink-soft"
+						data-testid="hero-done"
+					>
+						<svg
+							width="14"
+							height="14"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2.6"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg
+						>
 						Done
 					</span>
 				{/if}
 				{#if item.booked}
-					<span class="text-ink-soft inline-flex items-center gap-1 text-sm font-medium" data-testid="hero-booked">
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg>
+					<span
+						class="inline-flex items-center gap-1 text-sm font-medium text-ink-soft"
+						data-testid="hero-booked"
+					>
+						<svg
+							width="14"
+							height="14"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2.6"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg
+						>
 						{words.done}
 					</span>
 				{/if}
@@ -222,17 +281,28 @@
 			<div class="space-y-2" data-testid="hero-going">
 				{#if goingControl}{@render goingControl()}{/if}
 				{#if people.length > 0}
-					<div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5" data-testid="hero-going-people">
-						{#if goers.length > 0}<span class="text-ink-muted text-sm">Going</span>{/if}
+					<div
+						class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5"
+						data-testid="hero-going-people"
+					>
+						{#if goers.length > 0}<span class="text-sm text-ink-muted">Going</span>{/if}
 						{#each goers as g (g.memberId)}
-							<span class="text-ink-soft inline-flex items-center gap-1.5 text-sm">
+							<span class="inline-flex items-center gap-1.5 text-sm text-ink-soft">
 								<PersonBubble name={g.name} img={memberOf(g.memberId)?.avatarUrl} size={24} />
 								{g.name}
 							</span>
 						{/each}
 						{#each passers as g (g.memberId)}
-							<span class="text-ink-muted inline-flex items-center gap-1.5 text-sm line-through" data-testid="hero-not-going">
-								<PersonBubble name={g.name} img={memberOf(g.memberId)?.avatarUrl} notGoing size={24} />
+							<span
+								class="inline-flex items-center gap-1.5 text-sm text-ink-muted line-through"
+								data-testid="hero-not-going"
+							>
+								<PersonBubble
+									name={g.name}
+									img={memberOf(g.memberId)?.avatarUrl}
+									notGoing
+									size={24}
+								/>
 								{g.name}
 							</span>
 						{/each}

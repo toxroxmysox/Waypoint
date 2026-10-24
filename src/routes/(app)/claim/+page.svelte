@@ -30,25 +30,28 @@
 
 <NavBar title="You've been added to a trip" />
 
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 space-y-6 px-4 pt-8 pb-8">
+<main class="mx-auto w-full max-w-lg flex-1 space-y-6 px-4 pt-8 pb-8 md-desktop:max-w-2xl">
 	{#if claim}
 		<div class="space-y-1 text-center">
-			<p class="text-ink-soft text-sm">Someone added you as a member of</p>
-			<h1 class="text-ink text-xl font-semibold">{claim.trip_title}</h1>
+			<p class="text-sm text-ink-soft">Someone added you as a member of</p>
+			<h1 class="text-xl font-semibold text-ink">{claim.trip_title}</h1>
 		</div>
 
 		<Card>
 			<div class="space-y-4 p-4">
 				{#if form?.error}
-					<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">
+					<div
+						role="alert"
+						class="rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error-deep"
+					>
 						{form.error}
 					</div>
 				{/if}
 
 				<div class="flex items-center justify-between gap-3">
 					<div>
-						<p class="text-ink-soft text-xs font-medium uppercase tracking-wider">Added as</p>
-						<p class="text-ink mt-0.5 font-semibold">{claim.placeholder_name || '(unnamed)'}</p>
+						<p class="text-xs font-medium tracking-wider text-ink-soft uppercase">Added as</p>
+						<p class="mt-0.5 font-semibold text-ink">{claim.placeholder_name || '(unnamed)'}</p>
 					</div>
 					<Pill variant={rolePillVariant(claim.role)} size="sm">
 						{roleLabel[claim.role] ?? claim.role}
@@ -72,7 +75,7 @@
 					<input type="hidden" name="redirect" value={data.redirectTo ?? ''} />
 
 					<div>
-						<label for="display-name" class="text-ink-soft block text-sm font-medium">
+						<label for="display-name" class="block text-sm font-medium text-ink-soft">
 							Your display name for this trip
 						</label>
 						<input
@@ -82,11 +85,18 @@
 							bind:value={displayName}
 							placeholder="Your name"
 							maxlength="100"
-							class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-base"
+							class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-ink"
 						/>
 					</div>
 
-					<Button type="submit" variant="moss" size="md" class="w-full" disabled={accepting} loading={accepting}>
+					<Button
+						type="submit"
+						variant="moss"
+						size="md"
+						class="w-full"
+						disabled={accepting}
+						loading={accepting}
+					>
 						{accepting ? 'Joining…' : `Join ${claim.trip_title}`}
 					</Button>
 				</form>
@@ -95,7 +105,7 @@
 					<input type="hidden" name="redirect" value={data.redirectTo ?? ''} />
 					<button
 						type="submit"
-						class="text-ink-muted hover:text-ink active:text-ink w-full py-1 text-center text-sm"
+						class="w-full py-1 text-center text-sm text-ink-muted hover:text-ink active:text-ink"
 					>
 						Skip for now
 					</button>
@@ -104,8 +114,9 @@
 		</Card>
 
 		{#if data.claims.length > 1}
-			<p class="text-ink-muted text-center text-xs">
-				{data.claims.length - 1} more trip{data.claims.length - 1 === 1 ? '' : 's'} pending after this one.
+			<p class="text-center text-xs text-ink-muted">
+				{data.claims.length - 1} more trip{data.claims.length - 1 === 1 ? '' : 's'} pending after this
+				one.
 			</p>
 		{/if}
 	{/if}

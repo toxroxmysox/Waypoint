@@ -177,9 +177,22 @@ test.describe('BottomSheet gestures (#365)', () => {
 				async ({ x, y }) => {
 					const target = document.elementFromPoint(x, y)!;
 					const mk = (type: string, cy: number) => {
-						const t = new Touch({ identifier: 2, target, clientX: x, clientY: cy, pageX: x, pageY: cy });
+						const t = new Touch({
+							identifier: 2,
+							target,
+							clientX: x,
+							clientY: cy,
+							pageX: x,
+							pageY: cy
+						});
 						const list = type === 'touchend' ? [] : [t];
-						return new TouchEvent(type, { touches: list, targetTouches: list, changedTouches: [t], bubbles: true, cancelable: true });
+						return new TouchEvent(type, {
+							touches: list,
+							targetTouches: list,
+							changedTouches: [t],
+							bubbles: true,
+							cancelable: true
+						});
 					};
 					target.dispatchEvent(mk('touchstart', y));
 					for (let i = 1; i <= 6; i++) {
@@ -261,7 +274,10 @@ test.describe('BottomSheet gestures (#365)', () => {
 
 			await page.goto(`${BASE}/trips/${activeSlug}`, { waitUntil: 'networkidle' });
 			await page.goto(`${BASE}/trips/${activeSlug}/now`, { waitUntil: 'networkidle' });
-			expect(new URL(page.url()).pathname, 'trip must be in trip mode for the Add FAB to exist').toContain('/now');
+			expect(
+				new URL(page.url()).pathname,
+				'trip must be in trip mode for the Add FAB to exist'
+			).toContain('/now');
 
 			const add = page.locator('[aria-label="Add"]:visible').first();
 			await add.click();
@@ -309,7 +325,9 @@ test.describe('BottomSheet gestures (#365)', () => {
 			const before = page.url();
 			await openAddExpense(page);
 			await page.keyboard.press('Escape');
-			await expect.poll(async () => page.locator('[data-sheet-panel]').count(), { timeout: 5000 }).toBe(0);
+			await expect
+				.poll(async () => page.locator('[data-sheet-panel]').count(), { timeout: 5000 })
+				.toBe(0);
 			// The entry must be popped too, or back would be spent on a dead entry.
 			// Only meaningful while a sheet owns an entry at all — see #383.
 			//
@@ -323,7 +341,9 @@ test.describe('BottomSheet gestures (#365)', () => {
 			if (BACK_SWALLOWING_ENABLED) {
 				await page.goBack();
 				await page.waitForTimeout(900);
-				expect(page.url(), 'back after Escape must retrace a real page, not a dead entry').toBe(before);
+				expect(page.url(), 'back after Escape must retrace a real page, not a dead entry').toBe(
+					before
+				);
 			}
 		} finally {
 			await ctx.close();
@@ -346,7 +366,9 @@ test.describe('BottomSheet gestures (#365)', () => {
 			expect(page.url()).toBe(urlWithSheetOpen);
 
 			// Shallow routing must not run the layout's view-transition wrapper.
-			expect(await page.evaluate(() => document.documentElement.dataset.transition ?? null)).toBeNull();
+			expect(
+				await page.evaluate(() => document.documentElement.dataset.transition ?? null)
+			).toBeNull();
 
 			// Closing by other means must POP the pushed entry, or back would need
 			// two presses forever after (the #235 history-depth scar).
@@ -374,7 +396,10 @@ test.describe('BottomSheet gestures (#365)', () => {
 			const prompt = sheet.getByText(/discard this expense/i);
 
 			// 1. Backdrop tap — the original one-mis-tap data loss.
-			await sheet.locator('.touch-none').first().click({ position: { x: 180, y: 40 } });
+			await sheet
+				.locator('.touch-none')
+				.first()
+				.click({ position: { x: 180, y: 40 } });
 			await expect(prompt).toBeVisible({ timeout: 5000 });
 			await expect(page.locator('[data-sheet-panel]')).toHaveCount(1);
 			await expect(desc).toHaveValue('Half-typed dinner');
@@ -419,7 +444,10 @@ test.describe('BottomSheet gestures (#365)', () => {
 		try {
 			// The guard is opt-in; it must not have made every sheet sticky.
 			await openAddExpense(page);
-			await page.locator('.z-modal .touch-none').first().click({ position: { x: 180, y: 40 } });
+			await page
+				.locator('.z-modal .touch-none')
+				.first()
+				.click({ position: { x: 180, y: 40 } });
 			await expect.poll(async () => page.locator('.z-modal').count(), { timeout: 5000 }).toBe(0);
 		} finally {
 			await ctx.close();
@@ -485,7 +513,9 @@ test.describe('BottomSheet gestures (#365)', () => {
 		}
 	});
 
-	test('the page behind is locked while a sheet is open and released after', async ({ browser }) => {
+	test('the page behind is locked while a sheet is open and released after', async ({
+		browser
+	}) => {
 		const { page, ctx } = await devLogin(browser);
 		try {
 			await openAddExpense(page);
@@ -498,8 +528,8 @@ test.describe('BottomSheet gestures (#365)', () => {
 			).toEqual({ pos: 'fixed', flag: 'true' });
 
 			expect(
-				await page.evaluate(() =>
-					getComputedStyle(document.querySelector('[data-sheet-panel]')!).overscrollBehavior
+				await page.evaluate(
+					() => getComputedStyle(document.querySelector('[data-sheet-panel]')!).overscrollBehavior
 				)
 			).toContain('contain');
 
@@ -550,7 +580,10 @@ test.describe('BottomSheet gestures (#365)', () => {
 				}
 				return room();
 			});
-			expect(maxScroll, 'fixture page must be scrollable or this guard proves nothing').toBeGreaterThanOrEqual(120);
+			expect(
+				maxScroll,
+				'fixture page must be scrollable or this guard proves nothing'
+			).toBeGreaterThanOrEqual(120);
 
 			const target = Math.min(200, maxScroll);
 			await page.evaluate((y) => window.scrollTo(0, y), target);
@@ -566,7 +599,9 @@ test.describe('BottomSheet gestures (#365)', () => {
 			// the entry pushState creates, so if the body is pinned before that push
 			// the snapshot records 0 and closing the sheet throws the reader back to
 			// the top of the page. Both effects must agree on where we were.
-			await expect.poll(async () => page.evaluate(() => window.scrollY), { timeout: 5000 }).toBe(target);
+			await expect
+				.poll(async () => page.evaluate(() => window.scrollY), { timeout: 5000 })
+				.toBe(target);
 		} finally {
 			await ctx.close();
 		}

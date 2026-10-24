@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { nightCards, phaseCard, tripNotesCard } from './get-trip';
 
-const night = (n: number, lodging: string) => ({ date: `2026-10-${String(n).padStart(2, '0')}`, lodging });
+const night = (n: number, lodging: string) => ({
+	date: `2026-10-${String(n).padStart(2, '0')}`,
+	lodging
+});
 
 describe('nightCards (#512: a long stay is one card, so goals and ideas survive the 50-card cap)', () => {
 	it('collapses consecutive nights at the same place into one range', () => {
@@ -22,7 +25,14 @@ describe('nightCards (#512: a long stay is one card, so goals and ideas survive 
 });
 
 describe('#401 notes in get_trip', () => {
-	const p = { name: 'Tokyo', location: 'Tokyo', country_code: 'JP', start_date: '2027-11-18', end_date: '2027-11-22', notes: 'Rail pass starts here.' };
+	const p = {
+		name: 'Tokyo',
+		location: 'Tokyo',
+		country_code: 'JP',
+		start_date: '2027-11-18',
+		end_date: '2027-11-22',
+		notes: 'Rail pass starts here.'
+	};
 	it('get_trip shows phase notes line', () => {
 		expect(phaseCard(p).lines).toContain('Rail pass starts here.');
 	});
@@ -30,7 +40,11 @@ describe('#401 notes in get_trip', () => {
 		expect(phaseCard({ ...p, notes: '' }).lines).not.toContain('');
 	});
 	it('trip notes card only when non-empty', () => {
-		expect(tripNotesCard('JR passes ordered.')).toEqual({ emoji: '📝', title: 'Trip notes', lines: ['JR passes ordered.'] });
+		expect(tripNotesCard('JR passes ordered.')).toEqual({
+			emoji: '📝',
+			title: 'Trip notes',
+			lines: ['JR passes ordered.']
+		});
 		expect(tripNotesCard('')).toBeNull();
 	});
 });

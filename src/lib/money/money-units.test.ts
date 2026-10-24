@@ -15,7 +15,8 @@ import {
 import { computeBalances } from './debt-simplify';
 
 function makeExpense(
-	overrides: Partial<Expense> & Pick<Expense, 'paid_by' | 'amount_usd' | 'split_mode' | 'split_data'>
+	overrides: Partial<Expense> &
+		Pick<Expense, 'paid_by' | 'amount_usd' | 'split_mode' | 'split_data'>
 ): Expense {
 	return {
 		id: 'exp-' + Math.random().toString(36).slice(2, 8),
@@ -81,11 +82,10 @@ describe('aggregateBalancesByUnit', () => {
 			['abby', -100],
 			['mary', -100]
 		]);
-		const map = buildMemberUnitMap([{ id: 'u1', members: ['scott', 'abby'] }], [
-			'scott',
-			'abby',
-			'mary'
-		]);
+		const map = buildMemberUnitMap(
+			[{ id: 'u1', members: ['scott', 'abby'] }],
+			['scott', 'abby', 'mary']
+		);
 		const unitBalances = aggregateBalancesByUnit(memberBalances, map);
 		expect(unitBalances.get('u1')).toBeCloseTo(100);
 		expect(unitBalances.get('mary')).toBeCloseTo(-100);

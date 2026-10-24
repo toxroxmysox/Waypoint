@@ -67,7 +67,10 @@
 		const prevNotifications = notifications;
 		const prevUnread = unreadCount;
 
-		notifications = notifications.map((n) => ({ ...n, read_at: n.read_at || new Date().toISOString() }));
+		notifications = notifications.map((n) => ({
+			...n,
+			read_at: n.read_at || new Date().toISOString()
+		}));
 		unreadCount = 0;
 
 		try {
@@ -90,15 +93,25 @@
 		type="button"
 		onclick={toggle}
 		aria-label="Notifications{unreadCount > 0 ? ` (${unreadCount} unread)` : ''}"
-		class="text-ink-soft hover:text-ink active:text-ink relative flex h-11 w-11 items-center justify-center rounded-full"
+		class="relative flex h-11 w-11 items-center justify-center rounded-full text-ink-soft hover:text-ink active:text-ink"
 	>
-		<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<svg
+			width="20"
+			height="20"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="2"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+			aria-hidden="true"
+		>
 			<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
 			<path d="M13.73 21a2 2 0 0 1-3.46 0" />
 		</svg>
 		{#if unreadCount > 0}
 			<span
-				class="bg-clay text-paper absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold"
+				class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-clay text-[10px] font-bold text-paper"
 				aria-hidden="true"
 			>
 				{unreadCount > 9 ? '9+' : unreadCount}
@@ -118,15 +131,15 @@
 
 		<!-- Dropdown -->
 		<div
-			class="border-line bg-paper shadow-md absolute right-0 top-full z-modal mt-1 w-80 max-h-[70vh] overflow-y-auto rounded-lg border"
+			class="absolute top-full right-0 z-modal mt-1 max-h-[70vh] w-80 overflow-y-auto rounded-lg border border-line bg-paper shadow-md"
 		>
-			<div class="border-line flex items-center justify-between border-b px-4 py-2.5">
-				<span class="text-ink text-sm font-semibold">Notifications</span>
+			<div class="flex items-center justify-between border-b border-line px-4 py-2.5">
+				<span class="text-sm font-semibold text-ink">Notifications</span>
 				{#if unreadCount > 0}
 					<button
 						type="button"
 						onclick={markAllRead}
-						class="text-ink-muted hover:text-ink-soft active:text-ink-soft text-xs"
+						class="text-xs text-ink-muted hover:text-ink-soft active:text-ink-soft"
 					>
 						Mark all read
 					</button>
@@ -134,38 +147,53 @@
 			</div>
 
 			{#if notifications.length === 0}
-				<p class="text-ink-muted px-4 py-6 text-center text-sm">No notifications yet.</p>
+				<p class="px-4 py-6 text-center text-sm text-ink-muted">No notifications yet.</p>
 			{:else}
-				<ul class="divide-line divide-y">
+				<ul class="divide-y divide-line">
 					{#each notifications as n (n.id)}
 						{@const isUnread = !n.read_at}
 						<li>
 							{#if n.link}
 								<a
 									href={n.link}
-									onclick={() => { if (isUnread) markRead(n.id); close(); }}
-									class="flex gap-3 px-4 py-3 transition-colors {isUnread ? 'bg-surface hover:bg-surface-2 active:bg-surface-2' : 'hover:bg-surface active:bg-surface'}"
+									onclick={() => {
+										if (isUnread) markRead(n.id);
+										close();
+									}}
+									class="flex gap-3 px-4 py-3 transition-colors {isUnread
+										? 'bg-surface hover:bg-surface-2 active:bg-surface-2'
+										: 'hover:bg-surface active:bg-surface'}"
 								>
 									<div class="flex min-w-0 flex-1 flex-col gap-0.5">
-										<span class="text-ink text-sm leading-snug {isUnread ? 'font-medium' : ''}">{n.body}</span>
-										<span class="text-ink-muted text-xs">{formatDate(n.created)}</span>
+										<span class="text-sm leading-snug text-ink {isUnread ? 'font-medium' : ''}"
+											>{n.body}</span
+										>
+										<span class="text-xs text-ink-muted">{formatDate(n.created)}</span>
 									</div>
 									{#if isUnread}
-										<span class="bg-moss mt-1.5 h-2 w-2 shrink-0 rounded-full" aria-hidden="true"></span>
+										<span class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-moss" aria-hidden="true"
+										></span>
 									{/if}
 								</a>
 							{:else}
 								<button
 									type="button"
-									onclick={() => { if (isUnread) markRead(n.id); }}
-									class="flex w-full gap-3 px-4 py-3 text-left transition-colors {isUnread ? 'bg-surface hover:bg-surface-2 active:bg-surface-2' : 'hover:bg-surface active:bg-surface'}"
+									onclick={() => {
+										if (isUnread) markRead(n.id);
+									}}
+									class="flex w-full gap-3 px-4 py-3 text-left transition-colors {isUnread
+										? 'bg-surface hover:bg-surface-2 active:bg-surface-2'
+										: 'hover:bg-surface active:bg-surface'}"
 								>
 									<div class="flex min-w-0 flex-1 flex-col gap-0.5">
-										<span class="text-ink text-sm leading-snug {isUnread ? 'font-medium' : ''}">{n.body}</span>
-										<span class="text-ink-muted text-xs">{formatDate(n.created)}</span>
+										<span class="text-sm leading-snug text-ink {isUnread ? 'font-medium' : ''}"
+											>{n.body}</span
+										>
+										<span class="text-xs text-ink-muted">{formatDate(n.created)}</span>
 									</div>
 									{#if isUnread}
-										<span class="bg-moss mt-1.5 h-2 w-2 shrink-0 rounded-full" aria-hidden="true"></span>
+										<span class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-moss" aria-hidden="true"
+										></span>
 									{/if}
 								</button>
 							{/if}

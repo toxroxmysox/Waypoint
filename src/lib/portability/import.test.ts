@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { validateTripImport, generateImportSlug, planImportPhases, resolveImportItemStatus } from './import';
+import {
+	validateTripImport,
+	generateImportSlug,
+	planImportPhases,
+	resolveImportItemStatus
+} from './import';
 
 describe('validateTripImport', () => {
 	const validExport = {
@@ -94,7 +99,12 @@ describe('planImportPhases', () => {
 
 	it('folds a start outside the trip into the phase covering it', () => {
 		const plan = planImportPhases(
-			[p('A', '2026-06-01'), p('B', '2026-06-05', 1), p('Late', '2026-07-01', 2), p('Early', '2026-05-01', 3)],
+			[
+				p('A', '2026-06-01'),
+				p('B', '2026-06-05', 1),
+				p('Late', '2026-07-01', 2),
+				p('Early', '2026-05-01', 3)
+			],
 			TS,
 			TE
 		);
@@ -110,7 +120,11 @@ describe('planImportPhases', () => {
 	});
 
 	it('folds a duplicate start into the phase already there', () => {
-		const plan = planImportPhases([p('A', '2026-06-01'), p('B', '2026-06-04', 1), p('C', '2026-06-04', 2)], TS, TE);
+		const plan = planImportPhases(
+			[p('A', '2026-06-01'), p('B', '2026-06-04', 1), p('C', '2026-06-04', 2)],
+			TS,
+			TE
+		);
 		expect(plan[1].action).toBe('create');
 		expect(plan[2]).toMatchObject({ action: 'fold', intoStart: '2026-06-04' });
 	});
@@ -121,12 +135,20 @@ describe('planImportPhases', () => {
 	});
 
 	it('accepts datetime starts', () => {
-		const plan = planImportPhases([p('A', '2026-06-01 00:00:00.000Z'), p('B', '2026-06-04 00:00:00.000Z', 1)], TS, TE);
+		const plan = planImportPhases(
+			[p('A', '2026-06-01 00:00:00.000Z'), p('B', '2026-06-04 00:00:00.000Z', 1)],
+			TS,
+			TE
+		);
 		expect(plan[1]).toMatchObject({ action: 'create', start: '2026-06-04' });
 	});
 
 	it('breaks start ties by order', () => {
-		const plan = planImportPhases([p('Second', '2026-06-01', 1), p('First', '2026-06-01', 0)], TS, TE);
+		const plan = planImportPhases(
+			[p('Second', '2026-06-01', 1), p('First', '2026-06-01', 0)],
+			TS,
+			TE
+		);
 		expect(plan[0].phase.name).toBe('First');
 	});
 });

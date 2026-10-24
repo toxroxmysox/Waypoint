@@ -55,13 +55,73 @@ describe('buildTripExport', () => {
 
 	it('resolves day dates and phase names for items', () => {
 		const phases: Phase[] = [
-			{ id: 'p1', trip: 'trip1', name: 'Barcelona', location: 'Barcelona', country_code: 'ES', start_date: '2026-06-01', end_date: '2026-06-03', order: 0, notes: '', collectionId: '', collectionName: 'phases', created: '', updated: '' }
+			{
+				id: 'p1',
+				trip: 'trip1',
+				name: 'Barcelona',
+				location: 'Barcelona',
+				country_code: 'ES',
+				start_date: '2026-06-01',
+				end_date: '2026-06-03',
+				order: 0,
+				notes: '',
+				collectionId: '',
+				collectionName: 'phases',
+				created: '',
+				updated: ''
+			}
 		];
 		const days: Day[] = [
-			{ id: 'd1', trip: 'trip1', phases: ['p1'], date: '2026-06-01', notes: '', collectionId: '', collectionName: 'days', created: '', updated: '' }
+			{
+				id: 'd1',
+				trip: 'trip1',
+				phases: ['p1'],
+				date: '2026-06-01',
+				notes: '',
+				collectionId: '',
+				collectionName: 'days',
+				created: '',
+				updated: ''
+			}
 		];
 		const items: Item[] = [
-			{ id: 'i1', trip: 'trip1', phase: 'p1', day: 'd1', type: 'activity', subtype: '', title: 'Sagrada Familia', description: '', location_name: '', location_address: '', location_coords: null, google_place_id: '', start_time: '', end_time: '', start_tz: '', end_tz: '', end_date: '', status: 'done', booked: true, booked_by: '', paid_by: '', confirmation_codes: [], reservation_url: '', free_cancellation: false, cost_estimate_usd: 0, cost_actual_usd: 0, assigned_to: [], sort_order: 0, parent_item: '', requires_booking: false, created_by: '', collectionId: '', collectionName: 'items', created: '', updated: '' } as Item
+			{
+				id: 'i1',
+				trip: 'trip1',
+				phase: 'p1',
+				day: 'd1',
+				type: 'activity',
+				subtype: '',
+				title: 'Sagrada Familia',
+				description: '',
+				location_name: '',
+				location_address: '',
+				location_coords: null,
+				google_place_id: '',
+				start_time: '',
+				end_time: '',
+				start_tz: '',
+				end_tz: '',
+				end_date: '',
+				status: 'done',
+				booked: true,
+				booked_by: '',
+				paid_by: '',
+				confirmation_codes: [],
+				reservation_url: '',
+				free_cancellation: false,
+				cost_estimate_usd: 0,
+				cost_actual_usd: 0,
+				assigned_to: [],
+				sort_order: 0,
+				parent_item: '',
+				requires_booking: false,
+				created_by: '',
+				collectionId: '',
+				collectionName: 'items',
+				created: '',
+				updated: ''
+			} as Item
 		];
 
 		const result = buildTripExport(makeTrip(), phases, days, items, null);
@@ -72,10 +132,7 @@ describe('buildTripExport', () => {
 	});
 
 	it('strips sensitive fields', () => {
-		const result = buildTripExport(
-			makeTrip({ public_share_token: 'tok123' }),
-			[], [], [], null
-		);
+		const result = buildTripExport(makeTrip({ public_share_token: 'tok123' }), [], [], [], null);
 		expect(result.trip).not.toHaveProperty('public_share_token');
 		expect(result.trip).not.toHaveProperty('id');
 		expect(result.trip).not.toHaveProperty('created_by');
@@ -111,7 +168,14 @@ describe('buildTripExport', () => {
 
 	it('exports requires_booking on items (#50/#53)', () => {
 		const items = [
-			{ id: 'i1', type: 'lodging', title: 'Hotel', status: 'planned', booked: false, requires_booking: true } as Item
+			{
+				id: 'i1',
+				type: 'lodging',
+				title: 'Hotel',
+				status: 'planned',
+				booked: false,
+				requires_booking: true
+			} as Item
 		];
 		const result = buildTripExport(makeTrip(), [], [], items, null);
 		expect(result.items[0].requires_booking).toBe(true);
@@ -121,14 +185,34 @@ describe('buildTripExport', () => {
 	// map keyed by item id. The map WINS over the item's (inert) legacy field.
 	it('sources confirmation_codes from the documents map when provided', () => {
 		const items = [
-			{ id: 'i1', type: 'lodging', title: 'Hotel', status: 'planned', confirmation_codes: [{ label: 'STALE', value: 'OLD' }] } as Item,
+			{
+				id: 'i1',
+				type: 'lodging',
+				title: 'Hotel',
+				status: 'planned',
+				confirmation_codes: [{ label: 'STALE', value: 'OLD' }]
+			} as Item,
 			{ id: 'i2', type: 'flight', title: 'Flight', status: 'planned' } as Item
 		];
 		const codesByItemId = new Map([
 			['i1', [{ label: 'Conf #', value: 'ABC123' }]],
 			['i2', [{ label: 'PNR', value: 'XYZ789' }]]
 		]);
-		const result = buildTripExport(makeTrip(), [], [], items, null, [], [], [], [], [], [], [], codesByItemId);
+		const result = buildTripExport(
+			makeTrip(),
+			[],
+			[],
+			items,
+			null,
+			[],
+			[],
+			[],
+			[],
+			[],
+			[],
+			[],
+			codesByItemId
+		);
 		// Documents map wins over the legacy field; the item with no doc gets its map entry.
 		expect(result.items[0].confirmation_codes).toEqual([{ label: 'Conf #', value: 'ABC123' }]);
 		expect(result.items[1].confirmation_codes).toEqual([{ label: 'PNR', value: 'XYZ789' }]);
@@ -136,21 +220,71 @@ describe('buildTripExport', () => {
 
 	it('emits empty confirmation_codes for an item absent from the documents map', () => {
 		const items = [
-			{ id: 'i1', type: 'lodging', title: 'Hotel', status: 'planned', confirmation_codes: [{ label: 'STALE', value: 'OLD' }] } as Item
+			{
+				id: 'i1',
+				type: 'lodging',
+				title: 'Hotel',
+				status: 'planned',
+				confirmation_codes: [{ label: 'STALE', value: 'OLD' }]
+			} as Item
 		];
 		// Empty map → the item has no code docs → no codes exported (legacy field ignored).
-		const result = buildTripExport(makeTrip(), [], [], items, null, [], [], [], [], [], [], [], new Map());
+		const result = buildTripExport(
+			makeTrip(),
+			[],
+			[],
+			items,
+			null,
+			[],
+			[],
+			[],
+			[],
+			[],
+			[],
+			[],
+			new Map()
+		);
 		expect(result.items[0].confirmation_codes).toEqual([]);
 	});
 
 	it('exports checklists with checked preserved and assignee stripped (#53)', () => {
 		const phases: Phase[] = [
-			{ id: 'p1', trip: 'trip1', name: 'Barcelona', location: '', country_code: '', start_date: '', end_date: '', order: 0, notes: '', collectionId: '', collectionName: 'phases', created: '', updated: '' }
+			{
+				id: 'p1',
+				trip: 'trip1',
+				name: 'Barcelona',
+				location: '',
+				country_code: '',
+				start_date: '',
+				end_date: '',
+				order: 0,
+				notes: '',
+				collectionId: '',
+				collectionName: 'phases',
+				created: '',
+				updated: ''
+			}
 		];
 		const checklists = [
 			{ id: 'c1', trip: 'trip1', phase: '', item: '', title: 'Packing', kind: 'manual', order: 0 },
-			{ id: 'c2', trip: 'trip1', phase: 'p1', item: '', title: 'Barcelona musts', kind: 'manual', order: 1 },
-			{ id: 'c3', trip: 'trip1', phase: '', item: 'i9', title: 'Grocery', kind: 'manual', order: 2 }, // item-scoped → excluded
+			{
+				id: 'c2',
+				trip: 'trip1',
+				phase: 'p1',
+				item: '',
+				title: 'Barcelona musts',
+				kind: 'manual',
+				order: 1
+			},
+			{
+				id: 'c3',
+				trip: 'trip1',
+				phase: '',
+				item: 'i9',
+				title: 'Grocery',
+				kind: 'manual',
+				order: 2
+			}, // item-scoped → excluded
 			{ id: 'c4', trip: 'trip1', phase: '', item: '', title: 'Booking', kind: 'booking', order: 3 } // smart list → excluded
 		] as unknown as import('$lib/types').Checklist[];
 		const tasks = [
@@ -462,7 +596,15 @@ describe('buildPublicTripExport (#208 — PII-stripped archive export)', () => {
 		{ id: 'm1', display_name: 'Ana', role: 'owner' } as unknown as TripMember
 	];
 	const expenses: Expense[] = [
-		{ id: 'e1', paid_by: 'm1', amount_usd: 120, description: 'Tapas', date: '2026-06-02', category: 'food', split_mode: 'equal' } as Expense
+		{
+			id: 'e1',
+			paid_by: 'm1',
+			amount_usd: 120,
+			description: 'Tapas',
+			date: '2026-06-02',
+			category: 'food',
+			split_mode: 'equal'
+		} as Expense
 	];
 
 	it('carries NO members, expenses, settlements, or goals (group identities + money stripped)', () => {
@@ -540,7 +682,17 @@ describe('buildPublicTripExport (#208 — PII-stripped archive export)', () => {
 	it('shares the export builder, so the same import path accepts it', () => {
 		// Sanity: shape parity with the full export — same top-level keys, so the
 		// existing /trips/import validator + creator handle it unchanged.
-		const full = buildTripExport(pbTrip, pbPhases, pbDays, pbItems, null, [], [], members, expenses);
+		const full = buildTripExport(
+			pbTrip,
+			pbPhases,
+			pbDays,
+			pbItems,
+			null,
+			[],
+			[],
+			members,
+			expenses
+		);
 		const pub = buildPublicTripExport(pbTrip, pbPhases, pbDays, pbItems);
 		expect(Object.keys(pub).sort()).toEqual(Object.keys(full).sort());
 	});
@@ -548,9 +700,19 @@ describe('buildPublicTripExport (#208 — PII-stripped archive export)', () => {
 
 describe('#401 phase and trip notes', () => {
 	const phase: Phase = {
-		id: 'p1', trip: 'trip1', name: 'Tokyo', location: 'Tokyo', country_code: 'JP',
-		start_date: '2027-11-18 00:00:00.000Z', end_date: '2027-11-22 00:00:00.000Z', order: 0,
-		notes: 'Rail pass starts here.', collectionId: '', collectionName: 'phases', created: '', updated: ''
+		id: 'p1',
+		trip: 'trip1',
+		name: 'Tokyo',
+		location: 'Tokyo',
+		country_code: 'JP',
+		start_date: '2027-11-18 00:00:00.000Z',
+		end_date: '2027-11-22 00:00:00.000Z',
+		order: 0,
+		notes: 'Rail pass starts here.',
+		collectionId: '',
+		collectionName: 'phases',
+		created: '',
+		updated: ''
 	};
 	it('export includes phase and trip notes', () => {
 		const out = buildTripExport(makeTrip({ notes: 'JR passes ordered.' }), [phase], [], [], null);
@@ -563,7 +725,10 @@ describe('#401 phase and trip notes', () => {
 		expect(validateTripImport(back).valid).toBe(true);
 		expect(importTripFields(back.trip).notes).toBe('JR passes ordered.');
 		expect(importPhaseFields(back.phases[0])).toEqual({
-			name: 'Tokyo', location: 'Tokyo', country_code: 'JP', notes: 'Rail pass starts here.'
+			name: 'Tokyo',
+			location: 'Tokyo',
+			country_code: 'JP',
+			notes: 'Rail pass starts here.'
 		});
 	});
 	it('import tolerates missing notes', () => {

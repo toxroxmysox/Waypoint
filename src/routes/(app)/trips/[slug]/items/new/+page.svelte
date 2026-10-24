@@ -40,14 +40,28 @@
 
 	let submitAsSuggestion = $derived(data.submitAsSuggestion ?? false);
 	let prefill = $derived(data.prefill ?? null);
-	let suggestionId = $derived((prefill as Record<string, unknown> | null)?._suggestion_id as string ?? '');
-	let prefillAuthorName = $derived((prefill as Record<string, unknown> | null)?._author_name as string ?? '');
-	let prefillDayLabel = $derived((prefill as Record<string, unknown> | null)?._proposed_day_label as string ?? '');
+	let suggestionId = $derived(
+		((prefill as Record<string, unknown> | null)?._suggestion_id as string) ?? ''
+	);
+	let prefillAuthorName = $derived(
+		((prefill as Record<string, unknown> | null)?._author_name as string) ?? ''
+	);
+	let prefillDayLabel = $derived(
+		((prefill as Record<string, unknown> | null)?._proposed_day_label as string) ?? ''
+	);
 
 	let buttonLabel = $derived(
 		loading
-			? (submitAsSuggestion ? 'Submitting…' : suggestionId ? 'Approving…' : 'Creating…')
-			: (submitAsSuggestion ? 'Submit suggestion' : suggestionId ? 'Approve' : 'Create item')
+			? submitAsSuggestion
+				? 'Submitting…'
+				: suggestionId
+					? 'Approving…'
+					: 'Creating…'
+			: submitAsSuggestion
+				? 'Submit suggestion'
+				: suggestionId
+					? 'Approve'
+					: 'Create item'
 	);
 
 	// #367 — the navigation guard and its beforeunload twin now live in
@@ -70,7 +84,9 @@
 	let goalPrefillDescription = $derived(data.prefillGoalDescription ?? '');
 
 	let initialData: ItemFormData = $derived({
-		...buildEmptyFormData((prefill?.type as ItemType) ?? ((data.presetType || 'activity') as ItemType)),
+		...buildEmptyFormData(
+			(prefill?.type as ItemType) ?? ((data.presetType || 'activity') as ItemType)
+		),
 		type: (prefill?.type as ItemType) ?? ((data.presetType || 'activity') as ItemType),
 		subtype: (prefill?.subtype as string) ?? '',
 		title: (prefill?.title as string) ?? goalPrefillTitle,
@@ -82,32 +98,36 @@
 		location_address: (prefill?.location_address as string) ?? '',
 		location_coords: prefill?.location_coords ?? null,
 		google_place_id: (prefill?.google_place_id as string) ?? '',
-		confirmation_codes: Array.isArray(prefill?.confirmation_codes) ? prefill.confirmation_codes : [],
+		confirmation_codes: Array.isArray(prefill?.confirmation_codes)
+			? prefill.confirmation_codes
+			: [],
 		booked: prefill?.booked === true,
 		requires_booking: prefill?.requires_booking === true,
 		reservation_url: (prefill?.reservation_url as string) ?? '',
 		free_cancellation: prefill?.free_cancellation === true,
 		cost_estimate_usd: Number(prefill?.cost_estimate_usd) || 0,
 		assigned_to: Array.isArray(prefill?.assigned_to) ? (prefill.assigned_to as string[]) : [],
-		linked_goal_ids: goalPrefillId ? [goalPrefillId] : [],
+		linked_goal_ids: goalPrefillId ? [goalPrefillId] : []
 	});
 </script>
 
 <NavBar title="New item" subtitle={data.trip.title} back {backHref} />
 
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-4">
+<main class="mx-auto w-full max-w-lg flex-1 space-y-4 px-4 pt-4 pb-8 md-desktop:max-w-2xl">
 	<ServerErrorAlert {form} />
 
 	{#if submitAsSuggestion}
-		<div class="border-sky/30 bg-sky/10 text-sky-700 rounded-md border p-3 text-sm">
-			You're a traveler on this trip. Your item will be submitted as a suggestion for the owner to review.
+		<div class="rounded-md border border-sky/30 bg-sky/10 p-3 text-sm text-sky-700">
+			You're a traveler on this trip. Your item will be submitted as a suggestion for the owner to
+			review.
 		</div>
 	{/if}
 
 	{#if suggestionId && prefillAuthorName}
-		<div class="border-moss/30 bg-moss-tint text-moss rounded-md border p-3 text-sm">
+		<div class="rounded-md border border-moss/30 bg-moss-tint p-3 text-sm text-moss">
 			Proposed by <strong>{prefillAuthorName}</strong>{#if prefillDayLabel}
-				for <strong>{prefillDayLabel}</strong>{/if}. Edit as needed, then Save (it stays pending) or Approve.
+				for <strong>{prefillDayLabel}</strong>{/if}. Edit as needed, then Save (it stays pending) or
+			Approve.
 		</div>
 	{/if}
 
@@ -163,7 +183,7 @@
 				<div class="space-y-2">
 					{#if rejectOpen}
 						<!-- Reject keeps its one-line note rule. -->
-						<label for="reject-note-edit" class="text-ink-soft block text-xs font-medium">
+						<label for="reject-note-edit" class="block text-xs font-medium text-ink-soft">
 							Reason for rejecting (required)
 						</label>
 						<input
@@ -172,25 +192,67 @@
 							type="text"
 							bind:value={rejectNote}
 							placeholder="Why isn’t this a fit?"
-							class="border-line bg-surface text-ink block min-h-[44px] w-full rounded-md border px-3 text-sm"
+							class="block min-h-[44px] w-full rounded-md border border-line bg-surface px-3 text-sm text-ink"
 						/>
 						<div class="flex gap-2">
-							<Button type="button" variant="ghost" size="lg" class="flex-1" disabled={loading} onclick={() => { rejectOpen = false; rejectNote = ''; }}>
+							<Button
+								type="button"
+								variant="ghost"
+								size="lg"
+								class="flex-1"
+								disabled={loading}
+								onclick={() => {
+									rejectOpen = false;
+									rejectNote = '';
+								}}
+							>
 								Cancel
 							</Button>
-							<Button type="submit" name="intent" value="reject" variant="outline" size="lg" class="flex-1" disabled={loading || !rejectNote.trim()}>
+							<Button
+								type="submit"
+								name="intent"
+								value="reject"
+								variant="outline"
+								size="lg"
+								class="flex-1"
+								disabled={loading || !rejectNote.trim()}
+							>
 								Confirm reject
 							</Button>
 						</div>
 					{:else}
 						<div class="flex gap-2">
-							<Button type="button" variant="ghost" size="lg" class="flex-1" disabled={loading} onclick={() => (rejectOpen = true)}>
+							<Button
+								type="button"
+								variant="ghost"
+								size="lg"
+								class="flex-1"
+								disabled={loading}
+								onclick={() => (rejectOpen = true)}
+							>
 								Reject
 							</Button>
-							<Button type="submit" name="intent" value="save" variant="outline" size="lg" class="flex-1" disabled={loading}>
+							<Button
+								type="submit"
+								name="intent"
+								value="save"
+								variant="outline"
+								size="lg"
+								class="flex-1"
+								disabled={loading}
+							>
 								Save
 							</Button>
-							<Button type="submit" name="intent" value="approve" variant="moss" size="lg" class="flex-1" disabled={loading} {loading}>
+							<Button
+								type="submit"
+								name="intent"
+								value="approve"
+								variant="moss"
+								size="lg"
+								class="flex-1"
+								disabled={loading}
+								{loading}
+							>
 								{buttonLabel}
 							</Button>
 						</div>

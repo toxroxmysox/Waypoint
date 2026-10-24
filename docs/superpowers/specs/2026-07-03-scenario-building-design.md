@@ -2,8 +2,8 @@
 
 > Status: **Designed 2026-07-03** (visual-companion brainstorm with Scott; board mockups in
 > `.superpowers/brainstorm/81190-1783130738/content/`, final = `board-v3.html`).
-> Capability: **Ideation** (`docs/CAPABILITY_MAP.md` §1) — realizes the 🔵 concepts *Proposal*,
-> *Candidate Scenario*, *pros/cons* for the **Where** wedge.
+> Capability: **Ideation** (`docs/CAPABILITY_MAP.md` §1) — realizes the 🔵 concepts _Proposal_,
+> _Candidate Scenario_, _pros/cons_ for the **Where** wedge.
 > Depends on: **#270 forming state (ADR-0022)** — scenarios live on forming trips only.
 > Siblings: #271 availability wedge (NOT built here; feeds the board later).
 
@@ -17,18 +17,18 @@ forkable, compared on a vertical board of rich cards.
 
 New `scenarios` collection (forming-trip children):
 
-| Field | Type | Notes |
-|---|---|---|
-| `trip` | relation → trips | required, cascadeDelete |
-| `title` | text | required — the pitch name |
-| `pitch` | text ≤200 | optional one-liner |
-| `champion` | relation → trip_members | required; author-owned (only champion edits) |
-| `date_start` / `date_end` | date | **optional at create; both required to promote** |
-| `budget_per_person` | number | **optional** (USD, rough). ⚠ PB numbers can't be null — unset stores as `0`; ALL reads must treat `0`/falsy as "no budget" (the #332/#335 scar), never render "$0" |
-| `phase_sketch` | json | ordered `[{name, days}]` — durations, NOT real phase records (forming trips have no days) |
-| `keystones` | relation → items, multi | anchor ideas; composer quick-create makes an unplanned item + attaches — one idea pool, no duplicate storage |
-| `fork_of` | relation → scenarios | optional; lineage badge "⑂ fork of X" |
-| `status` | select `candidate\|won\|archived` | archived = lost at promotion |
+| Field                     | Type                              | Notes                                                                                                                                                              |
+| ------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `trip`                    | relation → trips                  | required, cascadeDelete                                                                                                                                            |
+| `title`                   | text                              | required — the pitch name                                                                                                                                          |
+| `pitch`                   | text ≤200                         | optional one-liner                                                                                                                                                 |
+| `champion`                | relation → trip_members           | required; author-owned (only champion edits)                                                                                                                       |
+| `date_start` / `date_end` | date                              | **optional at create; both required to promote**                                                                                                                   |
+| `budget_per_person`       | number                            | **optional** (USD, rough). ⚠ PB numbers can't be null — unset stores as `0`; ALL reads must treat `0`/falsy as "no budget" (the #332/#335 scar), never render "$0" |
+| `phase_sketch`            | json                              | ordered `[{name, days}]` — durations, NOT real phase records (forming trips have no days)                                                                          |
+| `keystones`               | relation → items, multi           | anchor ideas; composer quick-create makes an unplanned item + attaches — one idea pool, no duplicate storage                                                       |
+| `fork_of`                 | relation → scenarios              | optional; lineage badge "⑂ fork of X"                                                                                                                              |
+| `status`                  | select `candidate\|won\|archived` | archived = lost at promotion                                                                                                                                       |
 
 `scenario_votes` — mirrors `votes` (scenario / member / value select love·like·flexible·dislike,
 unique `(scenario, member)`, weighted map reused from `src/lib/collaboration/voting.ts`).
@@ -100,12 +100,12 @@ promote → trip dated, phases match sketch, decision record readable, board ret
 
 ## Decisions log (brainstorm 2026-07-03)
 
-| Q | Decision |
-|---|---|
-| Bundle | Flexible bundle; fixed v1 dimension set; dates+budget optional at create, **dates required to promote** |
-| Comparability | Converge over time — filled dimension grows empty slots on siblings |
-| Authorship | Champion + fork with lineage |
-| Surface | Comparison board, rich cards, vertical scroll, quiet section headers (not aligned grid / pitch deck / conversation-first) |
-| Weighing | 4-option vote + pros/cons-as-comments; availability deferred to #271 |
-| Promotion | Full cascade + immutable decision record; initiator (owner/co_owner) decides, informed |
-| Placement | Board IS the forming home |
+| Q             | Decision                                                                                                                  |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Bundle        | Flexible bundle; fixed v1 dimension set; dates+budget optional at create, **dates required to promote**                   |
+| Comparability | Converge over time — filled dimension grows empty slots on siblings                                                       |
+| Authorship    | Champion + fork with lineage                                                                                              |
+| Surface       | Comparison board, rich cards, vertical scroll, quiet section headers (not aligned grid / pitch deck / conversation-first) |
+| Weighing      | 4-option vote + pros/cons-as-comments; availability deferred to #271                                                      |
+| Promotion     | Full cascade + immutable decision record; initiator (owner/co_owner) decides, informed                                    |
+| Placement     | Board IS the forming home                                                                                                 |

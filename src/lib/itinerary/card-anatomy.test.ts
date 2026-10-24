@@ -16,7 +16,11 @@ import {
 	type OverlapInfo
 } from './card-anatomy';
 
-const mk = (o: Partial<CardItemFields> & { id: string }): CardItemFields => ({ title: o.id, type: 'activity', ...o });
+const mk = (o: Partial<CardItemFields> & { id: string }): CardItemFields => ({
+	title: o.id,
+	type: 'activity',
+	...o
+});
 const t = (hhmm: string) => `2026-10-01 ${hhmm}:00.000Z`;
 
 describe('railSegments', () => {
@@ -64,11 +68,23 @@ describe('fitStrip', () => {
 describe('cardMeta', () => {
 	it("uses location, a flight route, a note's first line", () => {
 		expect(cardMeta({ type: 'meal', location_name: 'The Immigrant' })).toBe('The Immigrant');
-		expect(cardMeta({ type: 'flight', location_name: 'Milwaukee (MKE)', description: '→ Denver (DEN)' })).toBe('MKE → DEN');
-		const f = { type: 'flight' as const, location_name: 'Milwaukee (MKE)', description: '→ Denver (DEN)' };
-		expect(cardMeta({ ...f, title: 'UA 1234 to Denver', flight_number: 'UA 1234' })).toBe('MKE → DEN');
-		expect(cardMeta({ ...f, title: 'Spirit to the coast', flight_number: 'NK 345' })).toBe('NK 345 · MKE → DEN');
-		expect(cardMeta({ type: 'note', location_name: 'x', description: '\nBring cash\nmore' })).toBe('Bring cash');
+		expect(
+			cardMeta({ type: 'flight', location_name: 'Milwaukee (MKE)', description: '→ Denver (DEN)' })
+		).toBe('MKE → DEN');
+		const f = {
+			type: 'flight' as const,
+			location_name: 'Milwaukee (MKE)',
+			description: '→ Denver (DEN)'
+		};
+		expect(cardMeta({ ...f, title: 'UA 1234 to Denver', flight_number: 'UA 1234' })).toBe(
+			'MKE → DEN'
+		);
+		expect(cardMeta({ ...f, title: 'Spirit to the coast', flight_number: 'NK 345' })).toBe(
+			'NK 345 · MKE → DEN'
+		);
+		expect(cardMeta({ type: 'note', location_name: 'x', description: '\nBring cash\nmore' })).toBe(
+			'Bring cash'
+		);
 		expect(cardMeta({ type: 'activity' })).toBe('');
 	});
 });
@@ -89,8 +105,20 @@ describe('goingBubbles', () => {
 });
 
 describe('overlapPairs', () => {
-	const tee = mk({ id: 'tee', title: 'Tee time', start_time: t('10:00'), end_time: t('14:00'), assigned_to: ['k'] });
-	const lunch = mk({ id: 'lunch', title: 'Lunch', start_time: t('12:00'), end_time: t('13:00'), assigned_to: ['k', 'j'] });
+	const tee = mk({
+		id: 'tee',
+		title: 'Tee time',
+		start_time: t('10:00'),
+		end_time: t('14:00'),
+		assigned_to: ['k']
+	});
+	const lunch = mk({
+		id: 'lunch',
+		title: 'Lunch',
+		start_time: t('12:00'),
+		end_time: t('13:00'),
+		assigned_to: ['k', 'j']
+	});
 	it('both items carry it, red when people are shared', () => {
 		const m = overlapPairs([lunch, tee]);
 		expect(m.get('tee')).toMatchObject({ partnerTitle: 'Lunch', shared: true, role: 'earlier' });
@@ -100,11 +128,28 @@ describe('overlapPairs', () => {
 		const a = mk({ id: 'a', start_time: t('10:00'), end_time: t('12:00') });
 		const b = mk({ id: 'b', start_time: t('11:00'), end_time: t('13:00') });
 		expect(overlapPairs([a, b]).get('a')?.shared).toBe(false);
-		expect(overlapPairs([{ ...a, assigned_to: ['x'] }, { ...b, assigned_to: ['y'] }]).get('a')?.shared).toBe(false);
+		expect(
+			overlapPairs([
+				{ ...a, assigned_to: ['x'] },
+				{ ...b, assigned_to: ['y'] }
+			]).get('a')?.shared
+		).toBe(false);
 	});
 	it('Going only: not_going members never count as shared', () => {
-		const a = mk({ id: 'a', start_time: t('10:00'), end_time: t('12:00'), assigned_to: ['x'], not_going: ['y'] });
-		const b = mk({ id: 'b', start_time: t('11:00'), end_time: t('13:00'), assigned_to: ['z'], not_going: ['x'] });
+		const a = mk({
+			id: 'a',
+			start_time: t('10:00'),
+			end_time: t('12:00'),
+			assigned_to: ['x'],
+			not_going: ['y']
+		});
+		const b = mk({
+			id: 'b',
+			start_time: t('11:00'),
+			end_time: t('13:00'),
+			assigned_to: ['z'],
+			not_going: ['x']
+		});
 		expect(overlapPairs([a, b]).get('a')?.shared).toBe(false);
 	});
 	it('flags which rail times go red: earlier end, later start', () => {
@@ -116,14 +161,37 @@ describe('overlapPairs', () => {
 		expect(overlapPairs([a, b]).get('a')).toMatchObject({ redStart: false, redEnd: false });
 	});
 	it('three-way: a shared partner outranks an earlier unshared one', () => {
-		const a = mk({ id: 'a', title: 'A', start_time: t('10:00'), end_time: t('14:00'), assigned_to: ['k'] });
-		const b = mk({ id: 'b', title: 'B', start_time: t('11:00'), end_time: t('12:00'), assigned_to: ['j'] });
-		const c = mk({ id: 'c', title: 'C', start_time: t('12:30'), end_time: t('13:30'), assigned_to: ['k'] });
+		const a = mk({
+			id: 'a',
+			title: 'A',
+			start_time: t('10:00'),
+			end_time: t('14:00'),
+			assigned_to: ['k']
+		});
+		const b = mk({
+			id: 'b',
+			title: 'B',
+			start_time: t('11:00'),
+			end_time: t('12:00'),
+			assigned_to: ['j']
+		});
+		const c = mk({
+			id: 'c',
+			title: 'C',
+			start_time: t('12:30'),
+			end_time: t('13:30'),
+			assigned_to: ['k']
+		});
 		const m = overlapPairs([a, b, c]);
 		expect(m.get('a')).toMatchObject({ partnerTitle: 'C', shared: true, redEnd: true });
 		expect(m.get('c')).toMatchObject({ partnerTitle: 'A', shared: true, redStart: true });
 		// B only collides with A, and they share nobody: ink.
-		expect(m.get('b')).toMatchObject({ partnerTitle: 'A', shared: false, redStart: false, redEnd: false });
+		expect(m.get('b')).toMatchObject({
+			partnerTitle: 'A',
+			shared: false,
+			redStart: false,
+			redEnd: false
+		});
 	});
 	it('three-way: a middle item is red at both ends when it collides with shared people on each side', () => {
 		const a = mk({ id: 'a', start_time: t('10:00'), end_time: t('12:00'), assigned_to: ['k'] });
@@ -184,21 +252,34 @@ describe('freeTimeGaps', () => {
 });
 
 describe('accessible name', () => {
-	const dinner = mk({ id: 'd', title: 'Dinner at The Immigrant', type: 'meal', start_time: t('18:30'), end_time: t('20:30') });
+	const dinner = mk({
+		id: 'd',
+		title: 'Dinner at The Immigrant',
+		type: 'meal',
+		start_time: t('18:30'),
+		end_time: t('20:30')
+	});
 	it('time + title + type + state', () => {
 		expect(cardAccessibleName({ item: dinner, needsBooking: true, booked: false })).toBe(
 			'6:30 to 8:30 PM, Dinner at The Immigrant, meal, needs reservation'
 		);
 	});
 	it('spoken time forms', () => {
-		expect(spokenTime({ start_time: t('11:30'), end_time: t('13:00') })).toBe('11:30 AM to 1:00 PM');
+		expect(spokenTime({ start_time: t('11:30'), end_time: t('13:00') })).toBe(
+			'11:30 AM to 1:00 PM'
+		);
 		expect(spokenTime({ start_time: t('09:30') })).toBe('9:30 AM');
 		expect(spokenTime({ end_time: t('16:30') })).toBe('by 4:30 PM');
 		expect(spokenTime({})).toBe('');
 	});
 	it('carries overlap and booked', () => {
 		expect(
-			cardAccessibleName({ item: mk({ id: 'x', title: 'Hike' }), needsBooking: false, booked: true, overlapWith: 'Lunch' })
+			cardAccessibleName({
+				item: mk({ id: 'x', title: 'Hike' }),
+				needsBooking: false,
+				booked: true,
+				overlapWith: 'Lunch'
+			})
 		).toBe('Hike, activity, overlaps Lunch, booked');
 	});
 });
@@ -229,19 +310,39 @@ describe('stripCode (#429: the Trip Mode ✓ {code} chip)', () => {
 		expect(c.label).toBe('Copy confirmation code IMM-48213, 2 more codes on the item');
 	});
 	it('singular wording for exactly one more', () => {
-		expect(stripCode([{ label: '', value: 'A1' }, { label: '', value: 'B2' }])!.label).toBe(
-			'Copy confirmation code A1, 1 more code on the item'
-		);
+		expect(
+			stripCode([
+				{ label: '', value: 'A1' },
+				{ label: '', value: 'B2' }
+			])!.label
+		).toBe('Copy confirmation code A1, 1 more code on the item');
 	});
 });
 
 describe('stripEntries (#429)', () => {
-	const pair: OverlapInfo = { partnerId: 'p', partnerTitle: 'Lunch', shared: true, role: 'later', redStart: true, redEnd: false };
-	const base = { overlap: pair, needsBooking: false, booked: true, codes: [{ label: '', value: 'ABC123' }], docCount: 2 };
+	const pair: OverlapInfo = {
+		partnerId: 'p',
+		partnerTitle: 'Lunch',
+		shared: true,
+		role: 'later',
+		redStart: true,
+		redEnd: false
+	};
+	const base = {
+		overlap: pair,
+		needsBooking: false,
+		booked: true,
+		codes: [{ label: '', value: 'ABC123' }],
+		docCount: 2
+	};
 	const kinds = (e: { kind: string }[]) => e.map((x) => x.kind);
 
 	it('Planning Mode: overlap first, then booked, then documents; never a code chip', () => {
-		expect(kinds(stripEntries({ ...base, mode: 'planning' }))).toEqual(['overlap', 'booked', 'docs']);
+		expect(kinds(stripEntries({ ...base, mode: 'planning' }))).toEqual([
+			'overlap',
+			'booked',
+			'docs'
+		]);
 	});
 	it('Trip Mode shows no overlap at all, even when a pair is passed', () => {
 		const e = stripEntries({ ...base, mode: 'trip' });
@@ -272,7 +373,9 @@ describe('stripEntries meal words (#462)', () => {
 			text: 'To reserve',
 			label: 'Needs reservation'
 		});
-		expect(stripEntries({ ...base, needsBooking: false, booked: true, type: 'meal' })[0].text).toBe('Reserved');
+		expect(stripEntries({ ...base, needsBooking: false, booked: true, type: 'meal' })[0].text).toBe(
+			'Reserved'
+		);
 	});
 	it('an activity keeps To book', () => {
 		expect(stripEntries({ ...base, needsBooking: true, type: 'activity' })[0].text).toBe('To book');

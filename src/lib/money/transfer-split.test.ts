@@ -56,7 +56,9 @@ describe('transferSplitParticipation (#259, move-to-target merge)', () => {
 		it('SUMS when the target already has an amount', () => {
 			const split: SplitData = { amounts: { [BOB]: 30, [ALICE]: 10, [CAROL]: 20 } };
 			// Alice's 10 + Bob's 30 = 40; Bob key dropped.
-			const out = transferSplitParticipation(split, BOB, ALICE) as { amounts: Record<string, number> };
+			const out = transferSplitParticipation(split, BOB, ALICE) as {
+				amounts: Record<string, number>;
+			};
 			expect(out.amounts[ALICE]).toBe(40);
 			expect(out.amounts[CAROL]).toBe(20);
 			expect(out.amounts).not.toHaveProperty(BOB);
@@ -71,7 +73,9 @@ describe('transferSplitParticipation (#259, move-to-target merge)', () => {
 
 		it('sums a zero target with the moved amount', () => {
 			const split: SplitData = { amounts: { [BOB]: 25, [ALICE]: 0 } };
-			const out = transferSplitParticipation(split, BOB, ALICE) as { amounts: Record<string, number> };
+			const out = transferSplitParticipation(split, BOB, ALICE) as {
+				amounts: Record<string, number>;
+			};
 			expect(out.amounts[ALICE]).toBe(25);
 			expect(out.amounts).not.toHaveProperty(BOB);
 		});

@@ -22,7 +22,9 @@ async function canArrangeDay(locals: App.Locals, dayId: string): Promise<boolean
 		const day = await locals.pb.collection('days').getOne<Day>(dayId, { fields: 'trip' });
 		const member = await locals.pb
 			.collection('trip_members')
-			.getFirstListItem<TripMember>(`trip = "${day.trip}" && user = "${locals.user!.id}" && removed_at = ""`);
+			.getFirstListItem<TripMember>(
+				`trip = "${day.trip}" && user = "${locals.user!.id}" && removed_at = ""`
+			);
 		return member.role === 'owner' || member.role === 'co_owner';
 	} catch {
 		return false;
@@ -101,15 +103,29 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 				fields: 'id,item'
 			})
 			.catch(() => []);
-		for (const d of docs) if (dayItemIds.has(d.item)) docCountByItem[d.item] = (docCountByItem[d.item] ?? 0) + 1;
+		for (const d of docs)
+			if (dayItemIds.has(d.item)) docCountByItem[d.item] = (docCountByItem[d.item] ?? 0) + 1;
 	}
 
 	// #445 — the desktop rail's Up next rows (title, count, to-book) ride merged page
 	// data under the overview's own key. One trip-wide items read, as the overview does.
-	const tripItems = await locals.pb.collection('items').getFullList<Item>({ filter: `trip = "${trip.id}"` });
+	const tripItems = await locals.pb
+		.collection('items')
+		.getFullList<Item>({ filter: `trip = "${trip.id}"` });
 	const daySummaries = summarizeDays(tripItems, days as Day[]);
 
-	return { day, daySummaries, dayItems: items, dayPhases, votesByItem, docCountByItem, members: withAvatarUrls(locals.pb, members), parkingLotItems, spanningItems, allDays: days };
+	return {
+		day,
+		daySummaries,
+		dayItems: items,
+		dayPhases,
+		votesByItem,
+		docCountByItem,
+		members: withAvatarUrls(locals.pb, members),
+		parkingLotItems,
+		spanningItems,
+		allDays: days
+	};
 };
 
 export const actions: Actions = {
@@ -184,7 +200,8 @@ export const actions: Actions = {
 		const orderRaw = data.get('order')?.toString();
 		// A drag carries an order (whole-day rebalance): owner/co_owner only. Tap-to-
 		// plan writes just this item, so items.pb.js decides (creator or privileged).
-		if (orderRaw && !(await canArrangeDay(locals, params.dayId))) return fail(403, { error: 'Not allowed.' });
+		if (orderRaw && !(await canArrangeDay(locals, params.dayId)))
+			return fail(403, { error: 'Not allowed.' });
 
 		try {
 			if (!orderRaw) {

@@ -89,9 +89,7 @@ test.describe('#277 Organic-path onboarding (empty /trips → welcome card)', ()
 		}
 	});
 
-	test('empty /trips on-ramp → new trip → unified welcome card auto-shows', async ({
-		browser
-	}) => {
+	test('empty /trips on-ramp → new trip → unified welcome card auto-shows', async ({ browser }) => {
 		const { page, ctx } = await devLogin(browser, EMAILS.non_member);
 		try {
 			await page.goto(`${BASE}/trips`, { waitUntil: 'networkidle' });

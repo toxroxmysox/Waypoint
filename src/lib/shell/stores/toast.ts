@@ -25,13 +25,29 @@ function createToastStore() {
 	let current: Toast | null = null;
 	subscribe((t) => (current = t));
 
-	function show(message: string, variant: ToastVariant = 'success', opts: { action?: ToastAction } = {}) {
-		const duration = opts.action ? 6000 : variant === 'error' ? 5000 : variant === 'info' ? 4000 : 3000;
+	function show(
+		message: string,
+		variant: ToastVariant = 'success',
+		opts: { action?: ToastAction } = {}
+	) {
+		const duration = opts.action
+			? 6000
+			: variant === 'error'
+				? 5000
+				: variant === 'info'
+					? 4000
+					: 3000;
 		const id = ++nextId;
 
 		if (timeout) clearTimeout(timeout);
 
-		update(() => ({ id, message, variant, duration, ...(opts.action ? { action: opts.action } : {}) }));
+		update(() => ({
+			id,
+			message,
+			variant,
+			duration,
+			...(opts.action ? { action: opts.action } : {})
+		}));
 
 		timeout = setTimeout(() => {
 			update((current) => (current?.id === id ? null : current));

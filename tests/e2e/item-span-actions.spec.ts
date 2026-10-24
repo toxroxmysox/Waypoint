@@ -16,7 +16,12 @@ const SLUG = 'e2e-item-span-actions';
 
 type Rec = Record<string, unknown> & { id: string };
 
-async function pb<T = Rec>(method: string, path: string, token: string, body?: unknown): Promise<{ status: number; data: T }> {
+async function pb<T = Rec>(
+	method: string,
+	path: string,
+	token: string,
+	body?: unknown
+): Promise<{ status: number; data: T }> {
 	const res = await fetch(`${PB}${path}`, {
 		method,
 		headers: { 'Content-Type': 'application/json', Authorization: token },
@@ -59,7 +64,11 @@ test.describe('Item span actions (#411)', () => {
 		expect(seeded.ok).toBe(true);
 		const { tripId } = (await seeded.json()) as { tripId: string };
 		const days = (
-			await pb<{ items: Rec[] }>('GET', `/api/collections/days/records?filter=${encodeURIComponent(`trip="${tripId}"`)}&sort=date`, token)
+			await pb<{ items: Rec[] }>(
+				'GET',
+				`/api/collections/days/records?filter=${encodeURIComponent(`trip="${tripId}"`)}&sort=date`,
+				token
+			)
 		).data.items;
 		const stay = (body: Record<string, unknown>) =>
 			pb('POST', '/api/collections/items/records', token, {
@@ -77,7 +86,9 @@ test.describe('Item span actions (#411)', () => {
 		// Push to parking: a phase-less spanning stay leaves its day.
 		const parked = await stay({});
 		expect(parked.status).toBe(200);
-		const pushed = await action(page, `/trips/${SLUG}/days/${days[1].id}?/pushToParking`, { item_id: parked.data.id });
+		const pushed = await action(page, `/trips/${SLUG}/days/${days[1].id}?/pushToParking`, {
+			item_id: parked.data.id
+		});
 		expect(pushed, 'pushToParking result').toContain('"type":"success"');
 		const p = (await pb('GET', `/api/collections/items/records/${parked.data.id}`, token)).data;
 		expect([p.day, p.end_date, p.status]).toEqual(['', '', 'unplanned']);

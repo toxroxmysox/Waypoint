@@ -80,7 +80,12 @@ export const VOTE_LABELS: Record<VoteValue, string> = {
 	dislike: 'Pass'
 };
 
-export const VOTE_GLYPHS: Record<VoteValue, string> = { love: '♥', like: '+', flexible: '~', dislike: '–' };
+export const VOTE_GLYPHS: Record<VoteValue, string> = {
+	love: '♥',
+	like: '+',
+	flexible: '~',
+	dislike: '–'
+};
 
 export interface VotePill {
 	value: VoteValue;
@@ -101,7 +106,9 @@ export function votePills(
 	const grouped = groupVotesByOption(votes);
 	return VOTE_OPTIONS.map((value) => {
 		const mine = !!myMemberId && grouped[value].some((v) => v.member === myMemberId);
-		const others = grouped[value].filter((v) => v.member !== myMemberId).map((v) => nameOf(v.member));
+		const others = grouped[value]
+			.filter((v) => v.member !== myMemberId)
+			.map((v) => nameOf(v.member));
 		return {
 			value,
 			label: VOTE_LABELS[value],
@@ -122,7 +129,13 @@ export function votePillsLabel(pills: VotePill[]): string {
 }
 
 /** Votes with my vote set to `value` (null clears it). Optimistic render + toggle result. */
-export function withMyVote(votes: DisplayVote[], myMemberId: string, value: VoteValue | null): DisplayVote[] {
+export function withMyVote(
+	votes: DisplayVote[],
+	myMemberId: string,
+	value: VoteValue | null
+): DisplayVote[] {
 	const rest = votes.filter((v) => v.member !== myMemberId);
-	return value === null ? rest : [...rest, { id: `optimistic-${myMemberId}`, member: myMemberId, value }];
+	return value === null
+		? rest
+		: [...rest, { id: `optimistic-${myMemberId}`, member: myMemberId, value }];
 }

@@ -25,7 +25,11 @@ function isRendered(el: Element): boolean {
 export const validateForm: Action<HTMLFormElement> = (form) => {
 	function onBlur(e: Event) {
 		const el = e.target;
-		if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement || el instanceof HTMLTextAreaElement) {
+		if (
+			el instanceof HTMLInputElement ||
+			el instanceof HTMLSelectElement ||
+			el instanceof HTMLTextAreaElement
+		) {
 			el.classList.add('touched');
 		}
 	}
@@ -67,7 +71,9 @@ export function revealServerError(alert: HTMLElement | null | undefined, field?:
 
 	const scope: ParentNode = alert.closest('main') ?? document;
 	const target = field
-		? Array.from(scope.querySelectorAll<HTMLElement>(`[name="${CSS.escape(field)}"]`)).find(isRendered)
+		? Array.from(scope.querySelectorAll<HTMLElement>(`[name="${CSS.escape(field)}"]`)).find(
+				isRendered
+			)
 		: undefined;
 
 	if (target) {

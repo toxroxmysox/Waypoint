@@ -43,7 +43,10 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 	const rows = lineup.map((r) => {
 		const sub = flightSub({ departure: r.departure, arrival: r.arrival, from: r.from, to: r.to });
 		const flight_number = items.find((i) => i.id === r.id)?.flight_number;
-		return { ...r, sub: { ...sub, route: flightPlaceLine({ title: r.title, flight_number, route: sub.route }) } };
+		return {
+			...r,
+			sub: { ...sub, route: flightPlaceLine({ title: r.title, flight_number, route: sub.route }) }
+		};
 	});
 
 	return { rows };

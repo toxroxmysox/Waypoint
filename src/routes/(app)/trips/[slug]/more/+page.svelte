@@ -33,19 +33,41 @@
 	{/snippet}
 </NavBar>
 
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-2">
+<main class="mx-auto w-full max-w-lg flex-1 space-y-2 px-4 pt-4 pb-8 md-desktop:max-w-2xl">
 	{#if isOwnerOrCoOwner}
 		<Card href="/trips/{data.trip.slug}/inbox">
 			<div class="flex items-center gap-3 p-4">
-				<svg class="text-ink-soft shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+				<svg
+					class="shrink-0 text-ink-soft"
+					width="20"
+					height="20"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.75"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
 					<polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
-					<path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+					<path
+						d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"
+					/>
 				</svg>
 				<div class="min-w-0 flex-1">
-					<p class="text-ink text-sm font-semibold">Inbox</p>
-					<p class="text-ink-muted text-[12px]">Review suggestions from travelers</p>
+					<p class="text-sm font-semibold text-ink">Inbox</p>
+					<p class="text-[12px] text-ink-muted">Review suggestions from travelers</p>
 				</div>
-				<svg class="text-ink-muted shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<svg
+					class="shrink-0 text-ink-muted"
+					width="16"
+					height="16"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
 					<path d="m9 18 6-6-6-6" />
 				</svg>
 			</div>
@@ -55,15 +77,35 @@
 	{#if isOwnerOrCoOwner}
 		<Card href="/trips/{data.trip.slug}/closeout">
 			<div class="flex items-center gap-3 p-4">
-				<svg class="text-ink-soft shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+				<svg
+					class="shrink-0 text-ink-soft"
+					width="20"
+					height="20"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.75"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
 					<path d="M9 11l3 3L22 4" />
 					<path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
 				</svg>
 				<div class="min-w-0 flex-1">
-					<p class="text-ink text-sm font-semibold">Closeout</p>
-					<p class="text-ink-muted text-[12px]">Review each day and archive the trip</p>
+					<p class="text-sm font-semibold text-ink">Closeout</p>
+					<p class="text-[12px] text-ink-muted">Review each day and archive the trip</p>
 				</div>
-				<svg class="text-ink-muted shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<svg
+					class="shrink-0 text-ink-muted"
+					width="16"
+					height="16"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
 					<path d="m9 18 6-6-6-6" />
 				</svg>
 			</div>
@@ -72,15 +114,37 @@
 
 	<Card href="/trips/{data.trip.slug}/settings">
 		<div class="flex items-center gap-3 p-4">
-			<svg class="text-ink-soft shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+			<svg
+				class="shrink-0 text-ink-soft"
+				width="20"
+				height="20"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.75"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
 				<circle cx="12" cy="12" r="3" />
-				<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+				<path
+					d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
+				/>
 			</svg>
 			<div class="min-w-0 flex-1">
-				<p class="text-ink text-sm font-semibold">Settings</p>
-				<p class="text-ink-muted text-[12px]">Trip details, slug, auto-approve, danger zone</p>
+				<p class="text-sm font-semibold text-ink">Settings</p>
+				<p class="text-[12px] text-ink-muted">Trip details, slug, auto-approve, danger zone</p>
 			</div>
-			<svg class="text-ink-muted shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<svg
+				class="shrink-0 text-ink-muted"
+				width="16"
+				height="16"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
 				<path d="m9 18 6-6-6-6" />
 			</svg>
 		</div>
@@ -89,15 +153,35 @@
 	{#if isOwnerOrCoOwner}
 		<Card href="/trips/{data.trip.slug}/clone">
 			<div class="flex items-center gap-3 p-4">
-				<svg class="text-ink-soft shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+				<svg
+					class="shrink-0 text-ink-soft"
+					width="20"
+					height="20"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.75"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
 					<rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
 					<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
 				</svg>
 				<div class="min-w-0 flex-1">
-					<p class="text-ink text-sm font-semibold">Clone trip</p>
-					<p class="text-ink-muted text-[12px]">Create a new trip based on this one</p>
+					<p class="text-sm font-semibold text-ink">Clone trip</p>
+					<p class="text-[12px] text-ink-muted">Create a new trip based on this one</p>
 				</div>
-				<svg class="text-ink-muted shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<svg
+					class="shrink-0 text-ink-muted"
+					width="16"
+					height="16"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
 					<path d="m9 18 6-6-6-6" />
 				</svg>
 			</div>
@@ -109,15 +193,35 @@
 		     the trip was promoted out of forming via a scenario vote. -->
 		<Card href="/trips/{data.trip.slug}/decision">
 			<div class="flex items-center gap-3 p-4" data-testid="how-we-decided">
-				<svg class="text-ink-soft shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+				<svg
+					class="shrink-0 text-ink-soft"
+					width="20"
+					height="20"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.75"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
 					<path d="M9 11l3 3L22 4" />
 					<path d="M22 12v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
 				</svg>
 				<div class="min-w-0 flex-1">
-					<p class="text-ink text-sm font-semibold">How we decided</p>
-					<p class="text-ink-muted text-[12px]">The scenarios we weighed and what won</p>
+					<p class="text-sm font-semibold text-ink">How we decided</p>
+					<p class="text-[12px] text-ink-muted">The scenarios we weighed and what won</p>
 				</div>
-				<svg class="text-ink-muted shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<svg
+					class="shrink-0 text-ink-muted"
+					width="16"
+					height="16"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
 					<path d="m9 18 6-6-6-6" />
 				</svg>
 			</div>
@@ -131,36 +235,72 @@
 	     ask for a refresher on how the app works. -->
 	<Card href="/trips/{data.trip.slug}?welcome=1">
 		<div class="flex items-center gap-3 p-4" data-testid="replay-intro">
-			<svg class="text-ink-soft shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+			<svg
+				class="shrink-0 text-ink-soft"
+				width="20"
+				height="20"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.75"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
 				<path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
 				<path d="M3 3v5h5" />
 			</svg>
 			<div class="min-w-0 flex-1">
-				<p class="text-ink text-sm font-semibold">Replay intro</p>
-				<p class="text-ink-muted text-[12px]">Show the welcome walkthrough again</p>
+				<p class="text-sm font-semibold text-ink">Replay intro</p>
+				<p class="text-[12px] text-ink-muted">Show the welcome walkthrough again</p>
 			</div>
-			<svg class="text-ink-muted shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<svg
+				class="shrink-0 text-ink-muted"
+				width="16"
+				height="16"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
 				<path d="m9 18 6-6-6-6" />
 			</svg>
 		</div>
 	</Card>
 
 	<Card>
-		<a
-			href="/trips/{data.trip.slug}/export"
-			download
-			class="flex items-center gap-3 p-4"
-		>
-			<svg class="text-ink-soft shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+		<a href="/trips/{data.trip.slug}/export" download class="flex items-center gap-3 p-4">
+			<svg
+				class="shrink-0 text-ink-soft"
+				width="20"
+				height="20"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.75"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
 				<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
 				<polyline points="7 10 12 15 17 10" />
 				<line x1="12" y1="15" x2="12" y2="3" />
 			</svg>
 			<div class="min-w-0 flex-1">
-				<p class="text-ink text-sm font-semibold">Export</p>
-				<p class="text-ink-muted text-[12px]">Download trip as JSON backup</p>
+				<p class="text-sm font-semibold text-ink">Export</p>
+				<p class="text-[12px] text-ink-muted">Download trip as JSON backup</p>
 			</div>
-			<svg class="text-ink-muted shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<svg
+				class="shrink-0 text-ink-muted"
+				width="16"
+				height="16"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
 				<path d="m9 18 6-6-6-6" />
 			</svg>
 		</a>

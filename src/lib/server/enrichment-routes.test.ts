@@ -24,7 +24,9 @@ type Handler = (args: { url: URL; locals: { user: { id: string } | null } }) => 
 // return a Response. In a real request SvelteKit catches it and renders the
 // status. Here we normalize both paths to a { status } shape so tests can
 // assert on 429 the same way as on a 200 Response.
-async function run(p: Promise<Response>): Promise<{ status: number; json: () => Promise<unknown> }> {
+async function run(
+	p: Promise<Response>
+): Promise<{ status: number; json: () => Promise<unknown> }> {
 	try {
 		const res = await p;
 		return { status: res.status, json: () => res.json() };
@@ -182,8 +184,8 @@ describe('places/details route', () => {
 
 	it('returns 429 once the per-user bucket is drained past the cap', async () => {
 		// Fresh Response per call — a Response body can only be read once.
-		vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-			new Response(JSON.stringify({ ok: true }), { status: 200 })
+		vi.spyOn(globalThis, 'fetch').mockImplementation(
+			async () => new Response(JSON.stringify({ ok: true }), { status: 200 })
 		);
 
 		const userId = 'details-flood-user';
@@ -216,8 +218,8 @@ describe('flights/lookup route', () => {
 	});
 
 	it('returns 429 once the per-user bucket is drained past the cap', async () => {
-		vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-			new Response(JSON.stringify([]), { status: 200 })
+		vi.spyOn(globalThis, 'fetch').mockImplementation(
+			async () => new Response(JSON.stringify([]), { status: 200 })
 		);
 
 		const userId = 'flights-flood-user';
@@ -233,8 +235,8 @@ describe('places/autocomplete route', () => {
 	it('enforces the per-user bucket (429 past cap) and stays uncached', async () => {
 		const fetchSpy = vi
 			.spyOn(globalThis, 'fetch')
-			.mockImplementation(async () =>
-				new Response(JSON.stringify({ suggestions: [] }), { status: 200 })
+			.mockImplementation(
+				async () => new Response(JSON.stringify({ suggestions: [] }), { status: 200 })
 			);
 
 		const userId = 'autocomplete-flood-user';

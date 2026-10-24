@@ -14,14 +14,20 @@ migrate(
 			fields: [
 				{ type: 'relation', name: 'trip', required: true, collectionId: trips.id, maxSelect: 1 },
 				// recipient is a trip_member record
-				{ type: 'relation', name: 'recipient', required: true, collectionId: tripMembers.id, maxSelect: 1 },
+				{
+					type: 'relation',
+					name: 'recipient',
+					required: true,
+					collectionId: tripMembers.id,
+					maxSelect: 1
+				},
 				// type discriminator: suggestion_added | comment_added | member_joined
 				{ type: 'text', name: 'type', required: true },
 				// human-readable label, e.g. "Jake suggested: Hotel check-in"
 				{ type: 'text', name: 'body', max: 500 },
 				// deep link within the app
 				{ type: 'text', name: 'link', max: 500 },
-				{ type: 'datetime', name: 'read_at' },
+				{ type: 'datetime', name: 'read_at' }
 			],
 			// recipient reads their own via trip_members.user = auth.id
 			listRule: '@request.auth.id != "" && recipient.user = @request.auth.id',
@@ -29,7 +35,7 @@ migrate(
 			createRule: null,
 			// recipient marks read by setting read_at
 			updateRule: '@request.auth.id != "" && recipient.user = @request.auth.id',
-			deleteRule: null,
+			deleteRule: null
 		});
 
 		app.save(collection);

@@ -75,10 +75,8 @@ migrate(
 			// management UI + copy the URL). All mutations go through the join hook,
 			// which generates the token and enforces owner/co_owner + role cap; a
 			// direct client write would let any member forge a token or lifetime.
-			listRule:
-				'@request.auth.id != "" && trip.trip_members_via_trip.user ?= @request.auth.id',
-			viewRule:
-				'@request.auth.id != "" && trip.trip_members_via_trip.user ?= @request.auth.id',
+			listRule: '@request.auth.id != "" && trip.trip_members_via_trip.user ?= @request.auth.id',
+			viewRule: '@request.auth.id != "" && trip.trip_members_via_trip.user ?= @request.auth.id',
 			createRule: null,
 			updateRule: null,
 			deleteRule: null

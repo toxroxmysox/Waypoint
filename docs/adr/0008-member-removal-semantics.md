@@ -18,34 +18,34 @@ to a different payer without intent.
 
 ## Decision
 
-**Removal is a soft-remove.** The `trip_members` row is *retained as a tombstone*
+**Removal is a soft-remove.** The `trip_members` row is _retained as a tombstone_
 (a [[Departed Member]]) so authored records keep their identity. Concretely the
 remove hook: snapshots `users.name` → `display_name`, **clears `user`** (which
-severs access instantly — no membership rule matches their auth id, so *zero* of
+severs access instantly — no membership rule matches their auth id, so _zero_ of
 the ~12 collection rules change), and sets a new `removed_at` field. The departed
 member renders with a distinct **tombstone avatar**. The row hard-deletes only if
 nothing references it after the chosen disposition.
 
 Disposition of the departed member's authored records, chosen by the remover:
 
-- **Money (expenses, settlements)** — *never deleted.* Keep-with-tombstone (default)
+- **Money (expenses, settlements)** — _never deleted._ Keep-with-tombstone (default)
   or reassign to another member. This is the invariant the whole design protects.
 - **Non-money (suggestions, goals, documents, comments, item authorship, task
   assignments)** — remover's choice of keep-with-tombstone / reassign / cascade-delete.
-- **Votes (`votes`, `goal_votes`)** — *always dropped* (kept their existing
+- **Votes (`votes`, `goal_votes`)** — _always dropped_ (kept their existing
   `cascadeDelete: true`). A departed member's live preference shouldn't steer the
   parking-lot order; the one deliberate exception to "keep their contributions."
 
 **Self-leave is tombstone-only** — a leaver can't reassign their debts onto others
 or cascade away expenses others split. The full three-way choice belongs to
-owner/co_owner removal, which can also act on an *existing* tombstone later (removal
+owner/co*owner removal, which can also act on an \_existing* tombstone later (removal
 is a durable, reviewable state, not a one-shot). Allowed in `planning` + `active`;
 a `closed` trip's roster is frozen.
 
 ## Considered and rejected
 
 - **Keep `user`, add `&& removed_at = ""` to every membership rule.** PB's `?=`
-  multi-relation operator can't correlate "the row where `user == me` *and*
+  multi-relation operator can't correlate "the row where `user == me` _and_
   `removed_at` is empty" (the limitation RULES.md already documents for
   `trip_goals.created_by.role`). Fragile across 12 collections, with a real risk a
   removed member silently retains access. Rejected.
@@ -66,9 +66,9 @@ a `closed` trip's roster is frozen.
   `users` row) — by design, replaced by the tombstone graphic.
 - Every **claim / join surface must exclude `removed_at != ""`** — see the cross-issue
   note in `MEMBERSHIP_LIFECYCLE_PRD.md`. The #118 name-only claim picker query
-  (`user = "" && placeholder_email = ""`) currently *matches* a tombstone; it must add
+  (`user = "" && placeholder_email = ""`) currently _matches_ a tombstone; it must add
   `&& removed_at = ""` or a removed member becomes re-claimable.
-- A re-invited departed member starts a *fresh* row; their tombstone's history stays put.
+- A re-invited departed member starts a _fresh_ row; their tombstone's history stays put.
   Owners can reassign old records to the new membership if they want continuity.
 - Harness: `test-rules.mjs` `trip_members.delete` fixture switches to a childless
   delete-target so the 4 perennial red cells go green (378/378).

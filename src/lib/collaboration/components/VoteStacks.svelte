@@ -1,6 +1,11 @@
 <script lang="ts">
 	import type { TripMember } from '$lib/types';
-	import { VOTE_OPTIONS, groupVotesByOption, type DisplayVote, type VoteValue } from '$lib/collaboration/voting';
+	import {
+		VOTE_OPTIONS,
+		groupVotesByOption,
+		type DisplayVote,
+		type VoteValue
+	} from '$lib/collaboration/voting';
 	import Avatar from '$lib/ui/Avatar.svelte';
 
 	// Target-agnostic (ADR-0004/0009): item `Vote`, `GoalVote`, and
@@ -43,8 +48,13 @@
 				>
 				<div class="flex -space-x-1.5">
 					{#each grouped[option] as v (v.id)}
-						<span class="ring-surface rounded-full ring-2" title={memberName(v.member)}>
-							<Avatar img={memberAvatar(v.member)} initial={memberName(v.member)} alt={memberName(v.member)} {size} />
+						<span class="rounded-full ring-2 ring-surface" title={memberName(v.member)}>
+							<Avatar
+								img={memberAvatar(v.member)}
+								initial={memberName(v.member)}
+								alt={memberName(v.member)}
+								{size}
+							/>
 						</span>
 					{/each}
 				</div>

@@ -40,7 +40,9 @@ test.describe('Documents', () => {
 
 		// Either the empty state copy or at least one document row's action menu.
 		const empty = page.getByText('No documents yet.').filter({ visible: true });
-		const actions = page.getByRole('button', { name: 'Document actions' }).filter({ visible: true });
+		const actions = page
+			.getByRole('button', { name: 'Document actions' })
+			.filter({ visible: true });
 		await expect(empty.or(actions.first())).toBeVisible();
 	});
 

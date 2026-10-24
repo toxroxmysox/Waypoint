@@ -24,7 +24,10 @@
 	let dragFrom = $state<string | null>(null);
 	let dragTo = $state<string | null>(null);
 	const flatDays = $derived(
-		(data.poll?.weeks ?? []).flat().filter((c): c is PollDay => c !== null).map((c) => c.day)
+		(data.poll?.weeks ?? [])
+			.flat()
+			.filter((c): c is PollDay => c !== null)
+			.map((c) => c.day)
 	);
 	const dragSpan = $derived.by(() => {
 		if (!dragging || !dragFrom || !dragTo) return new Set<string>();
@@ -94,15 +97,17 @@
 <main class="mx-auto flex min-h-dvh w-full max-w-lg flex-col px-4 pt-6 pb-10">
 	{#if data.status === 'not_found'}
 		<div class="mt-16 text-center">
-			<p class="font-display text-ink-soft text-lg italic">This poll link isn't valid.</p>
-			<p class="text-ink-muted mt-2 text-sm">It may have been revoked. Ask whoever shared it for a fresh link.</p>
+			<p class="font-display text-lg text-ink-soft italic">This poll link isn't valid.</p>
+			<p class="mt-2 text-sm text-ink-muted">
+				It may have been revoked. Ask whoever shared it for a fresh link.
+			</p>
 		</div>
 	{:else if data.status === 'inactive'}
 		<div class="mt-16 text-center">
-			<p class="font-display text-ink-soft text-lg italic">
+			<p class="font-display text-lg text-ink-soft italic">
 				{data.dated ? 'The dates are set.' : 'This poll is closed.'}
 			</p>
-			<p class="text-ink-muted mt-2 text-sm">
+			<p class="mt-2 text-sm text-ink-muted">
 				{data.dated
 					? 'The group already picked the dates — nothing to vote on now.'
 					: 'This trip is no longer taking availability.'}
@@ -110,9 +115,11 @@
 		</div>
 	{:else}
 		<header class="mb-4">
-			<p class="text-ink-muted text-xs font-semibold tracking-wide uppercase">You're invited to weigh in</p>
-			<h1 class="font-display text-ink mt-1 text-2xl">{data.tripTitle}</h1>
-			<p class="text-ink-muted mt-1 text-sm">
+			<p class="text-xs font-semibold tracking-wide text-ink-muted uppercase">
+				You're invited to weigh in
+			</p>
+			<h1 class="mt-1 font-display text-2xl text-ink">{data.tripTitle}</h1>
+			<p class="mt-1 text-sm text-ink-muted">
 				{#if knownName}
 					Welcome back, {knownName}. Update the days you're free.
 				{:else}
@@ -122,27 +129,42 @@
 		</header>
 
 		{#if form?.ok}
-			<div class="border-moss-soft bg-moss-tint mb-4 rounded-lg border p-3">
-				<p class="text-ink text-sm font-semibold">Saved. Thanks{form.savedName ? `, ${form.savedName}` : ''}!</p>
-				<p class="text-ink-muted mt-0.5 text-xs">
+			<div class="mb-4 rounded-lg border border-moss-soft bg-moss-tint p-3">
+				<p class="text-sm font-semibold text-ink">
+					Saved. Thanks{form.savedName ? `, ${form.savedName}` : ''}!
+				</p>
+				<p class="mt-0.5 text-xs text-ink-muted">
 					You can come back to this link anytime to change your days.
 				</p>
 			</div>
 		{/if}
 		{#if form?.error}
-			<p role="alert" class="text-error-deep mb-3 text-sm">{form.error}</p>
+			<p role="alert" class="mb-3 text-sm text-error-deep">{form.error}</p>
 		{/if}
 
 		<!-- "That's me" re-entry picker (name-only respondents) -->
 		{#if !knownName && data.respondents.length > 0}
-			<div class="border-line bg-surface mb-4 rounded-lg border p-3">
-				<p class="text-ink-soft text-xs font-semibold">Already added your days?</p>
+			<div class="mb-4 rounded-lg border border-line bg-surface p-3">
+				<p class="text-xs font-semibold text-ink-soft">Already added your days?</p>
 				<div class="mt-2 flex flex-wrap gap-1.5">
 					{#each data.respondents as r (r.member_id)}
-						<form method="POST" action="?/paint" use:enhance={() => { saving = true; return async ({ update }) => { await update({ reset: false }); saving = false; }; }}>
+						<form
+							method="POST"
+							action="?/paint"
+							use:enhance={() => {
+								saving = true;
+								return async ({ update }) => {
+									await update({ reset: false });
+									saving = false;
+								};
+							}}
+						>
 							<input type="hidden" name="member_id" value={r.member_id} />
 							<input type="hidden" name="deltas" value="[]" />
-							<button type="submit" class="border-line bg-surface-2 hover:bg-surface active:bg-surface text-ink rounded-full border px-3 py-1 text-xs font-medium">
+							<button
+								type="submit"
+								class="rounded-full border border-line bg-surface-2 px-3 py-1 text-xs font-medium text-ink hover:bg-surface active:bg-surface"
+							>
 								That's me — {r.name}
 							</button>
 						</form>
@@ -152,15 +174,21 @@
 		{/if}
 
 		<!-- Paint calendar (My-mode) -->
-		<div class="border-line bg-surface rounded-xl border p-3">
-			<div class="text-ink-muted mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 px-0.5 text-[10px]">
-				<span class="inline-flex items-center gap-1"><span class="h-3 w-3 rounded-sm" style="background:var(--color-moss)"></span> Free</span>
-				<span class="inline-flex items-center gap-1"><span class="h-3 w-3 rounded-sm" style="background:var(--color-gold)"></span> Maybe</span>
+		<div class="rounded-xl border border-line bg-surface p-3">
+			<div
+				class="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 px-0.5 text-[10px] text-ink-muted"
+			>
+				<span class="inline-flex items-center gap-1"
+					><span class="h-3 w-3 rounded-sm" style="background:var(--color-moss)"></span> Free</span
+				>
+				<span class="inline-flex items-center gap-1"
+					><span class="h-3 w-3 rounded-sm" style="background:var(--color-gold)"></span> Maybe</span
+				>
 				<span>Tap to cycle · drag to paint</span>
 			</div>
 			<div class="grid grid-cols-7 gap-1 px-0.5">
 				{#each WEEKDAYS as w, i (i)}
-					<div class="text-ink-muted text-center text-[10px] font-semibold">{w}</div>
+					<div class="text-center text-[10px] font-semibold text-ink-muted">{w}</div>
 				{/each}
 			</div>
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -179,7 +207,9 @@
 									onpointerenter={() => onEnter(cell)}
 									data-testid="poll-day-{cell.day}"
 									data-mine={mv ?? 'blank'}
-									class="relative flex aspect-square flex-col items-center justify-center rounded-md border text-[11px] {cell.isToday ? 'ring-1 ring-ink/40' : ''}"
+									class="relative flex aspect-square flex-col items-center justify-center rounded-md border text-[11px] {cell.isToday
+										? 'ring-1 ring-ink/40'
+										: ''}"
 									style={mv === 'available'
 										? 'background:var(--color-moss);border-color:var(--color-moss);color:#fff'
 										: mv === 'maybe'
@@ -189,7 +219,10 @@
 												: 'background:var(--color-surface);border-color:var(--color-line)'}
 								>
 									{#if cell.monthTag}
-										<span class="text-ink-muted absolute top-0.5 left-0.5 text-[7px] font-bold tracking-wide">{cell.monthTag}</span>
+										<span
+											class="absolute top-0.5 left-0.5 text-[7px] font-bold tracking-wide text-ink-muted"
+											>{cell.monthTag}</span
+										>
 									{/if}
 									<span class="font-mono leading-none">{Number(cell.day.slice(8, 10))}</span>
 								</button>
@@ -203,7 +236,7 @@
 		<!-- Name + save -->
 		<div class="mt-4">
 			{#if showName && !knownName}
-				<label for="poll-name" class="text-ink-soft block text-xs font-medium">Your name</label>
+				<label for="poll-name" class="block text-xs font-medium text-ink-soft">Your name</label>
 				<input
 					id="poll-name"
 					name="name-visible"
@@ -211,21 +244,29 @@
 					placeholder="e.g. Dana"
 					autocomplete="name"
 					enterkeyhint="done"
-					class="border-line bg-surface text-ink mt-1 mb-3 block w-full rounded-md border px-3 py-2 text-sm"
+					class="mt-1 mb-3 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 				/>
 			{/if}
 			<button
 				type="button"
 				onclick={save}
 				disabled={saving || paintedCount === 0}
-				class="bg-moss text-paper w-full rounded-lg px-4 py-2.5 text-sm font-semibold disabled:opacity-50"
+				class="w-full rounded-lg bg-moss px-4 py-2.5 text-sm font-semibold text-paper disabled:opacity-50"
 				data-testid="poll-save"
 			>
-				{saving ? 'Saving…' : knownName ? 'Update my days' : showName ? 'Save my days' : `Save my days${paintedCount ? ` (${paintedCount})` : ''}`}
+				{saving
+					? 'Saving…'
+					: knownName
+						? 'Update my days'
+						: showName
+							? 'Save my days'
+							: `Save my days${paintedCount ? ` (${paintedCount})` : ''}`}
 			</button>
-			<p class="text-ink-muted mt-2 text-center text-xs">
+			<p class="mt-2 text-center text-xs text-ink-muted">
 				Want in on the rest of the trip — ideas, the plan?
-				<a href="/join/{data.token}" class="text-moss font-semibold underline decoration-dotted">Verify your email to join</a>
+				<a href="/join/{data.token}" class="font-semibold text-moss underline decoration-dotted"
+					>Verify your email to join</a
+				>
 			</p>
 		</div>
 	{/if}

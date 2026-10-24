@@ -67,7 +67,10 @@
 	let dragTo = $state<string | null>(null);
 	// Flat day list (in extent order) for span math.
 	const flatDays = $derived(
-		weeks.flat().filter((c): c is PollDay => c !== null).map((c) => c.day)
+		weeks
+			.flat()
+			.filter((c): c is PollDay => c !== null)
+			.map((c) => c.day)
 	);
 	const dragSpan = $derived.by(() => {
 		if (!dragging || !dragFrom || !dragTo) return new Set<string>();
@@ -121,7 +124,11 @@
 <div class="space-y-3" data-testid="availability-calendar">
 	<!-- Mode toggle -->
 	<div class="flex items-center justify-between px-0.5">
-		<div class="border-line inline-flex rounded-full border p-0.5" role="tablist" aria-label="Poll mode">
+		<div
+			class="inline-flex rounded-full border border-line p-0.5"
+			role="tablist"
+			aria-label="Poll mode"
+		>
 			<button
 				type="button"
 				role="tab"
@@ -148,12 +155,12 @@
 			</button>
 		</div>
 		{#if saving}
-			<span class="text-ink-muted text-[10px]">Saving…</span>
+			<span class="text-[10px] text-ink-muted">Saving…</span>
 		{/if}
 	</div>
 
 	<!-- Legend -->
-	<div class="text-ink-muted flex flex-wrap items-center gap-x-3 gap-y-1 px-0.5 text-[10px]">
+	<div class="flex flex-wrap items-center gap-x-3 gap-y-1 px-0.5 text-[10px] text-ink-muted">
 		{#if mode === 'mine'}
 			<span class="inline-flex items-center gap-1">
 				<span class="h-3 w-3 rounded-sm" style="background:var(--color-moss)"></span> Free
@@ -167,7 +174,10 @@
 				<span class="h-3 w-3 rounded-sm" style="background:var(--color-moss)"></span> Everyone free
 			</span>
 			<span class="inline-flex items-center gap-1">
-				<span class="h-3 w-3 rounded-sm" style="background:var(--color-gold-tint); box-shadow: inset 0 0 0 1px var(--color-gold)"></span>
+				<span
+					class="h-3 w-3 rounded-sm"
+					style="background:var(--color-gold-tint); box-shadow: inset 0 0 0 1px var(--color-gold)"
+				></span>
 				Some free
 			</span>
 		{/if}
@@ -176,7 +186,7 @@
 	<!-- Weekday header -->
 	<div class="grid grid-cols-7 gap-1 px-0.5">
 		{#each WEEKDAYS as w, i (i)}
-			<div class="text-ink-muted text-center text-[10px] font-semibold">{w}</div>
+			<div class="text-center text-[10px] font-semibold text-ink-muted">{w}</div>
 		{/each}
 	</div>
 
@@ -222,7 +232,10 @@
 										: 'background:var(--color-surface);border-color:var(--color-line)'}
 						>
 							{#if cell.monthTag}
-								<span class="text-ink-muted absolute top-0.5 left-0.5 text-[7px] font-bold tracking-wide">{cell.monthTag}</span>
+								<span
+									class="absolute top-0.5 left-0.5 text-[7px] font-bold tracking-wide text-ink-muted"
+									>{cell.monthTag}</span
+								>
 							{/if}
 							<span class="font-mono leading-none">{Number(cell.day.slice(8, 10))}</span>
 							{#if mode === 'group' && (cell.availableCount > 0 || cell.maybeCount > 0)}
@@ -233,11 +246,19 @@
 											style="background:{cell.status === 'green' ? '#fff' : 'var(--color-moss)'}"
 											aria-hidden="true"
 										></span>
-										<span class="text-[8px] font-bold {cell.status === 'green' ? 'text-paper' : 'text-moss'}">{cell.availableCount}</span>
+										<span
+											class="text-[8px] font-bold {cell.status === 'green'
+												? 'text-paper'
+												: 'text-moss'}">{cell.availableCount}</span
+										>
 									{/if}
 									{#if cell.maybeCount > 0}
-										<span class="inline-block h-1.5 w-1.5 rounded-full" style="background:var(--color-gold)" aria-hidden="true"></span>
-										<span class="text-gold-deep text-[8px] font-bold">{cell.maybeCount}</span>
+										<span
+											class="inline-block h-1.5 w-1.5 rounded-full"
+											style="background:var(--color-gold)"
+											aria-hidden="true"
+										></span>
+										<span class="text-[8px] font-bold text-gold-deep">{cell.maybeCount}</span>
 									{/if}
 								</span>
 							{/if}
@@ -249,8 +270,9 @@
 	</div>
 
 	{#if mode === 'group'}
-		<p class="text-ink-muted px-0.5 text-[10px]">
-			Green needs all {activeMemberCount} {activeMemberCount === 1 ? 'person' : 'people'} marked free — it un-greens as new people join.
+		<p class="px-0.5 text-[10px] text-ink-muted">
+			Green needs all {activeMemberCount}
+			{activeMemberCount === 1 ? 'person' : 'people'} marked free — it un-greens as new people join.
 		</p>
 	{/if}
 </div>

@@ -49,7 +49,7 @@
 <NavBar title={shortDayLabel()} subtitle={data.trip.title} back {backHref} />
 <DayNav days={data.days} currentDayId={data.day.id} tripSlug={data.trip.slug} />
 
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-24 space-y-4">
+<main class="mx-auto w-full max-w-lg flex-1 space-y-4 px-4 pt-4 pb-24 md-desktop:max-w-2xl">
 	<!-- #401 — day Level Header; keyed by day id so an unsaved notes draft is discarded on day navigation -->
 	{#key data.day.id}
 		<LevelHeader
@@ -104,13 +104,25 @@
 		canArrange={data.membership.role === 'owner' || data.membership.role === 'co_owner'}
 		canPullUp={(i) => itemPermissions(data.membership, i).canMove}
 	>
-		{#snippet children({ timelineItems, pullUp, onTimelineConsider, onTimelineFinalize, parkingZones, planDrop, dragDisabled, canPullUp })}
+		{#snippet children({
+			timelineItems,
+			pullUp,
+			onTimelineConsider,
+			onTimelineFinalize,
+			parkingZones,
+			planDrop,
+			dragDisabled,
+			canPullUp
+		})}
 			<!-- Items -->
 			<section class="space-y-1.5">
 				<SectionH>
 					{#snippet right()}
 						<a
-							href={withOrigin(`/trips/${data.trip.slug}/items/new?day=${data.day.id}`, page.url.pathname)}
+							href={withOrigin(
+								`/trips/${data.trip.slug}/items/new?day=${data.day.id}`,
+								page.url.pathname
+							)}
 							class="text-ink-muted hover:text-ink-soft active:text-ink-soft"
 							aria-label="Add item"
 						>

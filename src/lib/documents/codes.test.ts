@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { isCodeDocument, isFileDocument, codesByItem, codesForItem, attachCodesToItems } from './codes';
+import {
+	isCodeDocument,
+	isFileDocument,
+	codesByItem,
+	codesForItem,
+	attachCodesToItems
+} from './codes';
 
 // #268 / ADR-0016 — codes are kind:'code' Documents. These pure helpers re-source
 // the legacy `{label,value}[]` shape from code docs. Legacy file rows store

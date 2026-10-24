@@ -38,7 +38,9 @@ test.describe('Ideas grouped by type (#424)', () => {
 	// The seed is destructive per slug and the drag test plans an idea.
 	test.describe.configure({ mode: 'serial' });
 
-	test('375px: headings in fixed order, sub-line, no grip, no type icon on the card', async ({ page }) => {
+	test('375px: headings in fixed order, sub-line, no grip, no type icon on the card', async ({
+		page
+	}) => {
 		await open(page, 375);
 		await page.locator('button[aria-expanded]:visible', { hasText: /ideas?/ }).click();
 		const zone = page.locator('[data-parking-zone]').filter({ visible: true });
@@ -49,11 +51,9 @@ test.describe('Ideas grouped by type (#424)', () => {
 		const card = zone.locator('p[title="Whistling Straits tour"]').locator('xpath=..');
 		await expect(card.locator('svg')).toHaveCount(0);
 		// In a group the favourite (most votes) is on top.
-		await expect(zone.locator('p[title]').filter({ hasText: /Whistling|Kohler Waters|lakefront/ })).toHaveText([
-			'Whistling Straits tour',
-			'Kohler Waters Spa',
-			'Sheboygan lakefront walk'
-		]);
+		await expect(
+			zone.locator('p[title]').filter({ hasText: /Whistling|Kohler Waters|lakefront/ })
+		).toHaveText(['Whistling Straits tour', 'Kohler Waters Spa', 'Sheboygan lakefront walk']);
 	});
 
 	test('1280px: the Ideas panel uses the same headings', async ({ page }) => {
@@ -65,13 +65,17 @@ test.describe('Ideas grouped by type (#424)', () => {
 	test('Phase Detail groups the phase ideas the same way', async ({ page }) => {
 		await open(page, 768);
 		await page.goto(`${BASE}/trips/${SLUG}/phases/${phaseId}`, { waitUntil: 'networkidle' });
-		await expect(page.locator('[data-phase-ideas]:visible [data-idea-heading]')).toHaveText(HEADINGS);
+		await expect(page.locator('[data-phase-ideas]:visible [data-idea-heading]')).toHaveText(
+			HEADINGS
+		);
 	});
 
 	test('mouse: dragging a whole idea card onto the day plans it', async ({ page }) => {
 		await open(page, 768);
 		await page.locator('button[aria-expanded]:visible', { hasText: /ideas?/ }).click();
-		const idea = page.locator('[data-parking-zone]:visible').getByRole('listitem', { name: 'The American Club' });
+		const idea = page
+			.locator('[data-parking-zone]:visible')
+			.getByRole('listitem', { name: 'The American Club' });
 		const target = page.locator('[data-day-timeline]:visible > div').first();
 		const from = (await idea.boundingBox())!;
 		const to = (await target.boundingBox())!;
@@ -86,28 +90,52 @@ test.describe('Ideas grouped by type (#424)', () => {
 		await page.mouse.up();
 		await planned;
 		await page.reload({ waitUntil: 'networkidle' });
-		await expect(page.locator('[data-day-timeline]:visible').getByText('The American Club')).toBeVisible();
+		await expect(
+			page.locator('[data-day-timeline]:visible').getByText('The American Club')
+		).toBeVisible();
 	});
 
-	test('touch: a long-press anywhere on the card drags it onto the day', async ({ browser }: { browser: Browser }) => {
-		const ctx = await browser.newContext({ viewport: { width: 375, height: 2400 }, hasTouch: true, isMobile: true });
+	test('touch: a long-press anywhere on the card drags it onto the day', async ({
+		browser
+	}: {
+		browser: Browser;
+	}) => {
+		const ctx = await browser.newContext({
+			viewport: { width: 375, height: 2400 },
+			hasTouch: true,
+			isMobile: true
+		});
 		const page = await ctx.newPage();
-		await page.goto(`${BASE}/api/dev/login?email=${encodeURIComponent(process.env.E2E_TEST_EMAIL!)}`);
+		await page.goto(
+			`${BASE}/api/dev/login?email=${encodeURIComponent(process.env.E2E_TEST_EMAIL!)}`
+		);
 		await page.waitForURL(/\/trips|\/claim/, { timeout: 15000 });
 		await page.goto(`${BASE}/trips/${SLUG}/days/${dayId}`, { waitUntil: 'networkidle' });
 		const cdp = await ctx.newCDPSession(page);
 		await page.locator('button[aria-expanded]:visible', { hasText: /ideas?/ }).click();
-		const idea = page.locator('[data-parking-zone]:visible').getByRole('listitem', { name: 'Rental car, 3 days' });
+		const idea = page
+			.locator('[data-parking-zone]:visible')
+			.getByRole('listitem', { name: 'Rental car, 3 days' });
 		const target = page.locator('[data-day-timeline]:visible > div').first();
 		const f = (await idea.boundingBox())!;
 		const t = (await target.boundingBox())!;
 		// The title row: the vote pills (#425) sit lower and take their own taps.
 		const from = { x: f.x + 60, y: f.y + 18 };
 		const to = { x: t.x + t.width / 2, y: t.y + t.height / 2 };
-		const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', pts: { x: number; y: number }[]) =>
+		const touch = (
+			type: 'touchStart' | 'touchMove' | 'touchEnd',
+			pts: { x: number; y: number }[]
+		) =>
 			cdp.send('Input.dispatchTouchEvent', {
 				type,
-				touchPoints: pts.map((p, i) => ({ x: p.x, y: p.y, id: i, radiusX: 1, radiusY: 1, force: 1 }))
+				touchPoints: pts.map((p, i) => ({
+					x: p.x,
+					y: p.y,
+					id: i,
+					radiusX: 1,
+					radiusY: 1,
+					force: 1
+				}))
 			});
 		const planned = page.waitForResponse(
 			(r) => r.request().method() === 'POST' && r.url().includes('?/pullToPlan') && r.ok(),
@@ -116,7 +144,9 @@ test.describe('Ideas grouped by type (#424)', () => {
 		await touch('touchStart', [from]);
 		await page.waitForTimeout(400);
 		for (let i = 1; i <= 14; i++) {
-			await touch('touchMove', [{ x: from.x + ((to.x - from.x) * i) / 14, y: from.y + ((to.y - from.y) * i) / 14 }]);
+			await touch('touchMove', [
+				{ x: from.x + ((to.x - from.x) * i) / 14, y: from.y + ((to.y - from.y) * i) / 14 }
+			]);
 			await page.waitForTimeout(16);
 		}
 		await page.waitForTimeout(120);

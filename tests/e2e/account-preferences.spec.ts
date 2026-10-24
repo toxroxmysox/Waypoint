@@ -25,7 +25,11 @@ test.beforeAll(async () => {
 	const trip = await fetch(`${E2E_PB_BASE}/api/collections/trips/records`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json', Authorization: token },
-		body: JSON.stringify({ title: TITLE, slug: `e2e-email-prefs-${Date.now().toString(36)}`, created_by: me.record.id })
+		body: JSON.stringify({
+			title: TITLE,
+			slug: `e2e-email-prefs-${Date.now().toString(36)}`,
+			created_by: me.record.id
+		})
 	});
 	expect(trip.ok, `trip create ${trip.status}`).toBe(true);
 });
@@ -55,7 +59,10 @@ test('#510 search + maps defaults save and persist', async ({ page }) => {
 
 	await page.locator('#search_engine').selectOption('duckduckgo');
 	await page.locator('#maps_app').selectOption('apple');
-	await page.locator('form[action="?/updateLinkDefaults"]').getByRole('button', { name: 'Save' }).click();
+	await page
+		.locator('form[action="?/updateLinkDefaults"]')
+		.getByRole('button', { name: 'Save' })
+		.click();
 	await expect(page.getByText('Defaults saved')).toBeVisible();
 
 	await page.reload({ waitUntil: 'networkidle' });
@@ -65,11 +72,16 @@ test('#510 search + maps defaults save and persist', async ({ page }) => {
 
 test('#523 a trip email toggle saves to that trip', async ({ page }) => {
 	await page.goto(`${BASE}/account`, { waitUntil: 'networkidle' });
-	const box = page.locator('[data-trip-emails] label', { hasText: TITLE }).locator('input[type=checkbox]');
+	const box = page
+		.locator('[data-trip-emails] label', { hasText: TITLE })
+		.locator('input[type=checkbox]');
 	await expect(box).toBeChecked();
 
 	await box.uncheck();
-	await page.locator('form[action="?/updateTripEmails"]').getByRole('button', { name: 'Save' }).click();
+	await page
+		.locator('form[action="?/updateTripEmails"]')
+		.getByRole('button', { name: 'Save' })
+		.click();
 	await expect(page.getByText('Email preferences saved')).toBeVisible();
 
 	await page.reload({ waitUntil: 'networkidle' });

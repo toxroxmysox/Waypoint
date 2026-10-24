@@ -75,11 +75,7 @@ async function walkCloseoutToSummary(page: import('@playwright/test').Page) {
 // <label>; click the label's visible "Publish" text — the label association toggles
 // the radio. Then confirm the publish date field appeared (proves the toggle took).
 async function selectPublish(page: import('@playwright/test').Page) {
-	await page
-		.getByText('Publish', { exact: true })
-		.filter({ visible: true })
-		.first()
-		.click();
+	await page.getByText('Publish', { exact: true }).filter({ visible: true }).first().click();
 	await expect(page.locator('input[name="publish_date"]:visible').first()).toBeVisible({
 		timeout: 5000
 	});
@@ -100,11 +96,7 @@ test.describe('Closed Record view + Share + reopen (#242)', () => {
 		const slug = await createPastTrip(page);
 
 		// Launch closeout from the wrap-up banner.
-		await page
-			.locator('[data-testid="wrapup-closeout"]')
-			.filter({ visible: true })
-			.first()
-			.click();
+		await page.locator('[data-testid="wrapup-closeout"]').filter({ visible: true }).first().click();
 		await page.waitForURL(`**/trips/${slug}/closeout`);
 
 		// Walk the day cards to the summary. The forward button reads "Next Day"
@@ -128,9 +120,9 @@ test.describe('Closed Record view + Share + reopen (#242)', () => {
 
 		// The closed Overview is the Record view: visibly marked closed + a Share panel
 		// with a LIVE, copyable ABSOLUTE link (origin + /archive/<token>).
-		await expect(
-			page.getByText('Trip closed').filter({ visible: true }).first()
-		).toBeVisible({ timeout: 5000 });
+		await expect(page.getByText('Trip closed').filter({ visible: true }).first()).toBeVisible({
+			timeout: 5000
+		});
 
 		const shareUrl = page.locator('[data-testid="share-url"]').filter({ visible: true }).first();
 		await expect(shareUrl).toBeVisible();
@@ -141,7 +133,10 @@ test.describe('Closed Record view + Share + reopen (#242)', () => {
 
 		// The status line reads live.
 		await expect(
-			page.getByText(/Live now/i).filter({ visible: true }).first()
+			page
+				.getByText(/Live now/i)
+				.filter({ visible: true })
+				.first()
 		).toBeVisible();
 
 		// #343 absence-is-silent: this trip was dated straight from /trips/new (never a
@@ -241,22 +236,28 @@ test.describe('Closed Record view + Share + reopen (#242)', () => {
 
 		// Reload the closed record — the origin-story section now renders.
 		await page.reload({ waitUntil: 'networkidle' });
-		const section = page
-			.getByText('How this trip came together')
-			.filter({ visible: true })
-			.first();
+		const section = page.getByText('How this trip came together').filter({ visible: true }).first();
 		await expect(section).toBeVisible({ timeout: 5000 });
 		// Names the chosen scenario, the runners-up, and the chooser.
 		await expect(
-			page.getByText(/Coastal Portugal, 7 nights/).filter({ visible: true }).first()
+			page
+				.getByText(/Coastal Portugal, 7 nights/)
+				.filter({ visible: true })
+				.first()
 		).toBeVisible();
 		await expect(
-			page.getByText(/Swiss Alps hiking and Kyoto in autumn/).filter({ visible: true }).first()
+			page
+				.getByText(/Swiss Alps hiking and Kyoto in autumn/)
+				.filter({ visible: true })
+				.first()
 		).toBeVisible();
 		await expect(page.getByText('Chosen by Maya.').filter({ visible: true }).first()).toBeVisible();
 		// Deep-links to the full "How we decided" record.
 		await expect(
-			page.getByRole('link', { name: /How we decided/ }).filter({ visible: true }).first()
+			page
+				.getByRole('link', { name: /How we decided/ })
+				.filter({ visible: true })
+				.first()
 		).toHaveAttribute('href', `/trips/${slug}/decision`);
 	});
 });

@@ -86,7 +86,9 @@ describe('optimisticSubmit', () => {
 		const update = vi.fn(async () => {
 			throw new Error('boom');
 		});
-		await expect(after!({ result: { type: 'success', status: 200 }, update })).rejects.toThrow('boom');
+		await expect(after!({ result: { type: 'success', status: 200 }, update })).rejects.toThrow(
+			'boom'
+		);
 		expect(h.settle).toHaveBeenCalledOnce();
 		expect(h.state.busy).toBe(false);
 	});

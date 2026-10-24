@@ -40,7 +40,11 @@ describe('scoreVotes', () => {
 
 describe('groupVotesByOption', () => {
 	it('buckets votes by option, every option present even when empty', () => {
-		const grouped = groupVotesByOption([vote('love', 'a'), vote('love', 'b'), vote('dislike', 'c')]);
+		const grouped = groupVotesByOption([
+			vote('love', 'a'),
+			vote('love', 'b'),
+			vote('dislike', 'c')
+		]);
 		expect(grouped.love.map((v) => v.member)).toEqual(['a', 'b']);
 		expect(grouped.like).toEqual([]);
 		expect(grouped.flexible).toEqual([]);

@@ -32,7 +32,9 @@ export function recordCardFields(
 	const meta =
 		item.type === 'note'
 			? ''
-			: [cardMeta(item), multiDay ? `through ${formatDayDate(through)}` : ''].filter(Boolean).join(' · ');
+			: [cardMeta(item), multiDay ? `through ${formatDayDate(through)}` : '']
+					.filter(Boolean)
+					.join(' · ');
 	return {
 		start_time: item.start_time ?? '',
 		end_time: multiDay ? '' : (item.end_time ?? ''),

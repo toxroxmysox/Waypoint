@@ -17,6 +17,7 @@ Visual checking is expensive and still misses bugs. `pnpm verify:visual` and bro
 Catch more than a screenshot does, in text. Make the looks that remain small. Keep images out of the main session when there is more than a single small crop to look at. Scott's visual sweep stays the judge of taste.
 
 Success, observable:
+
 - `pnpm test:visual` and `pnpm test:e2e:clean` report pass/fail in text; a pass produces no image for the agent.
 - `pnpm verify:visual` defaults to a single 375px viewport shot (~400 tokens instead of ~1.2k+ per width) and can crop to one element.
 - The DayNav hit area has a spec that fails when its fix is reverted.

@@ -44,7 +44,7 @@
 </script>
 
 {#snippet trailing()}
-	<span class="text-ink-muted text-xs font-medium">{isSkipped ? 'Skipped' : 'Done'}</span>
+	<span class="text-xs font-medium text-ink-muted">{isSkipped ? 'Skipped' : 'Done'}</span>
 {/snippet}
 
 {#snippet pills()}
@@ -53,7 +53,7 @@
 			<button
 				type="button"
 				onclick={() => (editingEnd = !editingEnd)}
-				class="text-ink-muted inline-flex min-h-11 items-center text-xs hover:underline active:underline"
+				class="inline-flex min-h-11 items-center text-xs text-ink-muted hover:underline active:underline"
 			>
 				{formatDateRange(range.start, range.end)} · adjust
 			</button>
@@ -76,9 +76,12 @@
 						value={range.end}
 						min={range.start}
 						max={tripEndDate || undefined}
-						class="border-line bg-surface text-ink rounded border px-1.5 py-1 text-xs"
+						class="rounded border border-line bg-surface px-1.5 py-1 text-xs text-ink"
 					/>
-					<button type="submit" class="text-sky inline-flex min-h-11 items-center px-2 text-xs font-medium">Save</button>
+					<button
+						type="submit"
+						class="inline-flex min-h-11 items-center px-2 text-xs font-medium text-sky">Save</button
+					>
 				</form>
 			{/if}
 		</div>
@@ -109,10 +112,22 @@
 				}}
 			>
 				<input type="hidden" name="item_id" value={item.id} />
-				<button type="submit" disabled={submitting} class={pill} title="Done as planned">Done</button>
+				<button type="submit" disabled={submitting} class={pill} title="Done as planned"
+					>Done</button
+				>
 			</form>
-			<button type="button" onclick={() => (localState = 'replacing')} class={pill} title="Did something else">Swap</button>
-			<button type="button" onclick={() => (localState = 'skipped')} class={pill} title="Skip — leave as planned">Skip</button>
+			<button
+				type="button"
+				onclick={() => (localState = 'replacing')}
+				class={pill}
+				title="Did something else">Swap</button
+			>
+			<button
+				type="button"
+				onclick={() => (localState = 'skipped')}
+				class={pill}
+				title="Skip — leave as planned">Skip</button
+			>
 		</div>
 	{/if}
 {/snippet}

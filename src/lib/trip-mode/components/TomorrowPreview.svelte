@@ -33,7 +33,10 @@
 
 <SectionH>
 	{#snippet right()}
-		<a href="/trips/{slug}/today/upcoming" class="text-ink-muted hover:text-ink-soft active:text-ink-soft text-xs">Next 3 days</a>
+		<a
+			href="/trips/{slug}/today/upcoming"
+			class="text-xs text-ink-muted hover:text-ink-soft active:text-ink-soft">Next 3 days</a
+		>
 	{/snippet}
 	{label}
 </SectionH>
@@ -50,9 +53,9 @@
 			/>
 		{/each}
 		{#if items.length > 3}
-			<p class="text-ink-muted text-center text-xs">+{items.length - 3} more</p>
+			<p class="text-center text-xs text-ink-muted">+{items.length - 3} more</p>
 		{/if}
 	</div>
 {:else}
-	<p class="text-ink-muted mt-2 text-xs">Nothing scheduled.</p>
+	<p class="mt-2 text-xs text-ink-muted">Nothing scheduled.</p>
 {/if}

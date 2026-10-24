@@ -31,7 +31,11 @@ const squash = (s: string) => s.replace(/\s+/g, '').toUpperCase();
  * labels). The stored number leads it only when the title doesn't contain it, so
  * new flights (number in the title) print it once and legacy ones keep it.
  */
-export function flightPlaceLine(input: { title: string; flight_number?: string; route: string }): string {
+export function flightPlaceLine(input: {
+	title: string;
+	flight_number?: string;
+	route: string;
+}): string {
 	const number = (input.flight_number ?? '').trim();
 	if (!number || squash(input.title).includes(squash(number))) return input.route;
 	return [number, input.route].filter(Boolean).join(SEP);

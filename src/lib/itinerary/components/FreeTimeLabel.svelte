@@ -12,7 +12,9 @@
 <div
 	role="separator"
 	aria-label={freeTimeSpoken(gap)}
-	class="px-[3px] py-1 text-center text-[11px] leading-4 {dropLabel ? 'font-semibold' : 'text-ink-muted italic'}"
+	class="px-[3px] py-1 text-center text-[11px] leading-4 {dropLabel
+		? 'font-semibold'
+		: 'text-ink-muted italic'}"
 	style={dropLabel ? 'color: var(--color-accent)' : ''}
 	data-free-time
 	data-drop-target={dropLabel ? '' : undefined}

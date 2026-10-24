@@ -5,7 +5,17 @@ export interface NavTab {
 	id: string;
 	label: string;
 	href: string;
-	icon: 'calendar' | 'dollar' | 'users' | 'more' | 'clock' | 'sun' | 'plus' | 'lock' | 'doc' | 'compass';
+	icon:
+		| 'calendar'
+		| 'dollar'
+		| 'users'
+		| 'more'
+		| 'clock'
+		| 'sun'
+		| 'plus'
+		| 'lock'
+		| 'doc'
+		| 'compass';
 	oversized?: boolean;
 	action?: 'add-sheet';
 }
@@ -94,7 +104,8 @@ export function getActiveTab(pathname: string, mode: NavChrome): string {
 	if (pathname.includes('/documents')) return 'documents';
 	if (pathname.includes('/expenses') || pathname.includes('/budget')) return 'money';
 	if (pathname.includes('/members')) return 'members';
-	if (pathname.includes('/more') || pathname.includes('/inbox') || pathname.includes('/settings')) return 'more';
+	if (pathname.includes('/more') || pathname.includes('/inbox') || pathname.includes('/settings'))
+		return 'more';
 	return 'itinerary';
 }
 
@@ -125,4 +136,3 @@ export function resolveChromeMode(
 	// lists, goals, more, settings) is a planning surface.
 	return 'planning';
 }
-

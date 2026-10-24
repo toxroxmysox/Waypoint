@@ -19,7 +19,10 @@ function startDateOf(item: Item, dayById: Map<string, Day>): string {
 function movingOn(items: Item[], days: Day[], date: string): Item[] {
 	const dayById = new Map(days.map((d) => [d.id, d]));
 	return items
-		.filter((i) => MOVING.has(i.type) && i.status !== 'considered' && date && startDateOf(i, dayById) === date)
+		.filter(
+			(i) =>
+				MOVING.has(i.type) && i.status !== 'considered' && date && startDateOf(i, dayById) === date
+		)
 		.sort((a, b) => (a.start_time || '').localeCompare(b.start_time || ''));
 }
 
@@ -86,7 +89,10 @@ export interface DayMenuRow {
 	travel: boolean;
 }
 
-export function dayMenuRows(phaseDays: Day[], summaries: Record<string, DayCardSummary>): DayMenuRow[] {
+export function dayMenuRows(
+	phaseDays: Day[],
+	summaries: Record<string, DayCardSummary>
+): DayMenuRow[] {
 	return [...phaseDays]
 		.sort((a, b) => toDateOnly(a.date).localeCompare(toDateOnly(b.date)))
 		.map((day) => {

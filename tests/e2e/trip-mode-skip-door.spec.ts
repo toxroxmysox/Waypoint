@@ -67,7 +67,11 @@ test.describe('Trip Mode Door 2 — skip → parking lot + ideas strip (#246)', 
 		const phaseHref = await phaseLink.getAttribute('href');
 		await phaseLink.click();
 		await page.waitForURL(new RegExp(`/trips/${tripSlug}/phases/`));
-		await page.getByRole('button', { name: '+ Add idea' }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('button', { name: '+ Add idea' })
+			.filter({ visible: true })
+			.first()
+			.click();
 		const ideaInput = page.locator('input[name="title"]:visible').first();
 		await ideaInput.fill(IDEA_TITLE);
 		// Submit via Enter (real mobile path); the submit button is occluded by the
@@ -94,13 +98,18 @@ test.describe('Trip Mode Door 2 — skip → parking lot + ideas strip (#246)', 
 		// Back on Now: the planned item renders in the "Coming up" rest list.
 		await page.waitForURL('**/now', { timeout: 10000 });
 		// Stretched-link card (#231): target by role/name (aria-label=title), not href+hasText.
-		const plannedCard = page.getByRole('link', { name: PLANNED_TITLE }).filter({ visible: true }).first();
+		const plannedCard = page
+			.getByRole('link', { name: PLANNED_TITLE })
+			.filter({ visible: true })
+			.first();
 		await expect(plannedCard).toBeVisible({ timeout: 7000 });
 
 		// --- Skip it via the card overflow → confirm in the little menu. ---
 		// The overflow button sits inside the planned item's card (visible tree).
 		const card = page
-			.locator('.no-callout:not(section[aria-label="Ideas for now"] .no-callout)', { hasText: PLANNED_TITLE })
+			.locator('.no-callout:not(section[aria-label="Ideas for now"] .no-callout)', {
+				hasText: PLANNED_TITLE
+			})
 			.filter({ visible: true })
 			.first();
 		await card.getByRole('button', { name: 'Item actions' }).click();
@@ -116,7 +125,9 @@ test.describe('Trip Mode Door 2 — skip → parking lot + ideas strip (#246)', 
 		// link-count-0 would falsely catch that legitimate strip occurrence.
 		await expect(
 			page
-				.locator('.no-callout:not(section[aria-label="Ideas for now"] .no-callout)', { hasText: PLANNED_TITLE })
+				.locator('.no-callout:not(section[aria-label="Ideas for now"] .no-callout)', {
+					hasText: PLANNED_TITLE
+				})
 				.filter({ visible: true })
 		).toHaveCount(0, { timeout: 7000 });
 

@@ -32,7 +32,7 @@
 </script>
 
 <nav
-	class="border-line bg-surface fixed left-0 top-0 hidden h-full flex-col border-r
+	class="fixed top-0 left-0 hidden h-full flex-col border-r border-line bg-surface
 		md-desktop:flex md-desktop:w-[72px] md-desktop:items-center
 		lg-desktop:w-[240px] lg-desktop:items-stretch"
 	aria-label="Trip navigation"
@@ -40,7 +40,7 @@
 	<!-- Logo -->
 	<a
 		href="/trips"
-		class="font-display text-moss flex items-center gap-2 font-semibold
+		class="flex items-center gap-2 font-display font-semibold text-moss
 			md-desktop:justify-center md-desktop:py-5
 			lg-desktop:justify-start lg-desktop:px-5 lg-desktop:py-4"
 	>
@@ -50,11 +50,10 @@
 
 	<!-- Trip name -->
 	{#if tripName}
-		<div class="border-line hidden border-b pb-3 lg-desktop:block lg-desktop:px-5 lg-desktop:text-left">
-			<p
-				class="text-ink-soft truncate text-xs font-medium"
-				title={tripName}
-			>
+		<div
+			class="hidden border-b border-line pb-3 lg-desktop:block lg-desktop:px-5 lg-desktop:text-left"
+		>
+			<p class="truncate text-xs font-medium text-ink-soft" title={tripName}>
 				{tripName}
 			</p>
 		</div>
@@ -66,9 +65,10 @@
 	{#if active && onToggleMode}
 		{@const toLabel = mode === 'trip' ? 'Edit plan' : 'Trip view'}
 		{@const toIcon = mode === 'trip' ? 'calendar' : 'clock'}
-		{@const tint = mode === 'trip'
-			? 'bg-moss-tint text-moss hover:bg-moss-tint/80'
-			: 'bg-clay-tint text-clay hover:bg-clay-tint/80'}
+		{@const tint =
+			mode === 'trip'
+				? 'bg-moss-tint text-moss hover:bg-moss-tint/80'
+				: 'bg-clay-tint text-clay hover:bg-clay-tint/80'}
 		<!-- md-desktop: icon button -->
 		<div class="flex justify-center px-2 pt-3 lg-desktop:hidden">
 			<button
@@ -81,7 +81,7 @@
 			</button>
 		</div>
 		<!-- lg-desktop: full pill -->
-		<div class="hidden lg-desktop:flex justify-center px-3 pt-3">
+		<div class="hidden justify-center px-3 pt-3 lg-desktop:flex">
 			<button
 				onclick={onToggleMode}
 				class="w-full rounded-full px-3 py-1.5 text-xs font-medium transition-colors {tint}"
@@ -95,16 +95,17 @@
 	<div class="flex flex-1 flex-col gap-1 px-2 pt-3 lg-desktop:px-3">
 		{#each config.tabs as tab (tab.id)}
 			{@const isActive = activeTabId === tab.id}
-			{@const activeClasses = config.accent === 'clay'
-				? 'bg-clay-tint text-clay font-medium'
-				: 'bg-moss-tint text-moss font-medium'}
+			{@const activeClasses =
+				config.accent === 'clay'
+					? 'bg-clay-tint text-clay font-medium'
+					: 'bg-moss-tint text-moss font-medium'}
 			{#if tab.oversized && tab.action}
 				<button
 					type="button"
-					class="flex items-center gap-3 rounded-lg transition-colors
-						md-desktop:w-12 md-desktop:flex-col md-desktop:justify-center md-desktop:gap-0.5 md-desktop:px-1 md-desktop:py-2.5 md-desktop:text-[11px]
-						lg-desktop:w-auto lg-desktop:flex-row lg-desktop:justify-start lg-desktop:px-3 lg-desktop:py-2 lg-desktop:text-sm
-						bg-clay text-white font-medium"
+					class="flex items-center gap-3 rounded-lg bg-clay
+						font-medium text-white transition-colors md-desktop:w-12 md-desktop:flex-col md-desktop:justify-center md-desktop:gap-0.5
+						md-desktop:px-1 md-desktop:py-2.5 md-desktop:text-[11px] lg-desktop:w-auto lg-desktop:flex-row lg-desktop:justify-start
+						lg-desktop:px-3 lg-desktop:py-2 lg-desktop:text-sm"
 					aria-label={tab.label}
 					onclick={() => onAction?.(tab.action!)}
 				>
@@ -118,10 +119,10 @@
 			{:else if tab.oversized}
 				<a
 					href={tab.href}
-					class="flex items-center gap-3 rounded-lg transition-colors
-						md-desktop:w-12 md-desktop:flex-col md-desktop:justify-center md-desktop:gap-0.5 md-desktop:px-1 md-desktop:py-2.5 md-desktop:text-[11px]
-						lg-desktop:w-auto lg-desktop:flex-row lg-desktop:justify-start lg-desktop:px-3 lg-desktop:py-2 lg-desktop:text-sm
-						bg-clay text-white font-medium"
+					class="flex items-center gap-3 rounded-lg bg-clay
+						font-medium text-white transition-colors md-desktop:w-12 md-desktop:flex-col md-desktop:justify-center md-desktop:gap-0.5
+						md-desktop:px-1 md-desktop:py-2.5 md-desktop:text-[11px] lg-desktop:w-auto lg-desktop:flex-row lg-desktop:justify-start
+						lg-desktop:px-3 lg-desktop:py-2 lg-desktop:text-sm"
 					aria-label={tab.label}
 				>
 					<StarIcons
@@ -137,9 +138,7 @@
 					class="flex items-center gap-3 rounded-lg transition-colors
 						md-desktop:w-12 md-desktop:flex-col md-desktop:justify-center md-desktop:gap-0.5 md-desktop:px-1 md-desktop:py-2.5 md-desktop:text-[11px]
 						lg-desktop:w-auto lg-desktop:flex-row lg-desktop:justify-start lg-desktop:px-3 lg-desktop:py-2 lg-desktop:text-sm
-						{isActive
-							? activeClasses
-							: 'text-ink-muted hover:bg-paper hover:text-ink-soft'}"
+						{isActive ? activeClasses : 'text-ink-muted hover:bg-paper hover:text-ink-soft'}"
 					aria-current={isActive ? 'page' : undefined}
 				>
 					<StarIcons
@@ -155,19 +154,21 @@
 
 	<!-- Phase list (lg-desktop only, planning mode only) -->
 	{#if phases.length > 0 && mode === 'planning'}
-		<div class="border-line hidden flex-col gap-1 border-t px-3 py-3 lg-desktop:flex">
-			<p class="text-ink-muted mb-1 px-2 text-[11px] font-semibold uppercase tracking-wider">Phases</p>
+		<div class="hidden flex-col gap-1 border-t border-line px-3 py-3 lg-desktop:flex">
+			<p class="mb-1 px-2 text-[11px] font-semibold tracking-wider text-ink-muted uppercase">
+				Phases
+			</p>
 			{#each phases as phase (phase.id)}
 				<a
 					href="/trips/{slug}/phases/{phase.id}"
-					class="text-ink-soft hover:text-ink flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-paper"
+					class="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-ink-soft transition-colors hover:bg-paper hover:text-ink"
 				>
 					<span
 						class="h-2.5 w-2.5 shrink-0 rounded-full"
 						style="background-color: var(--color-moss)"
 					></span>
 					<span class="flex-1 truncate">{phase.name}</span>
-					<span class="text-ink-muted text-[11px]">{formatTripDate(phase.start_date)}</span>
+					<span class="text-[11px] text-ink-muted">{formatTripDate(phase.start_date)}</span>
 				</a>
 			{/each}
 		</div>

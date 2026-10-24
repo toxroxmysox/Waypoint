@@ -153,19 +153,30 @@
 
 	{#if pendingFile && previewUrl}
 		<!-- Staged paste: preview + optional caption before sending. -->
-		<div class="border-line bg-surface space-y-3 rounded-lg border p-3">
+		<div class="space-y-3 rounded-lg border border-line bg-surface p-3">
 			<div class="flex items-start gap-3">
-				<img src={previewUrl} alt="Pasted screenshot preview" class="border-line h-16 w-16 shrink-0 rounded-md border object-cover" />
+				<img
+					src={previewUrl}
+					alt="Pasted screenshot preview"
+					class="h-16 w-16 shrink-0 rounded-md border border-line object-cover"
+				/>
 				<div class="min-w-0 flex-1">
-					<label for="paste-caption" class="text-ink-soft mb-1 block text-[12px] font-medium">Caption (optional)</label>
+					<label for="paste-caption" class="mb-1 block text-[12px] font-medium text-ink-soft"
+						>Caption (optional)</label
+					>
 					<input
 						id="paste-caption"
 						type="text"
 						bind:value={caption}
 						maxlength="500"
 						placeholder="e.g. TAP boarding pass"
-						class="border-line bg-paper text-ink w-full rounded-md border px-2.5 py-1.5 text-sm"
-						onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } }}
+						class="w-full rounded-md border border-line bg-paper px-2.5 py-1.5 text-sm text-ink"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') {
+								e.preventDefault();
+								submit();
+							}
+						}}
 					/>
 				</div>
 			</div>
@@ -174,20 +185,31 @@
 					type="button"
 					onclick={submit}
 					disabled={uploading}
-					class="bg-ink text-paper rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-40"
+					class="rounded-md bg-ink px-3 py-1.5 text-sm font-semibold text-paper disabled:opacity-40"
 				>
 					{uploading ? 'Adding…' : 'Add image'}
 				</button>
-				<button type="button" onclick={discard} disabled={uploading} class="text-ink-muted text-sm">Cancel</button>
+				<button type="button" onclick={discard} disabled={uploading} class="text-sm text-ink-muted"
+					>Cancel</button
+				>
 			</div>
 		</div>
 	{:else}
 		<button
 			type="button"
 			onclick={pasteFromClipboard}
-			class="border-line text-ink-soft hover:border-ink-muted active:border-ink-muted hover:text-ink active:text-ink flex w-full items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-3 text-sm font-medium transition-colors"
+			class="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-line px-3 py-3 text-sm font-medium text-ink-soft transition-colors hover:border-ink-muted hover:text-ink active:border-ink-muted active:text-ink"
 		>
-			<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+			<svg
+				width="18"
+				height="18"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.75"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
 				<rect x="8" y="2" width="8" height="4" rx="1" />
 				<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
 			</svg>
@@ -196,6 +218,6 @@
 	{/if}
 
 	{#if clientError}
-		<p class="text-clay mt-2 text-center text-[12px]">{clientError}</p>
+		<p class="mt-2 text-center text-[12px] text-clay">{clientError}</p>
 	{/if}
 </form>

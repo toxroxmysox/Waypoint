@@ -1,5 +1,14 @@
 import type { PageServerLoad } from './$types';
-import type { Expense, Settlement, TripMember, Item, TripBudget, MoneyUnitRecord, Day, Phase } from '$lib/types';
+import type {
+	Expense,
+	Settlement,
+	TripMember,
+	Item,
+	TripBudget,
+	MoneyUnitRecord,
+	Day,
+	Phase
+} from '$lib/types';
 import { rowContent } from '$lib/itinerary/row';
 import { tripToday, tripTz } from '$lib/shell/trip-time';
 import { computeBalances } from '$lib/money/debt-simplify';
@@ -33,7 +42,8 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 		// for the drill-down list; linkage to an expense is read from expenses.linked_item.
 		locals.pb.collection('items').getFullList<Item>({
 			filter: `trip = "${trip.id}"`,
-			fields: 'id,title,type,subtype,booked,cost_estimate_usd,day,phase,start_time,end_time,end_date,location_name,description,flight_number',
+			fields:
+				'id,title,type,subtype,booked,cost_estimate_usd,day,phase,start_time,end_time,end_date,location_name,description,flight_number',
 			sort: '-cost_estimate_usd'
 		}),
 		// #230 / ADR-0015 — Money Units, for auto-scoping the glance to the viewer's own

@@ -1,6 +1,17 @@
 import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { Item, Day, Checklist, Task, TripMember, Vote, Comment, Document, Expense, TripGoal } from '$lib/types';
+import type {
+	Item,
+	Day,
+	Checklist,
+	Task,
+	TripMember,
+	Vote,
+	Comment,
+	Document,
+	Expense,
+	TripGoal
+} from '$lib/types';
 import { VOTE_OPTIONS, type VoteValue } from '$lib/collaboration/voting';
 import { toDocumentView } from '$lib/documents/view';
 import { isFileDocument, codesForItem } from '$lib/documents/codes';
@@ -40,48 +51,61 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		.getFirstListItem<Checklist>(`item = "${item.id}" && kind = "manual"`)
 		.catch(() => null);
 
-	const [tasks, members, rawComments, votes, rawDocuments, linkedExpenses, tripGoals] = await Promise.all([
-		checklist
-			? locals.pb.collection('tasks').getFullList<Task>({
-					filter: `checklist = "${checklist.id}"`,
-					sort: 'order'
+	const [tasks, members, rawComments, votes, rawDocuments, linkedExpenses, tripGoals] =
+		await Promise.all([
+			checklist
+				? locals.pb.collection('tasks').getFullList<Task>({
+						filter: `checklist = "${checklist.id}"`,
+						sort: 'order'
+					})
+				: Promise.resolve([]),
+			locals.pb.collection('trip_members').getFullList<TripMember>({
+				filter: `trip = "${trip.id}" && removed_at = ""`,
+				expand: 'user'
+			}),
+			// Comments, newest first (#122).
+			locals.pb
+				.collection('suggestions')
+				.getFullList<Comment>({
+					filter: `target_item = "${item.id}" && target_type = "comment" && status = "approved"`,
+					sort: '-created',
+					expand: 'author.user'
 				})
-			: Promise.resolve([]),
-		locals.pb.collection('trip_members').getFullList<TripMember>({
-			filter: `trip = "${trip.id}" && removed_at = ""`,
-			expand: 'user'
-		}),
-		// Comments, newest first (#122).
-		locals.pb.collection('suggestions').getFullList<Comment>({
-			filter: `target_item = "${item.id}" && target_type = "comment" && status = "approved"`,
-			sort: '-created',
-			expand: 'author.user'
-		}).catch(() => [] as Comment[]),
-		locals.pb.collection('votes').getFullList<Vote>({
-			filter: `item = "${item.id}"`
-		}),
-		// Item-scoped documents, newest first.
-		locals.pb.collection('documents').getFullList<Document>({
-			filter: `item = "${item.id}"`,
-			sort: '-created',
-			expand: 'uploaded_by'
-		}).catch(() => [] as Document[]),
-		// #128 — does any expense link this item? Drives the conditional "View in
-		// expenses" affordance. id-only fetch; the count is all the detail needs.
-		locals.pb.collection('expenses').getFullList<Expense>({
-			filter: `linked_item = "${item.id}"`,
-			fields: 'id,amount_usd,linked_item'
-		}).catch(() => [] as Expense[]),
-		// #129 — Goals peek (back-link). The link lives goal-side on
-		// `trip_goals.items`; fetch the trip's goals and keep the ones whose
-		// relation contains this item (JS filter mirrors syncGoalLinks — goals
-		// per trip are few, sidesteps PB relation-filter syntax).
-		locals.pb.collection('trip_goals').getFullList<TripGoal>({
-			filter: `trip = "${trip.id}"`,
-			fields: 'id,title,items',
-			sort: 'sort_order'
-		}).catch(() => [] as TripGoal[])
-	]);
+				.catch(() => [] as Comment[]),
+			locals.pb.collection('votes').getFullList<Vote>({
+				filter: `item = "${item.id}"`
+			}),
+			// Item-scoped documents, newest first.
+			locals.pb
+				.collection('documents')
+				.getFullList<Document>({
+					filter: `item = "${item.id}"`,
+					sort: '-created',
+					expand: 'uploaded_by'
+				})
+				.catch(() => [] as Document[]),
+			// #128 — does any expense link this item? Drives the conditional "View in
+			// expenses" affordance. id-only fetch; the count is all the detail needs.
+			locals.pb
+				.collection('expenses')
+				.getFullList<Expense>({
+					filter: `linked_item = "${item.id}"`,
+					fields: 'id,amount_usd,linked_item'
+				})
+				.catch(() => [] as Expense[]),
+			// #129 — Goals peek (back-link). The link lives goal-side on
+			// `trip_goals.items`; fetch the trip's goals and keep the ones whose
+			// relation contains this item (JS filter mirrors syncGoalLinks — goals
+			// per trip are few, sidesteps PB relation-filter syntax).
+			locals.pb
+				.collection('trip_goals')
+				.getFullList<TripGoal>({
+					filter: `trip = "${trip.id}"`,
+					fields: 'id,title,items',
+					sort: 'sort_order'
+				})
+				.catch(() => [] as TripGoal[])
+		]);
 
 	const linkedGoals = tripGoals.filter((g) => (g.items ?? []).includes(item.id));
 
@@ -106,8 +130,8 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		};
 	});
 
-	const day = item.day ? days.find((d) => d.id === item.day) ?? null : null;
-	const phase = item.phase ? phases.find((p) => p.id === item.phase) ?? null : null;
+	const day = item.day ? (days.find((d) => d.id === item.day) ?? null) : null;
+	const phase = item.phase ? (phases.find((p) => p.id === item.phase) ?? null) : null;
 
 	const myVote = votes.find((v) => v.member === membership.id) ?? null;
 
@@ -122,13 +146,31 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	// prefilled add); ≥1 → "Paid $X" (summed) with a link-out. `booked` is orthogonal.
 	const paidSummary = paidSummaryForItem(linkedExpenses, item.id);
 
-	return { item, checklist, tasks, members: withAvatarUrls(locals.pb, members), comments, votes, myVote, documents, itemDay: day, itemPhase: phase, linkedExpenseCount: linkedExpenses.length, linkedGoals, paidSummary, permissions, now: tripNow(tripTz(trip)).toISOString() };
+	return {
+		item,
+		checklist,
+		tasks,
+		members: withAvatarUrls(locals.pb, members),
+		comments,
+		votes,
+		myVote,
+		documents,
+		itemDay: day,
+		itemPhase: phase,
+		linkedExpenseCount: linkedExpenses.length,
+		linkedGoals,
+		paidSummary,
+		permissions,
+		now: tripNow(tripTz(trip)).toISOString()
+	};
 };
 
 async function getMembership(locals: App.Locals, tripId: string): Promise<TripMember> {
 	return locals.pb
 		.collection('trip_members')
-		.getFirstListItem<TripMember>(`trip = "${tripId}" && user = "${locals.user!.id}" && removed_at = ""`);
+		.getFirstListItem<TripMember>(
+			`trip = "${tripId}" && user = "${locals.user!.id}" && removed_at = ""`
+		);
 }
 
 // Tasks sit outside the Suggestion pipeline (ADR-0003): traveler+ mutate freely,
@@ -234,7 +276,8 @@ export const actions: Actions = {
 	// item for v1 — no-op if one already exists.
 	attachChecklist: async ({ request, params, locals }) => {
 		const item = await locals.pb.collection('items').getOne<Item>(params.itemId);
-		if (await isViewer(locals, item.trip)) return fail(403, { error: 'Viewers cannot modify checklists.' });
+		if (await isViewer(locals, item.trip))
+			return fail(403, { error: 'Viewers cannot modify checklists.' });
 
 		const formData = await request.formData();
 		const title = formData.get('title')?.toString().trim() || 'Checklist';
@@ -263,7 +306,8 @@ export const actions: Actions = {
 
 	deleteChecklist: async ({ request, params, locals }) => {
 		const item = await locals.pb.collection('items').getOne<Item>(params.itemId);
-		if (await isViewer(locals, item.trip)) return fail(403, { error: 'Viewers cannot modify checklists.' });
+		if (await isViewer(locals, item.trip))
+			return fail(403, { error: 'Viewers cannot modify checklists.' });
 
 		const formData = await request.formData();
 		const checklistId = formData.get('checklist_id')?.toString();
@@ -282,7 +326,8 @@ export const actions: Actions = {
 
 	addTask: async ({ request, params, locals }) => {
 		const item = await locals.pb.collection('items').getOne<Item>(params.itemId);
-		if (await isViewer(locals, item.trip)) return fail(403, { error: 'Viewers cannot modify checklists.' });
+		if (await isViewer(locals, item.trip))
+			return fail(403, { error: 'Viewers cannot modify checklists.' });
 
 		const formData = await request.formData();
 		const checklistId = formData.get('checklist_id')?.toString();
@@ -316,7 +361,8 @@ export const actions: Actions = {
 
 	toggleTask: async ({ request, params, locals }) => {
 		const item = await locals.pb.collection('items').getOne<Item>(params.itemId);
-		if (await isViewer(locals, item.trip)) return fail(403, { error: 'Viewers cannot modify checklists.' });
+		if (await isViewer(locals, item.trip))
+			return fail(403, { error: 'Viewers cannot modify checklists.' });
 
 		const formData = await request.formData();
 		const taskId = formData.get('task_id')?.toString();
@@ -335,7 +381,8 @@ export const actions: Actions = {
 
 	assignTask: async ({ request, params, locals }) => {
 		const item = await locals.pb.collection('items').getOne<Item>(params.itemId);
-		if (await isViewer(locals, item.trip)) return fail(403, { error: 'Viewers cannot modify checklists.' });
+		if (await isViewer(locals, item.trip))
+			return fail(403, { error: 'Viewers cannot modify checklists.' });
 
 		const formData = await request.formData();
 		const taskId = formData.get('task_id')?.toString();
@@ -349,7 +396,9 @@ export const actions: Actions = {
 			if (assignee) {
 				const member = await locals.pb
 					.collection('trip_members')
-					.getFirstListItem<TripMember>(`id = "${assignee}" && trip = "${item.trip}" && removed_at = ""`)
+					.getFirstListItem<TripMember>(
+						`id = "${assignee}" && trip = "${item.trip}" && removed_at = ""`
+					)
 					.catch(() => null);
 				if (!member) return fail(400, { error: 'Invalid assignee.' });
 			}
@@ -363,7 +412,8 @@ export const actions: Actions = {
 
 	deleteTask: async ({ request, locals, params }) => {
 		const item = await locals.pb.collection('items').getOne<Item>(params.itemId);
-		if (await isViewer(locals, item.trip)) return fail(403, { error: 'Viewers cannot modify checklists.' });
+		if (await isViewer(locals, item.trip))
+			return fail(403, { error: 'Viewers cannot modify checklists.' });
 
 		const formData = await request.formData();
 		const taskId = formData.get('task_id')?.toString();
@@ -416,7 +466,9 @@ export const actions: Actions = {
 			const targetItem = await locals.pb.collection('items').getOne(params.itemId);
 			const membership = await locals.pb
 				.collection('trip_members')
-				.getFirstListItem<TripMember>(`trip = "${targetItem.trip}" && user = "${locals.user!.id}" && removed_at = ""`);
+				.getFirstListItem<TripMember>(
+					`trip = "${targetItem.trip}" && user = "${locals.user!.id}" && removed_at = ""`
+				);
 
 			// One vote per member per item (unique index): change = update, not insert.
 			const existing = await locals.pb
@@ -537,7 +589,9 @@ export const actions: Actions = {
 					code_value: code
 				});
 			}
-			await locals.pb.collection('items').update(item.id, { booked: true, booked_by: membership.id });
+			await locals.pb
+				.collection('items')
+				.update(item.id, { booked: true, booked_by: membership.id });
 		} catch (err: unknown) {
 			return failBooked(failStatus(err));
 		}

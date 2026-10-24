@@ -22,12 +22,21 @@ function sweep(now: number) {
 
 export function saveProposal(p: Omit<Proposal, 'id' | 'expiresAt'>, now = Date.now()): Proposal {
 	sweep(now);
-	const proposal: Proposal = { ...p, id: randomBytes(12).toString('base64url'), expiresAt: now + PROPOSAL_TTL_MS };
+	const proposal: Proposal = {
+		...p,
+		id: randomBytes(12).toString('base64url'),
+		expiresAt: now + PROPOSAL_TTL_MS
+	};
 	store.set(proposal.id, proposal);
 	return proposal;
 }
 
-export function takeProposal(id: string, userId: string, connectionId: string, now = Date.now()): Proposal | 'expired' | 'not_yours' {
+export function takeProposal(
+	id: string,
+	userId: string,
+	connectionId: string,
+	now = Date.now()
+): Proposal | 'expired' | 'not_yours' {
 	const p = store.get(id);
 	if (!p || p.expiresAt <= now) return 'expired';
 	if (p.userId !== userId || p.connectionId !== connectionId) return 'not_yours';
@@ -39,10 +48,14 @@ export function markCommitted(id: string, changeId: string): void {
 	if (p) p.committedChangeId = changeId;
 }
 
-const norm = (v: unknown) => (v === undefined || v === null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v));
+const norm = (v: unknown) =>
+	v === undefined || v === null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v);
 
 /** Fields whose current value differs from the preview's `before`. A missing record: all of them. */
-export function staleFields(change: PlannedChange, current: Record<string, unknown> | null): string[] {
+export function staleFields(
+	change: PlannedChange,
+	current: Record<string, unknown> | null
+): string[] {
 	if (!change.before) return [];
 	const fields = Object.keys(change.before);
 	if (!current) return fields;

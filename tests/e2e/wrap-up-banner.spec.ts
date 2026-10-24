@@ -52,10 +52,15 @@ test.describe('Wrap-up banner (#239)', () => {
 
 		// The banner replaces the top of the Overview. Its Close-out row is always
 		// outstanding in wrap-up — it's the deliberate transition out of wrap-up.
-		const banner = page.getByRole('region', { name: 'Trip wrap-up' }).filter({ visible: true }).first();
+		const banner = page
+			.getByRole('region', { name: 'Trip wrap-up' })
+			.filter({ visible: true })
+			.first();
 		await expect(banner).toBeVisible();
 		await expect(banner.getByText('Close out')).toBeVisible();
-		await expect(banner.getByText('Your trip has ended').filter({ visible: true }).first()).toBeVisible();
+		await expect(
+			banner.getByText('Your trip has ended').filter({ visible: true }).first()
+		).toBeVisible();
 
 		// The normal planning Overview top (the trip Level Header's "… · M phases" span)
 		// is gone: the banner stands in its place. Itinerary/Days still render below —
@@ -66,11 +71,7 @@ test.describe('Wrap-up banner (#239)', () => {
 	test('Close-out row launches the existing closeout wizard', async ({ page }) => {
 		const slug = await createPastTrip(page);
 
-		await page
-			.locator('[data-testid="wrapup-closeout"]')
-			.filter({ visible: true })
-			.first()
-			.click();
+		await page.locator('[data-testid="wrapup-closeout"]').filter({ visible: true }).first().click();
 		await page.waitForURL(`**/trips/${slug}/closeout`);
 		expect(page.url()).toContain(`/trips/${slug}/closeout`);
 	});
@@ -92,10 +93,16 @@ test.describe('Wrap-up banner (#239)', () => {
 		await page.setViewportSize({ width: 375, height: 812 });
 		await createPastTrip(page);
 
-		const banner = page.getByRole('region', { name: 'Trip wrap-up' }).filter({ visible: true }).first();
+		const banner = page
+			.getByRole('region', { name: 'Trip wrap-up' })
+			.filter({ visible: true })
+			.first();
 		await expect(banner).toBeVisible();
 		// The Close-out row is a real tap target within the 375px column.
-		const closeout = page.locator('[data-testid="wrapup-closeout"]').filter({ visible: true }).first();
+		const closeout = page
+			.locator('[data-testid="wrapup-closeout"]')
+			.filter({ visible: true })
+			.first();
 		await expect(closeout).toBeVisible();
 		const box = await closeout.boundingBox();
 		expect(box).not.toBeNull();

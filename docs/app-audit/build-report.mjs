@@ -11,9 +11,9 @@ const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 
 // ---- Mermaid diagrams (hand-curated from edges.json for legibility) ----
 const DIAGRAMS = {
-  app: {
-    title: 'App shell — entry points & trip split',
-    def: `flowchart LR
+	app: {
+		title: 'App shell — entry points & trip split',
+		def: `flowchart LR
   classDef pub fill:#ddebdd,stroke:#4a7c59,color:#1f2d23
   classDef warn fill:#f6d9cf,stroke:#b4552d,color:#5a2a14
   classDef mode fill:#fdf6ec,stroke:#b08d3e,color:#4a3a14
@@ -27,10 +27,10 @@ const DIAGRAMS = {
   tripHome <-->|"mode pill (active only)"| tripmode("TRIP MODE<br/>Now / Today / Add / Docs"):::mode
   tripHome --- planning("PLANNING<br/>Itinerary / Money / Members / Docs / More"):::mode
   err["404 / errors → unstyled dead end ⚠"]:::warn`
-  },
-  planning: {
-    title: 'Planning mode — 5-tab nav + sub-tabs',
-    def: `flowchart LR
+	},
+	planning: {
+		title: 'Planning mode — 5-tab nav + sub-tabs',
+		def: `flowchart LR
   classDef tab fill:#e7efe7,stroke:#4a7c59,color:#1f2d23
   classDef warn fill:#f6d9cf,stroke:#b4552d,color:#5a2a14
   subgraph bottomnav ["bottom nav (every planning page)"]
@@ -52,10 +52,10 @@ const DIAGRAMS = {
   MR --> more["/more"] --> inbox["/inbox (owner)<br/>traveler submit → 403 ⚠"]:::warn & close["/closeout"] & set["/settings"] & clone["/clone"] & exportE["GET /export"]
   item --> edit["/items/[id]/edit"] & goal
   itemNew -.->|"traveler, auto-approve off"| inbox`
-  },
-  trip: {
-    title: 'Trip mode — 4-tab nav (active trips)',
-    def: `flowchart LR
+	},
+	trip: {
+		title: 'Trip mode — 4-tab nav (active trips)',
+		def: `flowchart LR
   classDef tab fill:#f6e3d9,stroke:#b4552d,color:#5a2a14
   classDef warn fill:#f6d9cf,stroke:#b4552d,color:#5a2a14
   classDef miss fill:#fff,stroke:#b4552d,stroke-dasharray:5 4,color:#b4552d
@@ -74,10 +74,10 @@ const DIAGRAMS = {
   tl -.->|"no skip→replace ⚠"| park
   nav -.->|"no path ⚠"| money["budget / balances"]:::miss
   nav -.->|"no path ⚠"| offline["offline toggle (in More) "]:::miss`
-  },
-  post: {
-    title: 'Post-trip — the silent seam',
-    def: `flowchart LR
+	},
+	post: {
+		title: 'Post-trip — the silent seam',
+		def: `flowchart LR
   classDef warn fill:#f6d9cf,stroke:#b4552d,color:#5a2a14
   classDef miss fill:#fff,stroke:#b4552d,stroke-dasharray:5 4,color:#b4552d
   classDef ok fill:#e7efe7,stroke:#4a7c59,color:#1f2d23
@@ -89,7 +89,7 @@ const DIAGRAMS = {
   settings -.-> pub["/archive/[token] ✓<br/>404 before publish ⚠"]:::warn
   more --> clone["/clone ✓ (owner)"]:::ok & exp["GET /export ✓"]:::ok
   money["/expenses settle-up ✓<br/>(uninvited)"]:::ok`
-  }
+	}
 };
 
 // ---- findings cards ----
@@ -111,16 +111,29 @@ const findingCard = (f) => `
 
 // attach evidence screenshots to specific findings
 const shots = {
-  'WP-A-001': null, 'WP-A-002': '10-error-bad-slug.png', 'WP-A-003': '05-documents.png',
-  'WP-A-004': '06-more.png', 'WP-A-005': '03-now.png', 'WP-A-006': '08-overview-upcoming-chip.png',
-  'WP-A-019': '07-settings-archive.png'
+	'WP-A-001': null,
+	'WP-A-002': '10-error-bad-slug.png',
+	'WP-A-003': '05-documents.png',
+	'WP-A-004': '06-more.png',
+	'WP-A-005': '03-now.png',
+	'WP-A-006': '08-overview-upcoming-chip.png',
+	'WP-A-019': '07-settings-archive.png'
 };
-findings.forEach((f) => { if (shots[f.id]) f.screenshot = shots[f.id]; });
+findings.forEach((f) => {
+	if (shots[f.id]) f.screenshot = shots[f.id];
+});
 
-const verdictColor = { clean: '#4a7c59', findable: '#7a8a7a', slow: '#b08d3e', lost: '#b4552d', gap: '#8a3a5a', unbuilt: '#888' };
+const verdictColor = {
+	clean: '#4a7c59',
+	findable: '#7a8a7a',
+	slow: '#b08d3e',
+	lost: '#b4552d',
+	gap: '#8a3a5a',
+	unbuilt: '#888'
+};
 const tpRow = (s) => {
-  const v = s.verdict.startsWith('unbuilt') ? 'unbuilt' : s.verdict;
-  return `<tr data-verdict="${v}" data-tphase="${s.phase}">
+	const v = s.verdict.startsWith('unbuilt') ? 'unbuilt' : s.verdict;
+	return `<tr data-verdict="${v}" data-tphase="${s.phase}">
   <td class="num">${s.n}</td><td class="persona">${s.persona}</td>
   <td>${esc(s.intent)}</td><td class="phasecell">${s.phase}</td>
   <td><span class="verdict" style="background:${verdictColor[v]}">${esc(s.verdict)}</span></td>
@@ -234,9 +247,13 @@ function panzoom() {
 
 <h2>Navigation graph (code-derived)</h2>
 <p class="sub">Every edge from <code>href</code>/<code>goto()</code>/<code>redirect()</code>/form actions + nav chrome (<code>nav-tabs.ts</code>, BottomNav, SideRail, ContextRail, SubTabs). Drag to pan, scroll to zoom. ⚠ = finding. Raw data: <code>edges.json</code>.</p>
-${Object.values(DIAGRAMS).map((d) => `
+${Object.values(DIAGRAMS)
+	.map(
+		(d) => `
 <div class="diagram-box"><header>${d.title}<span><span class="hint">drag · scroll&nbsp;&nbsp;</span><button class="reset">reset</button></span></header>
-<div class="diagram"><pre class="mermaid">${d.def}</pre></div></div>`).join('')}
+<div class="diagram"><pre class="mermaid">${d.def}</pre></div></div>`
+	)
+	.join('')}
 
 <h2>Task-path walkthroughs — 44 scenarios</h2>
 <p class="sub">"I want to…" intents walked through the real graph. Personas: N = novice (no hidden gestures, nothing learned-by-exploring), P = power.</p>
@@ -327,4 +344,6 @@ document.getElementById('fclear').addEventListener('click', () => {
 </body></html>`;
 
 writeFileSync(dir + 'index.html', html);
-console.log(`wrote index.html (${(html.length / 1024).toFixed(0)} KB, ${findings.length} findings, ${taskpaths.scenarios.length} scenarios)`);
+console.log(
+	`wrote index.html (${(html.length / 1024).toFixed(0)} KB, ${findings.length} findings, ${taskpaths.scenarios.length} scenarios)`
+);

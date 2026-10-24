@@ -32,27 +32,52 @@ migrate(
 			type: 'base',
 			name: 'trip_goals',
 			fields: [
-				{ type: 'relation', name: 'trip', required: true, collectionId: trips.id, maxSelect: 1, cascadeDelete: true },
+				{
+					type: 'relation',
+					name: 'trip',
+					required: true,
+					collectionId: trips.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				},
 				{ type: 'text', name: 'title', required: true, min: 1, max: 200 },
 				{ type: 'text', name: 'description', max: 2000 },
-				{ type: 'relation', name: 'created_by', required: true, collectionId: tripMembers.id, maxSelect: 1, cascadeDelete: false },
-				{ type: 'select', name: 'manual_status', required: true, maxSelect: 1, values: ['unplanned', 'planned', 'done', 'considered'] },
+				{
+					type: 'relation',
+					name: 'created_by',
+					required: true,
+					collectionId: tripMembers.id,
+					maxSelect: 1,
+					cascadeDelete: false
+				},
+				{
+					type: 'select',
+					name: 'manual_status',
+					required: true,
+					maxSelect: 1,
+					values: ['unplanned', 'planned', 'done', 'considered']
+				},
 				{ type: 'number', name: 'sort_order', min: 0 },
-				{ type: 'relation', name: 'items', collectionId: items.id, maxSelect: 999, cascadeDelete: false },
+				{
+					type: 'relation',
+					name: 'items',
+					collectionId: items.id,
+					maxSelect: 999,
+					cascadeDelete: false
+				}
 			],
 			indexes: [
 				'CREATE INDEX idx_trip_goals_trip ON trip_goals (trip)',
-				'CREATE INDEX idx_trip_goals_trip_sort ON trip_goals (trip, sort_order)',
+				'CREATE INDEX idx_trip_goals_trip_sort ON trip_goals (trip, sort_order)'
 			],
 			listRule: MEMBER_VIA_TRIP,
 			viewRule: MEMBER_VIA_TRIP,
 			// create: member, authoring as themselves, and not a viewer.
 			createRule:
-				MEMBER_VIA_TRIP +
-				' && created_by.user = @request.auth.id && created_by.role != "viewer"',
+				MEMBER_VIA_TRIP + ' && created_by.user = @request.auth.id && created_by.role != "viewer"',
 			// edit/delete: rule stays at membership; role gating is in trip_goals.pb.js.
 			updateRule: MEMBER_VIA_TRIP,
-			deleteRule: MEMBER_VIA_TRIP,
+			deleteRule: MEMBER_VIA_TRIP
 		});
 
 		app.save(collection);

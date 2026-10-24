@@ -53,7 +53,7 @@
 
 <NavBar title="Import Trip" back backHref="/trips" />
 
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8">
+<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 md-desktop:max-w-2xl">
 	<ServerErrorAlert {form} class="mb-4" />
 
 	<form
@@ -76,7 +76,7 @@
 		class="space-y-4"
 	>
 		<div>
-			<label for="file" class="text-ink-soft block text-sm font-medium">
+			<label for="file" class="block text-sm font-medium text-ink-soft">
 				Select a Waypoint JSON export file
 			</label>
 			<input
@@ -86,24 +86,32 @@
 				name="file"
 				accept=".json,application/json"
 				onchange={handleFileChange}
-				class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-gray-100 file:px-3 file:py-1 file:text-sm"
+				class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink file:mr-3 file:rounded file:border-0 file:bg-gray-100 file:px-3 file:py-1 file:text-sm"
 			/>
 		</div>
 
 		{#if preview}
-			<div class="bg-surface border-border rounded-lg border p-4 space-y-1">
-				<p class="text-ink text-sm font-semibold">{preview.title}</p>
-				<p class="text-ink-muted text-xs">{preview.dates}</p>
-				<p class="text-ink-muted text-xs">{preview.phases} phases, {preview.items} items</p>
+			<div class="border-border space-y-1 rounded-lg border bg-surface p-4">
+				<p class="text-sm font-semibold text-ink">{preview.title}</p>
+				<p class="text-xs text-ink-muted">{preview.dates}</p>
+				<p class="text-xs text-ink-muted">{preview.phases} phases, {preview.items} items</p>
 			</div>
 		{/if}
 
-		<Button type="submit" disabled={submitting || !hasFile} loading={submitting} variant="moss" size="md" class="w-full">
+		<Button
+			type="submit"
+			disabled={submitting || !hasFile}
+			loading={submitting}
+			variant="moss"
+			size="md"
+			class="w-full"
+		>
 			{submitting ? 'Importing...' : 'Import Trip'}
 		</Button>
 	</form>
 
-	<p class="text-ink-muted mt-6 text-center text-xs">
-		Import creates a new trip from a previously exported Waypoint JSON file. Confirmation codes and costs are included if present in the export.
+	<p class="mt-6 text-center text-xs text-ink-muted">
+		Import creates a new trip from a previously exported Waypoint JSON file. Confirmation codes and
+		costs are included if present in the export.
 	</p>
 </main>

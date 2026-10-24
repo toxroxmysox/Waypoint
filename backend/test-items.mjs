@@ -65,7 +65,10 @@ function must(label, r) {
 
 // 400 carrying exactly this message.
 function rejects(name, r, message) {
-	assert(name, r.status === 400 && r.data?.message === message, { status: r.status, message: r.data?.message });
+	assert(name, r.status === 400 && r.data?.message === message, {
+		status: r.status,
+		message: r.data?.message
+	});
 }
 function accepts(name, r) {
 	assert(name, r.status === 200, { status: r.status, data: r.data });
@@ -73,8 +76,14 @@ function accepts(name, r) {
 
 async function main() {
 	console.log(`PB: ${PB_URL}`);
-	const fx = must('rules-fixture', await pb('POST', '/api/dev/rules-fixture', { body: { emails: EMAILS } }));
-	const owner = must('auth owner', await pb('POST', '/api/dev/auth-bypass', { body: { email: EMAILS.owner } })).token;
+	const fx = must(
+		'rules-fixture',
+		await pb('POST', '/api/dev/rules-fixture', { body: { emails: EMAILS } })
+	);
+	const owner = must(
+		'auth owner',
+		await pb('POST', '/api/dev/auth-bypass', { body: { email: EMAILS.owner } })
+	).token;
 
 	// Second trip, same owner: the source of foreign day / phase / item ids.
 	const other = await pb('POST', '/api/collections/trips/records', {
@@ -95,32 +104,63 @@ async function main() {
 	const otherTrip = other.data.id;
 	const otherDays = must(
 		'other days',
-		await pb('GET', `/api/collections/days/records?filter=${encodeURIComponent(`trip="${otherTrip}"`)}&sort=date`, { token: owner })
+		await pb(
+			'GET',
+			`/api/collections/days/records?filter=${encodeURIComponent(`trip="${otherTrip}"`)}&sort=date`,
+			{ token: owner }
+		)
 	).items;
 	const otherPhases = must(
 		'other phases',
-		await pb('GET', `/api/collections/phases/records?filter=${encodeURIComponent(`trip="${otherTrip}"`)}`, { token: owner })
+		await pb(
+			'GET',
+			`/api/collections/phases/records?filter=${encodeURIComponent(`trip="${otherTrip}"`)}`,
+			{ token: owner }
+		)
 	).items;
 	const otherItem = must(
 		'other item',
 		await pb('POST', '/api/collections/items/records', {
 			token: owner,
-			body: { trip: otherTrip, day: otherDays[0].id, type: 'activity', title: 'Other trip item', status: 'planned' }
+			body: {
+				trip: otherTrip,
+				day: otherDays[0].id,
+				type: 'activity',
+				title: 'Other trip item',
+				status: 'planned'
+			}
 		})
 	);
 
 	const base = { trip: fx.tripId, type: 'activity', title: 'Harness item' };
-	const create = (body, token = owner) => pb('POST', '/api/collections/items/records', { token, body: { ...base, ...body } });
-	const patch = (id, body, token = owner) => pb('PATCH', `/api/collections/items/records/${id}`, { token, body });
+	const create = (body, token = owner) =>
+		pb('POST', '/api/collections/items/records', { token, body: { ...base, ...body } });
+	const patch = (id, body, token = owner) =>
+		pb('PATCH', `/api/collections/items/records/${id}`, { token, body });
 
 	console.log('\n[create]');
 	accepts('valid day item', await create({ day: fx.dayId, status: 'planned' }));
 	rejects('foreign day', await create({ day: otherDays[0].id }), "That day isn't on this trip.");
-	rejects('foreign phase', await create({ day: fx.dayId, phase: otherPhases[0].id }), "That phase isn't on this trip.");
-	rejects('no day, no phase on a phased trip', await create({}), 'Pick a phase for an unscheduled item, or assign it to a day.');
+	rejects(
+		'foreign phase',
+		await create({ day: fx.dayId, phase: otherPhases[0].id }),
+		"That phase isn't on this trip."
+	);
+	rejects(
+		'no day, no phase on a phased trip',
+		await create({}),
+		'Pick a phase for an unscheduled item, or assign it to a day.'
+	);
 	accepts('no day, own phase', await create({ phase: fx.phaseId }));
-	accepts('booked meal (a reservation, #462)', await create({ day: fx.dayId, type: 'meal', booked: true }));
-	rejects('booked note', await create({ day: fx.dayId, type: 'note', booked: true }), 'Note items cannot be marked as booked.');
+	accepts(
+		'booked meal (a reservation, #462)',
+		await create({ day: fx.dayId, type: 'meal', booked: true })
+	);
+	rejects(
+		'booked note',
+		await create({ day: fx.dayId, type: 'note', booked: true }),
+		'Note items cannot be marked as booked.'
+	);
 	accepts('booked activity', await create({ day: fx.dayId, booked: true }));
 	rejects(
 		'end_date without a day',
@@ -137,40 +177,88 @@ async function main() {
 		await create({ day: fx.dayId, type: 'lodging', end_date: '2026-06-04 00:00:00.000Z' }),
 		'End date is after the trip ends.'
 	);
-	accepts('lodging spanning to trip end', await create({ day: fx.dayId, type: 'lodging', end_date: '2026-06-03 00:00:00.000Z' }));
-	accepts('red-eye flight next day', await create({ day: fx.dayId, type: 'flight', end_date: '2026-06-02 00:00:00.000Z' }));
-	rejects('flight landing after trip end', await create({ day: fx.dayId2, type: 'flight', end_date: '2026-06-05 00:00:00.000Z' }), 'End date is after the trip ends.');
-	rejects('foreign parent_item', await create({ day: fx.dayId, parent_item: otherItem.id }), "That item isn't on this trip.");
+	accepts(
+		'lodging spanning to trip end',
+		await create({ day: fx.dayId, type: 'lodging', end_date: '2026-06-03 00:00:00.000Z' })
+	);
+	accepts(
+		'red-eye flight next day',
+		await create({ day: fx.dayId, type: 'flight', end_date: '2026-06-02 00:00:00.000Z' })
+	);
+	rejects(
+		'flight landing after trip end',
+		await create({ day: fx.dayId2, type: 'flight', end_date: '2026-06-05 00:00:00.000Z' }),
+		'End date is after the trip ends.'
+	);
+	rejects(
+		'foreign parent_item',
+		await create({ day: fx.dayId, parent_item: otherItem.id }),
+		"That item isn't on this trip."
+	);
 	accepts('own parent_item', await create({ day: fx.dayId, parent_item: fx.itemId }));
-	accepts('empty-string relations treated as absent', await create({ day: fx.dayId, phase: '', parent_item: '' }));
+	accepts(
+		'empty-string relations treated as absent',
+		await create({ day: fx.dayId, phase: '', parent_item: '' })
+	);
 
 	const unplanned = await create({ phase: fx.phaseId, status: 'planned' });
-	assert('no day + planned stored as unplanned', unplanned.data?.status === 'unplanned', unplanned.data?.status);
+	assert(
+		'no day + planned stored as unplanned',
+		unplanned.data?.status === 'unplanned',
+		unplanned.data?.status
+	);
 
 	console.log('\n[update]');
 	const item = (await create({ day: fx.dayId, status: 'planned' })).data;
-	rejects('move to a foreign day', await patch(item.id, { day: otherDays[0].id }), "That day isn't on this trip.");
-	rejects('unschedule without a phase', await patch(item.id, { day: '' }), 'Pick a phase for an unscheduled item, or assign it to a day.');
+	rejects(
+		'move to a foreign day',
+		await patch(item.id, { day: otherDays[0].id }),
+		"That day isn't on this trip."
+	);
+	rejects(
+		'unschedule without a phase',
+		await patch(item.id, { day: '' }),
+		'Pick a phase for an unscheduled item, or assign it to a day.'
+	);
 	const moved = await patch(item.id, { day: '', phase: fx.phaseId });
 	accepts('unschedule into a phase', moved);
-	assert('unscheduled planned item becomes unplanned', moved.data?.status === 'unplanned', moved.data?.status);
-	rejects('end_date past trip end', await patch(item.id, { day: fx.dayId, end_date: '2026-06-09 00:00:00.000Z' }), 'End date is after the trip ends.');
+	assert(
+		'unscheduled planned item becomes unplanned',
+		moved.data?.status === 'unplanned',
+		moved.data?.status
+	);
+	rejects(
+		'end_date past trip end',
+		await patch(item.id, { day: fx.dayId, end_date: '2026-06-09 00:00:00.000Z' }),
+		'End date is after the trip ends.'
+	);
 	accepts('title-only edit', await patch(item.id, { title: 'Renamed' }));
 
 	// An owner's suggestion auto-approves: suggestions.pb.js builds the item and
 	// saves it in admin context (e.app.save), where request hooks don't fire.
 	console.log('\n[admin saves]');
 	const suggest = (payload) =>
-		pb('POST', '/api/suggestions/create', { token: owner, body: { trip_id: fx.tripId, payload: { title: 'Admin-path item', ...payload } } });
+		pb('POST', '/api/suggestions/create', {
+			token: owner,
+			body: { trip_id: fx.tripId, payload: { title: 'Admin-path item', ...payload } }
+		});
 	accepts('admin save: valid item', await suggest({ day: fx.dayId, type: 'activity' }));
-	rejects('admin save: booked note', await suggest({ day: fx.dayId, type: 'note', booked: true }), 'Note items cannot be marked as booked.');
+	rejects(
+		'admin save: booked note',
+		await suggest({ day: fx.dayId, type: 'note', booked: true }),
+		'Note items cannot be marked as booked.'
+	);
 
 	// Trip shrink (trips.pb.js) unschedules the pruned days' items in admin
 	// context. They must stay valid: keep a phase, drop the span, go unplanned.
 	console.log('\n[trip shrink]');
 	const days = must(
 		'fixture days',
-		await pb('GET', `/api/collections/days/records?filter=${encodeURIComponent(`trip="${fx.tripId}"`)}&sort=date`, { token: owner })
+		await pb(
+			'GET',
+			`/api/collections/days/records?filter=${encodeURIComponent(`trip="${fx.tripId}"`)}&sort=date`,
+			{ token: owner }
+		)
 	).items;
 	const lastDay = days[days.length - 1];
 	const stranded = (await create({ day: lastDay.id, status: 'planned' })).data;
@@ -183,11 +271,15 @@ async function main() {
 	const after = await pb('GET', `/api/collections/items/records/${stranded.id}`, { token: owner });
 	assert(
 		'pruned day item is unscheduled into a phase',
-		after.status === 200 && after.data.day === '' && after.data.phase !== '' && after.data.status === 'unplanned',
+		after.status === 200 &&
+			after.data.day === '' &&
+			after.data.phase !== '' &&
+			after.data.status === 'unplanned',
 		after.data && { day: after.data.day, phase: after.data.phase, status: after.data.status }
 	);
 
-	const stayAfter = (await pb('GET', `/api/collections/items/records/${stay.id}`, { token: owner })).data;
+	const stayAfter = (await pb('GET', `/api/collections/items/records/${stay.id}`, { token: owner }))
+		.data;
 	assert(
 		'a kept-day span is clamped to the new trip end',
 		stayAfter?.end_date?.slice(0, 10) === days[days.length - 2].date.slice(0, 10),

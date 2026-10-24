@@ -1,7 +1,14 @@
 import type { Checklist, Task } from '$lib/types';
 
 export interface ClonedChecklist {
-	checklist: { trip: string; phase: string; item: ''; title: string; kind: 'manual'; order: number };
+	checklist: {
+		trip: string;
+		phase: string;
+		item: '';
+		title: string;
+		kind: 'manual';
+		order: number;
+	};
 	tasks: Array<{ title: string; checked: false; order: number }>;
 }
 
@@ -27,7 +34,14 @@ export function cloneChecklistPayloads(
 			phase = mapped;
 		}
 		out.push({
-			checklist: { trip: newTripId, phase, item: '', title: c.title, kind: 'manual', order: c.order },
+			checklist: {
+				trip: newTripId,
+				phase,
+				item: '',
+				title: c.title,
+				kind: 'manual',
+				order: c.order
+			},
 			tasks: tasks
 				.filter((t) => t.checklist === c.id)
 				.map((t) => ({ title: t.title, checked: false as const, order: t.order }))

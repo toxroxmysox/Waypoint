@@ -8,13 +8,13 @@ Personal project. Live at [app.vandenwarsen.com](https://app.vandenwarsen.com), 
 
 ## Stack
 
-| Layer    | Choice                                                        |
-| -------- | ------------------------------------------------------------- |
-| Frontend | SvelteKit 2 + Svelte 5 (runes), Tailwind v4                    |
-| Backend  | PocketBase 0.27.2 — SQLite, collection rules, goja JS hooks    |
-| Auth     | Email + 6-digit code. No passwords, no magic links, no OAuth   |
-| Tests    | Vitest (logic), Playwright (critical-path E2E), PB harnesses   |
-| Hosting  | Docker on a home server, behind a Cloudflare Tunnel            |
+| Layer    | Choice                                                       |
+| -------- | ------------------------------------------------------------ |
+| Frontend | SvelteKit 2 + Svelte 5 (runes), Tailwind v4                  |
+| Backend  | PocketBase 0.27.2 — SQLite, collection rules, goja JS hooks  |
+| Auth     | Email + 6-digit code. No passwords, no magic links, no OAuth |
+| Tests    | Vitest (logic), Playwright (critical-path E2E), PB harnesses |
+| Hosting  | Docker on a home server, behind a Cloudflare Tunnel          |
 
 Full specification: [`docs/SPEC.md`](docs/SPEC.md). Architecture decisions: [`docs/adr/`](docs/adr/).
 
@@ -47,15 +47,15 @@ App on `http://localhost:5173`, PocketBase on `http://localhost:8090` (admin UI 
 
 `.env.local` is gitignored. The keys that matter:
 
-| Key                                  | Purpose                                              |
-| ------------------------------------ | ---------------------------------------------------- |
-| `PUBLIC_PB_URL`, `PUBLIC_APP_URL`    | Base URLs                                            |
-| `WAYPOINT_DEV_MODE`                  | `true` locally — disables SMTP + rate limits         |
-| `E2E_TEST_EMAIL`, `E2E_TEST_EMAILS`  | Whitelist for the `/api/dev/*` fixture routes        |
-| `PB_ADMIN_EMAIL`, `PB_ADMIN_PASSWORD`| Superuser, for the maintenance scripts               |
-| `RESEND_*` / `SMTP_*`                | Outbound email (unused when dev mode is on)          |
-| `GOOGLE_MAPS_API_KEY`                | Places autocomplete + details                        |
-| `AERODATABOX_API_KEY`                | Flight lookup                                        |
+| Key                                   | Purpose                                       |
+| ------------------------------------- | --------------------------------------------- |
+| `PUBLIC_PB_URL`, `PUBLIC_APP_URL`     | Base URLs                                     |
+| `WAYPOINT_DEV_MODE`                   | `true` locally — disables SMTP + rate limits  |
+| `E2E_TEST_EMAIL`, `E2E_TEST_EMAILS`   | Whitelist for the `/api/dev/*` fixture routes |
+| `PB_ADMIN_EMAIL`, `PB_ADMIN_PASSWORD` | Superuser, for the maintenance scripts        |
+| `RESEND_*` / `SMTP_*`                 | Outbound email (unused when dev mode is on)   |
+| `GOOGLE_MAPS_API_KEY`                 | Places autocomplete + details                 |
+| `AERODATABOX_API_KEY`                 | Flight lookup                                 |
 
 Both API keys are optional — those routes return 503 without them, and nothing else breaks.
 

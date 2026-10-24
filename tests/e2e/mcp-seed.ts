@@ -96,9 +96,18 @@ const addDays = (s: string, n: number) => {
 const pbDay = (s: string) => `${s} 00:00:00.000Z`;
 const at = (day: string, hm: string) => `${day} ${hm}:00.000Z`;
 
-const create = (t: string, col: string, body: unknown) => req(t, 'POST', `/api/collections/${col}/records`, body);
+const create = (t: string, col: string, body: unknown) =>
+	req(t, 'POST', `/api/collections/${col}/records`, body);
 
-async function makeTrip(t: string, userId: string, slug: string, title: string, start: string, end: string, tz: string) {
+async function makeTrip(
+	t: string,
+	userId: string,
+	slug: string,
+	title: string,
+	start: string,
+	end: string,
+	tz: string
+) {
 	const trip = await create(t, 'trips', {
 		slug,
 		title,
@@ -108,13 +117,25 @@ async function makeTrip(t: string, userId: string, slug: string, title: string, 
 		created_by: userId
 	});
 	const [owner] = (
-		await req(t, 'GET', `/api/collections/trip_members/records?filter=${encodeURIComponent(`trip="${trip.id}"`)}`)
+		await req(
+			t,
+			'GET',
+			`/api/collections/trip_members/records?filter=${encodeURIComponent(`trip="${trip.id}"`)}`
+		)
 	).items;
 	const days = (
-		await req(t, 'GET', `/api/collections/days/records?perPage=200&sort=date&filter=${encodeURIComponent(`trip="${trip.id}"`)}`)
+		await req(
+			t,
+			'GET',
+			`/api/collections/days/records?perPage=200&sort=date&filter=${encodeURIComponent(`trip="${trip.id}"`)}`
+		)
 	).items as Json[];
 	const [phase] = (
-		await req(t, 'GET', `/api/collections/phases/records?filter=${encodeURIComponent(`trip="${trip.id}"`)}`)
+		await req(
+			t,
+			'GET',
+			`/api/collections/phases/records?filter=${encodeURIComponent(`trip="${trip.id}"`)}`
+		)
 	).items as Json[];
 	const dayId = (d: string) => days.find((x) => String(x.date).startsWith(d))!.id as string;
 	return { trip, ownerMember: owner.id as string, phase: phase.id as string, dayId };
@@ -135,14 +156,37 @@ export async function seedMcpTrips(): Promise<McpSeed> {
 	const start = addDays(today, -1);
 	const last = addDays(today, 2);
 	const tomorrow = addDays(today, 1);
-	const cur = await makeTrip(T, owner.id, `e2e-mcp-current-${suffix}`, `E2E MCP Porto ${suffix}`, start, last, 'UTC');
-	await req(T, 'PATCH', `/api/collections/phases/records/${cur.phase}`, { name: 'Porto', location: 'Porto', country_code: 'PT' });
+	const cur = await makeTrip(
+		T,
+		owner.id,
+		`e2e-mcp-current-${suffix}`,
+		`E2E MCP Porto ${suffix}`,
+		start,
+		last,
+		'UTC'
+	);
+	await req(T, 'PATCH', `/api/collections/phases/records/${cur.phase}`, {
+		name: 'Porto',
+		location: 'Porto',
+		country_code: 'PT'
+	});
 
 	const travelerMember = (
-		await create(su, 'trip_members', { trip: cur.trip.id, user: traveler.id, role: 'traveler', display_name: 'Abby (Abby@Example.COM)' })
+		await create(su, 'trip_members', {
+			trip: cur.trip.id,
+			user: traveler.id,
+			role: 'traveler',
+			display_name: 'Abby (Abby@Example.COM)'
+		})
 	).id as string;
-	const viewerMember = (await create(su, 'trip_members', { trip: cur.trip.id, user: viewer.id, role: 'viewer', display_name: 'Vic' }))
-		.id as string;
+	const viewerMember = (
+		await create(su, 'trip_members', {
+			trip: cur.trip.id,
+			user: viewer.id,
+			role: 'viewer',
+			display_name: 'Vic'
+		})
+	).id as string;
 	await create(su, 'trip_members', {
 		trip: cur.trip.id,
 		role: 'traveler',
@@ -151,9 +195,13 @@ export async function seedMcpTrips(): Promise<McpSeed> {
 	});
 
 	const item = (body: Json) =>
-		create(T, 'items', { trip: cur.trip.id, phase: cur.phase, status: 'planned', created_by: cur.ownerMember, ...body }).then(
-			(r) => r.id as string
-		);
+		create(T, 'items', {
+			trip: cur.trip.id,
+			phase: cur.phase,
+			status: 'planned',
+			created_by: cur.ownerMember,
+			...body
+		}).then((r) => r.id as string);
 	const lodging = await item({
 		day: cur.dayId(start),
 		type: 'lodging',
@@ -191,7 +239,12 @@ export async function seedMcpTrips(): Promise<McpSeed> {
 		sort_order: 3
 	});
 	// Untimed, sort_order after the day's anchors → orderDayItems puts it last.
-	const untimedMeal = await item({ day: cur.dayId(today), type: 'meal', title: 'Picnic lunch', sort_order: 9 });
+	const untimedMeal = await item({
+		day: cur.dayId(today),
+		type: 'meal',
+		title: 'Picnic lunch',
+		sort_order: 9
+	});
 	const unbooked = await item({
 		day: cur.dayId(tomorrow),
 		type: 'transportation',
@@ -211,9 +264,25 @@ export async function seedMcpTrips(): Promise<McpSeed> {
 		booked: true,
 		sort_order: 0
 	});
-	const idea = await item({ day: '', type: 'activity', title: 'Surf lesson in Matosinhos', status: 'considered', sort_order: 0 });
-	await create(T, 'votes', { trip: cur.trip.id, item: idea, member: cur.ownerMember, value: 'love' });
-	await create(traveler.token, 'votes', { trip: cur.trip.id, item: idea, member: travelerMember, value: 'like' });
+	const idea = await item({
+		day: '',
+		type: 'activity',
+		title: 'Surf lesson in Matosinhos',
+		status: 'considered',
+		sort_order: 0
+	});
+	await create(T, 'votes', {
+		trip: cur.trip.id,
+		item: idea,
+		member: cur.ownerMember,
+		value: 'love'
+	});
+	await create(traveler.token, 'votes', {
+		trip: cur.trip.id,
+		item: idea,
+		member: travelerMember,
+		value: 'like'
+	});
 
 	await create(T, 'documents', {
 		trip: cur.trip.id,
@@ -229,7 +298,11 @@ export async function seedMcpTrips(): Promise<McpSeed> {
 	doc.set('uploaded_by', cur.ownerMember);
 	doc.set('kind', 'file');
 	doc.set('caption', 'Booking confirmation');
-	doc.set('file', new Blob([new Uint8Array([37, 80, 68, 70, 45, 49])], { type: 'application/pdf' }), 'casa-confirmation.pdf');
+	doc.set(
+		'file',
+		new Blob([new Uint8Array([37, 80, 68, 70, 45, 49])], { type: 'application/pdf' }),
+		'casa-confirmation.pdf'
+	);
 	await create(T, 'documents', doc);
 
 	await req(T, 'PATCH', `/api/collections/days/records/${cur.dayId(today)}`, {
@@ -263,12 +336,26 @@ export async function seedMcpTrips(): Promise<McpSeed> {
 		note: '',
 		created_by: cur.ownerMember
 	});
-	const list = await create(T, 'checklists', { trip: cur.trip.id, title: 'Packing', kind: 'manual', order: 0 });
-	await create(T, 'tasks', { checklist: list.id, title: 'Adapter for sam@pack.io', assignee: travelerMember, checked: false, order: 0 });
+	const list = await create(T, 'checklists', {
+		trip: cur.trip.id,
+		title: 'Packing',
+		kind: 'manual',
+		order: 0
+	});
+	await create(T, 'tasks', {
+		checklist: list.id,
+		title: 'Adapter for sam@pack.io',
+		assignee: travelerMember,
+		checked: false,
+		order: 0
+	});
 	await create(T, 'tasks', { checklist: list.id, title: 'Passports', checked: true, order: 1 });
 
 	const commentText = `Meet at the dock, ping zed@chat.io ${suffix}`;
-	await req(traveler.token, 'POST', '/api/comments/add', { item_id: overlapA, comment_text: commentText });
+	await req(traveler.token, 'POST', '/api/comments/add', {
+		item_id: overlapA,
+		comment_text: commentText
+	});
 
 	const photoName = `miradouro-${suffix}.png`;
 	const mem = new FormData();
@@ -278,7 +365,9 @@ export async function seedMcpTrips(): Promise<McpSeed> {
 	mem.set('thought', 'Sunset at the miradouro, thanks bea@mem.pt');
 	// 1×1 PNG
 	const png = Uint8Array.from(
-		atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='),
+		atob(
+			'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+		),
 		(c) => c.charCodeAt(0)
 	);
 	mem.set('photo', new Blob([png], { type: 'image/png' }), photoName);
@@ -287,8 +376,20 @@ export async function seedMcpTrips(): Promise<McpSeed> {
 	// ── past trip: Lucerne hotel + a Lisbon restaurant ─────────────────────────
 	const pStart = addDays(today, -400);
 	const pLast = addDays(pStart, 3);
-	const past = await makeTrip(T, owner.id, `e2e-mcp-past-${suffix}`, `E2E MCP Alps and Lisbon ${suffix}`, pStart, pLast, 'Europe/Zurich');
-	await req(T, 'PATCH', `/api/collections/phases/records/${past.phase}`, { name: 'Lucerne', location: 'Lucerne', country_code: 'CH' });
+	const past = await makeTrip(
+		T,
+		owner.id,
+		`e2e-mcp-past-${suffix}`,
+		`E2E MCP Alps and Lisbon ${suffix}`,
+		pStart,
+		pLast,
+		'Europe/Zurich'
+	);
+	await req(T, 'PATCH', `/api/collections/phases/records/${past.phase}`, {
+		name: 'Lucerne',
+		location: 'Lucerne',
+		country_code: 'CH'
+	});
 	const lisbonPhase = await create(T, 'phases', {
 		trip: past.trip.id,
 		name: 'Lisbon',
@@ -299,7 +400,12 @@ export async function seedMcpTrips(): Promise<McpSeed> {
 		order: 1
 	}).catch(() => null);
 	const pItem = (body: Json) =>
-		create(T, 'items', { trip: past.trip.id, status: 'done', created_by: past.ownerMember, ...body }).then((r) => r.id as string);
+		create(T, 'items', {
+			trip: past.trip.id,
+			status: 'done',
+			created_by: past.ownerMember,
+			...body
+		}).then((r) => r.id as string);
 	const hotelLucerne = await pItem({
 		phase: past.phase,
 		day: past.dayId(pStart),
@@ -321,12 +427,26 @@ export async function seedMcpTrips(): Promise<McpSeed> {
 
 	// Volume for search's 25-result cap.
 	for (let i = 0; i < 30; i++) {
-		await pItem({ phase: past.phase, day: past.dayId(addDays(pStart, i % 3)), type: 'activity', title: `Museum visit ${i + 1}`, sort_order: 10 + i });
+		await pItem({
+			phase: past.phase,
+			day: past.dayId(addDays(pStart, i % 3)),
+			type: 'activity',
+			title: `Museum visit ${i + 1}`,
+			sort_order: 10 + i
+		});
 	}
 
 	// ── off trip: AI Access off ────────────────────────────────────────────────
 	const offSecretText = `Secret hideaway ${suffix}`;
-	const off = await makeTrip(T, owner.id, `e2e-mcp-off-${suffix}`, `E2E MCP Private ${suffix}`, addDays(today, 30), addDays(today, 32), 'UTC');
+	const off = await makeTrip(
+		T,
+		owner.id,
+		`e2e-mcp-off-${suffix}`,
+		`E2E MCP Private ${suffix}`,
+		addDays(today, 30),
+		addDays(today, 32),
+		'UTC'
+	);
 	const offSecret = (
 		await create(T, 'items', {
 			trip: off.trip.id,
@@ -342,7 +462,15 @@ export async function seedMcpTrips(): Promise<McpSeed> {
 	await req(T, 'PATCH', `/api/collections/trips/records/${off.trip.id}`, { ai_access: false });
 
 	// ── no-write trip (#503): AI can read, AI changes off ──────────────────────
-	const noWrite = await makeTrip(T, owner.id, `e2e-mcp-nowrite-${suffix}`, `E2E MCP Read Only ${suffix}`, addDays(today, 40), addDays(today, 41), 'UTC');
+	const noWrite = await makeTrip(
+		T,
+		owner.id,
+		`e2e-mcp-nowrite-${suffix}`,
+		`E2E MCP Read Only ${suffix}`,
+		addDays(today, 40),
+		addDays(today, 41),
+		'UTC'
+	);
 	await req(T, 'PATCH', `/api/collections/trips/records/${noWrite.trip.id}`, { ai_write: false });
 
 	// ── foreign trip: someone else's ───────────────────────────────────────────
@@ -362,8 +490,20 @@ export async function seedMcpTrips(): Promise<McpSeed> {
 	return {
 		suffix,
 		startedAt,
-		trips: { current: cur.trip.slug, past: past.trip.slug, off: off.trip.slug, foreign: foreign.trip.slug, noWrite: noWrite.trip.slug },
-		tripIds: { current: cur.trip.id, past: past.trip.id, off: off.trip.id, foreign: foreign.trip.id, noWrite: noWrite.trip.id },
+		trips: {
+			current: cur.trip.slug,
+			past: past.trip.slug,
+			off: off.trip.slug,
+			foreign: foreign.trip.slug,
+			noWrite: noWrite.trip.slug
+		},
+		tripIds: {
+			current: cur.trip.id,
+			past: past.trip.id,
+			off: off.trip.id,
+			foreign: foreign.trip.id,
+			noWrite: noWrite.trip.id
+		},
 		members: { owner: cur.ownerMember, traveler: travelerMember, viewer: viewerMember },
 		items: {
 			lodging,

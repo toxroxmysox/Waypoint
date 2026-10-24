@@ -18,8 +18,8 @@
 		onclick={onToggle}
 		class="hit-44 rounded-full border px-4 py-1.5 text-xs font-semibold transition-colors
 			{mode === 'trip'
-				? 'border-moss/30 bg-moss-tint text-moss hover:bg-moss-tint/80 active:bg-moss-tint/80'
-				: 'border-clay/30 bg-clay-tint text-clay hover:bg-clay-tint/80 active:bg-clay-tint/80'}"
+			? 'border-moss/30 bg-moss-tint text-moss hover:bg-moss-tint/80 active:bg-moss-tint/80'
+			: 'border-clay/30 bg-clay-tint text-clay hover:bg-clay-tint/80 active:bg-clay-tint/80'}"
 	>
 		{mode === 'trip' ? 'To Planning Mode' : 'To Trip Mode'}
 	</button>

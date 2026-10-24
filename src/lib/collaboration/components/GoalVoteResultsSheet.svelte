@@ -52,23 +52,28 @@
 					<span class="text-sm font-semibold {OPTION_META[option].tint}" aria-hidden="true"
 						>{OPTION_META[option].glyph}</span
 					>
-					<span class="text-ink text-[13px] font-semibold">{OPTION_LABEL[option]}</span>
+					<span class="text-[13px] font-semibold text-ink">{OPTION_LABEL[option]}</span>
 				</div>
 				{#if voters.length > 0}
 					<div class="flex items-start gap-2">
 						<div class="flex -space-x-1.5 pt-0.5">
 							{#each voters as v (v.id)}
-								<span class="ring-surface rounded-full ring-2" title={memberName(v.member)}>
-									<Avatar img={memberAvatar(v.member)} initial={memberName(v.member)} alt={memberName(v.member)} size={22} />
+								<span class="rounded-full ring-2 ring-surface" title={memberName(v.member)}>
+									<Avatar
+										img={memberAvatar(v.member)}
+										initial={memberName(v.member)}
+										alt={memberName(v.member)}
+										size={22}
+									/>
 								</span>
 							{/each}
 						</div>
-						<p class="text-ink-soft flex-1 text-[12.5px] leading-relaxed">
+						<p class="flex-1 text-[12.5px] leading-relaxed text-ink-soft">
 							{voters.map((v) => memberName(v.member)).join(', ')}
 						</p>
 					</div>
 				{:else}
-					<p class="text-ink-muted text-[12.5px] italic">No one yet</p>
+					<p class="text-[12.5px] text-ink-muted italic">No one yet</p>
 				{/if}
 			</div>
 		{/each}

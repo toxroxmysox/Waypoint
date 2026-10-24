@@ -15,7 +15,14 @@ const typeOf = (i: I) => i.type;
 
 describe('group order and labels', () => {
 	it('is Lodging, Flights, Transportation, Activities, Meals, Notes', () => {
-		expect(IDEA_GROUP_ORDER).toEqual(['lodging', 'flight', 'transportation', 'activity', 'meal', 'note']);
+		expect(IDEA_GROUP_ORDER).toEqual([
+			'lodging',
+			'flight',
+			'transportation',
+			'activity',
+			'meal',
+			'note'
+		]);
 		expect(IDEA_GROUP_ORDER.map((t) => IDEA_GROUP_LABEL[t])).toEqual([
 			'Lodging',
 			'Flights',
@@ -29,13 +36,21 @@ describe('group order and labels', () => {
 
 describe('ideaGroups', () => {
 	it('orders groups by the fixed order whatever the input order, omitting empties', () => {
-		const groups = ideaGroups([mk('n', 'note'), mk('a', 'activity'), mk('l', 'lodging'), mk('m', 'meal')], typeOf);
+		const groups = ideaGroups(
+			[mk('n', 'note'), mk('a', 'activity'), mk('l', 'lodging'), mk('m', 'meal')],
+			typeOf
+		);
 		expect(groups.map((g) => g.type)).toEqual(['lodging', 'activity', 'meal', 'note']);
 		expect(groups.map((g) => g.label)).toEqual(['Lodging', 'Activities', 'Meals', 'Notes']);
 	});
 
 	it('sorts within a group by weighted score desc, ties by sort_order asc', () => {
-		const items = [mk('a', 'activity', 3), mk('b', 'activity', 1), mk('c', 'activity', 2), mk('d', 'activity', 0)];
+		const items = [
+			mk('a', 'activity', 3),
+			mk('b', 'activity', 1),
+			mk('c', 'activity', 2),
+			mk('d', 'activity', 0)
+		];
 		const g = ideaGroups(items, typeOf, { a: 2, b: 0, c: 2, d: -2 });
 		expect(g[0].items.map((i) => i.id)).toEqual(['c', 'a', 'b', 'd']);
 	});
@@ -63,7 +78,10 @@ describe('ideaGroups', () => {
 
 describe('ideaDisplayOrder', () => {
 	it('flattens the groups', () => {
-		const flat = ideaDisplayOrder([mk('n', 'note'), mk('a', 'activity'), mk('a2', 'activity', 1)], typeOf);
+		const flat = ideaDisplayOrder(
+			[mk('n', 'note'), mk('a', 'activity'), mk('a2', 'activity', 1)],
+			typeOf
+		);
 		expect(flat.map((i) => i.id)).toEqual(['a', 'a2', 'n']);
 	});
 });
@@ -101,7 +119,9 @@ describe('ideaScores', () => {
 
 describe('ideaSub', () => {
 	it('is place · cost', () => {
-		expect(ideaSub({ type: 'activity', location_name: 'Sheboygan', cost_estimate_usd: 40 })).toBe('Sheboygan · $40');
+		expect(ideaSub({ type: 'activity', location_name: 'Sheboygan', cost_estimate_usd: 40 })).toBe(
+			'Sheboygan · $40'
+		);
 	});
 	it('omits an empty part', () => {
 		expect(ideaSub({ type: 'activity', location_name: 'Sheboygan' })).toBe('Sheboygan');
@@ -114,7 +134,12 @@ describe('ideaSub', () => {
 	});
 	it('uses the card meta for the place: a flight route, a note first line', () => {
 		expect(
-			ideaSub({ type: 'flight', location_name: 'Milwaukee (MKE)', description: '→ Denver (DEN)', cost_estimate_usd: 320 })
+			ideaSub({
+				type: 'flight',
+				location_name: 'Milwaukee (MKE)',
+				description: '→ Denver (DEN)',
+				cost_estimate_usd: 320
+			})
 		).toBe('MKE → DEN · $320');
 		expect(ideaSub({ type: 'note', description: 'Bring cash\nsecond line' })).toBe('Bring cash');
 	});

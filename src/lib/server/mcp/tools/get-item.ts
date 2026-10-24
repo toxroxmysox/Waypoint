@@ -21,7 +21,11 @@ export const getItem: ToolDef = {
 		const pb = ctx.pb;
 		const item = await pb
 			.collection('items')
-			.getOne<Item & { expand?: { day?: Day } }>(id.trim(), { fields: `${ITEM_FIELDS},created_by,expand.day.date`, expand: 'day', requestKey: null })
+			.getOne<Item & { expand?: { day?: Day } }>(id.trim(), {
+				fields: `${ITEM_FIELDS},created_by,expand.day.date`,
+				expand: 'day',
+				requestKey: null
+			})
 			.catch(() => null);
 		const ref = item && (await myTrips(ctx)).find((t) => t.trip.id === item.trip);
 		if (!item || !ref) throw new Error(NOT_FOUND);
@@ -45,7 +49,9 @@ export const getItem: ToolDef = {
 				sort: 'created',
 				requestKey: null
 			}),
-			pb.collection('votes').getFullList<Vote>({ filter: byItem('item'), fields: 'id,member,value', requestKey: null }),
+			pb
+				.collection('votes')
+				.getFullList<Vote>({ filter: byItem('item'), fields: 'id,member,value', requestKey: null }),
 			pb.collection('expenses').getFullList<Expense>({
 				filter: byItem('linked_item'),
 				fields: 'id,amount_usd,description,paid_by,date',
@@ -53,12 +59,15 @@ export const getItem: ToolDef = {
 			})
 		]);
 		const name = new Map(members.map((m: TripMember) => [m.id, memberName(m)]));
-		const names = (ids: string[] | undefined) => (ids ?? []).map((i) => name.get(i) ?? 'former member').join(', ');
+		const names = (ids: string[] | undefined) =>
+			(ids ?? []).map((i) => name.get(i) ?? 'former member').join(', ');
 
 		const date = toDateOnly(item.expand?.day?.date ?? '');
 		const main = itemCard(item, date || undefined);
 		const facts = [
-			item.location_address && item.location_address !== main.lines.at(-1) ? item.location_address : '',
+			item.location_address && item.location_address !== main.lines.at(-1)
+				? item.location_address
+				: '',
 			item.flight_number ? `Flight ${item.flight_number}` : '',
 			item.cost_estimate_usd ? `Cost estimate $${item.cost_estimate_usd}` : '',
 			`Status: ${item.status}${date ? '' : ' (idea, not on a day)'}`,
@@ -69,12 +78,20 @@ export const getItem: ToolDef = {
 
 		const notes = stripHtml(item.description ?? '');
 		if (notes) cards.push({ emoji: '🗒️', title: 'Notes', lines: [notes] });
-		if (codes.length) cards.push({ emoji: '🔖', title: 'Confirmation codes', lines: codes.map((c) => `${c.code_label || 'Code'}: ${c.code_value}`) });
+		if (codes.length)
+			cards.push({
+				emoji: '🔖',
+				title: 'Confirmation codes',
+				lines: codes.map((c) => `${c.code_label || 'Code'}: ${c.code_value}`)
+			});
 		if (item.assigned_to?.length || item.not_going?.length) {
 			cards.push({
 				emoji: '🙋',
 				title: "Who's going",
-				lines: [item.assigned_to?.length ? `Going: ${names(item.assigned_to)}` : '', item.not_going?.length ? `Not going: ${names(item.not_going)}` : ''].filter(Boolean)
+				lines: [
+					item.assigned_to?.length ? `Going: ${names(item.assigned_to)}` : '',
+					item.not_going?.length ? `Not going: ${names(item.not_going)}` : ''
+				].filter(Boolean)
 			});
 		}
 		if (votes.length) {
@@ -82,23 +99,33 @@ export const getItem: ToolDef = {
 			cards.push({
 				emoji: '🗳️',
 				title: `${total} vote${total === 1 ? '' : 's'}`,
-				lines: votes.map((v) => `${name.get(v.member) ?? 'member'}: ${v.value}`).concat(
-					Object.entries(counts)
-						.filter(([, n]) => n)
-						.map(([k, n]) => `${k} ×${n}`)
-						.join(', ')
-				)
+				lines: votes
+					.map((v) => `${name.get(v.member) ?? 'member'}: ${v.value}`)
+					.concat(
+						Object.entries(counts)
+							.filter(([, n]) => n)
+							.map(([k, n]) => `${k} ×${n}`)
+							.join(', ')
+					)
 			});
 		}
 		if (expenses.length) {
 			cards.push({
 				emoji: '💵',
 				title: 'Paid',
-				lines: expenses.map((e) => `$${e.amount_usd} · ${e.description || 'expense'} · paid by ${name.get(e.paid_by) ?? 'member'}`)
+				lines: expenses.map(
+					(e) =>
+						`$${e.amount_usd} · ${e.description || 'expense'} · paid by ${name.get(e.paid_by) ?? 'member'}`
+				)
 			});
 		}
 		for (const c of comments) {
-			cards.push({ emoji: '💬', title: name.get(c.author) ?? 'member', tag: toDateOnly(c.created), lines: [c.comment_text] });
+			cards.push({
+				emoji: '💬',
+				title: name.get(c.author) ?? 'member',
+				tag: toDateOnly(c.created),
+				lines: [c.comment_text]
+			});
 		}
 		return result(item.title, cards, { id: item.id, trip: ref.trip.slug, date });
 	}

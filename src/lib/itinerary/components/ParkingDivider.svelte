@@ -38,7 +38,9 @@
 
 	// Collapsed by default — the day stays focused on the plan, ideas one tap away.
 	let expanded = $state(false);
-	const label = $derived(phaseName ? `${phaseName} · ${items.length}` : `Parking lot · ${items.length}`);
+	const label = $derived(
+		phaseName ? `${phaseName} · ${items.length}` : `Parking lot · ${items.length}`
+	);
 	// #325: when there ARE parked ideas, the header must read as a tap-to-reveal control
 	// (a first-time user missed the tiny chevron on a divider-styled header). A count pill.
 	const hasIdeas = $derived(items.length > 0);
@@ -50,15 +52,17 @@
 	<!-- Divider header: a count chip flanked by rules; tap toggles the ideas list. -->
 	<button
 		type="button"
-		class="text-ink-muted hover:text-ink-soft active:text-ink-soft flex w-full items-center gap-3"
+		class="flex w-full items-center gap-3 text-ink-muted hover:text-ink-soft active:text-ink-soft"
 		aria-expanded={expanded}
 		onclick={() => (expanded = !expanded)}
 	>
-		<span class="border-line flex-1 border-t"></span>
+		<span class="flex-1 border-t border-line"></span>
 		{#if hasIdeas}
 			<!-- #325: a pill that clearly reads as a tap-to-expand control (bordered, raised)
 			     with the idea count + a moss chevron; collapses back to the divider line. -->
-			<span class="border-line bg-surface-2 flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium whitespace-nowrap">
+			<span
+				class="flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-3 py-1 text-xs font-medium whitespace-nowrap"
+			>
 				<span class="text-ink-soft">{zoneName}</span>
 				<span class="text-ink-muted">·</span>
 				<span class="text-ink">{expanded ? 'Hide' : countLabel}</span>
@@ -80,11 +84,13 @@
 		{:else}
 			<!-- Empty zone (e.g. a boundary day where this phase has no ideas): a plain
 			     divider label — nothing to reveal, but still a drop target (#324). -->
-			<span class="text-ink-muted flex items-center gap-1 text-[11px] font-medium tracking-wider whitespace-nowrap uppercase">
+			<span
+				class="flex items-center gap-1 text-[11px] font-medium tracking-wider whitespace-nowrap text-ink-muted uppercase"
+			>
 				{label}
 			</span>
 		{/if}
-		<span class="border-line flex-1 border-t"></span>
+		<span class="flex-1 border-t border-line"></span>
 	</button>
 
 	<!-- Always mounted so it stays a drop target even while collapsed. -->

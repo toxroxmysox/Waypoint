@@ -56,8 +56,12 @@ describe('pinchView', () => {
 		expect(v.s).toBeCloseTo(3);
 	});
 	it('clamps at MAX_SCALE and never below 1x', () => {
-		expect(pinchView(IDENTITY, { x: 0, y: 0 }, 10, { x: 0, y: 0 }, 1000, img, stage).s).toBe(MAX_SCALE);
-		expect(pinchView({ s: 2, x: 0, y: 0 }, { x: 0, y: 0 }, 200, { x: 0, y: 0 }, 20, img, stage).s).toBe(1);
+		expect(pinchView(IDENTITY, { x: 0, y: 0 }, 10, { x: 0, y: 0 }, 1000, img, stage).s).toBe(
+			MAX_SCALE
+		);
+		expect(
+			pinchView({ s: 2, x: 0, y: 0 }, { x: 0, y: 0 }, 200, { x: 0, y: 0 }, 20, img, stage).s
+		).toBe(1);
 	});
 	it('the image point under the fingers follows their midpoint', () => {
 		const start = { s: 2, x: 0, y: 0 };

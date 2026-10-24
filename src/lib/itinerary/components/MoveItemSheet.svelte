@@ -74,12 +74,12 @@
 		class="space-y-4"
 	>
 		<div>
-			<label for="move-day" class="text-ink-soft block text-sm font-medium">Day</label>
+			<label for="move-day" class="block text-sm font-medium text-ink-soft">Day</label>
 			<select
 				id="move-day"
 				name="day"
 				bind:value={selectedDay}
-				class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+				class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 			>
 				<option value="">No day (unscheduled)</option>
 				{#each days as d (d.id)}
@@ -88,9 +88,9 @@
 			</select>
 		</div>
 
-{#if phases.length > 0}
+		{#if phases.length > 0}
 			<div>
-				<label for="move-phase" class="text-ink-soft block text-sm font-medium">
+				<label for="move-phase" class="block text-sm font-medium text-ink-soft">
 					Phase{#if phaseRequired}<span class="text-clay" aria-hidden="true"> *</span>{/if}
 				</label>
 				<select
@@ -98,7 +98,7 @@
 					name="phase"
 					bind:value={selectedPhase}
 					required={phaseRequired}
-					class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+					class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 				>
 					<option value="">{phaseRequired ? 'Select a phase…' : 'No phase'}</option>
 					{#each phases as p (p.id)}
@@ -106,7 +106,7 @@
 					{/each}
 				</select>
 				{#if phaseRequired}
-					<p class="text-ink-muted mt-1 text-xs">
+					<p class="mt-1 text-xs text-ink-muted">
 						An unscheduled idea needs a phase to show up in its parking lot.
 					</p>
 				{/if}
@@ -114,7 +114,7 @@
 		{/if}
 
 		{#if moveError}
-			<p role="alert" class="text-clay text-sm">{moveError}</p>
+			<p role="alert" class="text-sm text-clay">{moveError}</p>
 		{/if}
 
 		<Button type="submit" disabled={submitting} variant="moss" size="md" class="w-full">

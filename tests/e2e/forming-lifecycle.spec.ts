@@ -78,17 +78,18 @@ test.describe('Forming lifecycle (#270)', () => {
 		await page.locator('#idea-cap-title:visible').fill(ideaTitle);
 		await page.getByRole('button', { name: 'Add idea', exact: true }).click();
 		// Forming idea submits redirect back to the trip home; the idea list shows it.
-		await expect(
-			page.getByText(ideaTitle).filter({ visible: true }).first()
-		).toBeVisible({ timeout: 10000 });
+		await expect(page.getByText(ideaTitle).filter({ visible: true }).first()).toBeVisible({
+			timeout: 10000
+		});
 
 		// --- 4. Trips list: 'No dates yet' badge, sorted ahead of Past.
 		await page.goto(`${BASE}/trips`, { waitUntil: 'networkidle' });
+		await expect(page.getByText(title).filter({ visible: true }).first()).toBeVisible();
 		await expect(
-			page.getByText(title).filter({ visible: true }).first()
-		).toBeVisible();
-		await expect(
-			page.getByText(/no dates yet/i).filter({ visible: true }).first()
+			page
+				.getByText(/no dates yet/i)
+				.filter({ visible: true })
+				.first()
 		).toBeVisible();
 
 		// --- 5. Promote: set dates via the direct escape hatch (open its toggle
@@ -109,27 +110,21 @@ test.describe('Forming lifecycle (#270)', () => {
 
 		// --- 6. Promoted: the planning Overview renders with the seeded days
 		// (4-day span) + Phase 1; the planning nav is back.
-		await expect(
-			page.getByText('4 days').filter({ visible: true }).first()
-		).toBeVisible({ timeout: 15000 });
-		await expect(
-			page.getByText('Phase 1').filter({ visible: true }).first()
-		).toBeVisible();
+		await expect(page.getByText('4 days').filter({ visible: true }).first()).toBeVisible({
+			timeout: 15000
+		});
+		await expect(page.getByText('Phase 1').filter({ visible: true }).first()).toBeVisible();
 		await expect(
 			page.getByRole('link', { name: 'Itinerary' }).filter({ visible: true }).first()
 		).toBeVisible();
-		await expect(
-			page.getByText('No dates yet').filter({ visible: true })
-		).toHaveCount(0);
+		await expect(page.getByText('No dates yet').filter({ visible: true })).toHaveCount(0);
 
 		// Ideas intact: the idea was re-homed into Phase 1 — visible on its page.
-		const phaseLink = page
-			.locator(`a[href^="/trips/${slug}/phases/"]:visible`)
-			.first();
+		const phaseLink = page.locator(`a[href^="/trips/${slug}/phases/"]:visible`).first();
 		await phaseLink.click();
-		await expect(
-			page.getByText(ideaTitle).filter({ visible: true }).first()
-		).toBeVisible({ timeout: 10000 });
+		await expect(page.getByText(ideaTitle).filter({ visible: true }).first()).toBeVisible({
+			timeout: 10000
+		});
 	});
 
 	test('clearing dates on a dated trip is rejected (one-way promotion)', async ({ page }) => {
@@ -162,11 +157,7 @@ test.describe('Forming lifecycle (#270)', () => {
 		await page
 			.locator('input[name="end_date"]:visible')
 			.evaluate((el) => el.removeAttribute('required'));
-		await page
-			.getByRole('button', { name: /save/i })
-			.filter({ visible: true })
-			.first()
-			.click();
+		await page.getByRole('button', { name: /save/i }).filter({ visible: true }).first().click();
 		await expect(
 			page
 				.getByText(/they can be changed, but not removed/i)

@@ -89,7 +89,7 @@
 </script>
 
 <div
-	class="group relative no-callout"
+	class="group no-callout relative"
 	style="padding-left:{RAIL.column + RAIL.gap}px;{timed ? `min-height:${TIMED_MIN_HEIGHT}px;` : ''}"
 	bind:clientHeight={height}
 >
@@ -102,9 +102,9 @@
 	/>
 
 	<Card
-		class="group-hover:shadow-card-strong group-active:bg-surface-2 relative h-full {timed ? 'min-h-[62px]' : ''} {muted
-			? 'bg-transparent! shadow-none!'
-			: ''}"
+		class="relative h-full group-hover:shadow-card-strong group-active:bg-surface-2 {timed
+			? 'min-h-[62px]'
+			: ''} {muted ? 'bg-transparent! shadow-none!' : ''}"
 	>
 		<div class="p-3">
 			<a
@@ -114,20 +114,30 @@
 			></a>
 
 			<div class="flex items-start justify-between gap-2">
-				<h4 class="{muted ? 'text-ink-muted' : 'text-ink'} line-clamp-2 min-w-0 text-sm leading-5 font-semibold" data-card="title">{item.title}</h4>
+				<h4
+					class="{muted
+						? 'text-ink-muted'
+						: 'text-ink'} line-clamp-2 min-w-0 text-sm leading-5 font-semibold"
+					data-card="title"
+				>
+					{item.title}
+				</h4>
 				{#if cost > 0}
-					<div class="text-ink shrink-0 text-sm leading-5 font-medium tabular-nums" data-card="cost">
+					<div
+						class="shrink-0 text-sm leading-5 font-medium text-ink tabular-nums"
+						data-card="cost"
+					>
 						${cost.toLocaleString('en-US')}
 					</div>
 				{/if}
 				{#if menu}
 					<!-- 44px hit inside the card's own padding: -my-3 cancels the p-3 above and below. -->
-					<div class="relative z-10 focus-within:z-30 -my-3 -mr-1 shrink-0">{@render menu()}</div>
+					<div class="relative z-10 -my-3 -mr-1 shrink-0 focus-within:z-30">{@render menu()}</div>
 				{/if}
 			</div>
 
 			{#if meta}
-				<p class="text-ink-muted mt-0.5 truncate text-[12px] leading-4" data-card="meta">{meta}</p>
+				<p class="mt-0.5 truncate text-[12px] leading-4 text-ink-muted" data-card="meta">{meta}</p>
 			{/if}
 
 			{#snippet going()}

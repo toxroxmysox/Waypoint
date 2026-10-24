@@ -17,7 +17,8 @@ const card = (page: Page, title: string) =>
 		.filter({ visible: true })
 		.first();
 const note = (page: Page, title: string) => card(page, title).locator('[data-strip="overlap"]');
-const isRed = (loc: ReturnType<Page['locator']>) => loc.evaluate((el) => el.classList.contains('text-error'));
+const isRed = (loc: ReturnType<Page['locator']>) =>
+	loc.evaluate((el) => el.classList.contains('text-error'));
 
 test.describe('Planning Mode overlaps (#421)', () => {
 	test.skip(!process.env.E2E_TEST_EMAIL, 'Set E2E_TEST_EMAIL to run E2E tests');
@@ -34,19 +35,29 @@ test.describe('Planning Mode overlaps (#421)', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await page.setViewportSize({ width: 375, height: 812 });
-		await page.goto(`${BASE}/api/dev/login?email=${encodeURIComponent(process.env.E2E_TEST_EMAIL!)}`);
+		await page.goto(
+			`${BASE}/api/dev/login?email=${encodeURIComponent(process.env.E2E_TEST_EMAIL!)}`
+		);
 		await page.waitForURL(/\/(trips|claim)/, { timeout: 15000 });
 		await page.goto(`${BASE}/trips/${SLUG}/days/${dayId}`, { waitUntil: 'networkidle' });
 	});
 
-	test('shared people: both cards say Overlaps {partner} in red; earlier end + later start are red', async ({ page }) => {
+	test('shared people: both cards say Overlaps {partner} in red; earlier end + later start are red', async ({
+		page
+	}) => {
 		await expect(note(page, 'Brunch')).toContainText('Overlaps Red Rocks hike');
 		await expect(note(page, 'Red Rocks hike')).toContainText('Overlaps Brunch');
 		expect(await isRed(note(page, 'Brunch'))).toBe(true);
 		expect(await isRed(note(page, 'Red Rocks hike'))).toBe(true);
 		// First in the strip.
-		expect(await card(page, 'Brunch').locator('[data-card-strip] [data-strip]').first().getAttribute('data-strip')).toBe('overlap');
-		const t = (title: string, which: 'top' | 'bottom') => card(page, title).locator(`[data-rail="time-${which}"]`);
+		expect(
+			await card(page, 'Brunch')
+				.locator('[data-card-strip] [data-strip]')
+				.first()
+				.getAttribute('data-strip')
+		).toBe('overlap');
+		const t = (title: string, which: 'top' | 'bottom') =>
+			card(page, title).locator(`[data-rail="time-${which}"]`);
 		expect(await isRed(t('Brunch', 'bottom'))).toBe(true);
 		expect(await isRed(t('Brunch', 'top'))).toBe(false);
 		expect(await isRed(t('Red Rocks hike', 'top'))).toBe(true);

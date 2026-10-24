@@ -28,7 +28,27 @@ const EMAILS = {
 };
 
 const ROLES = ['owner', 'co_owner', 'traveler', 'viewer', 'non_member'];
-const COLLECTIONS = ['users', 'trips', 'trip_members', 'phases', 'days', 'items', 'checklist_items', 'pending_invites', 'votes', 'trip_goals', 'goal_votes', 'suggestion_votes', 'documents', 'memories', 'scenarios', 'scenario_votes', 'scenario_points', 'decisions', 'availability'];
+const COLLECTIONS = [
+	'users',
+	'trips',
+	'trip_members',
+	'phases',
+	'days',
+	'items',
+	'checklist_items',
+	'pending_invites',
+	'votes',
+	'trip_goals',
+	'goal_votes',
+	'suggestion_votes',
+	'documents',
+	'memories',
+	'scenarios',
+	'scenario_votes',
+	'scenario_points',
+	'decisions',
+	'availability'
+];
 
 // Collections whose create requires a multipart body (a file field). `documents`
 // (#70) takes a single file; the harness uploads a valid 1x1 PNG so PB's
@@ -89,9 +109,13 @@ async function authBypass(email) {
 async function superuserToken() {
 	const identity = process.env.PB_SUPERUSER_EMAIL || 'admin@e2e.test';
 	const password = process.env.PB_SUPERUSER_PASSWORD || 'e2eAdminPass123';
-	const { status, data } = await pbRequest('POST', '/api/collections/_superusers/auth-with-password', {
-		body: { identity, password }
-	});
+	const { status, data } = await pbRequest(
+		'POST',
+		'/api/collections/_superusers/auth-with-password',
+		{
+			body: { identity, password }
+		}
+	);
 	if (status !== 200 || !data?.token) {
 		console.error(`superuser auth failed (HTTP ${status}) — set PB_SUPERUSER_EMAIL/PASSWORD`, data);
 		return null;
@@ -282,7 +306,13 @@ const EXPECT = {
 	trips: {
 		list: ALLOW_MEMBERS_DENY_NONMEMBER,
 		view: ALLOW_MEMBERS_DENY_NONMEMBER,
-		create: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'allow', non_member: 'allow' },
+		create: {
+			owner: 'allow',
+			co_owner: 'allow',
+			traveler: 'allow',
+			viewer: 'allow',
+			non_member: 'allow'
+		},
 		update: ALLOW_MEMBERS_DENY_NONMEMBER,
 		delete: OWNER_COOWNER_ONLY
 	},
@@ -389,7 +419,13 @@ const EXPECT = {
 	votes: {
 		list: ALLOW_MEMBERS_DENY_NONMEMBER,
 		view: ALLOW_MEMBERS_DENY_NONMEMBER,
-		create: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' },
+		create: {
+			owner: 'allow',
+			co_owner: 'allow',
+			traveler: 'allow',
+			viewer: 'deny',
+			non_member: 'deny'
+		},
 		update: SELF_ONLY,
 		delete: SELF_ONLY
 	},
@@ -409,9 +445,27 @@ const EXPECT = {
 	trip_goals: {
 		list: ALLOW_MEMBERS_DENY_NONMEMBER,
 		view: ALLOW_MEMBERS_DENY_NONMEMBER,
-		create: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' },
-		update: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' },
-		delete: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' }
+		create: {
+			owner: 'allow',
+			co_owner: 'allow',
+			traveler: 'allow',
+			viewer: 'deny',
+			non_member: 'deny'
+		},
+		update: {
+			owner: 'allow',
+			co_owner: 'allow',
+			traveler: 'allow',
+			viewer: 'deny',
+			non_member: 'deny'
+		},
+		delete: {
+			owner: 'allow',
+			co_owner: 'allow',
+			traveler: 'allow',
+			viewer: 'deny',
+			non_member: 'deny'
+		}
 	},
 	// goal_votes (#77 — ADR-0004 separate collection, parallel to votes):
 	//   list/view: any member can see the trip's goal votes.
@@ -427,7 +481,13 @@ const EXPECT = {
 	goal_votes: {
 		list: ALLOW_MEMBERS_DENY_NONMEMBER,
 		view: ALLOW_MEMBERS_DENY_NONMEMBER,
-		create: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' },
+		create: {
+			owner: 'allow',
+			co_owner: 'allow',
+			traveler: 'allow',
+			viewer: 'deny',
+			non_member: 'deny'
+		},
 		update: SELF_ONLY,
 		delete: SELF_ONLY
 	},
@@ -447,7 +507,13 @@ const EXPECT = {
 	suggestion_votes: {
 		list: ALLOW_MEMBERS_DENY_NONMEMBER,
 		view: ALLOW_MEMBERS_DENY_NONMEMBER,
-		create: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' },
+		create: {
+			owner: 'allow',
+			co_owner: 'allow',
+			traveler: 'allow',
+			viewer: 'deny',
+			non_member: 'deny'
+		},
 		update: SELF_ONLY,
 		delete: SELF_ONLY
 	},
@@ -464,9 +530,21 @@ const EXPECT = {
 	documents: {
 		list: ALLOW_MEMBERS_DENY_NONMEMBER,
 		view: ALLOW_MEMBERS_DENY_NONMEMBER,
-		create: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' },
+		create: {
+			owner: 'allow',
+			co_owner: 'allow',
+			traveler: 'allow',
+			viewer: 'deny',
+			non_member: 'deny'
+		},
 		update: DENY_ALL,
-		delete: { owner: 'allow', co_owner: 'allow', traveler: 'deny', viewer: 'deny', non_member: 'deny' }
+		delete: {
+			owner: 'allow',
+			co_owner: 'allow',
+			traveler: 'deny',
+			viewer: 'deny',
+			non_member: 'deny'
+		}
 	},
 	// memories (#269 / ADR-0007):
 	//   list/view: ALL trip members, including viewers — memories are reviewed
@@ -482,7 +560,13 @@ const EXPECT = {
 	memories: {
 		list: ALLOW_MEMBERS_DENY_NONMEMBER,
 		view: ALLOW_MEMBERS_DENY_NONMEMBER,
-		create: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' },
+		create: {
+			owner: 'allow',
+			co_owner: 'allow',
+			traveler: 'allow',
+			viewer: 'deny',
+			non_member: 'deny'
+		},
 		update: SELF_ONLY,
 		delete: SELF_ONLY
 	},
@@ -499,7 +583,13 @@ const EXPECT = {
 	scenarios: {
 		list: ALLOW_MEMBERS_DENY_NONMEMBER,
 		view: ALLOW_MEMBERS_DENY_NONMEMBER,
-		create: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' },
+		create: {
+			owner: 'allow',
+			co_owner: 'allow',
+			traveler: 'allow',
+			viewer: 'deny',
+			non_member: 'deny'
+		},
 		update: SELF_ONLY,
 		delete: SELF_ONLY
 	},
@@ -515,7 +605,13 @@ const EXPECT = {
 	scenario_votes: {
 		list: ALLOW_MEMBERS_DENY_NONMEMBER,
 		view: ALLOW_MEMBERS_DENY_NONMEMBER,
-		create: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' },
+		create: {
+			owner: 'allow',
+			co_owner: 'allow',
+			traveler: 'allow',
+			viewer: 'deny',
+			non_member: 'deny'
+		},
 		update: SELF_ONLY,
 		delete: SELF_ONLY
 	},
@@ -529,7 +625,13 @@ const EXPECT = {
 	scenario_points: {
 		list: ALLOW_MEMBERS_DENY_NONMEMBER,
 		view: ALLOW_MEMBERS_DENY_NONMEMBER,
-		create: { owner: 'allow', co_owner: 'allow', traveler: 'allow', viewer: 'deny', non_member: 'deny' },
+		create: {
+			owner: 'allow',
+			co_owner: 'allow',
+			traveler: 'allow',
+			viewer: 'deny',
+			non_member: 'deny'
+		},
 		update: DENY_ALL,
 		delete: SELF_ONLY
 	},
@@ -794,7 +896,14 @@ async function runListPhase(tokens, fixture) {
 			const r = await pbRequest('GET', `/api/collections/${col}/records?perPage=200`, {
 				token: tokens[role]
 			});
-			recordResult(col, 'list', role, EXPECT[col].list[role], classifyList(r.status, r.data?.items, fid), r.status);
+			recordResult(
+				col,
+				'list',
+				role,
+				EXPECT[col].list[role],
+				classifyList(r.status, r.data?.items, fid),
+				r.status
+			);
 		}
 		const r = await pbRequest('GET', `/api/collections/${col}/records?perPage=200`);
 		recordResult(col, 'list', 'anon', 'deny', classifyList(r.status, r.data?.items, fid), r.status);
@@ -823,10 +932,19 @@ async function runCreatePhase(tokens, fixture) {
 				? { token: tokens[role], form: documentsCreateForm(fixture) }
 				: { token: tokens[role], body: createBody(col, role, fixture) };
 			const r = await pbRequest('POST', `/api/collections/${col}/records`, opts);
-			recordResult(col, 'create', role, EXPECT[col].create[role], classifyWrite(r.status), r.status);
+			recordResult(
+				col,
+				'create',
+				role,
+				EXPECT[col].create[role],
+				classifyWrite(r.status),
+				r.status
+			);
 			// #411: the 3-day fixture has one free phase start (06-02); free it for the next role.
 			if (col === 'phases' && r.status === 200) {
-				await pbRequest('DELETE', `/api/collections/phases/records/${r.data.id}`, { token: tokens.owner });
+				await pbRequest('DELETE', `/api/collections/phases/records/${r.data.id}`, {
+					token: tokens.owner
+				});
 			}
 		}
 		const anonOpts = multipart
@@ -855,7 +973,14 @@ async function runUpdatePhase(tokens, fixture) {
 				token: tokens[role],
 				body
 			});
-			recordResult(col, 'update', role, EXPECT[col].update[role], classifyWrite(r.status), r.status);
+			recordResult(
+				col,
+				'update',
+				role,
+				EXPECT[col].update[role],
+				classifyWrite(r.status),
+				r.status
+			);
 		}
 		const r = await pbRequest('PATCH', `/api/collections/${col}/records/${fid}`, {
 			body: updateBody(col)
@@ -916,21 +1041,46 @@ async function runGoalVotesNovelCases(tokens) {
 		token: tokens.owner,
 		body: { goal: fixture.goalOwnerId, member: fixture.memberIds.owner, value: 'like' }
 	});
-	recordResult('goal_votes', 'create_own_goal', 'owner', 'deny', classifyWrite(ownGoal.status), ownGoal.status);
+	recordResult(
+		'goal_votes',
+		'create_own_goal',
+		'owner',
+		'deny',
+		classifyWrite(ownGoal.status),
+		ownGoal.status
+	);
 
 	// 1b. Control: owner votes a goal they did NOT author (goalNeutral) → allow.
 	const otherGoal = await pbRequest('POST', '/api/collections/goal_votes/records', {
 		token: tokens.owner,
 		body: { goal: fixture.goalNeutralId, member: fixture.memberIds.owner, value: 'like' }
 	});
-	recordResult('goal_votes', 'create_other_goal', 'owner', 'allow', classifyWrite(otherGoal.status), otherGoal.status);
+	recordResult(
+		'goal_votes',
+		'create_other_goal',
+		'owner',
+		'allow',
+		classifyWrite(otherGoal.status),
+		otherGoal.status
+	);
 
 	// 2a. Control: traveler deletes their own goal while it has zero votes → allow.
 	fixture = await setupFixture();
-	const delZero = await pbRequest('DELETE', `/api/collections/trip_goals/records/${fixture.goalId}`, {
-		token: tokens.traveler
-	});
-	recordResult('trip_goals', 'delete_creator_zero', 'traveler', 'allow', classifyWrite(delZero.status), delZero.status);
+	const delZero = await pbRequest(
+		'DELETE',
+		`/api/collections/trip_goals/records/${fixture.goalId}`,
+		{
+			token: tokens.traveler
+		}
+	);
+	recordResult(
+		'trip_goals',
+		'delete_creator_zero',
+		'traveler',
+		'allow',
+		classifyWrite(delZero.status),
+		delZero.status
+	);
 
 	// 2b. Tightening: once a vote exists on the traveler's goal (cast by the owner,
 	//     legal — not the owner's own goal), the traveler-creator can no longer
@@ -940,10 +1090,21 @@ async function runGoalVotesNovelCases(tokens) {
 		token: tokens.owner,
 		body: { goal: fixture.goalId, member: fixture.memberIds.owner, value: 'like' }
 	});
-	const delVoted = await pbRequest('DELETE', `/api/collections/trip_goals/records/${fixture.goalId}`, {
-		token: tokens.traveler
-	});
-	recordResult('trip_goals', 'delete_creator_voted', 'traveler', 'deny', classifyWrite(delVoted.status), delVoted.status);
+	const delVoted = await pbRequest(
+		'DELETE',
+		`/api/collections/trip_goals/records/${fixture.goalId}`,
+		{
+			token: tokens.traveler
+		}
+	);
+	recordResult(
+		'trip_goals',
+		'delete_creator_voted',
+		'traveler',
+		'deny',
+		classifyWrite(delVoted.status),
+		delVoted.status
+	);
 
 	// 2c. ...but an owner may still delete a voted goal regardless.
 	fixture = await setupFixture();
@@ -951,17 +1112,30 @@ async function runGoalVotesNovelCases(tokens) {
 		token: tokens.owner,
 		body: { goal: fixture.goalId, member: fixture.memberIds.owner, value: 'like' }
 	});
-	const delOwner = await pbRequest('DELETE', `/api/collections/trip_goals/records/${fixture.goalId}`, {
-		token: tokens.owner
-	});
-	recordResult('trip_goals', 'delete_owner_voted', 'owner', 'allow', classifyWrite(delOwner.status), delOwner.status);
+	const delOwner = await pbRequest(
+		'DELETE',
+		`/api/collections/trip_goals/records/${fixture.goalId}`,
+		{
+			token: tokens.owner
+		}
+	);
+	recordResult(
+		'trip_goals',
+		'delete_owner_voted',
+		'owner',
+		'allow',
+		classifyWrite(delOwner.status),
+		delOwner.status
+	);
 }
 
 function printNovelReport() {
 	console.log('\n[novel #77 rules]');
 	for (const r of results.filter((x) => NOVEL_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
-		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+		console.log(
+			`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`
+		);
 	}
 }
 
@@ -986,9 +1160,20 @@ async function runSuggestionVotesNovelCases(tokens) {
 	let fixture = await setupFixture();
 	const cast = await pbRequest('POST', '/api/collections/suggestion_votes/records', {
 		token: tokens.owner,
-		body: { suggestion: fixture.suggestionNeutralId, member: fixture.memberIds.owner, value: 'love' }
+		body: {
+			suggestion: fixture.suggestionNeutralId,
+			member: fixture.memberIds.owner,
+			value: 'love'
+		}
 	});
-	recordResult('suggestion_votes', 'cast_vote', 'owner', 'allow', classifyWrite(cast.status), cast.status);
+	recordResult(
+		'suggestion_votes',
+		'cast_vote',
+		'owner',
+		'allow',
+		classifyWrite(cast.status),
+		cast.status
+	);
 
 	// 2. CANNOT-VOTE-OWN — owner votes the owner-authored `suggestionAuthored` →
 	//    deny (authorship is the implicit endorsement; rule: suggestion.author !=
@@ -996,9 +1181,20 @@ async function runSuggestionVotesNovelCases(tokens) {
 	fixture = await setupFixture();
 	const own = await pbRequest('POST', '/api/collections/suggestion_votes/records', {
 		token: tokens.owner,
-		body: { suggestion: fixture.suggestionAuthoredId, member: fixture.memberIds.owner, value: 'like' }
+		body: {
+			suggestion: fixture.suggestionAuthoredId,
+			member: fixture.memberIds.owner,
+			value: 'like'
+		}
 	});
-	recordResult('suggestion_votes', 'cannot_vote_own', 'owner', 'deny', classifyWrite(own.status), own.status);
+	recordResult(
+		'suggestion_votes',
+		'cannot_vote_own',
+		'owner',
+		'deny',
+		classifyWrite(own.status),
+		own.status
+	);
 
 	// 3. OWNERSHIP VIA PARENT — a traveler who is a member of the suggestion's trip
 	//    (resolved single-parent via `suggestion → trip`, no `trip` FK on the vote)
@@ -1007,9 +1203,20 @@ async function runSuggestionVotesNovelCases(tokens) {
 	fixture = await setupFixture();
 	const viaParent = await pbRequest('POST', '/api/collections/suggestion_votes/records', {
 		token: tokens.traveler,
-		body: { suggestion: fixture.suggestionNeutralId, member: fixture.memberIds.traveler, value: 'like' }
+		body: {
+			suggestion: fixture.suggestionNeutralId,
+			member: fixture.memberIds.traveler,
+			value: 'like'
+		}
 	});
-	recordResult('suggestion_votes', 'ownership_via_parent', 'traveler', 'allow', classifyWrite(viaParent.status), viaParent.status);
+	recordResult(
+		'suggestion_votes',
+		'ownership_via_parent',
+		'traveler',
+		'allow',
+		classifyWrite(viaParent.status),
+		viaParent.status
+	);
 
 	// 4. NON-MEMBER DENIED — a non-member of the trip cannot vote any of its
 	//    suggestions; the `suggestion.trip.trip_members_via_trip` path excludes
@@ -1018,16 +1225,31 @@ async function runSuggestionVotesNovelCases(tokens) {
 	fixture = await setupFixture();
 	const nm = await pbRequest('POST', '/api/collections/suggestion_votes/records', {
 		token: tokens.non_member,
-		body: { suggestion: fixture.suggestionNeutralId, member: fixture.memberIds.owner, value: 'like' }
+		body: {
+			suggestion: fixture.suggestionNeutralId,
+			member: fixture.memberIds.owner,
+			value: 'like'
+		}
 	});
-	recordResult('suggestion_votes', 'nonmember_denied', 'non_member', 'deny', classifyWrite(nm.status), nm.status);
+	recordResult(
+		'suggestion_votes',
+		'nonmember_denied',
+		'non_member',
+		'deny',
+		classifyWrite(nm.status),
+		nm.status
+	);
 }
 
 function printSuggestionVotesReport() {
-	console.log('\n[#248 suggestion_votes — cast, cannot-vote-own, ownership-via-parent, non-member denied]');
+	console.log(
+		'\n[#248 suggestion_votes — cast, cannot-vote-own, ownership-via-parent, non-member denied]'
+	);
 	for (const r of results.filter((x) => SUGGESTION_VOTE_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
-		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+		console.log(
+			`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`
+		);
 	}
 }
 
@@ -1044,24 +1266,44 @@ async function runLastPhaseDeleteCases(tokens) {
 	const fixture = await setupFixture();
 
 	// Control: two phases exist → owner deletes one ("Test Phase") → allow.
-	const delNotLast = await pbRequest('DELETE', `/api/collections/phases/records/${fixture.phaseId}`, {
-		token: tokens.owner
-	});
-	recordResult('phases', 'delete_not_last', 'owner', 'allow', classifyWrite(delNotLast.status), delNotLast.status);
+	const delNotLast = await pbRequest(
+		'DELETE',
+		`/api/collections/phases/records/${fixture.phaseId}`,
+		{
+			token: tokens.owner
+		}
+	);
+	recordResult(
+		'phases',
+		'delete_not_last',
+		'owner',
+		'allow',
+		classifyWrite(delNotLast.status),
+		delNotLast.status
+	);
 
 	// Block: only the hook-seeded "Trip" phase remains → deleting it is the
 	// last-phase delete → deny (BadRequestError, classified deny).
 	const delLast = await pbRequest('DELETE', `/api/collections/phases/records/${fixture.phaseId2}`, {
 		token: tokens.owner
 	});
-	recordResult('phases', 'delete_last', 'owner', 'deny', classifyWrite(delLast.status), delLast.status);
+	recordResult(
+		'phases',
+		'delete_last',
+		'owner',
+		'deny',
+		classifyWrite(delLast.status),
+		delLast.status
+	);
 }
 
 function printLastPhaseDeleteReport() {
 	console.log('\n[novel #217 last-phase delete block]');
 	for (const r of results.filter((x) => LAST_PHASE_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
-		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+		console.log(
+			`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`
+		);
 	}
 }
 
@@ -1087,7 +1329,14 @@ async function runSelfAssignNovelCases(tokens) {
 		token: tokens.traveler,
 		body: { assigned_to: [fixture.memberIds.traveler] }
 	});
-	recordResult('items', 'self_add_traveler', 'traveler', 'allow', classifyWrite(add.status), add.status);
+	recordResult(
+		'items',
+		'self_add_traveler',
+		'traveler',
+		'allow',
+		classifyWrite(add.status),
+		add.status
+	);
 
 	// 2. Traveler self-REMOVE — from a state where they're already assigned → allow.
 	//    Seed via the owner (a privileged edit) so the remove is the only delta.
@@ -1100,7 +1349,14 @@ async function runSelfAssignNovelCases(tokens) {
 		token: tokens.traveler,
 		body: { assigned_to: [] }
 	});
-	recordResult('items', 'self_remove_traveler', 'traveler', 'allow', classifyWrite(remove.status), remove.status);
+	recordResult(
+		'items',
+		'self_remove_traveler',
+		'traveler',
+		'allow',
+		classifyWrite(remove.status),
+		remove.status
+	);
 
 	// 3. Viewer self-ADD — viewers are read-only, never self-assign → deny.
 	fixture = await setupFixture();
@@ -1108,7 +1364,14 @@ async function runSelfAssignNovelCases(tokens) {
 		token: tokens.viewer,
 		body: { assigned_to: [fixture.memberIds.viewer] }
 	});
-	recordResult('items', 'self_add_viewer', 'viewer', 'deny', classifyWrite(viewerAdd.status), viewerAdd.status);
+	recordResult(
+		'items',
+		'self_add_viewer',
+		'viewer',
+		'deny',
+		classifyWrite(viewerAdd.status),
+		viewerAdd.status
+	);
 
 	// 4. Non-member self-ADD — not a member of the trip → deny.
 	fixture = await setupFixture();
@@ -1116,7 +1379,14 @@ async function runSelfAssignNovelCases(tokens) {
 		token: tokens.non_member,
 		body: { assigned_to: [fixture.memberIds.traveler] }
 	});
-	recordResult('items', 'self_add_nonmember', 'non_member', 'deny', classifyWrite(nmAdd.status), nmAdd.status);
+	recordResult(
+		'items',
+		'self_add_nonmember',
+		'non_member',
+		'deny',
+		classifyWrite(nmAdd.status),
+		nmAdd.status
+	);
 
 	// 5. Traveler adds ANOTHER member's id (the co_owner's) — not self → deny.
 	fixture = await setupFixture();
@@ -1124,7 +1394,14 @@ async function runSelfAssignNovelCases(tokens) {
 		token: tokens.traveler,
 		body: { assigned_to: [fixture.memberIds.co_owner] }
 	});
-	recordResult('items', 'add_other_member', 'traveler', 'deny', classifyWrite(other.status), other.status);
+	recordResult(
+		'items',
+		'add_other_member',
+		'traveler',
+		'deny',
+		classifyWrite(other.status),
+		other.status
+	);
 
 	// 6. Traveler self-adds AND edits another field (title) in one PATCH → deny
 	//    (the exception forbids any other field delta).
@@ -1133,14 +1410,23 @@ async function runSelfAssignNovelCases(tokens) {
 		token: tokens.traveler,
 		body: { assigned_to: [fixture.memberIds.traveler], title: 'Sneaky edit' }
 	});
-	recordResult('items', 'self_add_with_other_field', 'traveler', 'deny', classifyWrite(piggyback.status), piggyback.status);
+	recordResult(
+		'items',
+		'self_add_with_other_field',
+		'traveler',
+		'deny',
+		classifyWrite(piggyback.status),
+		piggyback.status
+	);
 }
 
 function printSelfAssignReport() {
 	console.log('\n[#226 self-assign — member toggles only their OWN assigned_to]');
 	for (const r of results.filter((x) => SELF_ASSIGN_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
-		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+		console.log(
+			`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`
+		);
 	}
 }
 
@@ -1181,7 +1467,14 @@ async function runCreatorEditNovelCases(tokens) {
 		token: tokens.traveler,
 		body: { description: 'Creator edits their own item' }
 	});
-	recordResult('items', 'edit_own_item_traveler', 'traveler', 'allow', classifyWrite(editOwn.status), editOwn.status);
+	recordResult(
+		'items',
+		'edit_own_item_traveler',
+		'traveler',
+		'allow',
+		classifyWrite(editOwn.status),
+		editOwn.status
+	);
 
 	// 2. Traveler edits a BOOKING/MONEY field on their OWN item → allow (the
 	//    carve-out covers all fields, unlike the narrow #226 self-assign one).
@@ -1189,7 +1482,14 @@ async function runCreatorEditNovelCases(tokens) {
 		token: tokens.traveler,
 		body: { booked: true, cost_estimate_usd: 42 }
 	});
-	recordResult('items', 'edit_own_item_booking_traveler', 'traveler', 'allow', classifyWrite(editBooking.status), editBooking.status);
+	recordResult(
+		'items',
+		'edit_own_item_booking_traveler',
+		'traveler',
+		'allow',
+		classifyWrite(editBooking.status),
+		editBooking.status
+	);
 
 	// 3. Traveler edits ANOTHER member's item (the owner-authored fixture item) →
 	//    deny. The creator exception must not leak to non-creators.
@@ -1198,7 +1498,14 @@ async function runCreatorEditNovelCases(tokens) {
 		token: tokens.traveler,
 		body: { description: 'Editing someone else’s item' }
 	});
-	recordResult('items', 'edit_other_item_traveler', 'traveler', 'deny', classifyWrite(editOther.status), editOther.status);
+	recordResult(
+		'items',
+		'edit_other_item_traveler',
+		'traveler',
+		'deny',
+		classifyWrite(editOther.status),
+		editOther.status
+	);
 
 	// 4. Traveler DELETEs their OWN item → deny. The creator may edit but never
 	//    delete (delete stays owner/co_owner only).
@@ -1217,14 +1524,23 @@ async function runCreatorEditNovelCases(tokens) {
 	const delOwn = await pbRequest('DELETE', `/api/collections/items/records/${delOwnId}`, {
 		token: tokens.traveler
 	});
-	recordResult('items', 'delete_own_item_traveler', 'traveler', 'deny', classifyWrite(delOwn.status), delOwn.status);
+	recordResult(
+		'items',
+		'delete_own_item_traveler',
+		'traveler',
+		'deny',
+		classifyWrite(delOwn.status),
+		delOwn.status
+	);
 }
 
 function printCreatorEditReport() {
 	console.log('\n[#219 creator-edit — member edits their OWN item directly, but cannot delete it]');
 	for (const r of results.filter((x) => CREATOR_EDIT_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
-		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+		console.log(
+			`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`
+		);
 	}
 }
 
@@ -1259,7 +1575,13 @@ const NOT_GOING_OPS = [
 async function ngFreshItem(tokens, fixture, extra = {}) {
 	const made = await pbRequest('POST', '/api/collections/items/records', {
 		token: tokens.owner,
-		body: { trip: fixture.tripId, day: fixture.dayId, type: 'activity', title: 'Not going harness item (#402)', ...extra }
+		body: {
+			trip: fixture.tripId,
+			day: fixture.dayId,
+			type: 'activity',
+			title: 'Not going harness item (#402)',
+			...extra
+		}
 	});
 	return made.data?.id;
 }
@@ -1269,7 +1591,9 @@ function ngPatch(token, itemId, body) {
 }
 
 async function ngRead(tokens, itemId) {
-	const r = await pbRequest('GET', `/api/collections/items/records/${itemId}`, { token: tokens.owner });
+	const r = await pbRequest('GET', `/api/collections/items/records/${itemId}`, {
+		token: tokens.owner
+	});
 	return { going: r.data?.assigned_to || [], notGoing: r.data?.not_going || [], status: r.status };
 }
 
@@ -1281,14 +1605,25 @@ async function ngStateCell(tokens, itemId, write, member, state) {
 	const ok =
 		write.status >= 200 &&
 		write.status < 300 &&
-		(state === 'going' ? inGoing && !inNot : state === 'not_going' ? inNot && !inGoing : !inGoing && !inNot);
-	return ok ? 'yes' : `no(going=${JSON.stringify(s.going)} not_going=${JSON.stringify(s.notGoing)})`;
+		(state === 'going'
+			? inGoing && !inNot
+			: state === 'not_going'
+				? inNot && !inGoing
+				: !inGoing && !inNot);
+	return ok
+		? 'yes'
+		: `no(going=${JSON.stringify(s.going)} not_going=${JSON.stringify(s.notGoing)})`;
 }
 
 async function runNotGoingNovelCases(tokens) {
 	const fixture = await setupFixture();
 	const m = fixture.memberIds;
-	const OTHER = { owner: 'traveler', co_owner: 'traveler', traveler: 'co_owner', viewer: 'traveler' };
+	const OTHER = {
+		owner: 'traveler',
+		co_owner: 'traveler',
+		traveler: 'co_owner',
+		viewer: 'traveler'
+	};
 	const ANSWERS = new Set(['owner', 'co_owner', 'traveler']); // viewers can't answer
 	const MAY_SET_OTHERS_GOING = new Set(['owner', 'co_owner']);
 
@@ -1302,7 +1637,14 @@ async function runNotGoingNovelCases(tokens) {
 
 		id = await ngFreshItem(tokens, fixture);
 		r = await ngPatch(tokens[role], id, { 'not_going+': own });
-		recordResult('items', 'ng_self', role, ANSWERS.has(role) ? 'allow' : 'deny', classifyWrite(r.status), r.status);
+		recordResult(
+			'items',
+			'ng_self',
+			role,
+			ANSWERS.has(role) ? 'allow' : 'deny',
+			classifyWrite(r.status),
+			r.status
+		);
 
 		id = await ngFreshItem(tokens, fixture);
 		r = await ngPatch(tokens[role], id, { 'not_going+': other });
@@ -1310,17 +1652,38 @@ async function runNotGoingNovelCases(tokens) {
 
 		id = await ngFreshItem(tokens, fixture);
 		r = await ngPatch(tokens[role], id, { 'assigned_to+': own });
-		recordResult('items', 'going_self', role, ANSWERS.has(role) ? 'allow' : 'deny', classifyWrite(r.status), r.status);
+		recordResult(
+			'items',
+			'going_self',
+			role,
+			ANSWERS.has(role) ? 'allow' : 'deny',
+			classifyWrite(r.status),
+			r.status
+		);
 
 		id = await ngFreshItem(tokens, fixture);
 		r = await ngPatch(tokens[role], id, { 'assigned_to+': other });
-		recordResult('items', 'going_other', role, MAY_SET_OTHERS_GOING.has(role) ? 'allow' : 'deny', classifyWrite(r.status), r.status);
+		recordResult(
+			'items',
+			'going_other',
+			role,
+			MAY_SET_OTHERS_GOING.has(role) ? 'allow' : 'deny',
+			classifyWrite(r.status),
+			r.status
+		);
 
 		// No answer = clear your own not going (seeded by you; a viewer has none).
 		id = await ngFreshItem(tokens, fixture);
 		if (ANSWERS.has(role)) await ngPatch(tokens[role], id, { 'not_going+': own });
 		r = await ngPatch(tokens[role], id, { 'not_going-': own });
-		recordResult('items', 'no_answer_self', role, ANSWERS.has(role) ? 'allow' : 'deny', classifyWrite(r.status), r.status);
+		recordResult(
+			'items',
+			'no_answer_self',
+			role,
+			ANSWERS.has(role) ? 'allow' : 'deny',
+			classifyWrite(r.status),
+			r.status
+		);
 
 		// Clearing SOMEONE ELSE's not going is never allowed (self-only, owners too).
 		id = await ngFreshItem(tokens, fixture);
@@ -1340,31 +1703,73 @@ async function runNotGoingNovelCases(tokens) {
 	id = await ngFreshItem(tokens, fixture);
 	await ngPatch(tokens.traveler, id, { 'assigned_to+': t });
 	r = await ngPatch(tokens.traveler, id, { 'not_going+': t }); // going → not going, assigned_to untouched
-	recordResult('items', 'exclusive_going_to_ng', 'traveler', 'yes', await ngStateCell(tokens, id, r, t, 'not_going'), r.status);
+	recordResult(
+		'items',
+		'exclusive_going_to_ng',
+		'traveler',
+		'yes',
+		await ngStateCell(tokens, id, r, t, 'not_going'),
+		r.status
+	);
 
 	id = await ngFreshItem(tokens, fixture);
 	await ngPatch(tokens.traveler, id, { 'not_going+': t });
 	r = await ngPatch(tokens.traveler, id, { 'assigned_to+': t }); // not going → going, not_going untouched
-	recordResult('items', 'exclusive_ng_to_going', 'traveler', 'yes', await ngStateCell(tokens, id, r, t, 'going'), r.status);
+	recordResult(
+		'items',
+		'exclusive_ng_to_going',
+		'traveler',
+		'yes',
+		await ngStateCell(tokens, id, r, t, 'going'),
+		r.status
+	);
 
 	id = await ngFreshItem(tokens, fixture);
 	await ngPatch(tokens.traveler, id, { 'assigned_to+': t });
 	r = await ngPatch(tokens.traveler, id, { assigned_to: [], not_going: [t] }); // both lists, one PATCH
-	recordResult('items', 'exclusive_swap_one_patch', 'traveler', 'yes', await ngStateCell(tokens, id, r, t, 'not_going'), r.status);
+	recordResult(
+		'items',
+		'exclusive_swap_one_patch',
+		'traveler',
+		'yes',
+		await ngStateCell(tokens, id, r, t, 'not_going'),
+		r.status
+	);
 
 	id = await ngFreshItem(tokens, fixture);
 	r = await ngPatch(tokens.traveler, id, { assigned_to: [t], not_going: [t] }); // contradictory → going wins
-	recordResult('items', 'exclusive_both_at_once', 'traveler', 'yes', await ngStateCell(tokens, id, r, t, 'going'), r.status);
+	recordResult(
+		'items',
+		'exclusive_both_at_once',
+		'traveler',
+		'yes',
+		await ngStateCell(tokens, id, r, t, 'going'),
+		r.status
+	);
 
 	id = await ngFreshItem(tokens, fixture);
 	await ngPatch(tokens.traveler, id, { 'not_going+': t });
 	r = await ngPatch(tokens.owner, id, { 'assigned_to+': t }); // owner's deliberate assignment clears it
-	recordResult('items', 'exclusive_owner_assigns_ng_member', 'owner', 'yes', await ngStateCell(tokens, id, r, t, 'going'), r.status);
+	recordResult(
+		'items',
+		'exclusive_owner_assigns_ng_member',
+		'owner',
+		'yes',
+		await ngStateCell(tokens, id, r, t, 'going'),
+		r.status
+	);
 
 	// --- Guards.
 	id = await ngFreshItem(tokens, fixture);
 	r = await ngPatch(tokens.traveler, id, { 'not_going+': t, title: 'Sneaky edit (#402)' });
-	recordResult('items', 'ng_with_other_field', 'traveler', 'deny', classifyWrite(r.status), r.status);
+	recordResult(
+		'items',
+		'ng_with_other_field',
+		'traveler',
+		'deny',
+		classifyWrite(r.status),
+		r.status
+	);
 
 	// The #219 creator exception (full edit of your own item) does not extend to
 	// someone else's not going.
@@ -1374,13 +1779,25 @@ async function runNotGoingNovelCases(tokens) {
 
 	r = await pbRequest('POST', '/api/collections/items/records', {
 		token: tokens.owner,
-		body: { trip: fixture.tripId, day: fixture.dayId, type: 'activity', title: 'Create with other not going (#402)', not_going: [t] }
+		body: {
+			trip: fixture.tripId,
+			day: fixture.dayId,
+			type: 'activity',
+			title: 'Create with other not going (#402)',
+			not_going: [t]
+		}
 	});
 	recordResult('items', 'create_ng_other', 'owner', 'deny', classifyWrite(r.status), r.status);
 
 	r = await pbRequest('POST', '/api/collections/items/records', {
 		token: tokens.owner,
-		body: { trip: fixture.tripId, day: fixture.dayId, type: 'activity', title: 'Create with own not going (#402)', not_going: [m.owner] }
+		body: {
+			trip: fixture.tripId,
+			day: fixture.dayId,
+			type: 'activity',
+			title: 'Create with own not going (#402)',
+			not_going: [m.owner]
+		}
 	});
 	recordResult('items', 'create_ng_self', 'owner', 'allow', classifyWrite(r.status), r.status);
 }
@@ -1418,11 +1835,20 @@ async function runNotGoingDepartureCases(tokens) {
 	// spare nothing else. The spare's only reference is then not_going.
 	let fixture = await setupFixture();
 	let m = fixture.memberIds;
-	await pbRequest('DELETE', `/api/collections/trip_goals/records/${fixture.goalId}`, { token: tokens.traveler });
+	await pbRequest('DELETE', `/api/collections/trip_goals/records/${fixture.goalId}`, {
+		token: tokens.traveler
+	});
 	const probe = () =>
 		pbRequest('GET', `/api/members/can-purge?member_id=${m.spare}`, { token: tokens.owner });
 	let p = await probe();
-	recordResult('trip_members', 'ng_purge_control', 'owner', 'yes', p.data?.zero_ref === true ? 'yes' : `no(${JSON.stringify(p.data)})`, p.status);
+	recordResult(
+		'trip_members',
+		'ng_purge_control',
+		'owner',
+		'yes',
+		p.data?.zero_ref === true ? 'yes' : `no(${JSON.stringify(p.data)})`,
+		p.status
+	);
 
 	await ngPatch(tokens.traveler, fixture.itemId, { 'not_going+': m.traveler });
 	await pbRequest('POST', '/api/members/remove', {
@@ -1430,15 +1856,38 @@ async function runNotGoingDepartureCases(tokens) {
 		body: { member_id: m.traveler, disposition: 'reassign', reassign_to: m.spare }
 	});
 	p = await probe();
-	recordResult('trip_members', 'ng_canpurge_blocks', 'owner', 'yes', p.data?.zero_ref === false ? 'yes' : `no(${JSON.stringify(p.data)})`, p.status);
+	recordResult(
+		'trip_members',
+		'ng_canpurge_blocks',
+		'owner',
+		'yes',
+		p.data?.zero_ref === false ? 'yes' : `no(${JSON.stringify(p.data)})`,
+		p.status
+	);
 
 	const rmKeep = await pbRequest('POST', '/api/members/remove', {
 		token: tokens.owner,
 		body: { member_id: m.spare }
 	});
-	recordResult('trip_members', 'ng_remove_tombstones', 'owner', 'yes', rmKeep.status === 200 && rmKeep.data?.deleted === false ? 'yes' : `no(${JSON.stringify(rmKeep.data)})`, rmKeep.status);
+	recordResult(
+		'trip_members',
+		'ng_remove_tombstones',
+		'owner',
+		'yes',
+		rmKeep.status === 200 && rmKeep.data?.deleted === false
+			? 'yes'
+			: `no(${JSON.stringify(rmKeep.data)})`,
+		rmKeep.status
+	);
 	let s = await ngRead(tokens, fixture.itemId);
-	recordResult('items', 'ng_kept_on_tombstone', 'owner', 'yes', s.notGoing.includes(m.spare) ? 'yes' : `no(${JSON.stringify(s.notGoing)})`, s.status);
+	recordResult(
+		'items',
+		'ng_kept_on_tombstone',
+		'owner',
+		'yes',
+		s.notGoing.includes(m.spare) ? 'yes' : `no(${JSON.stringify(s.notGoing)})`,
+		s.status
+	);
 
 	// --- reassign the traveler's answers to the co_owner.
 	fixture = await setupFixture();
@@ -1457,11 +1906,32 @@ async function runNotGoingDepartureCases(tokens) {
 		body: { member_id: m.traveler, disposition: 'reassign', reassign_to: m.co_owner }
 	});
 	s = await ngRead(tokens, a);
-	recordResult('items', 'reassign_moves_ng', 'owner', 'yes', ngListsAre(s, [], [m.co_owner]), rmReassign.status);
+	recordResult(
+		'items',
+		'reassign_moves_ng',
+		'owner',
+		'yes',
+		ngListsAre(s, [], [m.co_owner]),
+		rmReassign.status
+	);
 	s = await ngRead(tokens, b);
-	recordResult('items', 'reassign_own_answer_wins_going', 'owner', 'yes', ngListsAre(s, [m.co_owner], []), rmReassign.status);
+	recordResult(
+		'items',
+		'reassign_own_answer_wins_going',
+		'owner',
+		'yes',
+		ngListsAre(s, [m.co_owner], []),
+		rmReassign.status
+	);
 	s = await ngRead(tokens, c);
-	recordResult('items', 'reassign_own_answer_wins_ng', 'owner', 'yes', ngListsAre(s, [], [m.co_owner]), rmReassign.status);
+	recordResult(
+		'items',
+		'reassign_own_answer_wins_ng',
+		'owner',
+		'yes',
+		ngListsAre(s, [], [m.co_owner]),
+		rmReassign.status
+	);
 
 	// --- cascade clears the departed's not going.
 	fixture = await setupFixture();
@@ -1472,14 +1942,27 @@ async function runNotGoingDepartureCases(tokens) {
 		body: { member_id: m.traveler, disposition: 'cascade' }
 	});
 	s = await ngRead(tokens, fixture.itemId);
-	recordResult('items', 'cascade_clears_ng', 'owner', 'yes', ngListsAre(s, [], []), rmCascade.status);
+	recordResult(
+		'items',
+		'cascade_clears_ng',
+		'owner',
+		'yes',
+		ngListsAre(s, [], []),
+		rmCascade.status
+	);
 }
 
 function printNotGoingReport() {
-	console.log('\n[#402 not going — self-only for every role, viewers can\'t answer, going/not going exclusive, departure clean-up]');
-	for (const r of results.filter((x) => NOT_GOING_OPS.includes(x.op) || NOT_GOING_DEPARTURE_OPS.includes(x.op))) {
+	console.log(
+		"\n[#402 not going — self-only for every role, viewers can't answer, going/not going exclusive, departure clean-up]"
+	);
+	for (const r of results.filter(
+		(x) => NOT_GOING_OPS.includes(x.op) || NOT_GOING_DEPARTURE_OPS.includes(x.op)
+	)) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
-		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+		console.log(
+			`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`
+		);
 	}
 }
 // ═══ end #402 ═══════════════════════════════════════════════════════════════
@@ -1511,13 +1994,27 @@ async function runUsersCrossReadCases(tokens, fixture) {
 	const view = await pbRequest('GET', `/api/collections/users/records/${ownerUserId}`, {
 		token: tokens.co_owner
 	});
-	recordResult('users', 'crossread_view', 'co_owner', 'allow', classifyView(view.status), view.status);
+	recordResult(
+		'users',
+		'crossread_view',
+		'co_owner',
+		'allow',
+		classifyView(view.status),
+		view.status
+	);
 
 	// A non-member must NOT be able to read it (404, existence not leaked).
 	const denied = await pbRequest('GET', `/api/collections/users/records/${ownerUserId}`, {
 		token: tokens.non_member
 	});
-	recordResult('users', 'crossread_nonmember', 'non_member', 'deny', classifyView(denied.status), denied.status);
+	recordResult(
+		'users',
+		'crossread_nonmember',
+		'non_member',
+		'deny',
+		classifyView(denied.status),
+		denied.status
+	);
 
 	// Field-level visibility on the co-traveler payload. The fixture sets the
 	// owner's `name` to "E2E owner"; `avatar` is an (empty) file field — the KEY
@@ -1531,17 +2028,56 @@ async function runUsersCrossReadCases(tokens, fixture) {
 	const passwordHidden = !Object.prototype.hasOwnProperty.call(p, 'password');
 	const tokenKeyHidden = !Object.prototype.hasOwnProperty.call(p, 'tokenKey');
 
-	recordResult('users', 'crossread_name_visible', 'co_owner', 'yes', nameVisible ? 'yes' : 'no', view.status);
-	recordResult('users', 'crossread_avatar_visible', 'co_owner', 'yes', avatarVisible ? 'yes' : 'no', view.status);
-	recordResult('users', 'crossread_email_hidden', 'co_owner', 'yes', emailHidden ? 'yes' : 'no', view.status);
-	recordResult('users', 'crossread_password_hidden', 'co_owner', 'yes', passwordHidden ? 'yes' : 'no', view.status);
-	recordResult('users', 'crossread_tokenkey_hidden', 'co_owner', 'yes', tokenKeyHidden ? 'yes' : 'no', view.status);
+	recordResult(
+		'users',
+		'crossread_name_visible',
+		'co_owner',
+		'yes',
+		nameVisible ? 'yes' : 'no',
+		view.status
+	);
+	recordResult(
+		'users',
+		'crossread_avatar_visible',
+		'co_owner',
+		'yes',
+		avatarVisible ? 'yes' : 'no',
+		view.status
+	);
+	recordResult(
+		'users',
+		'crossread_email_hidden',
+		'co_owner',
+		'yes',
+		emailHidden ? 'yes' : 'no',
+		view.status
+	);
+	recordResult(
+		'users',
+		'crossread_password_hidden',
+		'co_owner',
+		'yes',
+		passwordHidden ? 'yes' : 'no',
+		view.status
+	);
+	recordResult(
+		'users',
+		'crossread_tokenkey_hidden',
+		'co_owner',
+		'yes',
+		tokenKeyHidden ? 'yes' : 'no',
+		view.status
+	);
 
 	// #508 — every user can read their OWN row, trips or not (0084). non_member
 	// shares no trip with anyone in the fixture, the case 0043 alone 404'd.
-	const self = await pbRequest('GET', `/api/collections/users/records/${fixture.userIds.non_member}`, {
-		token: tokens.non_member
-	});
+	const self = await pbRequest(
+		'GET',
+		`/api/collections/users/records/${fixture.userIds.non_member}`,
+		{
+			token: tokens.non_member
+		}
+	);
 	recordResult('users', 'self_view', 'non_member', 'allow', classifyView(self.status), self.status);
 }
 
@@ -1569,15 +2105,26 @@ async function runSuggestionsMemberReadCases(tokens, fixture) {
 		token: tokens.owner,
 		body: { item_id: fixture.itemId, comment_text: 'Harness comment (#122)' }
 	});
-	recordResult('suggestions', 'comment_add', 'owner', 'allow', classifyWrite(add.status), add.status);
+	recordResult(
+		'suggestions',
+		'comment_add',
+		'owner',
+		'allow',
+		classifyWrite(add.status),
+		add.status
+	);
 	const commentId = add.data?.comment_id;
 
 	// A co-member (not the author) lists suggestions sorted by created — both
 	// the rule fix and the autodate field must hold for this to pass (a missing
 	// `created` field makes the sort 400).
-	const list = await pbRequest('GET', '/api/collections/suggestions/records?perPage=200&sort=created', {
-		token: tokens.co_owner
-	});
+	const list = await pbRequest(
+		'GET',
+		'/api/collections/suggestions/records?perPage=200&sort=created',
+		{
+			token: tokens.co_owner
+		}
+	);
 	recordResult(
 		'suggestions',
 		'member_list_sorted',
@@ -1591,27 +2138,64 @@ async function runSuggestionsMemberReadCases(tokens, fixture) {
 	const view = await pbRequest('GET', `/api/collections/suggestions/records/${commentId}`, {
 		token: tokens.co_owner
 	});
-	recordResult('suggestions', 'member_view', 'co_owner', 'allow', classifyView(view.status), view.status);
+	recordResult(
+		'suggestions',
+		'member_view',
+		'co_owner',
+		'allow',
+		classifyView(view.status),
+		view.status
+	);
 
 	// The autodate field is populated on the payload.
 	const createdPresent = typeof view.data?.created === 'string' && view.data.created.length > 0;
-	recordResult('suggestions', 'created_present', 'co_owner', 'yes', createdPresent ? 'yes' : 'no', view.status);
+	recordResult(
+		'suggestions',
+		'created_present',
+		'co_owner',
+		'yes',
+		createdPresent ? 'yes' : 'no',
+		view.status
+	);
 
 	// Non-members and anon stay locked out.
-	const nm = await pbRequest('GET', '/api/collections/suggestions/records?perPage=200&sort=created', {
-		token: tokens.non_member
-	});
-	recordResult('suggestions', 'nonmember_list', 'non_member', 'deny', classifyList(nm.status, nm.data?.items, commentId), nm.status);
+	const nm = await pbRequest(
+		'GET',
+		'/api/collections/suggestions/records?perPage=200&sort=created',
+		{
+			token: tokens.non_member
+		}
+	);
+	recordResult(
+		'suggestions',
+		'nonmember_list',
+		'non_member',
+		'deny',
+		classifyList(nm.status, nm.data?.items, commentId),
+		nm.status
+	);
 
-	const anon = await pbRequest('GET', '/api/collections/suggestions/records?perPage=200&sort=created');
-	recordResult('suggestions', 'anon_list', 'anon', 'deny', classifyList(anon.status, anon.data?.items, commentId), anon.status);
+	const anon = await pbRequest(
+		'GET',
+		'/api/collections/suggestions/records?perPage=200&sort=created'
+	);
+	recordResult(
+		'suggestions',
+		'anon_list',
+		'anon',
+		'deny',
+		classifyList(anon.status, anon.data?.items, commentId),
+		anon.status
+	);
 }
 
 function printSuggestionsReport() {
 	console.log('\n[#122 suggestions member-read — co-member reads a comment, sort=created works]');
 	for (const r of results.filter((x) => SUGGESTIONS_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
-		console.log(`  ${mark} suggestions.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+		console.log(
+			`  ${mark} suggestions.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`
+		);
 	}
 }
 
@@ -1619,7 +2203,9 @@ function printUsersCrossReadReport() {
 	console.log('\n[#103 users cross-read — co-traveler name+avatar, email+secrets hidden]');
 	for (const r of results.filter((x) => USERS_CROSSREAD_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
-		console.log(`  ${mark} users.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+		console.log(
+			`  ${mark} users.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`
+		);
 	}
 }
 
@@ -1671,26 +2257,58 @@ async function runMemberRemovalNovelCases(tokens) {
 		token: tokens.owner,
 		body: { member_id: fixture.memberIds.traveler }
 	});
-	recordResult('trip_members', 'remove_with_expense_ok', 'owner', 'allow', classifyWrite(rm.status), rm.status);
+	recordResult(
+		'trip_members',
+		'remove_with_expense_ok',
+		'owner',
+		'allow',
+		classifyWrite(rm.status),
+		rm.status
+	);
 
 	// #238: the traveler authored an expense AND is in its split → tombstone, NOT
 	// purge. The hook must report deleted:false.
 	const tombNotDeleted = rm.status === 200 && rm.data?.deleted === false;
-	recordResult('trip_members', 'tombstone_not_deleted', 'owner', 'yes', tombNotDeleted ? 'yes' : 'no', rm.status);
+	recordResult(
+		'trip_members',
+		'tombstone_not_deleted',
+		'owner',
+		'yes',
+		tombNotDeleted ? 'yes' : 'no',
+		rm.status
+	);
 
 	// Row RETAINED as a tombstone: removed_at set, user cleared.
-	const mem = await pbRequest('GET', `/api/collections/trip_members/records/${fixture.memberIds.traveler}`, {
-		token: tokens.owner
-	});
+	const mem = await pbRequest(
+		'GET',
+		`/api/collections/trip_members/records/${fixture.memberIds.traveler}`,
+		{
+			token: tokens.owner
+		}
+	);
 	const tomb = mem.status === 200 && !!mem.data?.removed_at && mem.data?.user === '';
-	recordResult('trip_members', 'member_tombstoned', 'owner', 'yes', tomb ? 'yes' : 'no', mem.status);
+	recordResult(
+		'trip_members',
+		'member_tombstoned',
+		'owner',
+		'yes',
+		tomb ? 'yes' : 'no',
+		mem.status
+	);
 
 	// The expense survives, still attributed to the now-departed traveler.
 	const expAfter = await pbRequest('GET', `/api/collections/expenses/records/${expenseId}`, {
 		token: tokens.owner
 	});
 	const survived = expAfter.status === 200 && expAfter.data?.paid_by === paidBy;
-	recordResult('expenses', 'money_survived', 'owner', 'yes', survived ? 'yes' : 'no', expAfter.status);
+	recordResult(
+		'expenses',
+		'money_survived',
+		'owner',
+		'yes',
+		survived ? 'yes' : 'no',
+		expAfter.status
+	);
 
 	// Active roster (removed_at="") omits the tombstone; the unguarded query keeps it.
 	const guarded = await pbRequest(
@@ -1699,7 +2317,14 @@ async function runMemberRemovalNovelCases(tokens) {
 		{ token: tokens.owner }
 	);
 	const inGuarded = (guarded.data?.items || []).some((r) => r.id === fixture.memberIds.traveler);
-	recordResult('trip_members', 'roster_excludes_tombstone', 'owner', 'yes', !inGuarded ? 'yes' : 'no', guarded.status);
+	recordResult(
+		'trip_members',
+		'roster_excludes_tombstone',
+		'owner',
+		'yes',
+		!inGuarded ? 'yes' : 'no',
+		guarded.status
+	);
 
 	const all = await pbRequest(
 		'GET',
@@ -1707,7 +2332,14 @@ async function runMemberRemovalNovelCases(tokens) {
 		{ token: tokens.owner }
 	);
 	const inAll = (all.data?.items || []).some((r) => r.id === fixture.memberIds.traveler);
-	recordResult('trip_members', 'tombstone_retained', 'owner', 'yes', inAll ? 'yes' : 'no', all.status);
+	recordResult(
+		'trip_members',
+		'tombstone_retained',
+		'owner',
+		'yes',
+		inAll ? 'yes' : 'no',
+		all.status
+	);
 
 	// --- #238 zero-ref purge. The name-only spare authors nothing and holds no
 	// votes, so it is the canonical zero-reference member: removing it HARD-DELETES
@@ -1719,7 +2351,14 @@ async function runMemberRemovalNovelCases(tokens) {
 		body: { member_id: fixture.memberIds.spare }
 	});
 	const purgedDeleted = purge.status === 200 && purge.data?.deleted === true;
-	recordResult('trip_members', 'zeroref_purged_deleted', 'owner', 'yes', purgedDeleted ? 'yes' : 'no', purge.status);
+	recordResult(
+		'trip_members',
+		'zeroref_purged_deleted',
+		'owner',
+		'yes',
+		purgedDeleted ? 'yes' : 'no',
+		purge.status
+	);
 
 	// The row is hard-deleted: absent from the unguarded query (no removed_at filter),
 	// and a direct GET 404s.
@@ -1728,19 +2367,36 @@ async function runMemberRemovalNovelCases(tokens) {
 		`/api/collections/trip_members/records?perPage=200&filter=${filterQuery(fixture.tripId, '')}`,
 		{ token: tokens.owner }
 	);
-	const spareStillPresent = (allRows.data?.items || []).some((r) => r.id === fixture.memberIds.spare);
-	const directGet = await pbRequest('GET', `/api/collections/trip_members/records/${fixture.memberIds.spare}`, {
-		token: tokens.owner
-	});
+	const spareStillPresent = (allRows.data?.items || []).some(
+		(r) => r.id === fixture.memberIds.spare
+	);
+	const directGet = await pbRequest(
+		'GET',
+		`/api/collections/trip_members/records/${fixture.memberIds.spare}`,
+		{
+			token: tokens.owner
+		}
+	);
 	const rowGone = !spareStillPresent && directGet.status === 404;
-	recordResult('trip_members', 'zeroref_row_gone', 'owner', 'yes', rowGone ? 'yes' : 'no', directGet.status);
+	recordResult(
+		'trip_members',
+		'zeroref_row_gone',
+		'owner',
+		'yes',
+		rowGone ? 'yes' : 'no',
+		directGet.status
+	);
 }
 
 function printMemberRemovalReport() {
-	console.log('\n[#133/#238 removal — member-with-data tombstones (money survives); zero-ref member purges]');
+	console.log(
+		'\n[#133/#238 removal — member-with-data tombstones (money survives); zero-ref member purges]'
+	);
 	for (const r of results.filter((x) => MEMBER_REMOVAL_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
-		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+		console.log(
+			`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`
+		);
 	}
 }
 
@@ -1817,13 +2473,27 @@ async function runMemberRelationDriftCase() {
 	const res = await pbRequest('GET', '/api/collections?perPage=500', { token: 'Bearer ' + token });
 	const cols = res.data?.items;
 	const introspected = res.status === 200 && Array.isArray(cols);
-	recordResult('trip_members', 'introspection_ok', 'superuser', 'yes', introspected ? 'yes' : 'no', res.status);
+	recordResult(
+		'trip_members',
+		'introspection_ok',
+		'superuser',
+		'yes',
+		introspected ? 'yes' : 'no',
+		res.status
+	);
 	if (!introspected) return;
 
 	// Resolve the trip_members collection id (relation fields reference by id).
 	const tripMembers = cols.find((c) => c.name === 'trip_members');
 	if (!tripMembers) {
-		recordResult('trip_members', 'schema_covered', 'superuser', 'yes', 'no_trip_members', res.status);
+		recordResult(
+			'trip_members',
+			'schema_covered',
+			'superuser',
+			'yes',
+			'no_trip_members',
+			res.status
+		);
 		return;
 	}
 	const tripMembersId = tripMembers.id;
@@ -1864,10 +2534,14 @@ async function runMemberRelationDriftCase() {
 }
 
 function printMemberRelationDriftReport() {
-	console.log('\n[#238 schema drift — every trip_members relation field is covered by the purge check]');
+	console.log(
+		'\n[#238 schema drift — every trip_members relation field is covered by the purge check]'
+	);
 	for (const r of results.filter((x) => DRIFT_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
-		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+		console.log(
+			`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`
+		);
 	}
 }
 
@@ -1898,60 +2572,137 @@ const MEMBER_ROLE_GATE_OPS = [
 async function runMemberRoleGateNovelCases(tokens) {
 	// 1. Viewer self-escalates to owner on their OWN row → deny.
 	let fixture = await setupFixture();
-	const vEsc = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.viewer}`, {
-		token: tokens.viewer,
-		body: { role: 'owner' }
-	});
-	recordResult('trip_members', 'self_escalate_viewer', 'viewer', 'deny', classifyWrite(vEsc.status), vEsc.status);
+	const vEsc = await pbRequest(
+		'PATCH',
+		`/api/collections/trip_members/records/${fixture.memberIds.viewer}`,
+		{
+			token: tokens.viewer,
+			body: { role: 'owner' }
+		}
+	);
+	recordResult(
+		'trip_members',
+		'self_escalate_viewer',
+		'viewer',
+		'deny',
+		classifyWrite(vEsc.status),
+		vEsc.status
+	);
 
 	// 2. Traveler self-escalates to co_owner on their OWN row → deny.
 	fixture = await setupFixture();
-	const tEsc = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.traveler}`, {
-		token: tokens.traveler,
-		body: { role: 'co_owner' }
-	});
-	recordResult('trip_members', 'self_escalate_traveler', 'traveler', 'deny', classifyWrite(tEsc.status), tEsc.status);
+	const tEsc = await pbRequest(
+		'PATCH',
+		`/api/collections/trip_members/records/${fixture.memberIds.traveler}`,
+		{
+			token: tokens.traveler,
+			body: { role: 'co_owner' }
+		}
+	);
+	recordResult(
+		'trip_members',
+		'self_escalate_traveler',
+		'traveler',
+		'deny',
+		classifyWrite(tEsc.status),
+		tEsc.status
+	);
 
 	// 3. Traveler escalates ANOTHER member (the viewer) to owner → deny.
 	fixture = await setupFixture();
-	const tOther = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.viewer}`, {
-		token: tokens.traveler,
-		body: { role: 'owner' }
-	});
-	recordResult('trip_members', 'escalate_other_traveler', 'traveler', 'deny', classifyWrite(tOther.status), tOther.status);
+	const tOther = await pbRequest(
+		'PATCH',
+		`/api/collections/trip_members/records/${fixture.memberIds.viewer}`,
+		{
+			token: tokens.traveler,
+			body: { role: 'owner' }
+		}
+	);
+	recordResult(
+		'trip_members',
+		'escalate_other_traveler',
+		'traveler',
+		'deny',
+		classifyWrite(tOther.status),
+		tOther.status
+	);
 
 	// 4. Owner promotes the traveler to co_owner directly → allow (privileged path).
 	fixture = await setupFixture();
-	const oChange = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.traveler}`, {
-		token: tokens.owner,
-		body: { role: 'co_owner' }
-	});
-	recordResult('trip_members', 'owner_change_role_ok', 'owner', 'allow', classifyWrite(oChange.status), oChange.status);
+	const oChange = await pbRequest(
+		'PATCH',
+		`/api/collections/trip_members/records/${fixture.memberIds.traveler}`,
+		{
+			token: tokens.owner,
+			body: { role: 'co_owner' }
+		}
+	);
+	recordResult(
+		'trip_members',
+		'owner_change_role_ok',
+		'owner',
+		'allow',
+		classifyWrite(oChange.status),
+		oChange.status
+	);
 
 	// 5. Co_owner changes the viewer to traveler → allow.
 	fixture = await setupFixture();
-	const coChange = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.viewer}`, {
-		token: tokens.co_owner,
-		body: { role: 'traveler' }
-	});
-	recordResult('trip_members', 'coowner_change_role_ok', 'co_owner', 'allow', classifyWrite(coChange.status), coChange.status);
+	const coChange = await pbRequest(
+		'PATCH',
+		`/api/collections/trip_members/records/${fixture.memberIds.viewer}`,
+		{
+			token: tokens.co_owner,
+			body: { role: 'traveler' }
+		}
+	);
+	recordResult(
+		'trip_members',
+		'coowner_change_role_ok',
+		'co_owner',
+		'allow',
+		classifyWrite(coChange.status),
+		coChange.status
+	);
 
 	// 6. Viewer edits their OWN display_name (no role change) → allow (the edit the
 	//    roster UI does; the hook only gates role changes).
 	fixture = await setupFixture();
-	const vName = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.viewer}`, {
-		token: tokens.viewer,
-		body: { display_name: 'Viewer renamed self' }
-	});
-	recordResult('trip_members', 'self_display_name_viewer', 'viewer', 'allow', classifyWrite(vName.status), vName.status);
+	const vName = await pbRequest(
+		'PATCH',
+		`/api/collections/trip_members/records/${fixture.memberIds.viewer}`,
+		{
+			token: tokens.viewer,
+			body: { display_name: 'Viewer renamed self' }
+		}
+	);
+	recordResult(
+		'trip_members',
+		'self_display_name_viewer',
+		'viewer',
+		'allow',
+		classifyWrite(vName.status),
+		vName.status
+	);
 
 	// 7. Traveler edits their OWN display_name → allow.
 	fixture = await setupFixture();
-	const tName = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.traveler}`, {
-		token: tokens.traveler,
-		body: { display_name: 'Traveler renamed self' }
-	});
-	recordResult('trip_members', 'self_display_name_traveler', 'traveler', 'allow', classifyWrite(tName.status), tName.status);
+	const tName = await pbRequest(
+		'PATCH',
+		`/api/collections/trip_members/records/${fixture.memberIds.traveler}`,
+		{
+			token: tokens.traveler,
+			body: { display_name: 'Traveler renamed self' }
+		}
+	);
+	recordResult(
+		'trip_members',
+		'self_display_name_traveler',
+		'traveler',
+		'allow',
+		classifyWrite(tName.status),
+		tName.status
+	);
 
 	// 8. Self-leave is PERMITTED BY THE HOOK (a non-owner may delete their OWN row).
 	//    The fixture traveler authored a trip_goal (created_by, required + non-cascade),
@@ -1962,24 +2713,50 @@ async function runMemberRoleGateNovelCases(tokens) {
 	//    blocked the member from leaving). So the pass condition is "not 403": 204
 	//    (no references) or 400 (FK) are both the hook letting it through.
 	fixture = await setupFixture();
-	const selfLeave = await pbRequest('DELETE', `/api/collections/trip_members/records/${fixture.memberIds.traveler}`, {
-		token: tokens.traveler
-	});
-	recordResult('trip_members', 'self_leave_allowed_by_hook', 'traveler', 'yes', selfLeave.status !== 403 ? 'yes' : 'no', selfLeave.status);
+	const selfLeave = await pbRequest(
+		'DELETE',
+		`/api/collections/trip_members/records/${fixture.memberIds.traveler}`,
+		{
+			token: tokens.traveler
+		}
+	);
+	recordResult(
+		'trip_members',
+		'self_leave_allowed_by_hook',
+		'traveler',
+		'yes',
+		selfLeave.status !== 403 ? 'yes' : 'no',
+		selfLeave.status
+	);
 
 	// 9. Owner tries to DELETE their OWN row while sole owner → deny (sole-owner cap).
 	fixture = await setupFixture();
-	const soleOwner = await pbRequest('DELETE', `/api/collections/trip_members/records/${fixture.memberIds.owner}`, {
-		token: tokens.owner
-	});
-	recordResult('trip_members', 'delete_sole_owner_denied', 'owner', 'deny', classifyWrite(soleOwner.status), soleOwner.status);
+	const soleOwner = await pbRequest(
+		'DELETE',
+		`/api/collections/trip_members/records/${fixture.memberIds.owner}`,
+		{
+			token: tokens.owner
+		}
+	);
+	recordResult(
+		'trip_members',
+		'delete_sole_owner_denied',
+		'owner',
+		'deny',
+		classifyWrite(soleOwner.status),
+		soleOwner.status
+	);
 }
 
 function printMemberRoleGateReport() {
-	console.log('\n[#279 trip_members — block role escalation, gate cross-member delete, allow self-leave + display_name; sole-owner cap]');
+	console.log(
+		'\n[#279 trip_members — block role escalation, gate cross-member delete, allow self-leave + display_name; sole-owner cap]'
+	);
 	for (const r of results.filter((x) => MEMBER_ROLE_GATE_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
-		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+		console.log(
+			`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`
+		);
 	}
 }
 
@@ -2027,27 +2804,55 @@ async function runMemberFieldGateNovelCases(tokens) {
 	// 1. Traveler points the OWNER row at another account (stand-in for the
 	//    attacker's second login) → deny.
 	let fixture = await setupFixture();
-	const hijack = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.owner}`, {
-		token: tokens.traveler,
-		body: { user: fixture.userIds.non_member }
-	});
-	recordResult('trip_members', 'hijack_owner_row_user', 'traveler', 'deny', classifyWrite(hijack.status), hijack.status);
+	const hijack = await pbRequest(
+		'PATCH',
+		`/api/collections/trip_members/records/${fixture.memberIds.owner}`,
+		{
+			token: tokens.traveler,
+			body: { user: fixture.userIds.non_member }
+		}
+	);
+	recordResult(
+		'trip_members',
+		'hijack_owner_row_user',
+		'traveler',
+		'deny',
+		classifyWrite(hijack.status),
+		hijack.status
+	);
 
 	// 2. Traveler moves their own row onto a trip they're not on → deny.
 	fixture = await setupFixture();
 	const other = await pbRequest('POST', '/api/collections/trips/records', {
 		token: tokens.non_member,
-		body: { slug: 'e2e-rules-other-' + Date.now(), title: 'Other trip', created_by: fixture.userIds.non_member }
+		body: {
+			slug: 'e2e-rules-other-' + Date.now(),
+			title: 'Other trip',
+			created_by: fixture.userIds.non_member
+		}
 	});
 	const move = other.data?.id
-		? await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.traveler}`, {
-				token: tokens.traveler,
-				body: { trip: other.data.id }
-			})
+		? await pbRequest(
+				'PATCH',
+				`/api/collections/trip_members/records/${fixture.memberIds.traveler}`,
+				{
+					token: tokens.traveler,
+					body: { trip: other.data.id }
+				}
+			)
 		: { status: 0 };
-	recordResult('trip_members', 'move_own_row_trip', 'traveler', 'deny', classifyWrite(move.status), move.status);
+	recordResult(
+		'trip_members',
+		'move_own_row_trip',
+		'traveler',
+		'deny',
+		classifyWrite(move.status),
+		move.status
+	);
 	if (other.data?.id) {
-		await pbRequest('DELETE', `/api/collections/trips/records/${other.data.id}`, { token: tokens.non_member });
+		await pbRequest('DELETE', `/api/collections/trips/records/${other.data.id}`, {
+			token: tokens.non_member
+		});
 	}
 
 	// 3. Even an owner can't rewrite a locked field directly → the stored value
@@ -2055,54 +2860,122 @@ async function runMemberFieldGateNovelCases(tokens) {
 	//    hidden field from non-superusers, so the PATCH may be a 200 no-op rather
 	//    than a 403; what matters is the stored address (read as superuser).
 	fixture = await setupFixture();
-	const pe = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.spare}`, {
-		token: tokens.owner,
-		body: { placeholder_email: 'someone-else@e2e.test' }
-	});
+	const pe = await pbRequest(
+		'PATCH',
+		`/api/collections/trip_members/records/${fixture.memberIds.spare}`,
+		{
+			token: tokens.owner,
+			body: { placeholder_email: 'someone-else@e2e.test' }
+		}
+	);
 	const peSu = await superuserToken();
 	const peAfter = peSu
-		? await pbRequest('GET', `/api/collections/trip_members/records/${fixture.memberIds.spare}`, { token: peSu })
+		? await pbRequest('GET', `/api/collections/trip_members/records/${fixture.memberIds.spare}`, {
+				token: peSu
+			})
 		: { data: null };
 	const peUnchanged = peAfter.data?.placeholder_email === 'spare-450@e2e.test';
-	recordResult('trip_members', 'owner_rewrite_placeholder_email', 'owner', 'deny', peUnchanged ? 'deny' : `changed(${peAfter.data?.placeholder_email},${pe.status})`, pe.status);
+	recordResult(
+		'trip_members',
+		'owner_rewrite_placeholder_email',
+		'owner',
+		'deny',
+		peUnchanged ? 'deny' : `changed(${peAfter.data?.placeholder_email},${pe.status})`,
+		pe.status
+	);
 
 	// 4. Traveler renames ANOTHER member → deny.
 	fixture = await setupFixture();
-	const tRename = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.viewer}`, {
-		token: tokens.traveler,
-		body: { display_name: 'Renamed by traveler' }
-	});
-	recordResult('trip_members', 'rename_other_traveler', 'traveler', 'deny', classifyWrite(tRename.status), tRename.status);
+	const tRename = await pbRequest(
+		'PATCH',
+		`/api/collections/trip_members/records/${fixture.memberIds.viewer}`,
+		{
+			token: tokens.traveler,
+			body: { display_name: 'Renamed by traveler' }
+		}
+	);
+	recordResult(
+		'trip_members',
+		'rename_other_traveler',
+		'traveler',
+		'deny',
+		classifyWrite(tRename.status),
+		tRename.status
+	);
 
 	// 5. Owner renames another member → deny (#450: display_name is own-row only;
 	//    #415 had added an owner/co_owner rename-any path nobody asked for).
 	fixture = await setupFixture();
-	const oRename = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.traveler}`, {
-		token: tokens.owner,
-		body: { display_name: 'Renamed by owner' }
-	});
-	recordResult('trip_members', 'rename_other_owner', 'owner', 'deny', classifyWrite(oRename.status), oRename.status);
-	const coRename = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.traveler}`, {
-		token: tokens.co_owner,
-		body: { display_name: 'Renamed by co-owner' }
-	});
-	recordResult('trip_members', 'rename_other_coowner', 'co_owner', 'deny', classifyWrite(coRename.status), coRename.status);
+	const oRename = await pbRequest(
+		'PATCH',
+		`/api/collections/trip_members/records/${fixture.memberIds.traveler}`,
+		{
+			token: tokens.owner,
+			body: { display_name: 'Renamed by owner' }
+		}
+	);
+	recordResult(
+		'trip_members',
+		'rename_other_owner',
+		'owner',
+		'deny',
+		classifyWrite(oRename.status),
+		oRename.status
+	);
+	const coRename = await pbRequest(
+		'PATCH',
+		`/api/collections/trip_members/records/${fixture.memberIds.traveler}`,
+		{
+			token: tokens.co_owner,
+			body: { display_name: 'Renamed by co-owner' }
+		}
+	);
+	recordResult(
+		'trip_members',
+		'rename_other_coowner',
+		'co_owner',
+		'deny',
+		classifyWrite(coRename.status),
+		coRename.status
+	);
 
 	// 6. Traveler flips their own digest_opt_out (the settings toggle) → allow.
 	fixture = await setupFixture();
-	const ownDigest = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.traveler}`, {
-		token: tokens.traveler,
-		body: { digest_opt_out: true }
-	});
-	recordResult('trip_members', 'own_digest_opt_out', 'traveler', 'allow', classifyWrite(ownDigest.status), ownDigest.status);
+	const ownDigest = await pbRequest(
+		'PATCH',
+		`/api/collections/trip_members/records/${fixture.memberIds.traveler}`,
+		{
+			token: tokens.traveler,
+			body: { digest_opt_out: true }
+		}
+	);
+	recordResult(
+		'trip_members',
+		'own_digest_opt_out',
+		'traveler',
+		'allow',
+		classifyWrite(ownDigest.status),
+		ownDigest.status
+	);
 
 	// 7. Owner flips someone else's digest_opt_out → deny (personal preference).
 	fixture = await setupFixture();
-	const otherDigest = await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.traveler}`, {
-		token: tokens.owner,
-		body: { digest_opt_out: true }
-	});
-	recordResult('trip_members', 'other_digest_opt_out_owner', 'owner', 'deny', classifyWrite(otherDigest.status), otherDigest.status);
+	const otherDigest = await pbRequest(
+		'PATCH',
+		`/api/collections/trip_members/records/${fixture.memberIds.traveler}`,
+		{
+			token: tokens.owner,
+			body: { digest_opt_out: true }
+		}
+	);
+	recordResult(
+		'trip_members',
+		'other_digest_opt_out_owner',
+		'owner',
+		'deny',
+		classifyWrite(otherDigest.status),
+		otherDigest.status
+	);
 
 	// 8. Superusers bypass the allowlist (admin tooling) → allow.
 	fixture = await setupFixture();
@@ -2113,7 +2986,14 @@ async function runMemberFieldGateNovelCases(tokens) {
 				body: { placeholder_name: 'Admin fixed name' }
 			})
 		: { status: 0 };
-	recordResult('trip_members', 'superuser_edit', 'superuser', 'allow', classifyWrite(suEdit.status), suEdit.status);
+	recordResult(
+		'trip_members',
+		'superuser_edit',
+		'superuser',
+		'allow',
+		classifyWrite(suEdit.status),
+		suEdit.status
+	);
 
 	// --- #450: every role vs the locked identity fields -----------------------
 	// Before #450 only a traveler was tried. Each role PATCHes `user` and `trip`
@@ -2122,7 +3002,11 @@ async function runMemberFieldGateNovelCases(tokens) {
 	fixture = await setupFixture();
 	const otherTrip = await pbRequest('POST', '/api/collections/trips/records', {
 		token: tokens.non_member,
-		body: { slug: 'e2e-rules-other450-' + Date.now(), title: 'Other trip', created_by: fixture.userIds.non_member }
+		body: {
+			slug: 'e2e-rules-other450-' + Date.now(),
+			title: 'Other trip',
+			created_by: fixture.userIds.non_member
+		}
 	});
 	const targetFor = { owner: 'traveler', co_owner: 'owner', traveler: 'owner', viewer: 'owner' };
 	for (const role of ['owner', 'co_owner', 'traveler', 'viewer']) {
@@ -2131,17 +3015,37 @@ async function runMemberFieldGateNovelCases(tokens) {
 			token: tokens[role],
 			body: { user: fixture.userIds.non_member }
 		});
-		recordResult('trip_members', `hijack_user_${role}`, role, 'deny', u.status === 403 ? 'deny' : `status_${u.status}`, u.status);
+		recordResult(
+			'trip_members',
+			`hijack_user_${role}`,
+			role,
+			'deny',
+			u.status === 403 ? 'deny' : `status_${u.status}`,
+			u.status
+		);
 		const t = otherTrip.data?.id
-			? await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds[role]}`, {
-					token: tokens[role],
-					body: { trip: otherTrip.data.id }
-				})
+			? await pbRequest(
+					'PATCH',
+					`/api/collections/trip_members/records/${fixture.memberIds[role]}`,
+					{
+						token: tokens[role],
+						body: { trip: otherTrip.data.id }
+					}
+				)
 			: { status: 0 };
-		recordResult('trip_members', `move_trip_${role}`, role, 'deny', t.status === 403 ? 'deny' : `status_${t.status}`, t.status);
+		recordResult(
+			'trip_members',
+			`move_trip_${role}`,
+			role,
+			'deny',
+			t.status === 403 ? 'deny' : `status_${t.status}`,
+			t.status
+		);
 	}
 	if (otherTrip.data?.id) {
-		await pbRequest('DELETE', `/api/collections/trips/records/${otherTrip.data.id}`, { token: tokens.non_member });
+		await pbRequest('DELETE', `/api/collections/trips/records/${otherTrip.data.id}`, {
+			token: tokens.non_member
+		});
 	}
 
 	// --- #450: the guard is an ALLOWLIST ---------------------------------------
@@ -2156,23 +3060,57 @@ async function runMemberFieldGateNovelCases(tokens) {
 		let added = false;
 		if (colRes.status === 200) {
 			const fields = colRes.data.fields.concat([{ type: 'text', name: probeName }]);
-			const up = await pbRequest('PATCH', '/api/collections/trip_members', { token: su, body: { fields } });
+			const up = await pbRequest('PATCH', '/api/collections/trip_members', {
+				token: su,
+				body: { fields }
+			});
 			added = up.status === 200;
 		}
 		fixture = await setupFixture();
 		const row = fixture.memberIds.traveler;
 		const asOwner = added
-			? await pbRequest('PATCH', `/api/collections/trip_members/records/${row}`, { token: tokens.owner, body: { [probeName]: 'x' } })
+			? await pbRequest('PATCH', `/api/collections/trip_members/records/${row}`, {
+					token: tokens.owner,
+					body: { [probeName]: 'x' }
+				})
 			: { status: 0 };
-		recordResult('trip_members', 'allowlist_unknown_field_owner', 'owner', 'deny', asOwner.status === 403 ? 'deny' : `status_${asOwner.status}`, asOwner.status);
+		recordResult(
+			'trip_members',
+			'allowlist_unknown_field_owner',
+			'owner',
+			'deny',
+			asOwner.status === 403 ? 'deny' : `status_${asOwner.status}`,
+			asOwner.status
+		);
 		const asViewerSelf = added
-			? await pbRequest('PATCH', `/api/collections/trip_members/records/${fixture.memberIds.viewer}`, { token: tokens.viewer, body: { [probeName]: 'x' } })
+			? await pbRequest(
+					'PATCH',
+					`/api/collections/trip_members/records/${fixture.memberIds.viewer}`,
+					{ token: tokens.viewer, body: { [probeName]: 'x' } }
+				)
 			: { status: 0 };
-		recordResult('trip_members', 'allowlist_unknown_field_viewer', 'viewer', 'deny', asViewerSelf.status === 403 ? 'deny' : `status_${asViewerSelf.status}`, asViewerSelf.status);
+		recordResult(
+			'trip_members',
+			'allowlist_unknown_field_viewer',
+			'viewer',
+			'deny',
+			asViewerSelf.status === 403 ? 'deny' : `status_${asViewerSelf.status}`,
+			asViewerSelf.status
+		);
 		const asSu = added
-			? await pbRequest('PATCH', `/api/collections/trip_members/records/${row}`, { token: su, body: { [probeName]: 'x' } })
+			? await pbRequest('PATCH', `/api/collections/trip_members/records/${row}`, {
+					token: su,
+					body: { [probeName]: 'x' }
+				})
 			: { status: 0 };
-		recordResult('trip_members', 'allowlist_unknown_field_superuser', 'superuser', 'allow', classifyWrite(asSu.status), asSu.status);
+		recordResult(
+			'trip_members',
+			'allowlist_unknown_field_superuser',
+			'superuser',
+			'allow',
+			classifyWrite(asSu.status),
+			asSu.status
+		);
 		if (added) {
 			const cur = await pbRequest('GET', '/api/collections/trip_members', { token: su });
 			const fields = cur.data.fields.filter((f) => f.name !== probeName);
@@ -2183,28 +3121,69 @@ async function runMemberFieldGateNovelCases(tokens) {
 	// --- #450: placeholder_email is hidden over REST; owner/co_owner read it via a route
 	fixture = await setupFixture();
 	for (const role of ['owner', 'co_owner', 'traveler', 'viewer']) {
-		const g = await pbRequest('GET', `/api/collections/trip_members/records/${fixture.memberIds.spare}`, { token: tokens[role] });
+		const g = await pbRequest(
+			'GET',
+			`/api/collections/trip_members/records/${fixture.memberIds.spare}`,
+			{ token: tokens[role] }
+		);
 		const leaked = g.status === 200 && 'placeholder_email' in (g.data || {});
-		const list = await pbRequest('GET', `/api/collections/trip_members/records?perPage=200&filter=${filterQuery(fixture.tripId, '')}`, { token: tokens[role] });
+		const list = await pbRequest(
+			'GET',
+			`/api/collections/trip_members/records?perPage=200&filter=${filterQuery(fixture.tripId, '')}`,
+			{ token: tokens[role] }
+		);
 		const leakedList = (list.data?.items || []).some((r) => 'placeholder_email' in r);
-		recordResult('trip_members', `placeholder_email_hidden_${role}`, role, 'yes', g.status === 200 && !leaked && !leakedList ? 'yes' : `no(view=${g.status},leaked=${leaked},list=${leakedList})`, g.status);
+		recordResult(
+			'trip_members',
+			`placeholder_email_hidden_${role}`,
+			role,
+			'yes',
+			g.status === 200 && !leaked && !leakedList
+				? 'yes'
+				: `no(view=${g.status},leaked=${leaked},list=${leakedList})`,
+			g.status
+		);
 	}
 	const routeExpect = { owner: 200, co_owner: 200, traveler: 403, viewer: 403, non_member: 403 };
 	for (const role of ['owner', 'co_owner', 'traveler', 'viewer', 'non_member']) {
-		const r = await pbRequest('GET', `/api/members/placeholder-emails?trip_id=${fixture.tripId}`, { token: tokens[role] });
+		const r = await pbRequest('GET', `/api/members/placeholder-emails?trip_id=${fixture.tripId}`, {
+			token: tokens[role]
+		});
 		const leaked = JSON.stringify(r.data || {}).includes('@e2e.test');
 		const ok = r.status === routeExpect[role] && (routeExpect[role] === 200 || !leaked);
-		recordResult('trip_members', `placeholder_email_route_${role}`, role, 'yes', ok ? 'yes' : `no(status=${r.status})`, r.status);
+		recordResult(
+			'trip_members',
+			`placeholder_email_route_${role}`,
+			role,
+			'yes',
+			ok ? 'yes' : `no(status=${r.status})`,
+			r.status
+		);
 	}
-	const vals = await pbRequest('GET', `/api/members/placeholder-emails?trip_id=${fixture.tripId}`, { token: tokens.owner });
-	recordResult('trip_members', 'placeholder_email_route_values', 'owner', 'yes', vals.data?.emails?.[fixture.memberIds.spare] === 'spare-450@e2e.test' ? 'yes' : `no(${JSON.stringify(vals.data)})`, vals.status);
+	const vals = await pbRequest('GET', `/api/members/placeholder-emails?trip_id=${fixture.tripId}`, {
+		token: tokens.owner
+	});
+	recordResult(
+		'trip_members',
+		'placeholder_email_route_values',
+		'owner',
+		'yes',
+		vals.data?.emails?.[fixture.memberIds.spare] === 'spare-450@e2e.test'
+			? 'yes'
+			: `no(${JSON.stringify(vals.data)})`,
+		vals.status
+	);
 }
 
 function printMemberFieldGateReport() {
-	console.log('\n[#408 trip_members — identity/lifecycle fields locked; display_name own-or-owner; digest own-only]');
+	console.log(
+		'\n[#408 trip_members — identity/lifecycle fields locked; display_name own-or-owner; digest own-only]'
+	);
 	for (const r of results.filter((x) => MEMBER_FIELD_GATE_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
-		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+		console.log(
+			`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`
+		);
 	}
 }
 
@@ -2225,35 +3204,71 @@ async function runPendingRouteNovelCases(tokens) {
 	const path = `/api/invites/pending?trip_id=${fixture.tripId}`;
 	const su = await superuserToken();
 	const raw = su
-		? await pbRequest('GET', `/api/collections/pending_invites/records/${fixture.pendingInviteId}`, { token: su })
+		? await pbRequest(
+				'GET',
+				`/api/collections/pending_invites/records/${fixture.pendingInviteId}`,
+				{ token: su }
+			)
 		: { data: null };
 	const address = raw.data?.email || '';
 	const code = raw.data?.code || '';
 
 	const asOwner = await pbRequest('GET', path, { token: tokens.owner });
 	const ownRow = (asOwner.data?.invites || []).find((i) => i.id === fixture.pendingInviteId);
-	recordResult('pending_invites', 'route_inviter_sees_own', 'owner', 'yes',
-		address && ownRow?.label === address ? 'yes' : 'no', asOwner.status);
+	recordResult(
+		'pending_invites',
+		'route_inviter_sees_own',
+		'owner',
+		'yes',
+		address && ownRow?.label === address ? 'yes' : 'no',
+		asOwner.status
+	);
 
 	const asViewer = await pbRequest('GET', path, { token: tokens.viewer });
 	const viewerRow = (asViewer.data?.invites || []).find((i) => i.id === fixture.pendingInviteId);
-	recordResult('pending_invites', 'route_viewer_masked', 'viewer', 'yes',
-		viewerRow && viewerRow.label !== address && viewerRow.label.includes('•••') ? 'yes' : 'no', asViewer.status);
+	recordResult(
+		'pending_invites',
+		'route_viewer_masked',
+		'viewer',
+		'yes',
+		viewerRow && viewerRow.label !== address && viewerRow.label.includes('•••') ? 'yes' : 'no',
+		asViewer.status
+	);
 
 	const bodies = JSON.stringify([asOwner.data, asViewer.data]);
-	const clean = (asOwner.data?.invites || []).every((i) => !('email' in i) && !('code' in i)) &&
-		(!code || !bodies.includes(code)) && (!address || !JSON.stringify(asViewer.data).includes(address));
-	recordResult('pending_invites', 'route_no_email_or_code', 'viewer', 'yes', clean ? 'yes' : 'no', asViewer.status);
+	const clean =
+		(asOwner.data?.invites || []).every((i) => !('email' in i) && !('code' in i)) &&
+		(!code || !bodies.includes(code)) &&
+		(!address || !JSON.stringify(asViewer.data).includes(address));
+	recordResult(
+		'pending_invites',
+		'route_no_email_or_code',
+		'viewer',
+		'yes',
+		clean ? 'yes' : 'no',
+		asViewer.status
+	);
 
 	const asNon = await pbRequest('GET', path, { token: tokens.non_member });
-	recordResult('pending_invites', 'route_nonmember_denied', 'non_member', 'deny', classifyWrite(asNon.status), asNon.status);
+	recordResult(
+		'pending_invites',
+		'route_nonmember_denied',
+		'non_member',
+		'deny',
+		classifyWrite(asNon.status),
+		asNon.status
+	);
 }
 
 function printPendingRouteReport() {
-	console.log('\n[#409 pending invites — superuser-only collection; /api/invites/pending labels (inviter sees own, others masked, never email/code)]');
+	console.log(
+		'\n[#409 pending invites — superuser-only collection; /api/invites/pending labels (inviter sees own, others masked, never email/code)]'
+	);
 	for (const r of results.filter((x) => PENDING_ROUTE_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
-		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+		console.log(
+			`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`
+		);
 	}
 }
 
@@ -2289,7 +3304,14 @@ async function runTripsGateNovelCases(tokens) {
 		token: tokens.viewer,
 		body: { archived: true }
 	});
-	recordResult('trips', 'protected_viewer_archived', 'viewer', 'deny', classifyWrite(vArch.status), vArch.status);
+	recordResult(
+		'trips',
+		'protected_viewer_archived',
+		'viewer',
+		'deny',
+		classifyWrite(vArch.status),
+		vArch.status
+	);
 
 	// 2. Traveler enables publishing (archive_enabled + archive_publish_at) → deny —
 	//    the issue's headline "push the private itinerary public" exploit.
@@ -2298,7 +3320,14 @@ async function runTripsGateNovelCases(tokens) {
 		token: tokens.traveler,
 		body: { archive_enabled: true, archive_publish_at: '2026-06-02 00:00:00.000Z' }
 	});
-	recordResult('trips', 'protected_traveler_publish', 'traveler', 'deny', classifyWrite(tPub.status), tPub.status);
+	recordResult(
+		'trips',
+		'protected_traveler_publish',
+		'traveler',
+		'deny',
+		classifyWrite(tPub.status),
+		tPub.status
+	);
 
 	// 3. Traveler sets a public_share_token → deny.
 	fixture = await setupFixture();
@@ -2306,7 +3335,14 @@ async function runTripsGateNovelCases(tokens) {
 		token: tokens.traveler,
 		body: { public_share_token: 'sneaky-token-' + Date.now() }
 	});
-	recordResult('trips', 'protected_traveler_share_token', 'traveler', 'deny', classifyWrite(tTok.status), tTok.status);
+	recordResult(
+		'trips',
+		'protected_traveler_share_token',
+		'traveler',
+		'deny',
+		classifyWrite(tTok.status),
+		tTok.status
+	);
 
 	// 4. Traveler flips auto_approve_suggestions → deny (self-promote their own ghosts).
 	fixture = await setupFixture();
@@ -2314,7 +3350,14 @@ async function runTripsGateNovelCases(tokens) {
 		token: tokens.traveler,
 		body: { auto_approve_suggestions: true }
 	});
-	recordResult('trips', 'protected_traveler_autoapprove', 'traveler', 'deny', classifyWrite(tAuto.status), tAuto.status);
+	recordResult(
+		'trips',
+		'protected_traveler_autoapprove',
+		'traveler',
+		'deny',
+		classifyWrite(tAuto.status),
+		tAuto.status
+	);
 
 	// 5. Owner sets archive_enabled → allow (privileged path unaffected).
 	fixture = await setupFixture();
@@ -2322,7 +3365,14 @@ async function runTripsGateNovelCases(tokens) {
 		token: tokens.owner,
 		body: { archive_enabled: true }
 	});
-	recordResult('trips', 'protected_owner_archive_enabled', 'owner', 'allow', classifyWrite(oArch.status), oArch.status);
+	recordResult(
+		'trips',
+		'protected_owner_archive_enabled',
+		'owner',
+		'allow',
+		classifyWrite(oArch.status),
+		oArch.status
+	);
 
 	// 6. Co_owner sets archive_publish_at (the date field) → allow.
 	fixture = await setupFixture();
@@ -2330,15 +3380,33 @@ async function runTripsGateNovelCases(tokens) {
 		token: tokens.co_owner,
 		body: { archive_publish_at: '2026-06-03 00:00:00.000Z' }
 	});
-	recordResult('trips', 'protected_coowner_publish_at', 'co_owner', 'allow', classifyWrite(coPub.status), coPub.status);
+	recordResult(
+		'trips',
+		'protected_coowner_publish_at',
+		'co_owner',
+		'allow',
+		classifyWrite(coPub.status),
+		coPub.status
+	);
 
 	// 7. Traveler edits ordinary fields (title + dates) → allow (MEMBER allowance kept).
 	fixture = await setupFixture();
 	const tOrdinary = await pbRequest('PATCH', `/api/collections/trips/records/${fixture.tripId}`, {
 		token: tokens.traveler,
-		body: { title: 'Traveler renamed trip', start_date: '2026-06-01 00:00:00.000Z', end_date: '2026-06-04 00:00:00.000Z' }
+		body: {
+			title: 'Traveler renamed trip',
+			start_date: '2026-06-01 00:00:00.000Z',
+			end_date: '2026-06-04 00:00:00.000Z'
+		}
 	});
-	recordResult('trips', 'ordinary_traveler_title_date', 'traveler', 'allow', classifyWrite(tOrdinary.status), tOrdinary.status);
+	recordResult(
+		'trips',
+		'ordinary_traveler_title_date',
+		'traveler',
+		'allow',
+		classifyWrite(tOrdinary.status),
+		tOrdinary.status
+	);
 
 	// 8. Day-reconcile still runs after the gate: owner extends the trip by a day,
 	//    the new day must be materialized by the reconcile handler that runs after
@@ -2356,18 +3424,36 @@ async function runTripsGateNovelCases(tokens) {
 			`/api/collections/days/records?perPage=200&filter=${filterQuery(fixture.tripId, '')}`,
 			{ token: tokens.owner }
 		);
-		reconciled = (days.data?.items || []).some((d) => (d.date || '').substring(0, 10) === '2026-06-04');
+		reconciled = (days.data?.items || []).some(
+			(d) => (d.date || '').substring(0, 10) === '2026-06-04'
+		);
 	}
-	recordResult('trips', 'reconcile_after_gate', 'owner', 'yes', reconciled ? 'yes' : 'no', ext.status);
+	recordResult(
+		'trips',
+		'reconcile_after_gate',
+		'owner',
+		'yes',
+		reconciled ? 'yes' : 'no',
+		ext.status
+	);
 
 	// 9. #407: the delete hook lets a superuser through (clean-dev-trips purges
 	//    test trips as admin). Role denials are covered by the delete matrix.
 	fixture = await setupFixture();
 	const suToken = await superuserToken();
 	const suDel = suToken
-		? await pbRequest('DELETE', `/api/collections/trips/records/${fixture.tripId}`, { token: suToken })
+		? await pbRequest('DELETE', `/api/collections/trips/records/${fixture.tripId}`, {
+				token: suToken
+			})
 		: { status: 0 };
-	recordResult('trips', 'delete_superuser', 'superuser', 'allow', classifyWrite(suDel.status), suDel.status);
+	recordResult(
+		'trips',
+		'delete_superuser',
+		'superuser',
+		'allow',
+		classifyWrite(suDel.status),
+		suDel.status
+	);
 }
 
 // #503 — trips.ai_write gate + create default. Owner may switch AI changes off;
@@ -2388,7 +3474,14 @@ async function runAiWriteCases(tokens) {
 			token: tokens[role],
 			body: { ai_write: false }
 		});
-		recordResult('trips', `ai_write_${role}_denied`, role, 'deny', classifyWrite(r.status), r.status);
+		recordResult(
+			'trips',
+			`ai_write_${role}_denied`,
+			role,
+			'deny',
+			classifyWrite(r.status),
+			r.status
+		);
 	}
 
 	const c = await pbRequest('POST', '/api/collections/trips/records', {
@@ -2438,27 +3531,68 @@ async function runAiChangesCases(tokens) {
 			: { status: 0 };
 		rows[role] = r.data?.id;
 	}
-	const list = await pbRequest('GET', '/api/collections/ai_changes/records?perPage=200', { token: tokens.owner });
+	const list = await pbRequest('GET', '/api/collections/ai_changes/records?perPage=200', {
+		token: tokens.owner
+	});
 	const ids = (list.data?.items || []).map((x) => x.id);
 	const ownOnly =
-		list.status === 200 && rows.owner && ids.includes(rows.owner) && !ids.includes(rows.traveler) &&
+		list.status === 200 &&
+		rows.owner &&
+		ids.includes(rows.owner) &&
+		!ids.includes(rows.traveler) &&
 		(list.data?.items || []).every((x) => x.user === fixture.userIds.owner);
-	recordResult('ai_changes', 'ai_changes_list_own_only', 'owner', 'yes', ownOnly ? 'yes' : 'no', list.status);
+	recordResult(
+		'ai_changes',
+		'ai_changes_list_own_only',
+		'owner',
+		'yes',
+		ownOnly ? 'yes' : 'no',
+		list.status
+	);
 
 	const cr = await pbRequest('POST', '/api/collections/ai_changes/records', {
 		token: tokens.owner,
-		body: { user: fixture.userIds.owner, connection: 'x', trip: fixture.tripId, quote: 'forged', changes: [] }
+		body: {
+			user: fixture.userIds.owner,
+			connection: 'x',
+			trip: fixture.tripId,
+			quote: 'forged',
+			changes: []
+		}
 	});
-	recordResult('ai_changes', 'ai_changes_member_create_denied', 'owner', 'deny', classifyWrite(cr.status), cr.status);
+	recordResult(
+		'ai_changes',
+		'ai_changes_member_create_denied',
+		'owner',
+		'deny',
+		classifyWrite(cr.status),
+		cr.status
+	);
 
 	const up = await pbRequest('PATCH', `/api/collections/ai_changes/records/${rows.owner}`, {
 		token: tokens.owner,
 		body: { quote: 'edited' }
 	});
-	recordResult('ai_changes', 'ai_changes_member_update_denied', 'owner', 'deny', classifyWrite(up.status), up.status);
+	recordResult(
+		'ai_changes',
+		'ai_changes_member_update_denied',
+		'owner',
+		'deny',
+		classifyWrite(up.status),
+		up.status
+	);
 
-	const del = await pbRequest('DELETE', `/api/collections/ai_changes/records/${rows.owner}`, { token: tokens.owner });
-	recordResult('ai_changes', 'ai_changes_member_delete_denied', 'owner', 'deny', classifyWrite(del.status), del.status);
+	const del = await pbRequest('DELETE', `/api/collections/ai_changes/records/${rows.owner}`, {
+		token: tokens.owner
+	});
+	recordResult(
+		'ai_changes',
+		'ai_changes_member_delete_denied',
+		'owner',
+		'deny',
+		classifyWrite(del.status),
+		del.status
+	);
 }
 
 // #503 invariant audit — rules the app enforced only in SvelteKit, moved into PB
@@ -2477,7 +3611,14 @@ async function runAuditHookCases(tokens) {
 		token: tokens.owner,
 		body: { start_date: '2026-06-05 00:00:00.000Z', end_date: '2026-06-02 00:00:00.000Z' }
 	});
-	recordResult('trips', 'trip_dates_reversed_update_denied', 'owner', 'deny', classifyWrite(rev.status), rev.status);
+	recordResult(
+		'trips',
+		'trip_dates_reversed_update_denied',
+		'owner',
+		'deny',
+		classifyWrite(rev.status),
+		rev.status
+	);
 
 	const revC = await pbRequest('POST', '/api/collections/trips/records', {
 		token: tokens.owner,
@@ -2492,17 +3633,36 @@ async function runAuditHookCases(tokens) {
 	});
 	if (revC.status === 200) {
 		const su = await superuserToken();
-		if (su) await pbRequest('DELETE', `/api/collections/trips/records/${revC.data.id}`, { token: su });
+		if (su)
+			await pbRequest('DELETE', `/api/collections/trips/records/${revC.data.id}`, { token: su });
 	}
-	recordResult('trips', 'trip_dates_reversed_create_denied', 'owner', 'deny', classifyWrite(revC.status), revC.status);
+	recordResult(
+		'trips',
+		'trip_dates_reversed_create_denied',
+		'owner',
+		'deny',
+		classifyWrite(revC.status),
+		revC.status
+	);
 
 	fixture = await setupFixture();
 	const mu = await pbRequest('POST', '/api/collections/money_units/records', {
 		token: tokens.traveler,
-		body: { trip: fixture.tripId, members: [fixture.memberIds.traveler], created_by: fixture.memberIds.owner }
+		body: {
+			trip: fixture.tripId,
+			members: [fixture.memberIds.traveler],
+			created_by: fixture.memberIds.owner
+		}
 	});
 	const pinned = mu.status === 200 && mu.data?.created_by === fixture.memberIds.traveler;
-	recordResult('money_units', 'money_unit_created_by_pinned', 'traveler', 'yes', pinned ? 'yes' : 'no', mu.status);
+	recordResult(
+		'money_units',
+		'money_unit_created_by_pinned',
+		'traveler',
+		'yes',
+		pinned ? 'yes' : 'no',
+		mu.status
+	);
 
 	const other = await pbRequest('POST', '/api/dev/rules-fixture', {
 		body: { emails: EMAILS, slug: 'harness-audit-other' }
@@ -2510,16 +3670,31 @@ async function runAuditHookCases(tokens) {
 	const foreign = other.data?.memberIds?.viewer;
 	const cross = await pbRequest('POST', '/api/collections/money_units/records', {
 		token: tokens.traveler,
-		body: { trip: fixture.tripId, members: [fixture.memberIds.traveler, foreign], created_by: fixture.memberIds.traveler }
+		body: {
+			trip: fixture.tripId,
+			members: [fixture.memberIds.traveler, foreign],
+			created_by: fixture.memberIds.traveler
+		}
 	});
-	recordResult('money_units', 'money_unit_cross_trip_member_denied', 'traveler', 'deny', classifyWrite(cross.status), cross.status);
+	recordResult(
+		'money_units',
+		'money_unit_cross_trip_member_denied',
+		'traveler',
+		'deny',
+		classifyWrite(cross.status),
+		cross.status
+	);
 }
 
 function printAuditReport() {
-	console.log('\n[#503 invariant audit — trip dates ordered; money_units create pins created_by, same-trip members]');
+	console.log(
+		'\n[#503 invariant audit — trip dates ordered; money_units create pins created_by, same-trip members]'
+	);
 	for (const r of results.filter((x) => AUDIT_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
-		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+		console.log(
+			`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`
+		);
 	}
 }
 
@@ -2527,15 +3702,21 @@ function printAiChangesReport() {
 	console.log('\n[#503 ai_changes — list own rows only; members cannot create/update/delete]');
 	for (const r of results.filter((x) => AI_CHANGES_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
-		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+		console.log(
+			`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`
+		);
 	}
 }
 
 function printTripsGateReport() {
-	console.log('\n[#280/#407 trips — gate archive/publish/share/auto-approve + delete to owner·co_owner; ordinary edits + day-reconcile unaffected]');
+	console.log(
+		'\n[#280/#407 trips — gate archive/publish/share/auto-approve + delete to owner·co_owner; ordinary edits + day-reconcile unaffected]'
+	);
 	for (const r of results.filter((x) => TRIPS_GATE_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
-		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+		console.log(
+			`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`
+		);
 	}
 }
 
@@ -2580,9 +3761,18 @@ async function runMoneyUnitNovelCases(tokens) {
 	let unitId = await makeMoneyUnit(tokens, fixture);
 	const vAdd = await pbRequest('PATCH', `/api/collections/money_units/records/${unitId}`, {
 		token: tokens.viewer,
-		body: { members: [fixture.memberIds.co_owner, fixture.memberIds.traveler, fixture.memberIds.viewer] }
+		body: {
+			members: [fixture.memberIds.co_owner, fixture.memberIds.traveler, fixture.memberIds.viewer]
+		}
 	});
-	recordResult('money_units', 'nonmember_self_add_denied', 'viewer', 'deny', classifyWrite(vAdd.status), vAdd.status);
+	recordResult(
+		'money_units',
+		'nonmember_self_add_denied',
+		'viewer',
+		'deny',
+		classifyWrite(vAdd.status),
+		vAdd.status
+	);
 
 	// 2. Viewer edits the unit's budget (not in unit) → deny.
 	fixture = await setupFixture();
@@ -2591,7 +3781,14 @@ async function runMoneyUnitNovelCases(tokens) {
 		token: tokens.viewer,
 		body: { budget_usd: 999 }
 	});
-	recordResult('money_units', 'nonmember_edit_denied', 'viewer', 'deny', classifyWrite(vEdit.status), vEdit.status);
+	recordResult(
+		'money_units',
+		'nonmember_edit_denied',
+		'viewer',
+		'deny',
+		classifyWrite(vEdit.status),
+		vEdit.status
+	);
 
 	// 3. Viewer deletes the unit → deny.
 	fixture = await setupFixture();
@@ -2599,7 +3796,14 @@ async function runMoneyUnitNovelCases(tokens) {
 	const vDel = await pbRequest('DELETE', `/api/collections/money_units/records/${unitId}`, {
 		token: tokens.viewer
 	});
-	recordResult('money_units', 'nonmember_delete_denied', 'viewer', 'deny', classifyWrite(vDel.status), vDel.status);
+	recordResult(
+		'money_units',
+		'nonmember_delete_denied',
+		'viewer',
+		'deny',
+		classifyWrite(vDel.status),
+		vDel.status
+	);
 
 	// 4. Traveler (in unit) removes ONLY themselves → allow (the consent valve).
 	fixture = await setupFixture();
@@ -2608,7 +3812,14 @@ async function runMoneyUnitNovelCases(tokens) {
 		token: tokens.traveler,
 		body: { members: [fixture.memberIds.co_owner] }
 	});
-	recordResult('money_units', 'member_self_remove_ok', 'traveler', 'allow', classifyWrite(tLeave.status), tLeave.status);
+	recordResult(
+		'money_units',
+		'member_self_remove_ok',
+		'traveler',
+		'allow',
+		classifyWrite(tLeave.status),
+		tLeave.status
+	);
 
 	// 5. Traveler (in unit) deletes the whole unit → allow.
 	fixture = await setupFixture();
@@ -2616,7 +3827,14 @@ async function runMoneyUnitNovelCases(tokens) {
 	const tDel = await pbRequest('DELETE', `/api/collections/money_units/records/${unitId}`, {
 		token: tokens.traveler
 	});
-	recordResult('money_units', 'member_delete_ok', 'traveler', 'allow', classifyWrite(tDel.status), tDel.status);
+	recordResult(
+		'money_units',
+		'member_delete_ok',
+		'traveler',
+		'allow',
+		classifyWrite(tDel.status),
+		tDel.status
+	);
 
 	// 6. Co_owner (in unit) adds the viewer — an EXISTING member granting entry is
 	//    the consent path → allow. (Distinct from case 1: a unit member is doing the
@@ -2625,9 +3843,18 @@ async function runMoneyUnitNovelCases(tokens) {
 	unitId = await makeMoneyUnit(tokens, fixture);
 	const consent = await pbRequest('PATCH', `/api/collections/money_units/records/${unitId}`, {
 		token: tokens.co_owner,
-		body: { members: [fixture.memberIds.co_owner, fixture.memberIds.traveler, fixture.memberIds.viewer] }
+		body: {
+			members: [fixture.memberIds.co_owner, fixture.memberIds.traveler, fixture.memberIds.viewer]
+		}
 	});
-	recordResult('money_units', 'member_consent_add_ok', 'co_owner', 'allow', classifyWrite(consent.status), consent.status);
+	recordResult(
+		'money_units',
+		'member_consent_add_ok',
+		'co_owner',
+		'allow',
+		classifyWrite(consent.status),
+		consent.status
+	);
 
 	// 7. Owner (NOT in the unit) edits it → allow (trip admin can manage any unit).
 	fixture = await setupFixture();
@@ -2636,14 +3863,25 @@ async function runMoneyUnitNovelCases(tokens) {
 		token: tokens.owner,
 		body: { budget_usd: 250 }
 	});
-	recordResult('money_units', 'owner_manage_ok', 'owner', 'allow', classifyWrite(oManage.status), oManage.status);
+	recordResult(
+		'money_units',
+		'owner_manage_ok',
+		'owner',
+		'allow',
+		classifyWrite(oManage.status),
+		oManage.status
+	);
 }
 
 function printMoneyUnitReport() {
-	console.log('\n[#281 money_units — unit-member or owner·co_owner edits/deletes; no unilateral self-add; self-removal free]');
+	console.log(
+		'\n[#281 money_units — unit-member or owner·co_owner edits/deletes; no unilateral self-add; self-removal free]'
+	);
 	for (const r of results.filter((x) => MONEY_UNIT_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
-		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+		console.log(
+			`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`
+		);
 	}
 }
 
@@ -2689,14 +3927,28 @@ async function runChecklistTaskNovelCases(tokens) {
 		token: tokens.viewer,
 		body: { trip: fixture.tripId, title: 'Viewer checklist', kind: 'manual', order: 0 }
 	});
-	recordResult('checklists', 'checklist_create_viewer_denied', 'viewer', 'deny', classifyWrite(clVCreate.status), clVCreate.status);
+	recordResult(
+		'checklists',
+		'checklist_create_viewer_denied',
+		'viewer',
+		'deny',
+		classifyWrite(clVCreate.status),
+		clVCreate.status
+	);
 
 	// 2. Traveler creates a checklist → allow (traveler+ tier).
 	const clTCreate = await pbRequest('POST', '/api/collections/checklists/records', {
 		token: tokens.traveler,
 		body: { trip: fixture.tripId, title: 'Traveler checklist', kind: 'manual', order: 1 }
 	});
-	recordResult('checklists', 'checklist_create_traveler_ok', 'traveler', 'allow', classifyWrite(clTCreate.status), clTCreate.status);
+	recordResult(
+		'checklists',
+		'checklist_create_traveler_ok',
+		'traveler',
+		'allow',
+		classifyWrite(clTCreate.status),
+		clTCreate.status
+	);
 
 	// 3. Viewer edits an existing checklist → deny.
 	fixture = await setupFixture();
@@ -2705,15 +3957,33 @@ async function runChecklistTaskNovelCases(tokens) {
 		token: tokens.viewer,
 		body: { title: 'Viewer edit' }
 	});
-	recordResult('checklists', 'checklist_update_viewer_denied', 'viewer', 'deny', classifyWrite(clVUpdate.status), clVUpdate.status);
+	recordResult(
+		'checklists',
+		'checklist_update_viewer_denied',
+		'viewer',
+		'deny',
+		classifyWrite(clVUpdate.status),
+		clVUpdate.status
+	);
 
 	// 4. Viewer deletes a checklist → deny.
 	fixture = await setupFixture();
 	checklistId = await makeChecklist(tokens, fixture);
-	const clVDelete = await pbRequest('DELETE', `/api/collections/checklists/records/${checklistId}`, {
-		token: tokens.viewer
-	});
-	recordResult('checklists', 'checklist_delete_viewer_denied', 'viewer', 'deny', classifyWrite(clVDelete.status), clVDelete.status);
+	const clVDelete = await pbRequest(
+		'DELETE',
+		`/api/collections/checklists/records/${checklistId}`,
+		{
+			token: tokens.viewer
+		}
+	);
+	recordResult(
+		'checklists',
+		'checklist_delete_viewer_denied',
+		'viewer',
+		'deny',
+		classifyWrite(clVDelete.status),
+		clVDelete.status
+	);
 
 	// --- tasks (trip resolved via checklist.trip) ---
 	// 5. Viewer creates a task → deny.
@@ -2723,14 +3993,28 @@ async function runChecklistTaskNovelCases(tokens) {
 		token: tokens.viewer,
 		body: { checklist: checklistId, title: 'Viewer task', order: 0 }
 	});
-	recordResult('tasks', 'task_create_viewer_denied', 'viewer', 'deny', classifyWrite(tkVCreate.status), tkVCreate.status);
+	recordResult(
+		'tasks',
+		'task_create_viewer_denied',
+		'viewer',
+		'deny',
+		classifyWrite(tkVCreate.status),
+		tkVCreate.status
+	);
 
 	// 6. Traveler creates a task → allow.
 	const tkTCreate = await pbRequest('POST', '/api/collections/tasks/records', {
 		token: tokens.traveler,
 		body: { checklist: checklistId, title: 'Traveler task', order: 1 }
 	});
-	recordResult('tasks', 'task_create_traveler_ok', 'traveler', 'allow', classifyWrite(tkTCreate.status), tkTCreate.status);
+	recordResult(
+		'tasks',
+		'task_create_traveler_ok',
+		'traveler',
+		'allow',
+		classifyWrite(tkTCreate.status),
+		tkTCreate.status
+	);
 
 	// 7. Viewer ticks/edits a task → deny.
 	fixture = await setupFixture();
@@ -2740,14 +4024,28 @@ async function runChecklistTaskNovelCases(tokens) {
 		token: tokens.viewer,
 		body: { checked: true }
 	});
-	recordResult('tasks', 'task_update_viewer_denied', 'viewer', 'deny', classifyWrite(tkVUpdate.status), tkVUpdate.status);
+	recordResult(
+		'tasks',
+		'task_update_viewer_denied',
+		'viewer',
+		'deny',
+		classifyWrite(tkVUpdate.status),
+		tkVUpdate.status
+	);
 
 	// 8. Traveler ticks a task → allow (the in-app task management the tier is for).
 	const tkTTick = await pbRequest('PATCH', `/api/collections/tasks/records/${taskId}`, {
 		token: tokens.traveler,
 		body: { checked: true }
 	});
-	recordResult('tasks', 'task_tick_traveler_ok', 'traveler', 'allow', classifyWrite(tkTTick.status), tkTTick.status);
+	recordResult(
+		'tasks',
+		'task_tick_traveler_ok',
+		'traveler',
+		'allow',
+		classifyWrite(tkTTick.status),
+		tkTTick.status
+	);
 
 	// 9. Viewer deletes a task → deny.
 	fixture = await setupFixture();
@@ -2756,14 +4054,23 @@ async function runChecklistTaskNovelCases(tokens) {
 	const tkVDelete = await pbRequest('DELETE', `/api/collections/tasks/records/${taskId}`, {
 		token: tokens.viewer
 	});
-	recordResult('tasks', 'task_delete_viewer_denied', 'viewer', 'deny', classifyWrite(tkVDelete.status), tkVDelete.status);
+	recordResult(
+		'tasks',
+		'task_delete_viewer_denied',
+		'viewer',
+		'deny',
+		classifyWrite(tkVDelete.status),
+		tkVDelete.status
+	);
 }
 
 function printChecklistTaskReport() {
 	console.log('\n[#283 checklists/tasks — viewers blocked on write (traveler+ tier, SPEC §4)]');
 	for (const r of results.filter((x) => CHECKLIST_TASK_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
-		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+		console.log(
+			`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`
+		);
 	}
 }
 
@@ -2827,21 +4134,42 @@ async function runJoinLinkNovelCases(tokens) {
 		token: tokens.owner,
 		body: { trip_id: tripId, role: 'co_owner' }
 	});
-	recordResult('join_tokens', 'create_co_owner_denied', 'owner', 'deny', classifyWrite(capRes.status), capRes.status);
+	recordResult(
+		'join_tokens',
+		'create_co_owner_denied',
+		'owner',
+		'deny',
+		classifyWrite(capRes.status),
+		capRes.status
+	);
 
 	// 2. Owner mints a traveler link and a viewer link (both may be live at once).
 	const travCreate = await pbRequest('POST', '/api/join/create', {
 		token: tokens.owner,
 		body: { trip_id: tripId, role: 'traveler' }
 	});
-	recordResult('join_tokens', 'create_traveler_ok', 'owner', 'allow', classifyWrite(travCreate.status), travCreate.status);
+	recordResult(
+		'join_tokens',
+		'create_traveler_ok',
+		'owner',
+		'allow',
+		classifyWrite(travCreate.status),
+		travCreate.status
+	);
 	const travToken = travCreate.data?.token;
 
 	const viewCreate = await pbRequest('POST', '/api/join/create', {
 		token: tokens.owner,
 		body: { trip_id: tripId, role: 'viewer' }
 	});
-	recordResult('join_tokens', 'create_viewer_ok', 'owner', 'allow', classifyWrite(viewCreate.status), viewCreate.status);
+	recordResult(
+		'join_tokens',
+		'create_viewer_ok',
+		'owner',
+		'allow',
+		classifyWrite(viewCreate.status),
+		viewCreate.status
+	);
 	const viewToken = viewCreate.data?.token;
 
 	// 3. One link per (trip, role) — a second traveler create is refused.
@@ -2849,7 +4177,14 @@ async function runJoinLinkNovelCases(tokens) {
 		token: tokens.owner,
 		body: { trip_id: tripId, role: 'traveler' }
 	});
-	recordResult('join_tokens', 'create_duplicate_denied', 'owner', 'deny', classifyWrite(dupRes.status), dupRes.status);
+	recordResult(
+		'join_tokens',
+		'create_duplicate_denied',
+		'owner',
+		'deny',
+		classifyWrite(dupRes.status),
+		dupRes.status
+	);
 
 	// 4. Anon pre-auth lookup — title + dates + role ONLY, no roster (Resolution 6).
 	const anonLookup = await pbRequest('POST', '/api/join/lookup', { body: { token: travToken } });
@@ -2860,29 +4195,72 @@ async function runJoinLinkNovelCases(tokens) {
 		!!anonLookup.data?.start_date &&
 		anonLookup.data?.expired === false &&
 		(anonLookup.data?.unclaimed_placeholders || []).length === 0;
-	recordResult('join_tokens', 'anon_lookup_minimal', 'anon', 'yes', minimalOk ? 'yes' : 'no', anonLookup.status);
+	recordResult(
+		'join_tokens',
+		'anon_lookup_minimal',
+		'anon',
+		'yes',
+		minimalOk ? 'yes' : 'no',
+		anonLookup.status
+	);
 
 	// 5. Join at the traveler role — a stranger lands as a traveler.
 	const joinTrav = await pbRequest('POST', '/api/join/accept', {
 		token: tokens.non_member,
 		body: { token: travToken }
 	});
-	recordResult('join_tokens', 'accept_traveler_ok', 'non_member', 'allow', classifyWrite(joinTrav.status), joinTrav.status);
-	const travMem = await pbRequest('GET', `/api/collections/trip_members/records/${joinTrav.data?.member_id}`, {
-		token: tokens.owner
-	});
-	recordResult('join_tokens', 'joined_role_traveler', 'non_member', 'traveler', travMem.data?.role || 'none', travMem.status);
+	recordResult(
+		'join_tokens',
+		'accept_traveler_ok',
+		'non_member',
+		'allow',
+		classifyWrite(joinTrav.status),
+		joinTrav.status
+	);
+	const travMem = await pbRequest(
+		'GET',
+		`/api/collections/trip_members/records/${joinTrav.data?.member_id}`,
+		{
+			token: tokens.owner
+		}
+	);
+	recordResult(
+		'join_tokens',
+		'joined_role_traveler',
+		'non_member',
+		'traveler',
+		travMem.data?.role || 'none',
+		travMem.status
+	);
 
 	// 6. Join at the viewer role — a different stranger lands as a viewer.
 	const joinView = await pbRequest('POST', '/api/join/accept', {
 		token: tokens.viewer,
 		body: { token: viewToken }
 	});
-	recordResult('join_tokens', 'accept_viewer_ok', 'viewer', 'allow', classifyWrite(joinView.status), joinView.status);
-	const viewMem = await pbRequest('GET', `/api/collections/trip_members/records/${joinView.data?.member_id}`, {
-		token: tokens.owner
-	});
-	recordResult('join_tokens', 'joined_role_viewer', 'viewer', 'viewer', viewMem.data?.role || 'none', viewMem.status);
+	recordResult(
+		'join_tokens',
+		'accept_viewer_ok',
+		'viewer',
+		'allow',
+		classifyWrite(joinView.status),
+		joinView.status
+	);
+	const viewMem = await pbRequest(
+		'GET',
+		`/api/collections/trip_members/records/${joinView.data?.member_id}`,
+		{
+			token: tokens.owner
+		}
+	);
+	recordResult(
+		'join_tokens',
+		'joined_role_viewer',
+		'viewer',
+		'viewer',
+		viewMem.data?.role || 'none',
+		viewMem.status
+	);
 
 	// 7. Management authority (#152) — a TRAVELER may now manage links (parity with
 	// email invites); a VIEWER still may not. The freshly-joined traveler (step 5)
@@ -2894,27 +4272,62 @@ async function runJoinLinkNovelCases(tokens) {
 		token: tokens.non_member,
 		body: { trip_id: tripId, role: 'traveler' }
 	});
-	recordResult('join_tokens', 'traveler_manage_ok', 'traveler', 'allow', classifyWrite(travManage.status), travManage.status);
+	recordResult(
+		'join_tokens',
+		'traveler_manage_ok',
+		'traveler',
+		'allow',
+		classifyWrite(travManage.status),
+		travManage.status
+	);
 
 	const viewerManage = await pbRequest('POST', '/api/join/revoke', {
 		token: tokens.viewer,
 		body: { trip_id: tripId, role: 'viewer' }
 	});
-	recordResult('join_tokens', 'viewer_manage_denied', 'viewer', 'deny', classifyWrite(viewerManage.status), viewerManage.status);
+	recordResult(
+		'join_tokens',
+		'viewer_manage_denied',
+		'viewer',
+		'deny',
+		classifyWrite(viewerManage.status),
+		viewerManage.status
+	);
 
 	// 8. Revoke — the old traveler token 404s on lookup and is refused on accept.
 	const revRes = await pbRequest('POST', '/api/join/revoke', {
 		token: tokens.owner,
 		body: { trip_id: tripId, role: 'traveler' }
 	});
-	recordResult('join_tokens', 'revoke_ok', 'owner', 'allow', classifyWrite(revRes.status), revRes.status);
+	recordResult(
+		'join_tokens',
+		'revoke_ok',
+		'owner',
+		'allow',
+		classifyWrite(revRes.status),
+		revRes.status
+	);
 	const revLookup = await pbRequest('POST', '/api/join/lookup', { body: { token: travToken } });
-	recordResult('join_tokens', 'revoked_lookup_404', 'anon', 'yes', revLookup.status === 404 ? 'yes' : 'no', revLookup.status);
+	recordResult(
+		'join_tokens',
+		'revoked_lookup_404',
+		'anon',
+		'yes',
+		revLookup.status === 404 ? 'yes' : 'no',
+		revLookup.status
+	);
 	const revAccept = await pbRequest('POST', '/api/join/accept', {
 		token: tokens.co_owner,
 		body: { token: travToken }
 	});
-	recordResult('join_tokens', 'revoked_accept_denied', 'co_owner', 'deny', classifyWrite(revAccept.status), revAccept.status);
+	recordResult(
+		'join_tokens',
+		'revoked_accept_denied',
+		'co_owner',
+		'deny',
+		classifyWrite(revAccept.status),
+		revAccept.status
+	);
 
 	// 9. Clamp invariant — a name-only co_owner placeholder claimed through the
 	// VIEWER link lands as a viewer (never above the link cap).
@@ -2926,11 +4339,29 @@ async function runJoinLinkNovelCases(tokens) {
 		token: tokens.co_owner,
 		body: { token: viewToken, claim_placeholder: clampPh.data?.member_id }
 	});
-	recordResult('join_tokens', 'clamp_claim_ok', 'co_owner', 'allow', classifyWrite(clampJoin.status), clampJoin.status);
-	const clampMem = await pbRequest('GET', `/api/collections/trip_members/records/${clampPh.data?.member_id}`, {
-		token: tokens.owner
-	});
-	recordResult('join_tokens', 'clamp_role_viewer', 'co_owner', 'viewer', clampMem.data?.role || 'none', clampMem.status);
+	recordResult(
+		'join_tokens',
+		'clamp_claim_ok',
+		'co_owner',
+		'allow',
+		classifyWrite(clampJoin.status),
+		clampJoin.status
+	);
+	const clampMem = await pbRequest(
+		'GET',
+		`/api/collections/trip_members/records/${clampPh.data?.member_id}`,
+		{
+			token: tokens.owner
+		}
+	);
+	recordResult(
+		'join_tokens',
+		'clamp_role_viewer',
+		'co_owner',
+		'viewer',
+		clampMem.data?.role || 'none',
+		clampMem.status
+	);
 
 	// 10. Tombstone exclusion from the claim picker — a live name-only placeholder
 	// is offered; a Departed Member (#133) is not.
@@ -2953,8 +4384,22 @@ async function runJoinLinkNovelCases(tokens) {
 	const picker = authLookup.data?.unclaimed_placeholders || [];
 	const hasLive = picker.some((p) => p.member_id === liveph.data?.member_id);
 	const hasTomb = picker.some((p) => p.member_id === tombph.data?.member_id);
-	recordResult('join_tokens', 'picker_includes_live', 'owner', 'yes', hasLive ? 'yes' : 'no', authLookup.status);
-	recordResult('join_tokens', 'picker_excludes_tombstone', 'owner', 'yes', !hasTomb ? 'yes' : 'no', authLookup.status);
+	recordResult(
+		'join_tokens',
+		'picker_includes_live',
+		'owner',
+		'yes',
+		hasLive ? 'yes' : 'no',
+		authLookup.status
+	);
+	recordResult(
+		'join_tokens',
+		'picker_excludes_tombstone',
+		'owner',
+		'yes',
+		!hasTomb ? 'yes' : 'no',
+		authLookup.status
+	);
 
 	// 11. Closed trip — archiving the trip disables link creation (Resolution 3).
 	await pbRequest('PATCH', `/api/collections/trips/records/${tripId}`, {
@@ -2965,7 +4410,14 @@ async function runJoinLinkNovelCases(tokens) {
 		token: tokens.owner,
 		body: { trip_id: tripId, role: 'viewer' }
 	});
-	recordResult('join_tokens', 'closed_create_denied', 'owner', 'deny', classifyWrite(closedCreate.status), closedCreate.status);
+	recordResult(
+		'join_tokens',
+		'closed_create_denied',
+		'owner',
+		'deny',
+		classifyWrite(closedCreate.status),
+		closedCreate.status
+	);
 
 	// 12. Expiry — a link on the past-dated fixture trip is born expired (cap = trip
 	// end). Lookup flags it; accept refuses it.
@@ -2973,20 +4425,40 @@ async function runJoinLinkNovelCases(tokens) {
 		token: tokens.owner,
 		body: { trip_id: fixture.tripId, role: 'viewer' }
 	});
-	const expLookup = await pbRequest('POST', '/api/join/lookup', { body: { token: expLink.data?.token } });
-	recordResult('join_tokens', 'expired_lookup_flag', 'anon', 'yes', expLookup.data?.expired === true ? 'yes' : 'no', expLookup.status);
+	const expLookup = await pbRequest('POST', '/api/join/lookup', {
+		body: { token: expLink.data?.token }
+	});
+	recordResult(
+		'join_tokens',
+		'expired_lookup_flag',
+		'anon',
+		'yes',
+		expLookup.data?.expired === true ? 'yes' : 'no',
+		expLookup.status
+	);
 	const expAccept = await pbRequest('POST', '/api/join/accept', {
 		token: tokens.non_member,
 		body: { token: expLink.data?.token }
 	});
-	recordResult('join_tokens', 'expired_accept_denied', 'non_member', 'deny', classifyWrite(expAccept.status), expAccept.status);
+	recordResult(
+		'join_tokens',
+		'expired_accept_denied',
+		'non_member',
+		'deny',
+		classifyWrite(expAccept.status),
+		expAccept.status
+	);
 }
 
 function printJoinLinkReport() {
-	console.log('\n[#118 shared join link — role cap, join-at-role, revoke/expiry, clamp, tombstone exclusion]');
+	console.log(
+		'\n[#118 shared join link — role cap, join-at-role, revoke/expiry, clamp, tombstone exclusion]'
+	);
 	for (const r of results.filter((x) => JOIN_LINK_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
-		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+		console.log(
+			`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`
+		);
 	}
 }
 
@@ -3013,7 +4485,14 @@ async function runMemoriesNovelCases(tokens) {
 		token: tokens.owner,
 		form
 	});
-	recordResult('memories', 'photo_create', 'owner', 'allow', classifyWrite(photo.status), photo.status);
+	recordResult(
+		'memories',
+		'photo_create',
+		'owner',
+		'allow',
+		classifyWrite(photo.status),
+		photo.status
+	);
 
 	// 2. THE CAP — owner already holds the seeded (day1, owner) slot; a second
 	//    memory on day1 must 400 on the unique index → deny. Editing replaces;
@@ -3027,7 +4506,14 @@ async function runMemoriesNovelCases(tokens) {
 			thought: 'Second memory, same day — must never exist'
 		}
 	});
-	recordResult('memories', 'cap_second_memory', 'owner', 'deny', classifyWrite(dup.status), dup.status);
+	recordResult(
+		'memories',
+		'cap_second_memory',
+		'owner',
+		'deny',
+		classifyWrite(dup.status),
+		dup.status
+	);
 
 	// 3. EMPTY create — neither photo nor thought → deny (memories.pb.js: a
 	//    record with neither does not exist). Traveler on day2 (their slot is
@@ -3036,7 +4522,14 @@ async function runMemoriesNovelCases(tokens) {
 		token: tokens.traveler,
 		body: { trip: fixture.tripId, day: fixture.dayId2, author: fixture.memberIds.traveler }
 	});
-	recordResult('memories', 'empty_create', 'traveler', 'deny', classifyWrite(empty.status), empty.status);
+	recordResult(
+		'memories',
+		'empty_create',
+		'traveler',
+		'deny',
+		classifyWrite(empty.status),
+		empty.status
+	);
 
 	// 4. CLEAR-BOTH update backstop — the fixture memory is thought-only; the
 	//    author PATCHing thought:'' would empty the record → deny (the app
@@ -3045,14 +4538,23 @@ async function runMemoriesNovelCases(tokens) {
 		token: tokens.owner,
 		body: { thought: '' }
 	});
-	recordResult('memories', 'clear_both_update', 'owner', 'deny', classifyWrite(clear.status), clear.status);
+	recordResult(
+		'memories',
+		'clear_both_update',
+		'owner',
+		'deny',
+		classifyWrite(clear.status),
+		clear.status
+	);
 }
 
 function printMemoriesReport() {
 	console.log('\n[#269 memories — cap (day,author), at-least-one-of hook, photo multipart]');
 	for (const r of results.filter((x) => MEMORIES_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
-		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+		console.log(
+			`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`
+		);
 	}
 }
 
@@ -3092,20 +4594,41 @@ async function runScenarioChampionNovelCases(tokens) {
 		token: tokens.traveler,
 		body: { pitch: 'Champion refines their own pitch' }
 	});
-	recordResult('scenarios', 'champion_edit_own', 'traveler', 'allow', classifyWrite(editOwn.status), editOwn.status);
+	recordResult(
+		'scenarios',
+		'champion_edit_own',
+		'traveler',
+		'allow',
+		classifyWrite(editOwn.status),
+		editOwn.status
+	);
 
 	// 2. The OWNER (non-champion) edits the traveler's pitch → deny (fork, don't edit-war).
 	const ownerEdit = await pbRequest('PATCH', `/api/collections/scenarios/records/${scenId}`, {
 		token: tokens.owner,
 		body: { pitch: 'Owner tries to overwrite someone else’s pitch' }
 	});
-	recordResult('scenarios', 'nonchampion_owner_edit_denied', 'owner', 'deny', classifyWrite(ownerEdit.status), ownerEdit.status);
+	recordResult(
+		'scenarios',
+		'nonchampion_owner_edit_denied',
+		'owner',
+		'deny',
+		classifyWrite(ownerEdit.status),
+		ownerEdit.status
+	);
 
 	// 3. The OWNER (non-champion) deletes the traveler's pitch → deny.
 	const ownerDel = await pbRequest('DELETE', `/api/collections/scenarios/records/${scenId}`, {
 		token: tokens.owner
 	});
-	recordResult('scenarios', 'nonchampion_owner_delete_denied', 'owner', 'deny', classifyWrite(ownerDel.status), ownerDel.status);
+	recordResult(
+		'scenarios',
+		'nonchampion_owner_delete_denied',
+		'owner',
+		'deny',
+		classifyWrite(ownerDel.status),
+		ownerDel.status
+	);
 
 	// 4. The champion deletes their own pitch → allow. Fresh fixture so the delete
 	//    is independent of the edits above.
@@ -3123,14 +4646,25 @@ async function runScenarioChampionNovelCases(tokens) {
 	const champDel = await pbRequest('DELETE', `/api/collections/scenarios/records/${scenId}`, {
 		token: tokens.traveler
 	});
-	recordResult('scenarios', 'champion_delete_own', 'traveler', 'allow', classifyWrite(champDel.status), champDel.status);
+	recordResult(
+		'scenarios',
+		'champion_delete_own',
+		'traveler',
+		'allow',
+		classifyWrite(champDel.status),
+		champDel.status
+	);
 }
 
 function printScenarioChampionReport() {
-	console.log('\n[#337 scenarios — champion-only edit/delete (non-champion owner denied; fork, don’t edit-war)]');
+	console.log(
+		'\n[#337 scenarios — champion-only edit/delete (non-champion owner denied; fork, don’t edit-war)]'
+	);
 	for (const r of results.filter((x) => SCENARIO_CHAMPION_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
-		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+		console.log(
+			`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`
+		);
 	}
 }
 
@@ -3155,7 +4689,10 @@ async function runDaysNotificationsGateCases(tokens) {
 	recordResult('days', 'traveler_phases', 'traveler', 'deny', classifyWrite(r.status), r.status);
 	r = await pbRequest('PATCH', day, { token: tokens.owner, body: { phases: otherPhases } });
 	recordResult('days', 'owner_phases', 'owner', 'allow', classifyWrite(r.status), r.status);
-	r = await pbRequest('PATCH', day, { token: tokens.owner, body: { date: '2026-06-09 00:00:00.000Z' } });
+	r = await pbRequest('PATCH', day, {
+		token: tokens.owner,
+		body: { date: '2026-06-09 00:00:00.000Z' }
+	});
 	recordResult('days', 'owner_date', 'owner', 'deny', classifyWrite(r.status), r.status);
 
 	const list = await pbRequest(
@@ -3165,22 +4702,58 @@ async function runDaysNotificationsGateCases(tokens) {
 	);
 	const nid = list.data?.items?.[0]?.id;
 	if (!nid) {
-		recordResult('notifications', 'recipient_body', 'traveler', 'deny', 'no_fixture_notification', list.status);
-		recordResult('notifications', 'recipient_read_at', 'traveler', 'allow', 'no_fixture_notification', list.status);
+		recordResult(
+			'notifications',
+			'recipient_body',
+			'traveler',
+			'deny',
+			'no_fixture_notification',
+			list.status
+		);
+		recordResult(
+			'notifications',
+			'recipient_read_at',
+			'traveler',
+			'allow',
+			'no_fixture_notification',
+			list.status
+		);
 		return;
 	}
 	const n = `/api/collections/notifications/records/${nid}`;
-	r = await pbRequest('PATCH', n, { token: tokens.traveler, body: { body: 'Harness rewrote this' } });
-	recordResult('notifications', 'recipient_body', 'traveler', 'deny', classifyWrite(r.status), r.status);
-	r = await pbRequest('PATCH', n, { token: tokens.traveler, body: { read_at: '2026-06-02 10:00:00.000Z' } });
-	recordResult('notifications', 'recipient_read_at', 'traveler', 'allow', classifyWrite(r.status), r.status);
+	r = await pbRequest('PATCH', n, {
+		token: tokens.traveler,
+		body: { body: 'Harness rewrote this' }
+	});
+	recordResult(
+		'notifications',
+		'recipient_body',
+		'traveler',
+		'deny',
+		classifyWrite(r.status),
+		r.status
+	);
+	r = await pbRequest('PATCH', n, {
+		token: tokens.traveler,
+		body: { read_at: '2026-06-02 10:00:00.000Z' }
+	});
+	recordResult(
+		'notifications',
+		'recipient_read_at',
+		'traveler',
+		'allow',
+		classifyWrite(r.status),
+		r.status
+	);
 }
 
 function printDaysNotificationsReport() {
 	console.log('\n[novel #411 days + notifications field gates]');
 	for (const r of results.filter((x) => DAYS_NOTIF_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
-		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+		console.log(
+			`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`
+		);
 	}
 }
 
@@ -3198,15 +4771,51 @@ async function runNotesGateCases(tokens) {
 	const fixture = await setupFixture();
 	const phase = `/api/collections/phases/records/${fixture.phaseId}`;
 	const trip = `/api/collections/trips/records/${fixture.tripId}`;
-	let r = await pbRequest('PATCH', phase, { token: tokens.traveler, body: { notes: 'Rail pass starts here.' } });
-	recordResult('phases', 'phase_notes_traveler', 'traveler', 'allow', classifyWrite(r.status), r.status);
-	r = await pbRequest('PATCH', phase, { token: tokens.viewer, body: { notes: 'Viewer wrote this' } });
+	let r = await pbRequest('PATCH', phase, {
+		token: tokens.traveler,
+		body: { notes: 'Rail pass starts here.' }
+	});
+	recordResult(
+		'phases',
+		'phase_notes_traveler',
+		'traveler',
+		'allow',
+		classifyWrite(r.status),
+		r.status
+	);
+	r = await pbRequest('PATCH', phase, {
+		token: tokens.viewer,
+		body: { notes: 'Viewer wrote this' }
+	});
 	recordResult('phases', 'phase_notes_viewer', 'viewer', 'deny', classifyWrite(r.status), r.status);
-	r = await pbRequest('PATCH', phase, { token: tokens.traveler, body: { name: 'Renamed by traveler' } });
-	recordResult('phases', 'phase_name_traveler', 'traveler', 'deny', classifyWrite(r.status), r.status);
-	r = await pbRequest('PATCH', trip, { token: tokens.traveler, body: { notes: 'JR passes ordered.' } });
-	recordResult('trips', 'trip_notes_traveler', 'traveler', 'allow', classifyWrite(r.status), r.status);
-	r = await pbRequest('PATCH', trip, { token: tokens.viewer, body: { notes: 'Viewer wrote this' } });
+	r = await pbRequest('PATCH', phase, {
+		token: tokens.traveler,
+		body: { name: 'Renamed by traveler' }
+	});
+	recordResult(
+		'phases',
+		'phase_name_traveler',
+		'traveler',
+		'deny',
+		classifyWrite(r.status),
+		r.status
+	);
+	r = await pbRequest('PATCH', trip, {
+		token: tokens.traveler,
+		body: { notes: 'JR passes ordered.' }
+	});
+	recordResult(
+		'trips',
+		'trip_notes_traveler',
+		'traveler',
+		'allow',
+		classifyWrite(r.status),
+		r.status
+	);
+	r = await pbRequest('PATCH', trip, {
+		token: tokens.viewer,
+		body: { notes: 'Viewer wrote this' }
+	});
 	recordResult('trips', 'trip_notes_viewer', 'viewer', 'deny', classifyWrite(r.status), r.status);
 }
 
@@ -3214,7 +4823,9 @@ function printNotesReport() {
 	console.log('\n[novel #401 phase + trip notes gates]');
 	for (const r of results.filter((x) => NOTES_OPS.includes(x.op))) {
 		const mark = r.passed ? 'PASS' : 'FAIL';
-		console.log(`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`);
+		console.log(
+			`  ${mark} ${r.collection}.${r.op} as ${r.role}: expected=${r.expected} actual=${r.actual}/${r.status}`
+		);
 	}
 }
 
@@ -3290,7 +4901,9 @@ async function main() {
 	console.log('Novel #77 cases: vote-own-goal + tightened delete');
 	await runGoalVotesNovelCases(tokens);
 
-	console.log('#248 cases: suggestion_votes (cast, cannot-vote-own, ownership-via-parent, non-member denied)');
+	console.log(
+		'#248 cases: suggestion_votes (cast, cannot-vote-own, ownership-via-parent, non-member denied)'
+	);
 	await runSuggestionVotesNovelCases(tokens);
 
 	console.log('#103 cases: co-traveler users cross-read (name+avatar, no email/secrets)');
@@ -3301,22 +4914,32 @@ async function main() {
 	fixture = await setupFixture();
 	await runSuggestionsMemberReadCases(tokens, fixture);
 
-	console.log('#133/#238 cases: removal disposition (member-with-data tombstones; zero-ref purges)');
+	console.log(
+		'#133/#238 cases: removal disposition (member-with-data tombstones; zero-ref purges)'
+	);
 	await runMemberRemovalNovelCases(tokens);
 
 	console.log('#238 case: member-relation schema drift (purge reference set is complete)');
 	await runMemberRelationDriftCase();
 
-	console.log('#279 cases: trip_members role gate (block escalation, gate cross-member delete, self-leave, sole-owner cap)');
+	console.log(
+		'#279 cases: trip_members role gate (block escalation, gate cross-member delete, self-leave, sole-owner cap)'
+	);
 	await runMemberRoleGateNovelCases(tokens);
 
-	console.log('#408 cases: trip_members field allowlist (identity fields locked; display_name own-or-owner; digest own-only)');
+	console.log(
+		'#408 cases: trip_members field allowlist (identity fields locked; display_name own-or-owner; digest own-only)'
+	);
 	await runMemberFieldGateNovelCases(tokens);
 
-	console.log('#409 cases: pending invites read route (superuser-only collection; labels, never email/code)');
+	console.log(
+		'#409 cases: pending invites read route (superuser-only collection; labels, never email/code)'
+	);
 	await runPendingRouteNovelCases(tokens);
 
-	console.log('#280 cases: trips lifecycle/publishing gate (protected fields owner·co_owner only; ordinary edits + reconcile unaffected)');
+	console.log(
+		'#280 cases: trips lifecycle/publishing gate (protected fields owner·co_owner only; ordinary edits + reconcile unaffected)'
+	);
 	await runTripsGateNovelCases(tokens);
 	await runAiWriteCases(tokens);
 
@@ -3326,13 +4949,17 @@ async function main() {
 	console.log('#503 invariant audit cases: trip date order, money_units create');
 	await runAuditHookCases(tokens);
 
-	console.log('#281 cases: money_units edit/delete gate (unit-member or owner·co_owner; no unilateral self-add)');
+	console.log(
+		'#281 cases: money_units edit/delete gate (unit-member or owner·co_owner; no unilateral self-add)'
+	);
 	await runMoneyUnitNovelCases(tokens);
 
 	console.log('#283 cases: checklists/tasks write gate (viewers blocked, traveler+ allowed)');
 	await runChecklistTaskNovelCases(tokens);
 
-	console.log('#118 cases: shared join link (role cap, join-at-role, revoke/expiry, clamp, tombstone)');
+	console.log(
+		'#118 cases: shared join link (role cap, join-at-role, revoke/expiry, clamp, tombstone)'
+	);
 	await runJoinLinkNovelCases(tokens);
 
 	console.log('#226 cases: self-assign exception (member toggles only their own assigned_to)');
@@ -3341,7 +4968,7 @@ async function main() {
 	console.log('#219 cases: creator-edit exception (member edits their own item; cannot delete it)');
 	await runCreatorEditNovelCases(tokens);
 
-	console.log('#402 cases: not going (self-only, viewers can\'t answer, going/not going exclusive)');
+	console.log("#402 cases: not going (self-only, viewers can't answer, going/not going exclusive)");
 	await runNotGoingNovelCases(tokens);
 	await runNotGoingDepartureCases(tokens);
 

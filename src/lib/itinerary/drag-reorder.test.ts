@@ -51,7 +51,11 @@ describe('resolveDrop', () => {
 
 		it('pushes a timed item (eject unschedules regardless of clock)', () => {
 			const action = resolveDrop(
-				ctx({ source: 'timeline', target: 'parking', item: { phase: 'p1', start_time: '2026-06-15 09:00:00' } })
+				ctx({
+					source: 'timeline',
+					target: 'parking',
+					item: { phase: 'p1', start_time: '2026-06-15 09:00:00' }
+				})
 			);
 			expect(action).toEqual({ kind: 'push' });
 		});
@@ -60,7 +64,14 @@ describe('resolveDrop', () => {
 	describe('parking → timeline (pull)', () => {
 		it('pulls an idea whose phase is among the day phases', () => {
 			const action = resolveDrop(
-				ctx({ source: 'parking', target: 'timeline', item: { phase: 'p1', start_time: '' }, before: 100, after: 200, dayPhases: ['p1'] })
+				ctx({
+					source: 'parking',
+					target: 'timeline',
+					item: { phase: 'p1', start_time: '' },
+					before: 100,
+					after: 200,
+					dayPhases: ['p1']
+				})
 			);
 			expect(action).toEqual({ kind: 'pull', before: 100, after: 200 });
 		});
@@ -74,14 +85,28 @@ describe('resolveDrop', () => {
 
 		it('pulls into a boundary day when the phase matches one of the two phases', () => {
 			const action = resolveDrop(
-				ctx({ source: 'parking', target: 'timeline', item: { phase: 'p2', start_time: '' }, before: 100, after: null, dayPhases: ['p1', 'p2'] })
+				ctx({
+					source: 'parking',
+					target: 'timeline',
+					item: { phase: 'p2', start_time: '' },
+					before: 100,
+					after: null,
+					dayPhases: ['p1', 'p2']
+				})
 			);
 			expect(action).toEqual({ kind: 'pull', before: 100, after: null });
 		});
 
 		it('rejects a cross-phase pull (phase is sticky)', () => {
 			const action = resolveDrop(
-				ctx({ source: 'parking', target: 'timeline', item: { phase: 'pX', start_time: '' }, before: 100, after: 200, dayPhases: ['p1', 'p2'] })
+				ctx({
+					source: 'parking',
+					target: 'timeline',
+					item: { phase: 'pX', start_time: '' },
+					before: 100,
+					after: 200,
+					dayPhases: ['p1', 'p2']
+				})
 			);
 			expect(action).toEqual({ kind: 'reject' });
 		});
@@ -92,14 +117,26 @@ describe('resolveDrop', () => {
 		// zone's phase only — a foreign-phase idea is rejected (snaps back).
 		it('rejects an idea pulled into a foreign phase zone (per-phase split)', () => {
 			const action = resolveDrop(
-				ctx({ source: 'parking', target: 'timeline', item: { phase: 'p1', start_time: '' }, dayPhases: ['p2'] })
+				ctx({
+					source: 'parking',
+					target: 'timeline',
+					item: { phase: 'p1', start_time: '' },
+					dayPhases: ['p2']
+				})
 			);
 			expect(action).toEqual({ kind: 'reject' });
 		});
 
 		it('allows an idea pulled within its own phase zone (per-phase split)', () => {
 			const action = resolveDrop(
-				ctx({ source: 'parking', target: 'timeline', item: { phase: 'p1', start_time: '' }, before: null, after: 100, dayPhases: ['p1'] })
+				ctx({
+					source: 'parking',
+					target: 'timeline',
+					item: { phase: 'p1', start_time: '' },
+					before: null,
+					after: 100,
+					dayPhases: ['p1']
+				})
 			);
 			expect(action).toEqual({ kind: 'pull', before: null, after: 100 });
 		});
@@ -108,7 +145,13 @@ describe('resolveDrop', () => {
 	describe('timeline → timeline (reorder / snapback)', () => {
 		it('reorders an untimed item', () => {
 			const action = resolveDrop(
-				ctx({ source: 'timeline', target: 'timeline', item: { phase: 'p1', start_time: '' }, before: 100, after: 200 })
+				ctx({
+					source: 'timeline',
+					target: 'timeline',
+					item: { phase: 'p1', start_time: '' },
+					before: 100,
+					after: 200
+				})
 			);
 			expect(action).toEqual({ kind: 'reorder', before: 100, after: 200 });
 		});
@@ -122,7 +165,13 @@ describe('resolveDrop', () => {
 
 		it('snaps back a timed item dropped in place (clock pins it)', () => {
 			const action = resolveDrop(
-				ctx({ source: 'timeline', target: 'timeline', item: { phase: 'p1', start_time: '2026-06-15 09:00:00' }, before: 100, after: 200 })
+				ctx({
+					source: 'timeline',
+					target: 'timeline',
+					item: { phase: 'p1', start_time: '2026-06-15 09:00:00' },
+					before: 100,
+					after: 200
+				})
 			);
 			expect(action).toEqual({ kind: 'snapback' });
 		});

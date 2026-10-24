@@ -24,36 +24,49 @@
 	};
 </script>
 
-<div class="bg-paper text-ink flex min-h-dvh items-center justify-center p-4">
+<div class="flex min-h-dvh items-center justify-center bg-paper p-4 text-ink">
 	<div class="w-full max-w-sm">
 		<div class="mb-6 text-center">
-			<h1 class="font-display text-ink text-3xl font-semibold tracking-tight">Waypoint</h1>
+			<h1 class="font-display text-3xl font-semibold tracking-tight text-ink">Waypoint</h1>
 		</div>
 
 		{#if data.status === 'not_found'}
-			<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-4 text-sm">
+			<div
+				role="alert"
+				class="rounded-md border border-error/30 bg-error/10 p-4 text-sm text-error-deep"
+			>
 				<p class="font-semibold">Invite not found</p>
 				<p class="mt-1">
 					This link is invalid or has already been used. If you think it should still work, ask the
 					person who invited you to send a fresh one.
 				</p>
 			</div>
-			<a href="/trips" class="text-ink-muted hover:text-ink-soft active:text-ink-soft mt-4 block text-center text-sm"
+			<a
+				href="/trips"
+				class="mt-4 block text-center text-sm text-ink-muted hover:text-ink-soft active:text-ink-soft"
 				>Back to your trips</a
 			>
 		{:else if data.status === 'expired'}
-			<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-4 text-sm">
+			<div
+				role="alert"
+				class="rounded-md border border-error/30 bg-error/10 p-4 text-sm text-error-deep"
+			>
 				<p class="font-semibold">Invite expired</p>
 				<p class="mt-1">
-					This invitation to <strong>{data.tripTitle}</strong> has expired. Ask the person who
-					invited you to send a new one.
+					This invitation to <strong>{data.tripTitle}</strong> has expired. Ask the person who invited
+					you to send a new one.
 				</p>
 			</div>
-			<a href="/trips" class="text-ink-muted hover:text-ink-soft active:text-ink-soft mt-4 block text-center text-sm"
+			<a
+				href="/trips"
+				class="mt-4 block text-center text-sm text-ink-muted hover:text-ink-soft active:text-ink-soft"
 				>Back to your trips</a
 			>
 		{:else if data.status === 'mismatch'}
-			<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-4 text-sm">
+			<div
+				role="alert"
+				class="rounded-md border border-error/30 bg-error/10 p-4 text-sm text-error-deep"
+			>
 				<p class="font-semibold">Wrong account</p>
 				<p class="mt-2">
 					This invite was sent to <strong>{data.email}</strong>, but you're signed in as
@@ -76,42 +89,45 @@
 				}}
 				class="mt-4"
 			>
-				<Button type="submit" disabled={loading} loading={loading} variant="primary" size="md" class="w-full">
+				<Button
+					type="submit"
+					disabled={loading}
+					{loading}
+					variant="primary"
+					size="md"
+					class="w-full"
+				>
 					{loading ? 'Signing out…' : 'Sign out and accept as ' + data.email}
 				</Button>
 			</form>
 		{:else if data.status === 'match'}
 			<div class="text-center">
-				<p class="text-ink-soft text-sm">
-					You've been invited to join
-				</p>
-				<p class="font-display text-ink mt-1 text-2xl font-semibold tracking-tight">
+				<p class="text-sm text-ink-soft">You've been invited to join</p>
+				<p class="mt-1 font-display text-2xl font-semibold tracking-tight text-ink">
 					{data.tripTitle}
 				</p>
-				<p class="text-ink-muted mt-1 text-sm">
+				<p class="mt-1 text-sm text-ink-muted">
 					as a <strong>{roleLabel[data.role] ?? data.role}</strong>
 				</p>
 			</div>
 
 			{#if placeholders.length > 0}
 				<div class="mt-6 space-y-2">
-					<p class="text-ink-soft text-sm">
-						Were you already added to this trip?
-					</p>
+					<p class="text-sm text-ink-soft">Were you already added to this trip?</p>
 
 					{#each placeholders as ph (ph.member_id)}
 						<button
 							type="button"
-							class="border-line w-full rounded-lg border p-3 text-left transition-colors
+							class="w-full rounded-lg border border-line p-3 text-left transition-colors
 								{selectedPlaceholder === ph.member_id
-									? 'border-moss bg-moss-tint'
-									: 'bg-surface hover:bg-surface-2 active:bg-surface-2'}"
+								? 'border-moss bg-moss-tint'
+								: 'bg-surface hover:bg-surface-2 active:bg-surface-2'}"
 							onclick={() => {
 								selectedPlaceholder = selectedPlaceholder === ph.member_id ? null : ph.member_id;
 							}}
 						>
-							<span class="text-ink font-medium">{ph.display_name}</span>
-							<span class="text-ink-muted ml-1 text-sm">
+							<span class="font-medium text-ink">{ph.display_name}</span>
+							<span class="ml-1 text-sm text-ink-muted">
 								{roleLabel[ph.role] ?? ph.role}
 							</span>
 						</button>
@@ -120,7 +136,10 @@
 			{/if}
 
 			{#if error}
-				<div role="alert" class="border-error/30 bg-error/10 text-error-deep mt-4 rounded-md border p-3 text-sm">
+				<div
+					role="alert"
+					class="mt-4 rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error-deep"
+				>
 					{error}
 				</div>
 			{/if}
@@ -140,11 +159,11 @@
 				{#if selectedPlaceholder}
 					<input type="hidden" name="claim_placeholder" value={selectedPlaceholder} />
 				{/if}
-				<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="w-full">
+				<Button type="submit" disabled={loading} {loading} variant="moss" size="lg" class="w-full">
 					{#if loading}
 						Joining…
 					{:else if selectedPlaceholder}
-						Join as {placeholders.find(p => p.member_id === selectedPlaceholder)?.display_name}
+						Join as {placeholders.find((p) => p.member_id === selectedPlaceholder)?.display_name}
 					{:else}
 						Accept invite
 					{/if}
@@ -152,26 +171,29 @@
 			</form>
 
 			{#if placeholders.length > 0 && !selectedPlaceholder}
-				<p class="text-ink-muted mt-2 text-center text-xs">
+				<p class="mt-2 text-center text-xs text-ink-muted">
 					None of those are me — join as a new member
 				</p>
 			{/if}
 		{:else if data.status === 'logged_out'}
 			<div class="text-center">
-				<p class="text-ink-soft text-sm">You've been invited to join</p>
-				<p class="font-display text-ink mt-1 text-2xl font-semibold tracking-tight">
+				<p class="text-sm text-ink-soft">You've been invited to join</p>
+				<p class="mt-1 font-display text-2xl font-semibold tracking-tight text-ink">
 					{data.tripTitle}
 				</p>
-				<p class="text-ink-muted mt-1 text-sm">
+				<p class="mt-1 text-sm text-ink-muted">
 					as a <strong>{roleLabel[data.role] ?? data.role}</strong>
 				</p>
-				<p class="text-ink-muted mt-3 text-sm">
+				<p class="mt-3 text-sm text-ink-muted">
 					Verify your email <strong>{data.email}</strong> to continue.
 				</p>
 			</div>
 
 			{#if error}
-				<div role="alert" class="border-error/30 bg-error/10 text-error-deep mt-4 rounded-md border p-3 text-sm">
+				<div
+					role="alert"
+					class="mt-4 rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error-deep"
+				>
 					{error}
 				</div>
 			{/if}
@@ -194,7 +216,14 @@
 					class="mt-4"
 				>
 					<input type="hidden" name="email" value={data.email} />
-					<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="w-full">
+					<Button
+						type="submit"
+						disabled={loading}
+						{loading}
+						variant="moss"
+						size="lg"
+						class="w-full"
+					>
 						{loading ? 'Sending…' : 'Send 6-digit code'}
 					</Button>
 				</form>
@@ -220,7 +249,7 @@
 					class="mt-4"
 				>
 					<input type="hidden" name="otpId" value={otpId} />
-					<label for="code" class="text-ink-soft block text-sm font-medium">Code</label>
+					<label for="code" class="block text-sm font-medium text-ink-soft">Code</label>
 					<input
 						type="text"
 						id="code"
@@ -231,15 +260,22 @@
 						enterkeyhint="go"
 						maxlength="6"
 						use:otp.action={loading}
-						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-center font-mono text-2xl tracking-[0.5em]"
+						class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-center font-mono text-2xl tracking-[0.5em] text-ink"
 						placeholder="000000"
 					/>
-					<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="mt-4 w-full">
+					<Button
+						type="submit"
+						disabled={loading}
+						{loading}
+						variant="moss"
+						size="lg"
+						class="mt-4 w-full"
+					>
 						{loading ? 'Verifying…' : 'Verify and join'}
 					</Button>
 					<button
 						type="button"
-						class="text-ink-muted hover:text-ink-soft active:text-ink-soft mt-2 w-full text-sm"
+						class="mt-2 w-full text-sm text-ink-muted hover:text-ink-soft active:text-ink-soft"
 						onclick={() => {
 							otpId = '';
 							otp.release();

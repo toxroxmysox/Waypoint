@@ -28,11 +28,17 @@ describe('recordCardFields (#436)', () => {
 		expect(f.meta).toBe('Kohler · through Sat Oct 3');
 	});
 	it('a note carries its description in the body, not the meta', () => {
-		const f = recordCardFields({ ...base, type: 'note', location_name: '', description: 'Bring cash\nmore' }, '2026-10-01');
+		const f = recordCardFields(
+			{ ...base, type: 'note', location_name: '', description: 'Bring cash\nmore' },
+			'2026-10-01'
+		);
 		expect(f.meta).toBe('');
 	});
 	it('an empty end_date is not multi-day', () => {
-		const f = recordCardFields({ ...base, end_date: '', end_time: '2026-10-01 11:00:00.000Z' }, '2026-10-01');
+		const f = recordCardFields(
+			{ ...base, end_date: '', end_time: '2026-10-01 11:00:00.000Z' },
+			'2026-10-01'
+		);
 		expect(f.end_time).toBe('2026-10-01 11:00:00.000Z');
 	});
 });

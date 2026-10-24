@@ -44,14 +44,21 @@
 
 	// The day page's order: timed items by time, untimed woven in by sort_order.
 	const sortedItems = $derived(
-		orderDayItems(items.map((i) => ({ ...i, start_time: i.start_time ?? '', end_time: i.end_time ?? '', sort_order: i.sort_order ?? 0 })))
+		orderDayItems(
+			items.map((i) => ({
+				...i,
+				start_time: i.start_time ?? '',
+				end_time: i.end_time ?? '',
+				sort_order: i.sort_order ?? 0
+			}))
+		)
 	);
 </script>
 
-<section class="bg-surface border-border overflow-hidden rounded-xl border shadow-sm">
-	<div class="flex items-center gap-3 border-b border-border/50 px-4 py-3">
+<section class="border-border overflow-hidden rounded-xl border bg-surface shadow-sm">
+	<div class="border-border/50 flex items-center gap-3 border-b px-4 py-3">
 		<div>
-			<h3 class="text-ink text-base font-semibold">{dayDate}</h3>
+			<h3 class="text-base font-semibold text-ink">{dayDate}</h3>
 			{#if dayPhase}
 				<span
 					class="mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium"
@@ -64,7 +71,7 @@
 	</div>
 
 	{#if items.length === 0}
-		<p class="text-ink-muted px-4 py-4 text-center text-sm">Rest day</p>
+		<p class="px-4 py-4 text-center text-sm text-ink-muted">Rest day</p>
 	{:else}
 		<!-- #436: the day on the same rail as the day page, read-only. -->
 		<div class="space-y-2 p-3">

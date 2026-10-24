@@ -65,10 +65,8 @@
 					code: flight.arrival?.airport?.iata ?? ''
 				}),
 				flight_number: formatFlightNumber(flightNumber),
-				start_time:
-					flight.departure?.scheduledTime?.local?.split('T')[1]?.slice(0, 5) ?? '',
-				end_time:
-					flight.arrival?.scheduledTime?.local?.split('T')[1]?.slice(0, 5) ?? '',
+				start_time: flight.departure?.scheduledTime?.local?.split('T')[1]?.slice(0, 5) ?? '',
+				end_time: flight.arrival?.scheduledTime?.local?.split('T')[1]?.slice(0, 5) ?? '',
 				end_date: endDate,
 				start_tz: flight.departure?.airport?.timeZone ?? '',
 				end_tz: flight.arrival?.airport?.timeZone ?? '',
@@ -90,7 +88,7 @@
 			bind:value={flightNumber}
 			placeholder="e.g. AA1234"
 			aria-label="Flight number"
-			class="border-line bg-surface text-ink w-full rounded-md border px-3 py-2 text-sm uppercase sm:flex-1"
+			class="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink uppercase sm:flex-1"
 			oninput={(e) => {
 				e.currentTarget.value = e.currentTarget.value.toUpperCase();
 				flightNumber = e.currentTarget.value;
@@ -102,7 +100,7 @@
 			min={minDate || undefined}
 			max={maxDate || undefined}
 			aria-label="Flight date"
-			class="border-line bg-surface text-ink w-full rounded-md border px-3 py-2 text-sm sm:w-auto"
+			class="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink sm:w-auto"
 		/>
 	</div>
 	<Button
@@ -115,6 +113,6 @@
 		{loading ? 'Looking up...' : 'Look up flight'}
 	</Button>
 	{#if error}
-		<p class="text-error text-sm">{error}</p>
+		<p class="text-sm text-error">{error}</p>
 	{/if}
 </div>

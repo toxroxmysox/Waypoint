@@ -25,7 +25,9 @@
 	const itemCodes = $derived(data.itemCodes ?? []);
 	const isEmpty = $derived(total === 0 && itemCodes.length === 0);
 	const onTrip = $derived(isTripActive(data.trip));
-	const privileged = $derived(data.membership.role === 'owner' || data.membership.role === 'co_owner');
+	const privileged = $derived(
+		data.membership.role === 'owner' || data.membership.role === 'co_owner'
+	);
 
 	function canDelete(doc: DocumentView): boolean {
 		return privileged || doc.uploaded_by === data.membership.id;
@@ -73,25 +75,43 @@
 </script>
 
 <!-- Back stays INSIDE the trip (#197 B-012) — never abandon to the all-trips list. -->
-<NavBar title="Documents" subtitle="{total} {total === 1 ? 'file' : 'files'} · {data.trip.title}" back backHref="/trips/{data.trip.slug}">
+<NavBar
+	title="Documents"
+	subtitle="{total} {total === 1 ? 'file' : 'files'} · {data.trip.title}"
+	back
+	backHref="/trips/{data.trip.slug}"
+>
 	{#snippet right()}
 		{#if onTrip}
-			<span class="bg-clay-tint text-clay rounded-full px-2.5 py-1 text-[11px] font-semibold">On trip</span>
+			<span class="rounded-full bg-clay-tint px-2.5 py-1 text-[11px] font-semibold text-clay"
+				>On trip</span
+			>
 		{/if}
 	{/snippet}
 </NavBar>
 
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-24">
+<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-24 md-desktop:max-w-2xl">
 	{#if isEmpty}
 		<div class="flex flex-col items-center justify-center py-20 text-center">
-			<div class="text-ink-muted mb-3">
-				<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+			<div class="mb-3 text-ink-muted">
+				<svg
+					width="34"
+					height="34"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.4"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
 					<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
 					<polyline points="14 2 14 8 20 8" />
 				</svg>
 			</div>
-			<p class="font-display text-ink-soft text-base italic">No documents yet.</p>
-			<p class="text-ink-muted mt-1 text-sm">Boarding passes, tickets, and confirmations land here.</p>
+			<p class="font-display text-base text-ink-soft italic">No documents yet.</p>
+			<p class="mt-1 text-sm text-ink-muted">
+				Boarding passes, tickets, and confirmations land here.
+			</p>
 		</div>
 	{:else}
 		<div class="space-y-7">
@@ -103,9 +123,11 @@
 				<section>
 					<!-- #434 — plain heading, Rows, no gold: a code is settled, not an open loop. -->
 					<div class="mb-1 flex items-center gap-2.5">
-						<h2 class="text-ink text-sm font-semibold">Confirmation codes</h2>
-						<span class="text-ink-muted font-mono text-xs tabular-nums">{itemCodes.reduce((n, e) => n + e.codes.length, 0)}</span>
-						<span class="bg-line h-px flex-1"></span>
+						<h2 class="text-sm font-semibold text-ink">Confirmation codes</h2>
+						<span class="font-mono text-xs text-ink-muted tabular-nums"
+							>{itemCodes.reduce((n, e) => n + e.codes.length, 0)}</span
+						>
+						<span class="h-px flex-1 bg-line"></span>
 					</div>
 					<div>
 						{#each itemCodes as entry (entry.item_id)}
@@ -113,10 +135,18 @@
 								<Row
 									type={entry.item_type}
 									title={entry.item_title}
-									href={withOrigin(`/trips/${data.trip.slug}/items/${entry.item_id}`, page.url.pathname)}
+									href={withOrigin(
+										`/trips/${data.trip.slug}/items/${entry.item_id}`,
+										page.url.pathname
+									)}
 								>
 									{#snippet subline()}
-										{#if code.label}<span class="mr-1.5 text-[11px] font-semibold tracking-wide uppercase">{code.label}</span>{/if}<span class="text-ink font-mono text-sm font-semibold">{code.value}</span>
+										{#if code.label}<span
+												class="mr-1.5 text-[11px] font-semibold tracking-wide uppercase"
+												>{code.label}</span
+											>{/if}<span class="font-mono text-sm font-semibold text-ink"
+											>{code.value}</span
+										>
 									{/snippet}
 									{#snippet action()}
 										<CodeCopyButton {code} />
@@ -134,16 +164,27 @@
 						{#if group.type}
 							<TypeIcon type={group.type} size={28} />
 						{:else}
-							<span class="bg-moss-tint text-moss flex h-7 w-7 items-center justify-center rounded-full">
-								<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+							<span
+								class="flex h-7 w-7 items-center justify-center rounded-full bg-moss-tint text-moss"
+							>
+								<svg
+									width="15"
+									height="15"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="1.9"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								>
 									<circle cx="12" cy="12" r="9" />
 									<path d="M12 7v5l3 2" />
 								</svg>
 							</span>
 						{/if}
-						<h2 class="text-ink text-sm font-semibold">{group.label}</h2>
-						<span class="text-ink-muted font-mono text-xs tabular-nums">{group.docs.length}</span>
-						<span class="bg-line h-px flex-1"></span>
+						<h2 class="text-sm font-semibold text-ink">{group.label}</h2>
+						<span class="font-mono text-xs text-ink-muted tabular-nums">{group.docs.length}</span>
+						<span class="h-px flex-1 bg-line"></span>
 					</div>
 
 					<div class="space-y-2">
@@ -162,7 +203,7 @@
 	{/if}
 
 	{#if form?.uploadError}
-		<p class="text-clay mt-4 text-center text-sm">{form.uploadError}</p>
+		<p class="mt-4 text-center text-sm text-clay">{form.uploadError}</p>
 	{/if}
 </main>
 
@@ -173,4 +214,4 @@
 
 <DocumentAddSheet bind:open={addOpen} itemOptions={data.itemOptions} />
 
-<DocumentLightbox bind:index={lightboxIndex} gallery={lightboxGallery} canDelete={canDelete} />
+<DocumentLightbox bind:index={lightboxIndex} gallery={lightboxGallery} {canDelete} />

@@ -21,8 +21,10 @@ routerAdd('POST', '/api/suggestions/create', (e) => {
 	const payload = (info.body && info.body['payload']) || null;
 
 	if (!tripId) throw new BadRequestError('trip_id is required');
-	if (!payload || typeof payload !== 'object') throw new BadRequestError('payload is required and must be an object');
-	if (!payload.title || !payload.title.trim()) throw new BadRequestError('payload.title is required');
+	if (!payload || typeof payload !== 'object')
+		throw new BadRequestError('payload is required and must be an object');
+	if (!payload.title || !payload.title.trim())
+		throw new BadRequestError('payload.title is required');
 
 	// Resolve caller's membership.
 	let callerMember;
@@ -57,20 +59,27 @@ routerAdd('POST', '/api/suggestions/create', (e) => {
 	// item points into another trip. Drop foreign ids. Inlined (sandbox).
 	if (payload.day) {
 		try {
-			if (e.app.findRecordById('days', '' + payload.day).getString('trip') !== '' + tripId) payload.day = '';
-		} catch (_) { payload.day = ''; }
+			if (e.app.findRecordById('days', '' + payload.day).getString('trip') !== '' + tripId)
+				payload.day = '';
+		} catch (_) {
+			payload.day = '';
+		}
 	}
 	if (payload.phase) {
 		try {
-			if (e.app.findRecordById('phases', '' + payload.phase).getString('trip') !== '' + tripId) payload.phase = '';
-		} catch (_) { payload.phase = ''; }
+			if (e.app.findRecordById('phases', '' + payload.phase).getString('trip') !== '' + tripId)
+				payload.phase = '';
+		} catch (_) {
+			payload.phase = '';
+		}
 	}
 	if (Array.isArray(payload.assigned_to)) {
 		const keepAssigned = [];
 		for (let i = 0; i < payload.assigned_to.length; i++) {
 			try {
 				const m = e.app.findRecordById('trip_members', '' + payload.assigned_to[i]);
-				if (m.getString('trip') === '' + tripId && !m.getString('removed_at')) keepAssigned.push(m.id);
+				if (m.getString('trip') === '' + tripId && !m.getString('removed_at'))
+					keepAssigned.push(m.id);
 			} catch (_) {}
 		}
 		payload.assigned_to = keepAssigned;
@@ -104,14 +113,9 @@ routerAdd('POST', '/api/suggestions/create', (e) => {
 		let resolvedPhase = payload.phase || '';
 		if (!resolvedPhase && !payload.day) {
 			try {
-				const firstPhase = e.app.findRecordsByFilter(
-					'phases',
-					'trip = {:tripId}',
-					'+order',
-					1,
-					0,
-					{ tripId: tripId }
-				);
+				const firstPhase = e.app.findRecordsByFilter('phases', 'trip = {:tripId}', '+order', 1, 0, {
+					tripId: tripId
+				});
 				if (firstPhase && firstPhase.length > 0) resolvedPhase = firstPhase[0].id;
 			} catch (_) {
 				resolvedPhase = '';
@@ -150,7 +154,8 @@ routerAdd('POST', '/api/suggestions/create', (e) => {
 		let parentId = payload.parent_item ? '' + payload.parent_item : '';
 		if (parentId) {
 			try {
-				if (e.app.findRecordById('items', parentId).getString('trip') !== '' + tripId) parentId = '';
+				if (e.app.findRecordById('items', parentId).getString('trip') !== '' + tripId)
+					parentId = '';
 			} catch (_) {
 				parentId = '';
 			}
@@ -230,8 +235,8 @@ routerAdd('GET', '/api/suggestions/list', (e) => {
 	// Use requestInfo().query — e.request.url is not valid in PB 0.27 sandbox.
 	// Values may be a string or string array depending on PB version; normalize safely.
 	const query = e.requestInfo().query || {};
-	const tripId = Array.isArray(query['trip_id']) ? query['trip_id'][0] : (query['trip_id'] || '');
-	const statusFilter = Array.isArray(query['status']) ? query['status'][0] : (query['status'] || '');
+	const tripId = Array.isArray(query['trip_id']) ? query['trip_id'][0] : query['trip_id'] || '';
+	const statusFilter = Array.isArray(query['status']) ? query['status'][0] : query['status'] || '';
 
 	if (!tripId) throw new BadRequestError('trip_id is required');
 
@@ -349,7 +354,8 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 
 	// #250 — reject requires a one-line note (no one-tap reject). Stored on the
 	// suggestion (migration 0051 review_note) and carried in the rejection notice.
-	const reviewNote = (info.body && info.body['review_note']) ? String(info.body['review_note']).trim() : '';
+	const reviewNote =
+		info.body && info.body['review_note'] ? String(info.body['review_note']).trim() : '';
 	if (action === 'reject' && !reviewNote) {
 		throw new BadRequestError('A note is required to reject a suggestion');
 	}
@@ -395,16 +401,29 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 		let rawPayload = suggestion.get('payload');
 		// PB 0.27 JSON fields return as a byte array, string, or object depending on context — normalize all cases.
 		if (Array.isArray(rawPayload)) {
-			try { rawPayload = JSON.parse(String.fromCharCode.apply(null, rawPayload)); } catch (_) { rawPayload = {}; }
+			try {
+				rawPayload = JSON.parse(String.fromCharCode.apply(null, rawPayload));
+			} catch (_) {
+				rawPayload = {};
+			}
 		} else if (typeof rawPayload === 'string') {
-			try { rawPayload = JSON.parse(rawPayload); } catch (_) { rawPayload = {}; }
+			try {
+				rawPayload = JSON.parse(rawPayload);
+			} catch (_) {
+				rawPayload = {};
+			}
 		}
 		const payload = modifiedPayload || rawPayload;
 		// #444 (carried from #402) — the Edit form has no Going control, so an edited
 		// payload arrives without `not_going` and the author's answer was dropped on
 		// Edit & Approve. When the edit omits the key, fall back to the stored one.
 		// (A key that is present, even empty, is the owner's explicit say.)
-		if (modifiedPayload && !Array.isArray(modifiedPayload.not_going) && rawPayload && Array.isArray(rawPayload.not_going)) {
+		if (
+			modifiedPayload &&
+			!Array.isArray(modifiedPayload.not_going) &&
+			rawPayload &&
+			Array.isArray(rawPayload.not_going)
+		) {
 			payload.not_going = rawPayload.not_going;
 		}
 
@@ -412,20 +431,27 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 		// item points into another trip. Drop foreign ids. Inlined (sandbox).
 		if (payload.day) {
 			try {
-				if (e.app.findRecordById('days', '' + payload.day).getString('trip') !== '' + tripId) payload.day = '';
-			} catch (_) { payload.day = ''; }
+				if (e.app.findRecordById('days', '' + payload.day).getString('trip') !== '' + tripId)
+					payload.day = '';
+			} catch (_) {
+				payload.day = '';
+			}
 		}
 		if (payload.phase) {
 			try {
-				if (e.app.findRecordById('phases', '' + payload.phase).getString('trip') !== '' + tripId) payload.phase = '';
-			} catch (_) { payload.phase = ''; }
+				if (e.app.findRecordById('phases', '' + payload.phase).getString('trip') !== '' + tripId)
+					payload.phase = '';
+			} catch (_) {
+				payload.phase = '';
+			}
 		}
 		if (Array.isArray(payload.assigned_to)) {
 			const keepAssigned = [];
 			for (let i = 0; i < payload.assigned_to.length; i++) {
 				try {
 					const m = e.app.findRecordById('trip_members', '' + payload.assigned_to[i]);
-					if (m.getString('trip') === '' + tripId && !m.getString('removed_at')) keepAssigned.push(m.id);
+					if (m.getString('trip') === '' + tripId && !m.getString('removed_at'))
+						keepAssigned.push(m.id);
 				} catch (_) {}
 			}
 			payload.assigned_to = keepAssigned;
@@ -438,14 +464,9 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 		let resolvedPhase = payload.phase || '';
 		if (!resolvedPhase && !payload.day) {
 			try {
-				const firstPhase = e.app.findRecordsByFilter(
-					'phases',
-					'trip = {:tripId}',
-					'+order',
-					1,
-					0,
-					{ tripId: tripId }
-				);
+				const firstPhase = e.app.findRecordsByFilter('phases', 'trip = {:tripId}', '+order', 1, 0, {
+					tripId: tripId
+				});
 				if (firstPhase && firstPhase.length > 0) resolvedPhase = firstPhase[0].id;
 			} catch (_) {
 				resolvedPhase = '';
@@ -485,7 +506,8 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 		let parentId = payload.parent_item ? '' + payload.parent_item : '';
 		if (parentId) {
 			try {
-				if (e.app.findRecordById('items', parentId).getString('trip') !== '' + tripId) parentId = '';
+				if (e.app.findRecordById('items', parentId).getString('trip') !== '' + tripId)
+					parentId = '';
 			} catch (_) {
 				parentId = '';
 			}
@@ -561,7 +583,9 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 			const ghostVotes = e.app.findRecordsByFilter(
 				'suggestion_votes',
 				'suggestion = {:sid}',
-				'-id', 0, 0,
+				'-id',
+				0,
+				0,
 				{ sid: suggestionId }
 			);
 			const votesCol = e.app.findCollectionByNameOrId('votes');
@@ -587,9 +611,17 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 		if (!payloadTitle) {
 			let rp = suggestion.get('payload');
 			if (Array.isArray(rp)) {
-				try { rp = JSON.parse(String.fromCharCode.apply(null, rp)); } catch (_) { rp = {}; }
+				try {
+					rp = JSON.parse(String.fromCharCode.apply(null, rp));
+				} catch (_) {
+					rp = {};
+				}
 			} else if (typeof rp === 'string') {
-				try { rp = JSON.parse(rp); } catch (_) { rp = {}; }
+				try {
+					rp = JSON.parse(rp);
+				} catch (_) {
+					rp = {};
+				}
 			}
 			if (rp && rp.title) payloadTitle = rp.title;
 		}
@@ -607,9 +639,17 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 			let rejPhase = '';
 			let rp = suggestion.get('payload');
 			if (Array.isArray(rp)) {
-				try { rp = JSON.parse(String.fromCharCode.apply(null, rp)); } catch (_) { rp = {}; }
+				try {
+					rp = JSON.parse(String.fromCharCode.apply(null, rp));
+				} catch (_) {
+					rp = {};
+				}
 			} else if (typeof rp === 'string') {
-				try { rp = JSON.parse(rp); } catch (_) { rp = {}; }
+				try {
+					rp = JSON.parse(rp);
+				} catch (_) {
+					rp = {};
+				}
 			}
 			if (rp && rp.phase) rejPhase = rp.phase;
 			if (tripSlug && rejPhase) link = `/trips/${tripSlug}/phases/${rejPhase}`;
@@ -693,9 +733,17 @@ routerAdd('POST', '/api/suggestions/update', (e) => {
 	// when the new payload omits it (same rule as Edit & Approve).
 	let stored = suggestion.get('payload');
 	if (Array.isArray(stored)) {
-		try { stored = JSON.parse(String.fromCharCode.apply(null, stored)); } catch (_) { stored = {}; }
+		try {
+			stored = JSON.parse(String.fromCharCode.apply(null, stored));
+		} catch (_) {
+			stored = {};
+		}
 	} else if (typeof stored === 'string') {
-		try { stored = JSON.parse(stored); } catch (_) { stored = {}; }
+		try {
+			stored = JSON.parse(stored);
+		} catch (_) {
+			stored = {};
+		}
 	}
 	if (!Array.isArray(newPayload.not_going) && stored && Array.isArray(stored.not_going)) {
 		newPayload.not_going = stored.not_going;
@@ -705,20 +753,27 @@ routerAdd('POST', '/api/suggestions/update', (e) => {
 	// item points into another trip. Drop foreign ids. Inlined (sandbox).
 	if (newPayload.day) {
 		try {
-			if (e.app.findRecordById('days', '' + newPayload.day).getString('trip') !== '' + tripId) newPayload.day = '';
-		} catch (_) { newPayload.day = ''; }
+			if (e.app.findRecordById('days', '' + newPayload.day).getString('trip') !== '' + tripId)
+				newPayload.day = '';
+		} catch (_) {
+			newPayload.day = '';
+		}
 	}
 	if (newPayload.phase) {
 		try {
-			if (e.app.findRecordById('phases', '' + newPayload.phase).getString('trip') !== '' + tripId) newPayload.phase = '';
-		} catch (_) { newPayload.phase = ''; }
+			if (e.app.findRecordById('phases', '' + newPayload.phase).getString('trip') !== '' + tripId)
+				newPayload.phase = '';
+		} catch (_) {
+			newPayload.phase = '';
+		}
 	}
 	if (Array.isArray(newPayload.assigned_to)) {
 		const keepAssigned = [];
 		for (let i = 0; i < newPayload.assigned_to.length; i++) {
 			try {
 				const m = e.app.findRecordById('trip_members', '' + newPayload.assigned_to[i]);
-				if (m.getString('trip') === '' + tripId && !m.getString('removed_at')) keepAssigned.push(m.id);
+				if (m.getString('trip') === '' + tripId && !m.getString('removed_at'))
+					keepAssigned.push(m.id);
 			} catch (_) {}
 		}
 		newPayload.assigned_to = keepAssigned;

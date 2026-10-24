@@ -30,9 +30,7 @@
 	const tripEnd = $derived(String(data.trip.end_date || '').split(/[T ]/)[0]);
 	// #323 — the first phase (start == trip start) is pinned; under the tiling model
 	// (ADR-0021) its boundary can't move, so its start picker is locked to trip start.
-	const isFirstPhase = $derived(
-		String(data.phase.start_date || '').split(/[T ]/)[0] === tripStart
-	);
+	const isFirstPhase = $derived(String(data.phase.start_date || '').split(/[T ]/)[0] === tripStart);
 
 	// #252 — consistent capture affordance, defaulting to THIS phase.
 	let ideaSheetOpen = $state(false);
@@ -115,10 +113,14 @@
 	let ideaType = $state('activity');
 	let ideaError = $derived(form?.ideaError ?? '');
 	const ideaTypes = ['activity', 'meal', 'lodging', 'transportation', 'flight', 'note'] as const;
-
 </script>
 
-<NavBar title={data.phase.name} subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}/phases" />
+<NavBar
+	title={data.phase.name}
+	subtitle={data.trip.title}
+	back
+	backHref="/trips/{data.trip.slug}/phases"
+/>
 
 <!-- #89 layout pass — composition only. Three zones with distinct textures:
      1. Phase identity as a masthead set directly on paper (typography carries
@@ -128,12 +130,18 @@
         against it, and the tray reads as "holding area" vs. the plan above.
      ≥900px the two working zones sit side by side (7fr plan / 5fr pool).
      Card content, drag wiring (#87/#88), and DayCard internals (#65) untouched. -->
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-4xl flex-1 px-4 pt-5 pb-10">
+<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-5 pb-10 md-desktop:max-w-4xl">
 	{#if error}
-		<div bind:this={alertEl} role="alert" class="border-error/30 bg-error/10 text-error-deep mb-4 rounded-md border p-3 text-sm">{error}</div>
+		<div
+			bind:this={alertEl}
+			role="alert"
+			class="mb-4 rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error-deep"
+		>
+			{error}
+		</div>
 	{/if}
 
-	<div class="border-line border-b pb-4">
+	<div class="border-b border-line pb-4">
 		<LevelHeader
 			title={data.phase.name}
 			place={data.phase.location}
@@ -189,33 +197,33 @@
 						await update();
 					};
 				}}
-				class="p-4 space-y-3"
+				class="space-y-3 p-4"
 			>
 				<div>
-					<label for="name" class="text-ink-soft block text-sm font-medium">Name</label>
+					<label for="name" class="block text-sm font-medium text-ink-soft">Name</label>
 					<input
 						type="text"
 						id="name"
 						name="name"
 						required
 						value={data.phase.name}
-						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+						class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 					/>
 				</div>
 
 				<div>
-					<label for="location" class="text-ink-soft block text-sm font-medium">Location</label>
+					<label for="location" class="block text-sm font-medium text-ink-soft">Location</label>
 					<input
 						type="text"
 						id="location"
 						name="location"
 						value={data.phase.location}
-						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+						class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 					/>
 				</div>
 
 				<div>
-					<label for="start_date" class="text-ink-soft block text-sm font-medium">Starts</label>
+					<label for="start_date" class="block text-sm font-medium text-ink-soft">Starts</label>
 					<input
 						type="date"
 						id="start_date"
@@ -224,9 +232,9 @@
 						value={data.phase.start_date.split('T')[0].split(' ')[0]}
 						min={tripStart || undefined}
 						max={(isFirstPhase ? tripStart : tripEnd) || undefined}
-						class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
+						class="mt-1 block w-full min-w-0 rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 					/>
-					<p class="text-ink-muted mt-1 text-xs">
+					<p class="mt-1 text-xs text-ink-muted">
 						{isFirstPhase
 							? 'The first phase always starts when the trip begins.'
 							: 'Runs until the next phase begins (or the end of the trip).'}
@@ -234,30 +242,32 @@
 				</div>
 
 				<div>
-					<label for="country_code" class="text-ink-soft block text-sm font-medium">Country</label>
+					<label for="country_code" class="block text-sm font-medium text-ink-soft">Country</label>
 					<input
 						type="text"
 						id="country_code"
 						name="country_code"
 						maxlength="2"
 						value={data.phase.country_code}
-						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm uppercase"
+						class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink uppercase"
 					/>
 				</div>
 
-				<Button type="submit" disabled={loading} loading={loading} variant="moss" size="md" class="w-full">
+				<Button type="submit" disabled={loading} {loading} variant="moss" size="md" class="w-full">
 					{loading ? 'Saving…' : 'Save changes'}
 				</Button>
 			</form>
 		</Card>
 	{/if}
 
-	<div class="mt-6 space-y-7 md-desktop:grid md-desktop:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] md-desktop:items-start md-desktop:gap-x-10 md-desktop:space-y-0">
+	<div
+		class="mt-6 space-y-7 md-desktop:grid md-desktop:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] md-desktop:items-start md-desktop:space-y-0 md-desktop:gap-x-10"
+	>
 		<section class="md-desktop:mt-0">
 			<div class="mb-2 flex items-center justify-between gap-2">
 				<div class="flex items-baseline gap-2">
 					<SectionH>Days</SectionH>
-					<span class="text-ink-muted font-mono text-[11px]">{data.phaseDays.length}</span>
+					<span class="font-mono text-[11px] text-ink-muted">{data.phaseDays.length}</span>
 				</div>
 				{#if data.phaseDays.length > 0}
 					<DayMetricToggle />
@@ -265,8 +275,10 @@
 			</div>
 			{#if data.phaseDays.length === 0}
 				<div class="px-4 py-7 text-center">
-					<p class="font-display text-ink-soft text-base italic">A blank stretch of calendar.</p>
-					<p class="text-ink-muted mt-1 text-[13px]">No days fall within this phase's date range.</p>
+					<p class="font-display text-base text-ink-soft italic">A blank stretch of calendar.</p>
+					<p class="mt-1 text-[13px] text-ink-muted">
+						No days fall within this phase's date range.
+					</p>
 				</div>
 			{:else}
 				<div class="space-y-1.5">
@@ -286,14 +298,17 @@
 			<div class="mb-2 flex items-center justify-between gap-2">
 				<div class="flex items-baseline gap-2">
 					<SectionH>Parking lot</SectionH>
-					<span class="text-ink-muted font-mono text-[11px]">{parkingLotCount}</span>
+					<span class="font-mono text-[11px] text-ink-muted">{parkingLotCount}</span>
 				</div>
 				<div class="flex items-center gap-1">
 					{#if data.unratedCount > 0}
 						<a
-							href="/trips/{data.trip.slug}/swipe/{data.phase.id}?from={encodeURIComponent(phasePath)}"
-							class="text-moss min-h-11 px-2 text-sm leading-[44px] font-semibold"
-						>Rate {data.unratedCount}</a>
+							href="/trips/{data.trip.slug}/swipe/{data.phase.id}?from={encodeURIComponent(
+								phasePath
+							)}"
+							class="min-h-11 px-2 text-sm leading-[44px] font-semibold text-moss"
+							>Rate {data.unratedCount}</a
+						>
 					{/if}
 					<Button onclick={() => (addingIdea = !addingIdea)} variant="ghost" size="sm">
 						{addingIdea ? 'Cancel' : '+ Add idea'}
@@ -301,7 +316,7 @@
 				</div>
 			</div>
 
-			<div class="border-line bg-surface-2 rounded-lg border p-2.5 space-y-3">
+			<div class="space-y-3 rounded-lg border border-line bg-surface-2 p-2.5">
 				{#if addingIdea}
 					<Card>
 						<form
@@ -320,13 +335,13 @@
 									await update();
 								};
 							}}
-							class="p-3 space-y-3"
+							class="space-y-3 p-3"
 						>
 							{#if ideaError}
-								<p role="alert" class="text-error-deep text-sm">{ideaError}</p>
+								<p role="alert" class="text-sm text-error-deep">{ideaError}</p>
 							{/if}
 							<div>
-								<label for="idea-title" class="text-ink-soft block text-sm font-medium">Idea</label>
+								<label for="idea-title" class="block text-sm font-medium text-ink-soft">Idea</label>
 								<input
 									type="text"
 									id="idea-title"
@@ -334,23 +349,30 @@
 									required
 									bind:value={ideaTitle}
 									placeholder="e.g. Tapas crawl in Seville"
-									class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+									class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 								/>
 							</div>
 							<div>
-								<label for="idea-type" class="text-ink-soft block text-sm font-medium">Type</label>
+								<label for="idea-type" class="block text-sm font-medium text-ink-soft">Type</label>
 								<select
 									id="idea-type"
 									name="type"
 									bind:value={ideaType}
-									class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+									class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 								>
 									{#each ideaTypes as t (t)}
 										<option value={t}>{titleCase(t)}</option>
 									{/each}
 								</select>
 							</div>
-							<Button type="submit" disabled={savingIdea} loading={savingIdea} variant="moss" size="md" class="w-full">
+							<Button
+								type="submit"
+								disabled={savingIdea}
+								loading={savingIdea}
+								variant="moss"
+								size="md"
+								class="w-full"
+							>
 								{savingIdea ? 'Adding…' : 'Add to parking lot'}
 							</Button>
 						</form>
@@ -365,8 +387,8 @@
 						tripSlug={data.trip.slug}
 						members={data.members}
 						myMemberId={data.myMemberId}
-						canVoteGhosts={canVoteGhosts}
-						canReviewGhosts={canReviewGhosts}
+						{canVoteGhosts}
+						{canReviewGhosts}
 						place={data.trip.location_summary}
 						planRows={data.planRows}
 						{canPlanIds}
@@ -376,8 +398,10 @@
 
 				{#if parkingLotItems.length === 0 && ghostCards.length === 0 && !addingIdea}
 					<div class="px-4 py-7 text-center">
-						<p class="font-display text-ink-soft text-base italic">No ideas yet.</p>
-						<p class="text-ink-muted mt-1 text-[13px]">Add one to start a parking lot for this phase.</p>
+						<p class="font-display text-base text-ink-soft italic">No ideas yet.</p>
+						<p class="mt-1 text-[13px] text-ink-muted">
+							Add one to start a parking lot for this phase.
+						</p>
 					</div>
 				{/if}
 			</div>

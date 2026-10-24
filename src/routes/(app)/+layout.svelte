@@ -22,13 +22,19 @@
 		'/(app)/trips/[slug]/now'
 	]);
 
-	function classifyNavigation(from: string | null | undefined, to: string | null | undefined): TransitionType {
+	function classifyNavigation(
+		from: string | null | undefined,
+		to: string | null | undefined
+	): TransitionType {
 		if (!from || !to || from === to) return 'fade';
 
 		if (bottomNavRoutes.has(from) && bottomNavRoutes.has(to)) return 'tab';
 
 		const depth = (id: string) =>
-			id.replace(/\([^)]+\)\/?/g, '').split('/').filter(Boolean).length;
+			id
+				.replace(/\([^)]+\)\/?/g, '')
+				.split('/')
+				.filter(Boolean).length;
 		const fromDepth = depth(from);
 		const toDepth = depth(to);
 
@@ -127,6 +133,6 @@
 
 <NavProgress />
 
-<div class="bg-paper text-ink flex min-h-dvh flex-col">
+<div class="flex min-h-dvh flex-col bg-paper text-ink">
 	{@render children()}
 </div>

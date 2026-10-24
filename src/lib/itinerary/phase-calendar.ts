@@ -17,7 +17,9 @@ export type PhasePalette = (typeof PHASE_PALETTE)[number];
 
 /** The palette a phase uses, cycled by its order. */
 export function paletteFor(phaseIndex: number): PhasePalette {
-	return PHASE_PALETTE[((phaseIndex % PHASE_PALETTE.length) + PHASE_PALETTE.length) % PHASE_PALETTE.length];
+	return PHASE_PALETTE[
+		((phaseIndex % PHASE_PALETTE.length) + PHASE_PALETTE.length) % PHASE_PALETTE.length
+	];
 }
 
 function parseUTC(d: string): Date {
@@ -44,10 +46,33 @@ export function mondayIndex(d: string): number {
 	return (parseUTC(d).getUTCDay() + 6) % 7;
 }
 
-const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS_SHORT = [
+	'Jan',
+	'Feb',
+	'Mar',
+	'Apr',
+	'May',
+	'Jun',
+	'Jul',
+	'Aug',
+	'Sep',
+	'Oct',
+	'Nov',
+	'Dec'
+];
 const MONTHS_LONG = [
-	'January', 'February', 'March', 'April', 'May', 'June',
-	'July', 'August', 'September', 'October', 'November', 'December'
+	'January',
+	'February',
+	'March',
+	'April',
+	'May',
+	'June',
+	'July',
+	'August',
+	'September',
+	'October',
+	'November',
+	'December'
 ];
 
 export interface CalendarCell {
@@ -75,7 +100,11 @@ export interface CalendarModel {
  * Build the calendar render model. `tiled` must be the sorted `retilePhases()`
  * output for the trip (start days ascending). Days are numbered 1..totalDays.
  */
-export function buildCalendar(startDate: string, totalDays: number, tiled: TiledPhase[]): CalendarModel {
+export function buildCalendar(
+	startDate: string,
+	totalDays: number,
+	tiled: TiledPhase[]
+): CalendarModel {
 	const start = toDay(startDate);
 	const starts = tiled.map((p) => p.start); // ascending
 	// The owning phase for a day = the latest phase whose start is on/before it.

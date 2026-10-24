@@ -3,12 +3,15 @@
 Source: [toxroxmysox/Waypoint#503](https://github.com/toxroxmysox/Waypoint/issues/503) · Date: 2026-10-11
 
 ## Problem Statement
+
 Since v3.1, Scott's Claude can read his trips but can't change anything. Every decision made in conversation ("booked the 9:40 train, conf ABC123", "dinner was €84, Abby paid, split three ways", "move the museum to Thursday", "push the trip a day later") still means opening Waypoint and re-entering it by hand. Scott wants Claude to act as an extension of himself in Waypoint: able to do almost anything he can do in the app, quickly, from the phone, with a clear look at the change before it lands and an easy undo.
 
 ## Intent & Success Criteria
+
 Make the connected AI a capable writer of the user's own decisions, bounded by a few clear prohibitions rather than a list of permitted actions.
 
 Observable outcomes:
+
 - From the Claude app, a member can make any change the app would let them make (items, phases, trip dates, scenarios, closeout statuses, budget, expenses with custom splits, votes they state, tasks, goals, codes, links, text docs, memory thoughts), except the can't-list.
 - Before anything is written, the member sees a preview card showing old → new, their own words, the real outcome, and every cascade (e.g. "Day 9 removed; 2 ideas move to Lisbon").
 - Nothing is written without a yes in chat or a tap on the card's Confirm.
@@ -20,6 +23,7 @@ Observable outcomes:
 - Members/invitations, AI settings, emails and tokens are never writable through the connector.
 
 ## User Stories
+
 1. As a member, I want to tell Claude a decision in my own words and have it recorded in Waypoint, so that I don't re-enter it in the app.
 2. As a member, I want to see a Waypoint-style preview of exactly what will change before it's written, so that I can catch mistakes.
 3. As a member, I want changed fields shown old → new, so that I see the difference at a glance.
@@ -59,6 +63,7 @@ Observable outcomes:
 37. As a member, I want my other members notified of my AI changes exactly as if I'd made them in the app, so that the group stays informed the same way.
 
 ## Decisions
+
 - **Posture: anything the user can do, minus a can't-list** (ADR-0025 §1, amends ADR-0024 §3). The can't-list:
   - members and invitations
   - AI settings
@@ -81,7 +86,7 @@ Observable outcomes:
   - The preview may choose a better view where it communicates more, e.g. a small calendar for trip or phase date changes.
 - **Cascades:** trip-date and phase changes list every consequence (days removed or added, items and ideas re-homed), computed with the app's own tiling logic, before confirm.
 - **Formats:** AI ↔ server use ISO `YYYY-MM-DD` and 24h `HH:MM`, trip-local. Cards show `9:40 am`. Dates outside the trip are refused with a reason, except an explicit trip-date change.
-- **Suggestions:** exactly as in the app. A traveler's item add goes through the suggestion endpoint: "Added as an idea" when Auto-approve is on, "Sent to the owners as a suggestion" when off. Item edits are owner/co_owner only in the app (#175), so a traveler's AI edit is refused with that reason; the AI may offer a comment. *(Corrected 2026-10-11 while planning: the grill assumed an edit-suggestion path; the app has none: suggestions are `new_item` | `comment` only.)*
+- **Suggestions:** exactly as in the app. A traveler's item add goes through the suggestion endpoint: "Added as an idea" when Auto-approve is on, "Sent to the owners as a suggestion" when off. Item edits are owner/co*owner only in the app (#175), so a traveler's AI edit is refused with that reason; the AI may offer a comment. *(Corrected 2026-10-11 while planning: the grill assumed an edit-suggestion path; the app has none: suggestions are `new_item` | `comment` only.)\_
 - **Attribution:** none. Changes are the member's own. Notifications fire as the app's would.
 - **AI Change audit** (glossary [[AI Change]]): each commit records the changes (before → after per field) and the user's words. Private to the author. Recent AI changes covers 30 days, lives in Account → Connected apps, and is collapsed by default.
 - **Revert:**
@@ -102,6 +107,7 @@ Observable outcomes:
 - **Order:** Scott dogfoods v3.1 reads in parallel with the build. Generic ops remove dogfooding as a gate on the plan.
 
 ## Testing Decisions
+
 - **Highest seam: the MCP endpoint.** Playwright specs against `/mcp` on the isolated PB, as `tests/e2e/mcp-oauth.spec.ts` and the v3.1 MCP specs do. Cover:
   - propose → commit → record changed
   - stale proposal refused
@@ -124,6 +130,7 @@ Observable outcomes:
 - **Visual:** a 375px screenshot of Recent AI changes in account settings and of the trip AI settings, via `pnpm verify:visual`. Card layouts for item, expense, phase and trip are checked on Scott's iPhone in the Claude app (MCP Apps rendering can't be screenshotted locally).
 
 ## Out of Scope
+
 - Members and invitations: any read of emails, any write.
 - Changing AI settings through the AI.
 - Deleting anything the AI didn't create.
@@ -134,6 +141,7 @@ Observable outcomes:
 - The ADR-0020 domain cutover.
 
 ## Assumptions & Open Questions
+
 - **Assumption (spike in the plan):** the claude.ai MCP Apps view can call a server tool (Confirm → `commit_changes`) on iPhone. If not, the button is dropped and chat yes is the only path.
 - **Assumption (spike in the plan):** the view can render a small calendar inside the card. Fallback is a text "Mon 3 → Tue 4" range.
 - **Assumption:** the #411 hooks cover every invariant the app enforces for writable collections. The plan audits writable collections for any rule still enforced only in SvelteKit form actions (e.g. scenario, closeout or budget logic) and moves it into PB or the op layer before exposing it.

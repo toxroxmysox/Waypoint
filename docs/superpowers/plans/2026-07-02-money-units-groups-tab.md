@@ -7,6 +7,7 @@
 ## TL;DR — this is mostly a UI relocation, not new plumbing
 
 The settle-up collapse, per-unit budgets, and the whole permission model already ship and work:
+
 - `saveMoneyUnit` (expenses `+page.server.ts`) **already supports edit** — `unit_id` present → `update`, absent → `create`.
 - `money_units.pb.js` **already implements the exact leave/edit/delete gate**: owner/co-owner OR an existing member of the unit. "Leaving is just an `update` that drops yourself from `members`." Non-members can't self-add.
 - `MoneyUnitsManager.svelte` already renders the list + create + delete, and `SettleUpFlow` already renders unit labels.
@@ -24,20 +25,22 @@ So #332 = **give it a discoverable home (a Groups sub-tab), surface the edit + l
 - **New route** `src/routes/(app)/trips/[slug]/groups/+page.{server.ts,svelte}`.
 - **SubTabs** gains a third entry on ALL three money pages (expenses, budget, groups):
   `{ id: 'groups', label: 'Groups', href: \`/trips/${slug}/groups\` }`.
-  The tabs array is currently duplicated in `expenses/+page.svelte` and `budget/+page.svelte`. **Extract `moneyTabs(slug)` into a small shared helper** (`src/lib/money/money-tabs.ts`) and use it in all three — prevents the drift that would otherwise show 2 tabs on one page and 3 on another. (`nav-state-active`: SubTabs already highlights the current tab by `id`.)
+The tabs array is currently duplicated in `expenses/+page.svelte`and`budget/+page.svelte`. **Extract `moneyTabs(slug)` into a small shared helper** (`src/lib/money/money-tabs.ts`) and use it in all three — prevents the drift that would otherwise show 2 tabs on one page and 3 on another. (`nav-state-active`: SubTabs already highlights the current tab by `id`.)
 - Deep-link: `/trips/[slug]/groups` loads directly (`deep-linking`).
 
 ## 2. Server load (`groups/+page.server.ts`)
 
 Mirror the expenses load's money-unit fetch:
+
 - `trip` (by slug), `membership` (caller's active `trip_members`), `members` (active only — `removed_at = ""`), `moneyUnits` (`money_units` where `trip = t.id`, sort `created`; `.catch(() => [])`).
 - Return `{ trip, membership, members, moneyUnits }`.
 
 ## 3. Screen states (mobile-first)
 
 ### a. List (has units)
+
 - Header: title **Groups** + one-line explainer (`--ink-soft`, Fraunces italic ok):
-  *"Group people who share a card. Settle-up nets across the group — splits never change."*
+  _"Group people who share a card. Settle-up nets across the group — splits never change."_
 - Each unit = a `Card`:
   - Label: `unitLabel` = members joined `" & "`, self shown as **You** (existing `memberName` logic). e.g. "You & Abby".
   - Sub-line (`--ink-muted`, 12px): budget — `Even-share budget` OR `$X.XX budget (custom)`.
@@ -46,26 +49,31 @@ Mirror the expenses load's money-unit fetch:
 - Primary action: **New group** button (top-right of header, or FAB consistent with expenses' `FAB`). One primary CTA per screen (`primary-action`).
 
 ### b. Empty state (no units) — teaching, per `empty-states`
+
 - Centered: coin/people icon, `No groups yet.` (Fraunces italic like the expenses empty state), then a teaching line + concrete example:
-  *"If two of you share a card, group them — one payment settles you both, instead of settling every pair."*
+  _"If two of you share a card, group them — one payment settles you both, instead of settling every pair."_
 - Primary **New group** button below.
 
 ### c. Create / Edit sheet (`BottomSheet`, title "New group" / "Edit group")
+
 - Reuses the current `MoneyUnitsManager` form, relocated:
   - **Members** — checkbox list of active members (labels via `memberName`, `form-labels`); show `(in another unit)` hint on already-assigned members (existing behavior). Seed the creator checked on create; prefill actual members on edit.
-  - **Custom budget (optional)** — `type=number step=0.01 min=0`, labeled, helper: *"Absolute target — doesn't change the group budget or other units."* (`input-helper-text`, `input-type-keyboard`).
+  - **Custom budget (optional)** — `type=number step=0.01 min=0`, labeled, helper: _"Absolute target — doesn't change the group budget or other units."_ (`input-helper-text`, `input-type-keyboard`).
   - Submit → progressive-enhancement `?/saveMoneyUnit` (create or edit via hidden `unit_id`); loading state on the button (`loading-buttons`, `submit-feedback`); success toast "Group saved" + close sheet (`success-feedback`).
 - Validation: ≥1 member (existing); inline error via `role="alert"` (`aria-live-errors`).
 
 ### d. Leave confirm (inline, mirrors phases delete-confirm)
-- Trigger `Leave` → inline confirm: *"Leave this group? The others stay grouped."* → confirm posts `?/leaveMoneyUnit` (see §4). Success toast "You left the group".
+
+- Trigger `Leave` → inline confirm: _"Leave this group? The others stay grouped."_ → confirm posts `?/leaveMoneyUnit` (see §4). Success toast "You left the group".
 
 ### e. Delete confirm (inline)
-- Trigger `Delete` → inline confirm, stronger copy: *"Delete this group for everyone? This can't be undone."* → `?/deleteMoneyUnit`. Success toast "Group deleted" (`confirmation-dialogs`, `undo-support` optional via toast).
+
+- Trigger `Delete` → inline confirm, stronger copy: _"Delete this group for everyone? This can't be undone."_ → `?/deleteMoneyUnit`. Success toast "Group deleted" (`confirmation-dialogs`, `undo-support` optional via toast).
 
 ## 4. Backend deltas (small)
 
 Move the three actions to `groups/+page.server.ts` (and delete them from `expenses/+page.server.ts`):
+
 - `saveMoneyUnit` — **unchanged** (already create/edit).
 - `deleteMoneyUnit` — unchanged.
 - **New `leaveMoneyUnit`** — read the unit, drop the caller's `membership.id` from `members`:

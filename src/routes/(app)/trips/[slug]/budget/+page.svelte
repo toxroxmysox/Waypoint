@@ -70,7 +70,8 @@
 		} else if (field === 'total') {
 			cat.total = parseFloat(value) || 0;
 			if (cat.mode === 'per_day') {
-				cat.daily_amount = data.tripDays > 0 ? Math.round((cat.total / data.tripDays) * 100) / 100 : 0;
+				cat.daily_amount =
+					data.tripDays > 0 ? Math.round((cat.total / data.tripDays) * 100) / 100 : 0;
 			}
 		}
 		cats[idx] = cat;
@@ -105,11 +106,11 @@
 </NavBar>
 <SubTabs tabs={moneyTabs(data.trip.slug)} />
 
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8">
+<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 md-desktop:max-w-2xl">
 	<!-- Budget envelope total. Header names the BUDGET (the limit you set), not the
 	     plan estimate or what's spent — those are shown as their own lines (#198). -->
 	<div class="mb-6 text-center">
-		<p class="text-xs font-medium text-ink-muted uppercase tracking-wider">Budget Total</p>
+		<p class="text-xs font-medium tracking-wider text-ink-muted uppercase">Budget Total</p>
 		<p class="font-mono text-3xl font-semibold text-ink">${formatAmount(grandTotal)}</p>
 		<div class="mt-1 flex items-center justify-center gap-3 text-xs text-ink-muted">
 			<span>${formatAmount(perDay)} / day</span>
@@ -120,7 +121,11 @@
 		     expense exists. Clay = the plan already exceeds the envelope. -->
 		{#if totalPlanned > 0}
 			<p class="mt-2 text-xs text-ink-muted">
-				<span class="font-mono font-semibold {totalPlanned > grandTotal && grandTotal > 0 ? 'text-clay' : 'text-ink-soft'}">${formatAmount(totalPlanned)}</span>
+				<span
+					class="font-mono font-semibold {totalPlanned > grandTotal && grandTotal > 0
+						? 'text-clay'
+						: 'text-ink-soft'}">${formatAmount(totalPlanned)}</span
+				>
 				planned
 				{#if totalPlanned > grandTotal && grandTotal > 0}
 					<span class="text-clay">(${formatAmount(totalPlanned - grandTotal)} over budget)</span>
@@ -129,9 +134,11 @@
 		{/if}
 		{#if totalSpent > 0}
 			<div class="mt-2">
-				<div class="mx-auto max-w-[200px] h-1.5 rounded-full bg-surface-2 overflow-hidden">
+				<div class="mx-auto h-1.5 max-w-[200px] overflow-hidden rounded-full bg-surface-2">
 					<div
-						class="h-full rounded-full transition-all {totalSpent > grandTotal && grandTotal > 0 ? 'bg-clay' : 'bg-moss'}"
+						class="h-full rounded-full transition-all {totalSpent > grandTotal && grandTotal > 0
+							? 'bg-clay'
+							: 'bg-moss'}"
 						style="width: {grandTotal > 0 ? Math.min(100, (totalSpent / grandTotal) * 100) : 0}%"
 					></div>
 				</div>
@@ -164,19 +171,23 @@
 				{@const meta = categoryMeta[cat.category]}
 				<Card>
 					<div class="p-3">
-						<div class="flex items-center justify-between mb-2">
+						<div class="mb-2 flex items-center justify-between">
 							<div class="flex items-center gap-2">
 								<TypeIcon type={meta.iconType} size={24} />
 								<span class="text-sm font-medium text-ink">{meta.label}</span>
 							</div>
-							<span class="font-mono text-sm font-semibold text-ink">${formatAmount(cat.total)}</span>
+							<span class="font-mono text-sm font-semibold text-ink"
+								>${formatAmount(cat.total)}</span
+							>
 						</div>
 
 						<!-- Progress bar (only if budget > 0) -->
 						{#if cat.total > 0}
-							<div class="mb-2 h-1.5 rounded-full bg-surface-2 overflow-hidden">
+							<div class="mb-2 h-1.5 overflow-hidden rounded-full bg-surface-2">
 								<div
-									class="h-full rounded-full transition-all {spent > cat.total ? 'bg-clay' : 'bg-moss'}"
+									class="h-full rounded-full transition-all {spent > cat.total
+										? 'bg-clay'
+										: 'bg-moss'}"
 									style="width: {Math.min(100, (spent / cat.total) * 100)}%"
 								></div>
 							</div>
@@ -185,9 +196,15 @@
 						<!-- planned / budget / spent — the per-category comparison (#198).
 						     Always shown so a member can read it before any expense exists
 						     (the bar above only appears once a budget is set). -->
-						<div class="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[11px] text-ink-muted">
+						<div
+							class="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[11px] text-ink-muted"
+						>
 							<span>
-								<span class="font-mono {planned > cat.total && cat.total > 0 ? 'text-clay' : 'text-ink-soft'}">${formatAmount(planned)}</span>
+								<span
+									class="font-mono {planned > cat.total && cat.total > 0
+										? 'text-clay'
+										: 'text-ink-soft'}">${formatAmount(planned)}</span
+								>
 								planned
 							</span>
 							<span>
@@ -207,17 +224,22 @@
 						{#if data.isOwner}
 							<div class="flex items-center gap-2">
 								<!-- Mode toggle -->
-								<div class="flex rounded-md border border-line overflow-hidden">
+								<div class="flex overflow-hidden rounded-md border border-line">
 									<button
 										type="button"
-										class="px-2 py-1 text-[11px] font-medium transition-colors {cat.mode === 'per_day' ? 'bg-ink text-paper' : 'bg-surface-2 text-ink-soft'}"
-										onclick={() => updateCategory(idx, 'mode', 'per_day')}
-									>Per day</button>
+										class="px-2 py-1 text-[11px] font-medium transition-colors {cat.mode ===
+										'per_day'
+											? 'bg-ink text-paper'
+											: 'bg-surface-2 text-ink-soft'}"
+										onclick={() => updateCategory(idx, 'mode', 'per_day')}>Per day</button
+									>
 									<button
 										type="button"
-										class="px-2 py-1 text-[11px] font-medium transition-colors {cat.mode === 'total' ? 'bg-ink text-paper' : 'bg-surface-2 text-ink-soft'}"
-										onclick={() => updateCategory(idx, 'mode', 'total')}
-									>Total</button>
+										class="px-2 py-1 text-[11px] font-medium transition-colors {cat.mode === 'total'
+											? 'bg-ink text-paper'
+											: 'bg-surface-2 text-ink-soft'}"
+										onclick={() => updateCategory(idx, 'mode', 'total')}>Total</button
+									>
 								</div>
 
 								{#if cat.mode === 'per_day'}
@@ -227,7 +249,8 @@
 										step="0.01"
 										min="0"
 										value={cat.daily_amount ?? 0}
-										oninput={(e) => updateCategory(idx, 'daily_amount', (e.target as HTMLInputElement).value)}
+										oninput={(e) =>
+											updateCategory(idx, 'daily_amount', (e.target as HTMLInputElement).value)}
 										class="w-20 rounded-md border border-line bg-surface px-2 py-1 font-mono text-xs text-ink focus:border-moss focus:outline-none"
 									/>
 									<span class="text-[11px] text-ink-muted">x {data.tripDays}d</span>
@@ -238,7 +261,8 @@
 										step="0.01"
 										min="0"
 										value={cat.total}
-										oninput={(e) => updateCategory(idx, 'total', (e.target as HTMLInputElement).value)}
+										oninput={(e) =>
+											updateCategory(idx, 'total', (e.target as HTMLInputElement).value)}
 										class="w-24 rounded-md border border-line bg-surface px-2 py-1 font-mono text-xs text-ink focus:border-moss focus:outline-none"
 									/>
 								{/if}
@@ -258,7 +282,14 @@
 		{/if}
 
 		{#if data.isOwner}
-			<Button type="submit" variant="primary" size="lg" class="mt-4 w-full" disabled={saving} loading={saving}>
+			<Button
+				type="submit"
+				variant="primary"
+				size="lg"
+				class="mt-4 w-full"
+				disabled={saving}
+				loading={saving}
+			>
 				{saving ? 'Saving...' : 'Save Budget'}
 			</Button>
 		{/if}

@@ -35,7 +35,12 @@ export async function token(email: string): Promise<string> {
 	return ((await res.json()) as { token: string }).token;
 }
 
-export async function pb(t: string, method: string, path: string, body?: unknown): Promise<Record<string, unknown>> {
+export async function pb(
+	t: string,
+	method: string,
+	path: string,
+	body?: unknown
+): Promise<Record<string, unknown>> {
 	const res = await fetch(`${PB_BASE}${path}`, {
 		method,
 		headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
@@ -46,7 +51,10 @@ export async function pb(t: string, method: string, path: string, body?: unknown
 	return json;
 }
 
-export async function devLogin(browser: Browser, email: string): Promise<{ page: Page; close: () => Promise<void> }> {
+export async function devLogin(
+	browser: Browser,
+	email: string
+): Promise<{ page: Page; close: () => Promise<void> }> {
 	const ctx = await browser.newContext({ viewport: { width: 375, height: 812 } });
 	const page = await ctx.newPage();
 	await page.goto(`${BASE}/api/dev/login?email=${encodeURIComponent(email)}`);
@@ -61,7 +69,9 @@ export async function seedJapanTrip(SLUG: string): Promise<JapanFx> {
 		headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${owner}` },
 		body: JSON.stringify({ emails: EMAILS, slug: SLUG })
 	});
-	expect(res.ok, `rules-fixture: ${res.status} ${res.ok ? '' : await res.clone().text()}`).toBe(true);
+	expect(res.ok, `rules-fixture: ${res.status} ${res.ok ? '' : await res.clone().text()}`).toBe(
+		true
+	);
 	const base = (await res.json()) as {
 		tripId: string;
 		phaseId: string;
@@ -75,11 +85,19 @@ export async function seedJapanTrip(SLUG: string): Promise<JapanFx> {
 		start_date: '2027-11-18 00:00:00.000Z',
 		end_date: '2027-11-24 00:00:00.000Z'
 	});
-	const remaining = (await pb(owner, 'GET', `/api/collections/phases/records?filter=${encodeURIComponent(`trip="${tripId}"`)}`))
-		.items as { id: string }[];
+	const remaining = (
+		await pb(
+			owner,
+			'GET',
+			`/api/collections/phases/records?filter=${encodeURIComponent(`trip="${tripId}"`)}`
+		)
+	).items as { id: string }[];
 	expect(remaining).toHaveLength(1);
 	const tokyo = remaining[0].id;
-	await pb(owner, 'PATCH', `/api/collections/phases/records/${tokyo}`, { name: 'Tokyo', notes: '' });
+	await pb(owner, 'PATCH', `/api/collections/phases/records/${tokyo}`, {
+		name: 'Tokyo',
+		notes: ''
+	});
 	const kan = await pb(owner, 'POST', '/api/collections/phases/records', {
 		trip: tripId,
 		name: 'Kanazawa',
@@ -87,8 +105,13 @@ export async function seedJapanTrip(SLUG: string): Promise<JapanFx> {
 		end_date: '2027-11-24 00:00:00.000Z',
 		order: 1
 	});
-	const dayList = (await pb(owner, 'GET', `/api/collections/days/records?perPage=50&filter=${encodeURIComponent(`trip="${tripId}"`)}`))
-		.items as { id: string; date: string }[];
+	const dayList = (
+		await pb(
+			owner,
+			'GET',
+			`/api/collections/days/records?perPage=50&filter=${encodeURIComponent(`trip="${tripId}"`)}`
+		)
+	).items as { id: string; date: string }[];
 	const days: Record<string, string> = {};
 	for (const d of dayList) days[d.date.slice(0, 10)] = d.id;
 

@@ -79,7 +79,11 @@ test.describe('Trip Mode Door 1 — ideas for now (#245)', () => {
 		await phaseLink.click();
 		await page.waitForURL(new RegExp(`/trips/${tripSlug}/phases/`));
 
-		await page.getByRole('button', { name: '+ Add idea' }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('button', { name: '+ Add idea' })
+			.filter({ visible: true })
+			.first()
+			.click();
 		const ideaInput = page.locator('input[name="title"]:visible').first();
 		await ideaInput.fill(IDEA_TITLE);
 		// Submit via Enter (the real mobile path — keyboard Go). The "Add to parking
@@ -99,9 +103,7 @@ test.describe('Trip Mode Door 1 — ideas for now (#245)', () => {
 		// (never the wall-clock-only "Day wrapped"), so the strip renders. Match only the
 		// two door-OPEN states — "Day wrapped" would be a FALSE pass (it closes the door).
 		await expect(
-			page
-				.locator(':visible', { hasText: /Free time|Nothing else planned/ })
-				.first()
+			page.locator(':visible', { hasText: /Free time|Nothing else planned/ }).first()
 		).toBeVisible({ timeout: 7000 });
 
 		// The ideas strip is visible and lists the parked idea. A fresh trip's idea write +

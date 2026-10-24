@@ -72,8 +72,16 @@ describe('getNowViewState — Focus + forward list (#153)', () => {
 
 		it('#430: every ongoing item is a Hero (no longer only the one that ends last)', () => {
 			const items = [
-				makeItem({ id: 'a', start_time: '2026-10-15 12:00:00.000Z', end_time: '2026-10-15 14:00:00.000Z' }),
-				makeItem({ id: 'b', start_time: '2026-10-15 13:00:00.000Z', end_time: '2026-10-15 15:00:00.000Z' })
+				makeItem({
+					id: 'a',
+					start_time: '2026-10-15 12:00:00.000Z',
+					end_time: '2026-10-15 14:00:00.000Z'
+				}),
+				makeItem({
+					id: 'b',
+					start_time: '2026-10-15 13:00:00.000Z',
+					end_time: '2026-10-15 15:00:00.000Z'
+				})
 			];
 			const state = getNowViewState(items, new Date('2026-10-15T13:30:00Z'), true);
 			expect(state.focus.kind).toBe('mid-event');
@@ -83,22 +91,55 @@ describe('getNowViewState — Focus + forward list (#153)', () => {
 			}
 		});
 
-		it('#430: the viewer\'s items lead, then everyone else\'s, each group by start time', () => {
+		it("#430: the viewer's items lead, then everyone else's, each group by start time", () => {
 			const items = [
-				makeItem({ id: 'other-early', start_time: '2026-10-15 09:00:00.000Z', end_time: '2026-10-15 15:00:00.000Z', assigned_to: ['m2'] }),
-				makeItem({ id: 'mine-late', start_time: '2026-10-15 12:30:00.000Z', end_time: '2026-10-15 15:00:00.000Z', assigned_to: ['m2', 'me'] }),
-				makeItem({ id: 'nobody', start_time: '2026-10-15 11:00:00.000Z', end_time: '2026-10-15 15:00:00.000Z' }),
-				makeItem({ id: 'mine-early', start_time: '2026-10-15 10:00:00.000Z', end_time: '2026-10-15 15:00:00.000Z', assigned_to: ['me'] })
+				makeItem({
+					id: 'other-early',
+					start_time: '2026-10-15 09:00:00.000Z',
+					end_time: '2026-10-15 15:00:00.000Z',
+					assigned_to: ['m2']
+				}),
+				makeItem({
+					id: 'mine-late',
+					start_time: '2026-10-15 12:30:00.000Z',
+					end_time: '2026-10-15 15:00:00.000Z',
+					assigned_to: ['m2', 'me']
+				}),
+				makeItem({
+					id: 'nobody',
+					start_time: '2026-10-15 11:00:00.000Z',
+					end_time: '2026-10-15 15:00:00.000Z'
+				}),
+				makeItem({
+					id: 'mine-early',
+					start_time: '2026-10-15 10:00:00.000Z',
+					end_time: '2026-10-15 15:00:00.000Z',
+					assigned_to: ['me']
+				})
 			];
 			const state = getNowViewState(items, new Date('2026-10-15T13:00:00Z'), true, 'me');
 			if (state.focus.kind !== 'mid-event') throw new Error('expected mid-event');
-			expect(state.focus.heroes.map((i) => i.id)).toEqual(['mine-early', 'mine-late', 'other-early', 'nobody']);
+			expect(state.focus.heroes.map((i) => i.id)).toEqual([
+				'mine-early',
+				'mine-late',
+				'other-early',
+				'nobody'
+			]);
 		});
 
 		it('#430: without a viewer id the order is plain start time', () => {
 			const items = [
-				makeItem({ id: 'b', start_time: '2026-10-15 12:30:00.000Z', end_time: '2026-10-15 15:00:00.000Z', assigned_to: ['me'] }),
-				makeItem({ id: 'a', start_time: '2026-10-15 12:00:00.000Z', end_time: '2026-10-15 15:00:00.000Z' })
+				makeItem({
+					id: 'b',
+					start_time: '2026-10-15 12:30:00.000Z',
+					end_time: '2026-10-15 15:00:00.000Z',
+					assigned_to: ['me']
+				}),
+				makeItem({
+					id: 'a',
+					start_time: '2026-10-15 12:00:00.000Z',
+					end_time: '2026-10-15 15:00:00.000Z'
+				})
 			];
 			const state = getNowViewState(items, new Date('2026-10-15T13:00:00Z'), true);
 			if (state.focus.kind !== 'mid-event') throw new Error('expected mid-event');
@@ -107,8 +148,16 @@ describe('getNowViewState — Focus + forward list (#153)', () => {
 
 		it('forward list during mid-event holds only items after now, not the ongoing focus item', () => {
 			const items = [
-				makeItem({ id: 'now', start_time: '2026-10-15 12:00:00.000Z', end_time: '2026-10-15 14:00:00.000Z' }),
-				makeItem({ id: 'later', start_time: '2026-10-15 16:00:00.000Z', end_time: '2026-10-15 18:00:00.000Z' })
+				makeItem({
+					id: 'now',
+					start_time: '2026-10-15 12:00:00.000Z',
+					end_time: '2026-10-15 14:00:00.000Z'
+				}),
+				makeItem({
+					id: 'later',
+					start_time: '2026-10-15 16:00:00.000Z',
+					end_time: '2026-10-15 18:00:00.000Z'
+				})
 			];
 			const state = getNowViewState(items, new Date('2026-10-15T13:00:00Z'), true);
 			expect(state.forwardItems.map((i) => i.id)).toEqual(['later']);
@@ -116,7 +165,11 @@ describe('getNowViewState — Focus + forward list (#153)', () => {
 
 		it('forward list is empty when the ongoing item is the last thing today', () => {
 			const items = [
-				makeItem({ id: 'now', start_time: '2026-10-15 12:00:00.000Z', end_time: '2026-10-15 14:00:00.000Z' })
+				makeItem({
+					id: 'now',
+					start_time: '2026-10-15 12:00:00.000Z',
+					end_time: '2026-10-15 14:00:00.000Z'
+				})
 			];
 			const state = getNowViewState(items, new Date('2026-10-15T13:00:00Z'), true);
 			expect(state.forwardItems).toEqual([]);
@@ -126,7 +179,11 @@ describe('getNowViewState — Focus + forward list (#153)', () => {
 	describe('free-time focus', () => {
 		it('focuses "Xh until next" with the next item as forwardItems[0] (normal-weight list entry)', () => {
 			const items = [
-				makeItem({ id: 'past', start_time: '2026-10-15 09:00:00.000Z', end_time: '2026-10-15 10:00:00.000Z' }),
+				makeItem({
+					id: 'past',
+					start_time: '2026-10-15 09:00:00.000Z',
+					end_time: '2026-10-15 10:00:00.000Z'
+				}),
 				makeItem({
 					id: 'dinner',
 					start_time: '2026-10-15 16:00:00.000Z',
@@ -146,8 +203,16 @@ describe('getNowViewState — Focus + forward list (#153)', () => {
 
 		it('next item is the earliest future item and the forward list is sorted', () => {
 			const items = [
-				makeItem({ id: 'later', start_time: '2026-10-15 18:00:00.000Z', end_time: '2026-10-15 19:00:00.000Z' }),
-				makeItem({ id: 'soon', start_time: '2026-10-15 15:00:00.000Z', end_time: '2026-10-15 16:00:00.000Z' })
+				makeItem({
+					id: 'later',
+					start_time: '2026-10-15 18:00:00.000Z',
+					end_time: '2026-10-15 19:00:00.000Z'
+				}),
+				makeItem({
+					id: 'soon',
+					start_time: '2026-10-15 15:00:00.000Z',
+					end_time: '2026-10-15 16:00:00.000Z'
+				})
 			];
 			const state = getNowViewState(items, new Date('2026-10-15T14:00:00Z'), true);
 			if (state.focus.kind === 'free-time') {
@@ -161,8 +226,16 @@ describe('getNowViewState — Focus + forward list (#153)', () => {
 	describe('forward list hides the past', () => {
 		it('excludes items that have already ended', () => {
 			const items = [
-				makeItem({ id: 'done', start_time: '2026-10-15 09:00:00.000Z', end_time: '2026-10-15 10:00:00.000Z' }),
-				makeItem({ id: 'ahead', start_time: '2026-10-15 16:00:00.000Z', end_time: '2026-10-15 17:00:00.000Z' })
+				makeItem({
+					id: 'done',
+					start_time: '2026-10-15 09:00:00.000Z',
+					end_time: '2026-10-15 10:00:00.000Z'
+				}),
+				makeItem({
+					id: 'ahead',
+					start_time: '2026-10-15 16:00:00.000Z',
+					end_time: '2026-10-15 17:00:00.000Z'
+				})
 			];
 			const state = getNowViewState(items, new Date('2026-10-15T12:00:00Z'), true);
 			expect(state.forwardItems.map((i) => i.id)).toEqual(['ahead']);
@@ -172,7 +245,12 @@ describe('getNowViewState — Focus + forward list (#153)', () => {
 	describe('nothing ahead — before 8pm cutoff', () => {
 		it('reads "nothing else planned" (not wrapped) when the day is open but empty ahead', () => {
 			const items = [
-				makeItem({ id: 'past', start_time: '2026-10-15 09:00:00.000Z', end_time: '2026-10-15 10:00:00.000Z', status: 'done' })
+				makeItem({
+					id: 'past',
+					start_time: '2026-10-15 09:00:00.000Z',
+					end_time: '2026-10-15 10:00:00.000Z',
+					status: 'done'
+				})
 			];
 			const state = getNowViewState(items, new Date('2026-10-15T14:00:00Z'), true);
 			expect(state.focus.kind).toBe('nothing-else-planned');
@@ -194,8 +272,18 @@ describe('getNowViewState — Focus + forward list (#153)', () => {
 	describe('nothing ahead — at/after 8pm cutoff', () => {
 		it('reads as a wrapped plan summary once empty ahead and at/after 8pm', () => {
 			const items = [
-				makeItem({ id: 'a', start_time: '2026-10-15 09:00:00.000Z', end_time: '2026-10-15 10:00:00.000Z', status: 'done' }),
-				makeItem({ id: 'b', start_time: '2026-10-15 12:00:00.000Z', end_time: '2026-10-15 13:00:00.000Z', status: 'done' })
+				makeItem({
+					id: 'a',
+					start_time: '2026-10-15 09:00:00.000Z',
+					end_time: '2026-10-15 10:00:00.000Z',
+					status: 'done'
+				}),
+				makeItem({
+					id: 'b',
+					start_time: '2026-10-15 12:00:00.000Z',
+					end_time: '2026-10-15 13:00:00.000Z',
+					status: 'done'
+				})
 			];
 			const state = getNowViewState(items, new Date('2026-10-15T20:00:00Z'), true);
 			expect(state.focus.kind).toBe('wrapped-summary');
@@ -252,7 +340,11 @@ describe('getNowViewState — Focus + forward list (#153)', () => {
 
 		it('an ongoing item past 8pm stays mid-event, never wrapped', () => {
 			const items = [
-				makeItem({ id: 'show', start_time: '2026-10-15 20:00:00.000Z', end_time: '2026-10-15 23:00:00.000Z' })
+				makeItem({
+					id: 'show',
+					start_time: '2026-10-15 20:00:00.000Z',
+					end_time: '2026-10-15 23:00:00.000Z'
+				})
 			];
 			const state = getNowViewState(items, new Date('2026-10-15T21:00:00Z'), true);
 			expect(state.focus.kind).toBe('mid-event');
@@ -371,9 +463,21 @@ describe('getNowFeed — merged Now: faded past / Focus / normal rest (#244)', (
 
 	it('splits a day into past (ended) / Focus (ongoing) / rest (forward), earliest-first', () => {
 		const items = [
-			makeItem({ id: 'breakfast', start_time: '2026-10-15 08:00:00.000Z', end_time: '2026-10-15 09:00:00.000Z' }),
-			makeItem({ id: 'museum', start_time: '2026-10-15 12:00:00.000Z', end_time: '2026-10-15 14:00:00.000Z' }),
-			makeItem({ id: 'dinner', start_time: '2026-10-15 19:00:00.000Z', end_time: '2026-10-15 21:00:00.000Z' })
+			makeItem({
+				id: 'breakfast',
+				start_time: '2026-10-15 08:00:00.000Z',
+				end_time: '2026-10-15 09:00:00.000Z'
+			}),
+			makeItem({
+				id: 'museum',
+				start_time: '2026-10-15 12:00:00.000Z',
+				end_time: '2026-10-15 14:00:00.000Z'
+			}),
+			makeItem({
+				id: 'dinner',
+				start_time: '2026-10-15 19:00:00.000Z',
+				end_time: '2026-10-15 21:00:00.000Z'
+			})
 		];
 		const feed = getNowFeed(items, NOW, true);
 		// 13:00: breakfast ended (past), museum ongoing (Focus), dinner ahead (rest).
@@ -387,8 +491,16 @@ describe('getNowFeed — merged Now: faded past / Focus / normal rest (#244)', (
 		// 2026-10-15 21:30 UTC is 17:30 in New York (EDT) and 06:30 next day in Tokyo.
 		const instant = new Date('2026-10-15T21:30:00Z');
 		const items = [
-			makeItem({ id: 'lunch', start_time: '2026-10-15 12:00:00.000Z', end_time: '2026-10-15 13:30:00.000Z' }),
-			makeItem({ id: 'dinner', start_time: '2026-10-15 19:00:00.000Z', end_time: '2026-10-15 21:00:00.000Z' })
+			makeItem({
+				id: 'lunch',
+				start_time: '2026-10-15 12:00:00.000Z',
+				end_time: '2026-10-15 13:30:00.000Z'
+			}),
+			makeItem({
+				id: 'dinner',
+				start_time: '2026-10-15 19:00:00.000Z',
+				end_time: '2026-10-15 21:00:00.000Z'
+			})
 		];
 		const ny = getNowFeed(items, tripNow('America/New_York', instant), true);
 		expect(ny.pastItems.map((i) => i.id)).toEqual(['lunch']);
@@ -399,7 +511,13 @@ describe('getNowFeed — merged Now: faded past / Focus / normal rest (#244)', (
 	});
 
 	it('#429: an item that ends exactly now is Earlier today, never in both lists', () => {
-		const items = [makeItem({ id: 'brunch', start_time: '2026-10-15 12:00:00.000Z', end_time: '2026-10-15 13:00:00.000Z' })];
+		const items = [
+			makeItem({
+				id: 'brunch',
+				start_time: '2026-10-15 12:00:00.000Z',
+				end_time: '2026-10-15 13:00:00.000Z'
+			})
+		];
 		const feed = getNowFeed(items, NOW, true);
 		expect(feed.pastItems.map((i) => i.id)).toEqual(['brunch']);
 		expect(feed.restItems).toEqual([]);
@@ -407,8 +525,16 @@ describe('getNowFeed — merged Now: faded past / Focus / normal rest (#244)', (
 
 	it('the ongoing Focus item never double-renders in the rest (mid-event)', () => {
 		const items = [
-			makeItem({ id: 'museum', start_time: '2026-10-15 12:00:00.000Z', end_time: '2026-10-15 14:00:00.000Z' }),
-			makeItem({ id: 'dinner', start_time: '2026-10-15 19:00:00.000Z', end_time: '2026-10-15 21:00:00.000Z' })
+			makeItem({
+				id: 'museum',
+				start_time: '2026-10-15 12:00:00.000Z',
+				end_time: '2026-10-15 14:00:00.000Z'
+			}),
+			makeItem({
+				id: 'dinner',
+				start_time: '2026-10-15 19:00:00.000Z',
+				end_time: '2026-10-15 21:00:00.000Z'
+			})
 		];
 		const feed = getNowFeed(items, NOW, true);
 		expect(feed.restItems.map((i) => i.id)).toEqual(['dinner']);
@@ -418,7 +544,11 @@ describe('getNowFeed — merged Now: faded past / Focus / normal rest (#244)', (
 	it('UNTIMED items render in the rest — the whole point of the merge (old Now dropped them)', () => {
 		const items = [
 			makeItem({ id: 'idea', start_time: '', sort_order: 100, title: 'Promoted idea' }),
-			makeItem({ id: 'dinner', start_time: '2026-10-15 19:00:00.000Z', end_time: '2026-10-15 21:00:00.000Z' })
+			makeItem({
+				id: 'dinner',
+				start_time: '2026-10-15 19:00:00.000Z',
+				end_time: '2026-10-15 21:00:00.000Z'
+			})
 		];
 		const feed = getNowFeed(items, NOW, true);
 		expect(feed.restItems.map((i) => i.id).sort()).toEqual(['dinner', 'idea']);
@@ -427,7 +557,12 @@ describe('getNowFeed — merged Now: faded past / Focus / normal rest (#244)', (
 	it('weaves untimed among forward timed by sort_order (an untimed before an anchor leads it)', () => {
 		// dinner anchored sort_order 300; idea untimed sort_order 100 → idea precedes it.
 		const items = [
-			makeItem({ id: 'dinner', start_time: '2026-10-15 19:00:00.000Z', end_time: '2026-10-15 21:00:00.000Z', sort_order: 300 }),
+			makeItem({
+				id: 'dinner',
+				start_time: '2026-10-15 19:00:00.000Z',
+				end_time: '2026-10-15 21:00:00.000Z',
+				sort_order: 300
+			}),
 			makeItem({ id: 'idea', start_time: '', sort_order: 100 })
 		];
 		const feed = getNowFeed(items, NOW, true);
@@ -435,7 +570,10 @@ describe('getNowFeed — merged Now: faded past / Focus / normal rest (#244)', (
 	});
 
 	it('an untimed-only day before the cutoff: nothing-else Focus, untimed in the rest, no past', () => {
-		const items = [makeItem({ id: 'a', start_time: '', sort_order: 100 }), makeItem({ id: 'b', start_time: '', sort_order: 200 })];
+		const items = [
+			makeItem({ id: 'a', start_time: '', sort_order: 100 }),
+			makeItem({ id: 'b', start_time: '', sort_order: 200 })
+		];
 		const feed = getNowFeed(items, NOW, true);
 		expect(feed.focus.kind).toBe('nothing-else-planned');
 		expect(feed.pastItems).toEqual([]);
@@ -444,8 +582,16 @@ describe('getNowFeed — merged Now: faded past / Focus / normal rest (#244)', (
 
 	it('in free-time the next item stays as a rest row (Focus is a countdown card, not an item)', () => {
 		const items = [
-			makeItem({ id: 'past', start_time: '2026-10-15 09:00:00.000Z', end_time: '2026-10-15 10:00:00.000Z' }),
-			makeItem({ id: 'dinner', start_time: '2026-10-15 19:00:00.000Z', end_time: '2026-10-15 21:00:00.000Z' })
+			makeItem({
+				id: 'past',
+				start_time: '2026-10-15 09:00:00.000Z',
+				end_time: '2026-10-15 10:00:00.000Z'
+			}),
+			makeItem({
+				id: 'dinner',
+				start_time: '2026-10-15 19:00:00.000Z',
+				end_time: '2026-10-15 21:00:00.000Z'
+			})
 		];
 		const feed = getNowFeed(items, NOW, true);
 		expect(feed.focus.kind).toBe('free-time');
@@ -455,8 +601,17 @@ describe('getNowFeed — merged Now: faded past / Focus / normal rest (#244)', (
 
 	it('multi-day spanning items never appear in past or rest (they are banners)', () => {
 		const items = [
-			makeItem({ id: 'hotel', start_time: '2026-10-15 06:00:00.000Z', end_time: '2026-10-18 11:00:00.000Z', end_date: '2026-10-18' }),
-			makeItem({ id: 'dinner', start_time: '2026-10-15 19:00:00.000Z', end_time: '2026-10-15 21:00:00.000Z' })
+			makeItem({
+				id: 'hotel',
+				start_time: '2026-10-15 06:00:00.000Z',
+				end_time: '2026-10-18 11:00:00.000Z',
+				end_date: '2026-10-18'
+			}),
+			makeItem({
+				id: 'dinner',
+				start_time: '2026-10-15 19:00:00.000Z',
+				end_time: '2026-10-15 21:00:00.000Z'
+			})
 		];
 		const feed = getNowFeed(items, NOW, true);
 		expect(feed.pastItems.some((i) => i.id === 'hotel')).toBe(false);
@@ -468,14 +623,23 @@ describe('getNowFeed — merged Now: faded past / Focus / normal rest (#244)', (
 describe('getNowFeed — several Heroes (#430)', () => {
 	const NOW = new Date('2026-10-15T13:00:00Z');
 	const ongoing = (id: string, start: string, extra: Partial<Item> = {}) =>
-		makeItem({ id, start_time: `2026-10-15 ${start}:00.000Z`, end_time: '2026-10-15 15:00:00.000Z', ...extra });
+		makeItem({
+			id,
+			start_time: `2026-10-15 ${start}:00.000Z`,
+			end_time: '2026-10-15 15:00:00.000Z',
+			...extra
+		});
 
 	it('three ongoing items: all are Heroes, mine first, none repeated in the rest', () => {
 		const items = [
 			ongoing('theirs', '11:00', { assigned_to: ['m2'] }),
 			ongoing('mine', '12:00', { assigned_to: ['me'] }),
 			ongoing('also-theirs', '12:30'),
-			makeItem({ id: 'dinner', start_time: '2026-10-15 19:00:00.000Z', end_time: '2026-10-15 21:00:00.000Z' })
+			makeItem({
+				id: 'dinner',
+				start_time: '2026-10-15 19:00:00.000Z',
+				end_time: '2026-10-15 21:00:00.000Z'
+			})
 		];
 		const feed = getNowFeed(items, NOW, true, 'me');
 		if (feed.focus.kind !== 'mid-event') throw new Error('expected mid-event');
@@ -487,7 +651,13 @@ describe('getNowFeed — several Heroes (#430)', () => {
 	it('a Multi-day Item is never a Hero, even alongside timed ongoing items', () => {
 		const items = [
 			ongoing('lunch', '12:00'),
-			makeItem({ id: 'hotel', start_time: '2026-10-14 15:00:00.000Z', end_time: '2026-10-18 11:00:00.000Z', end_date: '2026-10-18', assigned_to: ['me'] })
+			makeItem({
+				id: 'hotel',
+				start_time: '2026-10-14 15:00:00.000Z',
+				end_time: '2026-10-18 11:00:00.000Z',
+				end_date: '2026-10-18',
+				assigned_to: ['me']
+			})
 		];
 		const feed = getNowFeed(items, NOW, true, 'me');
 		if (feed.focus.kind !== 'mid-event') throw new Error('expected mid-event');
@@ -497,13 +667,23 @@ describe('getNowFeed — several Heroes (#430)', () => {
 
 	it('a Multi-day Item alone is not mid-event', () => {
 		const items = [
-			makeItem({ id: 'hotel', start_time: '2026-10-14 15:00:00.000Z', end_time: '2026-10-18 11:00:00.000Z', end_date: '2026-10-18', assigned_to: ['me'] })
+			makeItem({
+				id: 'hotel',
+				start_time: '2026-10-14 15:00:00.000Z',
+				end_time: '2026-10-18 11:00:00.000Z',
+				end_date: '2026-10-18',
+				assigned_to: ['me']
+			})
 		];
 		expect(getNowFeed(items, NOW, true, 'me').focus.kind).not.toBe('mid-event');
 	});
 
 	it('the free-time card shows only when nothing is ongoing for anyone', () => {
-		const later = makeItem({ id: 'dinner', start_time: '2026-10-15 19:00:00.000Z', end_time: '2026-10-15 21:00:00.000Z' });
+		const later = makeItem({
+			id: 'dinner',
+			start_time: '2026-10-15 19:00:00.000Z',
+			end_time: '2026-10-15 21:00:00.000Z'
+		});
 		expect(getNowFeed([later], NOW, true, 'me').focus.kind).toBe('free-time');
 		// someone else's item is ongoing -> their Hero shows, not free time
 		const theirs = ongoing('theirs', '12:00', { assigned_to: ['m2'] });
@@ -512,7 +692,11 @@ describe('getNowFeed — several Heroes (#430)', () => {
 
 	it('an ended item is not a Hero; a start-equal item is', () => {
 		const items = [
-			makeItem({ id: 'ended', start_time: '2026-10-15 11:00:00.000Z', end_time: '2026-10-15 13:00:00.000Z' }),
+			makeItem({
+				id: 'ended',
+				start_time: '2026-10-15 11:00:00.000Z',
+				end_time: '2026-10-15 13:00:00.000Z'
+			}),
 			ongoing('starting', '13:00')
 		];
 		const feed = getNowFeed(items, NOW, true);
@@ -534,7 +718,12 @@ describe('getNowFeed — buckets by time shape (#431, #392)', () => {
 		makeItem({ id, end_time: T(end), ...extra });
 	const untimed = (id: string, extra: Partial<Item> = {}) => makeItem({ id, ...extra });
 	const multiDay = () =>
-		makeItem({ id: 'hotel', start_time: '2026-10-14 15:00:00.000Z', end_time: '2026-10-18 11:00:00.000Z', end_date: '2026-10-18' });
+		makeItem({
+			id: 'hotel',
+			start_time: '2026-10-14 15:00:00.000Z',
+			end_time: '2026-10-18 11:00:00.000Z',
+			end_date: '2026-10-18'
+		});
 
 	/** Where an item landed: 'earlier' | 'hero' | 'coming' | 'none'. Fails on duplicates. */
 	function bucket(items: Item[], now: Date, id: string, viewer = '') {
@@ -633,7 +822,10 @@ describe('getNowFeed — buckets by time shape (#431, #392)', () => {
 			expect(feed.focus.minutesRemaining).toBeNull();
 		});
 		it('a start-only Hero is mine-first ordered like any other', () => {
-			const items = [startOnly('theirs', '12:00'), startOnly('mine', '12:00', { assigned_to: ['me'] })];
+			const items = [
+				startOnly('theirs', '12:00'),
+				startOnly('mine', '12:00', { assigned_to: ['me'] })
+			];
 			const feed = getNowFeed(items, at('13:00'), true, 'me');
 			if (feed.focus.kind !== 'mid-event') throw new Error('expected mid-event');
 			expect(feed.focus.heroes.map((i) => i.id)).toEqual(['mine', 'theirs']);
@@ -672,7 +864,10 @@ describe('getNowFeed — buckets by time shape (#431, #392)', () => {
 
 	describe('countdown target includes deadlines', () => {
 		it('#392: deadline 25m away beats a later dinner', () => {
-			const items = [deadline('clubs', '16:30', { title: 'Return rental clubs' }), range('dinner', '18:30', '20:00')];
+			const items = [
+				deadline('clubs', '16:30', { title: 'Return rental clubs' }),
+				range('dinner', '18:30', '20:00')
+			];
 			const view = getNowViewState(items, at('16:05'), true);
 			if (view.focus.kind !== 'free-time') throw new Error('expected free-time');
 			expect(view.focus.nextItem.id).toBe('clubs');
@@ -733,7 +928,12 @@ describe('getNowFeed — overnight flight stays discrete (#498)', () => {
 	});
 
 	it('lodging with an end_date is still a Span (not bucketed)', () => {
-		const hotel = makeItem({ id: 'hotel', type: 'lodging', start_time: '2026-10-15 15:00:00.000Z', end_date: '2026-10-18 00:00:00.000Z' });
+		const hotel = makeItem({
+			id: 'hotel',
+			type: 'lodging',
+			start_time: '2026-10-15 15:00:00.000Z',
+			end_date: '2026-10-18 00:00:00.000Z'
+		});
 		const feed = getNowFeed([hotel], new Date('2026-10-15T18:00:00Z'), true);
 		expect([...feed.pastItems, ...feed.restItems].map((i) => i.id)).toEqual([]);
 	});

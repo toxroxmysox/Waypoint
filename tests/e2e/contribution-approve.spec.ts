@@ -86,7 +86,9 @@ test.describe('#249 approve ghost → real item', () => {
 		//    scoped to this phase (a Ghost Card).
 		const traveler = await devLogin(browser, EMAILS.traveler);
 		try {
-			await traveler.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/items/new?phase=${ids.phaseId}`, { waitUntil: 'networkidle' });
+			await traveler.page.goto(`${BASE}/trips/${FIXTURE_SLUG}/items/new?phase=${ids.phaseId}`, {
+				waitUntil: 'networkidle'
+			});
 			// input[name="title"]:visible — the title input has a duplicate id across the
 			// dual tree (#56), so getByLabel fills the hidden tree; scope to the visible one.
 			const titleField = traveler.page.locator('input[name="title"]:visible').first();
@@ -137,7 +139,10 @@ test.describe('#249 approve ghost → real item', () => {
 				.filter({ visible: true })
 				.first();
 			await expect(ghost).toBeVisible({ timeout: 10000 });
-			await ghost.getByRole('button', { name: /^approve$/i }).first().click();
+			await ghost
+				.getByRole('button', { name: /^approve$/i })
+				.first()
+				.click();
 
 			// The ghost promotes in place → a real (linked) idea card with the same
 			// title appears; the dotted ghost for that title is gone.
@@ -174,8 +179,8 @@ test.describe('#249 approve ghost → real item', () => {
 		expect(item.created_by).not.toBe('');
 
 		// The traveler's own membership id — from the fixture's authoritative memberIds
-			// map (querying trip_members by user.email returns empty: listRule + emailVisibility).
-			const travMemberId = ids.memberIds.traveler;
+		// map (querying trip_members by user.email returns empty: listRule + emailVisibility).
+		const travMemberId = ids.memberIds.traveler;
 		expect(travMemberId).not.toBe('');
 		// created_by === the AUTHOR (traveler), never the reviewing owner.
 		expect(item.created_by).toBe(travMemberId);
@@ -203,7 +208,9 @@ test.describe('#249 approve ghost → real item', () => {
 	// #444 — Edit opens the Suggestion's edit view (Reject / Save / Approve). Save
 	// keeps the edits and leaves it pending; Approve then lands the SAVED edit with
 	// the author's not going (carried from #402).
-	test('Inbox Edit -> Save keeps it pending -> Approve lands the saved edit', async ({ browser }) => {
+	test('Inbox Edit -> Save keeps it pending -> Approve lands the saved edit', async ({
+		browser
+	}) => {
 		const stamp = Date.now();
 		const title = `Edit me ${stamp}`;
 		const savedTitle = `Edited ${stamp}`;
@@ -230,7 +237,8 @@ test.describe('#249 approve ghost → real item', () => {
 				`${PB_BASE}/api/suggestions/list?trip_id=${ids.tripId}&status=pending`,
 				{ headers: { Authorization: `Bearer ${ownerToken}` } }
 			);
-			return ((await r.json()) as { items: Array<{ id: string; payload: { title: string } }> }).items;
+			return ((await r.json()) as { items: Array<{ id: string; payload: { title: string } }> })
+				.items;
 		};
 
 		const owner = await devLogin(browser, EMAILS.owner);

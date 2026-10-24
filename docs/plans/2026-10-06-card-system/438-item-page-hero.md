@@ -3,6 +3,7 @@
 Refs #438, parent #418, D12/D13 in `docs/CARD_SYSTEM.md`. Builds on #428 (Hero), #437 (bar + menu), #416 (`itemPermissions`).
 
 ## Decisions
+
 - Pure derivations in `src/lib/itinerary/item-page.ts` (Vitest first): `itemTypeLine` (`Meal · Dinner`, "other" subtype dropped), `itemTimeText` (date-led text grammar; multi-day `Thu Oct 1–Sat Oct 3 · 2 nights`), `detailsRows` (estimate; payment row = `Paid $X` or `Log payment`, independent of the estimate; booking link; cancellation; phase), `addLine` (which of `+ Document` / `+ Checklist` show), `newestFirst` (comments).
 - Hero (extend, Now untouched): `docs` rows under the codes (44px links, quiet ink), `done` (`✓ Done`), `needsBooking` (gold `To book` chip; #441 turns it into a button via `children`). Planning Mode = not live: no `status` passed, no accent.
 - Page: Hero replaces the header card + `ItemForm mode=view` cards (Schedule/Location/Booking/Cost/Assigned to). The view mode of ItemForm goes (edit/create keep "Going" copy).
@@ -12,6 +13,7 @@ Refs #438, parent #418, D12/D13 in `docs/CARD_SYSTEM.md`. Builds on #428 (Hero),
 - Slots for later tickets: Hero `children` (after Going: #441 booking actions), `[data-testid=hero-going]` (#440), the votes block (#442), Details card (#439 folds it).
 
 ## Tasks
+
 1. Red: `item-page.test.ts`; implement.
 2. Hero props; page rebuild; ItemForm cleanup; copy.
 3. Specs: role-gating / checklist / closeout selectors (`+ Checklist`, `+ Document`); new item-page e2e.

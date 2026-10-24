@@ -168,15 +168,17 @@ Planning a day or living it, a member can't trust a card to tell them when, wher
 ## Implementation Decisions
 
 ### Shapes [D1]
+
 - Every Item rendering is one of four Card Shapes. Surfaces configure a shape; they never invent one.
   - **Card:** the working-list unit.
-  - **Hero:** the Card enlarged for the item that *is* the moment. Used for the Now Focus, the Swipe-Quiz face and the item page header.
+  - **Hero:** the Card enlarged for the item that _is_ the moment. Used for the Now Focus, the Swipe-Quiz face and the item page header.
   - **Row:** a reference in a list.
   - **Span:** context, not a step. Used for Multi-day Items.
 - An item's state marks a shape but never changes its layout. The states are the Item Status (unplanned, planned, done, considered), a Suggestion's pending, and the derived Ongoing / past / next.
 - The Swipe-Quiz's gesture layer is the only bespoke piece left; its face is a Hero.
 
 ### Time grammar [D5, D9, D11]
+
 - **Format:** `6:30p`, `10:30a`. The colon stays; the space and the "m" go.
 - **On the rail:**
   - A start sits on the card's top edge and an end on its bottom edge.
@@ -193,6 +195,7 @@ Planning a day or living it, a member can't trust a card to tell them when, wher
 - **Time shape:** items are classified as untimed, start-only, range or end-only. That one classification drives the rail, the text forms and the Now feed buckets.
 
 ### Timeline Rail geometry [D9, D7, D10]
+
 - **Per-card layout:** each card's stretch of the rail is a centred time · icon · time stack, 48px wide, then 8px to the card (about 56px in all).
 - **Spacing:**
   - 5px from each rule to its time text
@@ -200,7 +203,7 @@ Planning a day or living it, a member can't trust a card to tell them when, wher
   - 4px from the segment to the icon disc
   - icon disc 24px with a 16px glyph
   - at least 3px side padding around labels
-- **Leaders:** a rule *across* the time, level with the card edge: over the start label along the top edge, under the end label along the bottom edge.
+- **Leaders:** a rule _across_ the time, level with the card edge: over the start label along the top edge, under the end label along the bottom edge.
 - **Segments:** run only within an item, between its times and the icon. A segment shorter than 6px is dropped. There is no line between cards.
 - **The icon node:**
   - monochrome (ink-soft glyph on surface-2 with a line ring), centred vertically on the card
@@ -213,6 +216,7 @@ Planning a day or living it, a member can't trust a card to tell them when, wher
 - **Free-time label:** when the gap between a known end (an end time or a deadline) and the next timed start is ≥ 60 minutes, the rail shows the text `2h free · 4:30p to 6:30p`. There is no line and no tap target, and screen readers hear "Free, 4:30p to 6:30p". A start-only item creates no gap.
 
 ### Card anatomy [D2, D8, D10]
+
 - **Zones,** top to bottom; empty zones collapse:
   - **Head:** the title (2 lines max, then ellipsis) and one trailing value per job. In Planning Mode that value is the Item Cost; Trip Mode shows no cost. Idea cards carry the cost in their sub-line instead (`Sheboygan · $40`, per the approved mocks).
   - **Meta:** one line, the best "where" for the type:
@@ -228,6 +232,7 @@ Planning a day or living it, a member can't trust a card to tell them when, wher
   4. the documents count
 
   When it overflows, the lowest-priority entry shrinks to its icon, then drops.
+
 - **Strip right:** Going bubbles, at most 3, then `+n`.
 - **Heights:** 1, 2 or 3 rows, plus one line if the title wraps. Duration never sets height.
 - **No time on a card hosted by the rail.**
@@ -238,6 +243,7 @@ Planning a day or living it, a member can't trust a card to tell them when, wher
 - **Off the face** (item page only): the subtype as text, the description (except notes and the record), free cancellation, the booking link, payment state, goals, comments and checklist progress.
 
 ### Colour [D10]
+
 - Colour on an item means "act on this", and only that:
   - **Gold:** an open loop (`Needs booking`, `Pending`). Gold-deep is retuned from `#8a6f24` to `#745a1c`.
   - **Red:** a conflict where the same people are going to both items.
@@ -248,12 +254,14 @@ Planning a day or living it, a member can't trust a card to tell them when, wher
 - **Collisions retired:** moss keeps only the planning accent, clay only the trip accent (plus primary actions), gold only open loops, and sky leaves item cards.
 
 ### Overlap [D10, D2]
+
 - An overlap is computed as **pairs**: each item learns its partner and whether they share any Going member.
 - Both items carry the note. It is red when people are shared, with both colliding rail times in red (the earlier item's end and the later item's start). With nobody shared it is a plain ink note.
 - **Planning Mode only.** Trip Mode shows no conflicts at all: no note and no red, on Heroes or on cards (Scott, 2026-10-06).
 - Overlap outranks Needs booking in the strip.
 
 ### Going [D4, D6]
+
 - Assignment means who is going on or doing the item, and nothing else. The surfaced label is **"Going"**; the field keeps its name.
 - **Three states:**
   - Going: a bubble
@@ -262,6 +270,7 @@ Planning a day or living it, a member can't trust a card to tell them when, wher
 - Not going needs #402's stored state; this spec depends on #402.
 
 ### Votes [D3]
+
 - Votes show only on **unplanned** ideas, in these places:
   - the phase's Parking Lot (Phase Detail today; phase planning later, #401)
   - the day page's Parking Lot (mobile and tablet)
@@ -276,11 +285,13 @@ Planning a day or living it, a member can't trust a card to tell them when, wher
 - **Trip mode's Ideas for now** uses the grouped idea cards with vote pills (Scott, 2026-10-06). "Do this" stays its primary action.
 
 ### Ideas grouping [D7]
+
 - Off the rail, idea cards carry **no** icon.
 - Ideas are grouped under headings made of the icon plus the plural type label, in this fixed order: Lodging · Flights · Transportation · Activities · Meals · Notes.
 - Grip handles are retired. On touch, a long-press anywhere on the card starts a drag.
 
 ### Span [D10, D11]
+
 - A Multi-day Item renders as a full-width neutral (surface-2) band outside the timeline ("all-day" in the log means these bands; there is no separate all-day item). Its icon is the 24px disc, sitting where the rail's icons sit, and its title lines up with card titles. It is never dragged.
 - **A stay, day by day:**
   - first day: `Check-in 3:00p · 3 nights`
@@ -293,6 +304,7 @@ Planning a day or living it, a member can't trust a card to tell them when, wher
 - The solid moss and clay banners are retired.
 
 ### Row [D11]
+
 - Two lines:
   - a 16px icon on the left
   - the title as the headline
@@ -306,6 +318,7 @@ Planning a day or living it, a member can't trust a card to tell them when, wher
 - **A Trip Goal's items:** headed "Linked items", with status in words and no coloured pills.
 
 ### Hero [D11, D10]
+
 - **Layout, top to bottom:**
   - a 40px icon upper left, beside the title
   - the title
@@ -332,16 +345,19 @@ Planning a day or living it, a member can't trust a card to tell them when, wher
 - **Item page header:** see the item page section below.
 
 ### Now feed [D11, #392]
+
 - The feed classifies items by time shape, and every item lands in exactly one bucket: Earlier today, ongoing (Heroes) or Coming up.
 - The countdown target is the next timed start **or deadline**.
 - A start-only item stays ongoing (a Hero, `NOW · since 1:00p`) until the next timed item starts, then moves to Earlier today (Scott, 2026-10-06).
 - A deadline sits in Coming up until its time passes, then moves to Earlier today, with no overdue state (Scott, 2026-10-06).
 
 ### Earlier today [D10]
+
 - Earlier-today items keep the full Card shape without the white fill, in ink-muted text (5.4:1, never opacity), with a lighter rail rule and an outlined node.
 - They stay tappable.
 
 ### Overview day cards [D10]
+
 - The date block is centred vertically.
 - **Today** (Planning Mode only) gets a moss outline instead of the TODAY pill.
 - The stay line is neutral ink with the lodging icon.
@@ -349,6 +365,7 @@ Planning a day or living it, a member can't trust a card to tell them when, wher
 - **Empty day:** the card says "Nothing planned yet · Add something, or drag an idea here". The day page shows a dashed panel with "+ Add item".
 
 ### Item page [D12, D13]
+
 - **NavBar:** back, the trip name, Edit (visible to those who can edit, as built), and `⋯`. The `⋯` holds Move, Skip… and Delete, each shown only to roles the server allows; that gating builds on #416. Skip confirms in a sheet that keeps "Nothing is deleted" (Scott approved the `⋯` contents by role, 2026-10-06).
 - **Hero header:**
   - the icon and title
@@ -379,18 +396,21 @@ Planning a day or living it, a member can't trust a card to tell them when, wher
 - **Copy:** "Assigned to" becomes "Going" [D4].
 
 ### Suggestions [D11]
+
 - The Inbox card is the pending idea card: dashed, with a gold `Pending` chip, the vote pills, and a tray with **Approve / Edit / Reject**. The role badge is removed.
 - **Edit** opens the Suggestion's edit view, whose actions are **Reject / Save / Approve**. Save stores the edits and leaves the Suggestion pending.
 - **New server contract:** the Suggestions endpoint gains an update action that replaces a pending Suggestion's payload without changing its status. Owners and co-owners only, matching review.
 - Rejecting still requires a one-line note (existing rule).
 
 ### Flights [D2 amendment]
+
 - **Default title:** the flight lookup writes "Flight to {arrival city}". It falls back to the arrival airport code when the city is unknown, using the lookup API's municipality field.
 - **New stored field:** the flight number needs its own field, in an append-only migration, because the title no longer carries it.
 - **Place line:** `{flight number} · {from code} → {to code}`.
 - **Existing flights** keep their titles; the place line uses the new field when present.
 
 ### Desktop [D13]
+
 - **Frame** (as built): at ≥ 1280px, a 240px side rail, a 720px content column and a 320px context rail. From 900px, a 72px rail plus content.
 - **Cards:** one card at any width.
 - **Ideas:** in the context rail at ≥ 1280px; under the timeline below that.
@@ -399,21 +419,23 @@ Planning a day or living it, a member can't trust a card to tell them when, wher
 - **Hover:** a card lifts, and a vote pill's tooltip lists who voted. Nothing exists only on hover.
 
 ### Accessibility [D2]
+
 - State chips meet 4.5:1 contrast.
 - Nested controls get 44px hit areas: vote pills, code chips, Closeout pills, Going buttons, tray buttons.
 - A card's accessible name carries its time, title, type and state.
 - Nothing is told apart by colour alone.
 
 ### Schema and API changes
+
 1. **Not going** (three-state Going): #402, its own issue and a dependency.
 2. **The flight number** stored as its own field: an append-only migration (approved with the flight title, 2026-10-06).
-4. **Not going (#402), as built in this release:**
+3. **Not going (#402), as built in this release:**
    - Items gain a `not_going` relation list of trip members, beside `assigned_to`, in an append-only migration.
    - A member is in at most one of the two lists; the server keeps them exclusive.
    - The items update rule that lets a traveler change only their own id in `assigned_to` extends to `not_going`. The self-assign endpoint takes a target state (going / not going / no answer).
    - Viewers can't answer.
    - Departure clean-up, Suggestion approval and copying items treat `not_going` the way they treat `assigned_to`.
-3. **The Suggestions endpoint's update action:** save without approving.
+4. **The Suggestions endpoint's update action:** save without approving.
 
 No other schema changes.
 

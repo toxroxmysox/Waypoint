@@ -11,7 +11,7 @@
 	} = $props();
 </script>
 
-<div class="border-line bg-surface-2 inline-flex rounded-full border p-0.5">
+<div class="inline-flex rounded-full border border-line bg-surface-2 p-0.5">
 	{#each options as [key, label] (key)}
 		{@const on = key === value}
 		<button

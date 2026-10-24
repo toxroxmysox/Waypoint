@@ -20,5 +20,7 @@ export function whatIsQuery(title: string, place = ''): string {
 /** The search URL for `whatIsQuery`, or '' for an empty title. */
 export function whatIsSearchUrl(title: string, place = '', engine?: SearchEngine | ''): string {
 	if (!title.trim()) return '';
-	return (ENGINES[engine || 'google'] ?? ENGINES.google) + encodeURIComponent(whatIsQuery(title, place));
+	return (
+		(ENGINES[engine || 'google'] ?? ENGINES.google) + encodeURIComponent(whatIsQuery(title, place))
+	);
 }

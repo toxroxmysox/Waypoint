@@ -4,12 +4,15 @@ Source: [toxroxmysox/Waypoint#412](https://github.com/toxroxmysox/Waypoint/issue
 ADR: [ADR-0024](../../adr/0024-agent-access-posture.md) (amends ADR-0017). Glossary: **AI Access**, **Connection** (`CONTEXT.md`).
 
 ## Problem Statement
+
 Looking things up in Waypoint from a phone means tapping through trip → phase → day → item. Questions like "what hotel did we stay at in Lucerne?", "when's our flight tomorrow?", "who owes whom?" or "what's still unbooked?" are faster to ask than to navigate, especially across past trips. Scott and Abby both use the Claude phone app already.
 
 ## Intent & Success Criteria
+
 From the Claude app on a phone, with no computer, a member asks about any of their trips (current or historical) and gets a correct answer faster than opening Waypoint. The AI helps the member who asked: it answers from Waypoint data and may advise (timing, what fits together), but the decisions stay with the members.
 
 Success, observable:
+
 - Scott adds the connector once on claude.ai, logs in with his email code, and the connector works from the Claude iPhone app.
 - Abby does the same with her own Claude account and sees exactly what her role sees in the app.
 - Asked the opening examples (Lucerne hotel, tomorrow's flight, unbooked items, who owes whom), Claude answers correctly from Waypoint data.
@@ -19,6 +22,7 @@ Success, observable:
 - Disconnecting in account settings stops the connector working immediately.
 
 ## User Stories
+
 1. As a member, I want to add Waypoint as a connector in Claude and log in with my email code, so that Claude can answer questions about my trips.
 2. As a member, I want the connector to work from the Claude phone app after adding it once on the web, so that I never need a computer.
 3. As a member, I want Claude to act as me with my role, so that it sees what I see and nothing more.
@@ -44,6 +48,7 @@ Success, observable:
 23. As a member, I want no email address and no photo to reach the AI, so that the most sensitive data stays in the app.
 
 ## Decisions
+
 - **Release sequencing:** v3.1 = reads (this record) → v3.2 = writes (+ #411 hardening, #413 decision) → v3.3 = phase planning (#401, #391). Writes start after reads are dogfooded.
 - **Surface:** claude.ai custom (remote MCP) connector; syncs to iOS/Android. Host: `/mcp` routes inside the existing Waypoint container. No new stack. (#412)
 - **Host:** `app.vandenwarsen.com` for now. The ADR-0020 cutover waits until Abby's trip ends; afterwards each user re-adds the connector.
@@ -57,10 +62,11 @@ Success, observable:
 - **Server-computed answers:** money balances, audit gaps and trip-local times are computed by Waypoint's existing modules, not left to the model.
 - **Presentation:** results render as Waypoint-style cards via MCP Apps if the Claude iPhone app renders them; otherwise as formatted text cards (type emoji, bold title, time/place lines). Card-like, not an exact replica.
 - **Connections UI:** "Connected apps" section in account settings: list of the user's connections, Disconnect each (revokes tokens immediately).
-- **Instructions:** the MCP server's `instructions` field carries the posture as a principle, not prohibitions: ground answers in Waypoint data, help the user, offer advice (better timing, what fits where) as suggestions they decide on. Every user gets it without setup. *(Revised 2026-10-10 after the spike: Scott wants advice allowed; "never plan" absolutes dropped.)*
+- **Instructions:** the MCP server's `instructions` field carries the posture as a principle, not prohibitions: ground answers in Waypoint data, help the user, offer advice (better timing, what fits where) as suggestions they decide on. Every user gets it without setup. _(Revised 2026-10-10 after the spike: Scott wants advice allowed; "never plan" absolutes dropped.)_
 - **Spike first:** on Scott's Mac dev copy behind a temporary `cloudflared` URL, live app untouched. Must prove: email-code login in Claude's in-app browser on iPhone; the token endpoint vs SvelteKit's CSRF origin check; Cloudflare bot protection not blocking; refresh; whether MCP Apps cards render on iPhone. **If phone login fails: stop and rethink with Scott**, no automatic fallback.
 
 ## Testing Decisions
+
 - Highest seam: the MCP tool layer. Call each tool as a seeded user against a disposable PB (`pnpm test:e2e:clean` / `scripts/e2e-clean-pb.sh` pattern) and assert on output, not internals.
 - Email/photo isolation test: seed email-shaped strings into every text field and a photo everywhere one fits; assert zero addresses and zero photo URLs across every tool's output.
 - Role tests: viewer reads; non-member gets nothing; AI Access off returns only name + dates + notice.
@@ -69,6 +75,7 @@ Success, observable:
 - The phone itself is verified by hand in the spike and at release (Scott + Abby).
 
 ## Out of Scope
+
 - Any write (v3.2): propose/commit, previews of changes, audit log, Revert, kill switch, #411, #413.
 - Phase planning (v3.3).
 - The ADR-0020 cutover.
@@ -78,6 +85,7 @@ Success, observable:
 - Splitting MCP into its own stack.
 
 ## Assumptions & Open Questions
+
 - **Assumed:** the Claude iPhone app supports custom remote connectors added on the web and completes OAuth in its in-app browser. The spike verifies.
 - **Open (spike answers):** whether the iPhone app renders MCP Apps UI; whether Cloudflare's bot/AI settings need an exception for Anthropic's egress range on `/mcp` and `/oauth/token`.
 - **Open (v3.2 grill):** write-op vocabulary vs #413's importer; where Recent AI changes → Revert lives; kill-switch shape.

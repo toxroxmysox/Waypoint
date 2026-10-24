@@ -5,6 +5,7 @@
 **Goal:** Let a member's connected Claude change anything they could change in the app (except a short can't-list) through propose → confirm → commit, with private audit and revert. Also land the v3.1 hardening minors (#512) and the timestamps fix (#515).
 
 **Architecture:**
+
 - Four new MCP tools (`describe`, `propose_changes`, `commit_changes`, `revert_change`) sit on a write layer in `src/lib/server/mcp/writes/`. They compile generic `create`/`update` ops against a collection registry (the can't-list made concrete), store proposals in memory for 15 min, and commit them as one PocketBase batch with the user's own PB token. PB rules and #411 hooks remain the only permission gate.
 - Each commit writes a private `ai_changes` row (the glossary's **AI Change**). Revert works from chat and from a collapsible list in account settings.
 - Trips gain `ai_write` alongside `ai_access`. A `MCP_WRITES` env flag removes the write tools server-wide.
@@ -16,6 +17,7 @@
 **Intent sources:** `docs/adr/0025-ai-writes-everything-but-a-cant-list.md`, `docs/adr/0024-agent-access-posture.md`, `docs/adr/0021-phases-tile-the-trip.md`, `docs/adr/0016-codes-as-documents.md`, `docs/adr/0002-multi-day-item-storage-asymmetry.md`; glossary `CONTEXT.md` (AI Access, AI Change, Connection, Suggestion, Auto-approve); PB rules doc `backend/RULES.md`.
 
 **Run:**
+
 - `pnpm test:e2e:clean -- mcp-` runs every MCP spec against a disposable PB, calling tools as the seeded owner, traveler, viewer and outsider (`tests/e2e/mcp-seed.ts`).
 - `pnpm verify:visual '/account'` and `pnpm verify:visual '/trips/{slug}/settings'` produce the 375px screenshots.
 - On-device card check (Confirm button, calendar) happens on Scott's iPhone after deploy. Deploying is Scott's call.
@@ -49,7 +51,7 @@
 ## Review Focus
 
 1. **A proposal whose ops target records in another trip than its `trip` argument** must be refused at propose time: every op resolves to the proposal's trip. Pinned in Task 6.
-2. **A double commit** (the user taps Confirm *and* says yes) must commit once. The second call returns `Already saved` and writes nothing. Pinned in Task 9.
+2. **A double commit** (the user taps Confirm _and_ says yes) must commit once. The second call returns `Already saved` and writes nothing. Pinned in Task 9.
 3. **A commit by someone other than the proposer** (a different user or connection holding a leaked `proposal_id`) must be refused. Pinned in Task 9.
 4. **AI access or AI changes turned off between propose and commit**, or `MCP_WRITES=off`, must refuse the commit. Pinned in Task 9.
 5. **Revert of a record someone has since deleted or edited** must report what it skipped without throwing, and still mark the change reverted for what it restored. Pinned in Task 10.
@@ -59,6 +61,7 @@
 ### Task 1: mcp_tokens gets `updated` (#515)
 
 **Files:**
+
 - Create: `backend/pb_migrations/0079_mcp_tokens_updated.js`
 - Test: `backend/test-timestamps.mjs` (existing schema guard; no edit expected)
 
@@ -72,11 +75,13 @@
 ### Task 2: Schema for writes (ai_write, ai_changes, batch)
 
 **Files:**
+
 - Create: `backend/pb_migrations/0080_trips_ai_write.js`, `backend/pb_migrations/0081_ai_changes.js`, `backend/pb_migrations/0082_enable_batch.js`
 - Modify: `backend/pb_hooks/trips.pb.js` (protected-field list ~line 37; create-default for `ai_write` next to `ai_access`), `backend/RULES.md`
 - Test: `backend/test-rules.mjs`
 
 **Interfaces:**
+
 - Produces: `trips.ai_write: boolean`, default true. Collection `ai_changes` has these fields:
   - `user`: relation users, required
   - `connection`: text, the mcp_connections id (text so disconnecting keeps history)
@@ -100,6 +105,7 @@
 ### Task 3: Trip settings, two AI switches
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/settings/+page.svelte`, `src/routes/(app)/trips/[slug]/settings/+page.server.ts`, `src/lib/types.ts` (`Trip.ai_write?: boolean`)
 - Test: `tests/e2e/ai-access-setting.spec.ts`
 
@@ -116,23 +122,26 @@
 Before a collection becomes AI-writable, every rule the app enforces for it must live in PB (rules/hooks) or in this registry's normalisation. #411 covered items, phases, trips, expenses, settlements, checklists, votes and suggestions. This task covers the rest and classifies everything.
 
 **Files:**
+
 - Create: `docs/plans/2026-10-11-mcp-writes/invariant-audit.md`, `src/lib/server/mcp/writes/registry.ts`, `src/lib/server/mcp/writes/registry.test.ts`, `tests/e2e/mcp-writes-registry.spec.ts`
 - Modify: any `backend/pb_hooks/*.pb.js` where the audit finds a SvelteKit-only rule, plus its harness
 
 **Interfaces:**
+
 - Produces, in `registry.ts`:
+
 ```ts
 export interface WritableSpec {
-	label: string;                     // plain words for describe, e.g. 'trip items (plans and ideas)'
-	tripPath: string;                  // relation path to the trip id: 'trip' | 'item.trip' | 'checklist.trip' | 'scenario.trip' | 'id' (trips)
+	label: string; // plain words for describe, e.g. 'trip items (plans and ideas)'
+	tripPath: string; // relation path to the trip id: 'trip' | 'item.trip' | 'checklist.trip' | 'scenario.trip' | 'id' (trips)
 	stamp?: Record<string, 'user' | 'member'>; // author fields the server fills, never the AI
-	dayField?: string;                 // relation field a friendly `date` resolves into (e.g. 'day')
-	timeFields?: string[];             // fields that accept 'HH:MM' (e.g. start_time, end_time)
-	viaSuggestion?: true;              // items: traveler creates route through /api/suggestions/create
+	dayField?: string; // relation field a friendly `date` resolves into (e.g. 'day')
+	timeFields?: string[]; // fields that accept 'HH:MM' (e.g. start_time, end_time)
+	viaSuggestion?: true; // items: traveler creates route through /api/suggestions/create
 }
 export const WRITABLE: Record<string, WritableSpec>;
 export const BLOCKED_COLLECTIONS: readonly string[]; // trip_members, pending_invites, join_tokens, users, mcp_connections, mcp_tokens, ai_changes, notifications, vault_entries, plus any the audit adds
-export const BLOCKED_FIELDS: readonly string[];      // email, placeholder_email, soft_token, token, public_share_token, ai_access, ai_write, created_by, uploaded_by, invited_by, author, hash, every file field (photo, file, avatar, cover_image)
+export const BLOCKED_FIELDS: readonly string[]; // email, placeholder_email, soft_token, token, public_share_token, ai_access, ai_write, created_by, uploaded_by, invited_by, author, hash, every file field (photo, file, avatar, cover_image)
 export function blockedReason(collection: string, field?: string): string | null; // plain-words refusal or null
 ```
 
@@ -152,11 +161,13 @@ export function blockedReason(collection: string, field?: string): string | null
 ### Task 5: Write gating, describe tool, server registration
 
 **Files:**
+
 - Create: `src/lib/server/mcp/writes/gate.ts`, `src/lib/server/mcp/tools/describe.ts`
 - Modify: `src/lib/server/mcp/tools/get-item.ts` (story 35: an `Added by <name>` line from `created_by`, name only), `src/lib/server/mcp/context.ts` (`TRIP_FIELDS` + `ai_write`; `TripRef.canWrite`), `src/lib/server/mcp/tools/types.ts` (`ToolDef.write?: true`), `src/lib/server/mcp/tools/index.ts` (`WRITE_TOOLS`), `src/lib/server/mcp/server.ts` (register write tools only when enabled; `annotations.readOnlyHint` false for them; `INSTRUCTIONS` addition), `.env.example` (`MCP_WRITES=on`)
 - Test: `src/lib/server/mcp/writes/gate.test.ts`, `tests/e2e/mcp-writes.spec.ts` (new, serial)
 
 **Interfaces:**
+
 - Produces:
   - `writesEnabled(env: Record<string, string | undefined>): boolean` returns false only for `MCP_WRITES === 'off'`.
   - `TripRef.canWrite: boolean`, which is `open && trip.ai_write !== false && role !== 'viewer'`.
@@ -167,6 +178,7 @@ export function blockedReason(collection: string, field?: string): string | null
   - with `trip` given: `members` (display name → member id), `phases` (name, id, start, end), `days` (date → id) for that trip, scrubbed
 
 `INSTRUCTIONS` gains, verbatim:
+
 > To change something, call propose_changes with the user's own words as `quote`, show the preview, and wait: call commit_changes only after the user says yes in a later message (or taps Confirm). Record only what the user stated; never infer a booking, payment, vote or choice. Talk to Waypoint in ISO dates and 24-hour times; show times to the user as 9:40 am. "Undo that" → revert_change.
 
 - [ ] **Step 1:** Write the failing `gate.test.ts`:
@@ -185,11 +197,14 @@ export function blockedReason(collection: string, field?: string): string | null
 ### Task 6: Ops → planned changes; proposal store
 
 **Files:**
+
 - Create: `src/lib/server/mcp/writes/types.ts`, `src/lib/server/mcp/writes/compile.ts`, `src/lib/server/mcp/writes/proposals.ts`
 - Test: `src/lib/server/mcp/writes/compile.test.ts`, `src/lib/server/mcp/writes/proposals.test.ts`
 
 **Interfaces:**
+
 - Produces (`types.ts`):
+
 ```ts
 export type WriteOp =
 	| { action: 'create'; collection: string; ref?: string; data: Record<string, unknown> }
@@ -198,20 +213,27 @@ export type Outcome = 'saved' | 'suggested' | 'idea';
 export interface PlannedChange {
 	action: 'create' | 'update';
 	collection: string;
-	id: string;                                  // update target, or pre-generated 15-char PB id for a create
+	id: string; // update target, or pre-generated 15-char PB id for a create
 	via: 'record' | 'suggestion';
-	before: Record<string, unknown> | null;      // only the touched fields; null for create
-	after: Record<string, unknown>;              // normalised values that will be written
+	before: Record<string, unknown> | null; // only the touched fields; null for create
+	after: Record<string, unknown>; // normalised values that will be written
 	outcome: Outcome;
-	title: string;                               // record title/name for the card
+	title: string; // record title/name for the card
 }
 export interface Proposal {
-	id: string; userId: string; connectionId: string; tripId: string;
-	quote: string; changes: PlannedChange[]; cascade: Cascade | null;
-	expiresAt: number; committedChangeId?: string;
+	id: string;
+	userId: string;
+	connectionId: string;
+	tripId: string;
+	quote: string;
+	changes: PlannedChange[];
+	cascade: Cascade | null;
+	expiresAt: number;
+	committedChangeId?: string;
 }
 export type CommittedChange = PlannedChange & { committed: boolean; suggestionId?: string };
 ```
+
 - `compileOps(loader: RecordLoader, trip: TripRef, ops: WriteOp[]): Promise<PlannedChange[]>`. The loader is injected so tests use fakes: `interface RecordLoader { get(collection, id): Promise<Record<string, unknown> | null>; tripIdOf(collection, record): Promise<string> }`. It throws a plain-words `Error` on refusal.
 - `proposals.ts`:
   - `saveProposal(p: Omit<Proposal, 'id' | 'expiresAt'>, now?: number): Proposal`
@@ -244,22 +266,31 @@ export type CommittedChange = PlannedChange & { committed: boolean; suggestionId
 ### Task 7: Cascade preview for trip dates and phases
 
 **Files:**
+
 - Create: `src/lib/server/mcp/writes/cascade.ts`
 - Test: `src/lib/server/mcp/writes/cascade.test.ts`
 
 **Interfaces:**
+
 - Consumes `retilePhases`, `PhaseStart` and `TiledPhase` from `src/lib/itinerary/phase-tiling.ts`.
 - Produces:
+
 ```ts
 export interface Cascade {
-	tripBefore: [string, string] | null; tripAfter: [string, string] | null;   // ISO dates
-	daysAdded: string[]; daysRemoved: string[];
+	tripBefore: [string, string] | null;
+	tripAfter: [string, string] | null; // ISO dates
+	daysAdded: string[];
+	daysRemoved: string[];
 	phases: { name: string; before: [string, string] | null; after: [string, string] | null }[];
-	moves: { title: string; from: string; to: string }[];  // items/ideas re-homed, by phase name
+	moves: { title: string; from: string; to: string }[]; // items/ideas re-homed, by phase name
 }
-export function cascadeFor(changes: PlannedChange[], snapshot: { trip: Trip; phases: Phase[]; days: Day[]; items: Item[] }): Cascade | null;
+export function cascadeFor(
+	changes: PlannedChange[],
+	snapshot: { trip: Trip; phases: Phase[]; days: Day[]; items: Item[] }
+): Cascade | null;
 ```
-  Returns null when no change touches `trips.start_date`/`end_date` or `phases.start_date`. It must mirror what `trips.pb.js` / `phases.pb.js` do on commit.
+
+Returns null when no change touches `trips.start_date`/`end_date` or `phases.start_date`. It must mirror what `trips.pb.js` / `phases.pb.js` do on commit.
 
 - [ ] **Step 1:** Write failing tests using the same scenarios as `backend/test-tiling.mjs`:
   - extend: the last phase grows, and the new day is listed in `daysAdded`
@@ -275,11 +306,13 @@ export function cascadeFor(changes: PlannedChange[], snapshot: { trip: Trip; pha
 ### Task 8: propose_changes + the preview card
 
 **Files:**
+
 - Create: `src/lib/server/mcp/tools/propose-changes.ts`, `src/lib/server/mcp/writes/preview.ts`
 - Modify: `src/lib/server/mcp/present.ts` (`Card.changes?`, `structuredContent.proposal?`), `src/lib/server/mcp/card-html.ts` (diff rows, quote, outcome line, calendar, Confirm button), `src/lib/server/mcp/tools/index.ts`
 - Test: `src/lib/server/mcp/writes/preview.test.ts`, `tests/e2e/mcp-writes.spec.ts`
 
 **Interfaces:**
+
 - Consumes `compileOps`, `saveProposal`, `cascadeFor`, `assertCanWrite`.
 - Produces:
   - `propose_changes({ trip: string; quote: string; ops: WriteOp[] })` returns `structuredContent` = `{ heading, cards, proposal: { id, quote, outcome: string, calendar?: { before: [string,string]; after: [string,string] } } }`.
@@ -306,11 +339,13 @@ export function cascadeFor(changes: PlannedChange[], snapshot: { trip: Trip; pha
 ### Task 9: commit_changes
 
 **Files:**
+
 - Create: `src/lib/server/mcp/tools/commit-changes.ts`, `src/lib/server/mcp/writes/commit.ts`
 - Modify: `src/lib/server/mcp/tools/index.ts`, `src/lib/server/mcp/context.ts` (`McpContext.connectionId: string`), `src/routes/mcp/+server.ts` (pass `grant.connectionId`)
 - Test: `tests/e2e/mcp-writes.spec.ts`
 
 **Interfaces:**
+
 - Consumes `takeProposal`, `markCommitted`, `staleFields`, `assertCanWrite`, `writesEnabled`, and `adminPb()` (writing the audit row).
 - Produces:
   - `commitProposal(ctx: McpContext, proposalId: string): Promise<{ changeId: string; changes: CommittedChange[]; outcome: string }>`
@@ -342,11 +377,13 @@ export function cascadeFor(changes: PlannedChange[], snapshot: { trip: Trip; pha
 ### Task 10: Revert, in chat and in account settings
 
 **Files:**
+
 - Create: `src/lib/server/mcp/writes/revert.ts`, `src/lib/server/mcp/tools/revert-change.ts`
 - Modify: `src/lib/server/mcp/tools/index.ts`, `src/routes/(app)/account/+page.server.ts` (load last-30-days `ai_changes`; action `revertAiChange`), `src/routes/(app)/account/+page.svelte` (Recent AI changes inside Connected apps, a `<details>` collapsed by default)
 - Test: `src/lib/server/mcp/writes/revert.test.ts`, `tests/e2e/mcp-writes.spec.ts`, `tests/e2e/connected-apps.spec.ts`
 
 **Interfaces:**
+
 - Produces:
   - `revertChange(pb: PocketBase, userId: string, changeId?: string): Promise<{ restored: string[]; skipped: string[] }>`. Without a `changeId` it reverts the user's latest un-reverted change. It runs with the **user's** PB client and sets `reverted_at` via `adminPb()`.
   - `inverseOf(change: CommittedChange, current: Record<string, unknown> | null): { data: Record<string, unknown> | null; delete: boolean; skipped: string[] }` (pure)
@@ -375,6 +412,7 @@ export function cascadeFor(changes: PlannedChange[], snapshot: { trip: Trip; pha
 ### Task 11: v3.1 hardening minors (#512)
 
 **Files:**
+
 - Modify: `src/lib/server/mcp/oauth/store.ts`, `src/routes/oauth/authorize/+page.server.ts`, `src/routes/oauth/token/+server.ts` (if the resource check lands there), `src/lib/server/mcp/tools/get-trip.ts`, `src/lib/server/mcp/admin-pb.ts`
 - Test: `src/lib/server/mcp/oauth/*.test.ts`, `tests/e2e/mcp-oauth.spec.ts`, `tests/e2e/mcp-tools.spec.ts`
 
@@ -396,6 +434,7 @@ export function cascadeFor(changes: PlannedChange[], snapshot: { trip: Trip; pha
 ### Task 12: Release wiring
 
 **Files:**
+
 - Modify: `docs/DEPLOY_RUNBOOK.md` (`MCP_WRITES` env; pre-deploy dry-run for duplicate phase `start_date` from the #411 review M2), `src/lib/server/mcp/server.ts` (server version `3.2.0`), `src/lib/server/mcp/card-html.ts` (appInfo version `3.2.0`), `package.json` version `3.2.0`
 
 - [ ] **Step 1:** Make the edits.

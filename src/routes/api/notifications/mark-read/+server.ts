@@ -6,7 +6,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		error(401, 'Unauthorized');
 	}
 
-	const body = await request.json().catch(() => ({})) as { ids?: string[]; all?: boolean };
+	const body = (await request.json().catch(() => ({}))) as { ids?: string[]; all?: boolean };
 	const BASE = locals.pb.baseUrl;
 	const token = locals.pb.authStore.token;
 

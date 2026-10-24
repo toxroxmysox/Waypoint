@@ -21,7 +21,8 @@ export const getDay: ToolDef = {
 		const tz = tripTz(t.trip);
 		const d = resolveDate(tz, date ?? 'today', ctx.now);
 		const data = await loadDay(ctx, t.trip, d);
-		if (!data.day) return result(dayHeading(t.trip, d), [], { date: d, note: 'That date is outside the trip.' });
+		if (!data.day)
+			return result(dayHeading(t.trip, d), [], { date: d, note: 'That date is outside the trip.' });
 		return result(dayHeading(t.trip, d), dayCards(data), { date: d, timezone: tz });
 	}
 };

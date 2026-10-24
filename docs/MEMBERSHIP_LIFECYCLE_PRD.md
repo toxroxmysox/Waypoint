@@ -26,7 +26,7 @@
   `items.created_by`/`paid_by`/`booked_by`/`assigned_to`, `suggestions.reviewed_by`,
   `tasks.assignee`.
 - `trip_members` fields today: `trip, user, role, display_name, placeholder_name,
-  placeholder_email, joined_at, claimable_by`. **No `removed_at`** (next migration 0045+).
+placeholder_email, joined_at, claimable_by`. **No `removed_at`** (next migration 0045+).
 
 ---
 
@@ -34,16 +34,16 @@
 
 1. **Shared reusable [[Join Link]], coexisting with email [[Invite]]s.** A new
    trip-level join token (not email-bound), pasteable into a group text. Email-bound
-   invites stay for targeted per-person invites and remain the *only* path that can
+   invites stay for targeted per-person invites and remain the _only_ path that can
    mint a co_owner.
 2. **Owner picks the link role, capped at traveler.** Default traveler, may downgrade
    to viewer. **co_owner is never mintable via a join link.**
-3. **One link per role.** A trip can have a live **traveler** link *and* a live
+3. **One link per role.** A trip can have a live **traveler** link _and_ a live
    **viewer** link concurrently. Data model: a join-token keyed by `(trip, role)`,
    max two rows per trip — each with its own token, expiry, and revoked state.
 4. **Revocable + rotatable + time-expiry.** Owner can revoke/regenerate at will (old
    token 404s); each link carries an owner-set expiry, default **30 days**, capped at
-   trip end. *No use-cap.* (Considered and dropped — group size is unknown up front; a
+   trip end. _No use-cap._ (Considered and dropped — group size is unknown up front; a
    too-low cap silently locks out real invitees.)
 5. **Live in `planning` + `active`, dead on `closed`.** Mid-trip joins are allowed; a
    closed/archived trip takes no new members (use the Public Archive token for read access).
@@ -60,8 +60,8 @@
    - **Name-only** — offered in the browse-and-claim picker; claiming inherits the
      placeholder's **name/identity but the role is clamped to the link's role**.
    - **No match** — fresh member at the link role.
-   - **Invariant:** *no join-link path yields a role above the link's cap, except an
-     owner-targeted email match.* Impersonation of a name-only slot is accepted as
+   - **Invariant:** _no join-link path yields a role above the link's cap, except an
+     owner-targeted email match._ Impersonation of a name-only slot is accepted as
      detectable (member_joined notification + visible roster) and reversible (#133 removal).
 
 ---
@@ -118,6 +118,7 @@
 ## Suggested slicing
 
 **#118 (entry)** — tracer-bullet vertical slices:
+
 - 0045 migration: join-token model `(trip, role, token, expires_at, revoked)`.
 - `POST /api/join/create|rotate|revoke` (owner/co_owner, role-capped at traveler).
 - `POST /api/join/lookup` (anon, returns title + dates + role only).
@@ -127,6 +128,7 @@
   `/invite` OTP + claim components.
 
 **#133 (exit)** — slices:
+
 - 0045+ migration: add `removed_at` to `trip_members`.
 - Rewrite `/api/members/remove` → soft-remove + disposition (`keep` | `reassign` | `cascade`,
   money-gated; votes always drop; self-leave forced to `keep`).

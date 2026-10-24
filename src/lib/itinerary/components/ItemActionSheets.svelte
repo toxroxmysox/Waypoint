@@ -121,12 +121,12 @@
 			}}
 			class="space-y-4"
 		>
-			<p class="text-ink-soft text-sm">
+			<p class="text-sm text-ink-soft">
 				Skip this {typeLabel}? It returns to your ideas so you can do it later or pick a
 				replacement. Nothing is deleted.
 			</p>
 			{#if skipError || form?.skipError}
-				<p role="alert" class="text-clay text-sm">{skipError || form?.skipError}</p>
+				<p role="alert" class="text-sm text-clay">{skipError || form?.skipError}</p>
 			{/if}
 			<div class="flex gap-2">
 				<Button type="submit" variant="moss" size="md" class="min-h-11 flex-1" disabled={skipping}>
@@ -167,22 +167,22 @@
 			}}
 			class="space-y-4"
 		>
-			<p class="text-ink-soft text-sm">
+			<p class="text-sm text-ink-soft">
 				{#if docCount > 0}
-					Delete this {typeLabel} and its {docCount} document{docCount === 1 ? '' : 's'}? This
-					can't be undone.
+					Delete this {typeLabel} and its {docCount} document{docCount === 1 ? '' : 's'}? This can't
+					be undone.
 				{:else}
 					Delete this {typeLabel}? This can't be undone.
 				{/if}
 			</p>
 			{#if deleteError || form?.deleteError}
-				<p role="alert" class="text-clay text-sm">{deleteError || form?.deleteError}</p>
+				<p role="alert" class="text-sm text-clay">{deleteError || form?.deleteError}</p>
 			{/if}
 			<div class="flex gap-2">
 				<button
 					type="submit"
 					disabled={deleting}
-					class="min-h-11 bg-clay text-paper hover:bg-clay/90 active:bg-clay/90 flex-1 rounded-md px-3 py-2 text-sm font-semibold disabled:opacity-40"
+					class="min-h-11 flex-1 rounded-md bg-clay px-3 py-2 text-sm font-semibold text-paper hover:bg-clay/90 active:bg-clay/90 disabled:opacity-40"
 				>
 					{deleting ? 'Deleting…' : 'Delete'}
 				</button>

@@ -193,7 +193,8 @@ onRecordUpdateRequest((e) => {
 		const current = others.concat([oldStart]).sort();
 		const idx = current.indexOf(oldStart);
 		if (idx === 0) {
-			if (s !== tStart) throw new BadRequestError('The first phase must start when the trip begins.');
+			if (s !== tStart)
+				throw new BadRequestError('The first phase must start when the trip begins.');
 		} else {
 			const lower = current[idx - 1];
 			const upper = idx < current.length - 1 ? current[idx + 1] : tEnd;
@@ -238,7 +239,12 @@ onRecordCreateRequest((e) => {
 			for (let i = 0; i < ps.length; i++) {
 				const end = i < ps.length - 1 ? starts[i + 1] : tEnd;
 				const p = ps[i];
-				if (startOf(p) === starts[i] && p.getString('end_date').substring(0, 10) === end && p.getInt('order') === i) continue;
+				if (
+					startOf(p) === starts[i] &&
+					p.getString('end_date').substring(0, 10) === end &&
+					p.getInt('order') === i
+				)
+					continue;
 				p.set('start_date', starts[i] + ' 00:00:00.000Z');
 				p.set('end_date', end + ' 00:00:00.000Z');
 				p.set('order', i);
@@ -255,7 +261,9 @@ onRecordCreateRequest((e) => {
 	}
 	let phases;
 	try {
-		phases = e.app.findRecordsByFilter('phases', 'trip = {:tripId}', '+order', 0, 0, { tripId: tripId });
+		phases = e.app.findRecordsByFilter('phases', 'trip = {:tripId}', '+order', 0, 0, {
+			tripId: tripId
+		});
 	} catch (_) {
 		phases = [];
 	}
@@ -266,7 +274,8 @@ onRecordCreateRequest((e) => {
 			const pStart = phase.getString('start_date');
 			const pEnd = phase.getString('end_date');
 			if (!pStart || !pEnd) continue;
-			if (dayDate >= pStart.substring(0, 10) && dayDate <= pEnd.substring(0, 10)) matched.push(phase.id);
+			if (dayDate >= pStart.substring(0, 10) && dayDate <= pEnd.substring(0, 10))
+				matched.push(phase.id);
 		}
 		const current = day.get('phases') || [];
 		if ([...current].sort().join(',') !== [...matched].sort().join(',')) {
@@ -305,7 +314,12 @@ onRecordUpdateRequest((e) => {
 			for (let i = 0; i < ps.length; i++) {
 				const end = i < ps.length - 1 ? starts[i + 1] : tEnd;
 				const p = ps[i];
-				if (startOf(p) === starts[i] && p.getString('end_date').substring(0, 10) === end && p.getInt('order') === i) continue;
+				if (
+					startOf(p) === starts[i] &&
+					p.getString('end_date').substring(0, 10) === end &&
+					p.getInt('order') === i
+				)
+					continue;
 				p.set('start_date', starts[i] + ' 00:00:00.000Z');
 				p.set('end_date', end + ' 00:00:00.000Z');
 				p.set('order', i);
@@ -322,7 +336,9 @@ onRecordUpdateRequest((e) => {
 	}
 	let phases;
 	try {
-		phases = e.app.findRecordsByFilter('phases', 'trip = {:tripId}', '+order', 0, 0, { tripId: tripId });
+		phases = e.app.findRecordsByFilter('phases', 'trip = {:tripId}', '+order', 0, 0, {
+			tripId: tripId
+		});
 	} catch (_) {
 		phases = [];
 	}
@@ -333,7 +349,8 @@ onRecordUpdateRequest((e) => {
 			const pStart = phase.getString('start_date');
 			const pEnd = phase.getString('end_date');
 			if (!pStart || !pEnd) continue;
-			if (dayDate >= pStart.substring(0, 10) && dayDate <= pEnd.substring(0, 10)) matched.push(phase.id);
+			if (dayDate >= pStart.substring(0, 10) && dayDate <= pEnd.substring(0, 10))
+				matched.push(phase.id);
 		}
 		const current = day.get('phases') || [];
 		if ([...current].sort().join(',') !== [...matched].sort().join(',')) {
@@ -352,14 +369,9 @@ onRecordDeleteRequest((e) => {
 	// per the goja isolated-sandbox constraint documented above.
 	let phaseCount = 0;
 	try {
-		const tripPhases = e.app.findRecordsByFilter(
-			'phases',
-			'trip = {:tripId}',
-			'',
-			0,
-			0,
-			{ tripId: tripId }
-		);
+		const tripPhases = e.app.findRecordsByFilter('phases', 'trip = {:tripId}', '', 0, 0, {
+			tripId: tripId
+		});
 		phaseCount = tripPhases.length;
 	} catch (_) {
 		phaseCount = 0;
@@ -428,7 +440,12 @@ onRecordDeleteRequest((e) => {
 			for (let i = 0; i < ps.length; i++) {
 				const end = i < ps.length - 1 ? starts[i + 1] : tEnd;
 				const p = ps[i];
-				if (startOf(p) === starts[i] && p.getString('end_date').substring(0, 10) === end && p.getInt('order') === i) continue;
+				if (
+					startOf(p) === starts[i] &&
+					p.getString('end_date').substring(0, 10) === end &&
+					p.getInt('order') === i
+				)
+					continue;
 				p.set('start_date', starts[i] + ' 00:00:00.000Z');
 				p.set('end_date', end + ' 00:00:00.000Z');
 				p.set('order', i);
@@ -445,7 +462,9 @@ onRecordDeleteRequest((e) => {
 	}
 	let phases;
 	try {
-		phases = e.app.findRecordsByFilter('phases', 'trip = {:tripId}', '+order', 0, 0, { tripId: tripId });
+		phases = e.app.findRecordsByFilter('phases', 'trip = {:tripId}', '+order', 0, 0, {
+			tripId: tripId
+		});
 	} catch (_) {
 		phases = [];
 	}
@@ -456,7 +475,8 @@ onRecordDeleteRequest((e) => {
 			const pStart = phase.getString('start_date');
 			const pEnd = phase.getString('end_date');
 			if (!pStart || !pEnd) continue;
-			if (dayDate >= pStart.substring(0, 10) && dayDate <= pEnd.substring(0, 10)) matched.push(phase.id);
+			if (dayDate >= pStart.substring(0, 10) && dayDate <= pEnd.substring(0, 10))
+				matched.push(phase.id);
 		}
 		const current = day.get('phases') || [];
 		if ([...current].sort().join(',') !== [...matched].sort().join(',')) {

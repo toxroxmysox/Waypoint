@@ -53,7 +53,18 @@ export interface AvailabilityPollData {
 }
 
 const MONTHS_SHORT = [
-	'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'
+	'JAN',
+	'FEB',
+	'MAR',
+	'APR',
+	'MAY',
+	'JUN',
+	'JUL',
+	'AUG',
+	'SEP',
+	'OCT',
+	'NOV',
+	'DEC'
 ];
 
 /** Monday-first weekday index for a 'YYYY-MM-DD' day: 0 = Mon … 6 = Sun. */

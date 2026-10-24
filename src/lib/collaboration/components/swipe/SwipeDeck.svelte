@@ -307,7 +307,7 @@
 				onclick={undo}
 				disabled={history.length === 0}
 				aria-label="Rewind last vote"
-				class="hit-44 border-line bg-surface text-ink-soft active:bg-surface-2 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors duration-75 disabled:opacity-45"
+				class="hit-44 inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-ink-soft transition-colors duration-75 active:bg-surface-2 disabled:opacity-45"
 			>
 				<span aria-hidden="true">↺</span> Rewind
 			</button>
@@ -316,7 +316,7 @@
 				type="button"
 				onclick={() => (peek = !peek)}
 				aria-pressed={peek}
-				class="hit-44 border-line bg-surface text-ink-soft active:bg-surface-2 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors duration-75"
+				class="hit-44 inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-ink-soft transition-colors duration-75 active:bg-surface-2"
 			>
 				<span aria-hidden="true">{peek ? '◑' : '○'}</span>
 				{peek ? 'Peeking' : 'Peek'}
@@ -329,18 +329,18 @@
 					type="button"
 					onclick={onclose}
 					aria-label="Close"
-					class="hit-44 text-ink-soft active:opacity-60 inline-flex p-1 transition-opacity duration-75"
+					class="hit-44 inline-flex p-1 text-ink-soft transition-opacity duration-75 active:opacity-60"
 				>
 					<span aria-hidden="true" class="text-xl leading-none">×</span>
 				</button>
 			{/if}
 		</div>
 		<div class="mt-0.5 text-center">
-			<div class="font-display text-ink text-[17px] leading-tight font-semibold tracking-tight">
+			<div class="font-display text-[17px] leading-tight font-semibold tracking-tight text-ink">
 				{title}
 			</div>
 			{#if subtitle}
-				<div class="text-ink-muted mt-px text-[11.5px]">{subtitle}</div>
+				<div class="mt-px text-[11.5px] text-ink-muted">{subtitle}</div>
 			{/if}
 		</div>
 	</div>
@@ -352,17 +352,24 @@
 				{@render complete({ spread, rated: Object.keys(votes).length, total, reset })}
 			{:else}
 				<div class="text-center">
-					<div class="font-display text-ink mb-2 text-2xl italic">Deck cleared.</div>
-					<p class="text-ink-soft text-sm">You rated {Object.keys(votes).length} items.</p>
+					<div class="mb-2 font-display text-2xl text-ink italic">Deck cleared.</div>
+					<p class="text-sm text-ink-soft">You rated {Object.keys(votes).length} items.</p>
 				</div>
 			{/if}
 		{:else if card}
 			<!-- faint compass-star behind -->
 			<div
 				aria-hidden="true"
-				class="text-moss pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.05]"
+				class="pointer-events-none absolute inset-0 flex items-center justify-center text-moss opacity-[0.05]"
 			>
-				<svg viewBox="0 0 24 24" width="300" height="300" fill="none" stroke="currentColor" stroke-width="0.6">
+				<svg
+					viewBox="0 0 24 24"
+					width="300"
+					height="300"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="0.6"
+				>
 					<path d="M12 2 L13.6 10.4 L22 12 L13.6 13.6 L12 22 L10.4 13.6 L2 12 L10.4 10.4 Z" />
 				</svg>
 			</div>
@@ -375,7 +382,7 @@
 						onpointermove={onMove}
 						onpointerup={onUp}
 						onpointercancel={onUp}
-						class="bg-surface border-line relative touch-none overflow-hidden rounded-[20px] border shadow-modal select-none"
+						class="relative touch-none overflow-hidden rounded-[20px] border border-line bg-surface shadow-modal select-none"
 						class:cursor-grab={!buttonsOnly && !isPrompt}
 						style={cardStyle}
 						role="group"
@@ -404,13 +411,13 @@
 								<span
 									class="inline-flex items-center gap-1.5 rounded-full border-2 px-3.5 py-2 text-[15px] font-extrabold tracking-wider shadow-dropdown {committed
 										? liveIntent === 'dislike'
-											? 'bg-clay text-paper border-clay'
-											: 'bg-moss text-paper border-moss'
+											? 'border-clay bg-clay text-paper'
+											: 'border-moss bg-moss text-paper'
 										: liveIntent === 'love'
-											? 'bg-paper text-moss border-paper'
+											? 'border-paper bg-paper text-moss'
 											: liveIntent === 'like'
-												? 'bg-surface text-moss border-moss'
-												: 'bg-surface text-clay border-clay'}"
+												? 'border-moss bg-surface text-moss'
+												: 'border-clay bg-surface text-clay'}"
 									style="transition:transform .12s cubic-bezier(.16,1,.3,1);transform:scale({committed
 										? 1.12
 										: 1});"
@@ -424,7 +431,9 @@
 								<div
 									aria-hidden="true"
 									class="pointer-events-none absolute inset-0 z-[5] rounded-[inherit] border-2"
-									style="border-color:{intentColor(liveIntent)};box-shadow:inset 0 0 0 1px {intentColor(
+									style="border-color:{intentColor(
+										liveIntent
+									)};box-shadow:inset 0 0 0 1px {intentColor(
 										liveIntent
 									)},0 0 0 4px color-mix(in srgb, {intentColor(liveIntent)} 22%, transparent);"
 								></div>
@@ -438,7 +447,7 @@
 								style="width:{needleLen}px;transform:rotate({needleAng}deg);background:linear-gradient(90deg,rgba(62,90,58,0.1),var(--color-moss));border-radius:2px;"
 							>
 								<span
-									class="bg-moss absolute -top-[2.5px] -right-[3px] h-[7px] w-[7px] rounded-full"
+									class="absolute -top-[2.5px] -right-[3px] h-[7px] w-[7px] rounded-full bg-moss"
 								></span>
 							</div>
 						{/if}
@@ -447,35 +456,39 @@
 							{@render face(card)}
 							<!-- footer: peek + details (vote cards only — prompts own their UI) -->
 							{#if !isPrompt}
-							<div
-								class="border-line mt-4 flex min-h-[30px] items-center justify-center gap-2.5 border-t pt-3.5"
-							>
-								{#if peek}
-									{#if (othersByCard[card.id] ?? []).length}
-										<VoteStacks votes={othersByCard[card.id]} {members} size={20} />
+								<div
+									class="mt-4 flex min-h-[30px] items-center justify-center gap-2.5 border-t border-line pt-3.5"
+								>
+									{#if peek}
+										{#if (othersByCard[card.id] ?? []).length}
+											<VoteStacks votes={othersByCard[card.id]} {members} size={20} />
+										{:else}
+											<span class="font-display text-[13px] text-ink-muted italic"
+												>no votes yet</span
+											>
+										{/if}
 									{:else}
-										<span class="text-ink-muted font-display text-[13px] italic">no votes yet</span>
+										<span
+											class="inline-flex items-center gap-1.5 text-center text-[13px] text-ink-muted"
+										>
+											<span aria-hidden="true">⊘</span> Others' votes hidden until you vote
+										</span>
 									{/if}
-								{:else}
-									<span class="text-ink-muted inline-flex items-center gap-1.5 text-center text-[13px]">
-										<span aria-hidden="true">⊘</span> Others' votes hidden until you vote
-									</span>
-								{/if}
-								{#if detail}
-									<button
-										type="button"
-										onpointerdown={(e) => e.stopPropagation()}
-										onclick={(e) => {
-											e.stopPropagation();
-											openDetail(card);
-										}}
-										class="hit-44 border-line bg-surface-2 text-ink-soft active:bg-surface ml-auto inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors duration-75"
-									>
-										Details <span aria-hidden="true">›</span>
-									</button>
-								{/if}
-							</div>
-						{/if}
+									{#if detail}
+										<button
+											type="button"
+											onpointerdown={(e) => e.stopPropagation()}
+											onclick={(e) => {
+												e.stopPropagation();
+												openDetail(card);
+											}}
+											class="hit-44 ml-auto inline-flex items-center gap-1 rounded-full border border-line bg-surface-2 px-2.5 py-1 text-xs font-semibold text-ink-soft transition-colors duration-75 active:bg-surface"
+										>
+											Details <span aria-hidden="true">›</span>
+										</button>
+									{/if}
+								</div>
+							{/if}
 						</div>
 					</div>
 				</div>
@@ -505,7 +518,7 @@
 			{:else}
 				<CompassRose onvote={commit} />
 				{#if showKeys}
-					<div class="text-ink-muted mt-3 flex flex-wrap justify-center gap-3.5 text-[11.5px]">
+					<div class="mt-3 flex flex-wrap justify-center gap-3.5 text-[11.5px] text-ink-muted">
 						<span>↑ Love</span><span>→ Like</span><span>← Pass</span><span>F Flexible</span><span
 							>U Rewind</span
 						>
@@ -530,7 +543,7 @@
 		{/snippet}
 		{#if detailLayout === 'modal'}
 			<div
-				class="z-overlay fixed inset-0 flex items-center justify-center p-4"
+				class="fixed inset-0 z-overlay flex items-center justify-center p-4"
 				style="background:rgba(28,27,24,0.4);"
 			>
 				<button
@@ -540,7 +553,7 @@
 					onclick={() => (detailOpen = false)}
 				></button>
 				<div
-					class="bg-surface relative z-[1] max-h-[85vh] w-[440px] max-w-full overflow-auto rounded-xl p-5 shadow-modal"
+					class="relative z-[1] max-h-[85vh] w-[440px] max-w-full overflow-auto rounded-xl bg-surface p-5 shadow-modal"
 				>
 					{@render detailBody()}
 				</div>

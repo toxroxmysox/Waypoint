@@ -41,8 +41,7 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
 	// SVG/HTML). Anything else downloads rather than renders, even on a GET
 	// without `?download`. An explicit `?download` always forces attachment.
 	const inlineable = contentType === 'application/pdf' || contentType.startsWith('image/');
-	const disposition =
-		url.searchParams.has('download') || !inlineable ? 'attachment' : 'inline';
+	const disposition = url.searchParams.has('download') || !inlineable ? 'attachment' : 'inline';
 	// The stored filename carries a PB-generated suffix; keep it simple for the
 	// download name by using the caption when present, else the stored name.
 	const downloadName = (doc.caption?.trim() || doc.file).replace(/"/g, '');

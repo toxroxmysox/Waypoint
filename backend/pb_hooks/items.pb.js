@@ -36,7 +36,9 @@ onRecordCreateRequest((e) => {
 
 	const role = callerMember.getString('role');
 	if (role !== 'owner' && role !== 'co_owner') {
-		throw new ForbiddenError('Only an owner or co-owner can add items directly; travelers suggest items.');
+		throw new ForbiddenError(
+			'Only an owner or co-owner can add items directly; travelers suggest items.'
+		);
 	}
 
 	// #402 — Not going is self-only: a new item may carry the caller's own "not
@@ -126,10 +128,12 @@ onRecordUpdateRequest((e) => {
 	if (rawNgNew) for (let i = 0; i < rawNgNew.length; i++) ngNew.push('' + rawNgNew[i]);
 	const ngChanged = [];
 	for (let i = 0; i < ngOld.length; i++) {
-		if (ngNew.indexOf(ngOld[i]) === -1 && ngChanged.indexOf(ngOld[i]) === -1) ngChanged.push(ngOld[i]);
+		if (ngNew.indexOf(ngOld[i]) === -1 && ngChanged.indexOf(ngOld[i]) === -1)
+			ngChanged.push(ngOld[i]);
 	}
 	for (let i = 0; i < ngNew.length; i++) {
-		if (ngOld.indexOf(ngNew[i]) === -1 && ngChanged.indexOf(ngNew[i]) === -1) ngChanged.push(ngNew[i]);
+		if (ngOld.indexOf(ngNew[i]) === -1 && ngChanged.indexOf(ngNew[i]) === -1)
+			ngChanged.push(ngNew[i]);
 	}
 	if (ngChanged.length > 0) {
 		if (role === 'viewer') {
@@ -171,12 +175,36 @@ onRecordUpdateRequest((e) => {
 	// introspection) + string-coercion compares (empty/JSON fields read back as
 	// objects; '' + x normalizes them — cerebrum goja scar).
 	const lockedFields = [
-		'trip', 'phase', 'day', 'type', 'subtype', 'title', 'description',
-		'location_name', 'location_address', 'location_coords', 'google_place_id',
-		'start_time', 'end_time', 'start_tz', 'end_tz', 'flight_number', 'end_date', 'status',
-		'booked', 'booked_by', 'paid_by', 'confirmation_codes', 'reservation_url',
-		'free_cancellation', 'cost_estimate_usd', 'cost_actual_usd', 'sort_order',
-		'parent_item', 'requires_booking', 'created_by'
+		'trip',
+		'phase',
+		'day',
+		'type',
+		'subtype',
+		'title',
+		'description',
+		'location_name',
+		'location_address',
+		'location_coords',
+		'google_place_id',
+		'start_time',
+		'end_time',
+		'start_tz',
+		'end_tz',
+		'flight_number',
+		'end_date',
+		'status',
+		'booked',
+		'booked_by',
+		'paid_by',
+		'confirmation_codes',
+		'reservation_url',
+		'free_cancellation',
+		'cost_estimate_usd',
+		'cost_actual_usd',
+		'sort_order',
+		'parent_item',
+		'requires_booking',
+		'created_by'
 	];
 	for (let i = 0; i < lockedFields.length; i++) {
 		const f = lockedFields[i];
@@ -199,10 +227,12 @@ onRecordUpdateRequest((e) => {
 	// Symmetric difference of old vs new ids — the ids that were added or removed.
 	const changed = [];
 	for (let i = 0; i < oldIds.length; i++) {
-		if (newIds.indexOf(oldIds[i]) === -1 && changed.indexOf(oldIds[i]) === -1) changed.push(oldIds[i]);
+		if (newIds.indexOf(oldIds[i]) === -1 && changed.indexOf(oldIds[i]) === -1)
+			changed.push(oldIds[i]);
 	}
 	for (let i = 0; i < newIds.length; i++) {
-		if (oldIds.indexOf(newIds[i]) === -1 && changed.indexOf(newIds[i]) === -1) changed.push(newIds[i]);
+		if (oldIds.indexOf(newIds[i]) === -1 && changed.indexOf(newIds[i]) === -1)
+			changed.push(newIds[i]);
 	}
 	// #402 — a member answering not going (or switching going ↔ not going in one
 	// write) touches both lists; the union of both deltas must still be only them.
@@ -280,7 +310,8 @@ onRecordValidate((e) => {
 		try {
 			day = e.app.findRecordById('days', dayId);
 		} catch (_) {}
-		if (!day || day.getString('trip') !== tripId) throw new BadRequestError("That day isn't on this trip.");
+		if (!day || day.getString('trip') !== tripId)
+			throw new BadRequestError("That day isn't on this trip.");
 		dayDate = day.getString('date').substring(0, 10);
 	}
 
@@ -289,7 +320,8 @@ onRecordValidate((e) => {
 		try {
 			phase = e.app.findRecordById('phases', phaseId);
 		} catch (_) {}
-		if (!phase || phase.getString('trip') !== tripId) throw new BadRequestError("That phase isn't on this trip.");
+		if (!phase || phase.getString('trip') !== tripId)
+			throw new BadRequestError("That phase isn't on this trip.");
 	}
 
 	if (!dayId && !phaseId && (changed('day') || changed('phase'))) {
@@ -304,7 +336,11 @@ onRecordValidate((e) => {
 
 	// A note can't be booked. Meals can (#462: a meal is reserved), so the item
 	// forms' older meal check is not mirrored here.
-	if (r.getBool('booked') && r.getString('type') === 'note' && (changed('booked') || changed('type'))) {
+	if (
+		r.getBool('booked') &&
+		r.getString('type') === 'note' &&
+		(changed('booked') || changed('type'))
+	) {
 		throw new BadRequestError('Note items cannot be marked as booked.');
 	}
 
@@ -320,7 +356,8 @@ onRecordValidate((e) => {
 			tripEnd = e.app.findRecordById('trips', tripId).getString('end_date').substring(0, 10);
 		} catch (_) {}
 		if (tripEnd && endDate > tripEnd) throw new BadRequestError('End date is after the trip ends.');
-		if (dayDate && endDate <= dayDate) throw new BadRequestError('End date must be after the start day.');
+		if (dayDate && endDate <= dayDate)
+			throw new BadRequestError('End date must be after the start day.');
 	}
 
 	if (parentId && (changed('parent_item') || changed('trip'))) {
@@ -328,7 +365,8 @@ onRecordValidate((e) => {
 		try {
 			parent = e.app.findRecordById('items', parentId);
 		} catch (_) {}
-		if (!parent || parent.getString('trip') !== tripId) throw new BadRequestError("That item isn't on this trip.");
+		if (!parent || parent.getString('trip') !== tripId)
+			throw new BadRequestError("That item isn't on this trip.");
 	}
 
 	// #519 — member references (booked_by, paid_by, going, not going) must be
@@ -337,7 +375,12 @@ onRecordValidate((e) => {
 	for (let f = 0; f < memberFields.length; f++) {
 		const field = memberFields[f];
 		const ids = r.getStringSlice(field);
-		if (!isNew && !changed('trip') && JSON.stringify(ids) === JSON.stringify(original.getStringSlice(field))) continue;
+		if (
+			!isNew &&
+			!changed('trip') &&
+			JSON.stringify(ids) === JSON.stringify(original.getStringSlice(field))
+		)
+			continue;
 		for (let i = 0; i < ids.length; i++) {
 			let ok = false;
 			try {
@@ -406,10 +449,16 @@ onRecordUpdate((e) => {
 		else dropFromNot.push(id);
 	}
 	if (dropFromGoing.length > 0) {
-		e.record.set('assigned_to', going.filter((id) => dropFromGoing.indexOf(id) === -1));
+		e.record.set(
+			'assigned_to',
+			going.filter((id) => dropFromGoing.indexOf(id) === -1)
+		);
 	}
 	if (dropFromNot.length > 0) {
-		e.record.set('not_going', notGoing.filter((id) => dropFromNot.indexOf(id) === -1));
+		e.record.set(
+			'not_going',
+			notGoing.filter((id) => dropFromNot.indexOf(id) === -1)
+		);
 	}
 
 	e.next();

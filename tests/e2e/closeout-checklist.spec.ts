@@ -36,10 +36,18 @@ test.describe('Closeout leaves checklists untouched (#53)', () => {
 		const dayLinks = page.locator(`a[href^="/trips/${tripSlug}/days/"]:visible`);
 		await expect(dayLinks.first()).toBeVisible({ timeout: 5000 });
 		await dayLinks.first().click();
-		await page.getByRole('link', { name: /^Add item$/i }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('link', { name: /^Add item$/i })
+			.filter({ visible: true })
+			.first()
+			.click();
 		await page.waitForURL(/\/items\/new/);
 		await page.locator('input[name="title"]:visible').first().fill('Campsite');
-		await page.getByRole('button', { name: /create|save/i }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('button', { name: /create|save/i })
+			.filter({ visible: true })
+			.first()
+			.click();
 		await page.waitForURL(/\/days\//, { timeout: 10000 });
 
 		// #231: the card is a stretched-link <a aria-label="<title>"> overlaying the
@@ -47,7 +55,11 @@ test.describe('Closeout leaves checklists untouched (#53)', () => {
 		await page.getByRole('link', { name: 'Campsite' }).filter({ visible: true }).first().click();
 		await page.waitForURL(/\/items\/[a-z0-9]+(?:\?|$)/); // #361: item links carry ?from=
 		const itemUrl = page.url();
-		await page.getByRole('button', { name: '+ Checklist', exact: true }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('button', { name: '+ Checklist', exact: true })
+			.filter({ visible: true })
+			.first()
+			.click();
 		const addRow = page.getByPlaceholder('Add an item').filter({ visible: true }).first();
 		await addRow.fill('Tent');
 		await addRow.press('Enter');
@@ -56,7 +68,9 @@ test.describe('Closeout leaves checklists untouched (#53)', () => {
 		// --- Closeout: mark the item done (reviews the Item) ---
 		await page.goto(`${BASE}/trips/${tripSlug}/closeout`, { waitUntil: 'networkidle' });
 		await page.getByRole('button', { name: 'Done', exact: true }).first().click();
-		await expect(page.getByRole('button', { name: 'Done', exact: true })).toHaveCount(0, { timeout: 5000 });
+		await expect(page.getByRole('button', { name: 'Done', exact: true })).toHaveCount(0, {
+			timeout: 5000
+		});
 
 		// --- Item is reviewed (Done) but its checklist + task survive ---
 		await page.goto(itemUrl, { waitUntil: 'networkidle' });
@@ -99,27 +113,47 @@ test.describe('Closeout leaves checklists untouched (#53)', () => {
 			.filter({ hasText: /\bitems?\b|\bplanned\b/ });
 		await expect(dayLinks.nth(1)).toBeVisible({ timeout: 5000 });
 		await dayLinks.nth(1).click();
-		await page.getByRole('link', { name: /^Add item$/i }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('link', { name: /^Add item$/i })
+			.filter({ visible: true })
+			.first()
+			.click();
 		await page.waitForURL(/\/items\/new/);
 		await page.locator('input[name="title"]:visible').first().fill('Hot Springs');
-		await page.getByRole('button', { name: /create|save/i }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('button', { name: /create|save/i })
+			.filter({ visible: true })
+			.first()
+			.click();
 		await page.waitForURL(/\/days\//, { timeout: 10000 });
 
 		// Closeout: advance to Day 2, then click "All done".
 		await page.goto(`${BASE}/trips/${tripSlug}/closeout`, { waitUntil: 'networkidle' });
-		await expect(page.getByText('Day 1 of', { exact: false }).filter({ visible: true }).first()).toBeVisible();
+		await expect(
+			page.getByText('Day 1 of', { exact: false }).filter({ visible: true }).first()
+		).toBeVisible();
 		await page.getByRole('button', { name: 'Next Day' }).filter({ visible: true }).first().click();
-		await expect(page.getByText('Day 2 of', { exact: false }).filter({ visible: true }).first()).toBeVisible();
+		await expect(
+			page.getByText('Day 2 of', { exact: false }).filter({ visible: true }).first()
+		).toBeVisible();
 
-		await page.getByRole('button', { name: 'All done', exact: true }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('button', { name: 'All done', exact: true })
+			.filter({ visible: true })
+			.first()
+			.click();
 
 		// The bug: this would snap back to "Day 1 of N". The fix keeps us on Day 2,
 		// and the day's items now read Done.
-		await expect(page.getByText('Day 2 of', { exact: false }).filter({ visible: true }).first()).toBeVisible({ timeout: 5000 });
+		await expect(
+			page.getByText('Day 2 of', { exact: false }).filter({ visible: true }).first()
+		).toBeVisible({ timeout: 5000 });
 		// Dual AppShell trees instantiate +page.svelte twice with independent
 		// currentDayIndex $state — the hidden tree still shows "Day 1 of", so scope
 		// the negative assertion to the visible tree (#257).
-		await expect(page.getByText('Day 1 of', { exact: false }).filter({ visible: true })).toHaveCount(0);
+		await expect(
+			page.getByText('Day 1 of', { exact: false }).filter({ visible: true })
+		).toHaveCount(0);
 		await expect(page.getByText('Done').filter({ visible: true }).first()).toBeVisible();
 	});
 });

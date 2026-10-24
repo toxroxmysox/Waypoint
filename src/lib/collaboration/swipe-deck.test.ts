@@ -91,10 +91,34 @@ describe('buildDeck — order: planned first by itinerary, then unplanned by vot
 
 	it('orders planned cards within a day like the timeline (timed by start_time, untimed woven by sort_order)', () => {
 		const items = [
-			cand({ id: 'pm', status: 'planned', dayDate: '2026-05-01', start_time: '2026-05-01 15:00:00.000Z', sort_order: 5 }),
-			cand({ id: 'am', status: 'planned', dayDate: '2026-05-01', start_time: '2026-05-01 09:00:00.000Z', sort_order: 5 }),
-			cand({ id: 'untimed-early', status: 'planned', dayDate: '2026-05-01', start_time: '', sort_order: 1 }),
-			cand({ id: 'untimed-late', status: 'planned', dayDate: '2026-05-01', start_time: '', sort_order: 99 })
+			cand({
+				id: 'pm',
+				status: 'planned',
+				dayDate: '2026-05-01',
+				start_time: '2026-05-01 15:00:00.000Z',
+				sort_order: 5
+			}),
+			cand({
+				id: 'am',
+				status: 'planned',
+				dayDate: '2026-05-01',
+				start_time: '2026-05-01 09:00:00.000Z',
+				sort_order: 5
+			}),
+			cand({
+				id: 'untimed-early',
+				status: 'planned',
+				dayDate: '2026-05-01',
+				start_time: '',
+				sort_order: 1
+			}),
+			cand({
+				id: 'untimed-late',
+				status: 'planned',
+				dayDate: '2026-05-01',
+				start_time: '',
+				sort_order: 99
+			})
 		];
 		const { queue } = buildDeck(items, [], scope('p1', ['p1']));
 		// untimed-early (order 1) precedes the first anchor; both anchors by time; untimed-late (order 99) trails.
@@ -107,10 +131,28 @@ describe('buildDeck — order: planned first by itinerary, then unplanned by vot
 	// surfaces disagreed about the same day.
 	it('anchors an end-only planned card at its end_time, not in the untimed tail', () => {
 		const items = [
-			cand({ id: 'pm', status: 'planned', dayDate: '2026-05-01', start_time: '2026-05-01 15:00:00.000Z', sort_order: 5 }),
-			cand({ id: 'am', status: 'planned', dayDate: '2026-05-01', start_time: '2026-05-01 09:00:00.000Z', sort_order: 5 }),
+			cand({
+				id: 'pm',
+				status: 'planned',
+				dayDate: '2026-05-01',
+				start_time: '2026-05-01 15:00:00.000Z',
+				sort_order: 5
+			}),
+			cand({
+				id: 'am',
+				status: 'planned',
+				dayDate: '2026-05-01',
+				start_time: '2026-05-01 09:00:00.000Z',
+				sort_order: 5
+			}),
 			// No start — a deadline at noon. Belongs between am and pm.
-			cand({ id: 'deadline-noon', status: 'planned', dayDate: '2026-05-01', end_time: '2026-05-01 12:00:00.000Z', sort_order: 99 }),
+			cand({
+				id: 'deadline-noon',
+				status: 'planned',
+				dayDate: '2026-05-01',
+				end_time: '2026-05-01 12:00:00.000Z',
+				sort_order: 99
+			}),
 			cand({ id: 'untimed', status: 'planned', dayDate: '2026-05-01', sort_order: 99 })
 		];
 		const { queue } = buildDeck(items, [], scope('p1', ['p1']));
@@ -119,8 +161,20 @@ describe('buildDeck — order: planned first by itinerary, then unplanned by vot
 
 	it('orders two end-only planned cards by their end times', () => {
 		const items = [
-			cand({ id: 'late', status: 'planned', dayDate: '2026-05-01', end_time: '2026-05-01 18:00:00.000Z', sort_order: 1 }),
-			cand({ id: 'early', status: 'planned', dayDate: '2026-05-01', end_time: '2026-05-01 08:00:00.000Z', sort_order: 2 })
+			cand({
+				id: 'late',
+				status: 'planned',
+				dayDate: '2026-05-01',
+				end_time: '2026-05-01 18:00:00.000Z',
+				sort_order: 1
+			}),
+			cand({
+				id: 'early',
+				status: 'planned',
+				dayDate: '2026-05-01',
+				end_time: '2026-05-01 08:00:00.000Z',
+				sort_order: 2
+			})
 		];
 		const { queue } = buildDeck(items, [], scope('p1', ['p1']));
 		// end_time wins over sort_order — both are anchored, so neither is woven.
@@ -129,8 +183,19 @@ describe('buildDeck — order: planned first by itinerary, then unplanned by vot
 
 	it('a start_time item still anchors at its start even when it also has an end_time', () => {
 		const items = [
-			cand({ id: 'spans-morning', status: 'planned', dayDate: '2026-05-01', start_time: '2026-05-01 09:00:00.000Z', end_time: '2026-05-01 17:00:00.000Z' }),
-			cand({ id: 'deadline-ten', status: 'planned', dayDate: '2026-05-01', end_time: '2026-05-01 10:00:00.000Z' })
+			cand({
+				id: 'spans-morning',
+				status: 'planned',
+				dayDate: '2026-05-01',
+				start_time: '2026-05-01 09:00:00.000Z',
+				end_time: '2026-05-01 17:00:00.000Z'
+			}),
+			cand({
+				id: 'deadline-ten',
+				status: 'planned',
+				dayDate: '2026-05-01',
+				end_time: '2026-05-01 10:00:00.000Z'
+			})
 		];
 		const { queue } = buildDeck(items, [], scope('p1', ['p1']));
 		expect(queue.map((i) => i.id)).toEqual(['spans-morning', 'deadline-ten']);
@@ -141,9 +206,28 @@ describe('buildDeck — order: planned first by itinerary, then unplanned by vot
 	// restating the expected order twice.
 	it('matches orderDayItems for a day mixing start-only, end-only, both, and untimed', () => {
 		const day = [
-			cand({ id: 'both', status: 'planned', dayDate: '2026-05-01', start_time: '2026-05-01 13:00:00.000Z', end_time: '2026-05-01 20:00:00.000Z', sort_order: 4 }),
-			cand({ id: 'end-only', status: 'planned', dayDate: '2026-05-01', end_time: '2026-05-01 11:00:00.000Z', sort_order: 3 }),
-			cand({ id: 'start-only', status: 'planned', dayDate: '2026-05-01', start_time: '2026-05-01 07:00:00.000Z', sort_order: 2 }),
+			cand({
+				id: 'both',
+				status: 'planned',
+				dayDate: '2026-05-01',
+				start_time: '2026-05-01 13:00:00.000Z',
+				end_time: '2026-05-01 20:00:00.000Z',
+				sort_order: 4
+			}),
+			cand({
+				id: 'end-only',
+				status: 'planned',
+				dayDate: '2026-05-01',
+				end_time: '2026-05-01 11:00:00.000Z',
+				sort_order: 3
+			}),
+			cand({
+				id: 'start-only',
+				status: 'planned',
+				dayDate: '2026-05-01',
+				start_time: '2026-05-01 07:00:00.000Z',
+				sort_order: 2
+			}),
 			cand({ id: 'untimed', status: 'planned', dayDate: '2026-05-01', sort_order: 1 })
 		];
 		const { queue } = buildDeck(day, [], scope('p1', ['p1']));
@@ -205,7 +289,12 @@ describe('buildDeck — order: planned first by itinerary, then unplanned by vot
 	it('builds a mixed deck: planned in itinerary order, then unplanned by votes', () => {
 		const items = [
 			cand({ id: 'u1', status: 'unplanned', voteCount: 5 }),
-			cand({ id: 'p-day2', status: 'planned', dayDate: '2026-05-02', start_time: '2026-05-02 10:00:00.000Z' }),
+			cand({
+				id: 'p-day2',
+				status: 'planned',
+				dayDate: '2026-05-02',
+				start_time: '2026-05-02 10:00:00.000Z'
+			}),
 			cand({ id: 'u2', status: 'unplanned', voteCount: 2 }),
 			cand({ id: 'p-day1', status: 'planned', dayDate: '2026-05-01', sort_order: 0 })
 		];
@@ -333,7 +422,10 @@ describe('buildCaptureDeck — interleave reaction/prompt 1:1', () => {
 	});
 
 	it('degrades to all-reactions once prompts are spent', () => {
-		const deck = buildCaptureDeck([react({ id: 'r1' }), react({ id: 'r2' }), react({ id: 'r3' })], []);
+		const deck = buildCaptureDeck(
+			[react({ id: 'r1' }), react({ id: 'r2' }), react({ id: 'r3' })],
+			[]
+		);
 		expect(deck.map((c) => c.kind)).toEqual(['reaction', 'reaction', 'reaction']);
 	});
 

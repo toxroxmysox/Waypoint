@@ -248,9 +248,9 @@ test.describe('#274 + #275 Onboarding welcome card', () => {
 
 			// ?welcome=1 → force-shown regardless of the stamped flag.
 			await page.goto(`${BASE}/trips/${tripSlug}?welcome=1`, { waitUntil: 'networkidle' });
-			await expect(
-				page.getByTestId('welcome-card').filter({ visible: true }).first()
-			).toBeVisible({ timeout: 10000 });
+			await expect(page.getByTestId('welcome-card').filter({ visible: true }).first()).toBeVisible({
+				timeout: 10000
+			});
 		} finally {
 			await ctx.close();
 		}
@@ -262,9 +262,9 @@ test.describe('#274 + #275 Onboarding welcome card', () => {
 			await page.setViewportSize({ width: 375, height: 812 });
 			await page.goto(`${BASE}/trips/${tripSlug}`, { waitUntil: 'networkidle' });
 
-			await expect(
-				page.getByTestId('welcome-card').filter({ visible: true }).first()
-			).toBeVisible({ timeout: 10000 });
+			await expect(page.getByTestId('welcome-card').filter({ visible: true }).first()).toBeVisible({
+				timeout: 10000
+			});
 
 			const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
 			const viewportWidth = await page.evaluate(() => window.innerWidth);

@@ -4,7 +4,7 @@
 
 **Goal:** Items store who said "not going" (`not_going`, beside `assigned_to`); the server keeps the two lists exclusive, lets only a member answer for themselves, and the self-assign endpoint takes a target state (going / not going / no answer).
 
-**Architecture:** One append-only migration adds the relation list. `items.pb.js` gets two layers: the existing *request* hooks enforce who may change what (Not going is self-only for every role; viewers can't answer), and a new *model* hook (`onRecordCreate` / `onRecordUpdate`) enforces exclusivity on every save, including internal `e.app.save` calls from departure clean-up and Suggestion approval. The SvelteKit self-assign endpoint writes with PB's `field+` / `field-` modifiers, so it only ever touches the caller's id. *(Corrected in review: the modifiers apply to the record as loaded, so two answers landing within a few ms can lose one. Accepted as rare; assigning "going" already had the same race.)* No UI (that is #440).
+**Architecture:** One append-only migration adds the relation list. `items.pb.js` gets two layers: the existing _request_ hooks enforce who may change what (Not going is self-only for every role; viewers can't answer), and a new _model_ hook (`onRecordCreate` / `onRecordUpdate`) enforces exclusivity on every save, including internal `e.app.save` calls from departure clean-up and Suggestion approval. The SvelteKit self-assign endpoint writes with PB's `field+` / `field-` modifiers, so it only ever touches the caller's id. _(Corrected in review: the modifiers apply to the record as loaded, so two answers landing within a few ms can lose one. Accepted as rare; assigning "going" already had the same race.)_ No UI (that is #440).
 
 **Tech Stack:** PocketBase 0.27 JSVM (goja) hooks + migrations, SvelteKit server route, Vitest, the PB harnesses (`backend/test-rules.mjs`, `backend/test-suggestions.mjs`).
 
@@ -37,10 +37,12 @@
 ### Task 1: Pure going-state logic
 
 **Files:**
+
 - Modify: `src/lib/itinerary/assignment.ts`
 - Test: `src/lib/itinerary/assignment.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `export type GoingState = 'going' | 'not_going' | 'no_answer'`
   - `export function parseGoingState(raw: unknown): GoingState | null` — exact string match, else `null`.
@@ -57,6 +59,7 @@
 ### Task 2: Storage + items rules (self-only, viewers out, exclusivity)
 
 **Files:**
+
 - Create: `backend/pb_migrations/0071_items_not_going.js`
 - Modify: `backend/pb_hooks/items.pb.js` (create request hook, update request hook, new model hooks)
 - Modify: `src/lib/itinerary/types.ts` (`Item.not_going?: string[]`)
@@ -64,9 +67,10 @@
 - Test: `backend/test-rules.mjs` (new `#402` block: `NOT_GOING_OPS`, `runNotGoingNovelCases`, `printNotGoingReport`, wired in `main()` after the #219 cases)
 
 **Interfaces:**
+
 - Produces: the `items.not_going` field (relation → `trip_members`, `maxSelect: 50`, not required, no cascade — same shape as `assigned_to`); the exclusivity guarantee every later task relies on.
 
-- [ ] **Step 1: failing harness cells.** Fresh item per case: the owner POSTs `{trip, type:'activity', title}`; seed answers with each member's *own* token. Read back with an owner GET. `other` = traveler for owner/co_owner/viewer, co_owner for traveler.
+- [ ] **Step 1: failing harness cells.** Fresh item per case: the owner POSTs `{trip, type:'activity', title}`; seed answers with each member's _own_ token. Read back with an owner GET. `other` = traveler for owner/co_owner/viewer, co_owner for traveler.
   - Role matrix, for `owner, co_owner, traveler, viewer` (ops are the cell names):
     - `ng_self` PATCH `{'not_going+': own}` → allow (viewer deny)
     - `ng_other` PATCH `{'not_going+': other}` → deny for all four
@@ -87,7 +91,7 @@
 - [ ] **Step 4: request hooks** in `items.pb.js`:
   - Create: after the role gate, every id in `not_going` must equal the caller's member id, else `ForbiddenError("Only you can say you're not going.")`.
   - Update: right after resolving `callerMember` and **before** the owner/creator bypasses, compute the `not_going` symmetric difference (original vs submitted). Non-empty and viewer → `ForbiddenError("Viewers can't answer whether they're going.")`; non-empty and not exactly `[me]` → the self-only error. In the traveler branch, the changed-id set is the union of the `assigned_to` and `not_going` differences and must be exactly `[me]`; `not_going` stays out of `lockedFields`.
-- [ ] **Step 5: model hooks** `onRecordCreate` + `onRecordUpdate` for `items` (exclusivity, before `e.next()`). For each id in both lists after the change: if it was newly added to `not_going` and *not* newly added to `assigned_to`, drop it from `assigned_to`; otherwise drop it from `not_going` (going wins). On create, "original" is empty, so any overlap resolves to going. Only `set` a list when it changed.
+- [ ] **Step 5: model hooks** `onRecordCreate` + `onRecordUpdate` for `items` (exclusivity, before `e.next()`). For each id in both lists after the change: if it was newly added to `not_going` and _not_ newly added to `assigned_to`, drop it from `assigned_to`; otherwise drop it from `not_going` (going wins). On create, "original" is empty, so any overlap resolves to going. Only `set` a list when it changed.
 - [ ] **Step 6:** `Item.not_going?: string[]` (optional: fixtures and `fields:`-limited loaders omit it; PB always returns `[]`). Clone: `not_going: []`.
 - [ ] **Step 7:** the new field trips the #238 drift cell, so in this task add `['items', 'not_going', 'block_multi']` to `members.pb.js` `MEMBER_RELATION_FIELDS` and `'items.not_going'` to the harness `CANONICAL_MEMBER_RELATIONS` (Task 4 does the rest of the departure work). Rerun rules → all PASS, including the pre-existing #226/#219/matrix and drift cells.
 - [ ] **Step 8:** commit `feat(#402): not_going storage, self-only rule, exclusivity`.
@@ -95,9 +99,11 @@
 ### Task 3: Self-assign endpoint takes a target state
 
 **Files:**
+
 - Modify: `src/routes/api/items/[itemId]/assign-self/+server.ts`
 
 **Interfaces:**
+
 - Consumes: Task 1's `parseGoingState`, `goingStateOf`, `goingPatch`, `canSelfAssign`.
 - Produces (for #440): `POST /api/items/:itemId/assign-self` body `{ state: 'going' | 'not_going' | 'no_answer' }` → `200 { ok, state, assigned_to, not_going, member_id }`; `400` on an unknown `state`; `403` for viewers ("Viewers can't answer whether they're going.") and non-members; `401` signed out; `404` unknown item.
 
@@ -110,6 +116,7 @@
 ### Task 4: Departure clean-up treats `not_going` like `assigned_to`
 
 **Files:**
+
 - Modify: `backend/pb_hooks/members.pb.js` (`/api/members/can-purge`, `/api/members/remove`)
 - Test: `backend/test-rules.mjs` (`#402` block: departure cells in `runNotGoingNovelCases`)
 
@@ -125,6 +132,7 @@
 ### Task 5: Suggestion approval carries the author's own not going
 
 **Files:**
+
 - Modify: `backend/pb_hooks/suggestions.pb.js` (auto-approve create, review approve)
 - Test: `backend/test-suggestions.mjs` (new `#402` section before the summary)
 

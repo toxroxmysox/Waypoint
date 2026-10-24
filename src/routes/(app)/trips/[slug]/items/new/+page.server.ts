@@ -78,10 +78,9 @@ export const load: PageServerLoad = async ({ url, locals, parent }) => {
 	if (suggestionId) {
 		try {
 			const token = locals.pb.authStore.token;
-			const res = await fetch(
-				`${PB_BASE}/api/suggestions/list?trip_id=${trip.id}&status=pending`,
-				{ headers: { Authorization: `Bearer ${token}` } }
-			);
+			const res = await fetch(`${PB_BASE}/api/suggestions/list?trip_id=${trip.id}&status=pending`, {
+				headers: { Authorization: `Bearer ${token}` }
+			});
 			const resData = await res.json();
 			const s = (resData.items ?? []).find((item: { id: string }) => item.id === suggestionId);
 			if (s) {
@@ -100,7 +99,11 @@ export const load: PageServerLoad = async ({ url, locals, parent }) => {
 				let proposedDayLabel = 'Unscheduled';
 				const proposedDayRec = (days as Day[]).find((d) => d.id === String(raw.day ?? ''));
 				if (proposedDayRec?.date) {
-					proposedDayLabel = formatCalendarDate(proposedDayRec.date, { weekday: 'short', month: 'short', day: 'numeric' });
+					proposedDayLabel = formatCalendarDate(proposedDayRec.date, {
+						weekday: 'short',
+						month: 'short',
+						day: 'numeric'
+					});
 				}
 				prefill = {
 					...raw,
@@ -120,8 +123,7 @@ export const load: PageServerLoad = async ({ url, locals, parent }) => {
 	}
 
 	// Traveler with auto-approve off submits to suggestions endpoint instead.
-	const submitAsSuggestion =
-		membership.role === 'traveler' && !trip.auto_approve_suggestions;
+	const submitAsSuggestion = membership.role === 'traveler' && !trip.auto_approve_suggestions;
 
 	return {
 		trip,
@@ -158,7 +160,9 @@ export const actions: Actions = {
 			.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
 		const membership = await locals.pb
 			.collection('trip_members')
-			.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`);
+			.getFirstListItem<TripMember>(
+				`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`
+			);
 		const data = await request.formData();
 
 		const type = data.get('type')?.toString() || 'activity';
@@ -203,7 +207,8 @@ export const actions: Actions = {
 		if (intent === 'reject') {
 			// Reject keeps its one-line note rule; the server re-validates.
 			const reviewNote = data.get('review_note')?.toString().trim() || '';
-			if (!reviewNote) return fail(400, { error: 'A note is required to reject.', field: 'review_note' });
+			if (!reviewNote)
+				return fail(400, { error: 'A note is required to reject.', field: 'review_note' });
 			try {
 				const res = await fetch(`${PB_BASE}/api/suggestions/review`, {
 					method: 'POST',
@@ -211,14 +216,22 @@ export const actions: Actions = {
 						'Content-Type': 'application/json',
 						Authorization: `Bearer ${locals.pb.authStore.token}`
 					},
-					body: JSON.stringify({ suggestion_id: suggestionId, action: 'reject', review_note: reviewNote })
+					body: JSON.stringify({
+						suggestion_id: suggestionId,
+						action: 'reject',
+						review_note: reviewNote
+					})
 				});
 				if (!res.ok) {
 					const err = await res.json().catch(() => ({}));
-					return fail(res.status, { error: (err as { message?: string }).message || 'Failed to reject.' });
+					return fail(res.status, {
+						error: (err as { message?: string }).message || 'Failed to reject.'
+					});
 				}
 			} catch (err: unknown) {
-				return fail(500, { error: err instanceof Error ? err.message : 'Failed to reject suggestion.' });
+				return fail(500, {
+					error: err instanceof Error ? err.message : 'Failed to reject suggestion.'
+				});
 			}
 			redirect(303, `/trips/${params.slug}/inbox`);
 		}
@@ -332,10 +345,14 @@ export const actions: Actions = {
 				});
 				if (!res.ok) {
 					const err = await res.json().catch(() => ({}));
-					return fail(res.status, { error: (err as { message?: string }).message || 'Failed to save.' });
+					return fail(res.status, {
+						error: (err as { message?: string }).message || 'Failed to save.'
+					});
 				}
 			} catch (err: unknown) {
-				return fail(500, { error: err instanceof Error ? err.message : 'Failed to save suggestion.' });
+				return fail(500, {
+					error: err instanceof Error ? err.message : 'Failed to save suggestion.'
+				});
 			}
 			return { saved: true };
 		}
@@ -353,7 +370,9 @@ export const actions: Actions = {
 				});
 				if (!reviewRes.ok) {
 					const err = await reviewRes.json().catch(() => ({}));
-					return fail(reviewRes.status, { error: (err as { message?: string }).message || 'Failed to approve suggestion.' });
+					return fail(reviewRes.status, {
+						error: (err as { message?: string }).message || 'Failed to approve suggestion.'
+					});
 				}
 			} catch (err: unknown) {
 				const message = err instanceof Error ? err.message : 'Failed to approve suggestion.';
@@ -383,7 +402,9 @@ export const actions: Actions = {
 				});
 				if (!suggestRes.ok) {
 					const err = await suggestRes.json().catch(() => ({}));
-					return fail(suggestRes.status, { error: (err as { message?: string }).message || 'Failed to submit suggestion.' });
+					return fail(suggestRes.status, {
+						error: (err as { message?: string }).message || 'Failed to submit suggestion.'
+					});
 				}
 			} catch (err: unknown) {
 				const message = err instanceof Error ? err.message : 'Failed to submit suggestion.';
@@ -439,7 +460,10 @@ export const actions: Actions = {
 			redirect(303, `/trips/${params.slug}`);
 		} catch (err: unknown) {
 			if (isRedirect(err)) throw err;
-			const e = err as { message?: string; response?: { data?: Record<string, { message: string }> } };
+			const e = err as {
+				message?: string;
+				response?: { data?: Record<string, { message: string }> };
+			};
 			const fieldErrors = e.response?.data
 				? Object.entries(e.response.data)
 						.map(([f, v]) => `${f}: ${v.message}`)

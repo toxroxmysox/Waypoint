@@ -24,13 +24,18 @@ test.beforeAll(async () => {
 	// /account needs the user to be in at least one trip (#508: users.viewRule
 	// excludes a trip-less user's own record).
 	const t = await pbToken(OWNER);
-	const me = await fetch(`${E2E_PB_BASE}/api/collections/users/auth-refresh`, { method: 'POST', headers: { Authorization: t } }).then(
-		(r) => r.json()
-	);
+	const me = await fetch(`${E2E_PB_BASE}/api/collections/users/auth-refresh`, {
+		method: 'POST',
+		headers: { Authorization: t }
+	}).then((r) => r.json());
 	const res = await fetch(`${E2E_PB_BASE}/api/collections/trips/records`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json', Authorization: t },
-		body: JSON.stringify({ title: 'E2E connected apps', slug: `e2e-connected-apps-${Date.now().toString(36)}`, created_by: me.record.id })
+		body: JSON.stringify({
+			title: 'E2E connected apps',
+			slug: `e2e-connected-apps-${Date.now().toString(36)}`,
+			created_by: me.record.id
+		})
 	});
 	expect(res.ok, `trip create ${res.status}`).toBe(true);
 });
@@ -45,7 +50,9 @@ test('Disconnect removes the connection and kills its token', async ({ browser }
 	await page.waitForURL(/\/(trips|claim)/);
 	await page.goto(`${BASE}/account`, { waitUntil: 'networkidle' });
 
-	const section = page.locator('section', { has: page.getByRole('heading', { name: 'Connected apps' }) }).filter({ visible: true });
+	const section = page
+		.locator('section', { has: page.getByRole('heading', { name: 'Connected apps' }) })
+		.filter({ visible: true });
 	await expect(section).toBeVisible();
 	const row = section.locator('li', { hasText: 'E2E Test Client' }).first();
 	await expect(row).toContainText('Last used');
@@ -65,7 +72,9 @@ test("another user can't see or delete my connection", async () => {
 	const id = mine.items[0].id;
 
 	const other = await pbToken(OTHER);
-	const view = await fetch(`${E2E_PB_BASE}/api/collections/mcp_connections/records/${id}`, { headers: { Authorization: other } });
+	const view = await fetch(`${E2E_PB_BASE}/api/collections/mcp_connections/records/${id}`, {
+		headers: { Authorization: other }
+	});
 	expect(view.status).toBe(404);
 	const del = await fetch(`${E2E_PB_BASE}/api/collections/mcp_connections/records/${id}`, {
 		method: 'DELETE',
@@ -76,12 +85,17 @@ test("another user can't see or delete my connection", async () => {
 
 // #503 — Recent AI changes: the member's AI Changes from the last 30 days,
 // collapsed inside Connected apps, each revertible.
-test('Recent AI changes lists a change with its words and time, and Revert undoes it', async ({ browser }) => {
+test('Recent AI changes lists a change with its words and time, and Revert undoes it', async ({
+	browser
+}) => {
 	const { access } = await connect(OWNER);
 	const t = await pbToken(OWNER);
-	const trips = await fetch(`${E2E_PB_BASE}/api/collections/trips/records?filter=${encodeURIComponent('title = "E2E connected apps"')}`, {
-		headers: { Authorization: t }
-	}).then((r) => r.json());
+	const trips = await fetch(
+		`${E2E_PB_BASE}/api/collections/trips/records?filter=${encodeURIComponent('title = "E2E connected apps"')}`,
+		{
+			headers: { Authorization: t }
+		}
+	).then((r) => r.json());
 	const trip = trips.items[0];
 	const quote = `rename it ${Date.now().toString(36)}`;
 	const call = async (name: string, args: Record<string, unknown>) =>
@@ -89,10 +103,19 @@ test('Recent AI changes lists a change with its words and time, and Revert undoe
 	const p = await call('propose_changes', {
 		trip: trip.id,
 		quote,
-		ops: [{ action: 'update', collection: 'trips', id: trip.id, data: { location_summary: 'Douro valley' } }]
+		ops: [
+			{
+				action: 'update',
+				collection: 'trips',
+				id: trip.id,
+				data: { location_summary: 'Douro valley' }
+			}
+		]
 	});
 	expect(p.isError, JSON.stringify(p)).toBeFalsy();
-	expect((await call('commit_changes', { proposal_id: p.structuredContent.proposal.id })).isError).toBeFalsy();
+	expect(
+		(await call('commit_changes', { proposal_id: p.structuredContent.proposal.id })).isError
+	).toBeFalsy();
 
 	const ctx = await browser.newContext({ viewport: { width: 375, height: 812 } });
 	const page = await ctx.newPage();
@@ -100,7 +123,9 @@ test('Recent AI changes lists a change with its words and time, and Revert undoe
 	await page.waitForURL(/\/(trips|claim)/);
 	await page.goto(`${BASE}/account`, { waitUntil: 'networkidle' });
 
-	const recent = page.locator('details', { hasText: 'Recent AI changes' }).filter({ visible: true });
+	const recent = page
+		.locator('details', { hasText: 'Recent AI changes' })
+		.filter({ visible: true });
 	await expect(recent).toBeVisible();
 	await expect(recent).not.toHaveAttribute('open', '');
 	await recent.locator('summary').click();
@@ -109,7 +134,9 @@ test('Recent AI changes lists a change with its words and time, and Revert undoe
 	await expect(row).toContainText(/\d{1,2}:\d{2} (am|pm)/);
 	await row.getByRole('button', { name: 'Revert' }).click();
 	await expect(row).toContainText('Undone');
-	const after = await fetch(`${E2E_PB_BASE}/api/collections/trips/records/${trip.id}`, { headers: { Authorization: t } }).then((r) => r.json());
+	const after = await fetch(`${E2E_PB_BASE}/api/collections/trips/records/${trip.id}`, {
+		headers: { Authorization: t }
+	}).then((r) => r.json());
 	expect(after.location_summary).toBe('');
 	await ctx.close();
 });

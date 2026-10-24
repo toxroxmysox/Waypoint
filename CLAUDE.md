@@ -18,6 +18,7 @@ Work that spans sessions or needs a plan should trace to a GitHub Issue. File is
 Small, self-contained fixes (single-session, no plan needed) — just do them.
 
 "Let's just..." on anything non-trivial is a scope-creep trigger. Interrogate:
+
 - Is this a quick fix or a rabbit hole?
 - If it's out of scope, park it as an issue (bug or future feature) rather than doing it now.
 
@@ -28,6 +29,7 @@ Small, self-contained fixes (single-session, no plan needed) — just do them.
 Issue-driven development. Label reference: `docs/agents/triage-labels.md`
 
 Ceremony by type:
+
 - **bug**: fix → PR → review
 - **enhancement**: plan optional → PR → review
 - **feature**: grill → plan → subagent execution → PR → review
@@ -71,6 +73,7 @@ Modals: bottom sheets on mobile, centered modals on tablet+.
 Vitest for algorithmic logic, Playwright for critical-path E2E. Don't test trivial CRUD.
 
 E2E PB targets:
+
 - `pnpm test:e2e` — runs against the shared dev PB on :8090. Leaves throwaway trips behind; they accumulate.
 - `pnpm test:e2e:clean` — preferred. Spins up an isolated, disposable PB on :8097 (`scripts/e2e-isolated.sh` → #67's `e2e-clean-pb.sh`), runs the suite, throws it away. Keeps :8090 clean.
 - `E2E_SLOT=N` — one per worktree. Offsets every verifier's ports + data dirs by N (e2e PB :8097+N, preview :4173+N, harnesses, `verify:visual` :5199+N), so worktrees on different slots run concurrently (#384). Default 0. Specs read `BASE` from `tests/e2e/e2e-env.ts` — never hardcode a port.
@@ -110,6 +113,7 @@ Multi-currency, push notifications, embedded maps, real-time co-editing, native 
 Live on home server `basecamp` (migrated off Fly.io 2026-06-27; Fly + its CI removed). Shared infra facts (SSH, /volume1 layout, Caddy, DNS, restic→B2, secrets, gotchas) are canonical in `homeserver-stacks/BASECAMP.md` — don't restate them here.
 
 This app on basecamp:
+
 - Stack: `/volume1/docker/stacks/waypoint/`
 - Container @ port: `waypoint` @ host `100.82.71.103:8091` (the TAILNET ip, NOT `127.0.0.1` — curl to localhost gets connection-refused) → internal `:8080`
 - Public: `app.vandenwarsen.com` (Cloudflare Tunnel); `/pb/_/` admin tailnet-only (`100.82.71.103:8091/pb/_/`)

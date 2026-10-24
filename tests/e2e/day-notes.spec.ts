@@ -25,7 +25,10 @@ async function token(email: string): Promise<string> {
 	return ((await res.json()) as { token: string }).token;
 }
 
-async function devLogin(browser: Browser, email: string): Promise<{ page: Page; close: () => Promise<void> }> {
+async function devLogin(
+	browser: Browser,
+	email: string
+): Promise<{ page: Page; close: () => Promise<void> }> {
 	const ctx = await browser.newContext({ viewport: { width: 375, height: 812 } });
 	const page = await ctx.newPage();
 	await page.goto(`${BASE}/api/dev/login?email=${encodeURIComponent(email)}`);
@@ -63,17 +66,27 @@ test('day notes save from the header', async ({ browser }) => {
 	await page.getByRole('button', { name: 'Save', exact: true }).filter({ visible: true }).click();
 	await expect(page.getByText('Notes saved')).toBeVisible();
 	await page.reload({ waitUntil: 'networkidle' });
-	await expect(page.getByText('Pick up rail passes at Shinagawa.').filter({ visible: true })).toBeVisible();
+	await expect(
+		page.getByText('Pick up rail passes at Shinagawa.').filter({ visible: true })
+	).toBeVisible();
 	// Filled notes carry no label, and the old Notes card heading is gone.
-	await expect(page.getByRole('heading', { name: 'Notes', exact: true }).filter({ visible: true })).toHaveCount(0);
-	await expect(page.getByRole('button', { name: 'Edit notes' }).filter({ visible: true })).toBeVisible();
+	await expect(
+		page.getByRole('heading', { name: 'Notes', exact: true }).filter({ visible: true })
+	).toHaveCount(0);
+	await expect(
+		page.getByRole('button', { name: 'Edit notes' }).filter({ visible: true })
+	).toBeVisible();
 	await close();
 });
 
 test('viewer sees notes but no edit', async ({ browser }) => {
 	const { page, close } = await devLogin(browser, EMAILS.viewer);
 	await page.goto(`${BASE}/trips/${SLUG}/days/${dayId}`, { waitUntil: 'networkidle' });
-	await expect(page.getByText('Pick up rail passes at Shinagawa.').filter({ visible: true })).toBeVisible();
-	await expect(page.getByRole('button', { name: 'Edit notes' }).filter({ visible: true })).toHaveCount(0);
+	await expect(
+		page.getByText('Pick up rail passes at Shinagawa.').filter({ visible: true })
+	).toBeVisible();
+	await expect(
+		page.getByRole('button', { name: 'Edit notes' }).filter({ visible: true })
+	).toHaveCount(0);
 	await close();
 });

@@ -70,9 +70,7 @@ describe('getTripModeState', () => {
 		});
 
 		it('returns null today when no day matches', () => {
-			const days = [
-				makeDay({ id: 'day1', date: '2026-10-20 00:00:00.000Z' })
-			];
+			const days = [makeDay({ id: 'day1', date: '2026-10-20 00:00:00.000Z' })];
 			const state = getTripModeState([], days, oct15);
 			expect(state.now.today).toBeNull();
 		});
@@ -89,15 +87,25 @@ describe('getTripModeState', () => {
 			];
 			const state = getTripModeState(items, days, oct15);
 			expect(state.now.todayItems).toHaveLength(2);
-			expect(state.now.todayItems.map(i => i.id)).toEqual(['a', 'c']);
+			expect(state.now.todayItems.map((i) => i.id)).toEqual(['a', 'c']);
 		});
 
 		it('sorts todayItems by sort_order then start_time', () => {
 			const state = getTripModeState(
 				[
 					makeItem({ id: 'a', day: 'day1', sort_order: 300 }),
-					makeItem({ id: 'b', day: 'day1', sort_order: 100, start_time: '2026-10-15 09:00:00.000Z' }),
-					makeItem({ id: 'c', day: 'day1', sort_order: 100, start_time: '2026-10-15 10:00:00.000Z' })
+					makeItem({
+						id: 'b',
+						day: 'day1',
+						sort_order: 100,
+						start_time: '2026-10-15 09:00:00.000Z'
+					}),
+					makeItem({
+						id: 'c',
+						day: 'day1',
+						sort_order: 100,
+						start_time: '2026-10-15 10:00:00.000Z'
+					})
 				],
 				[makeDay({ id: 'day1', date: '2026-10-15 00:00:00.000Z' })],
 				oct15
@@ -128,9 +136,7 @@ describe('getTripModeState', () => {
 
 		it('isPast returns true for items with end_time before now', () => {
 			const days = [makeDay({ id: 'day1', date: '2026-10-15 00:00:00.000Z' })];
-			const items = [
-				makeItem({ id: 'a', day: 'day1', end_time: '2026-10-15 10:00:00.000Z' })
-			];
+			const items = [makeItem({ id: 'a', day: 'day1', end_time: '2026-10-15 10:00:00.000Z' })];
 			const state = getTripModeState(items, days, oct15);
 			expect(state.now.isPast(items[0])).toBe(true);
 		});
@@ -167,9 +173,7 @@ describe('getTripModeState', () => {
 		});
 
 		it('returns null tomorrowDay when no day matches', () => {
-			const days = [
-				makeDay({ id: 'day1', date: '2026-10-15 00:00:00.000Z' })
-			];
+			const days = [makeDay({ id: 'day1', date: '2026-10-15 00:00:00.000Z' })];
 			const state = getTripModeState([], days, oct15);
 			expect(state.upNext.tomorrowDay).toBeNull();
 		});
@@ -186,19 +190,17 @@ describe('getTripModeState', () => {
 			];
 			const state = getTripModeState(items, days, oct15);
 			expect(state.upNext.tomorrowItems).toHaveLength(2);
-			expect(state.upNext.tomorrowItems.map(i => i.id)).toEqual(['b', 'c']);
+			expect(state.upNext.tomorrowItems.map((i) => i.id)).toEqual(['b', 'c']);
 		});
 
 		it('sorts tomorrowItems by sort_order', () => {
-			const days = [
-				makeDay({ id: 'day2', date: '2026-10-16 00:00:00.000Z' })
-			];
+			const days = [makeDay({ id: 'day2', date: '2026-10-16 00:00:00.000Z' })];
 			const items = [
 				makeItem({ id: 'a', day: 'day2', sort_order: 200 }),
 				makeItem({ id: 'b', day: 'day2', sort_order: 100 })
 			];
 			const state = getTripModeState(items, days, oct15);
-			expect(state.upNext.tomorrowItems.map(i => i.id)).toEqual(['b', 'a']);
+			expect(state.upNext.tomorrowItems.map((i) => i.id)).toEqual(['b', 'a']);
 		});
 	});
 
@@ -230,25 +232,21 @@ describe('getTripModeState', () => {
 				makeDay({ id: 'day2', date: '2026-10-16 00:00:00.000Z' }),
 				makeDay({ id: 'day3', date: '2026-10-17 00:00:00.000Z' })
 			];
-			const items = [
-				makeItem({ id: 'a', day: 'day3' })
-			];
+			const items = [makeItem({ id: 'a', day: 'day3' })];
 			const state = getTripModeState(items, days, oct15);
 			expect(state.timeline.upcomingDays).toHaveLength(1);
 			expect(state.timeline.upcomingDays[0].day.id).toBe('day3');
 		});
 
 		it('sorts items within each day group by sort_order then time', () => {
-			const days = [
-				makeDay({ id: 'day2', date: '2026-10-16 00:00:00.000Z' })
-			];
+			const days = [makeDay({ id: 'day2', date: '2026-10-16 00:00:00.000Z' })];
 			const items = [
 				makeItem({ id: 'a', day: 'day2', sort_order: 300 }),
 				makeItem({ id: 'b', day: 'day2', sort_order: 100, start_time: '2026-10-16 10:00:00.000Z' }),
 				makeItem({ id: 'c', day: 'day2', sort_order: 100, start_time: '2026-10-16 08:00:00.000Z' })
 			];
 			const state = getTripModeState(items, days, oct15);
-			expect(state.timeline.upcomingDays[0].items.map(i => i.id)).toEqual(['c', 'b', 'a']);
+			expect(state.timeline.upcomingDays[0].items.map((i) => i.id)).toEqual(['c', 'b', 'a']);
 		});
 
 		it('#81: orders each day group chronologically by time like the itinerary, not by sort_order', () => {
@@ -257,11 +255,31 @@ describe('getTripModeState', () => {
 			// itinerary day view showed them chronological.
 			const days = [makeDay({ id: 'day2', date: '2026-10-16 00:00:00.000Z' })];
 			const items = [
-				makeItem({ id: 'taco', day: 'day2', sort_order: 1, start_time: '2026-10-16 18:00:00.000Z' }),
-				makeItem({ id: 'wrapup', day: 'day2', sort_order: 2, start_time: '2026-10-16 08:00:00.000Z' }),
+				makeItem({
+					id: 'taco',
+					day: 'day2',
+					sort_order: 1,
+					start_time: '2026-10-16 18:00:00.000Z'
+				}),
+				makeItem({
+					id: 'wrapup',
+					day: 'day2',
+					sort_order: 2,
+					start_time: '2026-10-16 08:00:00.000Z'
+				}),
 				makeItem({ id: 'oyo', day: 'day2', sort_order: 3, start_time: '2026-10-16 18:00:00.000Z' }),
-				makeItem({ id: 'colab', day: 'day2', sort_order: 4, start_time: '2026-10-16 08:00:00.000Z' }),
-				makeItem({ id: 'copilot', day: 'day2', sort_order: 5, start_time: '2026-10-16 07:00:00.000Z' })
+				makeItem({
+					id: 'colab',
+					day: 'day2',
+					sort_order: 4,
+					start_time: '2026-10-16 08:00:00.000Z'
+				}),
+				makeItem({
+					id: 'copilot',
+					day: 'day2',
+					sort_order: 5,
+					start_time: '2026-10-16 07:00:00.000Z'
+				})
 			];
 			const state = getTripModeState(items, days, oct15);
 			expect(state.timeline.upcomingDays[0].items.map((i) => i.id)).toEqual([
@@ -274,9 +292,7 @@ describe('getTripModeState', () => {
 		});
 
 		it('returns empty upcomingDays when no future days exist', () => {
-			const days = [
-				makeDay({ id: 'day1', date: '2026-10-15 00:00:00.000Z' })
-			];
+			const days = [makeDay({ id: 'day1', date: '2026-10-15 00:00:00.000Z' })];
 			const state = getTripModeState([], days, oct15);
 			expect(state.timeline.upcomingDays).toEqual([]);
 		});
@@ -295,10 +311,7 @@ describe('getTripModeState', () => {
 
 		it('items without a day assignment are excluded everywhere', () => {
 			const days = [makeDay({ id: 'day1', date: '2026-10-15 00:00:00.000Z' })];
-			const items = [
-				makeItem({ id: 'a', day: '' }),
-				makeItem({ id: 'b', day: 'day1' })
-			];
+			const items = [makeItem({ id: 'a', day: '' }), makeItem({ id: 'b', day: 'day1' })];
 			const state = getTripModeState(items, days, oct15);
 			expect(state.now.todayItems).toHaveLength(1);
 			expect(state.now.todayItems[0].id).toBe('b');

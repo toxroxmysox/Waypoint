@@ -22,18 +22,34 @@ describe('spanBandText (#423)', () => {
 			...over
 		}) as Item;
 	const rental = (over: Partial<Item> = {}) =>
-		stay({ type: 'transportation', start_time: '2026-06-18 10:00:00.000Z', end_time: '2026-06-22 12:00:00.000Z', ...over });
+		stay({
+			type: 'transportation',
+			start_time: '2026-06-18 10:00:00.000Z',
+			end_time: '2026-06-22 12:00:00.000Z',
+			...over
+		});
 
 	describe('stay', () => {
 		it('first day: Check-in time · N nights', () => {
-			expect(spanBandText(stay(), run, '2026-06-18')).toEqual({ phase: 'first', text: 'Check-in 3:00p · 4 nights' });
+			expect(spanBandText(stay(), run, '2026-06-18')).toEqual({
+				phase: 'first',
+				text: 'Check-in 3:00p · 4 nights'
+			});
 		});
 		it('middle day: Night N of M · check-out Weekday by time', () => {
-			expect(spanBandText(stay(), run, '2026-06-19')).toEqual({ phase: 'middle', text: 'Night 2 of 4 · check-out Mon by 11:00a' });
-			expect(spanBandText(stay(), run, '2026-06-21')?.text).toBe('Night 4 of 4 · check-out Mon by 11:00a');
+			expect(spanBandText(stay(), run, '2026-06-19')).toEqual({
+				phase: 'middle',
+				text: 'Night 2 of 4 · check-out Mon by 11:00a'
+			});
+			expect(spanBandText(stay(), run, '2026-06-21')?.text).toBe(
+				'Night 4 of 4 · check-out Mon by 11:00a'
+			);
 		});
 		it('last day: Check-out by time', () => {
-			expect(spanBandText(stay(), run, '2026-06-22')).toEqual({ phase: 'last', text: 'Check-out by 11:00a' });
+			expect(spanBandText(stay(), run, '2026-06-22')).toEqual({
+				phase: 'last',
+				text: 'Check-out by 11:00a'
+			});
 		});
 		it('without times the time parts drop', () => {
 			const bare = stay({ start_time: '', end_time: '' });
@@ -49,14 +65,25 @@ describe('spanBandText (#423)', () => {
 
 	describe('rental (transportation)', () => {
 		it('first day: Pick up time', () => {
-			expect(spanBandText(rental(), run, '2026-06-18')).toEqual({ phase: 'first', text: 'Pick up 10:00a' });
+			expect(spanBandText(rental(), run, '2026-06-18')).toEqual({
+				phase: 'first',
+				text: 'Pick up 10:00a'
+			});
 		});
 		it('middle day: Day N of M · return Weekday by time', () => {
-			expect(spanBandText(rental(), run, '2026-06-19')).toEqual({ phase: 'middle', text: 'Day 2 of 5 · return Mon by 12:00p' });
-			expect(spanBandText(rental(), run, '2026-06-21')?.text).toBe('Day 4 of 5 · return Mon by 12:00p');
+			expect(spanBandText(rental(), run, '2026-06-19')).toEqual({
+				phase: 'middle',
+				text: 'Day 2 of 5 · return Mon by 12:00p'
+			});
+			expect(spanBandText(rental(), run, '2026-06-21')?.text).toBe(
+				'Day 4 of 5 · return Mon by 12:00p'
+			);
 		});
 		it('last day: Return by time', () => {
-			expect(spanBandText(rental(), run, '2026-06-22')).toEqual({ phase: 'last', text: 'Return by 12:00p' });
+			expect(spanBandText(rental(), run, '2026-06-22')).toEqual({
+				phase: 'last',
+				text: 'Return by 12:00p'
+			});
 		});
 		it('without times the time parts drop', () => {
 			const bare = rental({ start_time: '', end_time: '' });

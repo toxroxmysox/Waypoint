@@ -41,9 +41,29 @@ migrate(
 			type: 'base',
 			name: 'memories',
 			fields: [
-				{ type: 'relation', name: 'trip', required: true, collectionId: trips.id, maxSelect: 1, cascadeDelete: true },
-				{ type: 'relation', name: 'day', required: true, collectionId: days.id, maxSelect: 1, cascadeDelete: true },
-				{ type: 'relation', name: 'author', required: true, collectionId: tripMembers.id, maxSelect: 1 },
+				{
+					type: 'relation',
+					name: 'trip',
+					required: true,
+					collectionId: trips.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				},
+				{
+					type: 'relation',
+					name: 'day',
+					required: true,
+					collectionId: days.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				},
+				{
+					type: 'relation',
+					name: 'author',
+					required: true,
+					collectionId: tripMembers.id,
+					maxSelect: 1
+				},
 				{
 					type: 'file',
 					name: 'photo',

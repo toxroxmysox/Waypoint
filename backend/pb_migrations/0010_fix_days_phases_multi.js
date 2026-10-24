@@ -73,14 +73,9 @@ migrate(
 			if (!startStr || !endStr) continue;
 
 			// Existing days keyed by YYYY-MM-DD
-			const existingDays = app.findRecordsByFilter(
-				'days',
-				'trip = {:tripId}',
-				'+date',
-				0,
-				0,
-				{ tripId: trip.id }
-			);
+			const existingDays = app.findRecordsByFilter('days', 'trip = {:tripId}', '+date', 0, 0, {
+				tripId: trip.id
+			});
 			const byDate = {};
 			for (const d of existingDays) {
 				byDate[d.getString('date').substring(0, 10)] = d;

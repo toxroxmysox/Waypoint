@@ -58,10 +58,9 @@ export function codesForItem(docs: CodeDoc[], itemId: string): ConfirmationCode[
  * fetch the item directly — the legacy json field is now inert, so the codes must
  * be re-sourced from the documents collection. Returns the same array for chaining.
  */
-export function attachCodesToItems<T extends { id: string; confirmation_codes?: ConfirmationCode[] }>(
-	items: T[],
-	codeDocs: CodeDoc[]
-): T[] {
+export function attachCodesToItems<
+	T extends { id: string; confirmation_codes?: ConfirmationCode[] }
+>(items: T[], codeDocs: CodeDoc[]): T[] {
 	const byItem = codesByItem(codeDocs);
 	for (const it of items) {
 		it.confirmation_codes = byItem.get(it.id) ?? [];

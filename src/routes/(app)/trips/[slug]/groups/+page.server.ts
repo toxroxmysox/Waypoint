@@ -87,7 +87,9 @@ export const actions: Actions = {
 			}
 			return { saveMoneyUnit: { success: true } };
 		} catch (err: unknown) {
-			return fail(400, { saveMoneyUnit: { error: extractErrorMessage(err) || 'Failed to save group.' } });
+			return fail(400, {
+				saveMoneyUnit: { error: extractErrorMessage(err) || 'Failed to save group.' }
+			});
 		}
 	},
 
@@ -114,7 +116,9 @@ export const actions: Actions = {
 			}
 			return { leaveMoneyUnit: { success: true } };
 		} catch (err: unknown) {
-			return fail(400, { leaveMoneyUnit: { error: extractErrorMessage(err) || 'Failed to leave group.' } });
+			return fail(400, {
+				leaveMoneyUnit: { error: extractErrorMessage(err) || 'Failed to leave group.' }
+			});
 		}
 	},
 
@@ -127,7 +131,9 @@ export const actions: Actions = {
 			await locals.pb.collection('money_units').delete(unitId);
 			return { deleteMoneyUnit: { success: true } };
 		} catch (err: unknown) {
-			return fail(400, { deleteMoneyUnit: { error: extractErrorMessage(err) || 'Failed to delete group.' } });
+			return fail(400, {
+				deleteMoneyUnit: { error: extractErrorMessage(err) || 'Failed to delete group.' }
+			});
 		}
 	}
 };

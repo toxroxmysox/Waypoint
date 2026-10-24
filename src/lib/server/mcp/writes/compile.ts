@@ -10,7 +10,11 @@
 import { randomBytes } from 'node:crypto';
 import type { TripRef } from '../context';
 import { ymd } from '../present';
-import { retilePhases, validateMovePhaseStart, validateNewPhaseStart } from '$lib/itinerary/phase-tiling';
+import {
+	retilePhases,
+	validateMovePhaseStart,
+	validateNewPhaseStart
+} from '$lib/itinerary/phase-tiling';
 import { shiftStoredDays } from '$lib/shell/trip-time';
 import { blockedReason, WRITABLE, type WritableSpec } from './registry';
 import type { Outcome, PlannedChange, WriteOp } from './types';
@@ -25,10 +29,13 @@ export interface RecordLoader {
 	/** The trip's day records (id, stored date, the phases covering it). */
 	days(tripId: string): Promise<{ id: string; date: string; phases?: string[] }[]>;
 	/** The trip's phases. */
-	phases(tripId: string): Promise<{ id: string; name: string; start_date: string; order: number }[]>;
+	phases(
+		tripId: string
+	): Promise<{ id: string; name: string; start_date: string; order: number }[]>;
 }
 
-const ITEM_EDIT_REFUSED = "Only the trip's owners can edit items. I can leave a comment for them instead.";
+const ITEM_EDIT_REFUSED =
+	"Only the trip's owners can edit items. I can leave a comment for them instead.";
 /** #226 / #402: a traveler may change who's going on any item (PB keeps it self-only). */
 const SELF_FIELDS = new Set(['assigned_to', 'not_going']);
 /** Collections the app lets only owners/co-owners change (#175, budgets.pb.js). */
@@ -81,7 +88,11 @@ function substituteRefs(v: unknown, refs: Map<string, string>): unknown {
 	return v;
 }
 
-function titleOf(record: Record<string, unknown> | null, data: Record<string, unknown>, spec: WritableSpec): string {
+function titleOf(
+	record: Record<string, unknown> | null,
+	data: Record<string, unknown>,
+	spec: WritableSpec
+): string {
 	for (const src of [record, data]) {
 		for (const k of ['title', 'name', 'description', 'code_label', 'text', 'thought']) {
 			const v = src?.[k];
@@ -99,7 +110,12 @@ function allowedKeys(spec: WritableSpec): Set<string> {
 	return keys;
 }
 
-export async function compileOps(loader: RecordLoader, ref: TripRef, ops: WriteOp[], userId = ''): Promise<PlannedChange[]> {
+export async function compileOps(
+	loader: RecordLoader,
+	ref: TripRef,
+	ops: WriteOp[],
+	userId = ''
+): Promise<PlannedChange[]> {
 	if (!ops.length) throw new Error('Nothing to change.');
 	if (ops.length > MAX_OPS) throw new Error(`At most ${MAX_OPS} changes at once.`);
 
@@ -114,9 +130,13 @@ export async function compileOps(loader: RecordLoader, ref: TripRef, ops: WriteO
 
 	const dayIdFor = async (date: string) => {
 		if (!ISO_DATE.test(date)) throw new Error(`"${date}" isn't a date. Use YYYY-MM-DD.`);
-		if (!trip.start_date) throw new Error(`${trip.title} has no dates yet, so nothing can go on a day.`);
+		if (!trip.start_date)
+			throw new Error(`${trip.title} has no dates yet, so nothing can go on a day.`);
 		const day = (await tripDays()).find((d) => ymd(d.date) === date);
-		if (!day) throw new Error(`${date} is outside ${trip.title} (${ymd(trip.start_date)} → ${ymd(trip.end_date)}).`);
+		if (!day)
+			throw new Error(
+				`${date} is outside ${trip.title} (${ymd(trip.start_date)} → ${ymd(trip.end_date)}).`
+			);
 		return day;
 	};
 
@@ -129,7 +149,8 @@ export async function compileOps(loader: RecordLoader, ref: TripRef, ops: WriteO
 				if (target === 'days' && (await tripDays()).some((d) => d.id === id)) continue;
 				if (target === 'phases' && (await tripPhases()).some((p) => p.id === id)) continue;
 				const rec = await loader.get(target, String(id));
-				if (!rec || String(rec.trip ?? '') !== trip.id) throw new Error(`That ${label(field)} isn't in ${trip.title}.`);
+				if (!rec || String(rec.trip ?? '') !== trip.id)
+					throw new Error(`That ${label(field)} isn't in ${trip.title}.`);
 			}
 		}
 	};
@@ -139,9 +160,12 @@ export async function compileOps(loader: RecordLoader, ref: TripRef, ops: WriteO
 		const blocked = blockedReason(op.collection);
 		if (blocked) throw new Error(blocked);
 		const spec = WRITABLE[op.collection];
-		if (op.action === 'create' && spec.updateOnly) throw new Error(`I can only edit ${spec.label}, not add new ones.`);
-		if (op.action === 'update' && spec.createOnly) throw new Error(`I can only add ${spec.label}, not edit them.`);
-		if (OWNERS_ONLY[op.collection] && !isPrivileged(ref)) throw new Error(`Only the trip's owners can change ${OWNERS_ONLY[op.collection]}.`);
+		if (op.action === 'create' && spec.updateOnly)
+			throw new Error(`I can only edit ${spec.label}, not add new ones.`);
+		if (op.action === 'update' && spec.createOnly)
+			throw new Error(`I can only add ${spec.label}, not edit them.`);
+		if (OWNERS_ONLY[op.collection] && !isPrivileged(ref))
+			throw new Error(`Only the trip's owners can change ${OWNERS_ONLY[op.collection]}.`);
 
 		const raw = { ...(op.data ?? {}) };
 		const allowed = allowedKeys(spec);
@@ -149,15 +173,23 @@ export async function compileOps(loader: RecordLoader, ref: TripRef, ops: WriteO
 			if (field === 'date' && spec.dayField) continue;
 			const why = blockedReason(op.collection, field.replace(/^\+|[+-]$/g, ''));
 			if (why) throw new Error(why);
-			if (!allowed.has(field)) throw new Error(`"${field}" isn't something I can set on ${spec.label}. Ask describe for the fields.`);
+			if (!allowed.has(field))
+				throw new Error(
+					`"${field}" isn't something I can set on ${spec.label}. Ask describe for the fields.`
+				);
 		}
-		const data = Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, substituteRefs(v, refs)]));
+		const data = Object.fromEntries(
+			Object.entries(raw).map(([k, v]) => [k, substituteRefs(v, refs)])
+		);
 
 		// The record and its trip (Review Focus 1: every op lands in this trip).
 		let record: Record<string, unknown> | null = null;
 		if (op.action === 'update') {
 			record = await loader.get(op.collection, String(op.id ?? '').trim());
-			if (!record) throw new Error(`No ${label(op.collection)} record "${op.id}" on a trip you're a member of.`);
+			if (!record)
+				throw new Error(
+					`No ${label(op.collection)} record "${op.id}" on a trip you're a member of.`
+				);
 			if ((await loader.tripIdOf(op.collection, record)) !== trip.id) throw new Error(elsewhere);
 		}
 		if (spec.tripPath === 'trip') {
@@ -208,7 +240,8 @@ export async function compileOps(loader: RecordLoader, ref: TripRef, ops: WriteO
 			if (record && oldDayDate && dayDate && dayDate !== oldDayDate) {
 				const delta = Math.round((Date.parse(dayDate) - Date.parse(oldDayDate)) / DAY_MS);
 				for (const f of [...(spec.timeFields ?? []), 'end_date']) {
-					if (!(f in data) && !empty(record[f])) data[f] = shiftStoredDays(String(record[f]), delta);
+					if (!(f in data) && !empty(record[f]))
+						data[f] = shiftStoredDays(String(record[f]), delta);
 				}
 			}
 		}
@@ -218,7 +251,10 @@ export async function compileOps(loader: RecordLoader, ref: TripRef, ops: WriteO
 			const stamped = v.match(STAMP_TIME);
 			if (stamped) data[f] = `${stamped[1]} ${stamped[2]}:00.000Z`;
 			else if (HHMM.test(v)) {
-				if (!dayDate) throw new Error(`Give a date for ${label(f)} (this ${label(op.collection).replace(/s$/, '')} isn't on a day).`);
+				if (!dayDate)
+					throw new Error(
+						`Give a date for ${label(f)} (this ${label(op.collection).replace(/s$/, '')} isn't on a day).`
+					);
 				data[f] = `${dayDate} ${v}:00.000Z`;
 			} else throw new Error(`"${v}" isn't a time. Use 24-hour HH:MM, e.g. 09:40.`);
 		}
@@ -238,24 +274,39 @@ export async function compileOps(loader: RecordLoader, ref: TripRef, ops: WriteO
 			const start = ymd(String(data.start_date));
 			const why =
 				op.action === 'create'
-					? validateNewPhaseStart(start, trip.start_date, trip.end_date, list.map((p) => p.start_date))
-					: validateMovePhaseStart(String(record!.id), start, retilePhases(list, trip.end_date), trip.start_date, trip.end_date);
+					? validateNewPhaseStart(
+							start,
+							trip.start_date,
+							trip.end_date,
+							list.map((p) => p.start_date)
+						)
+					: validateMovePhaseStart(
+							String(record!.id),
+							start,
+							retilePhases(list, trip.end_date),
+							trip.start_date,
+							trip.end_date
+						);
 			if (why) throw new Error(why);
 		}
 
 		let id: string;
 		if (op.action === 'create') {
-			for (const [f, who] of Object.entries(spec.stamp ?? {})) data[f] = who === 'user' ? userId : ref.memberId;
+			for (const [f, who] of Object.entries(spec.stamp ?? {}))
+				data[f] = who === 'user' ? userId : ref.memberId;
 			// What the app's forms fill in (required fields the AI can't or needn't send).
 			if (op.collection === 'checklists') data.kind = 'manual';
 			if (op.collection === 'scenarios') data.status = 'candidate';
-			if (op.collection === 'trip_goals' && empty(data.manual_status)) data.manual_status = 'unplanned';
+			if (op.collection === 'trip_goals' && empty(data.manual_status))
+				data.manual_status = 'unplanned';
 			if (op.collection === 'items') {
 				const dayId = String(data.day ?? '');
 				if (empty(data.status)) data.status = dayId ? 'planned' : 'unplanned';
 				if (empty(data.phase)) {
 					// items/new: a day's item takes the day's phase; an idea takes the first phase (#196).
-					const dayPhase = dayId ? (await tripDays()).find((d) => d.id === dayId)?.phases?.[0] : undefined;
+					const dayPhase = dayId
+						? (await tripDays()).find((d) => d.id === dayId)?.phases?.[0]
+						: undefined;
 					const first = [...(await tripPhases())].sort((a, b) => a.order - b.order)[0]?.id;
 					if (dayPhase ?? first) data.phase = dayPhase ?? first;
 				}
@@ -274,7 +325,9 @@ export async function compileOps(loader: RecordLoader, ref: TripRef, ops: WriteO
 			collection: op.collection,
 			id,
 			via,
-			before: record ? Object.fromEntries(Object.keys(data).map((k) => [k, record![k] ?? null])) : null,
+			before: record
+				? Object.fromEntries(Object.keys(data).map((k) => [k, record![k] ?? null]))
+				: null,
 			after: data,
 			outcome,
 			title: titleOf(record, data, spec)

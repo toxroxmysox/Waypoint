@@ -62,7 +62,10 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 	const prompts = shuffle(buildGoalPrompts(trip.location_summary, trip.countries));
 	const promptText = new Map(prompts.map((p) => [p.id, p.text]));
 
-	const plan = buildCaptureDeck(reactions, prompts.map((p) => p.id));
+	const plan = buildCaptureDeck(
+		reactions,
+		prompts.map((p) => p.id)
+	);
 	const goalById = new Map(goals.map((g) => [g.id, g]));
 
 	const cards: WizardCard[] = plan.map((c) =>
@@ -84,7 +87,9 @@ export const actions: Actions = {
 
 		const membership = await locals.pb
 			.collection('trip_members')
-			.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`);
+			.getFirstListItem<TripMember>(
+				`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`
+			);
 		if (membership.role === 'viewer') return fail(403, { error: 'Viewers cannot add goals.' });
 
 		const data = await request.formData();
@@ -149,7 +154,9 @@ export const actions: Actions = {
 			const goal = await locals.pb.collection('trip_goals').getOne<TripGoal>(goalId);
 			const membership = await locals.pb
 				.collection('trip_members')
-				.getFirstListItem<TripMember>(`trip = "${goal.trip}" && user = "${locals.user!.id}" && removed_at = ""`);
+				.getFirstListItem<TripMember>(
+					`trip = "${goal.trip}" && user = "${locals.user!.id}" && removed_at = ""`
+				);
 
 			const existing = await locals.pb
 				.collection('goal_votes')
@@ -179,7 +186,9 @@ export const actions: Actions = {
 			const goal = await locals.pb.collection('trip_goals').getOne<TripGoal>(goalId);
 			const membership = await locals.pb
 				.collection('trip_members')
-				.getFirstListItem<TripMember>(`trip = "${goal.trip}" && user = "${locals.user!.id}" && removed_at = ""`);
+				.getFirstListItem<TripMember>(
+					`trip = "${goal.trip}" && user = "${locals.user!.id}" && removed_at = ""`
+				);
 			const existing = await locals.pb
 				.collection('goal_votes')
 				.getFirstListItem<GoalVote>(`goal = "${goal.id}" && member = "${membership.id}"`)

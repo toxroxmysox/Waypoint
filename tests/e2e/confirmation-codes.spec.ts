@@ -43,7 +43,10 @@ test.describe('Confirmation codes → Documents (#268)', () => {
 		await expect(dayLinks.first()).toBeVisible({ timeout: 5000 });
 		await dayLinks.first().click();
 		await page.waitForURL(/\/days\//);
-		await page.getByRole('link', { name: /^Add item$/i }).first().click();
+		await page
+			.getByRole('link', { name: /^Add item$/i })
+			.first()
+			.click();
 		await page.waitForURL(/\/items\/new/);
 
 		await page.locator('button:has-text("Lodging"):visible').first().click();
@@ -82,7 +85,10 @@ test.describe('Confirmation codes → Documents (#268)', () => {
 		await expect(page.getByText('4242').filter({ visible: true }).first()).toBeVisible();
 
 		// --- Edit: keep Conf# (ABC123 → ABC999), remove PIN, add a third code ---
-		await page.getByRole('link', { name: /^Edit$/i }).first().click();
+		await page
+			.getByRole('link', { name: /^Edit$/i })
+			.first()
+			.click();
 		await page.waitForURL(/\/edit(?:\?|$)/); // #361: edit links carry ?from=
 
 		// The edit loader reshapes code Documents back into the form (2 rows).

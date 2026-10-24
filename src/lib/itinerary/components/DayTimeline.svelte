@@ -60,61 +60,80 @@
      accent (outline + tint) and a corner badge; the badge is absolutely placed so
      nothing shifts under the drag. Each free gap spells out what it offers. -->
 <div class="relative">
-{#if planDrop}
-	<span
-		class="text-paper absolute -top-2.5 left-3 z-10 rounded-full px-2 py-0.5 text-[11px] font-semibold"
-		style="background-color: var(--color-accent)"
-		data-drop-prompt
+	{#if planDrop}
+		<span
+			class="absolute -top-2.5 left-3 z-10 rounded-full px-2 py-0.5 text-[11px] font-semibold text-paper"
+			style="background-color: var(--color-accent)"
+			data-drop-prompt
+		>
+			Drop to plan
+		</span>
+	{/if}
+	<section
+		data-day-timeline
+		data-plan-drop={planDrop || undefined}
+		class="space-y-2 rounded-lg {items.length === 0
+			? 'min-h-[8.5rem]'
+			: 'min-h-[3rem]'} transition-[outline-color,background-color] duration-150"
+		style={planDrop
+			? 'outline: 2px dashed var(--color-accent); outline-offset: 2px; background-color: var(--color-accent-tint)'
+			: ''}
+		use:dndzone={{
+			items,
+			dragDisabled,
+			type: 'itinerary-item',
+			flipDurationMs: FLIP_MS,
+			dropTargetStyle: {},
+			useCursorForDetection: true,
+			delayTouchStart: LONG_PRESS_MS
+		}}
+		onconsider={onConsider}
+		onfinalize={onFinalize}
 	>
-		Drop to plan
-	</span>
-{/if}
-<section
-	data-day-timeline
-	data-plan-drop={planDrop || undefined}
-	class="space-y-2 rounded-lg {items.length === 0 ? 'min-h-[8.5rem]' : 'min-h-[3rem]'} transition-[outline-color,background-color] duration-150"
-	style={planDrop ? 'outline: 2px dashed var(--color-accent); outline-offset: 2px; background-color: var(--color-accent-tint)' : ''}
-	use:dndzone={{ items, dragDisabled, type: 'itinerary-item', flipDurationMs: FLIP_MS, dropTargetStyle: {}, useCursorForDetection: true, delayTouchStart: LONG_PRESS_MS }}
-	onconsider={onConsider}
-	onfinalize={onFinalize}
->
-	{#each items as item (item.id)}
-		{@const meta = flatById.get(item.id)}
-		{@const gap = gaps.get(item.id)}
-		<!-- This wrapper IS the drag target (whole-card drag, #353) and the one
+		{#each items as item (item.id)}
+			{@const meta = flatById.get(item.id)}
+			{@const gap = gaps.get(item.id)}
+			<!-- This wrapper IS the drag target (whole-card drag, #353) and the one
 		     svelte-dnd-action makes focusable for the keyboard path, so the
 		     item's name has to live here: the library reads `aria-label` off
 		     THIS element for its "started dragging <item>" announcements. The
 		     card's own link carries the full accessible name (#420). -->
-		<div animate:flip={{ duration: FLIP_MS }} class="rounded-lg" aria-label={item.title}>
-			{#if meta?.slotLabel}
-				<TimeSlotDivider label={meta.slotLabel} />
-			{/if}
-			{#if gap}
-				<FreeTimeLabel {gap} dropLabel={planDrop ? dropLabels.get(item.id) : undefined} />
-			{/if}
-			<ItemCard {item} {tripSlug} {members} overlap={overlaps.get(item.id)} docCount={docCountByItem[item.id] ?? 0} />
-		</div>
-	{/each}
-</section>
-{#if items.length === 0}
-	<!-- #427 empty day (story 35). The panel IS the dndzone's footprint: it is laid
+			<div animate:flip={{ duration: FLIP_MS }} class="rounded-lg" aria-label={item.title}>
+				{#if meta?.slotLabel}
+					<TimeSlotDivider label={meta.slotLabel} />
+				{/if}
+				{#if gap}
+					<FreeTimeLabel {gap} dropLabel={planDrop ? dropLabels.get(item.id) : undefined} />
+				{/if}
+				<ItemCard
+					{item}
+					{tripSlug}
+					{members}
+					overlap={overlaps.get(item.id)}
+					docCount={docCountByItem[item.id] ?? 0}
+				/>
+			</div>
+		{/each}
+	</section>
+	{#if items.length === 0}
+		<!-- #427 empty day (story 35). The panel IS the dndzone's footprint: it is laid
 	     over the (empty) zone, click-through except the button, so a drop onto the
 	     panel lands in the zone and plans the idea. (svelte-dnd-action maps zone
 	     children 1:1 onto items, so the panel can't live inside the zone.) -->
-	<div
-		class="border-line pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed px-4 text-center"
-		data-day-empty
-	>
-		<p class="text-ink-muted text-sm">
-			<span class="text-ink-soft font-medium">Nothing planned yet</span> · Add something, or drag an idea here.
-		</p>
-		<a
-			href={withOrigin(`/trips/${tripSlug}/items/new?day=${dayId}`, page.url.pathname)}
-			class="border-line text-ink-soft hover:border-ink-muted active:border-ink-muted pointer-events-auto inline-flex min-h-[44px] items-center rounded-lg border bg-white px-4 text-sm font-medium"
+		<div
+			class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-line px-4 text-center"
+			data-day-empty
 		>
-			+ Add item
-		</a>
-	</div>
-{/if}
+			<p class="text-sm text-ink-muted">
+				<span class="font-medium text-ink-soft">Nothing planned yet</span> · Add something, or drag an
+				idea here.
+			</p>
+			<a
+				href={withOrigin(`/trips/${tripSlug}/items/new?day=${dayId}`, page.url.pathname)}
+				class="pointer-events-auto inline-flex min-h-[44px] items-center rounded-lg border border-line bg-white px-4 text-sm font-medium text-ink-soft hover:border-ink-muted active:border-ink-muted"
+			>
+				+ Add item
+			</a>
+		</div>
+	{/if}
 </div>

@@ -10,7 +10,14 @@ import type { ItemType } from '$lib/itinerary/types';
 /** The six group types, in heading order. */
 export type IdeaGroupType = 'lodging' | 'flight' | 'transportation' | 'activity' | 'meal' | 'note';
 
-export const IDEA_GROUP_ORDER: IdeaGroupType[] = ['lodging', 'flight', 'transportation', 'activity', 'meal', 'note'];
+export const IDEA_GROUP_ORDER: IdeaGroupType[] = [
+	'lodging',
+	'flight',
+	'transportation',
+	'activity',
+	'meal',
+	'note'
+];
 
 export const IDEA_GROUP_LABEL: Record<IdeaGroupType, string> = {
 	lodging: 'Lodging',
@@ -73,7 +80,10 @@ export function ideaDisplayOrder<T extends Orderable>(
  * (svelte-dnd-action maps children 1:1 onto items, so a heading can't be a
  * sibling). Computed from the live array so it follows a drag in flight.
  */
-export function ideaRunStarts<T extends { id: string }>(flat: T[], typeOf: (e: T) => string): Map<string, IdeaGroupType> {
+export function ideaRunStarts<T extends { id: string }>(
+	flat: T[],
+	typeOf: (e: T) => string
+): Map<string, IdeaGroupType> {
 	const starts = new Map<string, IdeaGroupType>();
 	let prev: IdeaGroupType | null = null;
 	for (const e of flat) {
@@ -101,7 +111,12 @@ function money(n: number): string {
  * card meta (location; a flight's route; a note's first line). Empty parts are
  * omitted; '' when neither is known.
  */
-export function ideaSub(item: Pick<CardItemFields, 'location_name' | 'description'> & { type: ItemType | string; cost_estimate_usd?: number }): string {
+export function ideaSub(
+	item: Pick<CardItemFields, 'location_name' | 'description'> & {
+		type: ItemType | string;
+		cost_estimate_usd?: number;
+	}
+): string {
 	const place = cardMeta(item as Pick<CardItemFields, 'type' | 'location_name' | 'description'>);
 	const cost = (item.cost_estimate_usd ?? 0) > 0 ? money(item.cost_estimate_usd as number) : '';
 	return [place, cost].filter(Boolean).join(' · ');

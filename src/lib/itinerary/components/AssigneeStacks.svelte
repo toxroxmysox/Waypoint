@@ -43,7 +43,9 @@
 	// tombstone stand-in so the slot still reads honestly.
 	const resolve = (id: string) =>
 		members.find((mm) => mm.id === id) ??
-		({ id, removed_at: '1', display_name: '', placeholder_name: '' } as TripMember & { avatarUrl?: string });
+		({ id, removed_at: '1', display_name: '', placeholder_name: '' } as TripMember & {
+			avatarUrl?: string;
+		});
 	const going = $derived(assignedTo.map(resolve));
 	const notGoingMembers = $derived(notGoing.map(resolve));
 
@@ -76,7 +78,7 @@
 				{/each}
 			</span>
 			{#if bubbles.extra > 0}
-				<span class="text-ink-soft ml-1 text-[11px] font-semibold">+{bubbles.extra}</span>
+				<span class="ml-1 text-[11px] font-semibold text-ink-soft">+{bubbles.extra}</span>
 			{/if}
 		</button>
 	</div>

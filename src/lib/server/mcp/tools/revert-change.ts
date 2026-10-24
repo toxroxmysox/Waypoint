@@ -22,11 +22,16 @@ export const revertChangeTool: ToolDef = {
 			if (!ref) throw new Error("You're no longer a member of that trip.");
 			assertCanWrite(ref);
 		});
-		if (r.already) return result(ALREADY_UNDONE, [{ emoji: '↩️', title: ALREADY_UNDONE, lines: [`“${r.quote}”`] }]);
+		if (r.already)
+			return result(ALREADY_UNDONE, [
+				{ emoji: '↩️', title: ALREADY_UNDONE, lines: [`“${r.quote}”`] }
+			]);
 		const cards = [
 			...(r.restored.length ? [{ emoji: '↩️', title: 'Undone', lines: r.restored }] : []),
 			...(r.skipped.length ? [{ emoji: '⚠️', title: 'Left as is', lines: r.skipped }] : [])
 		];
-		return result(`Undone: “${r.quote}”`, cards, { note: r.skipped.length ? 'Some things were left as they are.' : 'Everything was put back.' });
+		return result(`Undone: “${r.quote}”`, cards, {
+			note: r.skipped.length ? 'Some things were left as they are.' : 'Everything was put back.'
+		});
 	}
 };

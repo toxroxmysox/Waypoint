@@ -67,13 +67,17 @@ export function summarizeDay(items: Item[], days: Day[], day: Day): DayCardSumma
 		const kind: StayKind = date === start ? 'check-in' : date === end ? 'check-out' : 'staying';
 		const name = it.title ?? '';
 		const night = nightInfo(it, days, date);
-		const lead = kind === 'check-out' || !night ? 'Check-out' : `Night ${night.night} of ${night.total}`;
+		const lead =
+			kind === 'check-out' || !night ? 'Check-out' : `Night ${night.night} of ${night.total}`;
 		stays.push({ kind, name, text: name ? `${lead} · ${name}` : lead });
 	}
 
 	// First *titled* item in itinerary order — an untitled item shouldn't make a
 	// non-empty day read as empty.
-	const leadTitle = orderDayItems(own).find((i) => i.title?.trim())?.title.trim() ?? '';
+	const leadTitle =
+		orderDayItems(own)
+			.find((i) => i.title?.trim())
+			?.title.trim() ?? '';
 
 	return {
 		itemCount: own.length,
@@ -101,7 +105,11 @@ export type TodayTreatment = 'outline' | 'pill' | 'none';
  * (moss) outline, no pill. Trip Mode keeps the TODAY pill. Compares calendar-date
  * strings only; `today` is the trip-local date (`tripToday`), never local Date math.
  */
-export function todayTreatment(dayDate: string, today: string | undefined, mode: TripViewMode): TodayTreatment {
+export function todayTreatment(
+	dayDate: string,
+	today: string | undefined,
+	mode: TripViewMode
+): TodayTreatment {
 	if (!today || toDateOnly(dayDate) !== today) return 'none';
 	return mode === 'planning' ? 'outline' : 'pill';
 }

@@ -40,11 +40,13 @@
 ### Task 1: AI Access setting
 
 **Files:**
+
 - Create: `backend/pb_migrations/0076_trips_ai_access.js`
 - Modify: `src/lib/itinerary/types.ts` (Trip), `src/routes/(app)/trips/[slug]/settings/+page.server.ts`, `src/routes/(app)/trips/[slug]/settings/+page.svelte`, `src/routes/(app)/trips/import/+page.server.ts`, `src/routes/(app)/trips/[slug]/clone/+page.server.ts`, `src/lib/portability/export.ts`, `backend/pb_hooks/trips.pb.js`
 - Test: `tests/e2e/ai-access-setting.spec.ts`
 
 **Interfaces:**
+
 - Produces: `Trip.ai_access: boolean`, true = connected AI can read the trip. Default true. A PB bool defaults to false, so: the migration sets every existing trip to true; `trips.pb.js` sets it true on create when the request body omits it (so any future creation path is on by default); import uses `importData.trip.ai_access ?? true`, clone copies the source `?? true`, export includes it.
 
 - [ ] **Step 1: Write the failing test** `tests/e2e/ai-access-setting.spec.ts` (serial, seed via `/api/dev/rules-fixture`):
@@ -59,10 +61,12 @@
 ### Task 2: Connection storage and user-scoped PB
 
 **Files:**
+
 - Create: `backend/pb_migrations/0077_mcp_connections.js`, `src/lib/server/mcp/admin-pb.ts`, `src/lib/server/mcp/oauth/store.ts`, `src/lib/server/mcp/oauth/pending.ts`, `src/lib/server/mcp/oauth/crypto.ts`
 - Test: `src/lib/server/mcp/oauth/crypto.test.ts`, `src/lib/server/mcp/oauth/pending.test.ts`
 
 **Interfaces:**
+
 - Produces (PB):
   - `mcp_connections`: `user` (relation users, required, cascadeDelete), `client_id` (text), `client_name` (text), `last_used_at` (date), autodate `created`. Rules: list/view/delete `user = @request.auth.id`; create/update `null` (superuser only).
   - `mcp_tokens`: `connection` (relation mcp_connections, required, **cascadeDelete**), `kind` (select `access|refresh`), `hash` (text, unique index), `expires_at` (date). All rules `null`.
@@ -83,11 +87,13 @@
 ### Task 3: OAuth endpoints and the CSRF shim
 
 **Files:**
+
 - Create: `src/routes/api/dev/test-cimd/+server.ts`, `src/routes/api/dev/test-callback/+server.ts` (both 404 unless `WAYPOINT_DEV_MODE=true`), `src/lib/server/mcp/oauth/clients.ts`, `src/routes/.well-known/oauth-authorization-server/+server.ts`, `src/routes/.well-known/oauth-protected-resource/[...rest]/+server.ts`, `src/routes/oauth/authorize/+page.server.ts`, `src/routes/oauth/authorize/+page.svelte`, `src/routes/oauth/authorize/dev/+server.ts`, `src/routes/oauth/token/+server.ts`, `deploy/server.mjs`, `deploy/token-origin.mjs`
 - Modify: `deploy/start.sh` (`node /app/build/index.js` → `node /app/deploy/server.mjs`), `Dockerfile` (copy `deploy/*.mjs`), the A2HS banner component (hide when `page.url.pathname.startsWith('/oauth')`)
 - Test: `deploy/token-origin.test.ts`, `tests/e2e/mcp-oauth.spec.ts`, `tests/e2e/mcp-helpers.ts`
 
 **Interfaces:**
+
 - Consumes: Task 2 `pending.ts`, `store.ts`, `crypto.ts`.
 - Produces:
   - `resolveClient(client_id: string): Promise<OAuthClient | { error: string }>`: CIMD only (https URL; `http://localhost`/`127.0.0.1` accepted only when `WAYPOINT_DEV_MODE=true`, for the e2e test client; fetch with 5 s timeout, `redirect: 'error'`, `doc.client_id === client_id`, non-empty `redirect_uris`, 1 h cache). No DCR: Claude uses CIMD (spike); no `/oauth/register`, no `registration_endpoint`.
@@ -113,11 +119,13 @@
 ### Task 4: MCP endpoint, trip gate, presentation, `list_trips`, Connected apps
 
 **Files:**
+
 - Create: `src/routes/mcp/+server.ts`, `src/lib/server/mcp/server.ts`, `src/lib/server/mcp/context.ts`, `src/lib/server/mcp/present.ts`, `src/lib/server/mcp/card-html.ts`, `src/lib/server/mcp/tools/list-trips.ts`, `src/lib/account/components/ConnectedApps.svelte`
 - Modify: `src/routes/(app)/account/+page.server.ts` (load connections, `disconnect` action), `src/routes/(app)/account/+page.svelte`, `backend/pb_hooks/dev-auth.pb.js` (`/api/dev/seed-mcp-trips`), `package.json` (`@modelcontextprotocol/sdk` 1.32.1, exact)
 - Test: `src/lib/server/mcp/present.test.ts`, `tests/e2e/mcp-tools.spec.ts`, `tests/e2e/connected-apps.spec.ts`
 
 **Interfaces:**
+
 - Consumes: Task 2 `lookupAccess`, `userPb`; Task 1 `ai_access`.
 - Produces:
   - `context.ts`: `McpContext = { pb: PocketBase; user: { id: string; name: string }; now: Date }`; `TripRef = { trip: Trip; role: Role; memberId: string; open: boolean }`; `myTrips(ctx): Promise<TripRef[]>` (active memberships, newest start first); `resolveTrip(ctx, ref: string): Promise<TripRef>` (slug or id exact → else title/location_summary contains, case-insensitive; 0 → throws `No trip matching "<ref>" that you're a member of.`; >1 → throws `"<ref>" matches several trips: <title (start → end)>, …. Which one?`).
@@ -138,10 +146,12 @@
 ### Task 5: `get_trip` and `get_day`
 
 **Files:**
+
 - Create: `src/lib/server/mcp/tools/get-trip.ts`, `src/lib/server/mcp/tools/get-day.ts`, `src/lib/server/mcp/day-data.ts`
 - Test: `tests/e2e/mcp-tools.spec.ts` (`describe('get_trip')`, `describe('get_day')`), `src/lib/server/mcp/day-data.test.ts`
 
 **Interfaces:**
+
 - Consumes: `resolveTrip`, `offTrip`, `result`, `EMOJI`.
 - Produces: `resolveDate(tz: string, date: string, now: Date): string` ('today' | 'tomorrow' | 'yesterday' | YYYY-MM-DD → YYYY-MM-DD, trip-local); `loadDay(ctx, trip: Trip, date: string): Promise<{ day: Day | null; stays: Item[]; items: Item[]; notes: string }>` with `items` ordered by `orderDayItems` and stays from `spanningItemsForDate`; `dayCards(d): Card[]` (stays first, line `staying · night N of M` or `check-out` via `nightInfo`, time range, place, tag `booked`). Trip_brief (Task 9) reuses `loadDay` + `dayCards`.
 - Tool inputs: `get_trip { trip: string }`; `get_day { trip: string, date?: string = 'today' }`.
@@ -155,10 +165,12 @@
 ### Task 6: `search` and `get_item`
 
 **Files:**
+
 - Create: `src/lib/server/mcp/tools/search.ts`, `src/lib/server/mcp/tools/get-item.ts`
 - Test: `tests/e2e/mcp-tools.spec.ts` (`describe('search')`, `describe('get_item')`)
 
 **Interfaces:**
+
 - Consumes: `myTrips`, `resolveTrip`, `codesForItem` (`src/lib/documents/codes.ts`), `linked-expenses.ts`.
 - Tool inputs: `search { query?: string, trip?: string, type?: ItemType, country?: string, from?: string, to?: string, status?: ItemStatus, booked?: boolean, min_cost?: number, max_cost?: number }` (at least one of query/filters required); `get_item { item: string }` (id from a search card).
 - Search covers items (title, description, location), day notes, code Documents (`code_label`, `code_value`), expenses (description), goals (title, description) over open trips only. `country` (ISO-2) matches the item's phase `country_code`, else the trip's `countries`. **Never** suggestions/comments. Each card's tag = trip title; item cards carry `id: <itemId>` line so `get_item` can follow. Off trips skipped and listed in structured `skipped: [{ title, start_date, end_date, notice }]`. Cap 25 cards.
@@ -170,12 +182,14 @@
 ### Task 7: `get_money` and `audit_trip`
 
 **Files:**
+
 - Create: `src/lib/server/mcp/tools/get-money.ts`, `src/lib/server/mcp/tools/audit-trip.ts`, `src/lib/server/mcp/audit.ts`
 - Test: `src/lib/server/mcp/audit.test.ts`, `tests/e2e/mcp-tools.spec.ts` (`describe('get_money')`, `describe('audit_trip')`)
 
 **Interfaces:**
+
 - `get_money { trip }`: balances by member name from `computeBalances`; who-owes-whom from `unitDebts` (unit labels as the Expenses page shows them); spend vs budget via `groupBudgetTotal`; spend by category; planned remaining via `remainingPlannedTotal`. Same inputs the `/expenses` and `/money` loaders use; no new arithmetic.
-- `audit.ts`: `auditTrip(input: { trip: Trip; days: Day[]; items: Item[]; codeDocs: CodeDoc[]; tasks: Task[] }): AuditGap[]`, `AuditGap = { kind: 'no_lodging' | 'unbooked' | 'flight_no_code' | 'overlap' | 'unplaced_idea' | 'open_task'; title: string; date?: string; itemId?: string }`. Uses `spanningItemsForDate` (nights), `needsBooking`, `codesForItem`, `detectOverlaps`, parking-lot definition from `parking-lot-cards.ts`, `Task.checked`. Last trip day has no night. `audit_trip { trip }` renders one card per gap, grouped by kind, heading `What's missing`. 
+- `audit.ts`: `auditTrip(input: { trip: Trip; days: Day[]; items: Item[]; codeDocs: CodeDoc[]; tasks: Task[] }): AuditGap[]`, `AuditGap = { kind: 'no_lodging' | 'unbooked' | 'flight_no_code' | 'overlap' | 'unplaced_idea' | 'open_task'; title: string; date?: string; itemId?: string }`. Uses `spanningItemsForDate` (nights), `needsBooking`, `codesForItem`, `detectOverlaps`, parking-lot definition from `parking-lot-cards.ts`, `Task.checked`. Last trip day has no night. `audit_trip { trip }` renders one card per gap, grouped by kind, heading `What's missing`.
 
 - [ ] **Step 1: Write the failing tests:**
   - `audit.test.ts`: 4-day trip with a 2-night lodging on day 1 → one `no_lodging` for night 3, none for day 4; flight without code → `flight_no_code`; booked lodging not `unbooked`; two overlapping timed activities → one `overlap`; checked task absent.
@@ -185,10 +199,12 @@
 ### Task 8: `what_changed`, `get_lists`, `get_memories`
 
 **Files:**
+
 - Create: `src/lib/server/mcp/tools/what-changed.ts`, `src/lib/server/mcp/tools/get-lists.ts`, `src/lib/server/mcp/tools/get-memories.ts`
 - Test: `tests/e2e/mcp-tools.spec.ts` (three describes)
 
 **Interfaces:**
+
 - `what_changed { trip, since: string }` (ISO datetime or `yesterday` / `last week`, trip-local): items, expenses, goals, memories, comments, tasks with `created >= since` (tag `added`, plus author name when the record has one) or `updated >= since` (tag `edited`). Heading notes deletions aren't tracked. First step verifies each collection has `created`/`updated` autodate fields; any without is left out and named in the tool description.
 - `get_lists { trip }`: each checklist with its tasks, checked state, assignee name; open tasks first.
 - `get_memories { trip, date?: string }`: memory `thought` text, day date, author name; `fields:` excludes `photo`; memories with only a photo are omitted.
@@ -199,11 +215,13 @@
 ### Task 9: `trip_brief`, posture text, isolation and role sweep
 
 **Files:**
+
 - Create: `src/lib/server/mcp/tools/trip-brief.ts`
 - Modify: `src/lib/server/mcp/server.ts` (final `instructions`), every `tools/*.ts` description
 - Test: `tests/e2e/mcp-isolation.spec.ts`
 
 **Interfaces:**
+
 - `trip_brief { trip?: string }` (default: the open trip containing trip-local today, else the next upcoming): composes `getNowViewState`/`current-phase` for where we are, `loadDay` + `dayCards` for what's next today, tonight's lodging with `location_address`, codes for today's and tomorrow's bookings via `codesForItem`. No new data logic.
 - Descriptions: each says plainly what it returns. No prohibitions; the posture lives in `instructions`.
 
@@ -220,6 +238,7 @@
 ### Task 10: Release checks (hitl)
 
 **Files:**
+
 - Create: `docs/MCP_CONNECTOR.md` (member setup: add `https://app.vandenwarsen.com/mcp` as a custom connector on claude.ai → sign in with email code → in the connector's settings set every tool to **Always allow**; Disconnect lives in Waypoint account settings)
 - Modify: `docs/DEPLOY_RUNBOOK.md` (post-deploy MCP smoke), `CONTEXT.md` only if a term shifted
 

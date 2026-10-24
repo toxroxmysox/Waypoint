@@ -26,5 +26,5 @@ Make the active trip available **read-only offline** by caching the service-work
 - **Offline is a snapshot**, not live data — the last successful cache write. A staleness banner ("showing your trip as of [time]") communicates this; network-first revalidates the moment signal returns.
 - **Cached navigations are server-rendered, authenticated HTML.** Caches are therefore **device-scoped and cleared on logout**. A future multiple-accounts-per-device case would need per-identity cache partitioning — out of scope now (personal-phone PWA).
 - **`__data.json` caching couples to SvelteKit's data-loading contract.** A SvelteKit major that changed that contract would require revisiting `cache-policy`. Acceptable, and isolated to one pure module.
-- **Editing offline stays out** (read-only). This ADR doesn't preclude adding IndexedDB *later* for the narrower offline-write need — it only declines IDB as the *read* mechanism now.
+- **Editing offline stays out** (read-only). This ADR doesn't preclude adding IndexedDB _later_ for the narrower offline-write need — it only declines IDB as the _read_ mechanism now.
 - **Additive, no data model change** — no collections or fields; a PWA/service-worker + UI change. The existing document-bytes precache (V4_DOCUMENTS_PRD S5) folds in as one branch.

@@ -40,7 +40,11 @@ test.describe('Trip Mode checklist check-off (#52)', () => {
 		await page.goto(`${BASE}/trips/${tripSlug}/lists`, { waitUntil: 'networkidle' });
 		await page.getByRole('button', { name: 'New list' }).filter({ visible: true }).first().click();
 		await page.getByLabel('Name').fill('Packing');
-		await page.getByRole('button', { name: /create list/i }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('button', { name: /create list/i })
+			.filter({ visible: true })
+			.first()
+			.click();
 		await page.waitForURL(/\/lists\/[a-z0-9]+$/);
 		const listUrl = page.url();
 		const addRow = page.getByPlaceholder('Add task').filter({ visible: true }).first();
@@ -59,13 +63,23 @@ test.describe('Trip Mode checklist check-off (#52)', () => {
 
 		// #364: the checkbox flips optimistically, so "Uncheck task" appears before
 		// the save lands. Wait for the action POST — a full-page goto would abort it.
-		const saved = page.waitForResponse((r) => r.request().method() === 'POST' && r.url().includes('/now'));
-		await page.getByRole('button', { name: 'Check task' }).filter({ visible: true }).first().click();
-		await expect(page.getByRole('button', { name: 'Uncheck task' }).filter({ visible: true }).first()).toBeVisible();
+		const saved = page.waitForResponse(
+			(r) => r.request().method() === 'POST' && r.url().includes('/now')
+		);
+		await page
+			.getByRole('button', { name: 'Check task' })
+			.filter({ visible: true })
+			.first()
+			.click();
+		await expect(
+			page.getByRole('button', { name: 'Uncheck task' }).filter({ visible: true }).first()
+		).toBeVisible();
 		expect((await saved).ok()).toBe(true);
 
 		// --- Persists to Planning ---
 		await page.goto(listUrl, { waitUntil: 'networkidle' });
-		await expect(page.getByRole('button', { name: 'Uncheck task' }).filter({ visible: true }).first()).toBeVisible();
+		await expect(
+			page.getByRole('button', { name: 'Uncheck task' }).filter({ visible: true }).first()
+		).toBeVisible();
 	});
 });

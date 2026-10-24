@@ -13,13 +13,28 @@ const diagrams = await page.locator('.diagram svg').count();
 const cards = await page.locator('#cards .card').count();
 const rows = await page.locator('#tptable tbody tr').count();
 const imgs = await page.evaluate(() =>
-  Array.from(document.images).map((i) => [i.src.split('/').pop(), i.naturalWidth > 0])
+	Array.from(document.images).map((i) => [i.src.split('/').pop(), i.naturalWidth > 0])
 );
 // test a filter: click P1 → count visible cards
 await page.locator('#ff button[data-val="P1"]').click();
 await page.waitForTimeout(200);
 const visP1 = await page.locator('#cards .card:visible').count();
 
-await page.screenshot({ path: new URL('./screenshots/zz-report-top.png', import.meta.url).pathname });
-console.log(JSON.stringify({ diagramsRendered: diagrams, findingCards: cards, taskpathRows: rows, p1Visible: visP1, images: imgs, pageErrors: errors }, null, 1));
+await page.screenshot({
+	path: new URL('./screenshots/zz-report-top.png', import.meta.url).pathname
+});
+console.log(
+	JSON.stringify(
+		{
+			diagramsRendered: diagrams,
+			findingCards: cards,
+			taskpathRows: rows,
+			p1Visible: visP1,
+			images: imgs,
+			pageErrors: errors
+		},
+		null,
+		1
+	)
+);
 await browser.close();

@@ -88,7 +88,10 @@ test.describe('#271 availability poll', () => {
 
 		// Paint the green day, then a couple neighbours (tap to mark Free).
 		await poll.getByTestId(`poll-day-${greenDay}`).click();
-		await expect(poll.getByTestId(`poll-day-${greenDay}`)).toHaveAttribute('data-mine', 'available');
+		await expect(poll.getByTestId(`poll-day-${greenDay}`)).toHaveAttribute(
+			'data-mine',
+			'available'
+		);
 
 		// Save → reveals the name step (Tier-1: no account needed).
 		await poll.getByTestId('poll-save').click();
@@ -110,7 +113,9 @@ test.describe('#271 availability poll', () => {
 			`/api/collections/availability/records?filter=${encodeURIComponent(`member="${danaId}"`)}`,
 			ownerToken
 		);
-		expect(danaCells.items.some((c: { day: string }) => c.day.slice(0, 10) === greenDay)).toBe(true);
+		expect(danaCells.items.some((c: { day: string }) => c.day.slice(0, 10) === greenDay)).toBe(
+			true
+		);
 		await anonCtx.close();
 
 		// --- 2. The OWNER paints the SAME day → both members free → the day is GREEN.
@@ -134,12 +139,19 @@ test.describe('#271 availability poll', () => {
 		// --- 3. DIRECT PROMOTION: pick the green window → set the dates. -----------
 		await app.getByTestId('promote-toggle').filter({ visible: true }).first().click();
 		// The window pre-fills to the green run; submit.
-		await app.getByTestId('promote-form').filter({ visible: true }).first().locator('button[type="submit"]').click();
+		await app
+			.getByTestId('promote-form')
+			.filter({ visible: true })
+			.first()
+			.locator('button[type="submit"]')
+			.click();
 		// Redirects to the (now dated) trip home.
 		await app.waitForURL(`${BASE}/trips/${slug}`, { timeout: 15000 });
 
 		// The trip is now dated (forming→dated cascade): the planning tabs appear.
-		await expect(app.getByRole('link', { name: 'Phases' }).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
+		await expect(
+			app.getByRole('link', { name: 'Phases' }).filter({ visible: true }).first()
+		).toBeVisible({ timeout: 10000 });
 
 		// And PB confirms the dates are set.
 		const dated = await pbGet(`/api/collections/trips/records/${tripId}`, ownerToken);

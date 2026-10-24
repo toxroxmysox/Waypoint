@@ -15,7 +15,9 @@ describe('formatFlightNumber', () => {
 
 describe('flightTitle', () => {
 	it('number to city', () => {
-		expect(flightTitle({ number: 'UA1234', city: 'Denver', code: 'DEN' })).toBe('UA 1234 to Denver');
+		expect(flightTitle({ number: 'UA1234', city: 'Denver', code: 'DEN' })).toBe(
+			'UA 1234 to Denver'
+		);
 	});
 	it('falls back to the airport code when no city', () => {
 		expect(flightTitle({ number: 'UA1234', city: '', code: 'DEN' })).toBe('UA 1234 to DEN');
@@ -33,10 +35,14 @@ describe('flightTitle', () => {
 describe('flightPlaceLine', () => {
 	const route = 'MKE → DEN';
 	it('new flight: title carries the number, so the line is the route', () => {
-		expect(flightPlaceLine({ title: 'UA 1234 to Denver', flight_number: 'UA 1234', route })).toBe(route);
+		expect(flightPlaceLine({ title: 'UA 1234 to Denver', flight_number: 'UA 1234', route })).toBe(
+			route
+		);
 	});
 	it('contains check ignores spaces and case', () => {
-		expect(flightPlaceLine({ title: 'ua1234 overnight', flight_number: 'UA 1234', route })).toBe(route);
+		expect(flightPlaceLine({ title: 'ua1234 overnight', flight_number: 'UA 1234', route })).toBe(
+			route
+		);
 	});
 	it('legacy flight with a stored number the title lacks', () => {
 		expect(flightPlaceLine({ title: 'Spirit to the coast', flight_number: 'NK 345', route })).toBe(

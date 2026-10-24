@@ -125,7 +125,9 @@
 			     announcements. -->
 			<div
 				animate:flip={{ duration: FLIP_MS }}
-				class={collapsed ? 'no-callout h-0 w-0 shrink-0 basis-0 overflow-hidden' : 'no-callout group transition-transform hover:-translate-y-px'}
+				class={collapsed
+					? 'no-callout h-0 w-0 shrink-0 basis-0 overflow-hidden'
+					: 'no-callout group transition-transform hover:-translate-y-px'}
 				aria-hidden={collapsed}
 				aria-label={collapsed ? undefined : item.title}
 			>
@@ -135,20 +137,37 @@
 					{/if}
 					<div class="flex items-stretch gap-1">
 						<div class="min-w-0 flex-1">
-							<IdeaCard {item} {tripSlug} votes={votesByItem[item.id] ?? []} {members} {myMemberId} {canVote} />
+							<IdeaCard
+								{item}
+								{tripSlug}
+								votes={votesByItem[item.id] ?? []}
+								{members}
+								{myMemberId}
+								{canVote}
+							/>
 						</div>
 						<!-- Pull-up: the owner's one primary action on the card (tap to plan). -->
 						{#if canPullUp(item)}
-						<button
-							type="button"
-							class="text-ink-muted hover:text-ink-soft active:text-ink-soft flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center"
-							aria-label="Pull up to plan"
-							onclick={() => pullUp(item.id)}
-						>
-							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-								<polyline points="18 15 12 9 6 15" />
-							</svg>
-						</button>
+							<button
+								type="button"
+								class="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center text-ink-muted hover:text-ink-soft active:text-ink-soft"
+								aria-label="Pull up to plan"
+								onclick={() => pullUp(item.id)}
+							>
+								<svg
+									width="16"
+									height="16"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									aria-hidden="true"
+								>
+									<polyline points="18 15 12 9 6 15" />
+								</svg>
+							</button>
 						{/if}
 					</div>
 				{/if}
@@ -156,10 +175,12 @@
 		{/each}
 	</section>
 	{#if !collapsed && items.length === 0}
-		<p class="text-ink-muted mt-1.5 px-2 py-3 text-center text-xs italic">Drag an item here to unschedule it.</p>
+		<p class="mt-1.5 px-2 py-3 text-center text-xs text-ink-muted italic">
+			Drag an item here to unschedule it.
+		</p>
 	{/if}
 {:else if inertItems.length === 0}
-	<p class="text-ink-muted text-sm italic">No parking lot items.</p>
+	<p class="text-sm text-ink-muted italic">No parking lot items.</p>
 {:else}
 	<section class="space-y-1.5">
 		{#each inertItems as item (item.id)}
@@ -173,11 +194,31 @@
 				{/if}
 				<div class="flex items-stretch gap-1">
 					<div class="min-w-0 flex-1">
-						<IdeaCard {item} {tripSlug} votes={votesByItem[item.id] ?? []} {members} {myMemberId} {canVote} />
+						<IdeaCard
+							{item}
+							{tripSlug}
+							votes={votesByItem[item.id] ?? []}
+							{members}
+							{myMemberId}
+							{canVote}
+						/>
 					</div>
 					{#if canPullUp(item)}
-						<div class="text-ink-muted flex shrink-0 items-center px-1" aria-label="Pull up to plan">
-							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<div
+							class="flex shrink-0 items-center px-1 text-ink-muted"
+							aria-label="Pull up to plan"
+						>
+							<svg
+								width="16"
+								height="16"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								aria-hidden="true"
+							>
 								<polyline points="18 15 12 9 6 15" />
 							</svg>
 						</div>

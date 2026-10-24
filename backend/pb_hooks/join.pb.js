@@ -39,7 +39,9 @@ routerAdd('POST', '/api/join/create', (e) => {
 	if (!tripId) throw new BadRequestError('Missing trip_id');
 	if (!role) throw new BadRequestError('Missing role');
 	if (role !== 'traveler' && role !== 'viewer') {
-		throw new BadRequestError('Join links can only be traveler or viewer — co-owner stays on the email invite path');
+		throw new BadRequestError(
+			'Join links can only be traveler or viewer — co-owner stays on the email invite path'
+		);
 	}
 
 	// Caller must be an active owner/co_owner of the trip.
@@ -93,11 +95,10 @@ routerAdd('POST', '/api/join/create', (e) => {
 	// Reuse a revoked (trip, role) row if present (unique index), else insert.
 	let existing = null;
 	try {
-		existing = e.app.findFirstRecordByFilter(
-			'join_tokens',
-			'trip = {:tripId} && role = {:role}',
-			{ tripId: tripId, role: role }
-		);
+		existing = e.app.findFirstRecordByFilter('join_tokens', 'trip = {:tripId} && role = {:role}', {
+			tripId: tripId,
+			role: role
+		});
 	} catch (_) {
 		// No existing link for this (trip, role) — fine.
 	}
@@ -105,7 +106,9 @@ routerAdd('POST', '/api/join/create', (e) => {
 	let link;
 	if (existing) {
 		if (!existing.get('revoked')) {
-			throw new BadRequestError('A ' + role + ' link already exists for this trip — rotate or revoke it first');
+			throw new BadRequestError(
+				'A ' + role + ' link already exists for this trip — rotate or revoke it first'
+			);
 		}
 		existing.set('token', token);
 		existing.set('expires_at', expiresAt);
@@ -182,11 +185,10 @@ routerAdd('POST', '/api/join/rotate', (e) => {
 
 	let link;
 	try {
-		link = e.app.findFirstRecordByFilter(
-			'join_tokens',
-			'trip = {:tripId} && role = {:role}',
-			{ tripId: tripId, role: role }
-		);
+		link = e.app.findFirstRecordByFilter('join_tokens', 'trip = {:tripId} && role = {:role}', {
+			tripId: tripId,
+			role: role
+		});
 	} catch (_) {
 		throw new NotFoundError('No join link to rotate — create one first');
 	}
@@ -202,7 +204,10 @@ routerAdd('POST', '/api/join/rotate', (e) => {
 		const endMs = new Date(endStr).getTime() + 24 * 60 * 60 * 1000;
 		const curMs = new Date(curExp).getTime();
 		if (!isNaN(endMs) && !isNaN(curMs) && endMs < curMs) {
-			link.set('expires_at', new Date(endMs).toISOString().replace('T', ' ').replace('Z', '') + 'Z');
+			link.set(
+				'expires_at',
+				new Date(endMs).toISOString().replace('T', ' ').replace('Z', '') + 'Z'
+			);
 		}
 	}
 
@@ -212,7 +217,12 @@ routerAdd('POST', '/api/join/rotate', (e) => {
 		throw new BadRequestError('Failed to rotate join link: ' + err);
 	}
 
-	return e.json(200, { id: link.id, token: token, role: role, expires_at: link.getString('expires_at') });
+	return e.json(200, {
+		id: link.id,
+		token: token,
+		role: role,
+		expires_at: link.getString('expires_at')
+	});
 });
 
 // --- POST /api/join/revoke -------------------------------------------------
@@ -248,11 +258,10 @@ routerAdd('POST', '/api/join/revoke', (e) => {
 
 	let link;
 	try {
-		link = e.app.findFirstRecordByFilter(
-			'join_tokens',
-			'trip = {:tripId} && role = {:role}',
-			{ tripId: tripId, role: role }
-		);
+		link = e.app.findFirstRecordByFilter('join_tokens', 'trip = {:tripId} && role = {:role}', {
+			tripId: tripId,
+			role: role
+		});
 	} catch (_) {
 		throw new NotFoundError('No join link to revoke');
 	}

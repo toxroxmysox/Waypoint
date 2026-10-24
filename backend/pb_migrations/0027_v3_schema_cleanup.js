@@ -13,7 +13,7 @@ migrate(
 		items.fields.add(
 			new NumberField({
 				name: 'sort_order',
-				min: 0,
+				min: 0
 			})
 		);
 
@@ -23,7 +23,15 @@ migrate(
 
 		// Add 'flight' to type enum
 		const typeField = items.fields.getByName('type');
-		typeField.values = ['lodging', 'transportation', 'activity', 'meal', 'note', 'checklist', 'flight'];
+		typeField.values = [
+			'lodging',
+			'transportation',
+			'activity',
+			'meal',
+			'note',
+			'checklist',
+			'flight'
+		];
 
 		// Update indexes: remove slot-based index, add sort_order index
 		items.indexes = items.indexes.filter((idx) => !idx.includes('idx_items_trip_day_slot'));
@@ -52,20 +60,20 @@ migrate(
 			new SelectField({
 				name: 'slot',
 				values: ['morning', 'afternoon', 'evening', 'anytime'],
-				maxSelect: 1,
+				maxSelect: 1
 			})
 		);
 		items.fields.add(
 			new NumberField({
 				name: 'rank',
-				min: 0,
+				min: 0
 			})
 		);
 		items.fields.add(
 			new SelectField({
 				name: 'parking_lot_scope',
 				values: ['none', 'trip', 'phase', 'day'],
-				maxSelect: 1,
+				maxSelect: 1
 			})
 		);
 
@@ -88,7 +96,7 @@ migrate(
 		phases.fields.add(
 			new TextField({
 				name: 'color',
-				max: 7,
+				max: 7
 			})
 		);
 		app.save(phases);

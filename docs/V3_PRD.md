@@ -45,6 +45,7 @@ No production data to preserve. One migration that makes the following changes:
 | Remove field | `color` (text) | — |
 
 **Types file (`src/lib/itinerary/types.ts`) cleanup:**
+
 - Remove `Slot` type and `ParkingLotScope` type
 - Add `'unplanned'` to `ItemStatus`, `'flight'` to `ItemType`
 - Remove `slot`, `parking_lot_scope` from `Item` interface
@@ -58,11 +59,13 @@ No production data to preserve. One migration that makes the following changes:
 Replace the current slot-enum-based day view with an anchor-time timeline.
 
 **Layout (top to bottom):**
+
 1. **Multi-day items** — spanning lodging/transport rendered as full-width cards
 2. **Timeline** — continuous, 8am–10pm default range (expands if items have times outside)
 3. **Parking lot** — unplanned items for the current phase. On desktop, renders in the ContextRail (right panel) instead of below the timeline
 
 **Timeline behavior:**
+
 - Anchored items (have `start_time`) are pinned at their time position
 - Untimed planned items flow between anchored items based on `sort_order`
 - Untimed items visually expand to fill the gap between surrounding anchored items
@@ -70,6 +73,7 @@ Replace the current slot-enum-based day view with an anchor-time timeline.
 - Time slot headers (Morning / Afternoon / Evening) are visual dividers derived from anchor time positions, never stored
 
 **Overlap handling:**
+
 - Anchored items with overlapping time ranges render sequentially in `start_time` order with a subtle visual overlap indicator (informational, not blocking)
 
 **Drag interactions:**
@@ -83,11 +87,13 @@ Replace the current slot-enum-based day view with an anchor-time timeline.
 Dragging **never** sets or changes anchor times. Use the item form for that.
 
 **sort_order implementation:**
+
 - Gap-based integers: 100, 200, 300...
 - Insert between two items = midpoint (e.g., 150)
 - When gaps close, rebalance all items on the day in one write
 
 **Status lifecycle:**
+
 - `unplanned ↔ planned → done | considered`
 - Backward (`planned → unplanned`) is allowed — "we're not sure about this anymore"
 
@@ -102,20 +108,24 @@ Separate views from Planning Mode. Shares item card components but not layout.
 #### Now tab — three states
 
 **Mid-event** (current time falls within an item's anchor time range or multi-day span):
+
 - Expanded card for the current item with full details (location, booking info, reservation codes)
 - "UP NEXT" preview below showing next item with countdown
 - Tomorrow's first item preview at bottom
 
 **Between things** (no item is ongoing, but items remain today):
+
 - "FREE TIME" card with countdown to next item
 - "UP NEXT" preview
 
 **Day wrapped** (all items done or past 10pm):
+
 - End-of-day summary card
 
 #### Today tab
 
 Full-day timeline using the same data as the Planning Mode day view, with distinct rendering:
+
 - Past items dimmed with completion state
 - Current item highlighted with "RIGHT NOW" indicator and countdown
 - Future items in normal/waiting state
@@ -126,6 +136,7 @@ Full-day timeline using the same data as the Planning Mode day view, with distin
 #### Add button
 
 Center nav button (not a real tab). Opens a choice:
+
 - Add item to today (pre-filled with current phase and today's date)
 - Add expense
 
@@ -138,6 +149,7 @@ Unchanged from current implementation.
 ### 3.4 UI Cleanup
 
 **Remove page-level skeleton components** (8 files):
+
 - `TripCardSkeleton.svelte`
 - `DayItemSkeleton.svelte`
 - `ExpenseRowSkeleton.svelte`
@@ -156,18 +168,21 @@ PocketBase loads fast enough that skeletons flash for sub-200ms transitions, whi
 ## 4. Testing Strategy
 
 **Vitest (unit) — dense coverage:**
+
 - Timeline interleaving logic: anchored items sorted by time, untimed items positioned by sort_order, overlap detection, edge cases (no anchored items, all same time, untimed-only days, single item)
 - `sort_order` rebalancing: gap insertion, midpoint calculation, full rebalance
 - `getTripModeState()`: mid-event/between-things/day-wrapped state derivation
 - Trip mode activation: date-based derivation logic
 
 **Playwright (E2E) — critical paths only:**
+
 - Create item with anchor time → correct timeline position
 - Drag untimed item between anchored items → sort_order updates, correct render
 - Mode switching: active trip → Trip Mode default → "Edit plan" → Planning → "Trip view" → back
 - Trip Mode Now: correct state based on time of day
 
 **Skip:**
+
 - Component rendering tests (skeleton removal, pill styling, dimming)
 - Schema migration verification (one-shot manual)
 - Layout-only changes (ContextRail parking lot placement)
@@ -185,6 +200,7 @@ Captured in `docs/SPEC_BACKLOG.md` under v4 Concepts:
 - **Day Wrapped Stats** — items/distance/spent summary card
 
 Tracked as separate issues:
+
 - **Voting UI** — [#30](https://github.com/toxroxmysox/Waypoint/issues/30)
 - **SideRail truncation** — [#29](https://github.com/toxroxmysox/Waypoint/issues/29)
 
@@ -192,16 +208,17 @@ Tracked as separate issues:
 
 ## 6. Issue Breakdown
 
-| Issue | Title | Type | Dependencies |
-|-------|-------|------|-------------|
-| [#31](https://github.com/toxroxmysox/Waypoint/issues/31) | Schema cleanup: hard cut migration | refactor | None |
-| [#32](https://github.com/toxroxmysox/Waypoint/issues/32) | Day view timeline layout | feature | #31 |
-| [#17](https://github.com/toxroxmysox/Waypoint/issues/17) | Deepen trip-mode module | feature | #31 |
-| [#33](https://github.com/toxroxmysox/Waypoint/issues/33) | Trip Mode views (Now/Today/Add) | feature | #17, #32 |
-| [#34](https://github.com/toxroxmysox/Waypoint/issues/34) | Mode switching (derived + symmetric pills) | feature | #33 |
-| [#35](https://github.com/toxroxmysox/Waypoint/issues/35) | Remove page-level skeleton components | refactor | None |
+| Issue                                                    | Title                                      | Type     | Dependencies |
+| -------------------------------------------------------- | ------------------------------------------ | -------- | ------------ |
+| [#31](https://github.com/toxroxmysox/Waypoint/issues/31) | Schema cleanup: hard cut migration         | refactor | None         |
+| [#32](https://github.com/toxroxmysox/Waypoint/issues/32) | Day view timeline layout                   | feature  | #31          |
+| [#17](https://github.com/toxroxmysox/Waypoint/issues/17) | Deepen trip-mode module                    | feature  | #31          |
+| [#33](https://github.com/toxroxmysox/Waypoint/issues/33) | Trip Mode views (Now/Today/Add)            | feature  | #17, #32     |
+| [#34](https://github.com/toxroxmysox/Waypoint/issues/34) | Mode switching (derived + symmetric pills) | feature  | #33          |
+| [#35](https://github.com/toxroxmysox/Waypoint/issues/35) | Remove page-level skeleton components      | refactor | None         |
 
 **Dependency graph:**
+
 ```
 #31 Schema cleanup
  ├── #32 Day view timeline
@@ -217,6 +234,6 @@ Tracked as separate issues:
 
 ## 7. Changelog
 
-| Date | Summary |
-|------|---------|
+| Date       | Summary                                                                                                                                                                                    |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 2026-05-31 | PRD created from grill session. Scope: schema cleanup, day view timeline, Trip Mode, skeleton removal. Deferred: inline parking lot, quick actions, day stats, voting UI, note before bed. |

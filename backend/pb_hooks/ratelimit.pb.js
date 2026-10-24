@@ -57,7 +57,7 @@ onBootstrap((e) => {
 			label: 'users:requestOTP',
 			audience: '',
 			duration: 60,
-			maxRequests: 5,
+			maxRequests: 5
 		},
 		// #271 / ADR-0023 — the anonymous poll-paint path (/api/poll/paint) is
 		// token-gated but still creates a name-only Placeholder Member on first paint,
@@ -70,10 +70,12 @@ onBootstrap((e) => {
 			label: '/api/poll/paint',
 			audience: '',
 			duration: 60,
-			maxRequests: 20,
-		},
+			maxRequests: 20
+		}
 	];
 
 	e.app.save(settings);
-	console.log('ratelimit.pb.js: rate limits enabled — 5/60s users:requestOTP, 20/60s /api/poll/paint');
+	console.log(
+		'ratelimit.pb.js: rate limits enabled — 5/60s users:requestOTP, 20/60s /api/poll/paint'
+	);
 });

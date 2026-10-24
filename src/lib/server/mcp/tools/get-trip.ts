@@ -13,7 +13,10 @@ import type { ToolDef } from './types';
 export const memberName = (m: Pick<TripMember, 'display_name' | 'placeholder_name' | 'expand'>) =>
 	m.display_name || m.expand?.user?.name || m.placeholder_name || 'member';
 
-export async function loadMembers(ctx: Parameters<ToolDef['run']>[0], tripId: string): Promise<TripMember[]> {
+export async function loadMembers(
+	ctx: Parameters<ToolDef['run']>[0],
+	tripId: string
+): Promise<TripMember[]> {
 	return ctx.pb.collection('trip_members').getFullList<TripMember>({
 		filter: ctx.pb.filter('trip = {:t} && removed_at = ""', { t: tripId }),
 		// ADR-0024 §5: only the account's name, never its email or avatar.
@@ -45,12 +48,18 @@ export function nightCards(nights: { date: string; lodging: string }[]): Card[] 
 }
 
 /** A phase card: place, dates, then its Phase Notes when set (#401). */
-export function phaseCard(p: Pick<Phase, 'name' | 'location' | 'country_code' | 'start_date' | 'end_date' | 'notes'>): Card {
+export function phaseCard(
+	p: Pick<Phase, 'name' | 'location' | 'country_code' | 'start_date' | 'end_date' | 'notes'>
+): Card {
 	return {
 		emoji: '📍',
 		title: p.name,
 		tag: 'phase',
-		lines: [[p.location, p.country_code].filter(Boolean).join(', '), tripDates(p), p.notes || ''].filter(Boolean)
+		lines: [
+			[p.location, p.country_code].filter(Boolean).join(', '),
+			tripDates(p),
+			p.notes || ''
+		].filter(Boolean)
 	};
 }
 
@@ -100,26 +109,42 @@ export const getTrip: ToolDef = {
 			...nightCards(
 				nightsOf(days).map((date) => {
 					const here = lodgingForNight(items, days, date);
-					return { date, lodging: here.length ? here.map((l) => l.title).join(', ') : 'no lodging' };
+					return {
+						date,
+						lodging: here.length ? here.map((l) => l.title).join(', ') : 'no lodging'
+					};
 				})
 			)
 		);
 
 		if (members.length) {
-			cards.push({ emoji: '👥', title: 'Members', lines: members.map((m) => `${memberName(m)} · ${m.role.replace('_', '-')}`) });
+			cards.push({
+				emoji: '👥',
+				title: 'Members',
+				lines: members.map((m) => `${memberName(m)} · ${m.role.replace('_', '-')}`)
+			});
 		}
 
 		const statusById = new Map(items.map((i) => [i.id, i.status as ItemStatus]));
 		for (const g of goals) {
-			const linked = (g.items ?? []).map((id) => statusById.get(id)).filter(Boolean) as ItemStatus[];
+			const linked = (g.items ?? [])
+				.map((id) => statusById.get(id))
+				.filter(Boolean) as ItemStatus[];
 			const status: GoalStatus = deriveGoalStatus(linked, g.manual_status);
-			cards.push({ emoji: '🎯', title: g.title, tag: status, lines: [stripHtml(g.description ?? '')].filter(Boolean) });
+			cards.push({
+				emoji: '🎯',
+				title: g.title,
+				tag: status,
+				lines: [stripHtml(g.description ?? '')].filter(Boolean)
+			});
 		}
 
 		const ideas = items.filter((i) => !i.day);
 		const votesBy = new Map<string, Vote[]>();
 		for (const v of votes) votesBy.set(v.item, [...(votesBy.get(v.item) ?? []), v]);
-		const scores = Object.fromEntries(ideas.map((i) => [i.id, scoreVotes(votesBy.get(i.id) ?? [])]));
+		const scores = Object.fromEntries(
+			ideas.map((i) => [i.id, scoreVotes(votesBy.get(i.id) ?? [])])
+		);
 		for (const i of sortByVoteScore(ideas as (Item & { sort_order: number })[], scores)) {
 			const { counts, total } = tallyVotes(votesBy.get(i.id) ?? []);
 			const breakdown = Object.entries(counts)
@@ -130,10 +155,15 @@ export const getTrip: ToolDef = {
 				emoji: '💡',
 				title: i.title,
 				tag: 'idea',
-				lines: [`${EMOJI[i.type] ?? ''} ${i.type}`.trim(), total ? `${total} vote${total === 1 ? '' : 's'}: ${breakdown}` : 'no votes']
+				lines: [
+					`${EMOJI[i.type] ?? ''} ${i.type}`.trim(),
+					total ? `${total} vote${total === 1 ? '' : 's'}: ${breakdown}` : 'no votes'
+				]
 			});
 		}
 
-		return result(`${trip.title} (${ymd(trip.start_date)} → ${ymd(trip.end_date)})`, cards, { timezone: trip.timezone });
+		return result(`${trip.title} (${ymd(trip.start_date)} → ${ymd(trip.end_date)})`, cards, {
+			timezone: trip.timezone
+		});
 	}
 };

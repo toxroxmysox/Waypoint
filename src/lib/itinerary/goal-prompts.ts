@@ -20,7 +20,12 @@ interface PromptTemplate {
 }
 
 const PROMPTS: PromptTemplate[] = [
-	{ id: 'food', located: 'A food you have to try in {place}?', generic: 'A food you have to try?', kicker: 'Food to try' },
+	{
+		id: 'food',
+		located: 'A food you have to try in {place}?',
+		generic: 'A food you have to try?',
+		kicker: 'Food to try'
+	},
 	{
 		id: 'experience',
 		located: 'An experience in {place} you’d regret missing?',

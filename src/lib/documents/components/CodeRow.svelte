@@ -26,20 +26,49 @@
 	type="button"
 	onclick={copy}
 	data-testid="code-row"
-	class="bg-surface-2 border-line hover:border-ink-muted active:border-ink-muted focus-visible:ring-ink-muted/40 flex min-h-14 w-full items-center gap-3 rounded-lg border px-4 py-2 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
+	class="flex min-h-14 w-full items-center gap-3 rounded-lg border border-line bg-surface-2 px-4 py-2 text-left transition-colors hover:border-ink-muted focus-visible:ring-2 focus-visible:ring-ink-muted/40 focus-visible:outline-none active:border-ink-muted"
 >
 	<span class="min-w-0 flex-1">
 		{#if code.label}
-			<span class="text-ink-muted block text-[11px] font-semibold tracking-wide uppercase">{code.label}</span>
+			<span class="block text-[11px] font-semibold tracking-wide text-ink-muted uppercase"
+				>{code.label}</span
+			>
 		{/if}
-		<span class="text-ink block truncate font-mono text-xl leading-tight font-semibold tracking-wide">{code.value}</span>
+		<span
+			class="block truncate font-mono text-xl leading-tight font-semibold tracking-wide text-ink"
+			>{code.value}</span
+		>
 	</span>
-	<span class="text-ink-soft flex shrink-0 items-center gap-1 text-xs font-medium" aria-hidden="true">
+	<span
+		class="flex shrink-0 items-center gap-1 text-xs font-medium text-ink-soft"
+		aria-hidden="true"
+	>
 		{#if copied}
-			<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+			<svg
+				width="18"
+				height="18"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2.5"
+				stroke-linecap="round"
+				stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg
+			>
 			Copied
 		{:else}
-			<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="13" height="13" x="9" y="9" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+			<svg
+				width="18"
+				height="18"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				><rect width="13" height="13" x="9" y="9" rx="2" /><path
+					d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+				/></svg
+			>
 			Copy
 		{/if}
 	</span>

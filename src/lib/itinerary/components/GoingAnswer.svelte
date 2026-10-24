@@ -38,13 +38,13 @@
 </script>
 
 <div class="pointer-events-auto relative z-10 space-y-2" data-testid="going-answer">
-	<p class="text-ink flex items-center gap-1 text-sm font-semibold" data-testid="going-line">
+	<p class="flex items-center gap-1 text-sm font-semibold text-ink" data-testid="going-line">
 		<span>{line}</span>
 		{#if answered}
-			<span class="text-ink-muted font-normal">·</span>
+			<span class="font-normal text-ink-muted">·</span>
 			<button
 				type="button"
-				class="text-ink-soft hover:text-ink active:text-ink -my-3 inline-flex min-h-11 items-center px-1 text-sm font-medium underline underline-offset-2"
+				class="-my-3 inline-flex min-h-11 items-center px-1 text-sm font-medium text-ink-soft underline underline-offset-2 hover:text-ink active:text-ink"
 				aria-expanded={changing}
 				onclick={() => (changing = !changing)}
 			>
@@ -75,6 +75,6 @@
 		</div>
 	{/if}
 	{#if failed}
-		<p class="text-clay text-xs font-medium" role="alert">Couldn't save your answer. Try again.</p>
+		<p class="text-xs font-medium text-clay" role="alert">Couldn't save your answer. Try again.</p>
 	{/if}
 </div>

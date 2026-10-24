@@ -118,12 +118,7 @@ test.describe('Trip-Mode Money summary (#227)', () => {
 		//  - $400 group dinner the TRAVELER paid -> owner's share $100 (the "I owe" side).
 		//  - $80 cab the OWNER paid               -> owner's share $20.
 		// Owner's reconciliation-aware share = $120 (independent of who fronted cash).
-		const allMembers = [
-			memberIds.owner,
-			memberIds.co_owner,
-			memberIds.traveler,
-			memberIds.viewer
-		];
+		const allMembers = [memberIds.owner, memberIds.co_owner, memberIds.traveler, memberIds.viewer];
 		await pb('POST', `/api/collections/expenses/records`, owner.token, {
 			trip: tripId,
 			paid_by: memberIds.traveler,
@@ -182,11 +177,19 @@ test.describe('Trip-Mode Money summary (#227)', () => {
 			).toBeVisible();
 
 			// Per-day hero framing ("$X/day") appears (active trip -> remaining days > 0).
-			await expect(page.getByText(/\$\d+\/day/).filter({ visible: true }).first()).toBeVisible();
+			await expect(
+				page
+					.getByText(/\$\d+\/day/)
+					.filter({ visible: true })
+					.first()
+			).toBeVisible();
 
 			// Honest caveat surfaced.
 			await expect(
-				page.getByText(/logged expenses only/i).filter({ visible: true }).first()
+				page
+					.getByText(/logged expenses only/i)
+					.filter({ visible: true })
+					.first()
 			).toBeVisible();
 
 			// Remaining-planned drill-down lists the unbooked items.

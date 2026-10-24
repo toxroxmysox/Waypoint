@@ -53,33 +53,47 @@
 	}
 </script>
 
-<NavBar
-	title="Goal"
-	subtitle={data.trip.title}
-	back
-	backHref="/trips/{data.trip.slug}/goals"
-/>
+<NavBar title="Goal" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}/goals" />
 
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-4">
+<main class="mx-auto w-full max-w-lg flex-1 space-y-4 px-4 pt-4 pb-8 md-desktop:max-w-2xl">
 	{#if form?.error}
-		<div role="alert" class="border-error/30 bg-error/10 text-error-deep rounded-md border p-3 text-sm">
+		<div
+			role="alert"
+			class="rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error-deep"
+		>
 			{form.error}
 		</div>
 	{/if}
 
 	<!-- Byline → title (firm order, V4 PRD handoff screen D). -->
 	<div>
-		<div class="text-ink-muted flex items-center gap-2 text-[12px]">
-			<Avatar img={data.authorAvatar} initial={memberInitial(author)} alt={memberDisplayName(author)} size={22} />
+		<div class="flex items-center gap-2 text-[12px] text-ink-muted">
+			<Avatar
+				img={data.authorAvatar}
+				initial={memberInitial(author)}
+				alt={memberDisplayName(author)}
+				size={22}
+			/>
 			<span>{memberDisplayName(author)}'s goal</span>
 		</div>
 		<!-- #403 — the prompt it answered. -->
 		{#if promptKicker(goal.prompt)}
-			<div class="text-ink-muted text-[10.5px] font-semibold tracking-wide uppercase mt-3" data-goal-kicker>{promptKicker(goal.prompt)}</div>
+			<div
+				class="mt-3 text-[10.5px] font-semibold tracking-wide text-ink-muted uppercase"
+				data-goal-kicker
+			>
+				{promptKicker(goal.prompt)}
+			</div>
 		{/if}
-		<h1 class="font-display text-ink {promptKicker(goal.prompt) ? 'mt-0.5' : 'mt-2'} text-[24px] font-semibold leading-tight">{goal.title}</h1>
+		<h1
+			class="font-display text-ink {promptKicker(goal.prompt)
+				? 'mt-0.5'
+				: 'mt-2'} text-[24px] leading-tight font-semibold"
+		>
+			{goal.title}
+		</h1>
 		{#if goal.description}
-			<p class="text-ink-soft mt-1.5 text-sm">{goal.description}</p>
+			<p class="mt-1.5 text-sm text-ink-soft">{goal.description}</p>
 		{/if}
 	</div>
 
@@ -92,10 +106,12 @@
 				{meta.label}
 			</span>
 			{#if data.isDerived}
-				<span class="text-ink-muted text-[10.5px] font-bold tracking-[0.15em] uppercase">· Auto</span>
+				<span class="text-[10.5px] font-bold tracking-[0.15em] text-ink-muted uppercase"
+					>· Auto</span
+				>
 			{/if}
 		</div>
-		<p class="text-ink-soft mt-2 text-[12.5px]">
+		<p class="mt-2 text-[12.5px] text-ink-soft">
 			{#if data.isDerived}
 				Set automatically from {linkedCount} linked item{linkedCount === 1 ? '' : 's'}. Link more
 				items and it keeps itself honest.
@@ -110,7 +126,7 @@
 
 	<!-- Linked items — the traceability list. -->
 	<section>
-		<h2 class="text-moss mb-2 px-0.5 text-[11px] font-bold tracking-[0.2em] uppercase">
+		<h2 class="mb-2 px-0.5 text-[11px] font-bold tracking-[0.2em] text-moss uppercase">
 			Linked items
 		</h2>
 		{#if linkedCount > 0}
@@ -130,14 +146,29 @@
 						>
 							{#snippet action()}
 								{#if data.canEdit}
-									<form method="POST" action="?/unlink" use:enhance class="-mr-3 flex shrink-0 items-center">
+									<form
+										method="POST"
+										action="?/unlink"
+										use:enhance
+										class="-mr-3 flex shrink-0 items-center"
+									>
 										<input type="hidden" name="item_id" value={item.id} />
 										<button
 											type="submit"
 											aria-label="Unlink {item.title}"
-											class="text-ink-muted hover:text-error active:text-error flex h-11 w-11 items-center justify-center"
+											class="flex h-11 w-11 items-center justify-center text-ink-muted hover:text-error active:text-error"
 										>
-											<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+											<svg
+												width="15"
+												height="15"
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												aria-hidden="true"
+											>
 												<path d="M6 18L18 6M6 6l12 12" />
 											</svg>
 										</button>
@@ -150,7 +181,7 @@
 			</Card>
 		{:else}
 			<div
-				class="border-line text-ink-muted rounded-[14px] border-[1.5px] border-dashed px-4 py-6 text-center text-[13px]"
+				class="rounded-[14px] border-[1.5px] border-dashed border-line px-4 py-6 text-center text-[13px] text-ink-muted"
 			>
 				No items linked yet. Link an item and this goal starts tracking it.
 			</div>
@@ -162,36 +193,46 @@
 		<div class="space-y-3">
 			<!-- #263 — "Plan this": one-tap from a captured goal into the composer,
 			     pre-seeded from this goal (title/notes) and pre-linked back to it. -->
-			<Button href={withOrigin(`/trips/${data.trip.slug}/items/new?goal=${goal.id}`, page.url.pathname)} variant="moss" size="md" class="w-full">
+			<Button
+				href={withOrigin(`/trips/${data.trip.slug}/items/new?goal=${goal.id}`, page.url.pathname)}
+				variant="moss"
+				size="md"
+				class="w-full"
+			>
 				Plan this
 			</Button>
 
-			<Button type="button" variant="outline" size="md" class="w-full" onclick={() => (linkOpen = true)}>
+			<Button
+				type="button"
+				variant="outline"
+				size="md"
+				class="w-full"
+				onclick={() => (linkOpen = true)}
+			>
 				Link an existing item
 			</Button>
 
 			<!-- Manual status only while the goal has zero links (otherwise derived wins). -->
 			{#if !data.isDerived}
 				<Card>
-					<form
-						method="POST"
-						action="?/setStatus"
-						use:enhance
-						class="flex items-end gap-2 p-4"
-					>
+					<form method="POST" action="?/setStatus" use:enhance class="flex items-end gap-2 p-4">
 						<div class="flex-1">
-							<label for="manual_status" class="text-ink-soft block text-sm font-medium">
+							<label for="manual_status" class="block text-sm font-medium text-ink-soft">
 								Set status
 							</label>
 							<select
 								id="manual_status"
 								name="manual_status"
-								class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+								class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 							>
-								<option value="unplanned" selected={goal.manual_status === 'unplanned'}>Unplanned</option>
+								<option value="unplanned" selected={goal.manual_status === 'unplanned'}
+									>Unplanned</option
+								>
 								<option value="planned" selected={goal.manual_status === 'planned'}>Planned</option>
 								<option value="done" selected={goal.manual_status === 'done'}>Done</option>
-								<option value="considered" selected={goal.manual_status === 'considered'}>Considered</option>
+								<option value="considered" selected={goal.manual_status === 'considered'}
+									>Considered</option
+								>
 							</select>
 						</div>
 						<Button type="submit" variant="primary" size="md">Save</Button>
@@ -202,13 +243,13 @@
 	{/if}
 
 	{#if data.canDelete}
-		<div class="border-error/30 rounded-lg border p-4">
-			<h3 class="text-error text-sm font-semibold">Delete goal</h3>
+		<div class="rounded-lg border border-error/30 p-4">
+			<h3 class="text-sm font-semibold text-error">Delete goal</h3>
 			{#if !confirmDelete}
 				<button
 					type="button"
 					onclick={() => (confirmDelete = true)}
-					class="hit-44 border-error/40 text-error hover:bg-error/10 active:bg-error/10 mt-2 rounded-md border px-3 py-1.5 text-sm font-semibold"
+					class="hit-44 mt-2 rounded-md border border-error/40 px-3 py-1.5 text-sm font-semibold text-error hover:bg-error/10 active:bg-error/10"
 				>
 					Delete
 				</button>
@@ -216,14 +257,14 @@
 				<form method="POST" action="?/delete" use:enhance class="mt-2 flex items-center gap-2">
 					<button
 						type="submit"
-						class="hit-44 bg-error text-paper hover:bg-error/90 active:bg-error/90 rounded-md px-3 py-1.5 text-sm font-semibold"
+						class="hit-44 rounded-md bg-error px-3 py-1.5 text-sm font-semibold text-paper hover:bg-error/90 active:bg-error/90"
 					>
 						Confirm delete
 					</button>
 					<button
 						type="button"
 						onclick={() => (confirmDelete = false)}
-						class="hit-44 text-ink-muted hover:text-ink-soft active:text-ink-soft text-sm"
+						class="hit-44 text-sm text-ink-muted hover:text-ink-soft active:text-ink-soft"
 					>
 						Cancel
 					</button>
@@ -235,7 +276,7 @@
 
 <BottomSheet bind:open={linkOpen} title="Link an item">
 	{#if data.linkCandidates.length === 0}
-		<p class="text-ink-muted py-4 text-center text-sm">
+		<p class="py-4 text-center text-sm text-ink-muted">
 			No more items to link. Every item on this trip is already attached.
 		</p>
 	{:else}
@@ -254,12 +295,12 @@
 					<input type="hidden" name="item_id" value={item.id} />
 					<button
 						type="submit"
-						class="hover:bg-surface-2 active:bg-surface-2 flex w-full items-center gap-3 rounded-[12px] px-2.5 py-2.5 text-left"
+						class="flex w-full items-center gap-3 rounded-[12px] px-2.5 py-2.5 text-left hover:bg-surface-2 active:bg-surface-2"
 					>
 						<TypeIcon type={item.type} size={26} />
 						<div class="min-w-0 flex-1">
-							<div class="text-ink truncate text-[14px] font-semibold">{item.title}</div>
-							<div class="text-ink-muted text-[11px]">{itemContext(item)}</div>
+							<div class="truncate text-[14px] font-semibold text-ink">{item.title}</div>
+							<div class="text-[11px] text-ink-muted">{itemContext(item)}</div>
 						</div>
 					</button>
 				</form>

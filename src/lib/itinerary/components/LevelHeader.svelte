@@ -55,10 +55,10 @@
 		<h3 class={titleClass}>{title}</h3>
 	{/if}
 	{#if place}
-		<p class="text-ink-soft mt-0.5 text-sm">{place}</p>
+		<p class="mt-0.5 text-sm text-ink-soft">{place}</p>
 	{/if}
 	{#if dates || span || meta}
-		<p class="text-ink-muted mt-0.5 text-xs">
+		<p class="mt-0.5 text-xs text-ink-muted">
 			{[dates, span, meta].filter(Boolean).join(' · ')}
 		</p>
 	{/if}
@@ -85,14 +85,15 @@
 			{#each chips as chip (chip.href)}
 				<a
 					href={chip.href}
-					class="text-ink-soft inline-flex min-h-9 items-center gap-1 rounded-full border px-3 text-xs font-medium
-						{chip.travel ? 'border-line border-dashed' : 'border-line bg-surface'}"
+					class="inline-flex min-h-9 items-center gap-1 rounded-full border px-3 text-xs font-medium text-ink-soft
+						{chip.travel ? 'border-dashed border-line' : 'border-line bg-surface'}"
 				>
 					{#if chip.travel}<span aria-hidden="true">⇄</span>{/if}
 					<span>{chip.label}</span>
 					{#if chip.sub}<span class="text-ink-muted">{chip.sub}</span>{/if}
 					{#if chip.filled}
-						<span class="bg-moss inline-block h-1.5 w-1.5 rounded-full" aria-label="has plans"></span>
+						<span class="inline-block h-1.5 w-1.5 rounded-full bg-moss" aria-label="has plans"
+						></span>
 					{/if}
 				</a>
 			{/each}

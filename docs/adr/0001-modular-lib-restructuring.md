@@ -127,12 +127,12 @@ These rules determine where new files go:
 
 These components don't exist yet but are planned for v3. When built, they go here:
 
-| Component | Module |
-|-----------|--------|
-| NowCard, UpNextCard, LaterRow, QuickActions, DayWrapCard | `trip-mode/components/` |
+| Component                                                            | Module                  |
+| -------------------------------------------------------------------- | ----------------------- |
+| NowCard, UpNextCard, LaterRow, QuickActions, DayWrapCard             | `trip-mode/components/` |
 | OngoingCard, UntimedItem, AnchoredItem, TripDayItem, TimelineSection | `itinerary/components/` |
-| PlanningBottomNav, TripBottomNav, TripModeNavBar, SyncDot | `shell/components/` |
-| CatGlyph, CatIconCircleV3 | `ui/` |
+| PlanningBottomNav, TripBottomNav, TripModeNavBar, SyncDot            | `shell/components/`     |
+| CatGlyph, CatIconCircleV3                                            | `ui/`                   |
 
 ## Options Considered
 
@@ -140,14 +140,15 @@ These components don't exist yet but are planned for v3. When built, they go her
 
 See target structure above.
 
-| Dimension | Assessment |
-|-----------|------------|
-| Complexity | Medium -- ~50 file moves, import rewrites, barrel re-exports |
-| Risk | Low -- no logic changes, purely organizational. Tests validate nothing broke. |
-| Discoverability | High -- file location signals domain intent |
-| Migration effort | ~2 hours with automated import rewriting |
+| Dimension        | Assessment                                                                    |
+| ---------------- | ----------------------------------------------------------------------------- |
+| Complexity       | Medium -- ~50 file moves, import rewrites, barrel re-exports                  |
+| Risk             | Low -- no logic changes, purely organizational. Tests validate nothing broke. |
+| Discoverability  | High -- file location signals domain intent                                   |
+| Migration effort | ~2 hours with automated import rewriting                                      |
 
 **Pros:**
+
 - Domain boundaries become visible in the file tree
 - types.ts splits into focused, smaller files
 - New features have a clear "home" via placement rules
@@ -155,6 +156,7 @@ See target structure above.
 - Each module is independently testable
 
 **Cons:**
+
 - Every `$lib/types` import (63 across the codebase) needs updating or a barrel re-export
 - Deeper nesting (2 levels instead of 1)
 - Churn in git blame
@@ -163,19 +165,21 @@ See target structure above.
 
 Split `types.ts` into per-domain type files but leave everything else flat.
 
-| Dimension | Assessment |
-|-----------|------------|
-| Complexity | Low -- 1 file split into 6, import barrel stays compatible |
-| Risk | Very low -- only types.ts changes |
-| Discoverability | Marginal improvement -- types are clearer, but utils/components still mixed |
-| Migration effort | ~30 minutes |
+| Dimension        | Assessment                                                                  |
+| ---------------- | --------------------------------------------------------------------------- |
+| Complexity       | Low -- 1 file split into 6, import barrel stays compatible                  |
+| Risk             | Very low -- only types.ts changes                                           |
+| Discoverability  | Marginal improvement -- types are clearer, but utils/components still mixed |
+| Migration effort | ~30 minutes                                                                 |
 
 **Pros:**
+
 - Minimal churn
 - Fixes the worst offender (god types file)
 - Barrel re-export means zero import changes in routes
 
 **Cons:**
+
 - Doesn't solve the utils junk drawer
 - Components still mixed domain/UI
 - Doesn't create domain boundaries
@@ -184,12 +188,12 @@ Split `types.ts` into per-domain type files but leave everything else flat.
 
 Each feature gets its own folder with types + logic + components + tests.
 
-| Dimension | Assessment |
-|-----------|------------|
-| Complexity | High -- deep restructuring, unclear boundaries for shared components |
-| Risk | Medium -- feature slicing works better for larger apps |
-| Discoverability | High but potentially over-engineered for this codebase size |
-| Migration effort | ~4 hours |
+| Dimension        | Assessment                                                           |
+| ---------------- | -------------------------------------------------------------------- |
+| Complexity       | High -- deep restructuring, unclear boundaries for shared components |
+| Risk             | Medium -- feature slicing works better for larger apps               |
+| Discoverability  | High but potentially over-engineered for this codebase size          |
+| Migration effort | ~4 hours                                                             |
 
 **Pros:** Maximum cohesion per feature.
 **Cons:** Overkill for ~67 lib files. Creates more folders than files in some slices.
@@ -199,6 +203,7 @@ Each feature gets its own folder with types + logic + components + tests.
 Option A hits the sweet spot. The codebase is small enough that the restructuring is a single-session task, but large enough that the flat structure already hides domain relationships. Option B is too conservative -- it only fixes types, leaving the real navigation problem (which util goes where?) unsolved. Option C is over-engineered for 67 files.
 
 The key risk with Option A is import churn. Mitigated by:
+
 1. Barrel `types.ts` at `src/lib/types.ts` that re-exports all domain types -- existing `$lib/types` imports work unchanged
 2. Module-level barrel exports (`$lib/itinerary`, `$lib/money`, etc.) for new code
 3. Automated import rewriting via search-and-replace

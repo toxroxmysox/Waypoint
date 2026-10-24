@@ -1,7 +1,12 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import type { Item, TripMember } from '$lib/types';
-import { canSelfAssign, goingPatch, goingStateOf, parseGoingState } from '$lib/itinerary/assignment';
+import {
+	canSelfAssign,
+	goingPatch,
+	goingStateOf,
+	parseGoingState
+} from '$lib/itinerary/assignment';
 import type { GoingState } from '$lib/itinerary/assignment';
 
 // Set the CALLER's own answer to "Are you going?" on an item (#226, ADR-0011;
@@ -34,7 +39,9 @@ export const POST: RequestHandler = async ({ params, locals, request }) => {
 		error(400, 'Body must be a JSON object');
 	}
 	const rawState =
-		body && typeof body === 'object' && 'state' in body ? (body as { state: unknown }).state : undefined;
+		body && typeof body === 'object' && 'state' in body
+			? (body as { state: unknown }).state
+			: undefined;
 	const requested = rawState === undefined ? null : parseGoingState(rawState);
 	if (rawState !== undefined && !requested) {
 		error(400, 'state must be going, not_going or no_answer');

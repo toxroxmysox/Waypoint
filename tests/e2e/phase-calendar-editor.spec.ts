@@ -28,20 +28,35 @@ test.describe('#330 phase calendar editor', () => {
 			await page.goto(`${BASE}/trips/e2e-active-trip/phases`, { waitUntil: 'networkidle' });
 
 			// Editor renders: hint, weekday header, calendar cells, single-phase summary.
-			await expect(page.getByText(/tap a day to split/i).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
+			await expect(
+				page
+					.getByText(/tap a day to split/i)
+					.filter({ visible: true })
+					.first()
+			).toBeVisible({ timeout: 10000 });
 			await expect(page.locator('[data-day]:visible').first()).toBeVisible();
-			const summary = page.getByText(/phase.*travel day.*days/i).filter({ visible: true }).first();
+			const summary = page
+				.getByText(/phase.*travel day.*days/i)
+				.filter({ visible: true })
+				.first();
 			await expect(summary).toHaveText(/1 phase · 0 travel days/);
 
 			// Split at day 5 → 2 phases, 1 travel day. On the 9-day trip the split tiles
 			// into Days 1–5 (5d) and Days 5–9 (5d) — the tiling invariant, verified end to end.
 			await page.locator('[data-day="5"]:visible').first().click();
-			await expect(page.getByText(/2 phases · 1 travel day/).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
+			await expect(
+				page
+					.getByText(/2 phases · 1 travel day/)
+					.filter({ visible: true })
+					.first()
+			).toBeVisible({ timeout: 10000 });
 			await expect(page.getByText('New phase').filter({ visible: true }).first()).toBeVisible();
 			await expect(page.getByText('Days 1–5').filter({ visible: true }).first()).toBeVisible();
 			await expect(page.getByText('Days 5–9').filter({ visible: true }).first()).toBeVisible();
 			// Phase Detail is reachable from each phase's Overview card (#391 moved it off the editor rows).
-			await expect(page.locator('a[href^="/trips/e2e-active-trip/phases/"]:visible').first()).toBeVisible();
+			await expect(
+				page.locator('a[href^="/trips/e2e-active-trip/phases/"]:visible').first()
+			).toBeVisible();
 
 			// Drag the boundary handle day 5 → day 7 (a real Pointer-Event drag, multiple
 			// days). Regression guard: the handle used to lose pointer capture after 1 day
@@ -57,22 +72,41 @@ test.describe('#330 phase calendar editor', () => {
 			await page.mouse.down();
 			await page.mouse.move(tb.x + tb.width / 2, tb.y + tb.height / 2, { steps: 10 });
 			await page.mouse.up();
-			await expect(page.getByText('Days 1–7').filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
+			await expect(page.getByText('Days 1–7').filter({ visible: true }).first()).toBeVisible({
+				timeout: 10000
+			});
 			await expect(page.getByText('Days 7–9').filter({ visible: true }).first()).toBeVisible();
 			// Persisted: a reload keeps the moved boundary (not just optimistic local state).
 			await page.reload({ waitUntil: 'networkidle' });
-			await expect(page.getByText('Days 1–7').filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
+			await expect(page.getByText('Days 1–7').filter({ visible: true }).first()).toBeVisible({
+				timeout: 10000
+			});
 
 			// Rename the new phase via its pill → inline input → Enter.
-			await page.getByRole('button', { name: 'New phase', exact: true }).filter({ visible: true }).first().click();
+			await page
+				.getByRole('button', { name: 'New phase', exact: true })
+				.filter({ visible: true })
+				.first()
+				.click();
 			const input = page.locator('input:not([type="hidden"]):visible').first();
 			await input.fill('Islands');
 			await input.press('Enter');
-			await expect(page.getByText('Islands').filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
+			await expect(page.getByText('Islands').filter({ visible: true }).first()).toBeVisible({
+				timeout: 10000
+			});
 
 			// Delete the new phase (its list-row trash) → merge back to a single phase.
-			await page.getByRole('button', { name: /^Remove Islands/ }).filter({ visible: true }).first().click();
-			await expect(page.getByText(/1 phase · 0 travel days/).filter({ visible: true }).first()).toBeVisible({ timeout: 10000 });
+			await page
+				.getByRole('button', { name: /^Remove Islands/ })
+				.filter({ visible: true })
+				.first()
+				.click();
+			await expect(
+				page
+					.getByText(/1 phase · 0 travel days/)
+					.filter({ visible: true })
+					.first()
+			).toBeVisible({ timeout: 10000 });
 			await expect(page.getByText('Islands')).toHaveCount(0);
 		} finally {
 			await ctx.close();

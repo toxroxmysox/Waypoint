@@ -1,40 +1,73 @@
 import { describe, it, expect } from 'vitest';
-import { linkedItemSub, rowSub, flightSub, fitFlightSub, rowTrailing, flightRoute, rowContent, keyItemRows } from './row';
+import {
+	linkedItemSub,
+	rowSub,
+	flightSub,
+	fitFlightSub,
+	rowTrailing,
+	flightRoute,
+	rowContent,
+	keyItemRows
+} from './row';
 
 const est = (s: string) => s.length * 7; // 7px per char, deterministic
 
 describe('rowSub: the sub-line for non-flight rows', () => {
 	it('single day: date, time, place in the text grammar', () => {
 		const sub = rowSub(
-			{ type: 'meal', start_time: '2026-10-01 18:30:00.000Z', end_time: '', location_name: 'Immigrant' },
+			{
+				type: 'meal',
+				start_time: '2026-10-01 18:30:00.000Z',
+				end_time: '',
+				location_name: 'Immigrant'
+			},
 			{ dayDate: '2026-10-01 00:00:00.000Z' }
 		);
 		expect(sub).toBe('Thu Oct 1 · 6:30p · Immigrant');
 	});
 	it('range and deadline use the text forms', () => {
 		expect(
-			rowSub({ type: 'activity', start_time: '2026-10-01 10:00', end_time: '2026-10-01 12:00' }, { dayDate: '2026-10-01' })
+			rowSub(
+				{ type: 'activity', start_time: '2026-10-01 10:00', end_time: '2026-10-01 12:00' },
+				{ dayDate: '2026-10-01' }
+			)
 		).toBe('Thu Oct 1 · 10:00a–12:00p');
-		expect(rowSub({ type: 'activity', start_time: '', end_time: '2026-10-01 16:30' }, { dayDate: '2026-10-01' })).toBe(
-			'Thu Oct 1 · by 4:30p'
-		);
+		expect(
+			rowSub(
+				{ type: 'activity', start_time: '', end_time: '2026-10-01 16:30' },
+				{ dayDate: '2026-10-01' }
+			)
+		).toBe('Thu Oct 1 · by 4:30p');
 	});
 	it('untimed: date and place only; nothing when there is neither', () => {
-		expect(rowSub({ type: 'meal', location_name: 'Cafe' }, { dayDate: '2026-10-01' })).toBe('Thu Oct 1 · Cafe');
+		expect(rowSub({ type: 'meal', location_name: 'Cafe' }, { dayDate: '2026-10-01' })).toBe(
+			'Thu Oct 1 · Cafe'
+		);
 		expect(rowSub({ type: 'meal' }, {})).toBe('');
 	});
 	it('falls back to the phase name when there is no location', () => {
-		expect(rowSub({ type: 'meal' }, { dayDate: '2026-10-01', phaseName: 'Milwaukee' })).toBe('Thu Oct 1 · Milwaukee');
-		expect(rowSub({ type: 'meal', location_name: 'Cafe' }, { phaseName: 'Milwaukee' })).toBe('Cafe');
+		expect(rowSub({ type: 'meal' }, { dayDate: '2026-10-01', phaseName: 'Milwaukee' })).toBe(
+			'Thu Oct 1 · Milwaukee'
+		);
+		expect(rowSub({ type: 'meal', location_name: 'Cafe' }, { phaseName: 'Milwaukee' })).toBe(
+			'Cafe'
+		);
 	});
 	it('multi-day lodging: date range, nights, place', () => {
 		expect(
 			rowSub(
-				{ type: 'lodging', end_date: '2026-10-03 00:00:00.000Z', location_name: 'American Club', start_time: '2026-10-01 15:00' },
+				{
+					type: 'lodging',
+					end_date: '2026-10-03 00:00:00.000Z',
+					location_name: 'American Club',
+					start_time: '2026-10-01 15:00'
+				},
 				{ dayDate: '2026-10-01' }
 			)
 		).toBe('Thu Oct 1–Sat Oct 3 · 2 nights · American Club');
-		expect(rowSub({ type: 'lodging', end_date: '2026-10-02' }, { dayDate: '2026-10-01' })).toBe('Thu Oct 1–Fri Oct 2 · 1 night');
+		expect(rowSub({ type: 'lodging', end_date: '2026-10-02' }, { dayDate: '2026-10-01' })).toBe(
+			'Thu Oct 1–Fri Oct 2 · 1 night'
+		);
 	});
 	it('calendar dates never shift by zone (UTC)', () => {
 		expect(rowSub({ type: 'meal' }, { dayDate: '2026-01-01' })).toBe('Thu Jan 1');
@@ -53,9 +86,19 @@ describe('flightRoute', () => {
 });
 
 describe('flightSub', () => {
-	const base = { departure: '2026-10-01 14:05', arrival: '2026-10-01 16:20', from: 'MKE Airport (MKE)', to: 'Denver (DEN)' };
+	const base = {
+		departure: '2026-10-01 14:05',
+		arrival: '2026-10-01 16:20',
+		from: 'MKE Airport (MKE)',
+		to: 'Denver (DEN)'
+	};
 	it('splits into date, departure, arrival, route', () => {
-		expect(flightSub(base)).toEqual({ date: 'Thu Oct 1', dep: '2:05p', arr: '4:20p', route: 'MKE → DEN' });
+		expect(flightSub(base)).toEqual({
+			date: 'Thu Oct 1',
+			dep: '2:05p',
+			arr: '4:20p',
+			route: 'MKE → DEN'
+		});
 	});
 	it('marks a next-day arrival', () => {
 		expect(flightSub({ ...base, arrival: '2026-10-02 06:10' }).arr).toBe('6:10a +1');
@@ -99,7 +142,9 @@ describe('fitFlightSub: arrival drops first so the route survives', () => {
 		expect(r.dropped).toEqual(['dep']);
 	});
 	it('arrival alone (no departure) reads "arrives"', () => {
-		expect(fitFlightSub({ ...sub, dep: '' }, 1000, est).text).toBe('Thu Oct 1 · arrives 4:20p · MKE → DEN');
+		expect(fitFlightSub({ ...sub, dep: '' }, 1000, est).text).toBe(
+			'Thu Oct 1 · arrives 4:20p · MKE → DEN'
+		);
 	});
 	it('no route: the remaining parts still render', () => {
 		expect(fitFlightSub({ ...sub, route: '' }, 1000, est).text).toBe('Thu Oct 1 · 2:05p → 4:20p');
@@ -124,14 +169,57 @@ describe('keyItemRows: the overview Flights & stays list', () => {
 		{ id: 'd1', date: '2026-10-01 00:00:00.000Z' },
 		{ id: 'd2', date: '2026-10-03 00:00:00.000Z' }
 	];
-	const base = { subtype: '', status: 'planned' as const, booked: false, requires_booking: true, description: '', location_name: '' };
+	const base = {
+		subtype: '',
+		status: 'planned' as const,
+		booked: false,
+		requires_booking: true,
+		description: '',
+		location_name: ''
+	};
 	it('keeps flights and stays only, in date order, undated last', () => {
 		const rows = keyItemRows(
 			[
-				{ ...base, id: 'u', type: 'lodging', title: 'Undated', day: '', start_time: '', end_time: '', end_date: '' },
-				{ ...base, id: 'b', type: 'flight', title: 'Home', day: 'd2', start_time: '', end_time: '', end_date: '' },
-				{ ...base, id: 'meal', type: 'meal', title: 'Dinner', day: 'd1', start_time: '', end_time: '', end_date: '' },
-				{ ...base, id: 'a', type: 'lodging', title: 'Hotel', day: 'd1', start_time: '', end_time: '', end_date: '2026-10-03' }
+				{
+					...base,
+					id: 'u',
+					type: 'lodging',
+					title: 'Undated',
+					day: '',
+					start_time: '',
+					end_time: '',
+					end_date: ''
+				},
+				{
+					...base,
+					id: 'b',
+					type: 'flight',
+					title: 'Home',
+					day: 'd2',
+					start_time: '',
+					end_time: '',
+					end_date: ''
+				},
+				{
+					...base,
+					id: 'meal',
+					type: 'meal',
+					title: 'Dinner',
+					day: 'd1',
+					start_time: '',
+					end_time: '',
+					end_date: ''
+				},
+				{
+					...base,
+					id: 'a',
+					type: 'lodging',
+					title: 'Hotel',
+					day: 'd1',
+					start_time: '',
+					end_time: '',
+					end_date: '2026-10-03'
+				}
 			],
 			days
 		);
@@ -141,8 +229,27 @@ describe('keyItemRows: the overview Flights & stays list', () => {
 	it('flags what still needs booking', () => {
 		const [open, done] = keyItemRows(
 			[
-				{ ...base, id: 'o', type: 'flight', title: 'Out', day: 'd1', start_time: '', end_time: '', end_date: '' },
-				{ ...base, id: 'k', type: 'flight', title: 'Back', day: 'd2', booked: true, start_time: '', end_time: '', end_date: '' }
+				{
+					...base,
+					id: 'o',
+					type: 'flight',
+					title: 'Out',
+					day: 'd1',
+					start_time: '',
+					end_time: '',
+					end_date: ''
+				},
+				{
+					...base,
+					id: 'k',
+					type: 'flight',
+					title: 'Back',
+					day: 'd2',
+					booked: true,
+					start_time: '',
+					end_time: '',
+					end_date: ''
+				}
 			],
 			days
 		);
@@ -151,14 +258,24 @@ describe('keyItemRows: the overview Flights & stays list', () => {
 });
 
 describe('rowContent: flight place line (#435)', () => {
-	const base = { type: 'flight' as const, location_name: 'Milwaukee (MKE)', description: '→ Denver (DEN)' };
+	const base = {
+		type: 'flight' as const,
+		location_name: 'Milwaukee (MKE)',
+		description: '→ Denver (DEN)'
+	};
 	it('new flight: number is in the title, route alone', () => {
-		const r = rowContent({ ...base, title: 'UA 1234 to Denver', flight_number: 'UA 1234' }, { dayDate: '2026-10-01' });
+		const r = rowContent(
+			{ ...base, title: 'UA 1234 to Denver', flight_number: 'UA 1234' },
+			{ dayDate: '2026-10-01' }
+		);
 		expect(r.flight?.route).toBe('MKE → DEN');
 		expect(r.sub).toBe('Thu Oct 1 · MKE → DEN');
 	});
 	it('legacy flight with a stored number keeps it', () => {
-		const r = rowContent({ ...base, title: 'Spirit', flight_number: 'NK 345' }, { dayDate: '2026-10-01' });
+		const r = rowContent(
+			{ ...base, title: 'Spirit', flight_number: 'NK 345' },
+			{ dayDate: '2026-10-01' }
+		);
 		expect(r.flight?.route).toBe('NK 345 · MKE → DEN');
 	});
 });
@@ -179,7 +296,10 @@ describe('rowContent: one call per item', () => {
 		expect(r.sub).toBe('Thu Oct 1 · 2:05p → 4:20p · MKE → DEN');
 	});
 	it('a flight with only a day falls back to the day for the date', () => {
-		const r = rowContent({ type: 'flight', location_name: 'Milwaukee (MKE)', description: '→ Denver (DEN)' }, { dayDate: '2026-10-01' });
+		const r = rowContent(
+			{ type: 'flight', location_name: 'Milwaukee (MKE)', description: '→ Denver (DEN)' },
+			{ dayDate: '2026-10-01' }
+		);
 		expect(r.sub).toBe('Thu Oct 1 · MKE → DEN');
 	});
 	it('other types give plain text and no flight parts', () => {
@@ -190,7 +310,9 @@ describe('rowContent: one call per item', () => {
 
 describe('linkedItemSub: a goal linked item, status in words (#434)', () => {
 	it('an idea reads its status and phase', () => {
-		expect(linkedItemSub({ type: 'meal', status: 'unplanned' }, { phaseName: 'Phase 1' })).toBe('Idea · Phase 1');
+		expect(linkedItemSub({ type: 'meal', status: 'unplanned' }, { phaseName: 'Phase 1' })).toBe(
+			'Idea · Phase 1'
+		);
 	});
 	it('a planned item reads its date and time', () => {
 		expect(
@@ -201,12 +323,20 @@ describe('linkedItemSub: a goal linked item, status in words (#434)', () => {
 		).toBe('Planned · Thu Oct 1 · 6:30p');
 	});
 	it('planned and untimed: the date alone; planned with no day: the phase', () => {
-		expect(linkedItemSub({ type: 'meal', status: 'planned' }, { dayDate: '2026-10-01' })).toBe('Planned · Thu Oct 1');
-		expect(linkedItemSub({ type: 'meal', status: 'planned' }, { phaseName: 'Phase 1' })).toBe('Planned · Phase 1');
+		expect(linkedItemSub({ type: 'meal', status: 'planned' }, { dayDate: '2026-10-01' })).toBe(
+			'Planned · Thu Oct 1'
+		);
+		expect(linkedItemSub({ type: 'meal', status: 'planned' }, { phaseName: 'Phase 1' })).toBe(
+			'Planned · Phase 1'
+		);
 	});
 	it('done and considered use their own words', () => {
-		expect(linkedItemSub({ type: 'meal', status: 'done' }, { dayDate: '2026-10-01' })).toBe('Done · Thu Oct 1');
-		expect(linkedItemSub({ type: 'meal', status: 'considered' }, { phaseName: 'Phase 1' })).toBe('Considered · Phase 1');
+		expect(linkedItemSub({ type: 'meal', status: 'done' }, { dayDate: '2026-10-01' })).toBe(
+			'Done · Thu Oct 1'
+		);
+		expect(linkedItemSub({ type: 'meal', status: 'considered' }, { phaseName: 'Phase 1' })).toBe(
+			'Considered · Phase 1'
+		);
 	});
 	it('just the status when nothing else is known', () => {
 		expect(linkedItemSub({ type: 'meal', status: 'unplanned' })).toBe('Idea');

@@ -146,7 +146,8 @@
 	class="hidden"
 	use:enhance={() =>
 		async ({ result }) => {
-			if (result.type === 'failure') toast.show('Vote did not save — check your connection.', 'error');
+			if (result.type === 'failure')
+				toast.show('Vote did not save — check your connection.', 'error');
 		}}
 >
 	<input type="hidden" name="goal" value="" />
@@ -162,16 +163,16 @@
 	<input type="hidden" name="goal" value="" />
 </form>
 
-<div class="bg-paper flex min-h-[100dvh] flex-col">
+<div class="flex min-h-[100dvh] flex-col bg-paper">
 	<div
 		class="mx-auto flex w-full max-w-md flex-1 flex-col md-desktop:my-6 md-desktop:max-h-[760px] md-desktop:max-w-md md-desktop:overflow-hidden md-desktop:rounded-xl md-desktop:border md-desktop:border-line md-desktop:bg-surface md-desktop:shadow-modal"
 	>
 		{#if data.cards.length === 0}
 			<!-- drain-to-empty: nothing to add or react to right now -->
 			<div class="flex flex-1 flex-col items-center justify-center px-6 text-center">
-				<div class="text-moss mb-4 text-4xl" aria-hidden="true">✓</div>
-				<h1 class="font-display text-ink mb-2 text-2xl italic">You're all caught up.</h1>
-				<p class="text-ink-soft mb-6 max-w-xs text-sm">
+				<div class="mb-4 text-4xl text-moss" aria-hidden="true">✓</div>
+				<h1 class="mb-2 font-display text-2xl text-ink italic">You're all caught up.</h1>
+				<p class="mb-6 max-w-xs text-sm text-ink-soft">
 					No new goals to react to. Check back as the group adds more.
 				</p>
 				<div class="flex w-full max-w-[280px] flex-col gap-2.5">
@@ -180,108 +181,125 @@
 			</div>
 		{:else}
 			{#key runKey}
-			<SwipeDeck
-				cards={data.cards as WizardCard[]}
-				othersByCard={data.votesByGoal as unknown as Record<string, Vote[]>}
-				members={data.members}
-				kindOf={(c) => (c.kind === 'prompt' ? 'prompt' : 'vote')}
-				title="Add & review goals"
-				subtitle={data.trip.location_summary || 'Goals'}
-				detailLayout={isWide ? 'modal' : 'sheet'}
-				autoFocus={isWide}
-				onvote={persistVote}
-				onrewind={persistRewind}
-				onrewindPrompt={persistRewindPrompt}
-				onclose={() => goto(goalsHref)}
-			>
-				{#snippet face(card)}
-					{#if card.kind === 'prompt'}
-						<div class="min-h-[180px]">
-							<div class="text-moss mb-3 inline-flex items-center gap-1.5 text-[11.5px] font-semibold tracking-wide uppercase">
-								<span aria-hidden="true">✎</span> Your goal
-							</div>
-							<h2 class="font-display text-ink text-[21px] leading-snug font-semibold">
-								{card.text}
-							</h2>
-							<input
-								type="text"
-								bind:value={promptInput}
-								onkeydown={(e) => onPromptKey(e, card)}
-								onpointerdown={(e) => e.stopPropagation()}
-								placeholder="Type a goal, press enter…"
-								class="border-line bg-surface text-ink mt-4 w-full rounded-lg border px-3 py-2.5 text-sm"
-							/>
-							{#if (goalTitlesByCard[card.id] ?? []).length}
-								<div class="mt-3 flex flex-wrap gap-1.5">
-									{#each goalTitlesByCard[card.id] as title, i (i)}
-										<span
-											class="bg-moss-tint text-moss border-moss/30 inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium"
-										>
-											<span aria-hidden="true">✓</span>{title}
-										</span>
-									{/each}
+				<SwipeDeck
+					cards={data.cards as WizardCard[]}
+					othersByCard={data.votesByGoal as unknown as Record<string, Vote[]>}
+					members={data.members}
+					kindOf={(c) => (c.kind === 'prompt' ? 'prompt' : 'vote')}
+					title="Add & review goals"
+					subtitle={data.trip.location_summary || 'Goals'}
+					detailLayout={isWide ? 'modal' : 'sheet'}
+					autoFocus={isWide}
+					onvote={persistVote}
+					onrewind={persistRewind}
+					onrewindPrompt={persistRewindPrompt}
+					onclose={() => goto(goalsHref)}
+				>
+					{#snippet face(card)}
+						{#if card.kind === 'prompt'}
+							<div class="min-h-[180px]">
+								<div
+									class="mb-3 inline-flex items-center gap-1.5 text-[11.5px] font-semibold tracking-wide text-moss uppercase"
+								>
+									<span aria-hidden="true">✎</span> Your goal
 								</div>
-							{/if}
-						</div>
-					{:else}
-						{@const author = card.goal.expand?.created_by ?? null}
-						{@const authorImg = data.members.find((m) => m.id === card.goal.created_by)?.avatarUrl ?? ''}
-						<div class="min-h-[180px]">
-							<div class="text-ink-muted mb-3 inline-flex items-center gap-1.5 text-[11.5px] font-semibold tracking-wide uppercase">
-								<!-- #403 — the prompt it answered names the card, else the generic label. -->
-								<span aria-hidden="true">♡</span> {promptKicker(card.goal.prompt) || 'A group goal'}
+								<h2 class="font-display text-[21px] leading-snug font-semibold text-ink">
+									{card.text}
+								</h2>
+								<input
+									type="text"
+									bind:value={promptInput}
+									onkeydown={(e) => onPromptKey(e, card)}
+									onpointerdown={(e) => e.stopPropagation()}
+									placeholder="Type a goal, press enter…"
+									class="mt-4 w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-ink"
+								/>
+								{#if (goalTitlesByCard[card.id] ?? []).length}
+									<div class="mt-3 flex flex-wrap gap-1.5">
+										{#each goalTitlesByCard[card.id] as title, i (i)}
+											<span
+												class="inline-flex items-center gap-1 rounded-full border border-moss/30 bg-moss-tint px-2.5 py-1 text-[12px] font-medium text-moss"
+											>
+												<span aria-hidden="true">✓</span>{title}
+											</span>
+										{/each}
+									</div>
+								{/if}
 							</div>
-							<h2 class="font-display text-ink text-[21px] leading-snug font-semibold">
-								{card.goal.title}
-							</h2>
-							{#if card.goal.description}
-								<p class="text-ink-soft mt-2 text-[13px] leading-relaxed">{card.goal.description}</p>
-							{/if}
-							<div class="text-ink-muted mt-4 flex items-center gap-2 text-[12px]">
-								<Avatar img={authorImg} initial={memberInitial(author)} alt={memberDisplayName(author)} size={22} />
-								<span>Added by {memberDisplayName(author)}</span>
+						{:else}
+							{@const author = card.goal.expand?.created_by ?? null}
+							{@const authorImg =
+								data.members.find((m) => m.id === card.goal.created_by)?.avatarUrl ?? ''}
+							<div class="min-h-[180px]">
+								<div
+									class="mb-3 inline-flex items-center gap-1.5 text-[11.5px] font-semibold tracking-wide text-ink-muted uppercase"
+								>
+									<!-- #403 — the prompt it answered names the card, else the generic label. -->
+									<span aria-hidden="true">♡</span>
+									{promptKicker(card.goal.prompt) || 'A group goal'}
+								</div>
+								<h2 class="font-display text-[21px] leading-snug font-semibold text-ink">
+									{card.goal.title}
+								</h2>
+								{#if card.goal.description}
+									<p class="mt-2 text-[13px] leading-relaxed text-ink-soft">
+										{card.goal.description}
+									</p>
+								{/if}
+								<div class="mt-4 flex items-center gap-2 text-[12px] text-ink-muted">
+									<Avatar
+										img={authorImg}
+										initial={memberInitial(author)}
+										alt={memberDisplayName(author)}
+										size={22}
+									/>
+									<span>Added by {memberDisplayName(author)}</span>
+								</div>
+								<!-- Reaction cards are always someone else's goal. -->
+								<WhatIsLink
+									title={card.goal.title}
+									place={data.trip.location_summary}
+									class="mt-1"
+								/>
 							</div>
-							<!-- Reaction cards are always someone else's goal. -->
-							<WhatIsLink title={card.goal.title} place={data.trip.location_summary} class="mt-1" />
-						</div>
-					{/if}
-				{/snippet}
+						{/if}
+					{/snippet}
 
-				{#snippet promptControls(card, { advance })}
-					<!-- One adaptive action: flush pending input (count-reflecting label),
+					{#snippet promptControls(card, { advance })}
+						<!-- One adaptive action: flush pending input (count-reflecting label),
 					     else continue, else skip an untouched prompt. -->
-					<button
-						type="button"
-						onclick={() => nextPrompt(card, advance)}
-						class="w-full rounded-full px-4 py-3 text-sm font-semibold {pendingGoals.length > 0 ||
-						(goalTitlesByCard[card.id] ?? []).length > 0
-							? 'bg-moss text-paper'
-							: 'border-line bg-surface text-ink-soft border'}"
-					>
-						{pendingGoals.length > 0
-							? `Add ${pendingGoals.length} & continue`
-							: (goalTitlesByCard[card.id] ?? []).length > 0
-								? 'Continue'
-								: 'Skip this prompt'}
-					</button>
-				{/snippet}
+						<button
+							type="button"
+							onclick={() => nextPrompt(card, advance)}
+							class="w-full rounded-full px-4 py-3 text-sm font-semibold {pendingGoals.length > 0 ||
+							(goalTitlesByCard[card.id] ?? []).length > 0
+								? 'bg-moss text-paper'
+								: 'border border-line bg-surface text-ink-soft'}"
+						>
+							{pendingGoals.length > 0
+								? `Add ${pendingGoals.length} & continue`
+								: (goalTitlesByCard[card.id] ?? []).length > 0
+									? 'Continue'
+									: 'Skip this prompt'}
+						</button>
+					{/snippet}
 
-				{#snippet complete({ rated })}
-					<div class="flex flex-col items-center justify-center text-center">
-						<div class="text-moss mb-4 text-4xl" aria-hidden="true">✦</div>
-						<div class="font-display text-ink mb-2 text-2xl italic">You're all caught up.</div>
-						<p class="text-ink-soft mb-5 max-w-[260px] text-sm leading-relaxed">
-							{goalsAdded}
-							{goalsAdded === 1 ? 'goal' : 'goals'} added · {rated}
-							{rated === 1 ? 'goal' : 'goals'} rated.
-						</p>
-						<div class="flex w-full max-w-[280px] flex-col gap-2.5">
-							<Button onclick={() => goto(goalsHref)}>See the goal list</Button>
-							<Button variant="outline" onclick={goAgain}>Go again</Button>
+					{#snippet complete({ rated })}
+						<div class="flex flex-col items-center justify-center text-center">
+							<div class="mb-4 text-4xl text-moss" aria-hidden="true">✦</div>
+							<div class="mb-2 font-display text-2xl text-ink italic">You're all caught up.</div>
+							<p class="mb-5 max-w-[260px] text-sm leading-relaxed text-ink-soft">
+								{goalsAdded}
+								{goalsAdded === 1 ? 'goal' : 'goals'} added · {rated}
+								{rated === 1 ? 'goal' : 'goals'} rated.
+							</p>
+							<div class="flex w-full max-w-[280px] flex-col gap-2.5">
+								<Button onclick={() => goto(goalsHref)}>See the goal list</Button>
+								<Button variant="outline" onclick={goAgain}>Go again</Button>
+							</div>
 						</div>
-					</div>
-				{/snippet}
-			</SwipeDeck>
+					{/snippet}
+				</SwipeDeck>
 			{/key}
 		{/if}
 	</div>

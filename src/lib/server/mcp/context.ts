@@ -25,7 +25,13 @@ export interface TripRef {
 
 export function tripRef(trip: Trip, role: MemberRole, memberId: string): TripRef {
 	const open = trip.ai_access !== false;
-	return { trip, role, memberId, open, canWrite: open && trip.ai_write !== false && role !== 'viewer' };
+	return {
+		trip,
+		role,
+		memberId,
+		open,
+		canWrite: open && trip.ai_write !== false && role !== 'viewer'
+	};
 }
 
 // ADR-0024 §5 layer 1: no file fields (cover_image), no share token.
@@ -71,10 +77,16 @@ export async function resolveTrip(ctx: McpContext, ref: string): Promise<TripRef
 	if (exact) return exact;
 	const needle = r.toLowerCase();
 	const hits = needle
-		? trips.filter((t) => t.trip.title.toLowerCase().includes(needle) || (t.trip.location_summary ?? '').toLowerCase().includes(needle))
+		? trips.filter(
+				(t) =>
+					t.trip.title.toLowerCase().includes(needle) ||
+					(t.trip.location_summary ?? '').toLowerCase().includes(needle)
+			)
 		: [];
 	if (hits.length === 1) return hits[0];
 	if (!hits.length) throw new Error(`No trip matching "${ref}" that you're a member of.`);
-	const list = hits.map((t) => `${t.trip.title} (${tripDates(t.trip)}, slug ${t.trip.slug})`).join('; ');
+	const list = hits
+		.map((t) => `${t.trip.title} (${tripDates(t.trip)}, slug ${t.trip.slug})`)
+		.join('; ');
 	throw new Error(`"${ref}" matches several trips: ${list}. Which one?`);
 }

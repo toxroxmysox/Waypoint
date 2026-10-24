@@ -13,6 +13,7 @@
 ### Task 1: Trip activation logic — pure function + types
 
 **Files:**
+
 - Create: `src/lib/trip-mode/activation.ts`
 - Create: `src/lib/trip-mode/activation.test.ts`
 
@@ -53,7 +54,9 @@ describe('isTripActive', () => {
 	});
 
 	it('returns false when archived', () => {
-		expect(isTripActive(trip('2026-06-01', '2026-06-10', true), new Date('2026-06-05'))).toBe(false);
+		expect(isTripActive(trip('2026-06-01', '2026-06-10', true), new Date('2026-06-05'))).toBe(
+			false
+		);
 	});
 
 	it('returns false when start_date is empty', () => {
@@ -65,7 +68,9 @@ describe('isTripActive', () => {
 	});
 
 	it('ignores time portion of now — compares dates only', () => {
-		expect(isTripActive(trip('2026-06-05', '2026-06-05'), new Date('2026-06-05T23:59:59Z'))).toBe(true);
+		expect(isTripActive(trip('2026-06-05', '2026-06-05'), new Date('2026-06-05T23:59:59Z'))).toBe(
+			true
+		);
 	});
 });
 ```
@@ -113,6 +118,7 @@ git commit -m "feat(#34): add isTripActive pure function with date-range + archi
 ### Task 2: Add StarIcons for Trip Mode nav
 
 **Files:**
+
 - Modify: `src/lib/ui/StarIcons.svelte`
 
 Trip Mode nav needs icons: `clock` (Now), `sun` (Today), `lock` (Vault — already exists? check). The Add button uses `plus` which already exists. SideRail needs these too.
@@ -176,6 +182,7 @@ git commit -m "feat(#34): add clock, sun, lock icons to StarIcons"
 ### Task 3: Nav tab configurations
 
 **Files:**
+
 - Create: `src/lib/shell/nav-tabs.ts`
 
 Extract tab definitions into a shared config so BottomNav and SideRail both use the same source. Two configs: planning (moss) and trip (clay).
@@ -206,7 +213,13 @@ export function getNavConfig(slug: string, mode: TripViewMode): NavConfig {
 			tabs: [
 				{ id: 'now', label: 'Now', href: `/trips/${slug}/now`, icon: 'clock' },
 				{ id: 'today', label: 'Today', href: `/trips/${slug}/today`, icon: 'sun' },
-				{ id: 'add', label: 'Add', href: `/trips/${slug}/items/new?from=trip`, icon: 'plus', oversized: true },
+				{
+					id: 'add',
+					label: 'Add',
+					href: `/trips/${slug}/items/new?from=trip`,
+					icon: 'plus',
+					oversized: true
+				},
 				{ id: 'vault', label: 'Vault', href: `/trips/${slug}/vault`, icon: 'lock' }
 			]
 		};
@@ -231,7 +244,8 @@ export function getActiveTab(pathname: string, mode: TripViewMode): string {
 	}
 	if (pathname.includes('/expenses') || pathname.includes('/budget')) return 'money';
 	if (pathname.includes('/members')) return 'members';
-	if (pathname.includes('/more') || pathname.includes('/inbox') || pathname.includes('/settings')) return 'more';
+	if (pathname.includes('/more') || pathname.includes('/inbox') || pathname.includes('/settings'))
+		return 'more';
 	return 'itinerary';
 }
 ```
@@ -253,6 +267,7 @@ git commit -m "feat(#34): add shared nav tab configs for planning/trip modes"
 ### Task 4: Mode state in AppShell + pass to nav components
 
 **Files:**
+
 - Modify: `src/lib/shell/components/AppShell.svelte`
 
 AppShell already receives `trip`. Derive `isActive` from trip dates, default `mode` accordingly, and pass mode + config to BottomNav and SideRail.
@@ -316,8 +331,17 @@ Replace the full content of `src/lib/shell/components/AppShell.svelte`:
 
 <!-- Desktop: side rail + content + context rail -->
 <div class="hidden md-desktop:block">
-	<SideRail {slug} {role} tripName={trip?.title ?? ''} {phases} config={navConfig} {active} onToggleMode={toggleMode} {mode} />
-	<div class="md-desktop:ml-[72px] lg-desktop:ml-[240px] lg-desktop:mr-[320px]">
+	<SideRail
+		{slug}
+		{role}
+		tripName={trip?.title ?? ''}
+		{phases}
+		config={navConfig}
+		{active}
+		onToggleMode={toggleMode}
+		{mode}
+	/>
+	<div class="md-desktop:ml-[72px] lg-desktop:mr-[320px] lg-desktop:ml-[240px]">
 		{#if active}
 			<ModePill {mode} onToggle={toggleMode} />
 		{/if}
@@ -341,6 +365,7 @@ git commit -m "feat(#34): derive trip mode in AppShell, pass config to nav compo
 ### Task 5: Update BottomNav to use NavConfig
 
 **Files:**
+
 - Modify: `src/lib/shell/components/BottomNav.svelte`
 
 Replace the hardcoded tabs with the `NavConfig` passed from AppShell. Use the config's accent color for the active tab. The Add button gets special oversized treatment.
@@ -380,38 +405,41 @@ Replace full content of `src/lib/shell/components/BottomNav.svelte`:
 		inputFocused = false;
 	}
 
-	const activeTab = $derived(getActiveTab(page.url.pathname, config.accent === 'clay' ? 'trip' : 'planning'));
+	const activeTab = $derived(
+		getActiveTab(page.url.pathname, config.accent === 'clay' ? 'trip' : 'planning')
+	);
 	const accentClass = $derived(config.accent === 'clay' ? 'text-clay' : 'text-moss');
 </script>
 
 <svelte:window onfocusin={handleFocusIn} onfocusout={handleFocusOut} />
 
 {#if !inputFocused}
-<nav class="border-line bg-paper/95 fixed bottom-0 left-0 right-0 z-nav flex border-t backdrop-blur safe-bottom">
-	{#each config.tabs as tab}
-		{@const active = activeTab === tab.id}
-		{#if tab.oversized}
-			<a
-				href={tab.href}
-				class="flex flex-1 flex-col items-center justify-center py-1"
-			>
-				<span class="bg-clay flex h-10 w-10 items-center justify-center rounded-full text-white shadow-sm">
-					<StarIcons name={tab.icon} size={22} />
-				</span>
-			</a>
-		{:else}
-			<a
-				href={tab.href}
-				class="flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium transition-colors
+	<nav
+		class="safe-bottom fixed right-0 bottom-0 left-0 z-nav flex border-t border-line bg-paper/95 backdrop-blur"
+	>
+		{#each config.tabs as tab}
+			{@const active = activeTab === tab.id}
+			{#if tab.oversized}
+				<a href={tab.href} class="flex flex-1 flex-col items-center justify-center py-1">
+					<span
+						class="flex h-10 w-10 items-center justify-center rounded-full bg-clay text-white shadow-sm"
+					>
+						<StarIcons name={tab.icon} size={22} />
+					</span>
+				</a>
+			{:else}
+				<a
+					href={tab.href}
+					class="flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium transition-colors
 					{active ? accentClass : 'text-ink-muted'}"
-				aria-current={active ? 'page' : undefined}
-			>
-				<StarIcons name={tab.icon} size={22} />
-				<span>{tab.label}</span>
-			</a>
-		{/if}
-	{/each}
-</nav>
+					aria-current={active ? 'page' : undefined}
+				>
+					<StarIcons name={tab.icon} size={22} />
+					<span>{tab.label}</span>
+				</a>
+			{/if}
+		{/each}
+	</nav>
 {/if}
 
 <style>
@@ -438,6 +466,7 @@ git commit -m "feat(#34): rewrite BottomNav to render from NavConfig with accent
 ### Task 6: Update SideRail to use NavConfig
 
 **Files:**
+
 - Modify: `src/lib/shell/components/SideRail.svelte`
 
 Same pattern as BottomNav — accept `NavConfig`, render tabs from it, swap accent color. Add mode switching pill for desktop at the top of the rail.
@@ -481,7 +510,7 @@ Replace full content of `src/lib/shell/components/SideRail.svelte`:
 </script>
 
 <nav
-	class="border-line bg-surface fixed left-0 top-0 hidden h-full flex-col border-r
+	class="fixed top-0 left-0 hidden h-full flex-col border-r border-line bg-surface
 		md-desktop:flex md-desktop:w-[72px] md-desktop:items-center
 		lg-desktop:w-[240px] lg-desktop:items-stretch"
 	aria-label="Trip navigation"
@@ -489,7 +518,7 @@ Replace full content of `src/lib/shell/components/SideRail.svelte`:
 	<!-- Logo -->
 	<a
 		href="/trips"
-		class="font-display text-moss flex items-center gap-2 font-semibold
+		class="flex items-center gap-2 font-display font-semibold text-moss
 			md-desktop:justify-center md-desktop:py-5
 			lg-desktop:justify-start lg-desktop:px-5 lg-desktop:py-4"
 	>
@@ -499,8 +528,10 @@ Replace full content of `src/lib/shell/components/SideRail.svelte`:
 
 	<!-- Trip name -->
 	{#if tripName}
-		<div class="border-line border-b px-2 pb-3 md-desktop:text-center lg-desktop:px-5 lg-desktop:text-left">
-			<p class="text-ink-soft truncate text-xs font-medium" title={tripName}>
+		<div
+			class="border-b border-line px-2 pb-3 md-desktop:text-center lg-desktop:px-5 lg-desktop:text-left"
+		>
+			<p class="truncate text-xs font-medium text-ink-soft" title={tripName}>
 				{tripName}
 			</p>
 		</div>
@@ -513,8 +544,8 @@ Replace full content of `src/lib/shell/components/SideRail.svelte`:
 				onclick={onToggleMode}
 				class="w-full rounded-full px-3 py-1.5 text-xs font-medium transition-colors
 					{mode === 'trip'
-						? 'bg-moss-tint text-moss hover:bg-moss-tint/80'
-						: 'bg-clay-tint text-clay hover:bg-clay-tint/80'}"
+					? 'bg-moss-tint text-moss hover:bg-moss-tint/80'
+					: 'bg-clay-tint text-clay hover:bg-clay-tint/80'}"
 			>
 				{mode === 'trip' ? 'Edit plan' : 'Trip view'}
 			</button>
@@ -528,9 +559,9 @@ Replace full content of `src/lib/shell/components/SideRail.svelte`:
 			{#if tab.oversized}
 				<a
 					href={tab.href}
-					class="bg-clay my-1 flex items-center justify-center rounded-lg py-2 text-white transition-colors hover:bg-clay/90
-						md-desktop:w-12 md-desktop:mx-auto
-						lg-desktop:w-auto lg-desktop:mx-0"
+					class="my-1 flex items-center justify-center rounded-lg bg-clay py-2 text-white transition-colors hover:bg-clay/90
+						md-desktop:mx-auto md-desktop:w-12
+						lg-desktop:mx-0 lg-desktop:w-auto"
 				>
 					<StarIcons name={tab.icon} size={18} />
 					<span class="ml-2 hidden text-sm font-medium lg-desktop:inline">{tab.label}</span>
@@ -542,8 +573,10 @@ Replace full content of `src/lib/shell/components/SideRail.svelte`:
 						md-desktop:w-12 md-desktop:flex-col md-desktop:justify-center md-desktop:gap-0.5 md-desktop:px-1 md-desktop:py-2.5 md-desktop:text-[11px]
 						lg-desktop:w-auto lg-desktop:flex-row lg-desktop:justify-start lg-desktop:px-3 lg-desktop:py-2 lg-desktop:text-sm
 						{isActive
-							? (accentColor === 'clay' ? 'bg-clay-tint text-clay font-medium' : 'bg-moss-tint text-moss font-medium')
-							: 'text-ink-muted hover:bg-paper hover:text-ink-soft'}"
+						? accentColor === 'clay'
+							? 'bg-clay-tint font-medium text-clay'
+							: 'bg-moss-tint font-medium text-moss'
+						: 'text-ink-muted hover:bg-paper hover:text-ink-soft'}"
 					aria-current={isActive ? 'page' : undefined}
 				>
 					<StarIcons
@@ -559,19 +592,21 @@ Replace full content of `src/lib/shell/components/SideRail.svelte`:
 
 	<!-- Phase list (lg-desktop only, planning mode only) -->
 	{#if mode === 'planning' && phases.length > 0}
-		<div class="border-line hidden flex-col gap-1 border-t px-3 py-3 lg-desktop:flex">
-			<p class="text-ink-muted mb-1 px-2 text-[11px] font-semibold uppercase tracking-wider">Phases</p>
+		<div class="hidden flex-col gap-1 border-t border-line px-3 py-3 lg-desktop:flex">
+			<p class="mb-1 px-2 text-[11px] font-semibold tracking-wider text-ink-muted uppercase">
+				Phases
+			</p>
 			{#each phases as phase}
 				<a
 					href="/trips/{slug}/phases/{phase.id}"
-					class="text-ink-soft hover:text-ink flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-paper"
+					class="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-ink-soft transition-colors hover:bg-paper hover:text-ink"
 				>
 					<span
 						class="h-2.5 w-2.5 shrink-0 rounded-full"
 						style="background-color: var(--color-moss)"
 					></span>
 					<span class="flex-1 truncate">{phase.name}</span>
-					<span class="text-ink-muted text-[11px]">{formatTripDate(phase.start_date)}</span>
+					<span class="text-[11px] text-ink-muted">{formatTripDate(phase.start_date)}</span>
 				</a>
 			{/each}
 		</div>
@@ -596,6 +631,7 @@ git commit -m "feat(#34): rewrite SideRail with NavConfig, accent colors, mode p
 ### Task 7: ModePill component (mobile floating pill)
 
 **Files:**
+
 - Create: `src/lib/shell/components/ModePill.svelte`
 
 A small floating pill that appears on mobile (and in desktop main content area) when the trip is active. Shows "Edit plan" in Trip Mode (moss tint — switches TO planning) and "Trip view" in Planning Mode (clay tint — switches TO trip).
@@ -620,8 +656,8 @@ A small floating pill that appears on mobile (and in desktop main content area) 
 		onclick={onToggle}
 		class="rounded-full px-4 py-1.5 text-xs font-medium shadow-sm transition-colors
 			{mode === 'trip'
-				? 'bg-moss-tint text-moss hover:bg-moss-tint/80'
-				: 'bg-clay-tint text-clay hover:bg-clay-tint/80'}"
+			? 'bg-moss-tint text-moss hover:bg-moss-tint/80'
+			: 'bg-clay-tint text-clay hover:bg-clay-tint/80'}"
 	>
 		{mode === 'trip' ? 'Edit plan' : 'Trip view'}
 	</button>
@@ -645,6 +681,7 @@ git commit -m "feat(#34): add ModePill component for mode switching"
 ### Task 8: Stub Now route (placeholder for #33)
 
 **Files:**
+
 - Create: `src/routes/(app)/trips/[slug]/now/+page.svelte`
 - Create: `src/routes/(app)/trips/[slug]/now/+page.server.ts`
 
@@ -676,8 +713,8 @@ export const load: PageServerLoad = async ({ parent }) => {
 
 <main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8">
 	<div class="rounded-xl border border-line bg-surface p-6 text-center">
-		<p class="text-ink-soft font-semibold">Trip Mode — Now</p>
-		<p class="text-ink-muted mt-1 text-sm">Coming soon in #33.</p>
+		<p class="font-semibold text-ink-soft">Trip Mode — Now</p>
+		<p class="mt-1 text-sm text-ink-muted">Coming soon in #33.</p>
 	</div>
 </main>
 ```
@@ -699,6 +736,7 @@ git commit -m "feat(#34): add stub Now route for Trip Mode"
 ### Task 9: Clean up old trip-nav.ts
 
 **Files:**
+
 - Modify: `src/lib/shell/trip-nav.ts`
 
 `getActiveSection` is now replaced by `getActiveTab` in `nav-tabs.ts`. Remove it. Keep `formatTripDate` since SideRail still uses it.
@@ -746,6 +784,7 @@ git commit -m "refactor(#34): remove getActiveSection, replaced by getActiveTab 
 ### Task 10: Playwright E2E — mode switching
 
 **Files:**
+
 - Create: `tests/e2e/mode-switching.spec.ts`
 
 Test the core flow: active trip defaults to Trip Mode, pills switch modes, nav changes.
@@ -766,7 +805,7 @@ test.describe('Mode switching', () => {
 	test('active trip defaults to Trip Mode with clay nav', async ({ page }) => {
 		// Navigate to a trip that's currently active (within date range)
 		// The test data setup should have a trip with today's date in range
-		await page.getByRole('link').filter({ hasText: /./}).first().click();
+		await page.getByRole('link').filter({ hasText: /./ }).first().click();
 		await page.waitForURL(/\/trips\//);
 
 		// Check for Trip Mode nav items (Now, Today)
@@ -777,7 +816,7 @@ test.describe('Mode switching', () => {
 	});
 
 	test('Edit plan pill switches to Planning Mode', async ({ page }) => {
-		await page.getByRole('link').filter({ hasText: /./}).first().click();
+		await page.getByRole('link').filter({ hasText: /./ }).first().click();
 		await page.waitForURL(/\/trips\//);
 
 		const editPill = page.getByRole('button', { name: 'Edit plan' });
@@ -793,7 +832,7 @@ test.describe('Mode switching', () => {
 	});
 
 	test('Trip view pill switches back to Trip Mode', async ({ page }) => {
-		await page.getByRole('link').filter({ hasText: /./}).first().click();
+		await page.getByRole('link').filter({ hasText: /./ }).first().click();
 		await page.waitForURL(/\/trips\//);
 
 		const editPill = page.getByRole('button', { name: 'Edit plan' });
@@ -812,7 +851,7 @@ test.describe('Mode switching', () => {
 	test('pre-trip shows Planning Mode with no pills', async ({ page }) => {
 		// This test needs a trip with future dates
 		// Navigate to trips list and find one
-		await page.getByRole('link').filter({ hasText: /./}).first().click();
+		await page.getByRole('link').filter({ hasText: /./ }).first().click();
 		await page.waitForURL(/\/trips\//);
 
 		// If no pill is visible, we're in planning-only mode — that's the assertion
@@ -859,6 +898,7 @@ Start dev server: `pnpm dev`
 Start backend: `./backend/start.sh`
 
 Verify at 375px mobile:
+
 1. Open a trip — if dates are active, Trip Mode should be default with clay nav (Now/Today/Add/Vault)
 2. "Edit plan" pill visible → tap → Planning Mode (moss nav, Itinerary/Money/Members/More)
 3. "Trip view" pill visible → tap → back to Trip Mode
@@ -866,6 +906,7 @@ Verify at 375px mobile:
 5. Add button (center, oversized clay circle) links to item creation
 
 Verify at desktop (1280px+):
+
 1. SideRail shows mode pill at top
 2. Tab accent colors swap correctly
 3. Phase list only shows in Planning Mode

@@ -114,7 +114,9 @@ test.describe('Expense sheet stays closed after save (#387)', () => {
 		if (!res.ok) throw new Error(`rules-fixture failed: ${await res.text()}`);
 	});
 
-	test('a PREFILLED add (Log payment) closes on save and does not come back', async ({ browser }) => {
+	test('a PREFILLED add (Log payment) closes on save and does not come back', async ({
+		browser
+	}) => {
 		const { page, ctx } = await devLogin(browser);
 		try {
 			// Exactly what an item's "Log payment" deep-link produces.
@@ -132,7 +134,9 @@ test.describe('Expense sheet stays closed after save (#387)', () => {
 		}
 	});
 
-	test('a plain Trip-Mode Add (?action=add, no prefill) closes on save too', async ({ browser }) => {
+	test('a plain Trip-Mode Add (?action=add, no prefill) closes on save too', async ({
+		browser
+	}) => {
 		const { page, ctx } = await devLogin(browser);
 		try {
 			const title = `Coffee ${Date.now()}`;
@@ -164,7 +168,11 @@ test.describe('Expense sheet stays closed after save (#387)', () => {
 			await submitVisible(page);
 			await expectStaysClosed(page);
 
-			await page.getByRole('button', { name: 'Add expense' }).filter({ visible: true }).first().click();
+			await page
+				.getByRole('button', { name: 'Add expense' })
+				.filter({ visible: true })
+				.first()
+				.click();
 			await expect(openSheets(page)).toHaveCount(1, { timeout: 10000 });
 			await expect(page.locator('input[name="description"]:visible').first()).toHaveValue('');
 		} finally {

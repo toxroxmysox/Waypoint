@@ -38,11 +38,13 @@
 ### Task 1: `days` and `notifications` update gates
 
 **Files:**
+
 - Create: `backend/pb_hooks/days.pb.js`
 - Modify: `backend/pb_hooks/notifications.pb.js`, `backend/test-rules.mjs` (expected cells), `backend/RULES.md`
 - Test: `backend/test-rules.mjs`
 
 **Interfaces:**
+
 - Produces: `days` update by a viewer → 403 `Viewers can't edit the plan.`; travelers may change only `notes`; owner/co_owner may change `notes` and `phases` (clone sets `phases` through the user client, `clone/+page.server.ts:150`); `date`/`trip` by anyone, or `phases` by a traveler → 400 `Only a day's notes can be edited.` The phases hook's admin saves are unaffected. `notifications` update by the recipient → only `read_at` may change; any other field → 400 `Only read state can change.`
 
 - [ ] **Step 1:** In `test-rules.mjs`, flip the `days.update` expectation for `viewer` to deny, add cells "traveler updates day `phases`" → deny 400, "owner updates day `phases`" → allow, "owner updates day `date`" → deny 400, add a cell "recipient updates notification `body`" → deny 400, "recipient sets `read_at`" → allow.
@@ -54,11 +56,13 @@
 ### Task 2: Item validity in `items.pb.js`
 
 **Files:**
+
 - Modify: `backend/pb_hooks/items.pb.js` (new model-level `onRecordCreate` + `onRecordUpdate` validation block, registered before the existing exclusivity hooks)
 - Create: `backend/test-items.mjs`; add `items` to `ALL` in `scripts/backend-harnesses.sh`
 - Test: `backend/test-items.mjs`
 
 **Interfaces:**
+
 - Produces, enforced on every save (API and admin), messages verbatim from `items/new/+page.server.ts` where they exist:
   - `day` set → the day's `trip` equals the item's `trip`, else 400 `That day isn't on this trip.`
   - `phase` set → same trip, else 400 `That phase isn't on this trip.`
@@ -77,11 +81,13 @@
 ### Task 3: Secrets hidden per caller
 
 **Files:**
+
 - Create: `backend/pb_hooks/secrets.pb.js`
 - Create: `backend/test-secrets.mjs`; add `secrets` to `ALL`
 - Modify: `backend/RULES.md`
 
 **Interfaces:**
+
 - Produces (`onRecordEnrich`, skipped for superusers and for requests with no auth only where the record is already denied):
   - `trip_members.soft_token`: hidden from every non-superuser (only the poll hooks use it, in admin context).
   - `join_tokens.token`: hidden from viewers (non-viewers manage join links, #152).
@@ -94,12 +100,14 @@
 ### Task 4: Phase tiling as a PB invariant
 
 **Files:**
+
 - Modify: `backend/pb_hooks/phases.pb.js` (after the role hooks, before the rebucket hooks), `backend/pb_hooks/trips.pb.js` (date-change hook at ~line 486)
 - Modify: `src/routes/(app)/trips/[slug]/phases/+page.server.ts`, `src/routes/(app)/trips/[slug]/phases/[phaseId]/+page.server.ts`, `src/routes/(app)/trips/import/+page.server.ts` (drop `applyRetile` calls once the hook does it), `src/lib/itinerary/phase-tiling.server.ts` (delete if unused)
 - Create: `backend/test-tiling.mjs`; add `tiling` to `ALL`
 - Test: `backend/test-tiling.mjs`; existing `src/lib/itinerary/phase-tiling.test.ts` stays the spec for the algorithm
 
 **Interfaces:**
+
 - Consumes: the algorithm in `src/lib/itinerary/phase-tiling.ts` (`retilePhases`, `validateNewPhaseStart`, `validateMovePhaseStart`), ported inline into the hooks with the same messages.
 - Produces: after any phase create, `start_date` update or delete via the API, and after any trip `start_date`/`end_date` change, the trip's phases satisfy: sorted by start, `end_date` = next phase's start, last ends at trip end, first starts at trip start, `order` = position. Invalid starts → 400 with `validateNewPhaseStart` / `validateMovePhaseStart`'s exact message. Client-sent `end_date` / `order` are ignored (overwritten by the retile).
 
@@ -111,10 +119,12 @@
 ### Task 5: Cross-trip references
 
 **Files:**
+
 - Modify: `backend/pb_hooks/expenses.pb.js`, `backend/pb_hooks/checklists.pb.js`, `backend/pb_hooks/votes.pb.js`, `backend/pb_hooks/settlements.pb.js`
 - Modify: `backend/test-money.mjs`, `backend/test-rules.mjs`
 
 **Interfaces:**
+
 - Produces (create + update, model-level so admin saves are checked too): `expenses.paid_by`, every member id in `split_data` (shape per `split_mode`, see the existing validator), `expenses.linked_item`; `settlements.from_member`/`to_member`; `checklists.phase` / `checklists.item`; `votes.item` — each must belong to the record's `trip`, else 400 `That <member|item|phase> isn't on this trip.`
 
 - [ ] **Step 1:** Harness cells: each field pointed at a second trip's record → 400; same-trip → 201. **Step 2:** FAIL. **Step 3:** Implement (one inlined lookup per id). **Step 4:** `bash scripts/backend-harnesses.sh money rules` PASS. **Step 5:** Commit `refactor(#411): cross-trip references rejected in expenses, settlements, checklists, votes`.
@@ -122,10 +132,12 @@
 ### Task 6: Lossless suggestion → item conversion
 
 **Files:**
+
 - Modify: `backend/pb_hooks/suggestions.pb.js` (both item-building blocks: auto-approve ~line 97, approve ~line 355)
 - Modify: `backend/test-suggestions.mjs`
 
 **Interfaces:**
+
 - Produces: an approved or auto-approved item carries the payload's `end_date`, `start_tz`, `end_tz`, `location_coords`, `google_place_id`, `requires_booking`, `flight_number`, `parent_item` (same-trip check as `day`/`phase` from #496). Task 2's model hook then validates the result, so an out-of-bounds `end_date` in a suggestion fails at approval with Task 2's message.
 
 - [ ] **Step 1:** In `test-suggestions.mjs`, a traveler suggests a 3-night lodging with coords, place id, tz and `requires_booking`; owner approves; assert every field on the item. Same for the auto-approve trip setting. **Step 2:** FAIL. **Step 3:** Implement (one shared field list, duplicated into both blocks: sandbox). **Step 4:** PASS + `pnpm test:e2e:clean -- contribution` green. **Step 5:** Commit `fix(#411): suggestion approval keeps span, timezone, place and booking fields`.

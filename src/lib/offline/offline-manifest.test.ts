@@ -147,7 +147,12 @@ describe('buildOfflineManifest — inactive / empty trip (minimal set)', () => {
 
 	it('treats explicit empty arrays the same as omitted', () => {
 		const omitted = buildOfflineManifest({ trip: { slug: SLUG } });
-		const empty = buildOfflineManifest({ trip: { slug: SLUG }, days: [], items: [], documents: [] });
+		const empty = buildOfflineManifest({
+			trip: { slug: SLUG },
+			days: [],
+			items: [],
+			documents: []
+		});
 		expect(empty).toEqual(omitted);
 	});
 

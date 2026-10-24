@@ -38,14 +38,16 @@
 		selected = currentAssignee;
 	});
 
-	const closeOnDone = () => async ({ update }: { update: () => Promise<void> }) => {
-		await update();
-		open = false;
-	};
+	const closeOnDone =
+		() =>
+		async ({ update }: { update: () => Promise<void> }) => {
+			await update();
+			open = false;
+		};
 </script>
 
 <BottomSheet bind:open title="Assign a member">
-	<p class="text-ink-muted mb-3 text-[12.5px]">{taskTitle}</p>
+	<p class="mb-3 text-[12.5px] text-ink-muted">{taskTitle}</p>
 
 	<div class="flex flex-col gap-0.5" role="radiogroup" aria-label="Trip members">
 		{#each members as m (m.id)}
@@ -55,10 +57,12 @@
 				role="radio"
 				aria-checked={on}
 				onclick={() => (selected = m.id)}
-				class="flex items-center gap-3 rounded-[10px] px-2.5 py-2.5 text-left {on ? 'bg-moss-tint' : ''}"
+				class="flex items-center gap-3 rounded-[10px] px-2.5 py-2.5 text-left {on
+					? 'bg-moss-tint'
+					: ''}"
 			>
 				<Avatar img={m.avatarUrl} initial={memberInitial(m)} alt={memberDisplayName(m)} size={32} />
-				<span class="text-ink flex-1 text-sm font-semibold">{memberDisplayName(m)}</span>
+				<span class="flex-1 text-sm font-semibold text-ink">{memberDisplayName(m)}</span>
 				<span
 					class="flex h-5 w-5 items-center justify-center rounded-full border-[1.5px] {on
 						? 'border-moss bg-moss text-paper'
@@ -66,7 +70,13 @@
 				>
 					{#if on}
 						<svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-							<path d="M2.5 6.2l2.3 2.3L9.5 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+							<path
+								d="M2.5 6.2l2.3 2.3L9.5 3.5"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
 						</svg>
 					{/if}
 				</span>
@@ -89,7 +99,10 @@
 
 	<form method="POST" action={deleteAction} use:enhance={closeOnDone} class="mt-3 text-center">
 		<input type="hidden" name="task_id" value={taskId} />
-		<button type="submit" class="text-ink-muted hover:text-error active:text-error text-xs font-medium">
+		<button
+			type="submit"
+			class="text-xs font-medium text-ink-muted hover:text-error active:text-error"
+		>
 			Delete task
 		</button>
 	</form>

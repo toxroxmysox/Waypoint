@@ -41,7 +41,10 @@ export interface PlacesSearch {
 	cancel(): void;
 }
 
-type FetchLike = (input: string, init?: { signal?: AbortSignal }) => Promise<{
+type FetchLike = (
+	input: string,
+	init?: { signal?: AbortSignal }
+) => Promise<{
 	ok: boolean;
 	json(): Promise<unknown>;
 }>;
@@ -54,7 +57,9 @@ export function autocompleteUrl(query: string, sessionToken: string): string {
 	return `/api/places/autocomplete?input=${encodeURIComponent(query)}&session_token=${encodeURIComponent(sessionToken)}`;
 }
 
-export function createPlacesSearch(fetchImpl: FetchLike = fetch as unknown as FetchLike): PlacesSearch {
+export function createPlacesSearch(
+	fetchImpl: FetchLike = fetch as unknown as FetchLike
+): PlacesSearch {
 	let ctrl: AbortController | null = null;
 	let seq = 0;
 

@@ -23,7 +23,9 @@ const summary = (over: Partial<DayCardSummary> = {}): DayCardSummary => ({
 
 describe('dropPrompt', () => {
 	it('names the free time it offers', () => {
-		expect(dropPrompt({ minutes: 120, from: '4:30p', to: '6:30p' })).toBe('Drop to plan · 2h free · 4:30p to 6:30p');
+		expect(dropPrompt({ minutes: 120, from: '4:30p', to: '6:30p' })).toBe(
+			'Drop to plan · 2h free · 4:30p to 6:30p'
+		);
 	});
 	it('is bare when the day has no gap', () => {
 		expect(dropPrompt(null)).toBe('Drop to plan');
@@ -32,7 +34,11 @@ describe('dropPrompt', () => {
 
 describe('planDropLabels', () => {
 	it('labels the item that closes each free gap', () => {
-		const labels = planDropLabels([item('a', '09:00', '10:00'), item('b', '12:30', '13:30'), item('c')]);
+		const labels = planDropLabels([
+			item('a', '09:00', '10:00'),
+			item('b', '12:30', '13:30'),
+			item('c')
+		]);
 		expect([...labels.keys()]).toEqual(['b']);
 		expect(labels.get('b')).toBe('Drop to plan · 2h 30m free · 10:00a to 12:30p');
 	});
@@ -52,10 +58,14 @@ describe('canPlanOnDay', () => {
 
 describe('dayHeadline', () => {
 	it('prefers the day notes', () => {
-		expect(dayHeadline({ notes: ' Lake day ' }, summary({ leadTitle: 'Hike', itemCount: 2 }))).toBe('Lake day');
+		expect(dayHeadline({ notes: ' Lake day ' }, summary({ leadTitle: 'Hike', itemCount: 2 }))).toBe(
+			'Lake day'
+		);
 	});
 	it('falls back to the lead item with a + N more', () => {
-		expect(dayHeadline({ notes: '' }, summary({ leadTitle: 'Hike', itemCount: 3 }))).toBe('Hike + 2 more');
+		expect(dayHeadline({ notes: '' }, summary({ leadTitle: 'Hike', itemCount: 3 }))).toBe(
+			'Hike + 2 more'
+		);
 		expect(dayHeadline({ notes: '' }, summary({ leadTitle: 'Hike', itemCount: 1 }))).toBe('Hike');
 	});
 	it('says so when the day is empty', () => {
@@ -65,7 +75,10 @@ describe('dayHeadline', () => {
 
 describe('upNextRow', () => {
 	it('carries title, count and the to-book count', () => {
-		const r = upNextRow({ notes: '' }, summary({ leadTitle: 'Hike', itemCount: 2, needsBookingCount: 1 }));
+		const r = upNextRow(
+			{ notes: '' },
+			summary({ leadTitle: 'Hike', itemCount: 2, needsBookingCount: 1 })
+		);
 		expect(r).toEqual({ title: 'Hike + 1 more', itemCount: 2, toBook: 1, empty: false });
 	});
 	it('marks an empty day', () => {

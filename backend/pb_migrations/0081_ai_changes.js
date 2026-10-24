@@ -18,9 +18,23 @@ migrate(
 			updateRule: null,
 			deleteRule: null,
 			fields: [
-				{ type: 'relation', name: 'user', required: true, collectionId: users.id, maxSelect: 1, cascadeDelete: true },
+				{
+					type: 'relation',
+					name: 'user',
+					required: true,
+					collectionId: users.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				},
 				{ type: 'text', name: 'connection', required: false, max: 50 },
-				{ type: 'relation', name: 'trip', required: true, collectionId: trips.id, maxSelect: 1, cascadeDelete: true },
+				{
+					type: 'relation',
+					name: 'trip',
+					required: true,
+					collectionId: trips.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				},
 				{ type: 'text', name: 'quote', required: true, max: 2000 },
 				{ type: 'json', name: 'changes', required: false, maxSize: 2000000 },
 				{ type: 'date', name: 'reverted_at', required: false },

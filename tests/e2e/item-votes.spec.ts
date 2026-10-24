@@ -50,7 +50,9 @@ const vis = (page: Page, sel: string) => page.locator(sel).filter({ visible: tru
 
 async function open(page: Page, itemId: string, title: string) {
 	await page.goto(`${BASE}/trips/${SLUG}/items/${itemId}`, { waitUntil: 'networkidle' });
-	await expect(page.getByRole('heading', { name: title }).filter({ visible: true }).first()).toBeVisible({
+	await expect(
+		page.getByRole('heading', { name: title }).filter({ visible: true }).first()
+	).toBeVisible({
 		timeout: 10000
 	});
 	await page.waitForLoadState('networkidle');
@@ -65,7 +67,10 @@ test.describe('Votes on the item page (#442)', () => {
 
 	test.beforeAll(async () => {
 		const owner = await bypass(EMAILS.owner);
-		const fx = await pb(owner.token, 'POST', '/api/dev/rules-fixture', { emails: EMAILS, slug: SLUG });
+		const fx = await pb(owner.token, 'POST', '/api/dev/rules-fixture', {
+			emails: EMAILS,
+			slug: SLUG
+		});
 		const first = async (coll: string, sort = '') =>
 			(
 				await pb(
@@ -97,7 +102,9 @@ test.describe('Votes on the item page (#442)', () => {
 		plannedId = planned.id;
 	});
 
-	test('idea: vote, see who voted, no Going question, Add to a day for a planner', async ({ browser }) => {
+	test('idea: vote, see who voted, no Going question, Add to a day for a planner', async ({
+		browser
+	}) => {
 		const { ctx, page } = await devLogin(browser, EMAILS.owner);
 		try {
 			await open(page, ideaId, 'Kayak trip');
@@ -110,8 +117,13 @@ test.describe('Votes on the item page (#442)', () => {
 			await expect(vis(page, '[data-testid="item-your-vote"]')).toHaveCount(0);
 			// #406 — your own idea: no "What is this?".
 			await expect(vis(page, '[data-what-is]')).toHaveCount(0);
-			await vis(page, '[data-testid="add-to-day"]').first().getByRole('button', { name: 'Add to a day' }).click();
-			await expect(page.locator('[data-sheet-panel]').filter({ visible: true }).first()).toContainText('Add to a day');
+			await vis(page, '[data-testid="add-to-day"]')
+				.first()
+				.getByRole('button', { name: 'Add to a day' })
+				.click();
+			await expect(
+				page.locator('[data-sheet-panel]').filter({ visible: true }).first()
+			).toContainText('Add to a day');
 		} finally {
 			await ctx.close();
 		}
@@ -125,7 +137,10 @@ test.describe('Votes on the item page (#442)', () => {
 			await expect(vis(page, '[data-testid="add-to-day"]')).toHaveCount(0);
 			// #406 — someone else's idea: a web search for what it is, in a new tab.
 			const whatIs = vis(page, '[data-what-is]').first();
-			await expect(whatIs).toHaveAttribute('href', /^https:\/\/www\.google\.com\/search\?q=what%20is%20Kayak%20trip/);
+			await expect(whatIs).toHaveAttribute(
+				'href',
+				/^https:\/\/www\.google\.com\/search\?q=what%20is%20Kayak%20trip/
+			);
 			await expect(whatIs).toHaveAttribute('target', '_blank');
 		} finally {
 			await ctx.close();
@@ -143,7 +158,9 @@ test.describe('Votes on the item page (#442)', () => {
 			await row.getByRole('button', { name: 'change' }).click();
 			// The pill is optimistic: wait for the action's response before reloading,
 			// or the reload can abort the POST and the vote never lands.
-			const saved = page.waitForResponse((r) => r.request().method() === 'POST' && r.url().includes('/items/'));
+			const saved = page.waitForResponse(
+				(r) => r.request().method() === 'POST' && r.url().includes('/items/')
+			);
 			await row.locator('[data-vote="like"]').click();
 			await expect(row).toContainText('Like');
 			await saved;

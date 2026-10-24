@@ -180,7 +180,12 @@ onRecordCreateRequest((e) => {
 		const stem = base.slice(0, 90);
 		let slug = base;
 		for (let i = 1; taken(slug); i++) {
-			slug = stem + '-' + (i <= 50 ? i : $security.randomStringWithAlphabet(6, 'abcdefghijklmnopqrstuvwxyz0123456789'));
+			slug =
+				stem +
+				'-' +
+				(i <= 50
+					? i
+					: $security.randomStringWithAlphabet(6, 'abcdefghijklmnopqrstuvwxyz0123456789'));
 		}
 		e.record.set('slug', slug);
 	}
@@ -255,7 +260,8 @@ routerAdd('GET', '/api/trips/same-name', (e) => {
 		if (!tripId || myTrips[tripId]) continue;
 		myTrips[tripId] = true;
 		const trip = loadTrip(tripId);
-		if (trip && isCurrentMatch(trip)) mine.push({ slug: trip.getString('slug'), title: trip.getString('title') });
+		if (trip && isCurrentMatch(trip))
+			mine.push({ slug: trip.getString('slug'), title: trip.getString('title') });
 	}
 	const removedFrom = {};
 	for (const m of memberships('user = {:u} && removed_at != ""', { u: auth.id })) {
@@ -354,7 +360,9 @@ routerAdd('POST', '/api/trips/request-invite', (e) => {
 	// of this trip's owners/co-owners.
 	let linkedUser = '';
 	for (const mine of memberships('user = {:u} && removed_at = ""', { u: auth.id })) {
-		for (const o of memberships('trip = {:t} && user != "" && removed_at = ""', { t: mine.getString('trip') })) {
+		for (const o of memberships('trip = {:t} && user != "" && removed_at = ""', {
+			t: mine.getString('trip')
+		})) {
 			if (leadUsers[o.getString('user')]) {
 				linkedUser = o.getString('user');
 				break;
@@ -401,7 +409,11 @@ routerAdd('POST', '/api/trips/request-invite', (e) => {
 		sent++;
 	}
 
-	return e.json(200, { sent: sent, title: trip.getString('title'), name: nameOf(linkedUser, 'The organiser') });
+	return e.json(200, {
+		sent: sent,
+		title: trip.getString('title'),
+		name: nameOf(linkedUser, 'The organiser')
+	});
 });
 
 // After trip creation: add creator as owner + generate day records.
@@ -419,10 +431,7 @@ onRecordAfterCreateSuccess((e) => {
 		membership.set('trip', e.record.id);
 		membership.set('user', createdBy);
 		membership.set('role', 'owner');
-		membership.set(
-			'joined_at',
-			new Date().toISOString().replace('T', ' ').replace('Z', '') + 'Z'
-		);
+		membership.set('joined_at', new Date().toISOString().replace('T', ' ').replace('Z', '') + 'Z');
 		e.app.save(membership);
 	}
 
@@ -458,14 +467,9 @@ onRecordAfterCreateSuccess((e) => {
 
 	let phases = [];
 	try {
-		phases = e.app.findRecordsByFilter(
-			'phases',
-			'trip = {:tripId}',
-			'+order',
-			0,
-			0,
-			{ tripId: e.record.id }
-		);
+		phases = e.app.findRecordsByFilter('phases', 'trip = {:tripId}', '+order', 0, 0, {
+			tripId: e.record.id
+		});
 	} catch (_) {
 		phases = [];
 	}
@@ -605,7 +609,12 @@ onRecordUpdateRequest((e) => {
 			const p = kept[i];
 			const start = i === 0 ? tStart : startOf(p);
 			const end = i < kept.length - 1 ? startOf(kept[i + 1]) : tEnd;
-			if (startOf(p) === start && p.getString('end_date').substring(0, 10) === end && p.getInt('order') === i) continue;
+			if (
+				startOf(p) === start &&
+				p.getString('end_date').substring(0, 10) === end &&
+				p.getInt('order') === i
+			)
+				continue;
 			p.set('start_date', start + ' 00:00:00.000Z');
 			p.set('end_date', end + ' 00:00:00.000Z');
 			p.set('order', i);
@@ -615,14 +624,9 @@ onRecordUpdateRequest((e) => {
 
 	const daysCollection = e.app.findCollectionByNameOrId('days');
 
-	const existingDays = e.app.findRecordsByFilter(
-		'days',
-		'trip = {:tripId}',
-		'-date',
-		0,
-		0,
-		{ tripId: e.record.id }
-	);
+	const existingDays = e.app.findRecordsByFilter('days', 'trip = {:tripId}', '-date', 0, 0, {
+		tripId: e.record.id
+	});
 	const existingByDate = {};
 	for (const day of existingDays) {
 		existingByDate[day.getString('date').substring(0, 10)] = day;
@@ -639,14 +643,9 @@ onRecordUpdateRequest((e) => {
 
 	let phases = [];
 	try {
-		phases = e.app.findRecordsByFilter(
-			'phases',
-			'trip = {:tripId}',
-			'+order',
-			0,
-			0,
-			{ tripId: e.record.id }
-		);
+		phases = e.app.findRecordsByFilter('phases', 'trip = {:tripId}', '+order', 0, 0, {
+			tripId: e.record.id
+		});
 	} catch (_) {
 		phases = [];
 	}
@@ -678,7 +677,8 @@ onRecordUpdateRequest((e) => {
 			const pStart = phase.getString('start_date');
 			const pEnd = phase.getString('end_date');
 			if (!pStart || !pEnd) continue;
-			if (dateStr >= pStart.substring(0, 10) && dateStr <= pEnd.substring(0, 10)) matched.push(phase.id);
+			if (dateStr >= pStart.substring(0, 10) && dateStr <= pEnd.substring(0, 10))
+				matched.push(phase.id);
 		}
 		const cur = [];
 		const raw = day.get('phases');
@@ -706,9 +706,12 @@ onRecordUpdateRequest((e) => {
 		// it), else the first. Read fresh: the retile above may have merged phases.
 		let fallbackPhase = '';
 		try {
-			const live = e.app.findRecordsByFilter('phases', 'trip = {:t}', '+start_date', 0, 0, { t: e.record.id });
+			const live = e.app.findRecordsByFilter('phases', 'trip = {:t}', '+start_date', 0, 0, {
+				t: e.record.id
+			});
 			for (const p of live) {
-				if (!fallbackPhase || p.getString('start_date').substring(0, 10) <= dateStr) fallbackPhase = p.id;
+				if (!fallbackPhase || p.getString('start_date').substring(0, 10) <= dateStr)
+					fallbackPhase = p.id;
 			}
 		} catch (_) {}
 		for (const item of items) {
@@ -734,7 +737,10 @@ onRecordUpdateRequest((e) => {
 		for (const item of spanning) {
 			let dayDate = '';
 			try {
-				dayDate = e.app.findRecordById('days', item.getString('day')).getString('date').substring(0, 10);
+				dayDate = e.app
+					.findRecordById('days', item.getString('day'))
+					.getString('date')
+					.substring(0, 10);
 			} catch (_) {}
 			item.set('end_date', dayDate && endDay > dayDate ? endDay + ' 00:00:00.000Z' : '');
 			e.app.save(item);
@@ -748,14 +754,9 @@ onRecordUpdateRequest((e) => {
 	// first phase (the just-seeded "Phase 1") — ideas intact across promotion.
 	if (isPromotion) {
 		try {
-			const firstPhase = e.app.findRecordsByFilter(
-				'phases',
-				'trip = {:tripId}',
-				'+order',
-				1,
-				0,
-				{ tripId: e.record.id }
-			);
+			const firstPhase = e.app.findRecordsByFilter('phases', 'trip = {:tripId}', '+order', 1, 0, {
+				tripId: e.record.id
+			});
 			if (firstPhase && firstPhase.length > 0) {
 				const orphans = e.app.findRecordsByFilter(
 					'items',

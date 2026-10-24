@@ -24,21 +24,27 @@
 	});
 </script>
 
-<div class="bg-paper text-ink flex min-h-dvh md-desktop:flex-row">
+<div class="flex min-h-dvh bg-paper text-ink md-desktop:flex-row">
 	<!-- Brand panel: desktop only -->
-	<div class="bg-moss hidden flex-col items-center justify-center p-12 md-desktop:flex md-desktop:w-1/2">
-		<h1 class="font-display text-paper text-4xl font-bold italic">Waypoint</h1>
-		<p class="text-paper/80 mt-4 max-w-sm text-center text-lg">
+	<div
+		class="hidden flex-col items-center justify-center bg-moss p-12 md-desktop:flex md-desktop:w-1/2"
+	>
+		<h1 class="font-display text-4xl font-bold text-paper italic">Waypoint</h1>
+		<p class="mt-4 max-w-sm text-center text-lg text-paper/80">
 			Plan trips together. Share the adventure.
 		</p>
 	</div>
 
 	<!-- Auth form -->
-	<div class="flex min-h-dvh flex-1 items-center justify-center p-4 md-desktop:min-h-0 md-desktop:w-1/2">
+	<div
+		class="flex min-h-dvh flex-1 items-center justify-center p-4 md-desktop:min-h-0 md-desktop:w-1/2"
+	>
 		<div class="w-full max-w-sm">
 			<div class="mb-8 text-center">
-				<h1 class="font-display text-ink text-3xl font-semibold tracking-tight md-desktop:hidden">Waypoint</h1>
-				<p class="text-ink-muted mt-2 text-sm">
+				<h1 class="font-display text-3xl font-semibold tracking-tight text-ink md-desktop:hidden">
+					Waypoint
+				</h1>
+				<p class="mt-2 text-sm text-ink-muted">
 					{#if otpId}
 						Enter the 6-digit code sent to {email}
 					{:else}
@@ -48,7 +54,10 @@
 			</div>
 
 			{#if error}
-				<div role="alert" class="border-error/30 bg-error/10 text-error-deep mb-4 rounded-md border p-3 text-sm">
+				<div
+					role="alert"
+					class="mb-4 rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error-deep"
+				>
 					{error}
 				</div>
 			{/if}
@@ -72,7 +81,7 @@
 					}}
 				>
 					<input type="hidden" name="redirect" value={redirectTo} />
-					<label for="email" class="text-ink-soft block text-sm font-medium">Email</label>
+					<label for="email" class="block text-sm font-medium text-ink-soft">Email</label>
 					<input
 						type="email"
 						id="email"
@@ -81,10 +90,17 @@
 						required
 						autocomplete="email"
 						enterkeyhint="send"
-						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+						class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 						placeholder="you@example.com"
 					/>
-					<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="mt-4 w-full">
+					<Button
+						type="submit"
+						disabled={loading}
+						{loading}
+						variant="moss"
+						size="lg"
+						class="mt-4 w-full"
+					>
 						{loading ? 'Sending…' : 'Send code'}
 					</Button>
 				</form>
@@ -105,7 +121,7 @@
 				>
 					<input type="hidden" name="otpId" value={otpId} />
 					<input type="hidden" name="redirect" value={redirectTo} />
-					<label for="code" class="text-ink-soft block text-sm font-medium">Code</label>
+					<label for="code" class="block text-sm font-medium text-ink-soft">Code</label>
 					<input
 						type="text"
 						id="code"
@@ -116,10 +132,17 @@
 						enterkeyhint="go"
 						maxlength="6"
 						use:otp.action={loading}
-						class="border-line bg-surface text-ink font-mono mt-1 block w-full rounded-md border px-3 py-2 text-center text-2xl tracking-[0.5em]"
+						class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-center font-mono text-2xl tracking-[0.5em] text-ink"
 						placeholder="000000"
 					/>
-					<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="mt-4 w-full">
+					<Button
+						type="submit"
+						disabled={loading}
+						{loading}
+						variant="moss"
+						size="lg"
+						class="mt-4 w-full"
+					>
 						{loading ? 'Verifying…' : 'Verify'}
 					</Button>
 				</form>
@@ -151,7 +174,7 @@
 					<button
 						type="submit"
 						disabled={resending}
-						class="text-ink-muted hover:text-ink-soft active:text-ink-soft disabled:text-ink-muted/60 mt-3 w-full text-sm"
+						class="mt-3 w-full text-sm text-ink-muted hover:text-ink-soft active:text-ink-soft disabled:text-ink-muted/60"
 					>
 						{#if resending}
 							Resending…
@@ -164,7 +187,7 @@
 				</form>
 				<button
 					type="button"
-					class="text-ink-muted hover:text-ink-soft active:text-ink-soft mt-1 w-full text-sm"
+					class="mt-1 w-full text-sm text-ink-muted hover:text-ink-soft active:text-ink-soft"
 					onclick={() => {
 						otpId = '';
 						resent = false;

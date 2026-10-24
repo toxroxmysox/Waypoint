@@ -16,8 +16,6 @@ export default async function globalSetup() {
 	const PB_BASE = process.env.PUBLIC_PB_URL ?? 'http://127.0.0.1:8090';
 	const res = await fetch(`${PB_BASE}/api/dev/seed-baseline-trip`, { method: 'POST' });
 	if (!res.ok) {
-		throw new Error(
-			`global-setup: seed-baseline-trip failed (${res.status}): ${await res.text()}`
-		);
+		throw new Error(`global-setup: seed-baseline-trip failed (${res.status}): ${await res.text()}`);
 	}
 }

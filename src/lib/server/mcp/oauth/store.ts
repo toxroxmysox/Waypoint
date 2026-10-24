@@ -25,7 +25,10 @@ const REFRESH_TTL_S = 30 * 24 * 3600;
 const accessTtlS = () => Number(env.MCP_ACCESS_TTL_S) || 3600;
 const TOUCH_EVERY_MS = 60_000;
 
-const grantError = (error_description: string): OAuthError => ({ error: 'invalid_grant', error_description });
+const grantError = (error_description: string): OAuthError => ({
+	error: 'invalid_grant',
+	error_description
+});
 const pbDate = (ms: number) => new Date(ms).toISOString().replace('T', ' ');
 
 async function findToken(hash: string, kind: 'access' | 'refresh'): Promise<RecordModel | null> {
@@ -61,7 +64,12 @@ async function mint(connectionId: string, rotatedFrom = ''): Promise<TokenSet> {
 		{ requestKey: null }
 	);
 	await pb.collection('mcp_tokens').create(
-		{ connection: connectionId, kind: 'access', hash: sha256Hex(access_token), expires_at: pbDate(now + ttl * 1000) },
+		{
+			connection: connectionId,
+			kind: 'access',
+			hash: sha256Hex(access_token),
+			expires_at: pbDate(now + ttl * 1000)
+		},
 		{ requestKey: null }
 	);
 	return { access_token, refresh_token, token_type: 'Bearer', expires_in: ttl };
@@ -74,15 +82,20 @@ async function connectionFor(userId: string, client: OAuthClient): Promise<strin
 	const find = () =>
 		pb
 			.collection('mcp_connections')
-			.getFirstListItem(pb.filter('user = {:u} && client_id = {:c}', { u: userId, c: client.client_id }), { requestKey: null })
+			.getFirstListItem(
+				pb.filter('user = {:u} && client_id = {:c}', { u: userId, c: client.client_id }),
+				{ requestKey: null }
+			)
 			.catch(() => null);
 	const existing = await find();
 	if (existing) return existing.id;
 	try {
-		const created = await pb.collection('mcp_connections').create(
-			{ user: userId, client_id: client.client_id, client_name: client.client_name ?? '' },
-			{ requestKey: null }
-		);
+		const created = await pb
+			.collection('mcp_connections')
+			.create(
+				{ user: userId, client_id: client.client_id, client_name: client.client_name ?? '' },
+				{ requestKey: null }
+			);
 		return created.id;
 	} catch (err) {
 		const winner = await find();
@@ -93,10 +106,14 @@ async function connectionFor(userId: string, client: OAuthClient): Promise<strin
 
 async function revokeConnectionTokens(connectionId: string): Promise<void> {
 	const pb = await adminPb();
-	const rows = await pb
-		.collection('mcp_tokens')
-		.getFullList({ filter: pb.filter('connection = {:c}', { c: connectionId }), fields: 'id', requestKey: null });
-	await Promise.all(rows.map((r) => pb.collection('mcp_tokens').delete(r.id, { requestKey: null })));
+	const rows = await pb.collection('mcp_tokens').getFullList({
+		filter: pb.filter('connection = {:c}', { c: connectionId }),
+		fields: 'id',
+		requestKey: null
+	});
+	await Promise.all(
+		rows.map((r) => pb.collection('mcp_tokens').delete(r.id, { requestKey: null }))
+	);
 }
 
 export async function exchangeCode(p: {
@@ -105,12 +122,14 @@ export async function exchangeCode(p: {
 	redirect_uri: string;
 	code_verifier: string;
 }): Promise<TokenSet | OAuthError> {
-	if (!p.code || !p.code_verifier) return { error: 'invalid_request', error_description: 'code and code_verifier required' };
+	if (!p.code || !p.code_verifier)
+		return { error: 'invalid_request', error_description: 'code and code_verifier required' };
 	const rec = takeCode(p.code);
 	if (!rec) return grantError('code unknown, used or expired');
 	if (rec.client.client_id !== p.client_id) return grantError('client mismatch');
 	if (rec.redirect_uri !== p.redirect_uri) return grantError('redirect_uri mismatch');
-	if (!pkceS256Ok(p.code_verifier, rec.code_challenge)) return grantError('PKCE verification failed');
+	if (!pkceS256Ok(p.code_verifier, rec.code_challenge))
+		return grantError('PKCE verification failed');
 	return mint(await connectionFor(rec.userId, rec.client));
 }
 
@@ -133,12 +152,23 @@ export async function sweepExpiredTokens(now = Date.now(), pb?: PocketBase): Pro
 		const exp = new Date(String(r.expires_at).replace(' ', 'T')).getTime();
 		return r.kind === 'access' ? exp < now : exp < now - REFRESH_TTL_S * 1000;
 	});
-	await Promise.all(dead.map((r) => db.collection('mcp_tokens').delete(r.id, { requestKey: null }).catch(() => false)));
+	await Promise.all(
+		dead.map((r) =>
+			db
+				.collection('mcp_tokens')
+				.delete(r.id, { requestKey: null })
+				.catch(() => false)
+		)
+	);
 	return dead.length;
 }
 
-export async function rotateRefresh(p: { refresh_token: string; client_id: string }): Promise<TokenSet | OAuthError> {
-	if (!p.refresh_token) return { error: 'invalid_request', error_description: 'refresh_token required' };
+export async function rotateRefresh(p: {
+	refresh_token: string;
+	client_id: string;
+}): Promise<TokenSet | OAuthError> {
+	if (!p.refresh_token)
+		return { error: 'invalid_request', error_description: 'refresh_token required' };
 	const row = await findToken(sha256Hex(p.refresh_token), 'refresh');
 	if (!row) return grantError('refresh token unknown');
 	if (new Date(row.expires_at).getTime() <= Date.now()) {
@@ -155,7 +185,9 @@ export async function rotateRefresh(p: { refresh_token: string; client_id: strin
 		return grantError('refresh token already used or expired');
 	}
 	const pb = await adminPb();
-	await pb.collection('mcp_tokens').update(row.id, { expires_at: pbDate(Date.now()) }, { requestKey: null });
+	await pb
+		.collection('mcp_tokens')
+		.update(row.id, { expires_at: pbDate(Date.now()) }, { requestKey: null });
 	if (Date.now() - lastSweep > SWEEP_EVERY_MS) {
 		lastSweep = Date.now();
 		sweepExpiredTokens().catch(() => {});
@@ -163,7 +195,9 @@ export async function rotateRefresh(p: { refresh_token: string; client_id: strin
 	return tokens;
 }
 
-export async function lookupAccess(token: string): Promise<{ connectionId: string; userId: string } | null> {
+export async function lookupAccess(
+	token: string
+): Promise<{ connectionId: string; userId: string } | null> {
 	if (!token) return null;
 	const row = await findToken(sha256Hex(token), 'access');
 	if (!row || new Date(row.expires_at).getTime() <= Date.now()) return null;
@@ -172,7 +206,9 @@ export async function lookupAccess(token: string): Promise<{ connectionId: strin
 	const last = conn.last_used_at ? new Date(conn.last_used_at).getTime() : 0;
 	if (Date.now() - last > TOUCH_EVERY_MS) {
 		const pb = await adminPb();
-		pb.collection('mcp_connections').update(conn.id, { last_used_at: pbDate(Date.now()) }, { requestKey: null }).catch(() => {});
+		pb.collection('mcp_connections')
+			.update(conn.id, { last_used_at: pbDate(Date.now()) }, { requestKey: null })
+			.catch(() => {});
 	}
 	return { connectionId: conn.id, userId: conn.user };
 }

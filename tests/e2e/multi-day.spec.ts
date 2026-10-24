@@ -48,7 +48,10 @@ test.describe('Multi-day items', () => {
 		// --- Add a multi-day lodging item on the start day ---
 		await dayLinks.first().click();
 		await page.waitForURL(new RegExp(startDayHref!.replace(/\//g, '\\/')));
-		await page.getByRole('link', { name: /^Add item$/i }).first().click();
+		await page
+			.getByRole('link', { name: /^Add item$/i })
+			.first()
+			.click();
 		await page.waitForURL(/\/items\/new/);
 
 		await page.locator('button:has-text("Lodging"):visible').first().click();

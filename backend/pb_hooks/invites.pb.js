@@ -109,8 +109,7 @@ routerAdd('POST', '/api/invites/create', (e) => {
 	// Generate code + expiry. 40 chars of urlsafe entropy; 7-day TTL.
 	const code = $security.randomString(40);
 	const expiresMs = Date.now() + 7 * 24 * 60 * 60 * 1000;
-	const expiresAt =
-		new Date(expiresMs).toISOString().replace('T', ' ').replace('Z', '') + 'Z';
+	const expiresAt = new Date(expiresMs).toISOString().replace('T', ' ').replace('Z', '') + 'Z';
 
 	const collection = e.app.findCollectionByNameOrId('pending_invites');
 	const invite = new Record(collection);
@@ -345,8 +344,7 @@ routerAdd('POST', '/api/invites/accept', (e) => {
 			throw new BadRequestError('This placeholder is managed by email matching');
 		}
 
-		const joinedAt =
-			new Date().toISOString().replace('T', ' ').replace('Z', '') + 'Z';
+		const joinedAt = new Date().toISOString().replace('T', ' ').replace('Z', '') + 'Z';
 		target.set('user', auth.id);
 		target.set('joined_at', joinedAt);
 		target.set('placeholder_name', '');
@@ -375,8 +373,7 @@ routerAdd('POST', '/api/invites/accept', (e) => {
 		// No placeholder; fine.
 	}
 
-	const joinedAt =
-		new Date().toISOString().replace('T', ' ').replace('Z', '') + 'Z';
+	const joinedAt = new Date().toISOString().replace('T', ' ').replace('Z', '') + 'Z';
 
 	let member;
 	if (placeholder) {
@@ -460,9 +457,7 @@ onRecordDeleteRequest((e) => {
 // reading the console.log line at the start of the callback before debugging
 // the email payload.
 onRecordAfterCreateSuccess((e) => {
-	console.log(
-		'invites.pb.js: pending_invites after-create fired id=' + e.record.id
-	);
+	console.log('invites.pb.js: pending_invites after-create fired id=' + e.record.id);
 
 	if ($os.getenv('WAYPOINT_DEV_MODE') === 'true') {
 		console.log('invites.pb.js: WAYPOINT_DEV_MODE=true; skipping invite email');
@@ -475,9 +470,7 @@ onRecordAfterCreateSuccess((e) => {
 	const publicUrl = $os.getenv('PUBLIC_APP_URL') || 'http://localhost:5173';
 
 	if (!apiKey || !from) {
-		console.log(
-			'invites.pb.js: RESEND_API_KEY or RESEND_FROM not set; skipping email send'
-		);
+		console.log('invites.pb.js: RESEND_API_KEY or RESEND_FROM not set; skipping email send');
 		e.next();
 		return;
 	}
@@ -497,10 +490,7 @@ onRecordAfterCreateSuccess((e) => {
 
 	let inviterName = 'A Waypoint user';
 	try {
-		const inviter = e.app.findRecordById(
-			'trip_members',
-			e.record.getString('invited_by')
-		);
+		const inviter = e.app.findRecordById('trip_members', e.record.getString('invited_by'));
 		const dn = inviter.getString('display_name');
 		if (dn) {
 			inviterName = dn;
@@ -584,12 +574,7 @@ onRecordAfterCreateSuccess((e) => {
 			})
 		});
 		console.log(
-			'invites.pb.js: resend status=' +
-				res.statusCode +
-				' to=' +
-				email +
-				' invite=' +
-				e.record.id
+			'invites.pb.js: resend status=' + res.statusCode + ' to=' + email + ' invite=' + e.record.id
 		);
 	} catch (err) {
 		console.log('invites.pb.js: resend send failed: ' + err);
@@ -613,7 +598,9 @@ routerAdd('GET', '/api/invites/my-pending', (e) => {
 	const auth = e.auth;
 	if (!auth) throw new UnauthorizedError('Authentication required');
 
-	const email = String(auth.email() || '').trim().toLowerCase();
+	const email = String(auth.email() || '')
+		.trim()
+		.toLowerCase();
 	if (!email) return e.json(200, { invites: [] });
 
 	let rows;
@@ -708,7 +695,9 @@ routerAdd('POST', '/api/invites/decline', (e) => {
 	}
 
 	const inviteEmail = invite.getString('email').trim().toLowerCase();
-	const authEmail = String(auth.email() || '').trim().toLowerCase();
+	const authEmail = String(auth.email() || '')
+		.trim()
+		.toLowerCase();
 	if (inviteEmail !== authEmail) throw new ForbiddenError('This invite is not yours to decline');
 
 	e.app.delete(invite);
@@ -744,9 +733,7 @@ routerAdd('GET', '/api/invites/co-travelers', (e) => {
 	if (!auth) throw new UnauthorizedError('Authentication required');
 
 	const query = e.requestInfo().query || {};
-	const tripId = Array.isArray(query['trip_id'])
-		? query['trip_id'][0]
-		: query['trip_id'] || '';
+	const tripId = Array.isArray(query['trip_id']) ? query['trip_id'][0] : query['trip_id'] || '';
 	if (!tripId) throw new BadRequestError('trip_id is required');
 
 	// Requester must be an ACTIVE member of the target trip (#133 guard) and
@@ -814,13 +801,14 @@ routerAdd('GET', '/api/invites/co-travelers', (e) => {
 			}
 			// Name only, never the address: the account name, else the per-trip
 			// nickname from the shared trip, else a neutral label.
-			const name =
-				otherUser.getString('name') || other.getString('display_name') || 'Traveler';
+			const name = otherUser.getString('name') || other.getString('display_name') || 'Traveler';
 			seen[otherUserId] = {
 				user_id: otherUserId,
 				name: name,
 				avatar: otherUser.getString('avatar') || '',
-				email: String(otherUser.email() || '').trim().toLowerCase()
+				email: String(otherUser.email() || '')
+					.trim()
+					.toLowerCase()
 			};
 			pool.push(seen[otherUserId]);
 		}
@@ -846,14 +834,9 @@ routerAdd('GET', '/api/invites/co-travelers', (e) => {
 	// 4. Exclude anyone with an open invite on this trip.
 	let invites = [];
 	try {
-		invites = e.app.findRecordsByFilter(
-			'pending_invites',
-			'trip = {:tripId}',
-			'',
-			0,
-			0,
-			{ tripId: tripId }
-		);
+		invites = e.app.findRecordsByFilter('pending_invites', 'trip = {:tripId}', '', 0, 0, {
+			tripId: tripId
+		});
 	} catch (_) {
 		invites = [];
 	}
@@ -969,7 +952,9 @@ routerAdd('GET', '/api/invites/pending', (e) => {
 			} catch (_) {
 				continue;
 			}
-			const addr = String(u.email() || '').trim().toLowerCase();
+			const addr = String(u.email() || '')
+				.trim()
+				.toLowerCase();
 			if (!addr) continue;
 			coTravelerName[addr] = u.getString('name') || other.getString('display_name') || 'Traveler';
 		}
@@ -1107,7 +1092,9 @@ routerAdd('POST', '/api/invites/create-for-user', (e) => {
 	}
 	if (existingMember) throw new BadRequestError('They are already a member of this trip');
 
-	const email = String(target.email() || '').trim().toLowerCase();
+	const email = String(target.email() || '')
+		.trim()
+		.toLowerCase();
 	if (!email) throw new BadRequestError('That traveller has no email on file');
 
 	// Mirror the by-email path's placeholder collision check.

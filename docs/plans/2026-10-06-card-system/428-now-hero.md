@@ -31,19 +31,26 @@
 - Clipboard refused: toast fallback.
 
 ### Task 1: Pure derivations
+
 **Files:** Create `src/lib/trip-mode/hero.ts`, `hero.test.ts`.
 **Produces:** `heroStatus(item, now): { label: 'NOW'; text: string } | null` (`until 4:00p · 55m left`; null when no end or not ongoing); `goingNames(item, members): {memberId, name}[]`; `mapsUrl(item): string`.
+
 - [ ] Red tests: status line values (55m, 1h 5m, <1m, end==now => null, no end => null, before start => null); goingNames order + tombstone dropped; mapsUrl precedence place_id > coords > address > ''.
 - [ ] Implement; tests green; commit.
 
 ### Task 2: Components
+
 **Files:** Create `src/lib/documents/components/CodeRow.svelte`, `src/lib/itinerary/components/Hero.svelte`; modify `ItemActionSheets.svelte` (optional `onskipped`).
 **Produces:** Hero props: `item`, `members`, `status?: {label,text}|null` (live styling), `timeText?`, `typeLine?`, `codes`, `href?`, `showMaps?`, `menu?: Snippet`, `children?: Snippet`.
+
 - [ ] Build; `pnpm check`.
 
 ### Task 3: Adopt on Now
+
 **Files:** Modify Now `+page.svelte`, `+page.server.ts` (none needed unless data missing), `TripModeCard.svelte` (drop isNext accent), e2e regex in `trip-mode-views.spec.ts`; dev seed flag `now` in `backend/pb_hooks/dev-auth.pb.js`.
+
 - [ ] Wire; add e2e `trip-mode-hero.spec.ts` (copy code, Skip from Hero, no `⋯` for traveler is covered by permissions unit).
 
 ### Task 4: Docs + proof
+
 - [ ] CARD_CONTENT_SPEC Now section; screenshots 375/768 (hero + no-hero); `pnpm check`, unit, `E2E_SLOT=1 pnpm test:e2e:clean`; PR.

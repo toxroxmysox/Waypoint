@@ -12,10 +12,16 @@ export const GET: RequestHandler = async ({ request }) => {
 	if (!checkGlanceToken(request.headers.get('authorization'), env.WAYPOINT_GLANCE_TOKEN)) {
 		return json({ error: 'unauthorized' }, { status: 401, headers: NO_STORE });
 	}
-	const emails = (env.WAYPOINT_GLANCE_EMAILS ?? '').split(',').map((e) => e.trim()).filter(Boolean);
-	const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Detroit' }).format(new Date());
+	const emails = (env.WAYPOINT_GLANCE_EMAILS ?? '')
+		.split(',')
+		.map((e) => e.trim())
+		.filter(Boolean);
+	const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Detroit' }).format(
+		new Date()
+	);
 	// Misconfigured people = error, never a confident wrong number.
-	const misconfigured = () => json({ error: 'glance misconfigured' }, { status: 503, headers: NO_STORE });
+	const misconfigured = () =>
+		json({ error: 'glance misconfigured' }, { status: 503, headers: NO_STORE });
 	if (!emails.length) return misconfigured();
 
 	const pb = await adminPb();
@@ -44,8 +50,14 @@ export const GET: RequestHandler = async ({ request }) => {
 					throw e; // 5xx/network: surface an error, never a silently low count
 				});
 			if (!t?.start_date || !t?.end_date) return;
-			trips.push({ id, start: String(t.start_date).slice(0, 10), end: String(t.end_date).slice(0, 10) });
-			const r = await pb.collection('items').getList(1, 1, { filter: `trip = "${id}"`, fields: 'id', requestKey: null });
+			trips.push({
+				id,
+				start: String(t.start_date).slice(0, 10),
+				end: String(t.end_date).slice(0, 10)
+			});
+			const r = await pb
+				.collection('items')
+				.getList(1, 1, { filter: `trip = "${id}"`, fields: 'id', requestKey: null });
 			counts.set(id, r.totalItems);
 		})
 	);

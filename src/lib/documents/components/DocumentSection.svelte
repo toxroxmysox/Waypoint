@@ -45,7 +45,7 @@
 		<SectionH>
 			{#snippet right()}
 				{#if docs.length > 0}
-					<span class="text-ink-muted font-mono text-xs tabular-nums">{docs.length}</span>
+					<span class="font-mono text-xs text-ink-muted tabular-nums">{docs.length}</span>
 				{/if}
 			{/snippet}
 			Documents
@@ -53,24 +53,28 @@
 
 		{#if docs.length === 0}
 			<div class="py-6 text-center">
-				<div class="text-ink-muted mx-auto mb-2 flex h-10 w-10 items-center justify-center">
-					<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+				<div class="mx-auto mb-2 flex h-10 w-10 items-center justify-center text-ink-muted">
+					<svg
+						width="26"
+						height="26"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
 						<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
 						<polyline points="14 2 14 8 20 8" />
 					</svg>
 				</div>
-				<p class="font-display text-ink-soft text-sm italic">No documents yet.</p>
-				<p class="text-ink-muted mt-1 text-[12px]">Add a boarding pass, ticket, or confirmation.</p>
+				<p class="font-display text-sm text-ink-soft italic">No documents yet.</p>
+				<p class="mt-1 text-[12px] text-ink-muted">Add a boarding pass, ticket, or confirmation.</p>
 			</div>
 		{:else}
 			<div class="space-y-2">
 				{#each docs as doc (doc.id)}
-					<DocumentRow
-						{doc}
-						canDelete={canDelete(doc)}
-						{deleteAction}
-						onView={openLightbox}
-					/>
+					<DocumentRow {doc} canDelete={canDelete(doc)} {deleteAction} onView={openLightbox} />
 				{/each}
 			</div>
 		{/if}
@@ -89,4 +93,4 @@
 	</div>
 </Card>
 
-<DocumentLightbox bind:index={lightboxIndex} {gallery} canDelete={canDelete} {deleteAction} />
+<DocumentLightbox bind:index={lightboxIndex} {gallery} {canDelete} {deleteAction} />

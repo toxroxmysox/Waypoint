@@ -33,7 +33,7 @@
 	backHref="/trips/{data.sourceTrip.slug}/more"
 />
 
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8">
+<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 md-desktop:max-w-2xl">
 	<ServerErrorAlert {form} class="mb-4" />
 
 	<form
@@ -57,44 +57,47 @@
 		<Card>
 			<div class="space-y-3 p-4">
 				<div>
-					<label for="title" class="text-ink-soft block text-sm font-medium">New trip title</label>
+					<label for="title" class="block text-sm font-medium text-ink-soft">New trip title</label>
 					<input
 						type="text"
 						id="title"
 						name="title"
 						required
 						value="{data.sourceTrip.title} (Copy)"
-						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+						class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 					/>
 				</div>
 
 				<div class="grid grid-cols-2 gap-3">
 					<div class="min-w-0">
-						<label for="start_date" class="text-ink-soft block text-sm font-medium">Start date</label>
+						<label for="start_date" class="block text-sm font-medium text-ink-soft"
+							>Start date</label
+						>
 						<input
 							type="date"
 							id="start_date"
 							name="start_date"
 							required
 							value={sourceStartStr}
-							class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
+							class="mt-1 block w-full min-w-0 rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 						/>
 					</div>
 					<div class="min-w-0">
-						<label for="end_date" class="text-ink-soft block text-sm font-medium">End date</label>
+						<label for="end_date" class="block text-sm font-medium text-ink-soft">End date</label>
 						<input
 							type="date"
 							id="end_date"
 							name="end_date"
 							required
 							value={sourceEndStr}
-							class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
+							class="mt-1 block w-full min-w-0 rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 						/>
 					</div>
 				</div>
 
-				<p class="text-ink-muted text-xs">
-					Original trip: {sourceStartStr} to {sourceEndStr} ({sourceDays} days). Phases and day dates will be shifted to match the new date range.
+				<p class="text-xs text-ink-muted">
+					Original trip: {sourceStartStr} to {sourceEndStr} ({sourceDays} days). Phases and day dates
+					will be shifted to match the new date range.
 				</p>
 			</div>
 		</Card>
@@ -102,10 +105,16 @@
 		<Card>
 			<div class="space-y-3 p-4">
 				<div class="flex items-center gap-3">
-					<input type="checkbox" id="include_phases" name="include_phases" checked class="accent-moss h-4 w-4" />
-					<label for="include_phases" class="text-ink text-sm font-medium">
+					<input
+						type="checkbox"
+						id="include_phases"
+						name="include_phases"
+						checked
+						class="h-4 w-4 accent-moss"
+					/>
+					<label for="include_phases" class="text-sm font-medium text-ink">
 						Clone phases & days
-						<span class="text-ink-muted font-normal">({data.phases.length} phases)</span>
+						<span class="font-normal text-ink-muted">({data.phases.length} phases)</span>
 					</label>
 				</div>
 			</div>
@@ -113,7 +122,7 @@
 
 		<Card>
 			<div class="space-y-3 p-4">
-				<p class="text-ink-soft text-sm font-medium">Clone items by type</p>
+				<p class="text-sm font-medium text-ink-soft">Clone items by type</p>
 				{#each itemTypes as type (type)}
 					{@const count = data.itemTypeCounts[type] ?? 0}
 					{#if count > 0}
@@ -124,9 +133,9 @@
 								name="include_item_types"
 								value={type}
 								checked
-								class="accent-moss h-4 w-4"
+								class="h-4 w-4 accent-moss"
 							/>
-							<label for="item_{type}" class="text-ink text-sm">
+							<label for="item_{type}" class="text-sm text-ink">
 								{titleCase(type)}
 								<span class="text-ink-muted">({count})</span>
 							</label>
@@ -134,12 +143,12 @@
 					{/if}
 				{/each}
 				{#if Object.keys(data.itemTypeCounts).length === 0}
-					<p class="text-ink-muted text-sm italic">No items to clone.</p>
+					<p class="text-sm text-ink-muted italic">No items to clone.</p>
 				{/if}
 			</div>
 		</Card>
 
-		<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="w-full">
+		<Button type="submit" disabled={loading} {loading} variant="moss" size="lg" class="w-full">
 			{loading ? 'Cloning…' : 'Clone trip'}
 		</Button>
 	</form>

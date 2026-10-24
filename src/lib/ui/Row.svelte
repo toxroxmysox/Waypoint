@@ -61,23 +61,42 @@
 {#snippet body()}
 	<MonoTypeIcon {type} sub={subtype} size={16} />
 	<span class="min-w-0 flex-1">
-		<span class="text-ink block truncate text-sm leading-tight font-semibold {strike ? 'line-through' : ''}" data-row-title>{title}</span>
+		<span
+			class="block truncate text-sm leading-tight font-semibold text-ink {strike
+				? 'line-through'
+				: ''}"
+			data-row-title>{title}</span
+		>
 		{#if subline}
-			<span class="text-ink-muted mt-0.5 block text-xs leading-snug" data-row-sub>{@render subline()}</span>
+			<span class="mt-0.5 block text-xs leading-snug text-ink-muted" data-row-sub
+				>{@render subline()}</span
+			>
 		{:else if sub}
-			<span class="text-ink-muted mt-0.5 block truncate text-xs leading-snug" data-row-sub>{sub}</span>
+			<span class="mt-0.5 block truncate text-xs leading-snug text-ink-muted" data-row-sub
+				>{sub}</span
+			>
 		{/if}
 	</span>
 	{#if trailing}
 		<span class="flex shrink-0 items-center" data-row-trailing>{@render trailing()}</span>
 	{:else if onselect}
 		<span
-			class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors {selected ? 'border-ink bg-ink text-paper' : 'border-line bg-surface'}"
+			class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors {selected
+				? 'border-ink bg-ink text-paper'
+				: 'border-line bg-surface'}"
 			aria-hidden="true"
 			data-row-check
 		>
 			{#if selected}
-				<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6.2l2.3 2.3L9.5 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+				<svg width="12" height="12" viewBox="0 0 12 12" fill="none"
+					><path
+						d="M2.5 6.2l2.3 2.3L9.5 3.5"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					/></svg
+				>
 			{/if}
 		</span>
 	{:else if href}
@@ -85,11 +104,21 @@
 	{/if}
 {/snippet}
 
-<div class="transition-opacity {divider ? 'border-line border-b' : ''} {klass}" style="opacity:{dim ? 0.4 : 1};" data-row>
+<div
+	class="transition-opacity {divider ? 'border-b border-line' : ''} {klass}"
+	style="opacity:{dim ? 0.4 : 1};"
+	data-row
+>
 	<div class="flex items-stretch">
 		{#if leading}{@render leading()}{/if}
 		{#if onselect}
-			<button type="button" onclick={onselect} aria-pressed={selected} class="flex min-h-11 min-w-0 flex-1 items-center gap-3 py-2.5 text-left">{@render body()}</button>
+			<button
+				type="button"
+				onclick={onselect}
+				aria-pressed={selected}
+				class="flex min-h-11 min-w-0 flex-1 items-center gap-3 py-2.5 text-left"
+				>{@render body()}</button
+			>
 		{:else if href}
 			<a {href} class="flex min-h-11 min-w-0 flex-1 items-center gap-3 py-2.5">{@render body()}</a>
 		{:else}

@@ -14,7 +14,10 @@ import { renderDigestEmail as tsRender, formatDigestDay as tsFormatDay } from '.
 // The repo is "type": "module", so node refuses to require() the CommonJS
 // hook file. Evaluate it the way PB's goja require() does: wrap in a CJS
 // module shim. (Renaming to .cjs would desync it from the goja-verified path.)
-const corePath = join(dirname(fileURLToPath(import.meta.url)), '../../../backend/pb_hooks/digest-core.js');
+const corePath = join(
+	dirname(fileURLToPath(import.meta.url)),
+	'../../../backend/pb_hooks/digest-core.js'
+);
 const coreModule = { exports: {} as any };
 new Function('module', 'exports', readFileSync(corePath, 'utf8'))(coreModule, coreModule.exports);
 const core = coreModule.exports;
@@ -27,7 +30,13 @@ const items: ts.DigestSourceItem[] = [
 		status: 'planned',
 		signature: ts.buildSignature({ type: 'activity', location_name: 'Pier 3' })
 	},
-	{ id: 'i2', title: 'Tapas crawl', dayDate: '', status: 'unplanned', signature: ts.buildSignature({}) },
+	{
+		id: 'i2',
+		title: 'Tapas crawl',
+		dayDate: '',
+		status: 'unplanned',
+		signature: ts.buildSignature({})
+	},
 	{
 		id: 'i3',
 		title: 'Bus tour',
@@ -43,7 +52,13 @@ const after: ts.DigestSourceItem[] = [
 	// i2 renamed
 	{ ...items[1], title: 'Tapas crawl (old town)' },
 	// i3 removed; i4 added
-	{ id: 'i4', title: 'Museum', dayDate: '2026-06-04', status: 'planned', signature: ts.buildSignature({ type: 'activity' }) }
+	{
+		id: 'i4',
+		title: 'Museum',
+		dayDate: '2026-06-04',
+		status: 'planned',
+		signature: ts.buildSignature({ type: 'activity' })
+	}
 ];
 
 describe('digest-core.js parity with src/lib/digest', () => {
@@ -281,17 +296,47 @@ describe('#522 reminders parity: digest-core.js vs digest-reminders.ts + digest-
 		...o
 	});
 	const ritems = [
-		item({ title: 'Ryokan', type: 'lodging', dayDate: '2026-12-01', requiresBooking: true, going: ['m2'] }),
+		item({
+			title: 'Ryokan',
+			type: 'lodging',
+			dayDate: '2026-12-01',
+			requiresBooking: true,
+			going: ['m2']
+		}),
 		item({ title: 'Sushi class', dayDate: '2026-11-17', requiresBooking: true, going: ['m3'] }),
 		item({ title: 'Onsen day', phaseStart: '2026-12-31', requiresBooking: true }),
 		item({ title: 'Booked dinner', dayDate: '2026-12-01', requiresBooking: true, booked: true }),
 		item({ title: 'Flight HND', type: 'flight', dayDate: '2026-11-06' })
 	];
 	const cases: rem.ReminderInput[] = [
-		{ today: '2026-11-03', tripStart: '2026-11-06', tripEnd: '2026-11-20', archived: false, items: ritems },
-		{ today: '2026-10-01', tripStart: '2026-11-06', tripEnd: '2026-11-20', archived: false, items: ritems },
-		{ today: '2026-11-23', tripStart: '2026-11-06', tripEnd: '2026-11-20', archived: false, items: ritems },
-		{ today: '2026-11-23', tripStart: '2026-11-06', tripEnd: '2026-11-20', archived: true, items: ritems },
+		{
+			today: '2026-11-03',
+			tripStart: '2026-11-06',
+			tripEnd: '2026-11-20',
+			archived: false,
+			items: ritems
+		},
+		{
+			today: '2026-10-01',
+			tripStart: '2026-11-06',
+			tripEnd: '2026-11-20',
+			archived: false,
+			items: ritems
+		},
+		{
+			today: '2026-11-23',
+			tripStart: '2026-11-06',
+			tripEnd: '2026-11-20',
+			archived: false,
+			items: ritems
+		},
+		{
+			today: '2026-11-23',
+			tripStart: '2026-11-06',
+			tripEnd: '2026-11-20',
+			archived: true,
+			items: ritems
+		},
 		{ today: '2026-11-03', tripStart: '', tripEnd: '', archived: false, items: ritems }
 	];
 
@@ -301,15 +346,28 @@ describe('#522 reminders parity: digest-core.js vs digest-reminders.ts + digest-
 
 	it('remindersFor + hasReminders agree per role', () => {
 		const r = rem.composeReminders(cases[0]);
-		for (const [role, id] of [['owner', 'm1'], ['co_owner', 'm9'], ['traveler', 'm3'], ['traveler', 'm4'], ['viewer', 'm5']]) {
+		for (const [role, id] of [
+			['owner', 'm1'],
+			['co_owner', 'm9'],
+			['traveler', 'm3'],
+			['traveler', 'm4'],
+			['viewer', 'm5']
+		]) {
 			expect(core.remindersFor(r, role, id)).toEqual(rem.remindersFor(r, role, id));
-			expect(core.hasReminders(core.remindersFor(r, role, id))).toBe(rem.hasReminders(rem.remindersFor(r, role, id)));
+			expect(core.hasReminders(core.remindersFor(r, role, id))).toBe(
+				rem.hasReminders(rem.remindersFor(r, role, id))
+			);
 		}
 	});
 
 	it('renderDigestEmail agrees with reminders (alone and alongside changes)', () => {
 		const empty = { added: [], edited: [], moved: [], removed: [] };
-		const changed = { added: [{ title: 'New bar', dayDate: '2026-11-07' }], edited: [], moved: [], removed: [] };
+		const changed = {
+			added: [{ title: 'New bar', dayDate: '2026-11-07' }],
+			edited: [],
+			moved: [],
+			removed: []
+		};
 		const r0 = rem.composeReminders(cases[0]);
 		const r2 = rem.composeReminders(cases[2]);
 		const variants = [
@@ -331,7 +389,9 @@ describe('#522 reminders parity: digest-core.js vs digest-reminders.ts + digest-
 		try {
 			const instant = new Date('2026-11-02T20:30:00Z');
 			for (const tz of ['Asia/Tokyo', 'America/Los_Angeles', 'UTC', '', 'Local', 'bogus']) {
-				expect(core.tripLocalDate(gojaNow(instant), tz)).toBe(tripToday(tripTz({ timezone: tz }), instant));
+				expect(core.tripLocalDate(gojaNow(instant), tz)).toBe(
+					tripToday(tripTz({ timezone: tz }), instant)
+				);
 			}
 		} finally {
 			delete (globalThis as { Timezone?: unknown }).Timezone;

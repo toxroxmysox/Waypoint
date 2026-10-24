@@ -21,8 +21,16 @@
 	}
 
 	const fit = $derived(
-		width > 0 && el ? fitFlightSub(sub, width, measure) : fitFlightSub(sub, Number.POSITIVE_INFINITY)
+		width > 0 && el
+			? fitFlightSub(sub, width, measure)
+			: fitFlightSub(sub, Number.POSITIVE_INFINITY)
 	);
 </script>
 
-<span class="block truncate" bind:this={el} bind:clientWidth={width} data-flight-sub data-dropped={fit.dropped.join(',')}>{fit.text}</span>
+<span
+	class="block truncate"
+	bind:this={el}
+	bind:clientWidth={width}
+	data-flight-sub
+	data-dropped={fit.dropped.join(',')}>{fit.text}</span
+>

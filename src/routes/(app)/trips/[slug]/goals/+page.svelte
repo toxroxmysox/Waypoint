@@ -64,10 +64,10 @@
 	]}
 />
 
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8">
+<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-8 md-desktop:max-w-2xl">
 	<div class="mb-3 flex items-baseline justify-between px-0.5">
-		<h1 class="font-display text-ink text-[22px] font-semibold">Goals</h1>
-		<span class="text-ink-muted text-[11.5px] font-medium">
+		<h1 class="font-display text-[22px] font-semibold text-ink">Goals</h1>
+		<span class="text-[11.5px] font-medium text-ink-muted">
 			{goals.length} goal{goals.length === 1 ? '' : 's'}
 		</span>
 	</div>
@@ -76,12 +76,17 @@
 		<!-- Wizard entry (#79): the capture minigame launches from the top of the list. -->
 		<a
 			href="/trips/{data.trip.slug}/goals/capture"
-			class="border-moss/40 bg-moss-tint mb-3 flex items-center gap-3 rounded-[14px] border px-[15px] py-3"
+			class="mb-3 flex items-center gap-3 rounded-[14px] border border-moss/40 bg-moss-tint px-[15px] py-3"
 		>
-			<span class="bg-moss text-paper flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg" aria-hidden="true">✦</span>
+			<span
+				class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-moss text-lg text-paper"
+				aria-hidden="true">✦</span
+			>
 			<span class="min-w-0 flex-1">
-				<span class="text-ink block text-[14.5px] font-semibold">Add &amp; review goals</span>
-				<span class="text-ink-soft block text-[12px]">Brain-dump your goals and react to the group's</span>
+				<span class="block text-[14.5px] font-semibold text-ink">Add &amp; review goals</span>
+				<span class="block text-[12px] text-ink-soft"
+					>Brain-dump your goals and react to the group's</span
+				>
 			</span>
 			<span class="text-moss" aria-hidden="true">›</span>
 		</a>
@@ -92,17 +97,28 @@
 			{#each goals as goal, i (goal.id)}
 				{@const author = authorOf(goal)}
 				<div
-					class="relative hover:bg-surface-2 active:bg-surface-2 flex items-center gap-3 px-[15px] py-[13px] {i < goals.length - 1
-						? 'border-line border-b'
+					class="relative flex items-center gap-3 px-[15px] py-[13px] hover:bg-surface-2 active:bg-surface-2 {i <
+					goals.length - 1
+						? 'border-b border-line'
 						: ''}"
 				>
-					<Avatar img={authorAvatar(goal)} initial={memberInitial(author)} alt={memberDisplayName(author)} size={28} />
+					<Avatar
+						img={authorAvatar(goal)}
+						initial={memberInitial(author)}
+						alt={memberDisplayName(author)}
+						size={28}
+					/>
 					<div class="min-w-0 flex-1">
 						<!-- #403 — the prompt it answered, so "Sushi" reads as "Food to try · Sushi". -->
 						{#if promptKicker(goal.prompt)}
-							<div class="text-ink-muted text-[10.5px] font-semibold tracking-wide uppercase" data-goal-kicker>{promptKicker(goal.prompt)}</div>
+							<div
+								class="text-[10.5px] font-semibold tracking-wide text-ink-muted uppercase"
+								data-goal-kicker
+							>
+								{promptKicker(goal.prompt)}
+							</div>
 						{/if}
-						<div class="text-ink text-[14.5px] font-semibold">
+						<div class="text-[14.5px] font-semibold text-ink">
 							<!-- Stretched link: the ::after covers the whole row for navigation, while the
 							     sentiment-stacks button below sits above it (relative z-10) and stays tappable. -->
 							<a href="/trips/{data.trip.slug}/goals/{goal.id}" class="after:absolute after:inset-0"
@@ -110,9 +126,9 @@
 							>
 						</div>
 						{#if goal.description}
-							<div class="text-ink-soft mt-0.5 truncate text-[12px]">{goal.description}</div>
+							<div class="mt-0.5 truncate text-[12px] text-ink-soft">{goal.description}</div>
 						{/if}
-						<div class="text-ink-muted mt-0.5 text-[11px]">{memberDisplayName(author)}</div>
+						<div class="mt-0.5 text-[11px] text-ink-muted">{memberDisplayName(author)}</div>
 						{#if votesByGoal[goal.id]?.length}
 							<div class="relative z-10 mt-1.5 w-fit">
 								<GoalSentimentStacks
@@ -132,13 +148,18 @@
 		<button
 			type="button"
 			onclick={() => (createOpen = true)}
-			class="border-line text-moss mt-2.5 flex w-full items-center gap-2.5 rounded-[14px] border-[1.5px] border-dashed px-[15px] py-3"
+			class="mt-2.5 flex w-full items-center gap-2.5 rounded-[14px] border-[1.5px] border-dashed border-line px-[15px] py-3 text-moss"
 		>
 			<span
-				class="border-moss text-moss flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-[1.5px] border-dashed"
+				class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-[1.5px] border-dashed border-moss text-moss"
 			>
 				<svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-					<path d="M7 2.5v9M2.5 7h9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+					<path
+						d="M7 2.5v9M2.5 7h9"
+						stroke="currentColor"
+						stroke-width="1.8"
+						stroke-linecap="round"
+					/>
 				</svg>
 			</span>
 			<span class="text-[13.5px] font-semibold">Add a goal</span>
@@ -146,7 +167,7 @@
 	{/if}
 
 	{#if goals.length === 0}
-		<p class="text-ink-muted font-display mt-6 px-1 text-sm italic">
+		<p class="mt-6 px-1 font-display text-sm text-ink-muted italic">
 			No goals yet. What does everyone want out of this trip?
 		</p>
 	{/if}
@@ -161,7 +182,7 @@
 
 <BottomSheet bind:open={createOpen} title="Add a goal">
 	{#if form?.error}
-		<p class="text-error mb-3 text-sm">{form.error}</p>
+		<p class="mb-3 text-sm text-error">{form.error}</p>
 	{/if}
 	<form
 		method="POST"
@@ -198,26 +219,26 @@
 		class="space-y-3"
 	>
 		<div>
-			<label for="goal_title" class="text-ink-soft block text-sm font-medium">Goal</label>
+			<label for="goal_title" class="block text-sm font-medium text-ink-soft">Goal</label>
 			<input
 				id="goal_title"
 				name="title"
 				type="text"
 				required
 				placeholder="See the northern lights, eat at every market…"
-				class="border-line bg-surface text-ink mt-1 w-full rounded-md border px-3 py-2 text-sm"
+				class="mt-1 w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 			/>
 		</div>
 		<div>
-			<label for="goal_description" class="text-ink-soft block text-sm font-medium">
-				Notes <span class="text-ink-muted font-normal">(optional)</span>
+			<label for="goal_description" class="block text-sm font-medium text-ink-soft">
+				Notes <span class="font-normal text-ink-muted">(optional)</span>
 			</label>
 			<textarea
 				id="goal_description"
 				name="description"
 				rows="2"
 				placeholder="Anything to add?"
-				class="border-line bg-surface text-ink mt-1 w-full rounded-md border px-3 py-2 text-sm"
+				class="mt-1 w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 			></textarea>
 		</div>
 		<Button type="submit" variant="moss" size="md" class="w-full" disabled={creating}>

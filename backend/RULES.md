@@ -27,18 +27,18 @@ When a list/view rule denies a record, PB returns `404` (not `403`) so existence
 
 Role-agnostic. Any member of a trip can do anything to that trip's data; non-members are shut out. Role-based gating (per SPEC §3) is layered on top in later sub-milestones via server hooks and additional rules — see "Planned tightening" below.
 
-| Collection | list | view | create | update | delete |
-|---|---|---|---|---|---|
-| `users` | self only | **co-traveler** (name+avatar) | null (OTP hook) | self only | null (no API) |
-| `trips` | member | member | authed | member + hook (protected fields owner/co_owner, #280; incl. `ai_access` #502 and `ai_write` #503, both default true on create) | member + hook (owner/co_owner, #407) |
-| `trip_members` | member of trip | member of trip | null (hooks/admin) | member of trip + hook (field allowlist {role, display_name, digest_opt_out}, #279/#408/#450); `placeholder_email` hidden field (0074, #450) | member of trip + hook (#279) |
-| `phases` | member of trip | member of trip | member + hook (owner/co_owner, #175; start must tile, #411) | member + hook (owner/co_owner, #175; start move bounded, `end_date`/`order` derived, #411) | member + hook (owner/co_owner, #175; never the last; retile after, #411) |
-| `days` | member of trip | member of trip | null (hooks) | member + hook (viewers denied; travelers `notes` only; owner/co_owner `notes` + `phases`, #411) | null (hooks) |
-| `notifications` | recipient | recipient | null (hooks) | recipient + hook (`read_at` only, #411) | null |
-| `items` | member of trip | member of trip | member + hook (owner/co_owner, #175) | member + hook (owner/co_owner, #175) | member + hook (owner/co_owner, #175) |
-| `checklist_items` | member of item.trip | member of item.trip | member of item.trip | member of item.trip | member of item.trip |
-| `pending_invites` | null (superuser; members read `GET /api/invites/pending`, #409) | null (superuser, #409) | null (endpoint) | null (immutable) | member of trip + hook (SPEC §3) |
-| `ai_changes` (#503) | author only | author only | null (server) | null (server) | null (server) |
+| Collection          | list                                                            | view                          | create                                                      | update                                                                                                                                      | delete                                                                   |
+| ------------------- | --------------------------------------------------------------- | ----------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `users`             | self only                                                       | **co-traveler** (name+avatar) | null (OTP hook)                                             | self only                                                                                                                                   | null (no API)                                                            |
+| `trips`             | member                                                          | member                        | authed                                                      | member + hook (protected fields owner/co_owner, #280; incl. `ai_access` #502 and `ai_write` #503, both default true on create)              | member + hook (owner/co_owner, #407)                                     |
+| `trip_members`      | member of trip                                                  | member of trip                | null (hooks/admin)                                          | member of trip + hook (field allowlist {role, display_name, digest_opt_out}, #279/#408/#450); `placeholder_email` hidden field (0074, #450) | member of trip + hook (#279)                                             |
+| `phases`            | member of trip                                                  | member of trip                | member + hook (owner/co_owner, #175; start must tile, #411) | member + hook (owner/co_owner, #175; start move bounded, `end_date`/`order` derived, #411)                                                  | member + hook (owner/co_owner, #175; never the last; retile after, #411) |
+| `days`              | member of trip                                                  | member of trip                | null (hooks)                                                | member + hook (viewers denied; travelers `notes` only; owner/co_owner `notes` + `phases`, #411)                                             | null (hooks)                                                             |
+| `notifications`     | recipient                                                       | recipient                     | null (hooks)                                                | recipient + hook (`read_at` only, #411)                                                                                                     | null                                                                     |
+| `items`             | member of trip                                                  | member of trip                | member + hook (owner/co_owner, #175)                        | member + hook (owner/co_owner, #175)                                                                                                        | member + hook (owner/co_owner, #175)                                     |
+| `checklist_items`   | member of item.trip                                             | member of item.trip           | member of item.trip                                         | member of item.trip                                                                                                                         | member of item.trip                                                      |
+| `pending_invites`   | null (superuser; members read `GET /api/invites/pending`, #409) | null (superuser, #409)        | null (endpoint)                                             | null (immutable)                                                                                                                            | member of trip + hook (SPEC §3)                                          |
+| `ai_changes` (#503) | author only                                                     | author only                   | null (server)                                               | null (server)                                                                                                                               | null (server)                                                            |
 
 **Hidden fields (#411, `secrets.pb.js` `onRecordEnrich`, covers expanded relations):** `trip_members.soft_token` from every non-superuser; `join_tokens.token` and `trips.public_share_token` from viewers (and anyone without an active membership). Output only: filters on them still work.
 
@@ -75,19 +75,19 @@ The `?=` operator in PB is "any of the multi-relation values matches". Required 
 
 The current baseline lets any member do anything. SPEC §3 carves out role-specific behavior that gets enforced over the course of M2:
 
-| Action | Owner | Co-Owner | Traveler | Viewer |
-|---|:---:|:---:|:---:|:---:|
-| trips.update (metadata) | ✓ | ✓ | — | — |
-| trips.delete | ✓ | — | — | — |
-| trip_members.create (invite) | ✓ all roles | ✓ all roles | ✓ traveler/viewer only | — |
-| trip_members.update (promote / change role) | ✓ | ✓ (not the sole owner) | — | — |
-| trip_members.delete (remove member) | ✓ | ✓ (not the sole owner) | self only | self only |
-| items.create direct | ✓ | ✓ | — (suggests instead) | — |
-| items.update / delete | ✓ | ✓ | — | — |
-| suggestions.create (target_type=new_item) | ✓ auto-approve | ✓ auto-approve | ✓ queued unless trip.auto_approve_suggestions | — |
-| suggestions.update (approve/reject; Save via `/api/suggestions/update`, #444, pending only) | ✓ | ✓ | — | — |
-| suggestions.create (target_type=comment) | ✓ | ✓ | ✓ | ✓ |
-| checklist_items.update (check/uncheck) | ✓ | ✓ | ✓ | — |
+| Action                                                                                      |     Owner      |        Co-Owner        |                   Traveler                    |  Viewer   |
+| ------------------------------------------------------------------------------------------- | :------------: | :--------------------: | :-------------------------------------------: | :-------: |
+| trips.update (metadata)                                                                     |       ✓        |           ✓            |                       —                       |     —     |
+| trips.delete                                                                                |       ✓        |           —            |                       —                       |     —     |
+| trip_members.create (invite)                                                                |  ✓ all roles   |      ✓ all roles       |            ✓ traveler/viewer only             |     —     |
+| trip_members.update (promote / change role)                                                 |       ✓        | ✓ (not the sole owner) |                       —                       |     —     |
+| trip_members.delete (remove member)                                                         |       ✓        | ✓ (not the sole owner) |                   self only                   | self only |
+| items.create direct                                                                         |       ✓        |           ✓            |             — (suggests instead)              |     —     |
+| items.update / delete                                                                       |       ✓        |           ✓            |                       —                       |     —     |
+| suggestions.create (target_type=new_item)                                                   | ✓ auto-approve |     ✓ auto-approve     | ✓ queued unless trip.auto_approve_suggestions |     —     |
+| suggestions.update (approve/reject; Save via `/api/suggestions/update`, #444, pending only) |       ✓        |           ✓            |                       —                       |     —     |
+| suggestions.create (target_type=comment)                                                    |       ✓        |           ✓            |                       ✓                       |     ✓     |
+| checklist_items.update (check/uncheck)                                                      |       ✓        |           ✓            |                       ✓                       |     —     |
 
 Implementation strategy: anything expressible as a PB rule expression goes into the rule. Anything that requires reading `trip_members.role` or cross-record logic (e.g. "cannot remove the sole owner") goes into a server hook in `pb_hooks/` and the rule stays at "member-of-trip". The hook rejects with `BadRequestError` / `ForbiddenError` and the harness asserts the resulting status.
 
@@ -112,9 +112,9 @@ The harness expectations table at the bottom of `test-rules.mjs` is updated alon
 
 The `votes` collection (created 0024, `value` + `updateRule` added 0029) is exercised by the harness as of #30:
 
-| Collection | list | view | create | update | delete |
-|---|---|---|---|---|---|
-| `votes` | member | member | member | own vote only | own vote only |
+| Collection | list   | view   | create | update        | delete        |
+| ---------- | ------ | ------ | ------ | ------------- | ------------- |
+| `votes`    | member | member | member | own vote only | own vote only |
 
 - **create** — `MEMBER_VIA_TRIP`. A `votes.pb.js` `onRecordCreateRequest` hook additionally enforces vote-as-yourself (`member.user === auth` and `member.trip === record.trip`). The harness votes as each role's own membership on a second fixture item so the unique `(item, member)` index isn't tripped.
 - **update / delete** — `MEMBER_VIA_TRIP && member.user = @request.auth.id`. A member can only change or remove **their own** vote. The fixture vote belongs to the owner, so co_owner/traveler/viewer get `404` (the rule filters the record out of their view, so it reads as not-found). Changing a vote is an update (the unique index makes a re-vote an update, not an insert).
@@ -123,39 +123,39 @@ The `votes` collection (created 0024, `value` + `updateRule` added 0029) is exer
 
 The `trip_goals` collection (created 0040) is exercised by the harness as of #75. Goals are trip-scoped, phase-less aspirations; create/edit are open to owner·co_owner·traveler with **no suggestion queue** (viewers are read-only), and delete is `creator OR owner/co_owner`.
 
-| Collection | list | view | create | update | delete |
-|---|---|---|---|---|---|
+| Collection   | list   | view   | create                   | update                   | delete                           |
+| ------------ | ------ | ------ | ------------------------ | ------------------------ | -------------------------------- |
 | `trip_goals` | member | member | non-viewer member (rule) | non-viewer member (hook) | creator or owner/co_owner (hook) |
 
-- **create** — `MEMBER_VIA_TRIP && created_by.user = @request.auth.id && created_by.role != "viewer"`. Fully rule-expressible because `created_by` is a *single* relation: `created_by.role` correlates the author's role unambiguously (no multi-relation `?=` aliasing), and `created_by.user = auth` forces self-authorship. Viewers and non-members deny.
+- **create** — `MEMBER_VIA_TRIP && created_by.user = @request.auth.id && created_by.role != "viewer"`. Fully rule-expressible because `created_by` is a _single_ relation: `created_by.role` correlates the author's role unambiguously (no multi-relation `?=` aliasing), and `created_by.user = auth` forces self-authorship. Viewers and non-members deny.
 - **update (edit)** — rule is `MEMBER_VIA_TRIP`; `trip_goals.pb.js` `onRecordUpdateRequest` rejects viewers (`403`). The acting editor isn't necessarily the author, so their own role can't be correlated in one rule expression — hence the hook (same reasoning as the invites delete-hook).
 - **delete** — rule is `MEMBER_VIA_TRIP`; `trip_goals.pb.js` `onRecordDeleteRequest` allows only the creator (`record.created_by === acting member id`) or an owner/co_owner. The fixture goal is authored by the **traveler**, so traveler passes as creator, owner/co_owner pass by role, and viewer/non-member deny. The **`AND zero goal_votes`** tightening on the creator branch lands in #77 with the `goal_votes` collection.
 
 ## Items & Phases role gate (#175)
 
-Lands the long-documented "Target rules per SPEC §3" matrix for `items` and `phases` (migration 0047). Before this, both collections were plain `MEMBER_VIA_TRIP` for create/update/delete, so **viewers could write** and **travelers could edit/move/delete items + mutate phases** directly — the suggestion queue only ever gated item *creation* (findings WP-B-005, WP-B-006).
+Lands the long-documented "Target rules per SPEC §3" matrix for `items` and `phases` (migration 0047). Before this, both collections were plain `MEMBER_VIA_TRIP` for create/update/delete, so **viewers could write** and **travelers could edit/move/delete items + mutate phases** directly — the suggestion queue only ever gated item _creation_ (findings WP-B-005, WP-B-006).
 
-| Collection | list | view | create | update | delete |
-|---|---|---|---|---|---|
-| `items` | member | member | owner/co_owner (hook) | owner/co_owner (hook) | owner/co_owner (hook) |
-| `phases` | member | member | owner/co_owner (hook) | owner/co_owner (hook) | owner/co_owner (hook) |
+| Collection | list   | view   | create                | update                | delete                |
+| ---------- | ------ | ------ | --------------------- | --------------------- | --------------------- |
+| `items`    | member | member | owner/co_owner (hook) | owner/co_owner (hook) | owner/co_owner (hook) |
+| `phases`   | member | member | owner/co_owner (hook) | owner/co_owner (hook) | owner/co_owner (hook) |
 
-- **rules stay `MEMBER_VIA_TRIP`** — the role gate is enforced in `items.pb.js` (create/update/delete) and the extended `phases.pb.js` (create/update/delete, registered *before* the existing day-rebucket hooks so a denied write throws before any `e.next()` and never rebuckets). The rule can't carry the role: for **update/delete** the acting caller isn't the author, and correlating the caller's role needs `trip.trip_members_via_trip.role ?= "owner"` alongside `...user ?= auth`, where the two `?=` can match *different* member rows (the multi-relation aliasing gotcha). For **items.create** `created_by` is single-relation, but the **import** and **closeout** flows create items without setting `created_by`, so a `created_by.role` create rule would 403 those owner-only flows — rejected. **phases** has no `created_by` field at all. Each hook resolves the caller's *actual* `trip_members` row and rejects any role but owner/co_owner.
-- **items.create — travelers suggest, they don't create.** The `items/new` action routes every traveler through `/api/suggestions/create` (admin context, bypasses the gate): auto-approved when `trip.auto_approve_suggestions` is on (item created immediately), queued otherwise. SPEC §4 "Add/edit/delete items: traveler suggest only*" — the asterisk = auto-approvable. Owner/co_owner keep the direct-create path.
+- **rules stay `MEMBER_VIA_TRIP`** — the role gate is enforced in `items.pb.js` (create/update/delete) and the extended `phases.pb.js` (create/update/delete, registered _before_ the existing day-rebucket hooks so a denied write throws before any `e.next()` and never rebuckets). The rule can't carry the role: for **update/delete** the acting caller isn't the author, and correlating the caller's role needs `trip.trip_members_via_trip.role ?= "owner"` alongside `...user ?= auth`, where the two `?=` can match _different_ member rows (the multi-relation aliasing gotcha). For **items.create** `created_by` is single-relation, but the **import** and **closeout** flows create items without setting `created_by`, so a `created_by.role` create rule would 403 those owner-only flows — rejected. **phases** has no `created_by` field at all. Each hook resolves the caller's _actual_ `trip_members` row and rejects any role but owner/co_owner.
+- **items.create — travelers suggest, they don't create.** The `items/new` action routes every traveler through `/api/suggestions/create` (admin context, bypasses the gate): auto-approved when `trip.auto_approve_suggestions` is on (item created immediately), queued otherwise. SPEC §4 "Add/edit/delete items: traveler suggest only\*" — the asterisk = auto-approvable. Owner/co_owner keep the direct-create path.
 - **owner/co_owner flows unchanged** — all existing item/phase create/edit/reorder/delete/book paths pass the hook (caller is owner/co_owner). Harness: `items` + `phases` create/update/delete cells flip to `OWNER_COOWNER_ONLY` (traveler + viewer now deny; the fixture item/phase is owner-authored, so traveler/viewer mutating it deny on the caller's role). UI affordance-hiding for travelers/viewers on day-view/phase/item surfaces is a separate follow-up; this issue is the server-side enforcement.
 
 ## Going: self-assign and Not going (#226 / #402)
 
 Three-state Going (CARD_SYSTEM D6): a member is **going** (in `items.assigned_to`), **not going** (in `items.not_going`, migration 0071) or has **no answer** (in neither). Rules stay `MEMBER_VIA_TRIP`; everything is in `items.pb.js`, because "only your own id" is a diff against the stored record, which a rule can't express.
 
-| Change | Owner | Co-Owner | Traveler | Viewer |
-|---|:---:|:---:|:---:|:---:|
-| own going (`assigned_to`) | ✓ | ✓ | ✓ (#226 exception) | — |
-| someone else's going | ✓ | ✓ | — | — |
-| own not going (`not_going`) | ✓ | ✓ | ✓ | — |
-| someone else's not going (set or clear) | — | — | — | — |
+| Change                                  | Owner | Co-Owner |      Traveler      | Viewer |
+| --------------------------------------- | :---: | :------: | :----------------: | :----: |
+| own going (`assigned_to`)               |   ✓   |    ✓     | ✓ (#226 exception) |   —    |
+| someone else's going                    |   ✓   |    ✓     |         —          |   —    |
+| own not going (`not_going`)             |   ✓   |    ✓     |         ✓          |   —    |
+| someone else's not going (set or clear) |   —   |    —     |         —          |   —    |
 
-- **Not going is self-only for every role** (update request hook, checked *before* the owner and #219 creator bypasses): the `not_going` delta must be empty or exactly the caller's own member id. On create, `not_going` may hold only the caller's id. Viewers can't answer at all.
+- **Not going is self-only for every role** (update request hook, checked _before_ the owner and #219 creator bypasses): the `not_going` delta must be empty or exactly the caller's own member id. On create, `not_going` may hold only the caller's id. Viewers can't answer at all.
 - **Traveler exception (#226, extended):** a traveler may update an item they didn't create iff no locked field changed and the union of the `assigned_to` and `not_going` deltas is exactly their own id (so going ↔ not going in one write is allowed).
 - **Exclusive lists (model hooks `onRecordCreate` / `onRecordUpdate`):** they run on every save, REST and internal `e.app.save` alike. A member found in both lists after a change: newly added to `not_going` but not newly going → removed from `assigned_to`; anything else (newly going, both at once, a new record) → removed from `not_going` (going wins). So an owner assigning someone going clears that member's not going. **Intended (Scott, 2026-10-07):** the owner can override a member's "not going", and the item form's assignment does so, knowing the owner can't see who said not going and that a stale form can clear it too.
 - **Endpoint:** `POST /api/items/:id/assign-self { state: going | not_going | no_answer }` writes only the caller's id with relation modifiers (`assigned_to+`, `not_going-` …), through the caller's own auth, so these hooks still apply. An empty body is the legacy "+ Me" toggle (going ↔ no answer); a JSON body that isn't an object is a 400. Re-sending your current state returns it with no write (PB refuses a traveler's no-change update). PB `err.status` passes through. Not concurrency-safe: the modifiers apply to the record as loaded, so two answers within a few ms can lose one (accepted).
@@ -167,8 +167,8 @@ Three-state Going (CARD_SYSTEM D6): a member is **going** (in `items.assigned_to
 
 The `documents` collection (created 0032) is exercised by the harness as of #70:
 
-| Collection | list | view | create | update | delete |
-|---|---|---|---|---|---|
+| Collection  | list   | view   | create               | update   | delete                     |
+| ----------- | ------ | ------ | -------------------- | -------- | -------------------------- |
 | `documents` | member | member | member except viewer | — (none) | uploader or owner/co_owner |
 
 - **create** — `MEMBER_VIA_TRIP`. A `documents.pb.js` `onRecordCreateRequest` hook blocks **viewers** and pins `uploaded_by` to the caller's membership (mirrors `expenses.created_by`). The `file` field requires a single PDF/image ≤ 20 MB (`mimeTypes` + `maxSize`); the harness uploads a valid 1x1 PNG via multipart so each role's result reflects the permission gate, not a payload-validation 400.
@@ -181,8 +181,8 @@ The `documents` collection (created 0032) is exercised by the harness as of #70:
 The `memories` collection (created 0058) — Trip Memory bounded context: one photo + one
 thought, per member, per day. The cap is the unique `(day, author)` index, not UI discipline.
 
-| Collection | list | view | create | update | delete |
-|---|---|---|---|---|---|
+| Collection | list   | view   | create                        | update      | delete      |
+| ---------- | ------ | ------ | ----------------------------- | ----------- | ----------- |
 | `memories` | member | member | member except viewer, as self | author only | author only |
 
 - **list/view** — `MEMBER_VIA_TRIP`. ALL trip members including viewers see all memories
@@ -206,9 +206,9 @@ thought, per member, per day. The cap is the unique `(day, author)` index, not U
 
 Migration `0043_users_viewable_by_cotravelers.js` loosens **only** `users.viewRule` from self-only to **co-traveler**, so the avatar wire-up (#59) can read a member's `name` + `avatar` through `expand:user`. Everything else 0014 set on `users` is unchanged.
 
-| Collection | list | view | create | update | delete |
-|---|---|---|---|---|---|
-| `users` | self only | co-traveler (share a trip) | null (OTP hook) | self only | null (no API) |
+| Collection | list      | view                       | create          | update    | delete        |
+| ---------- | --------- | -------------------------- | --------------- | --------- | ------------- |
+| `users`    | self only | co-traveler (share a trip) | null (OTP hook) | self only | null (no API) |
 
 - **view** — `co_traveler` (see identity expressions above). The harness's `view` matrix targets the **owner's** `users` row: owner/co_owner/traveler/viewer (all members of the fixture trip) view it → allow; non_member + anon → 404. The two-level nested back-relation is proven to evaluate in PB 0.27 — the ADR-0006 `pb_hooks` superuser-avatar fallback was not needed.
 - **list** — stays **self-only** (`id = @request.auth.id`). No user enumeration: every role's `list` returns only their own row.
@@ -233,7 +233,7 @@ Three REST holes closed after the 2026-10-05 agent-access audit:
   Before: a traveler could point the owner row's `user` at a second account.
   **#450:** the guard is now a true ALLOWLIST: it iterates the collection's live
   field list and rejects any changed field outside `{role, display_name,
-  digest_opt_out}`, so a field added later is locked by default.
+digest_opt_out}`, so a field added later is locked by default.
 - **`pending_invites` read (#409, migration 0070)** — list/view are superuser-only:
   rows carry the invitee's `email` and the live `code`. Members read
   `GET /api/invites/pending?trip_id=` (`invites.pb.js`), which returns
@@ -288,9 +288,9 @@ the address unless the caller typed it.
   3. caller is the inviter and `origin = picked` → `picked_name` (if non-empty);
   4. otherwise → masked (`j•••@domain`). Pre-0072 rows (`origin = ''`) land here
      for everyone, the inviter included: how they were made is unknown.
-  Before: a picked invitee who left every trip shared with the inviter dropped
-  out of 1 and fell into "inviter → address", revealing an email the inviter was
-  never shown.
+     Before: a picked invitee who left every trip shared with the inviter dropped
+     out of 1 and fell into "inviter → address", revealing an email the inviter was
+     never shown.
 - **0073 — one-time scrub** of addresses stored by pre-#415 fallbacks:
   `member_joined` notification bodies (or any body ending " joined the trip")
   → `Someone joined the trip`; tombstoned (`removed_at` set) `trip_members.display_name`
@@ -309,11 +309,11 @@ The `join_tokens` collection (#118) backs the shared-link join flow. Management
 router endpoints, not direct record writes — the harness asserts the resulting
 status per `runJoinLinkNovelCases` in `test-rules.mjs`.
 
-| Endpoint | Authority | Role ceiling |
-|---|---|---|
-| `POST /api/join/create` · `rotate` · `revoke` | non-viewer member (owner · co_owner · traveler) | link role is `traveler\|viewer` only — never co_owner |
-| `POST /api/join/lookup` | anon-OK (minimal pre-auth context) | — |
-| `POST /api/join/accept` | auth | claim clamps to the lower of (placeholder role, link role) |
+| Endpoint                                      | Authority                                       | Role ceiling                                               |
+| --------------------------------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
+| `POST /api/join/create` · `rotate` · `revoke` | non-viewer member (owner · co_owner · traveler) | link role is `traveler\|viewer` only — never co_owner      |
+| `POST /api/join/lookup`                       | anon-OK (minimal pre-auth context)              | —                                                          |
+| `POST /api/join/accept`                       | auth                                            | claim clamps to the lower of (placeholder role, link role) |
 
 - **management authority (#152)** — widened from owner/co_owner to **any non-viewer
   member**, matching email-invite authority (a traveler who can send a traveler/

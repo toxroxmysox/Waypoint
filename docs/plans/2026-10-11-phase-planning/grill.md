@@ -4,7 +4,7 @@ Source: [#401](https://github.com/toxroxmysox/waypoint/issues/401) (rescoped her
 
 ## Problem Statement
 
-Phases exist, but the app doesn't make clear what they're for. The Phases tab is only a calendar editor. Tapping a phase name there renames it, and the only way into a phase is a tiny `›` per row. Phase Detail is a good screen (days plus parking lot), but it's hard to reach. It doesn't say how you get in or out of the leg, or where you sleep. It can't place an idea onto a day, and you can't rate only this phase's ideas from it. Explanatory copy won't fix this. The screens have to *do* what a phase is for.
+Phases exist, but the app doesn't make clear what they're for. The Phases tab is only a calendar editor. Tapping a phase name there renames it, and the only way into a phase is a tiny `›` per row. Phase Detail is a good screen (days plus parking lot), but it's hard to reach. It doesn't say how you get in or out of the leg, or where you sleep. It can't place an idea onto a day, and you can't rate only this phase's ideas from it. Explanatory copy won't fix this. The screens have to _do_ what a phase is for.
 
 ## Intent & Success Criteria
 
@@ -17,8 +17,9 @@ A phase answers, through function rather than text, five questions about a leg o
 5. **Do we want any of them?** A per-phase swipe quiz, and a two-tap placement onto a day.
 
 Observable outcomes:
+
 - From the Phases tab, one tap on a phase card opens its Phase Detail.
-- Every phase card shows its span in days *and* nights, its full notes, day chips, and a swipe row.
+- Every phase card shows its span in days _and_ nights, its full notes, day chips, and a swipe row.
 - On Phase Detail, In / Staying / Out each show either the item(s) or an open state with Add.
 - An idea can be planned onto any day of its phase in two taps without leaving Phase Detail, and the move can be undone.
 - Trip, phase and day pages share one level-header shape.

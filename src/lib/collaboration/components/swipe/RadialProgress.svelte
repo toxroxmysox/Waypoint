@@ -19,7 +19,14 @@
 
 <div class="relative flex-none" style="width:{size}px;height:{size}px;" aria-hidden="true">
 	<svg width={size} height={size} style="transform:rotate(-90deg);">
-		<circle cx={size / 2} cy={size / 2} {r} fill="none" stroke="var(--color-line)" stroke-width="3" />
+		<circle
+			cx={size / 2}
+			cy={size / 2}
+			{r}
+			fill="none"
+			stroke="var(--color-line)"
+			stroke-width="3"
+		/>
 		<circle
 			cx={size / 2}
 			cy={size / 2}
@@ -34,7 +41,7 @@
 		/>
 	</svg>
 	<span
-		class="text-ink font-mono absolute inset-0 flex items-center justify-center text-xs font-semibold"
+		class="absolute inset-0 flex items-center justify-center font-mono text-xs font-semibold text-ink"
 	>
 		{remaining}
 	</span>

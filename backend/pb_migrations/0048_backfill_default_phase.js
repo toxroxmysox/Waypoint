@@ -28,14 +28,9 @@ migrate(
 			// Only backfill trips that currently have NO phases (idempotent).
 			let existingPhases = [];
 			try {
-				existingPhases = app.findRecordsByFilter(
-					'phases',
-					'trip = {:tripId}',
-					'',
-					0,
-					0,
-					{ tripId: trip.id }
-				);
+				existingPhases = app.findRecordsByFilter('phases', 'trip = {:tripId}', '', 0, 0, {
+					tripId: trip.id
+				});
 			} catch (_) {
 				existingPhases = [];
 			}
@@ -54,14 +49,9 @@ migrate(
 			// (mirrors the rebucket in phases.pb.js / the seed in trips.pb.js).
 			let days = [];
 			try {
-				days = app.findRecordsByFilter(
-					'days',
-					'trip = {:tripId}',
-					'+date',
-					0,
-					0,
-					{ tripId: trip.id }
-				);
+				days = app.findRecordsByFilter('days', 'trip = {:tripId}', '+date', 0, 0, {
+					tripId: trip.id
+				});
 			} catch (_) {
 				days = [];
 			}

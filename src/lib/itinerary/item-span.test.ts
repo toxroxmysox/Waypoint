@@ -6,7 +6,9 @@ import { sanitizeItemSpan } from './item-span';
 // drop one that can't hold instead of tripping the hook mid-way.
 describe('sanitizeItemSpan', () => {
 	it('keeps a span after the day and within the trip', () => {
-		expect(sanitizeItemSpan('2026-06-01', '2026-06-03 00:00:00.000Z', '2026-06-03')).toBe('2026-06-03 00:00:00.000Z');
+		expect(sanitizeItemSpan('2026-06-01', '2026-06-03 00:00:00.000Z', '2026-06-03')).toBe(
+			'2026-06-03 00:00:00.000Z'
+		);
 	});
 	it('drops a span with no start day', () => {
 		expect(sanitizeItemSpan('', '2026-06-03 00:00:00.000Z', '2026-06-03')).toBe('');
@@ -23,6 +25,8 @@ describe('sanitizeItemSpan', () => {
 		expect(sanitizeItemSpan('2026-06-01', null, '2026-06-03')).toBe('');
 	});
 	it('accepts datetime day and trip-end inputs', () => {
-		expect(sanitizeItemSpan('2026-06-01 00:00:00.000Z', '2026-06-02', '2026-06-03 00:00:00.000Z')).toBe('2026-06-02');
+		expect(
+			sanitizeItemSpan('2026-06-01 00:00:00.000Z', '2026-06-02', '2026-06-03 00:00:00.000Z')
+		).toBe('2026-06-02');
 	});
 });

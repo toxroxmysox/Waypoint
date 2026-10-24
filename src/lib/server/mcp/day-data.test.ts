@@ -4,7 +4,9 @@ import { resolveDate } from './day-data';
 describe('resolveDate', () => {
 	it('reads tomorrow in trip-local time', () => {
 		// 23:30 UTC on Jul 1 is already Jul 2 in Zurich → tomorrow is Jul 3.
-		expect(resolveDate('Europe/Zurich', 'tomorrow', new Date('2026-07-01T23:30:00Z'))).toBe('2026-07-03');
+		expect(resolveDate('Europe/Zurich', 'tomorrow', new Date('2026-07-01T23:30:00Z'))).toBe(
+			'2026-07-03'
+		);
 	});
 
 	it('reads today and yesterday', () => {

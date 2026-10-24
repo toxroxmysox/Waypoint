@@ -71,7 +71,9 @@
 
 	// The merged feed: faded past / Focus / normal rest (timed + untimed woven).
 	// Named nowFeed (not `feed`/`state`) to avoid shadowing the $state rune.
-	const nowFeed = $derived(getNowFeed(data.todayItems, now, data.hasToday, data.membership?.id ?? ''));
+	const nowFeed = $derived(
+		getNowFeed(data.todayItems, now, data.hasToday, data.membership?.id ?? '')
+	);
 	const focus = $derived(nowFeed.focus);
 	const pastItems = $derived(nowFeed.pastItems);
 	const restItems = $derived(nowFeed.restItems);
@@ -98,7 +100,9 @@
 	// page, so they are masked off here. ONE Skip sheet, pointed at `skipTarget`.
 	function skipEntries(item: Item) {
 		const perms = data.membership ? itemPermissions(data.membership, item) : null;
-		return perms ? itemMenuEntries({ canMove: false, canSkip: perms.canSkip, canDelete: false }) : [];
+		return perms
+			? itemMenuEntries({ canMove: false, canSkip: perms.canSkip, canDelete: false })
+			: [];
 	}
 	let skipTarget = $state<Item | null>(null);
 	let skipOpen = $state(false);
@@ -162,25 +166,22 @@
 
 <!-- #244: Now owns the sub-tabs. Today (default, this view) + Next 3 days
      (the existing /today/upcoming view). -->
-<SubTabs tabs={[
-	{ id: 'today', label: 'Today', href: `/trips/${data.trip.slug}/now` },
-	{ id: 'upcoming', label: 'Next 3 Days', href: `/trips/${data.trip.slug}/today/upcoming` }
-]} />
+<SubTabs
+	tabs={[
+		{ id: 'today', label: 'Today', href: `/trips/${data.trip.slug}/now` },
+		{ id: 'upcoming', label: 'Next 3 Days', href: `/trips/${data.trip.slug}/today/upcoming` }
+	]}
+/>
 
 <!-- #84: reserve the home-indicator safe area so the fixed bottom nav doesn't clip the last items -->
 <main
-	class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-[calc(2rem+env(safe-area-inset-bottom))] space-y-4"
+	class="mx-auto w-full max-w-lg flex-1 space-y-4 px-4 pt-4 pb-[calc(2rem+env(safe-area-inset-bottom))] md-desktop:max-w-2xl"
 >
 	<!-- Ongoing multi-day context (lodging, rental car): slim banners, never the Focus (#82/#83) -->
 	{#if data.multiDayItems.length > 0}
 		<div class="space-y-2">
 			{#each data.multiDayItems as item (item.id)}
-				<SpanBand
-					{item}
-					days={data.days}
-					dayDate={todayStr}
-					tripSlug={data.trip.slug}
-				/>
+				<SpanBand {item} days={data.days} dayDate={todayStr} tripSlug={data.trip.slug} />
 			{/each}
 		</div>
 	{/if}
@@ -236,11 +237,14 @@
 				<!-- #431: centred. FREE TIME, a large countdown to the next timed start or
 				     deadline, `until {title}`. No second line (the rail's free-time label says it). -->
 				<div class="p-6 text-center" data-testid="free-time">
-					<p class="text-ink-muted text-xs font-semibold uppercase tracking-wide">Free time</p>
-					<p class="text-ink font-display mt-2 text-5xl leading-none font-semibold" data-testid="free-time-countdown">
+					<p class="text-xs font-semibold tracking-wide text-ink-muted uppercase">Free time</p>
+					<p
+						class="mt-2 font-display text-5xl leading-none font-semibold text-ink"
+						data-testid="free-time-countdown"
+					>
 						{formatCountdown(focus.minutesUntilNext)}
 					</p>
-					<p class="text-ink-soft mt-3 text-base break-words" data-testid="free-time-until">
+					<p class="mt-3 text-base break-words text-ink-soft" data-testid="free-time-until">
 						until {focus.nextItem.title}
 					</p>
 				</div>
@@ -248,28 +252,29 @@
 		{:else if focus.kind === 'wrapped-summary'}
 			<Card>
 				<div class="p-6 text-center">
-					<p class="text-ink font-display text-xl font-semibold">Day wrapped</p>
+					<p class="font-display text-xl font-semibold text-ink">Day wrapped</p>
 					{#if focus.totalCount > 0}
-						<p class="text-ink-muted mt-2 text-sm">
-							{focus.totalCount} {focus.totalCount === 1 ? 'thing' : 'things'} on today's plan
+						<p class="mt-2 text-sm text-ink-muted">
+							{focus.totalCount}
+							{focus.totalCount === 1 ? 'thing' : 'things'} on today's plan
 						</p>
 					{:else}
-						<p class="text-ink-muted mt-2 text-sm">Nothing was scheduled for today.</p>
+						<p class="mt-2 text-sm text-ink-muted">Nothing was scheduled for today.</p>
 					{/if}
 				</div>
 			</Card>
 		{:else if focus.kind === 'nothing-else-planned'}
 			<Card>
 				<div class="p-6 text-center">
-					<p class="text-ink-soft font-semibold">Nothing else planned</p>
-					<p class="text-ink-muted mt-1 text-sm">The rest of today is open.</p>
+					<p class="font-semibold text-ink-soft">Nothing else planned</p>
+					<p class="mt-1 text-sm text-ink-muted">The rest of today is open.</p>
 				</div>
 			</Card>
 		{:else}
 			<Card>
 				<div class="p-6 text-center">
-					<p class="text-ink-soft font-semibold">No itinerary for today</p>
-					<p class="text-ink-muted mt-1 text-sm">Today doesn't fall within this trip's dates.</p>
+					<p class="font-semibold text-ink-soft">No itinerary for today</p>
+					<p class="mt-1 text-sm text-ink-muted">Today doesn't fall within this trip's dates.</p>
 				</div>
 			</Card>
 		{/if}
@@ -281,25 +286,26 @@
 	{#if showNoteBeforeBed}
 		<Card>
 			<div class="p-5">
-				<p class="text-ink-muted text-[11px] font-medium uppercase tracking-wide">Note before bed</p>
-				<p class="text-ink font-display mt-1.5 text-lg font-semibold">What made today, today?</p>
-				<p class="text-ink-muted mt-1 text-sm">One photo, one thought — before it fades.</p>
+				<p class="text-[11px] font-medium tracking-wide text-ink-muted uppercase">
+					Note before bed
+				</p>
+				<p class="mt-1.5 font-display text-lg font-semibold text-ink">What made today, today?</p>
+				<p class="mt-1 text-sm text-ink-muted">One photo, one thought — before it fades.</p>
 				<div class="mt-4 flex items-center gap-3">
 					<button
 						type="button"
 						onclick={() => (memorySheetOpen = true)}
-						class="bg-ink text-paper rounded-lg px-4 py-2 text-sm font-medium"
+						class="rounded-lg bg-ink px-4 py-2 text-sm font-medium text-paper"
 					>
 						Capture today
 					</button>
-					<button type="button" onclick={dismissNbb} class="text-ink-muted px-2 py-2 text-sm">
+					<button type="button" onclick={dismissNbb} class="px-2 py-2 text-sm text-ink-muted">
 						Not tonight
 					</button>
 				</div>
 			</div>
 		</Card>
 	{/if}
-
 
 	<!-- Weight 3: the rest at NORMAL weight (overrides #154's muted later-today
 	     tier). Forward timed items woven with all untimed items. Full cards. -->
@@ -341,20 +347,20 @@
 	<!-- #446: at >=1280px the context rail holds this strip; the column stays on today. -->
 	{#if doorOpen || justSkipped}
 		<div class="lg-desktop:hidden">
-		<IdeasStrip
-			ideas={data.ideas}
-			members={data.members}
-			slug={data.trip.slug}
-			canPromote={data.canPromote}
-			myMemberId={data.myMemberId}
-			canVote={data.canVote}
-			heading={justSkipped && !doorOpen ? 'Replace it' : 'Ideas for now'}
-			subheading={justSkipped && !doorOpen
-				? 'Pick a backup from this part of the trip'
-				: 'Pick something to do in your free time'}
-			collapsible
-			open={justSkipped}
-		/>
+			<IdeasStrip
+				ideas={data.ideas}
+				members={data.members}
+				slug={data.trip.slug}
+				canPromote={data.canPromote}
+				myMemberId={data.myMemberId}
+				canVote={data.canVote}
+				heading={justSkipped && !doorOpen ? 'Replace it' : 'Ideas for now'}
+				subheading={justSkipped && !doorOpen
+					? 'Pick a backup from this part of the trip'
+					: 'Pick something to do in your free time'}
+				collapsible
+				open={justSkipped}
+			/>
 		</div>
 	{/if}
 
@@ -362,7 +368,7 @@
 	     review surface). A member with no memory today simply has no card. The
 	     empty state offers capture on an active trip — gently, never a nag. -->
 	{#if data.hasToday}
-		<section class="border-line space-y-2 border-t pt-4" data-testid="today-memories">
+		<section class="space-y-2 border-t border-line pt-4" data-testid="today-memories">
 			<SectionH>Today's memories</SectionH>
 			{#if memories.length > 0}
 				{#each memories as memory (memory.id)}
@@ -379,19 +385,19 @@
 					<button
 						type="button"
 						onclick={() => (memorySheetOpen = true)}
-						class="text-ink-muted hover:text-ink-soft active:text-ink-soft w-full py-1 text-center text-xs font-medium"
+						class="w-full py-1 text-center text-xs font-medium text-ink-muted hover:text-ink-soft active:text-ink-soft"
 					>
 						Add yours
 					</button>
 				{/if}
 			{:else}
 				<div class="py-2 text-center">
-					<p class="text-ink-muted text-sm">No memories yet</p>
+					<p class="text-sm text-ink-muted">No memories yet</p>
 					{#if canCapture}
 						<button
 							type="button"
 							onclick={() => (memorySheetOpen = true)}
-							class="text-ink-soft hover:text-ink active:text-ink mt-1 text-xs font-medium underline-offset-2 hover:underline active:underline"
+							class="mt-1 text-xs font-medium text-ink-soft underline-offset-2 hover:text-ink hover:underline active:text-ink active:underline"
 						>
 							Capture today's
 						</button>
@@ -404,14 +410,14 @@
 	<!-- Divider → next-day preview + link to the "Next 3 days" sub-tab. At >=1280px the
 	     context rail holds it (#446). -->
 	{#if data.tomorrowDate}
-		<div class="border-line border-t pt-4 lg-desktop:hidden">
+		<div class="border-t border-line pt-4 lg-desktop:hidden">
 			<TomorrowPreview slug={data.trip.slug} date={data.tomorrowDate} items={data.tomorrowItems} />
 		</div>
 	{/if}
 
 	<!-- Trip Mode checklists (#52): read + check only, no create/rename/assign -->
 	{#if data.checklists.length > 0}
-		<div class="border-line space-y-4 border-t pt-4">
+		<div class="space-y-4 border-t border-line pt-4">
 			{#each data.checklists as cl (cl.id)}
 				{@const done = cl.tasks.filter((t) => t.checked).length}
 				<section class="space-y-2">
@@ -437,7 +443,7 @@
 							</div>
 						</Card>
 					{:else}
-						<p class="text-ink-muted text-xs italic">Nothing on this list.</p>
+						<p class="text-xs text-ink-muted italic">Nothing on this list.</p>
 					{/if}
 				</section>
 			{/each}

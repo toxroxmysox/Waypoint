@@ -22,7 +22,15 @@
 //      /tmp/pb-scrub-slot<E2E_SLOT>).
 
 import { spawn, spawnSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, openSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+	copyFileSync,
+	mkdirSync,
+	openSync,
+	readdirSync,
+	readFileSync,
+	rmSync,
+	writeFileSync
+} from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { exit } from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -130,16 +138,36 @@ async function api(path, token) {
 const T = '2026-09-01 10:00:00.000Z';
 const SEED = {
 	// Scrubbed: the two pre-#415 email fallbacks.
-	joinEmail: { c: 'notifications', f: { type: 'member_joined', body: 'joiner-449@e2e.test joined the trip' } },
-	tombEmail: { c: 'trip_members', f: { display_name: 'gone-449@e2e.test', role: 'traveler', removed_at: T } },
+	joinEmail: {
+		c: 'notifications',
+		f: { type: 'member_joined', body: 'joiner-449@e2e.test joined the trip' }
+	},
+	tombEmail: {
+		c: 'trip_members',
+		f: { display_name: 'gone-449@e2e.test', role: 'traveler', removed_at: T }
+	},
 	// Scrubbed, odd data: would fail validation on a normal save (empty required
 	// `type`; empty required `role` + a trip that no longer exists).
-	joinOdd: { c: 'notifications', f: { type: '', body: 'nameless-449@e2e.test joined the trip' }, odd: true },
-	tombOdd: { c: 'trip_members', f: { display_name: 'odd-449@e2e.test', role: '', removed_at: T }, odd: true },
+	joinOdd: {
+		c: 'notifications',
+		f: { type: '', body: 'nameless-449@e2e.test joined the trip' },
+		odd: true
+	},
+	tombOdd: {
+		c: 'trip_members',
+		f: { display_name: 'odd-449@e2e.test', role: '', removed_at: T },
+		odd: true
+	},
 	// Controls: no "@".
 	ctlJoin: { c: 'notifications', f: { type: 'member_joined', body: 'Olive joined the trip' } },
-	ctlComment: { c: 'notifications', f: { type: 'comment_added', body: 'Olive commented on Dinner' } },
-	ctlFormer: { c: 'trip_members', f: { display_name: 'Former member', role: 'traveler', removed_at: T } },
+	ctlComment: {
+		c: 'notifications',
+		f: { type: 'comment_added', body: 'Olive commented on Dinner' }
+	},
+	ctlFormer: {
+		c: 'trip_members',
+		f: { display_name: 'Former member', role: 'traveler', removed_at: T }
+	},
 	ctlNamed: { c: 'trip_members', f: { display_name: 'Dana', role: 'viewer', removed_at: T } },
 	// Out of scope: an "@" someone typed, and live member data.
 	keepNote: {
@@ -148,7 +176,12 @@ const SEED = {
 	},
 	keepPlaceholder: {
 		c: 'trip_members',
-		f: { display_name: 'Pat', placeholder_name: 'Pat', placeholder_email: 'pat-449@e2e.test', role: 'traveler' }
+		f: {
+			display_name: 'Pat',
+			placeholder_name: 'Pat',
+			placeholder_email: 'pat-449@e2e.test',
+			role: 'traveler'
+		}
 	},
 	keepActiveNick: { c: 'trip_members', f: { display_name: 'Sam @ HQ', role: 'traveler' } }
 };
@@ -258,16 +291,38 @@ async function main() {
 	console.log('\n[first run: the two pre-#415 fallbacks are scrubbed]');
 	assert(
 		'0073 ran on boot and reports its writes (2 bodies, 2 tombstones)',
-		pbLog('run1').includes('0073_scrub_stored_emails: rewrote 2 notification bodies, 2 tombstone names'),
+		pbLog('run1').includes(
+			'0073_scrub_stored_emails: rewrote 2 notification bodies, 2 tombstone names'
+		),
 		pbLog('run1')
 	);
-	assert('joined body with an address → "Someone joined the trip"', run1.joinEmail.body === 'Someone joined the trip', run1.joinEmail.body);
-	assert('tombstone name that was an address → "Former member"', run1.tombEmail.display_name === 'Former member', run1.tombEmail.display_name);
-	assert('odd joined row (empty type) scrubbed without throwing', run1.joinOdd.body === 'Someone joined the trip', run1.joinOdd.body);
-	assert('odd tombstone (empty role, dangling trip) scrubbed without throwing', run1.tombOdd.display_name === 'Former member', run1.tombOdd.display_name);
+	assert(
+		'joined body with an address → "Someone joined the trip"',
+		run1.joinEmail.body === 'Someone joined the trip',
+		run1.joinEmail.body
+	);
+	assert(
+		'tombstone name that was an address → "Former member"',
+		run1.tombEmail.display_name === 'Former member',
+		run1.tombEmail.display_name
+	);
+	assert(
+		'odd joined row (empty type) scrubbed without throwing',
+		run1.joinOdd.body === 'Someone joined the trip',
+		run1.joinOdd.body
+	);
+	assert(
+		'odd tombstone (empty role, dangling trip) scrubbed without throwing',
+		run1.tombOdd.display_name === 'Former member',
+		run1.tombOdd.display_name
+	);
 
 	console.log('\n[#409 acceptance, over every row in the database]');
-	const joins = await listAll('notifications', 'type = "member_joined" || body ~ " joined the trip"', token);
+	const joins = await listAll(
+		'notifications',
+		'type = "member_joined" || body ~ " joined the trip"',
+		token
+	);
 	assert(
 		`no "joined the trip" notification body contains an @ (${joins.length} rows)`,
 		joins.length >= 3 && joins.every((n) => !n.body.includes('@')),
@@ -281,7 +336,15 @@ async function main() {
 	);
 
 	console.log('\n[control rows are untouched]');
-	for (const k of ['ctlJoin', 'ctlComment', 'ctlFormer', 'ctlNamed', 'keepNote', 'keepPlaceholder', 'keepActiveNick']) {
+	for (const k of [
+		'ctlJoin',
+		'ctlComment',
+		'ctlFormer',
+		'ctlNamed',
+		'keepNote',
+		'keepPlaceholder',
+		'keepActiveNick'
+	]) {
 		const s = SEED[k];
 		const row = run1[k];
 		const sameContent = Object.entries(s.f).every(([f, v]) => row[f] === v);
@@ -302,7 +365,9 @@ async function main() {
 	console.log('\n[second run is a no-op]');
 	assert(
 		'the copy of 0073 ran and wrote nothing',
-		pbLog('run2').includes('0073_scrub_stored_emails: rewrote 0 notification bodies, 0 tombstone names'),
+		pbLog('run2').includes(
+			'0073_scrub_stored_emails: rewrote 0 notification bodies, 0 tombstone names'
+		),
 		pbLog('run2')
 	);
 	for (const k of Object.keys(SEED)) {

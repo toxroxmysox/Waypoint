@@ -71,7 +71,7 @@ function getTimeSlot(dt: string): 'morning' | 'afternoon' | 'evening' {
 const SLOT_LABELS: Record<string, 'Morning' | 'Afternoon' | 'Evening'> = {
 	morning: 'Morning',
 	afternoon: 'Afternoon',
-	evening: 'Evening',
+	evening: 'Evening'
 };
 
 /** The minimum an item needs for single-day itinerary ordering. */
@@ -92,7 +92,9 @@ export interface DayOrderable {
 export function orderDayItems<T extends DayOrderable>(items: T[]): T[] {
 	const anchored = items
 		.filter((i) => isAnchored(i))
-		.sort((a, b) => parseTime(itemAnchorTime(a)).getTime() - parseTime(itemAnchorTime(b)).getTime());
+		.sort(
+			(a, b) => parseTime(itemAnchorTime(a)).getTime() - parseTime(itemAnchorTime(b)).getTime()
+		);
 
 	const untimed = items
 		.filter((i) => !isAnchored(i))

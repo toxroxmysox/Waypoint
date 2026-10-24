@@ -18,11 +18,10 @@ onRecordUpdateRequest((e) => {
 
 	let member;
 	try {
-		member = e.app.findFirstRecordByFilter(
-			'trip_members',
-			'trip = {:trip} && user = {:user}',
-			{ trip: e.record.get('trip'), user: authId }
-		);
+		member = e.app.findFirstRecordByFilter('trip_members', 'trip = {:trip} && user = {:user}', {
+			trip: e.record.get('trip'),
+			user: authId
+		});
 	} catch (_) {
 		throw new ForbiddenError('You are not a member of this trip.');
 	}
@@ -47,11 +46,10 @@ onRecordDeleteRequest((e) => {
 
 	let member;
 	try {
-		member = e.app.findFirstRecordByFilter(
-			'trip_members',
-			'trip = {:trip} && user = {:user}',
-			{ trip: e.record.get('trip'), user: authId }
-		);
+		member = e.app.findFirstRecordByFilter('trip_members', 'trip = {:trip} && user = {:user}', {
+			trip: e.record.get('trip'),
+			user: authId
+		});
 	} catch (_) {
 		throw new ForbiddenError('You are not a member of this trip.');
 	}

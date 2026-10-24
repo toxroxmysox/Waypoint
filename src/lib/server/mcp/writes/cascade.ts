@@ -31,7 +31,10 @@ const str = (v: unknown) => (v === undefined || v === null ? '' : String(v));
 
 export function cascadeFor(changes: PlannedChange[], snapshot: CascadeSnapshot): Cascade | null {
 	const tripChange = changes.find(
-		(c) => c.collection === 'trips' && c.action === 'update' && ('start_date' in c.after || 'end_date' in c.after)
+		(c) =>
+			c.collection === 'trips' &&
+			c.action === 'update' &&
+			('start_date' in c.after || 'end_date' in c.after)
 	);
 	const phaseChanges = changes.filter((c) => c.collection === 'phases' && 'start_date' in c.after);
 	if (!tripChange && !phaseChanges.length) return null;
@@ -39,14 +42,20 @@ export function cascadeFor(changes: PlannedChange[], snapshot: CascadeSnapshot):
 	const { trip } = snapshot;
 	const oldStart = toDay(trip.start_date ?? '');
 	const oldEnd = toDay(trip.end_date ?? '');
-	const newStart = tripChange && 'start_date' in tripChange.after ? toDay(str(tripChange.after.start_date)) : oldStart;
-	const newEnd = tripChange && 'end_date' in tripChange.after ? toDay(str(tripChange.after.end_date)) : oldEnd;
+	const newStart =
+		tripChange && 'start_date' in tripChange.after
+			? toDay(str(tripChange.after.start_date))
+			: oldStart;
+	const newEnd =
+		tripChange && 'end_date' in tripChange.after ? toDay(str(tripChange.after.end_date)) : oldEnd;
 	const datesMoved = newStart !== oldStart || newEnd !== oldEnd;
 	if (!datesMoved && !phaseChanges.length) return null;
 	if (!newStart || !newEnd) return null;
 
 	const nameOf = new Map(snapshot.phases.map((p) => [p.id, p.name]));
-	const before = new Map(snapshot.phases.map((p) => [p.id, [toDay(p.start_date), toDay(p.end_date)] as [string, string]]));
+	const before = new Map(
+		snapshot.phases.map((p) => [p.id, [toDay(p.start_date), toDay(p.end_date)] as [string, string]])
+	);
 
 	// Phase starts after this proposal's own phase edits/creates.
 	let starts = snapshot.phases.map((p) => ({ id: p.id, start: toDay(p.start_date) }));
@@ -76,7 +85,8 @@ export function cascadeFor(changes: PlannedChange[], snapshot: CascadeSnapshot):
 		const survivors: typeof kept = [];
 		kept.forEach((p, i) => {
 			if (i < firstIdx) merged.set(p.id, kept[firstIdx].id);
-			else if (i > firstIdx && p.start >= newEnd) merged.set(p.id, survivors[survivors.length - 1].id);
+			else if (i > firstIdx && p.start >= newEnd)
+				merged.set(p.id, survivors[survivors.length - 1].id);
 			else survivors.push(p);
 		});
 		if (survivors.length) survivors[0] = { ...survivors[0], start: newStart };
@@ -88,7 +98,11 @@ export function cascadeFor(changes: PlannedChange[], snapshot: CascadeSnapshot):
 	);
 	const after = new Map(tiled.map((p) => [p.id, [p.start, p.end] as [string, string]]));
 	const ids = [...new Set([...snapshot.phases.map((p) => p.id), ...starts.map((p) => p.id)])];
-	const phases = ids.map((id) => ({ name: nameOf.get(id) ?? 'Phase', before: before.get(id) ?? null, after: after.get(id) ?? null }));
+	const phases = ids.map((id) => ({
+		name: nameOf.get(id) ?? 'Phase',
+		before: before.get(id) ?? null,
+		after: after.get(id) ?? null
+	}));
 
 	// Days: the hook adds every missing date in range and prunes the rest.
 	const have = new Set(snapshot.days.map((d) => toDay(d.date)));
@@ -114,7 +128,11 @@ export function cascadeFor(changes: PlannedChange[], snapshot: CascadeSnapshot):
 		const phaseGone = !!item.phase && merged.has(item.phase);
 		if (!dayGone && !phaseGone && !(item.phase === '' && !oldStart)) continue;
 		const to = item.phase ? finalPhase(item.phase) : covering(date ?? newStart);
-		moves.push({ title: item.title, from: dayGone ? date! : nameOf.get(item.phase) ?? 'ideas', to: nameOf.get(to) ?? 'Phase' });
+		moves.push({
+			title: item.title,
+			from: dayGone ? date! : (nameOf.get(item.phase) ?? 'ideas'),
+			to: nameOf.get(to) ?? 'Phase'
+		});
 	}
 
 	return {

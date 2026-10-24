@@ -42,44 +42,58 @@
 		<ul class="min-w-0 flex-1 space-y-1">
 			{#each items as it (it.id)}
 				<li>
-					<a href={itemHref(it)} class="text-ink flex min-h-11 items-center gap-2 text-sm">
+					<a href={itemHref(it)} class="flex min-h-11 items-center gap-2 text-sm text-ink">
 						<TypeIcon type={it.type} size={16} />
 						<span class="min-w-0 truncate">{it.title}</span>
 						{#if formatClock(it.start_time)}
-							<span class="text-ink-muted shrink-0 font-mono text-xs">{formatClock(it.start_time)}</span>
+							<span class="shrink-0 font-mono text-xs text-ink-muted"
+								>{formatClock(it.start_time)}</span
+							>
 						{/if}
 					</a>
 				</li>
 			{/each}
 		</ul>
 	{:else}
-		<span class="text-ink-muted flex-1 text-sm italic">Not planned</span>
+		<span class="flex-1 text-sm text-ink-muted italic">Not planned</span>
 		{#if canAdd && dayId}
-			<a href={newItem({ type: 'transportation', day: dayId })} class="text-moss min-h-11 px-2 text-sm leading-[44px] font-semibold">Add</a>
+			<a
+				href={newItem({ type: 'transportation', day: dayId })}
+				class="min-h-11 px-2 text-sm leading-[44px] font-semibold text-moss">Add</a
+			>
 		{/if}
 	{/if}
 {/snippet}
 
-<dl class="divide-line border-line divide-y rounded-lg border">
+<dl class="divide-y divide-line rounded-lg border border-line">
 	<div class="flex items-start gap-3 px-3 py-1" data-logistics="in">
-		<dt class="text-moss w-16 shrink-0 pt-3 text-[11px] font-bold tracking-[0.15em] uppercase">In</dt>
+		<dt class="w-16 shrink-0 pt-3 text-[11px] font-bold tracking-[0.15em] text-moss uppercase">
+			In
+		</dt>
 		<dd class="flex min-w-0 flex-1 items-center">{@render moving(arrival, firstDayId)}</dd>
 	</div>
 
 	<div class="flex items-start gap-3 px-3 py-1" data-logistics="staying">
-		<dt class="text-moss w-16 shrink-0 pt-3 text-[11px] font-bold tracking-[0.15em] uppercase">Staying</dt>
+		<dt class="w-16 shrink-0 pt-3 text-[11px] font-bold tracking-[0.15em] text-moss uppercase">
+			Staying
+		</dt>
 		<dd class="min-w-0 flex-1">
 			{#if staying.totalNights === 0}
-				<p class="text-ink-muted min-h-11 text-sm leading-[44px] italic">No nights</p>
+				<p class="min-h-11 text-sm leading-[44px] text-ink-muted italic">No nights</p>
 			{:else}
 				{#if staying.lines.length > 0}
 					<ul class="space-y-1">
 						{#each staying.lines as line (line.item.id)}
 							<li>
-								<a href={itemHref(line.item)} class="text-ink flex min-h-11 items-center gap-2 text-sm">
+								<a
+									href={itemHref(line.item)}
+									class="flex min-h-11 items-center gap-2 text-sm text-ink"
+								>
 									<TypeIcon type="lodging" size={16} />
 									<span class="min-w-0 truncate">{line.item.title}</span>
-									<span class="text-ink-muted shrink-0 text-xs">{line.nights} night{line.nights === 1 ? '' : 's'}</span>
+									<span class="shrink-0 text-xs text-ink-muted"
+										>{line.nights} night{line.nights === 1 ? '' : 's'}</span
+									>
 								</a>
 							</li>
 						{/each}
@@ -87,11 +101,18 @@
 				{/if}
 				{#if staying.lines.length === 0 || partial}
 					<div class="flex items-center">
-						<span class="text-ink-muted flex-1 text-sm {staying.lines.length === 0 ? 'italic' : ''}">
-							{staying.lines.length === 0 ? 'Nowhere yet' : `${staying.coveredNights} of ${staying.totalNights} nights covered`}
+						<span
+							class="flex-1 text-sm text-ink-muted {staying.lines.length === 0 ? 'italic' : ''}"
+						>
+							{staying.lines.length === 0
+								? 'Nowhere yet'
+								: `${staying.coveredNights} of ${staying.totalNights} nights covered`}
 						</span>
 						{#if canAdd && firstDayId}
-							<a href={newItem({ type: 'lodging', day: firstDayId, end: lastDate })} class="text-moss min-h-11 px-2 text-sm leading-[44px] font-semibold">Add</a>
+							<a
+								href={newItem({ type: 'lodging', day: firstDayId, end: lastDate })}
+								class="min-h-11 px-2 text-sm leading-[44px] font-semibold text-moss">Add</a
+							>
 						{/if}
 					</div>
 				{/if}
@@ -100,7 +121,9 @@
 	</div>
 
 	<div class="flex items-start gap-3 px-3 py-1" data-logistics="out">
-		<dt class="text-moss w-16 shrink-0 pt-3 text-[11px] font-bold tracking-[0.15em] uppercase">Out</dt>
+		<dt class="w-16 shrink-0 pt-3 text-[11px] font-bold tracking-[0.15em] text-moss uppercase">
+			Out
+		</dt>
 		<dd class="flex min-w-0 flex-1 items-center">{@render moving(departure, lastDayId)}</dd>
 	</div>
 </dl>

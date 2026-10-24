@@ -44,10 +44,7 @@ export function computeBalances(
 	return balances;
 }
 
-export function simplifyDebts(
-	expenses: Expense[],
-	settlements: Settlement[]
-): DebtEdge[] {
+export function simplifyDebts(expenses: Expense[], settlements: Settlement[]): DebtEdge[] {
 	return simplifyFromBalances(computeBalances(expenses, settlements));
 }
 
@@ -86,7 +83,7 @@ export function simplifyFromBalances(balances: Map<string, number>): DebtEdge[] 
 			result.push({
 				from: debtor.id,
 				to: creditor.id,
-				amount: Math.round(transfer * 100) / 100,
+				amount: Math.round(transfer * 100) / 100
 			});
 		}
 

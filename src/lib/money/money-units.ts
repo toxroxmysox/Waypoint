@@ -38,7 +38,10 @@ export interface MoneyUnit {
  * If a member somehow appears in two units (shouldn't happen — opt-in/leave is the consent
  * valve), the FIRST unit in `units` wins, deterministically.
  */
-export function buildMemberUnitMap(units: MoneyUnit[], allMemberIds: string[]): Map<string, string> {
+export function buildMemberUnitMap(
+	units: MoneyUnit[],
+	allMemberIds: string[]
+): Map<string, string> {
 	const map = new Map<string, string>();
 	for (const unit of units) {
 		for (const memberId of unit.members) {

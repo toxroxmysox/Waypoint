@@ -24,8 +24,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	const cached = placeDetailsCache.get(placeId);
 	if (cached !== undefined) return json(cached);
 
-	const fields =
-		'displayName,formattedAddress,location,id,websiteUri,internationalPhoneNumber';
+	const fields = 'displayName,formattedAddress,location,id,websiteUri,internationalPhoneNumber';
 	const res = await fetch(
 		// Encoded: place_id is user-supplied and interpolated into the path.
 		`https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`,

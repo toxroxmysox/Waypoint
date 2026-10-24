@@ -24,23 +24,48 @@ migrate(
 			type: 'base',
 			name: 'checklists',
 			fields: [
-				{ type: 'relation', name: 'trip', required: true, collectionId: trips.id, maxSelect: 1, cascadeDelete: true },
-				{ type: 'relation', name: 'phase', collectionId: phases.id, maxSelect: 1, cascadeDelete: true },
-				{ type: 'relation', name: 'item', collectionId: items.id, maxSelect: 1, cascadeDelete: true },
+				{
+					type: 'relation',
+					name: 'trip',
+					required: true,
+					collectionId: trips.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				},
+				{
+					type: 'relation',
+					name: 'phase',
+					collectionId: phases.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				},
+				{
+					type: 'relation',
+					name: 'item',
+					collectionId: items.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				},
 				{ type: 'text', name: 'title', required: true, min: 1, max: 200 },
-				{ type: 'select', name: 'kind', required: true, values: ['manual', 'booking'], maxSelect: 1 },
-				{ type: 'number', name: 'order', min: 0 },
+				{
+					type: 'select',
+					name: 'kind',
+					required: true,
+					values: ['manual', 'booking'],
+					maxSelect: 1
+				},
+				{ type: 'number', name: 'order', min: 0 }
 			],
 			indexes: [
 				'CREATE INDEX idx_checklists_trip ON checklists (trip)',
 				'CREATE INDEX idx_checklists_item ON checklists (item)',
-				'CREATE INDEX idx_checklists_phase ON checklists (phase)',
+				'CREATE INDEX idx_checklists_phase ON checklists (phase)'
 			],
 			listRule: MEMBER_VIA_TRIP,
 			viewRule: MEMBER_VIA_TRIP,
 			createRule: MEMBER_VIA_TRIP,
 			updateRule: MEMBER_VIA_TRIP,
-			deleteRule: MEMBER_VIA_TRIP,
+			deleteRule: MEMBER_VIA_TRIP
 		});
 		app.save(checklists);
 
@@ -50,18 +75,25 @@ migrate(
 			type: 'base',
 			name: 'tasks',
 			fields: [
-				{ type: 'relation', name: 'checklist', required: true, collectionId: checklistsCol.id, maxSelect: 1, cascadeDelete: true },
+				{
+					type: 'relation',
+					name: 'checklist',
+					required: true,
+					collectionId: checklistsCol.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				},
 				{ type: 'text', name: 'title', required: true, min: 1, max: 500 },
 				{ type: 'bool', name: 'checked' },
 				{ type: 'relation', name: 'assignee', collectionId: tripMembers.id, maxSelect: 1 },
-				{ type: 'number', name: 'order', min: 0 },
+				{ type: 'number', name: 'order', min: 0 }
 			],
 			indexes: ['CREATE INDEX idx_tasks_checklist_order ON tasks (checklist, `order`)'],
 			listRule: MEMBER_VIA_CHECKLIST,
 			viewRule: MEMBER_VIA_CHECKLIST,
 			createRule: MEMBER_VIA_CHECKLIST,
 			updateRule: MEMBER_VIA_CHECKLIST,
-			deleteRule: MEMBER_VIA_CHECKLIST,
+			deleteRule: MEMBER_VIA_CHECKLIST
 		});
 		app.save(tasks);
 
@@ -70,7 +102,8 @@ migrate(
 		items.fields.add(new BoolField({ name: 'requires_booking' }));
 		app.save(items);
 
-		app.db()
+		app
+			.db()
 			.newQuery(
 				"UPDATE items SET requires_booking = true WHERE type IN ('lodging', 'flight', 'transportation')"
 			)

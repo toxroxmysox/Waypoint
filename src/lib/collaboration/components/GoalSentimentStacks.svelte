@@ -39,11 +39,16 @@
 	>
 		{#if liked.length > 0}
 			<span class="flex items-center gap-1.5">
-				<span class="text-moss text-[10px] font-semibold tracking-wide uppercase">Liked</span>
+				<span class="text-[10px] font-semibold tracking-wide text-moss uppercase">Liked</span>
 				<span class="flex -space-x-1.5">
 					{#each liked as v (v.id)}
-						<span class="ring-surface rounded-full ring-2" title={memberName(v.member)}>
-							<Avatar img={memberAvatar(v.member)} initial={memberName(v.member)} alt={memberName(v.member)} size={18} />
+						<span class="rounded-full ring-2 ring-surface" title={memberName(v.member)}>
+							<Avatar
+								img={memberAvatar(v.member)}
+								initial={memberName(v.member)}
+								alt={memberName(v.member)}
+								size={18}
+							/>
 						</span>
 					{/each}
 				</span>
@@ -51,11 +56,16 @@
 		{/if}
 		{#if passed.length > 0}
 			<span class="flex items-center gap-1.5">
-				<span class="text-clay text-[10px] font-semibold tracking-wide uppercase">Passed</span>
+				<span class="text-[10px] font-semibold tracking-wide text-clay uppercase">Passed</span>
 				<span class="flex -space-x-1.5">
 					{#each passed as v (v.id)}
-						<span class="ring-surface rounded-full ring-2" title={memberName(v.member)}>
-							<Avatar img={memberAvatar(v.member)} initial={memberName(v.member)} alt={memberName(v.member)} size={18} />
+						<span class="rounded-full ring-2 ring-surface" title={memberName(v.member)}>
+							<Avatar
+								img={memberAvatar(v.member)}
+								initial={memberName(v.member)}
+								alt={memberName(v.member)}
+								size={18}
+							/>
 						</span>
 					{/each}
 				</span>

@@ -88,8 +88,12 @@
 {:else}
 	<!-- Mobile: content + bottom nav -->
 	<div
-		class="md-desktop:hidden pt-[var(--edge-top)]"
-		style="--color-accent: {mode === 'trip' ? 'var(--color-clay)' : 'var(--color-moss)'}; --color-accent-tint: {mode === 'trip' ? 'var(--color-clay-tint)' : 'var(--color-moss-tint)'}"
+		class="pt-[var(--edge-top)] md-desktop:hidden"
+		style="--color-accent: {mode === 'trip'
+			? 'var(--color-clay)'
+			: 'var(--color-moss)'}; --color-accent-tint: {mode === 'trip'
+			? 'var(--color-clay-tint)'
+			: 'var(--color-moss-tint)'}"
 	>
 		<!-- Automatic offline banner (#255): self-hides when online; prominent at the
 		     top of every trip surface, most so in Trip Mode where the trip title shows. -->
@@ -106,9 +110,13 @@
 
 	<!-- Desktop: side rail + content + context rail -->
 	<div
-		class="hidden md-desktop:block pt-[var(--edge-top)]"
+		class="hidden pt-[var(--edge-top)] md-desktop:block"
 		data-shell="desktop"
-		style="--color-accent: {mode === 'trip' ? 'var(--color-clay)' : 'var(--color-moss)'}; --color-accent-tint: {mode === 'trip' ? 'var(--color-clay-tint)' : 'var(--color-moss-tint)'}"
+		style="--color-accent: {mode === 'trip'
+			? 'var(--color-clay)'
+			: 'var(--color-moss)'}; --color-accent-tint: {mode === 'trip'
+			? 'var(--color-clay-tint)'
+			: 'var(--color-moss-tint)'}"
 	>
 		<SideRail
 			{slug}
@@ -121,7 +129,7 @@
 			{mode}
 			onAction={handleNavAction}
 		/>
-		<div class="md-desktop:ml-[72px] lg-desktop:ml-[240px] lg-desktop:mr-[320px]">
+		<div class="md-desktop:ml-[72px] lg-desktop:mr-[320px] lg-desktop:ml-[240px]">
 			<OfflineBanner tripTitle={trip?.title ?? ''} />
 			{@render children()}
 		</div>

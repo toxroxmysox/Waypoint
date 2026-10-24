@@ -225,9 +225,13 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 			// since it pins both a member and the trip.
 			for (const col of ['notifications', 'documents', 'memories', 'suggestions', 'trip_goals']) {
 				try {
-					const rows = e.app.findRecordsByFilter(col, 'trip = {:tripId}', '', 0, 0, { tripId: existing.id });
+					const rows = e.app.findRecordsByFilter(col, 'trip = {:tripId}', '', 0, 0, {
+						tripId: existing.id
+					});
 					for (const row of rows) {
-						try { e.app.delete(row); } catch (_) {}
+						try {
+							e.app.delete(row);
+						} catch (_) {}
 					}
 				} catch (_) {}
 			}
@@ -267,10 +271,7 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 		member.set('trip', trip.id);
 		member.set('user', userIds[role]);
 		member.set('role', role);
-		member.set(
-			'joined_at',
-			new Date().toISOString().replace('T', ' ').replace('Z', '') + 'Z'
-		);
+		member.set('joined_at', new Date().toISOString().replace('T', ' ').replace('Z', '') + 'Z');
 		e.app.save(member);
 		memberIds[role] = member.id;
 	}
@@ -307,11 +308,9 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 	// harness can drive the last-phase-delete block.
 	let seededPhaseId = '';
 	try {
-		const seeded = e.app.findFirstRecordByFilter(
-			'phases',
-			'trip = {:tripId} && name = "Trip"',
-			{ tripId: trip.id }
-		);
+		const seeded = e.app.findFirstRecordByFilter('phases', 'trip = {:tripId} && name = "Trip"', {
+			tripId: trip.id
+		});
 		if (seeded) seededPhaseId = seeded.id;
 	} catch (_) {
 		seededPhaseId = '';
@@ -458,7 +457,11 @@ routerAdd('POST', '/api/dev/rules-fixture', (e) => {
 	suggestionAuthored.set('trip', trip.id);
 	suggestionAuthored.set('author', memberIds.owner);
 	suggestionAuthored.set('target_type', 'new_item');
-	suggestionAuthored.set('payload', { title: 'Owner ghost (voted)', phase: phase.id, type: 'activity' });
+	suggestionAuthored.set('payload', {
+		title: 'Owner ghost (voted)',
+		phase: phase.id,
+		type: 'activity'
+	});
 	suggestionAuthored.set('status', 'pending');
 	e.app.save(suggestionAuthored);
 
@@ -875,25 +878,59 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 		{
 			notes: 'Long drive up, then dinner with the Kohler crew.',
 			items: [
-				{ title: 'Blackwolf Run tee time', type: 'activity', time: '09:00', end: '11:30', cost: 180, booked: true },
-				{ title: 'Lunch at The Horse & Plow', type: 'meal', time: '12:30', end: '14:00', cost: 45, booked: false, requires: true },
+				{
+					title: 'Blackwolf Run tee time',
+					type: 'activity',
+					time: '09:00',
+					end: '11:30',
+					cost: 180,
+					booked: true
+				},
+				{
+					title: 'Lunch at The Horse & Plow',
+					type: 'meal',
+					time: '12:30',
+					end: '14:00',
+					cost: 45,
+					booked: false,
+					requires: true
+				},
 				{ title: 'Pack the clubs', type: 'note', time: '', cost: 0, booked: false }
 			]
 		},
 		{
 			notes: 'Slow morning — nothing booked on purpose.',
-			items: [{ title: 'Whistling Straits walk', type: 'activity', time: '10:00', cost: 0, booked: false }]
+			items: [
+				{ title: 'Whistling Straits walk', type: 'activity', time: '10:00', cost: 0, booked: false }
+			]
 		},
 		{
 			notes: '',
 			items: [
-				{ title: 'American Club check-in', type: 'lodging', time: '15:00', end: '16:00', cost: 320, booked: true },
+				{
+					title: 'American Club check-in',
+					type: 'lodging',
+					time: '15:00',
+					end: '16:00',
+					cost: 320,
+					booked: true
+				},
 				{ title: 'Kayak the Sheboygan', type: 'activity', time: '', cost: 60, booked: false }
 			]
 		},
 		{
 			notes: '',
-			items: [{ title: 'Drive home', type: 'transportation', time: '11:00', end: '17:00', cost: 0, booked: false, requires: true }]
+			items: [
+				{
+					title: 'Drive home',
+					type: 'transportation',
+					time: '11:00',
+					end: '17:00',
+					cost: 0,
+					booked: false,
+					requires: true
+				}
+			]
 		},
 		{ notes: 'Buffer day — notes but nothing planned.', items: [] },
 		{ notes: '', items: [] }
@@ -964,15 +1001,73 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 		const iso = day.getString('date').substring(0, 10);
 		const at = (hm) => iso + ' ' + hm + ':00.000Z';
 		const rich = [
-			{ title: 'Flight to Denver', type: 'flight', start_time: at('07:00'), end_time: at('09:15'), location_name: 'Milwaukee (MKE)', description: '→ Denver (DEN)', requires_booking: true, assigned_to: [owner, kev] },
-			{ title: 'Brunch', type: 'meal', start_time: at('10:30'), end_time: at('12:30'), location_name: 'Denver Biscuit Co.', cost_estimate_usd: 60, assigned_to: [kev, jess] },
-			{ title: 'Red Rocks hike', type: 'activity', start_time: at('11:30'), end_time: at('14:30'), location_name: 'Red Rocks Park', assigned_to: [kev] },
-			{ title: 'Museum', type: 'activity', start_time: at('15:00'), end_time: at('17:30'), location_name: 'Denver Art Museum', assigned_to: [owner] },
-			{ title: 'Spa hour', type: 'activity', start_time: at('16:00'), end_time: at('16:50'), assigned_to: [jess] },
-			{ title: 'Return rental clubs', type: 'transportation', end_time: at('18:15'), location_name: 'Golf Galaxy' },
-			{ title: 'Dinner at The Immigrant with the whole extended crew, tasting menu and wine pairing', type: 'meal', start_time: at('19:00'), end_time: at('21:30'), location_name: 'The Immigrant Restaurant', cost_estimate_usd: 420, requires_booking: true, assigned_to: [owner, kev, jess, pat], not_going: [lee], docs: 2 },
+			{
+				title: 'Flight to Denver',
+				type: 'flight',
+				start_time: at('07:00'),
+				end_time: at('09:15'),
+				location_name: 'Milwaukee (MKE)',
+				description: '→ Denver (DEN)',
+				requires_booking: true,
+				assigned_to: [owner, kev]
+			},
+			{
+				title: 'Brunch',
+				type: 'meal',
+				start_time: at('10:30'),
+				end_time: at('12:30'),
+				location_name: 'Denver Biscuit Co.',
+				cost_estimate_usd: 60,
+				assigned_to: [kev, jess]
+			},
+			{
+				title: 'Red Rocks hike',
+				type: 'activity',
+				start_time: at('11:30'),
+				end_time: at('14:30'),
+				location_name: 'Red Rocks Park',
+				assigned_to: [kev]
+			},
+			{
+				title: 'Museum',
+				type: 'activity',
+				start_time: at('15:00'),
+				end_time: at('17:30'),
+				location_name: 'Denver Art Museum',
+				assigned_to: [owner]
+			},
+			{
+				title: 'Spa hour',
+				type: 'activity',
+				start_time: at('16:00'),
+				end_time: at('16:50'),
+				assigned_to: [jess]
+			},
+			{
+				title: 'Return rental clubs',
+				type: 'transportation',
+				end_time: at('18:15'),
+				location_name: 'Golf Galaxy'
+			},
+			{
+				title:
+					'Dinner at The Immigrant with the whole extended crew, tasting menu and wine pairing',
+				type: 'meal',
+				start_time: at('19:00'),
+				end_time: at('21:30'),
+				location_name: 'The Immigrant Restaurant',
+				cost_estimate_usd: 420,
+				requires_booking: true,
+				assigned_to: [owner, kev, jess, pat],
+				not_going: [lee],
+				docs: 2
+			},
 			{ title: 'Night walk', type: 'activity', start_time: at('22:00') },
-			{ title: 'Bring cash for the tip jar and the ski lift', type: 'note', description: 'Bring cash for the tip jar and the ski lift\nsecond line' },
+			{
+				title: 'Bring cash for the tip jar and the ski lift',
+				type: 'note',
+				description: 'Bring cash for the tip jar and the ski lift\nsecond line'
+			},
 			{ title: 'Pick up the keys', type: 'activity', location_name: 'Front desk' }
 		];
 		const docsCol = e.app.findCollectionByNameOrId('documents');
@@ -985,7 +1080,18 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 			rec.set('status', 'planned');
 			rec.set('sort_order', k);
 			rec.set('created_by', owner);
-			for (const f of ['title', 'type', 'start_time', 'end_time', 'location_name', 'description', 'cost_estimate_usd', 'requires_booking', 'assigned_to', 'not_going']) {
+			for (const f of [
+				'title',
+				'type',
+				'start_time',
+				'end_time',
+				'location_name',
+				'description',
+				'cost_estimate_usd',
+				'requires_booking',
+				'assigned_to',
+				'not_going'
+			]) {
 				if (r[f] !== undefined) rec.set(f, r[f]);
 			}
 			e.app.save(rec);
@@ -1054,10 +1160,38 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 			const d = days[idx].getString('date').substring(0, 10);
 			return d + ' ' + hm + ':00.000Z';
 		};
-		fl(1, { title: 'UA 1234', start_time: on(1, '14:05'), end_time: on(1, '16:20'), location_name: 'Milwaukee Mitchell Intl (MKE)', description: '→ Denver Intl (DEN)', assigned_to: [ownerMember.id, kev] });
-		fl(3, { title: 'DL 482 overnight', start_time: on(3, '22:40'), end_time: on(4, '06:10'), location_name: 'Denver Intl (DEN)', description: '→ Atlanta Hartsfield-Jackson (ATL)', assigned_to: [ownerMember.id, kev, jess] });
-		fl(2, { title: 'AA 88 to Denver', flight_number: 'AA 88', start_time: on(2, '08:30'), end_time: on(2, '10:05'), location_name: 'Milwaukee Mitchell Intl (MKE)', description: '→ Denver Intl (DEN)' });
-		fl(5, { flight_number: 'NK 345', title: 'Spirit to the coast', start_time: on(5, '11:15'), end_time: on(5, '19:50'), location_name: 'Milwaukee Mitchell International', description: '→ Fort Lauderdale Hollywood International' });
+		fl(1, {
+			title: 'UA 1234',
+			start_time: on(1, '14:05'),
+			end_time: on(1, '16:20'),
+			location_name: 'Milwaukee Mitchell Intl (MKE)',
+			description: '→ Denver Intl (DEN)',
+			assigned_to: [ownerMember.id, kev]
+		});
+		fl(3, {
+			title: 'DL 482 overnight',
+			start_time: on(3, '22:40'),
+			end_time: on(4, '06:10'),
+			location_name: 'Denver Intl (DEN)',
+			description: '→ Atlanta Hartsfield-Jackson (ATL)',
+			assigned_to: [ownerMember.id, kev, jess]
+		});
+		fl(2, {
+			title: 'AA 88 to Denver',
+			flight_number: 'AA 88',
+			start_time: on(2, '08:30'),
+			end_time: on(2, '10:05'),
+			location_name: 'Milwaukee Mitchell Intl (MKE)',
+			description: '→ Denver Intl (DEN)'
+		});
+		fl(5, {
+			flight_number: 'NK 345',
+			title: 'Spirit to the coast',
+			start_time: on(5, '11:15'),
+			end_time: on(5, '19:50'),
+			location_name: 'Milwaukee Mitchell International',
+			description: '→ Fort Lauderdale Hollywood International'
+		});
 	}
 
 	// Optional { ideas: true } (#424): unplanned ideas across five type groups in the
@@ -1079,15 +1213,62 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 		const kev = mkMember('Kevin');
 		const jess = mkMember('Jess');
 		const ideas = [
-			{ title: 'Kohler Waters Spa', type: 'activity', location_name: 'Kohler', cost_estimate_usd: 40, votes: [[ownerMember.id, 'like']] },
-			{ title: 'Whistling Straits tour', type: 'activity', location_name: 'Sheboygan', cost_estimate_usd: 120, votes: [[ownerMember.id, 'love'], [kev, 'love'], [jess, 'like']] },
-			{ title: 'Sheboygan lakefront walk', type: 'activity', location_name: 'Sheboygan', votes: [[kev, 'dislike']] },
-			{ title: 'Pier 17 fish fry', type: 'meal', location_name: 'Sheboygan', cost_estimate_usd: 28, votes: [[jess, 'love']] },
+			{
+				title: 'Kohler Waters Spa',
+				type: 'activity',
+				location_name: 'Kohler',
+				cost_estimate_usd: 40,
+				votes: [[ownerMember.id, 'like']]
+			},
+			{
+				title: 'Whistling Straits tour',
+				type: 'activity',
+				location_name: 'Sheboygan',
+				cost_estimate_usd: 120,
+				votes: [
+					[ownerMember.id, 'love'],
+					[kev, 'love'],
+					[jess, 'like']
+				]
+			},
+			{
+				title: 'Sheboygan lakefront walk',
+				type: 'activity',
+				location_name: 'Sheboygan',
+				votes: [[kev, 'dislike']]
+			},
+			{
+				title: 'Pier 17 fish fry',
+				type: 'meal',
+				location_name: 'Sheboygan',
+				cost_estimate_usd: 28,
+				votes: [[jess, 'love']]
+			},
 			{ title: 'Late-night custard stand', type: 'meal', cost_estimate_usd: 9 },
-			{ title: 'The American Club', type: 'lodging', location_name: 'Kohler', cost_estimate_usd: 1250 },
-			{ title: 'Rental car, 3 days', type: 'transportation', location_name: 'MKE airport', cost_estimate_usd: 210 },
-			{ title: 'Flight home', type: 'flight', location_name: 'Milwaukee (MKE)', description: '→ Denver (DEN)', cost_estimate_usd: 320 },
-			{ title: 'Ask about the shuttle schedule', type: 'note', description: 'Ask about the shuttle schedule\nand the late checkout' }
+			{
+				title: 'The American Club',
+				type: 'lodging',
+				location_name: 'Kohler',
+				cost_estimate_usd: 1250
+			},
+			{
+				title: 'Rental car, 3 days',
+				type: 'transportation',
+				location_name: 'MKE airport',
+				cost_estimate_usd: 210
+			},
+			{
+				title: 'Flight home',
+				type: 'flight',
+				location_name: 'Milwaukee (MKE)',
+				description: '→ Denver (DEN)',
+				cost_estimate_usd: 320
+			},
+			{
+				title: 'Ask about the shuttle schedule',
+				type: 'note',
+				description: 'Ask about the shuttle schedule\nand the late checkout'
+			}
 		];
 		for (let k = 0; k < ideas.length; k++) {
 			const it = ideas[k];
@@ -1249,9 +1430,29 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 				e.app.save(sv);
 			}
 		};
-		mkSug(sJess, { title: 'Rooftop ramen night', type: 'meal', location_name: 'Menya Rui', cost_estimate_usd: 28 }, [[sSam, 'love']]);
-		mkSug(sSam, { title: 'Sunrise dune hike', type: 'activity', location_name: 'Kohler-Andrae State Park' }, [[sJess, 'like'], [ownerMember.id, 'flexible']]);
-		mkSug(sJess, { title: 'Shuttle to the course', type: 'transportation', cost_estimate_usd: 15 }, []);
+		mkSug(
+			sJess,
+			{
+				title: 'Rooftop ramen night',
+				type: 'meal',
+				location_name: 'Menya Rui',
+				cost_estimate_usd: 28
+			},
+			[[sSam, 'love']]
+		);
+		mkSug(
+			sSam,
+			{ title: 'Sunrise dune hike', type: 'activity', location_name: 'Kohler-Andrae State Park' },
+			[
+				[sJess, 'like'],
+				[ownerMember.id, 'flexible']
+			]
+		);
+		mkSug(
+			sJess,
+			{ title: 'Shuttle to the course', type: 'transportation', cost_estimate_usd: 15 },
+			[]
+		);
 	}
 
 	// Optional { record: true } (#436): the trip as a CLOSED record. Every day item becomes `done`
@@ -1261,9 +1462,12 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 	// archive resolves. Combine with { past: true }. Off by default.
 	if (info.body && info.body['record']) {
 		const descs = {
-			'Blackwolf Run tee time': 'Front nine on the River course, then the turn at the halfway house.\nKev owes everyone a beer after the 7th.',
-			'Lunch at The Horse & Plow': 'Split the burger flight; the cheese curds were the best part of the day.',
-			'American Club check-in': 'Room overlooks the courtyard. Late checkout was approved at the desk.'
+			'Blackwolf Run tee time':
+				'Front nine on the River course, then the turn at the halfway house.\nKev owes everyone a beer after the 7th.',
+			'Lunch at The Horse & Plow':
+				'Split the burger flight; the cheese curds were the best part of the day.',
+			'American Club check-in':
+				'Room overlooks the courtyard. Late checkout was approved at the desk.'
 		};
 		const mkRec = (dayIdx, f) => {
 			const rec = new Record(itemsCol);
@@ -1274,8 +1478,11 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 			rec.set('created_by', ownerMember.id);
 			e.app.save(rec);
 		};
-		const on = (idx, clock) => days[idx].getString('date').substring(0, 10) + ' ' + clock + ':00.000Z';
-		const planned = e.app.findRecordsByFilter('items', 'trip = {:tripId}', '+sort_order', 0, 0, { tripId: trip.id });
+		const on = (idx, clock) =>
+			days[idx].getString('date').substring(0, 10) + ' ' + clock + ':00.000Z';
+		const planned = e.app.findRecordsByFilter('items', 'trip = {:tripId}', '+sort_order', 0, 0, {
+			tripId: trip.id
+		});
 		for (let k = 0; k < planned.length; k++) {
 			const it = planned[k];
 			it.set('status', 'done');
@@ -1286,18 +1493,76 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 			}
 			e.app.save(it);
 		}
-		mkRec(0, { title: 'Flight to Denver', type: 'flight', status: 'done', sort_order: 9, start_time: on(0, '07:00'), end_time: on(0, '09:15'), location_name: 'Milwaukee (MKE)', description: '→ Denver (DEN)' });
-		mkRec(2, { title: 'Bring cash for the tip jar', type: 'note', status: 'done', sort_order: 9, description: 'Bring cash for the tip jar and the ski lift.\nSecond line.' });
-		mkRec(-1, { title: 'Inn on Woodlake', type: 'lodging', status: 'considered', sort_order: 0, location_name: 'Kohler, WI', description: 'Cheaper, but no pool.' });
-		mkRec(-1, { title: 'Delta to Chicago', type: 'flight', status: 'considered', sort_order: 1, start_time: on(0, '06:10'), end_time: on(0, '07:40'), location_name: 'Milwaukee (MKE)', description: '→ Chicago (ORD)' });
-		mkRec(-1, { title: 'Sheboygan brewery tour', type: 'activity', status: 'considered', sort_order: 2, location_name: 'Sheboygan, WI' });
-		mkRec(-1, { title: 'Blue Harbor spa day', type: 'activity', status: 'considered', sort_order: 3, location_name: 'Blue Harbor Resort' });
-		mkRec(-1, { title: 'Dinner at The Immigrant', type: 'meal', status: 'considered', sort_order: 4, location_name: 'The American Club' });
-		mkRec(-1, { title: 'Rent bikes for Sunday', type: 'note', status: 'considered', sort_order: 5, description: 'Rent bikes for Sunday morning.' });
+		mkRec(0, {
+			title: 'Flight to Denver',
+			type: 'flight',
+			status: 'done',
+			sort_order: 9,
+			start_time: on(0, '07:00'),
+			end_time: on(0, '09:15'),
+			location_name: 'Milwaukee (MKE)',
+			description: '→ Denver (DEN)'
+		});
+		mkRec(2, {
+			title: 'Bring cash for the tip jar',
+			type: 'note',
+			status: 'done',
+			sort_order: 9,
+			description: 'Bring cash for the tip jar and the ski lift.\nSecond line.'
+		});
+		mkRec(-1, {
+			title: 'Inn on Woodlake',
+			type: 'lodging',
+			status: 'considered',
+			sort_order: 0,
+			location_name: 'Kohler, WI',
+			description: 'Cheaper, but no pool.'
+		});
+		mkRec(-1, {
+			title: 'Delta to Chicago',
+			type: 'flight',
+			status: 'considered',
+			sort_order: 1,
+			start_time: on(0, '06:10'),
+			end_time: on(0, '07:40'),
+			location_name: 'Milwaukee (MKE)',
+			description: '→ Chicago (ORD)'
+		});
+		mkRec(-1, {
+			title: 'Sheboygan brewery tour',
+			type: 'activity',
+			status: 'considered',
+			sort_order: 2,
+			location_name: 'Sheboygan, WI'
+		});
+		mkRec(-1, {
+			title: 'Blue Harbor spa day',
+			type: 'activity',
+			status: 'considered',
+			sort_order: 3,
+			location_name: 'Blue Harbor Resort'
+		});
+		mkRec(-1, {
+			title: 'Dinner at The Immigrant',
+			type: 'meal',
+			status: 'considered',
+			sort_order: 4,
+			location_name: 'The American Club'
+		});
+		mkRec(-1, {
+			title: 'Rent bikes for Sunday',
+			type: 'note',
+			status: 'considered',
+			sort_order: 5,
+			description: 'Rent bikes for Sunday morning.'
+		});
 		trip.set('archived', true);
 		trip.set('archive_enabled', true);
 		trip.set('archive_publish_at', pbDay(new Date(Date.now() - dayMs)));
-		trip.set('public_share_token', 'recordseedtoken' + Math.floor(Math.random() * 1e9).toString(16));
+		trip.set(
+			'public_share_token',
+			'recordseedtoken' + Math.floor(Math.random() * 1e9).toString(16)
+		);
 		e.app.save(trip);
 	}
 
@@ -1323,7 +1588,9 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 		// #431: a start-only item stays ongoing until a later timed item starts, so the default
 		// matrix's 'Whistling Straits walk' (10:00, no end) on today's day would be an extra
 		// Hero for the whole day, at a wall-clock-dependent moment. A `now` seed owns today.
-		const defaultToday = e.app.findRecordsByFilter('items', 'day = {:dayId}', '', 0, 0, { dayId: todayDay.id });
+		const defaultToday = e.app.findRecordsByFilter('items', 'day = {:dayId}', '', 0, 0, {
+			dayId: todayDay.id
+		});
 		for (let d = 0; d < defaultToday.length; d++) e.app.delete(defaultToday[d]);
 		const tripMembersCol = e.app.findCollectionByNameOrId('trip_members');
 		const mkMember = (name) => {
@@ -1367,7 +1634,10 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 			});
 			nowItems.live = dinner.id;
 			const docsCol = e.app.findCollectionByNameOrId('documents');
-			const codes = [['Confirmation', 'IMM-48213'], ['Door PIN', '7731']];
+			const codes = [
+				['Confirmation', 'IMM-48213'],
+				['Door PIN', '7731']
+			];
 			for (let c = 0; c < codes.length; c++) {
 				const doc = new Record(docsCol);
 				doc.set('trip', trip.id);
@@ -1378,7 +1648,12 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 				doc.set('code_value', codes[c][1]);
 				e.app.save(doc);
 			}
-			nowItems.later = mk({ title: 'Night walk', type: 'activity', start_time: wall(nowMs + 120 * min), sort_order: 51 }).id;
+			nowItems.later = mk({
+				title: 'Night walk',
+				type: 'activity',
+				start_time: wall(nowMs + 120 * min),
+				sort_order: 51
+			}).id;
 		} else if (mode === 'multi') {
 			// #430: several Heroes. 'Beach volleyball' (not the viewer's; Kim + Dev) began
 			// EARLIEST, so plain start order would put it first. 'Dinner at The Immigrant'
@@ -1386,29 +1661,115 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 			// assigned. 'Lakeside cabin' is an ongoing multi-day stay: banner, never a Hero.
 			kim = mkMember('Kim');
 			dev = mkMember('Dev');
-			mk({ title: 'Beach volleyball', type: 'activity', start_time: wall(nowMs - 150 * min), end_time: wall(nowMs + 30 * min), location_name: 'Lakefront Courts', assigned_to: [kim, dev] });
-			mk({ title: 'Dinner at The Immigrant', type: 'meal', subtype: 'fine_dining', start_time: wall(nowMs - 65 * min), end_time: wall(nowMs + 55 * min), location_name: 'The Immigrant Restaurant', location_address: '1 Main St, Kohler, WI 53044', booked: true, assigned_to: [ownerMember.id, kim] });
-			mk({ title: 'Harbor walk', type: 'activity', start_time: wall(nowMs - 20 * min), end_time: wall(nowMs + 40 * min), location_name: 'Sheboygan Harbor' });
-			const stayEnd = days.length >= 4 ? days[3].getString('date').substring(0, 10) : days[days.length - 1].getString('date').substring(0, 10);
-			mk({ title: 'Lakeside cabin', type: 'lodging', start_time: wall(nowMs - 200 * min), end_time: stayEnd + ' 11:00:00.000Z', end_date: stayEnd + ' 00:00:00.000Z', location_name: 'Cabin 6' });
-			mk({ title: 'Night walk', type: 'activity', start_time: wall(nowMs + 120 * min), sort_order: 51 });
+			mk({
+				title: 'Beach volleyball',
+				type: 'activity',
+				start_time: wall(nowMs - 150 * min),
+				end_time: wall(nowMs + 30 * min),
+				location_name: 'Lakefront Courts',
+				assigned_to: [kim, dev]
+			});
+			mk({
+				title: 'Dinner at The Immigrant',
+				type: 'meal',
+				subtype: 'fine_dining',
+				start_time: wall(nowMs - 65 * min),
+				end_time: wall(nowMs + 55 * min),
+				location_name: 'The Immigrant Restaurant',
+				location_address: '1 Main St, Kohler, WI 53044',
+				booked: true,
+				assigned_to: [ownerMember.id, kim]
+			});
+			mk({
+				title: 'Harbor walk',
+				type: 'activity',
+				start_time: wall(nowMs - 20 * min),
+				end_time: wall(nowMs + 40 * min),
+				location_name: 'Sheboygan Harbor'
+			});
+			const stayEnd =
+				days.length >= 4
+					? days[3].getString('date').substring(0, 10)
+					: days[days.length - 1].getString('date').substring(0, 10);
+			mk({
+				title: 'Lakeside cabin',
+				type: 'lodging',
+				start_time: wall(nowMs - 200 * min),
+				end_time: stayEnd + ' 11:00:00.000Z',
+				end_date: stayEnd + ' 00:00:00.000Z',
+				location_name: 'Cabin 6'
+			});
+			mk({
+				title: 'Night walk',
+				type: 'activity',
+				start_time: wall(nowMs + 120 * min),
+				sort_order: 51
+			});
 		} else if (mode === 'buckets') {
 			// #431: every time shape at once. Earlier today: 'Bike rental' (start-only, ended
 			// by 'Lunch'), 'Return rental clubs' (a deadline already past). Ongoing: 'Lunch at
 			// Fika' (start-only, no end) -> `NOW · since`. Coming up: 'Return kayaks' (a
 			// deadline), 'Sunset cruise', one untimed. Nothing may appear twice.
-			mk({ title: 'Bike rental', type: 'activity', start_time: wall(nowMs - 300 * min), location_name: 'Lakefront Bikes' });
-			mk({ title: 'Return rental clubs', type: 'transportation', end_time: wall(nowMs - 45 * min), location_name: 'Golf Galaxy' });
-			mk({ title: 'Lunch at Fika', type: 'meal', start_time: wall(nowMs - 95 * min), location_name: 'Fika Cafe', location_address: '210 N 8th St, Sheboygan, WI', assigned_to: [ownerMember.id] });
-			mk({ title: 'Return kayaks', type: 'activity', end_time: wall(nowMs + 150 * min), location_name: 'Sheboygan Marina', sort_order: 51 });
-			mk({ title: 'Sunset cruise', type: 'activity', start_time: wall(nowMs + 200 * min), end_time: wall(nowMs + 260 * min), location_name: 'Harbor Dock 4', sort_order: 52 });
+			mk({
+				title: 'Bike rental',
+				type: 'activity',
+				start_time: wall(nowMs - 300 * min),
+				location_name: 'Lakefront Bikes'
+			});
+			mk({
+				title: 'Return rental clubs',
+				type: 'transportation',
+				end_time: wall(nowMs - 45 * min),
+				location_name: 'Golf Galaxy'
+			});
+			mk({
+				title: 'Lunch at Fika',
+				type: 'meal',
+				start_time: wall(nowMs - 95 * min),
+				location_name: 'Fika Cafe',
+				location_address: '210 N 8th St, Sheboygan, WI',
+				assigned_to: [ownerMember.id]
+			});
+			mk({
+				title: 'Return kayaks',
+				type: 'activity',
+				end_time: wall(nowMs + 150 * min),
+				location_name: 'Sheboygan Marina',
+				sort_order: 51
+			});
+			mk({
+				title: 'Sunset cruise',
+				type: 'activity',
+				start_time: wall(nowMs + 200 * min),
+				end_time: wall(nowMs + 260 * min),
+				location_name: 'Harbor Dock 4',
+				sort_order: 52
+			});
 			mk({ title: 'Stargazing', type: 'activity', sort_order: 99 });
 		} else if (mode === 'deadline') {
 			// #431: free time counting down to a DEADLINE 25 min out, with dinner later.
-			mk({ title: 'Return rental clubs', type: 'transportation', end_time: wall(nowMs + 25 * min), location_name: 'Golf Galaxy' });
-			mk({ title: 'Dinner at The Immigrant', type: 'meal', start_time: wall(nowMs + 145 * min), end_time: wall(nowMs + 205 * min), location_name: 'The Immigrant Restaurant', sort_order: 51 });
+			mk({
+				title: 'Return rental clubs',
+				type: 'transportation',
+				end_time: wall(nowMs + 25 * min),
+				location_name: 'Golf Galaxy'
+			});
+			mk({
+				title: 'Dinner at The Immigrant',
+				type: 'meal',
+				start_time: wall(nowMs + 145 * min),
+				end_time: wall(nowMs + 205 * min),
+				location_name: 'The Immigrant Restaurant',
+				sort_order: 51
+			});
 		} else if (mode === 'free') {
-			mk({ title: 'Return rental clubs', type: 'transportation', start_time: wall(nowMs + 90 * min), end_time: wall(nowMs + 120 * min), location_name: 'Golf Galaxy' });
+			mk({
+				title: 'Return rental clubs',
+				type: 'transportation',
+				start_time: wall(nowMs + 90 * min),
+				end_time: wall(nowMs + 120 * min),
+				location_name: 'Golf Galaxy'
+			});
 		}
 		if (mode === 'rail') {
 			const docsCol2 = e.app.findCollectionByNameOrId('documents');
@@ -1425,27 +1786,99 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 				}
 			};
 			// Earlier today.
-			mk({ title: 'Breakfast at Cafe Hollander', type: 'meal', start_time: wall(nowMs - 330 * min), end_time: wall(nowMs - 270 * min), location_name: 'Cafe Hollander', assigned_to: [ownerMember.id, kim] });
-			const kayak = mk({ title: 'Kayak rental pickup', type: 'activity', start_time: wall(nowMs - 210 * min), end_time: wall(nowMs - 150 * min), location_name: 'Sheboygan Marina', booked: true, assigned_to: [ownerMember.id] });
+			mk({
+				title: 'Breakfast at Cafe Hollander',
+				type: 'meal',
+				start_time: wall(nowMs - 330 * min),
+				end_time: wall(nowMs - 270 * min),
+				location_name: 'Cafe Hollander',
+				assigned_to: [ownerMember.id, kim]
+			});
+			const kayak = mk({
+				title: 'Kayak rental pickup',
+				type: 'activity',
+				start_time: wall(nowMs - 210 * min),
+				end_time: wall(nowMs - 150 * min),
+				location_name: 'Sheboygan Marina',
+				booked: true,
+				assigned_to: [ownerMember.id]
+			});
 			addCodes(kayak, [['Reservation', 'KYK-20931']]);
-			mk({ title: 'Cabin tidy-up', type: 'activity', start_time: wall(nowMs - 120 * min), end_time: wall(nowMs - 75 * min), location_name: 'Cabin 6' });
+			mk({
+				title: 'Cabin tidy-up',
+				type: 'activity',
+				start_time: wall(nowMs - 120 * min),
+				end_time: wall(nowMs - 75 * min),
+				location_name: 'Cabin 6'
+			});
 			// Coming up (the Hero's 'Night walk' at +120 is added above).
-			const cruise = mk({ title: 'Sunset cruise', type: 'activity', start_time: wall(nowMs + 150 * min), end_time: wall(nowMs + 240 * min), location_name: 'Harbor Dock 4', booked: true, assigned_to: [ownerMember.id, kim], sort_order: 52 });
-			addCodes(cruise, [['Confirmation', 'SUN-5521'], ['Boarding group', 'B12']]);
-			mk({ title: 'Wine tasting', type: 'activity', start_time: wall(nowMs + 180 * min), end_time: wall(nowMs + 230 * min), location_name: 'Kohler Wine Bar', assigned_to: [ownerMember.id, dev], sort_order: 53 });
-			mk({ title: 'Fireside tacos', type: 'meal', start_time: wall(nowMs + 330 * min), end_time: wall(nowMs + 390 * min), location_name: 'The Cabin Fire Pit', booked: true, sort_order: 54 });
+			const cruise = mk({
+				title: 'Sunset cruise',
+				type: 'activity',
+				start_time: wall(nowMs + 150 * min),
+				end_time: wall(nowMs + 240 * min),
+				location_name: 'Harbor Dock 4',
+				booked: true,
+				assigned_to: [ownerMember.id, kim],
+				sort_order: 52
+			});
+			addCodes(cruise, [
+				['Confirmation', 'SUN-5521'],
+				['Boarding group', 'B12']
+			]);
+			mk({
+				title: 'Wine tasting',
+				type: 'activity',
+				start_time: wall(nowMs + 180 * min),
+				end_time: wall(nowMs + 230 * min),
+				location_name: 'Kohler Wine Bar',
+				assigned_to: [ownerMember.id, dev],
+				sort_order: 53
+			});
+			mk({
+				title: 'Fireside tacos',
+				type: 'meal',
+				start_time: wall(nowMs + 330 * min),
+				end_time: wall(nowMs + 390 * min),
+				location_name: 'The Cabin Fire Pit',
+				booked: true,
+				sort_order: 54
+			});
 			mk({ title: 'Stargazing', type: 'activity', sort_order: 99 });
 			// Next 3 days: tomorrow carries a booked item with a code.
 			if (days.length >= 3) {
-				const tmr = mk({ title: 'Breakfast at Sip Coffeehouse', type: 'meal', day: days[2].id, start_time: days[2].getString('date').substring(0, 10) + ' 09:00:00.000Z', end_time: days[2].getString('date').substring(0, 10) + ' 10:00:00.000Z', location_name: 'Sip Coffeehouse', booked: true });
+				const tmr = mk({
+					title: 'Breakfast at Sip Coffeehouse',
+					type: 'meal',
+					day: days[2].id,
+					start_time: days[2].getString('date').substring(0, 10) + ' 09:00:00.000Z',
+					end_time: days[2].getString('date').substring(0, 10) + ' 10:00:00.000Z',
+					location_name: 'Sip Coffeehouse',
+					booked: true
+				});
 				addCodes(tmr, [['Reservation', 'SIP-7742']]);
 				// #422: a gap after the breakfast's end (10:00 to 1:00p) for the free-time label.
-				mk({ title: 'Lunch at the brewery', type: 'meal', day: days[2].id, start_time: days[2].getString('date').substring(0, 10) + ' 13:00:00.000Z', end_time: days[2].getString('date').substring(0, 10) + ' 14:00:00.000Z', location_name: 'Lakefront Brewery' });
+				mk({
+					title: 'Lunch at the brewery',
+					type: 'meal',
+					day: days[2].id,
+					start_time: days[2].getString('date').substring(0, 10) + ' 13:00:00.000Z',
+					end_time: days[2].getString('date').substring(0, 10) + ' 14:00:00.000Z',
+					location_name: 'Lakefront Brewery'
+				});
 			}
 		}
 	}
 
-	return e.json(200, { tripId: trip.id, slug: slug, phaseId: phaseId, goalId: goalId, formingSlug: formingSlug, nowItems: nowItems, days: summary });
+	return e.json(200, {
+		tripId: trip.id,
+		slug: slug,
+		phaseId: phaseId,
+		goalId: goalId,
+		formingSlug: formingSlug,
+		nowItems: nowItems,
+		days: summary
+	});
 });
 
 // ---------------------------------------------------------------------------
@@ -1563,9 +1996,16 @@ routerAdd('POST', '/api/dev/cotraveler-fixture', (e) => {
 					} catch (_) {}
 				}
 				try {
-					const invites = e.app.findRecordsByFilter('pending_invites', 'trip = {:tripId}', '', 0, 0, {
-						tripId: existing.id
-					});
+					const invites = e.app.findRecordsByFilter(
+						'pending_invites',
+						'trip = {:tripId}',
+						'',
+						0,
+						0,
+						{
+							tripId: existing.id
+						}
+					);
 					for (const inv of invites) {
 						try {
 							e.app.delete(inv);

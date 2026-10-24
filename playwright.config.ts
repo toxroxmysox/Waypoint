@@ -35,5 +35,10 @@ export default defineConfig({
 	// fly) are gated on `prefers-reduced-motion`; forcing it 'reduce' makes sheets
 	// open instantly so tests don't race the ~250ms animation and click a control
 	// that is still mid-flight (and momentarily off-screen).
-	use: { baseURL: E2E_BASE, reducedMotion: 'reduce', screenshot: 'only-on-failure', trace: 'retain-on-failure' }
+	use: {
+		baseURL: E2E_BASE,
+		reducedMotion: 'reduce',
+		screenshot: 'only-on-failure',
+		trace: 'retain-on-failure'
+	}
 });

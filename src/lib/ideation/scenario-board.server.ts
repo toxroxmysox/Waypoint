@@ -3,7 +3,11 @@ import type { TripMember } from '$lib/collaboration/types';
 import type { Item } from '$lib/itinerary/types';
 import { withAvatarUrls, type MemberWithAvatar } from '$lib/collaboration/member-avatar';
 import type { Scenario, ScenarioVote, ScenarioPoint, PhaseSketchSegment } from './types';
-import { boardLiveDimensions, scenarioDimensions, type ConvergeDimensions } from './scenario-planning';
+import {
+	boardLiveDimensions,
+	scenarioDimensions,
+	type ConvergeDimensions
+} from './scenario-planning';
 import { windowStatus, type AvailabilityCell, type DayStatus } from './availability';
 
 /** A scenario decorated with everything a board card renders — its own votes,

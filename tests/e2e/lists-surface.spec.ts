@@ -32,7 +32,11 @@ test.describe('Itinerary › Lists (#49)', () => {
 		await page.waitForURL(`${BASE}/trips/${tripSlug}`, { timeout: 10000 });
 
 		// --- Open the Lists sub-tab ---
-		await page.getByRole('link', { name: 'Lists', exact: true }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('link', { name: 'Lists', exact: true })
+			.filter({ visible: true })
+			.first()
+			.click();
 		await page.waitForURL(`${BASE}/trips/${tripSlug}/lists`);
 
 		// Booking smart list is pinned even with no manual lists yet.
@@ -42,11 +46,17 @@ test.describe('Itinerary › Lists (#49)', () => {
 		// --- Create a whole-trip "Packing" list (scope defaults to Whole trip) ---
 		await page.getByRole('button', { name: 'New list' }).filter({ visible: true }).first().click();
 		await page.getByLabel('Name').fill('Packing');
-		await page.getByRole('button', { name: /create list/i }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('button', { name: /create list/i })
+			.filter({ visible: true })
+			.first()
+			.click();
 
 		// Lands on the new list's detail.
 		await page.waitForURL(/\/lists\/[a-z0-9]+$/);
-		await expect(page.getByRole('heading', { name: 'Packing' }).filter({ visible: true }).first()).toBeVisible();
+		await expect(
+			page.getByRole('heading', { name: 'Packing' }).filter({ visible: true }).first()
+		).toBeVisible();
 
 		// --- Add two tasks via the ledger add-row, check one off ---
 		const addRow = page.getByPlaceholder('Add task').filter({ visible: true }).first();
@@ -58,8 +68,14 @@ test.describe('Itinerary › Lists (#49)', () => {
 		await addRow.press('Enter');
 		await expect(page.getByText('Sunscreen').filter({ visible: true }).first()).toBeVisible();
 
-		await page.getByRole('button', { name: 'Check task' }).filter({ visible: true }).first().click();
-		await expect(page.getByRole('button', { name: 'Uncheck task' }).filter({ visible: true }).first()).toBeVisible();
+		await page
+			.getByRole('button', { name: 'Check task' })
+			.filter({ visible: true })
+			.first()
+			.click();
+		await expect(
+			page.getByRole('button', { name: 'Uncheck task' }).filter({ visible: true }).first()
+		).toBeVisible();
 
 		// Hide-done removes the checked row from view.
 		await page.getByRole('button', { name: 'Hide done' }).filter({ visible: true }).first().click();

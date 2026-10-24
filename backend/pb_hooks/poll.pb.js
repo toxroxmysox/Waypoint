@@ -103,7 +103,8 @@ routerAdd('POST', '/api/poll/paint', (e) => {
 		} catch (_) {
 			throw new BadRequestError('That member was not found');
 		}
-		if (!validatePlaceholder(m)) throw new BadRequestError('That is not a claimable poll respondent');
+		if (!validatePlaceholder(m))
+			throw new BadRequestError('That is not a claimable poll respondent');
 		// If the placeholder carries a soft_token, require it to match (prevents a
 		// stranger picking someone else's already-keyed name). An un-keyed placeholder
 		// (created out-of-band, e.g. by an organiser) is claimable by first painter.
@@ -199,7 +200,10 @@ routerAdd('POST', '/api/poll/paint', (e) => {
 
 		if (value === null || value === undefined || value === '') {
 			if (existing) {
-				try { e.app.delete(existing); written++; } catch (_) {}
+				try {
+					e.app.delete(existing);
+					written++;
+				} catch (_) {}
 			}
 			continue;
 		}

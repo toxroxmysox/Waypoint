@@ -41,7 +41,7 @@ which we leave off. So the "open up `users`" move is far narrower than it sounds
 The alternatives all cost more and deliver the same or less:
 
 - **Server-proxy the bytes** (mirroring the documents file proxy) — the documents proxy works only
-  because `documents` is *member-readable*; `users` is not, so an avatar proxy needs a cross-user read
+  because `documents` is _member-readable_; `users` is not, so an avatar proxy needs a cross-user read
   capability that doesn't exist. That means either a **SvelteKit superuser client** (new superuser
   credentials in the app server — new secret, blast radius outside PB) or a **`pb_hooks` superuser
   endpoint**. Both add a moving part this rule change removes entirely.

@@ -77,7 +77,9 @@ onRecordDeleteRequest((e) => {
 	const isPrivileged = callerRole === 'owner' || callerRole === 'co_owner';
 
 	if (!isCreator && !isPrivileged) {
-		throw new ForbiddenError('Only the settlement creator or trip owner/co-owner can delete settlements');
+		throw new ForbiddenError(
+			'Only the settlement creator or trip owner/co-owner can delete settlements'
+		);
 	}
 
 	e.next();

@@ -3,7 +3,12 @@ import { previewCards, outcomeLine, clockAm, rangeText } from './preview';
 import type { Cascade, PlannedChange } from './types';
 import type { Trip } from '$lib/types';
 
-const trip = { id: 'porto', title: 'Porto', start_date: '2026-11-01 00:00:00.000Z', end_date: '2026-11-08 00:00:00.000Z' } as Trip;
+const trip = {
+	id: 'porto',
+	title: 'Porto',
+	start_date: '2026-11-01 00:00:00.000Z',
+	end_date: '2026-11-08 00:00:00.000Z'
+} as Trip;
 const update: PlannedChange = {
 	action: 'update',
 	collection: 'items',
@@ -33,7 +38,9 @@ describe('previewCards', () => {
 	});
 
 	it('carries the real outcome on each card', () => {
-		expect(previewCards([create('suggested')], null, trip)[0].lines).toContain('Sent to the owners as a suggestion');
+		expect(previewCards([create('suggested')], null, trip)[0].lines).toContain(
+			'Sent to the owners as a suggestion'
+		);
 		expect(previewCards([create('idea')], null, trip)[0].lines).toContain('Added as an idea');
 		expect(previewCards([update], null, trip)[0].lines).toContain('Saved');
 		expect(outcomeLine([update, create('idea')])).toBe('Saved · Added as an idea');
@@ -45,7 +52,13 @@ describe('previewCards', () => {
 			tripAfter: ['2026-11-01', '2026-11-07'],
 			daysAdded: [],
 			daysRemoved: ['2026-11-08'],
-			phases: [{ name: 'Lisbon', before: ['2026-11-05', '2026-11-08'], after: ['2026-11-05', '2026-11-07'] }],
+			phases: [
+				{
+					name: 'Lisbon',
+					before: ['2026-11-05', '2026-11-08'],
+					after: ['2026-11-05', '2026-11-07']
+				}
+			],
 			moves: [
 				{ title: 'Fado night', from: '2026-11-08', to: 'Lisbon' },
 				{ title: 'Tram 28', from: '2026-11-08', to: 'Lisbon' }
@@ -59,7 +72,10 @@ describe('previewCards', () => {
 	});
 
 	it('scrubs emails out of what it shows', () => {
-		const withEmail = { ...create('saved'), after: { title: 'Dinner', description: 'book via x@y.com' } };
+		const withEmail = {
+			...create('saved'),
+			after: { title: 'Dinner', description: 'book via x@y.com' }
+		};
 		const card = previewCards([withEmail], null, trip)[0];
 		expect(JSON.stringify(card)).not.toContain('x@y.com');
 	});
@@ -86,12 +102,21 @@ describe('wording (intent review)', () => {
 			phases: [],
 			moves: [{ title: 'Idea in F', from: 'F', to: 'E' }]
 		};
-		expect(previewCards([update], cascade, trip)[0].lines).toContain('1 item moves to E: Idea in F');
+		expect(previewCards([update], cascade, trip)[0].lines).toContain(
+			'1 item moves to E: Idea in F'
+		);
 	});
-	it('shows the year on a date outside the trip\'s year', () => {
-		const phase: PlannedChange = { ...create('saved'), collection: 'phases', after: { name: 'Winter', start_date: '2027-01-02 00:00:00.000Z' } };
+	it("shows the year on a date outside the trip's year", () => {
+		const phase: PlannedChange = {
+			...create('saved'),
+			collection: 'phases',
+			after: { name: 'Winter', start_date: '2027-01-02 00:00:00.000Z' }
+		};
 		expect(previewCards([phase], null, trip)[0].lines).toContain('Start date: Sat 2 Jan 2027');
-		const inYear: PlannedChange = { ...phase, after: { name: 'Lisbon', start_date: '2026-11-05 00:00:00.000Z' } };
+		const inYear: PlannedChange = {
+			...phase,
+			after: { name: 'Lisbon', start_date: '2026-11-05 00:00:00.000Z' }
+		};
 		expect(previewCards([inYear], null, trip)[0].lines).toContain('Start date: Thu 5 Nov');
 	});
 });

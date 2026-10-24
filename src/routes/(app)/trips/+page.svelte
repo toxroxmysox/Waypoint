@@ -32,7 +32,13 @@
 	function invitationSubmit(code: string) {
 		return () => {
 			busy = code;
-			return async ({ result, update }: { result: { type: string }; update: () => Promise<void> }) => {
+			return async ({
+				result,
+				update
+			}: {
+				result: { type: string };
+				update: () => Promise<void>;
+			}) => {
 				await update();
 				if (result.type === 'failure') await invalidateAll();
 				busy = '';
@@ -74,7 +80,8 @@
 		}
 		const token = extractToken(inviteInput);
 		if (!token) {
-			inviteError = "That doesn't look like an invite link. Paste the whole link, or just the code.";
+			inviteError =
+				"That doesn't look like an invite link. Paste the whole link, or just the code.";
 			return;
 		}
 		inviteError = '';
@@ -102,7 +109,7 @@
 			<form method="POST" action="/logout" onsubmit={() => clearOfflineCaches()}>
 				<button
 					type="submit"
-					class="text-ink-muted hover:text-ink-soft active:text-ink-soft text-[12px] font-medium"
+					class="text-[12px] font-medium text-ink-muted hover:text-ink-soft active:text-ink-soft"
 				>
 					Sign out
 				</button>
@@ -113,7 +120,12 @@
 				aria-label="Profile"
 				data-sveltekit-preload-data="hover"
 			>
-				<Avatar img={data.avatarUrl} initial={(data.profileName || '?').slice(0, 1)} alt={data.profileName} size={32} />
+				<Avatar
+					img={data.avatarUrl}
+					initial={(data.profileName || '?').slice(0, 1)}
+					alt={data.profileName}
+					size={32}
+				/>
 				{#if data.invitations.length > 0}
 					<!-- #397 — pending-invitations count. Visual only: the list itself is
 					     on this page (its heading carries the count for screen readers),
@@ -121,7 +133,7 @@
 					<span
 						data-testid="invitations-badge"
 						aria-hidden="true"
-						class="bg-clay text-paper absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-none font-bold"
+						class="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-clay px-1 text-[10px] leading-none font-bold text-paper"
 					>
 						{data.invitations.length}
 					</span>
@@ -131,22 +143,25 @@
 	{/snippet}
 </NavBar>
 
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-24">
+<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-24 md-desktop:max-w-2xl">
 	{#if data.invitations.length > 0}
 		<section class="mb-5" aria-labelledby="invitations-heading" data-testid="invitations">
-			<h2 id="invitations-heading" class="text-moss mb-2 text-[11px] font-bold tracking-[0.2em] uppercase">
+			<h2
+				id="invitations-heading"
+				class="mb-2 text-[11px] font-bold tracking-[0.2em] text-moss uppercase"
+			>
 				Invitations · {data.invitations.length}
 			</h2>
 			<div class="space-y-2">
 				{#each data.invitations as inv (inv.code)}
 					<Card strong accent="var(--color-moss)">
 						<div class="p-4" data-testid="invitation">
-							<p class="text-ink text-sm font-semibold">{inv.trip_title}</p>
-							<p class="text-ink-muted mt-0.5 text-xs">
+							<p class="text-sm font-semibold text-ink">{inv.trip_title}</p>
+							<p class="mt-0.5 text-xs text-ink-muted">
 								{inv.inviter_name} invited you as {ROLE_LABEL[inv.role] ?? 'a member'}
 							</p>
 							{#if form?.code === inv.code && form?.error}
-								<p role="alert" class="text-error-deep mt-2 text-xs">{form.error}</p>
+								<p role="alert" class="mt-2 text-xs text-error-deep">{form.error}</p>
 							{/if}
 							<div class="mt-3 flex flex-wrap gap-2">
 								{#if inv.needs_choice}
@@ -155,14 +170,28 @@
 									     signed in). -->
 									<Button href="/invite/{inv.code}" variant="moss" size="sm">Accept…</Button>
 								{:else}
-									<form method="POST" action="?/acceptInvite" use:enhance={invitationSubmit(inv.code)}>
+									<form
+										method="POST"
+										action="?/acceptInvite"
+										use:enhance={invitationSubmit(inv.code)}
+									>
 										<input type="hidden" name="code" value={inv.code} />
-										<Button type="submit" variant="moss" size="sm" loading={busy === inv.code} disabled={!!busy}>
+										<Button
+											type="submit"
+											variant="moss"
+											size="sm"
+											loading={busy === inv.code}
+											disabled={!!busy}
+										>
 											Accept
 										</Button>
 									</form>
 								{/if}
-								<form method="POST" action="?/declineInvite" use:enhance={invitationSubmit(inv.code)}>
+								<form
+									method="POST"
+									action="?/declineInvite"
+									use:enhance={invitationSubmit(inv.code)}
+								>
 									<input type="hidden" name="code" value={inv.code} />
 									<Button
 										type="submit"
@@ -194,24 +223,44 @@
 			<Card strong accent="var(--color-moss)">
 				<div class="flex items-center gap-3 p-4">
 					<span
-						class="bg-moss-tint text-moss flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+						class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-moss-tint text-moss"
 						aria-hidden="true"
 					>
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<svg
+							width="18"
+							height="18"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						>
 							<path d="M20 6 9 17l-5-5" />
 						</svg>
 					</span>
 					<div class="min-w-0 flex-1">
-						<p class="text-ink text-sm font-semibold">
+						<p class="text-sm font-semibold text-ink">
 							{#if data.pendingClaims === 1}
 								You've been added to {data.firstClaimTitle || 'a trip'}
 							{:else}
 								{data.pendingClaims} trips are waiting for you
 							{/if}
 						</p>
-						<p class="text-ink-muted text-xs">Tap to review and join.</p>
+						<p class="text-xs text-ink-muted">Tap to review and join.</p>
 					</div>
-					<svg class="text-ink-muted shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<svg
+						class="shrink-0 text-ink-muted"
+						width="18"
+						height="18"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
 						<path d="m9 18 6-6-6-6" />
 					</svg>
 				</div>
@@ -227,19 +276,19 @@
 		     existing /join flow. Evolves #277's on-ramp. NO feature tour, NO templates, NO
 		     seeded data. Converges with the in-trip welcome card (#274) once you're in a trip. -->
 		<div class="py-14 text-center" data-testid="trips-empty-onramp">
-			<p class="font-display text-ink text-2xl italic">Where to?</p>
-			<p class="text-ink-muted mx-auto mt-3 max-w-xs text-sm leading-relaxed">
-				A trip is a shared place to plan a journey with the people coming along —
-				gather ideas, weigh dates, and decide together.
+			<p class="font-display text-2xl text-ink italic">Where to?</p>
+			<p class="mx-auto mt-3 max-w-xs text-sm leading-relaxed text-ink-muted">
+				A trip is a shared place to plan a journey with the people coming along — gather ideas,
+				weigh dates, and decide together.
 			</p>
 			<div class="mt-6">
 				<Button href="/trips/new" variant="moss" size="md">Plan your first trip</Button>
 			</div>
 
 			<!-- Quieter escape hatch: signed up directly but someone sent you an invite. -->
-			<div class="border-line/60 mx-auto mt-10 max-w-xs border-t pt-6 text-left">
+			<div class="mx-auto mt-10 max-w-xs border-t border-line/60 pt-6 text-left">
 				<form onsubmit={submitInvite}>
-					<label for="invite-link" class="text-ink-soft block text-center text-sm font-medium">
+					<label for="invite-link" class="block text-center text-sm font-medium text-ink-soft">
 						Have an invite? Paste your link.
 					</label>
 					<div class="mt-2 flex items-center gap-2">
@@ -252,18 +301,21 @@
 							autocapitalize="off"
 							spellcheck="false"
 							placeholder="Paste link or code"
-							class="border-line bg-surface text-ink min-w-0 flex-1 rounded-md border px-3 py-2 text-sm"
+							class="min-w-0 flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 						/>
 						<Button type="submit" variant="ghost" size="sm">Go</Button>
 					</div>
 					{#if inviteError}
-						<p role="alert" class="text-error-deep mt-2 text-xs">{inviteError}</p>
+						<p role="alert" class="mt-2 text-xs text-error-deep">{inviteError}</p>
 					{/if}
 				</form>
 			</div>
 
 			<p class="mt-8">
-				<a href="/trips/import" class="text-ink-muted text-xs font-medium hover:text-ink-soft active:text-ink-soft">
+				<a
+					href="/trips/import"
+					class="text-xs font-medium text-ink-muted hover:text-ink-soft active:text-ink-soft"
+				>
 					or import from JSON
 				</a>
 			</p>
@@ -273,22 +325,22 @@
 			{#if data.active.length > 0}
 				<section class="space-y-2">
 					<div class="flex items-baseline justify-between pt-1">
-						<h2 class="text-moss text-[11px] font-bold tracking-[0.2em] uppercase">On trip</h2>
+						<h2 class="text-[11px] font-bold tracking-[0.2em] text-moss uppercase">On trip</h2>
 					</div>
 					{#each data.active as { trip }, i (trip?.id ?? i)}
 						<Card href="/trips/{trip?.slug}" strong accent="var(--color-clay)">
 							<div class="p-4">
 								<div class="flex items-start justify-between gap-2">
-									<h3 class="font-display text-ink text-lg leading-tight font-semibold">
+									<h3 class="font-display text-lg leading-tight font-semibold text-ink">
 										{trip?.title}
 									</h3>
 									<Pill variant="trip" size="sm">Now</Pill>
 								</div>
-								<p class="text-ink-muted font-mono mt-1 text-[12px]">
+								<p class="mt-1 font-mono text-[12px] text-ink-muted">
 									{formatDateRange(trip?.start_date ?? '', trip?.end_date ?? '')}
 								</p>
 								{#if trip?.location_summary}
-									<p class="font-display text-ink-soft mt-1 text-sm italic">
+									<p class="mt-1 font-display text-sm text-ink-soft italic">
 										{trip.location_summary}
 									</p>
 								{/if}
@@ -301,19 +353,19 @@
 			{#if data.upcoming.length > 0}
 				<section class="space-y-2">
 					<div class="flex items-baseline justify-between pt-1">
-						<h2 class="text-moss text-[11px] font-bold tracking-[0.2em] uppercase">Upcoming</h2>
+						<h2 class="text-[11px] font-bold tracking-[0.2em] text-moss uppercase">Upcoming</h2>
 					</div>
 					{#each data.upcoming as { trip }, i (trip?.id ?? i)}
 						<Card href="/trips/{trip?.slug}">
 							<div class="p-4">
-								<h3 class="font-display text-ink text-lg leading-tight font-semibold">
+								<h3 class="font-display text-lg leading-tight font-semibold text-ink">
 									{trip?.title}
 								</h3>
-								<p class="text-ink-muted font-mono mt-1 text-[12px]">
+								<p class="mt-1 font-mono text-[12px] text-ink-muted">
 									{formatDateRange(trip?.start_date ?? '', trip?.end_date ?? '')}
 								</p>
 								{#if trip?.location_summary}
-									<p class="font-display text-ink-soft mt-1 text-sm italic">
+									<p class="mt-1 font-display text-sm text-ink-soft italic">
 										{trip.location_summary}
 									</p>
 								{/if}
@@ -328,21 +380,19 @@
 				     of past. Subtle "No dates yet" badge where a date range would sit. -->
 				<section class="space-y-2">
 					<div class="flex items-baseline justify-between pt-1">
-						<h2 class="text-moss text-[11px] font-bold tracking-[0.2em] uppercase">
-							Taking shape
-						</h2>
+						<h2 class="text-[11px] font-bold tracking-[0.2em] text-moss uppercase">Taking shape</h2>
 					</div>
 					{#each data.forming as { trip }, i (trip?.id ?? i)}
 						<Card href="/trips/{trip?.slug}">
 							<div class="p-4">
 								<div class="flex items-start justify-between gap-2">
-									<h3 class="font-display text-ink text-lg leading-tight font-semibold">
+									<h3 class="font-display text-lg leading-tight font-semibold text-ink">
 										{trip?.title}
 									</h3>
 									<Pill size="sm">No dates yet</Pill>
 								</div>
 								{#if trip?.location_summary}
-									<p class="font-display text-ink-soft mt-1 text-sm italic">
+									<p class="mt-1 font-display text-sm text-ink-soft italic">
 										{trip.location_summary}
 									</p>
 								{/if}
@@ -355,15 +405,13 @@
 			{#if data.past.length > 0}
 				<section class="space-y-2">
 					<div class="flex items-baseline justify-between pt-1">
-						<h2 class="text-ink-muted text-[11px] font-bold tracking-[0.2em] uppercase">
-							Past
-						</h2>
+						<h2 class="text-[11px] font-bold tracking-[0.2em] text-ink-muted uppercase">Past</h2>
 					</div>
 					{#each data.past as { trip }, i (trip?.id ?? i)}
 						<Card href="/trips/{trip?.slug}" class="opacity-80">
 							<div class="p-4">
-								<h3 class="text-ink-soft text-base leading-tight font-medium">{trip?.title}</h3>
-								<p class="text-ink-muted font-mono mt-1 text-[12px]">
+								<h3 class="text-base leading-tight font-medium text-ink-soft">{trip?.title}</h3>
+								<p class="mt-1 font-mono text-[12px] text-ink-muted">
 									{formatDateRange(trip?.start_date ?? '', trip?.end_date ?? '')}
 								</p>
 							</div>
@@ -376,8 +424,11 @@
 </main>
 
 {#if !isEmpty}
-	<div class="fixed bottom-20 left-0 right-0 text-center">
-		<a href="/trips/import" class="text-ink-muted text-xs font-medium hover:text-ink-soft active:text-ink-soft">
+	<div class="fixed right-0 bottom-20 left-0 text-center">
+		<a
+			href="/trips/import"
+			class="text-xs font-medium text-ink-muted hover:text-ink-soft active:text-ink-soft"
+		>
 			Import from JSON
 		</a>
 	</div>

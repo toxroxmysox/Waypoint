@@ -7,7 +7,13 @@
 	// Documents, no bespoke camera UI.
 	import { enhance } from '$app/forms';
 	import BottomSheet from '$lib/ui/BottomSheet.svelte';
-	import { checkPhoto, decideMemorySave, isRenderablePhoto, MAX_THOUGHT_CHARS, PHOTO_ACCEPT } from '$lib/memory/memory';
+	import {
+		checkPhoto,
+		decideMemorySave,
+		isRenderablePhoto,
+		MAX_THOUGHT_CHARS,
+		PHOTO_ACCEPT
+	} from '$lib/memory/memory';
 	import type { Memory } from '$lib/memory/types';
 	import { isStrippableImage, reencodeStripMetadata } from '$lib/image/strip-exif';
 
@@ -105,7 +111,9 @@
 				if (type) {
 					const blob = await item.getType(type);
 					const sub = (blob.type.split('/')[1] || 'png').toLowerCase();
-					stage(new File([blob], `pasted-photo.${sub === 'jpeg' ? 'jpg' : sub}`, { type: blob.type }));
+					stage(
+						new File([blob], `pasted-photo.${sub === 'jpeg' ? 'jpg' : sub}`, { type: blob.type })
+					);
 					return;
 				}
 			}
@@ -176,7 +184,7 @@
 		}}
 		class="space-y-4"
 	>
-		<p class="text-ink-muted -mt-1 text-[12px]">{subtitle}</p>
+		<p class="-mt-1 text-[12px] text-ink-muted">{subtitle}</p>
 
 		<input type="hidden" name="day_id" value={dayId} />
 		<input type="hidden" name="remove_photo" value={removePhoto ? '1' : '0'} />
@@ -192,27 +200,58 @@
 
 		<!-- Photo slot: empty → add; filled → preview + replace/remove (PRD §Composer). -->
 		{#if stagedFile}
-			<div class="border-line bg-surface flex items-center gap-3 rounded-xl border p-2.5">
+			<div class="flex items-center gap-3 rounded-xl border border-line bg-surface p-2.5">
 				{#if stagedUrl}
-					<img src={stagedUrl} alt="Staged preview" class="border-line h-20 w-20 shrink-0 rounded-lg border object-cover" />
+					<img
+						src={stagedUrl}
+						alt="Staged preview"
+						class="h-20 w-20 shrink-0 rounded-lg border border-line object-cover"
+					/>
 				{:else}
-					<div class="bg-paper text-ink-muted flex h-20 w-20 shrink-0 items-center justify-center rounded-lg text-[10px]">HEIC</div>
+					<div
+						class="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-paper text-[10px] text-ink-muted"
+					>
+						HEIC
+					</div>
 				{/if}
 				<div class="min-w-0 flex-1">
-					<p class="text-ink-soft truncate text-sm">{stagedFile.name}</p>
-					<button type="button" onclick={discardStaged} class="text-ink-muted mt-1 text-xs underline-offset-2 hover:underline active:underline">Remove</button>
+					<p class="truncate text-sm text-ink-soft">{stagedFile.name}</p>
+					<button
+						type="button"
+						onclick={discardStaged}
+						class="mt-1 text-xs text-ink-muted underline-offset-2 hover:underline active:underline"
+						>Remove</button
+					>
 				</div>
 			</div>
 		{:else if hasExistingPhoto && !removePhoto}
-			<div class="border-line bg-surface flex items-center gap-3 rounded-xl border p-2.5">
+			<div class="flex items-center gap-3 rounded-xl border border-line bg-surface p-2.5">
 				{#if existingRenderable}
-					<img src={photoSrc} alt="Your memory" class="border-line h-20 w-20 shrink-0 rounded-lg border object-cover" />
+					<img
+						src={photoSrc}
+						alt="Your memory"
+						class="h-20 w-20 shrink-0 rounded-lg border border-line object-cover"
+					/>
 				{:else}
-					<div class="bg-paper text-ink-muted flex h-20 w-20 shrink-0 items-center justify-center rounded-lg text-[10px]">HEIC</div>
+					<div
+						class="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-paper text-[10px] text-ink-muted"
+					>
+						HEIC
+					</div>
 				{/if}
 				<div class="flex min-w-0 flex-1 flex-col items-start gap-1">
-					<button type="button" onclick={() => fileInput?.click()} class="text-ink-soft text-xs font-medium underline-offset-2 hover:underline active:underline">Replace photo</button>
-					<button type="button" onclick={() => (removePhoto = true)} class="text-ink-muted text-xs underline-offset-2 hover:underline active:underline">Remove photo</button>
+					<button
+						type="button"
+						onclick={() => fileInput?.click()}
+						class="text-xs font-medium text-ink-soft underline-offset-2 hover:underline active:underline"
+						>Replace photo</button
+					>
+					<button
+						type="button"
+						onclick={() => (removePhoto = true)}
+						class="text-xs text-ink-muted underline-offset-2 hover:underline active:underline"
+						>Remove photo</button
+					>
 				</div>
 			</div>
 		{:else}
@@ -220,9 +259,18 @@
 				<button
 					type="button"
 					onclick={() => fileInput?.click()}
-					class="border-line text-ink-soft hover:border-ink-muted active:border-ink-muted hover:text-ink active:text-ink flex flex-1 items-center justify-center gap-2 rounded-xl border border-dashed px-3 py-4 text-sm font-medium transition-colors"
+					class="flex flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-line px-3 py-4 text-sm font-medium text-ink-soft transition-colors hover:border-ink-muted hover:text-ink active:border-ink-muted active:text-ink"
 				>
-					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+					<svg
+						width="18"
+						height="18"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.75"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
 						<rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
 						<circle cx="8.5" cy="8.5" r="1.5" />
 						<polyline points="21 15 16 10 5 21" />
@@ -232,10 +280,19 @@
 				<button
 					type="button"
 					onclick={pasteFromClipboard}
-					class="border-line text-ink-soft hover:border-ink-muted active:border-ink-muted hover:text-ink active:text-ink flex items-center justify-center gap-2 rounded-xl border border-dashed px-3 py-4 text-sm font-medium transition-colors"
+					class="flex items-center justify-center gap-2 rounded-xl border border-dashed border-line px-3 py-4 text-sm font-medium text-ink-soft transition-colors hover:border-ink-muted hover:text-ink active:border-ink-muted active:text-ink"
 					aria-label="Paste image from clipboard"
 				>
-					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+					<svg
+						width="18"
+						height="18"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.75"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
 						<rect x="8" y="2" width="8" height="4" rx="1" />
 						<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
 					</svg>
@@ -243,9 +300,13 @@
 				</button>
 			</div>
 			{#if removePhoto && existing?.photo}
-				<p class="text-ink-muted -mt-2 text-[12px]">
+				<p class="-mt-2 text-[12px] text-ink-muted">
 					Photo will be removed when you save.
-					<button type="button" onclick={() => (removePhoto = false)} class="underline underline-offset-2">Undo</button>
+					<button
+						type="button"
+						onclick={() => (removePhoto = false)}
+						class="underline underline-offset-2">Undo</button
+					>
 				</p>
 			{/if}
 		{/if}
@@ -260,19 +321,19 @@
 				maxlength={MAX_THOUGHT_CHARS}
 				rows="3"
 				placeholder="One thought about today…"
-				class="border-line bg-paper text-ink placeholder:text-ink-muted w-full resize-none rounded-xl border px-3 py-2.5 text-sm"
+				class="w-full resize-none rounded-xl border border-line bg-paper px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted"
 			></textarea>
-			<p class="text-ink-muted mt-1 text-right text-[11px]">{thought.length}/{MAX_THOUGHT_CHARS}</p>
+			<p class="mt-1 text-right text-[11px] text-ink-muted">{thought.length}/{MAX_THOUGHT_CHARS}</p>
 		</div>
 
 		{#if clientError}
-			<p class="text-clay text-center text-[12px]">{clientError}</p>
+			<p class="text-center text-[12px] text-clay">{clientError}</p>
 		{/if}
 
 		<button
 			type="submit"
 			disabled={saving || saveOp === 'reject_empty'}
-			class="bg-ink text-paper w-full rounded-lg px-4 py-3 text-sm font-medium disabled:opacity-40"
+			class="w-full rounded-lg bg-ink px-4 py-3 text-sm font-medium text-paper disabled:opacity-40"
 		>
 			{#if saving}
 				Saving…
@@ -283,7 +344,9 @@
 			{/if}
 		</button>
 		{#if saveOp === 'delete'}
-			<p class="text-ink-muted -mt-2 text-center text-[11px]">Both fields are empty — saving removes this memory.</p>
+			<p class="-mt-2 text-center text-[11px] text-ink-muted">
+				Both fields are empty — saving removes this memory.
+			</p>
 		{/if}
 	</form>
 </BottomSheet>

@@ -42,7 +42,9 @@ test.describe('Trip Mode Views (#244 merged Now)', () => {
 
 		// The merged Now carries the sub-tabs (Today is the default view here).
 		await expect(page.locator(':visible', { hasText: 'Next 3 Days' }).first()).toBeVisible();
-		await expect(page.getByRole('link', { name: 'Today' }).filter({ visible: true }).first()).toBeVisible();
+		await expect(
+			page.getByRole('link', { name: 'Today' }).filter({ visible: true }).first()
+		).toBeVisible();
 	});
 
 	test('/today redirects to the merged /now', async ({ page }) => {

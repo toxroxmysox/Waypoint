@@ -43,7 +43,10 @@ const EMAIL_RE = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 const FILE_URL_RE = /\S*\/api\/files\/\S*/g;
 
 function scrubString(s: string): string {
-	return s.replace(MAILTO_RE, '[email removed]').replace(EMAIL_RE, '[email removed]').replace(FILE_URL_RE, '[file removed]');
+	return s
+		.replace(MAILTO_RE, '[email removed]')
+		.replace(EMAIL_RE, '[email removed]')
+		.replace(FILE_URL_RE, '[file removed]');
 }
 
 /** Deep copy with every string scrubbed of email addresses and PB file URLs. */
@@ -78,12 +81,19 @@ export function tripDates(trip: Pick<Trip, 'start_date' | 'end_date'>): string {
 
 function textCards(heading: string, cards: Card[], note?: string): string {
 	const body = cards
-		.map((c) => `${c.emoji} **${c.title}**${c.tag ? ` · ${c.tag}` : ''}${c.lines.map((l) => `\n   ${l}`).join('')}`)
+		.map(
+			(c) =>
+				`${c.emoji} **${c.title}**${c.tag ? ` · ${c.tag}` : ''}${c.lines.map((l) => `\n   ${l}`).join('')}`
+		)
 		.join('\n\n');
 	return `### ${heading}\n\n${body || `_${note ?? 'Nothing here.'}_`}${body && note ? `\n\n_${note}_` : ''}`;
 }
 
-export function result(heading: string, cards: Card[], extra: Record<string, unknown> = {}): ToolResult {
+export function result(
+	heading: string,
+	cards: Card[],
+	extra: Record<string, unknown> = {}
+): ToolResult {
 	const more = cards.length - MAX_CARDS;
 	const h = more > 0 ? `${heading} +${more} more` : heading;
 	const shown = cards.slice(0, MAX_CARDS);
@@ -97,5 +107,9 @@ export function result(heading: string, cards: Card[], extra: Record<string, unk
 
 /** What an AI-off trip reveals (ADR-0024 §2): its name, its dates, the notice. */
 export function offTrip(trip: Pick<Trip, 'title' | 'start_date' | 'end_date'>): ToolResult {
-	return result(trip.title, [{ emoji: '🔒', title: trip.title, lines: [tripDates(trip), AI_OFF_NOTICE] }], { note: AI_OFF_NOTICE });
+	return result(
+		trip.title,
+		[{ emoji: '🔒', title: trip.title, lines: [tripDates(trip), AI_OFF_NOTICE] }],
+		{ note: AI_OFF_NOTICE }
+	);
 }

@@ -23,7 +23,8 @@ export function authorizeUrl(params: Record<string, string>): string {
 
 /** The pending-request id the authorize page carries in its hidden `req` input. */
 export function reqIdFrom(html: string): string {
-	const m = html.match(/name="req"[^>]*value="([^"]+)"/) ?? html.match(/value="([^"]+)"[^>]*name="req"/);
+	const m =
+		html.match(/name="req"[^>]*value="([^"]+)"/) ?? html.match(/value="([^"]+)"[^>]*name="req"/);
 	if (!m) throw new Error('no req input on authorize page');
 	return m[1];
 }
@@ -32,17 +33,25 @@ export function reqIdFrom(html: string): string {
  * Token endpoint call. `Origin: BASE` stands in for deploy/token-origin.mjs:
  * `vite preview` has no shim and SvelteKit 403s a form POST without Origin.
  */
-export async function tokenRequest(body: Record<string, string>, headers: Record<string, string> = {}) {
+export async function tokenRequest(
+	body: Record<string, string>,
+	headers: Record<string, string> = {}
+) {
 	const res = await fetch(`${BASE}/oauth/token`, {
 		method: 'POST',
 		headers: { 'content-type': 'application/x-www-form-urlencoded', origin: BASE, ...headers },
 		body: new URLSearchParams(body).toString()
 	});
-	return { status: res.status, json: (await res.json().catch(() => ({}))) as Record<string, string> };
+	return {
+		status: res.status,
+		json: (await res.json().catch(() => ({}))) as Record<string, string>
+	};
 }
 
 /** authorize → (dev) code → callback. Returns the code and the verifier that goes with it. */
-export async function authorizeCode(email: string): Promise<{ code: string; verifier: string; state: string }> {
+export async function authorizeCode(
+	email: string
+): Promise<{ code: string; verifier: string; state: string }> {
 	const { verifier, challenge } = pkcePair();
 	const state = randomBytes(8).toString('hex');
 	const page = await fetch(
@@ -58,11 +67,15 @@ export async function authorizeCode(email: string): Promise<{ code: string; veri
 	);
 	if (page.status !== 200) throw new Error(`authorize ${page.status}: ${await page.text()}`);
 	const req = reqIdFrom(await page.text());
-	const done = await fetch(`${BASE}/oauth/authorize/dev?req=${encodeURIComponent(req)}&email=${encodeURIComponent(email)}`, {
-		redirect: 'manual'
-	});
+	const done = await fetch(
+		`${BASE}/oauth/authorize/dev?req=${encodeURIComponent(req)}&email=${encodeURIComponent(email)}`,
+		{
+			redirect: 'manual'
+		}
+	);
 	const loc = done.headers.get('location');
-	if (done.status !== 303 || !loc) throw new Error(`dev authorize ${done.status}: ${await done.text()}`);
+	if (done.status !== 303 || !loc)
+		throw new Error(`dev authorize ${done.status}: ${await done.text()}`);
 	const cb = new URL(loc);
 	if (cb.searchParams.get('state') !== state) throw new Error('state not echoed');
 	return { code: cb.searchParams.get('code')!, verifier, state };
@@ -92,7 +105,11 @@ export async function rpc(access: string, method: string, params: Record<string,
 		},
 		body: JSON.stringify({ jsonrpc: '2.0', id: ++rpcId, method, params })
 	});
-	return { status: res.status, headers: res.headers, json: (await res.json().catch(() => ({}))) as any };
+	return {
+		status: res.status,
+		headers: res.headers,
+		json: (await res.json().catch(() => ({}))) as any
+	};
 }
 
 export async function callTool(
@@ -101,7 +118,8 @@ export async function callTool(
 	args: Record<string, unknown> = {}
 ): Promise<{ text: string; structured: any; isError?: boolean }> {
 	const r = await rpc(access, 'tools/call', { name, arguments: args });
-	if (r.status !== 200 || r.json.error) throw new Error(`tools/call ${name} ${r.status}: ${JSON.stringify(r.json)}`);
+	if (r.status !== 200 || r.json.error)
+		throw new Error(`tools/call ${name} ${r.status}: ${JSON.stringify(r.json)}`);
 	const res = r.json.result;
 	return {
 		text: (res.content ?? []).map((c: { text?: string }) => c.text ?? '').join('\n'),

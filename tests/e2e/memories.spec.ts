@@ -72,11 +72,19 @@ test.describe('Trip Memory — Note Before Bed capture + Today review (#269)', (
 		await expect(nbb).toBeVisible();
 
 		// --- Capture: composer sheet → thought → save. ---
-		await page.getByRole('button', { name: 'Capture today' }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('button', { name: 'Capture today' })
+			.filter({ visible: true })
+			.first()
+			.click();
 		const thoughtBox = page.locator('textarea#memory-thought:visible').first();
 		await expect(thoughtBox).toBeVisible();
 		await thoughtBox.fill(THOUGHT);
-		await page.getByRole('button', { name: 'Save memory' }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('button', { name: 'Save memory' })
+			.filter({ visible: true })
+			.first()
+			.click();
 
 		// --- Review: the card renders under Today's memories, attributed "You",
 		//     and the NBB prompt is gone (captured = never nag again). ---
@@ -91,7 +99,10 @@ test.describe('Trip Memory — Note Before Bed capture + Today review (#269)', (
 		const editBox = page.locator('textarea#memory-thought:visible').first();
 		await expect(editBox).toHaveValue(THOUGHT);
 		await editBox.fill('');
-		const removeBtn = page.getByRole('button', { name: 'Remove memory' }).filter({ visible: true }).first();
+		const removeBtn = page
+			.getByRole('button', { name: 'Remove memory' })
+			.filter({ visible: true })
+			.first();
 		await expect(removeBtn).toBeVisible();
 		await removeBtn.click();
 
@@ -103,7 +114,11 @@ test.describe('Trip Memory — Note Before Bed capture + Today review (#269)', (
 		await expect(nbbAgain).toBeVisible();
 
 		// --- "Not tonight" dismisses for the day — optional, never nagging. ---
-		await page.getByRole('button', { name: 'Not tonight' }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('button', { name: 'Not tonight' })
+			.filter({ visible: true })
+			.first()
+			.click();
 		await expect(page.getByText('Note before bed').filter({ visible: true })).toHaveCount(0);
 		// ...and stays dismissed across a reload (localStorage-backed).
 		await page.reload({ waitUntil: 'networkidle' });

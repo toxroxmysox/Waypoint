@@ -172,7 +172,12 @@ function composeReminders(input) {
 		const date = neededBy(item, start).slice(0, 10);
 		const daysOut = daysBetween(input.today, date);
 		if (BOOKING_LEADS.indexOf(daysOut) !== -1) {
-			out.booking.push({ title: item.title, date: date, daysOut: daysOut, going: item.going.slice() });
+			out.booking.push({
+				title: item.title,
+				date: date,
+				daysOut: daysOut,
+				going: item.going.slice()
+			});
 		}
 	}
 	out.booking.sort(byDateThenTitle);
@@ -184,11 +189,13 @@ function composeReminders(input) {
 		for (const item of input.items) {
 			const date = neededBy(item, start).slice(0, 10);
 			if (item.type === 'lodging') stays.push({ title: item.title, date: date });
-			else if (item.type === 'flight' || item.type === 'transportation') travel.push({ title: item.title, date: date });
+			else if (item.type === 'flight' || item.type === 'transportation')
+				travel.push({ title: item.title, date: date });
 			// #522 review — only what's needed during the trip, and not twice.
 			const dup = out.booking.some((bk) => bk.title === item.title && bk.date === date);
 			const during = date >= start && (!end || date <= end);
-			if (item.requiresBooking && !item.booked && during && !dup) unbooked.push({ title: item.title, date: date });
+			if (item.requiresBooking && !item.booked && during && !dup)
+				unbooked.push({ title: item.title, date: date });
 		}
 		stays.sort(byDateThenTitle);
 		travel.sort(byDateThenTitle);
@@ -203,7 +210,11 @@ function composeReminders(input) {
 function remindersFor(r, role, memberId) {
 	const planner = role === 'owner' || role === 'co_owner';
 	const booking =
-		role === 'viewer' ? [] : planner ? r.booking : r.booking.filter((b) => b.going.indexOf(memberId) !== -1);
+		role === 'viewer'
+			? []
+			: planner
+				? r.booking
+				: r.booking.filter((b) => b.going.indexOf(memberId) !== -1);
 	return { booking: booking, brief: r.brief, closeout: planner && r.closeout };
 }
 
@@ -232,7 +243,9 @@ function editedLine(entry) {
 }
 
 function movedLine(entry) {
-	return entry.title + ' — ' + formatDigestDay(entry.fromDay) + ' → ' + formatDigestDay(entry.toDay);
+	return (
+		entry.title + ' — ' + formatDigestDay(entry.fromDay) + ' → ' + formatDigestDay(entry.toDay)
+	);
 }
 
 function reminderGroups(section, base) {
@@ -242,14 +255,18 @@ function reminderGroups(section, base) {
 	if (r.booking.length > 0) {
 		groups.push([
 			'Still to book',
-			r.booking.map((b) => b.title + ' — needed ' + formatDigestDay(b.date) + ' (in ' + b.daysOut + ' days)')
+			r.booking.map(
+				(b) => b.title + ' — needed ' + formatDigestDay(b.date) + ' (in ' + b.daysOut + ' days)'
+			)
 		]);
 	}
 	if (r.brief) {
 		const lines = [];
 		for (const x of r.brief.stays) lines.push('Stay: ' + x.title + ' — ' + formatDigestDay(x.date));
-		for (const x of r.brief.travel) lines.push('Travel: ' + x.title + ' — ' + formatDigestDay(x.date));
-		for (const x of r.brief.unbooked) lines.push('Not booked yet: ' + x.title + ' — ' + formatDigestDay(x.date));
+		for (const x of r.brief.travel)
+			lines.push('Travel: ' + x.title + ' — ' + formatDigestDay(x.date));
+		for (const x of r.brief.unbooked)
+			lines.push('Not booked yet: ' + x.title + ' — ' + formatDigestDay(x.date));
 		if (lines.length === 0) lines.push('Nothing booked to list yet.');
 		lines.push('Your trip: ' + base + '/trips/' + section.tripSlug);
 		groups.push(['Starts in 3 days (' + formatDigestDay(r.brief.start) + ')', lines]);
@@ -257,7 +274,13 @@ function reminderGroups(section, base) {
 	if (r.closeout) {
 		groups.push([
 			'Wrap up',
-			['The trip ended 3 days ago. Close it out: ' + base + '/trips/' + section.tripSlug + '/closeout']
+			[
+				'The trip ended 3 days ago. Close it out: ' +
+					base +
+					'/trips/' +
+					section.tripSlug +
+					'/closeout'
+			]
 		]);
 	}
 	return groups;
@@ -284,19 +307,21 @@ function renderDigestEmail(opts) {
 		opts.sections[0].reminders.booking.length === 0 &&
 		!opts.sections[0].reminders.brief;
 	const verb = anyChanges ? 'What changed on ' : onlyCloseout ? 'Wrapping up ' : 'Coming up on ';
-	let subject = many ? verb + opts.sections.length + ' of your trips' : verb + opts.sections[0].tripTitle;
+	let subject = many
+		? verb + opts.sections.length + ' of your trips'
+		: verb + opts.sections[0].tripTitle;
 	if (opts.testLabel) subject = '[Waypoint digest test] ' + subject;
 
 	const greeting = opts.recipientName ? 'Hi ' + opts.recipientName + ',' : 'Hi,';
 	const intro = onlyCloseout
 		? 'Time to wrap up ' + opts.sections[0].tripTitle + '.'
 		: !anyChanges
-		? many
-			? 'Here’s what’s coming up on your trips.'
-			: 'Here’s what’s coming up on ' + opts.sections[0].tripTitle + '.'
-		: many
-			? 'Here’s what changed on your trips since the last digest.'
-			: 'Here’s what changed on ' + opts.sections[0].tripTitle + ' since the last digest.';
+			? many
+				? 'Here’s what’s coming up on your trips.'
+				: 'Here’s what’s coming up on ' + opts.sections[0].tripTitle + '.'
+			: many
+				? 'Here’s what changed on your trips since the last digest.'
+				: 'Here’s what changed on ' + opts.sections[0].tripTitle + ' since the last digest.';
 
 	const textParts = [greeting, '', intro, ''];
 	const htmlParts = [
@@ -309,7 +334,8 @@ function renderDigestEmail(opts) {
 		if (many) {
 			textParts.push(section.tripTitle, '');
 		}
-		if (many) htmlParts.push('<h3 style="margin: 20px 0 4px;">' + escapeHtml(section.tripTitle) + '</h3>');
+		if (many)
+			htmlParts.push('<h3 style="margin: 20px 0 4px;">' + escapeHtml(section.tripTitle) + '</h3>');
 
 		const groups = [
 			['Added', section.diff.added.map((a) => a.title + ' — ' + formatDigestDay(a.dayDate))],
@@ -374,7 +400,11 @@ function renderDigestEmail(opts) {
 
 	return {
 		subject: subject,
-		text: textParts.join('\n').replace(/\n{3,}/g, '\n\n').replace(/\s+$/, '') + '\n',
+		text:
+			textParts
+				.join('\n')
+				.replace(/\n{3,}/g, '\n\n')
+				.replace(/\s+$/, '') + '\n',
 		html: htmlParts.join('')
 	};
 }
@@ -571,7 +601,9 @@ function runDigest(app, opts) {
 			members = app.findRecordsByFilter(
 				'trip_members',
 				'trip = {:t} && removed_at = "" && user != "" && digest_opt_out = false',
-				'', 200, 0,
+				'',
+				200,
+				0,
 				{ t: tripId }
 			);
 		} catch (_) {
@@ -588,7 +620,9 @@ function runDigest(app, opts) {
 			let name = '';
 			try {
 				const user = app.findRecordById('users', member.getString('user'));
-				email = String(user.email() || '').trim().toLowerCase();
+				email = String(user.email() || '')
+					.trim()
+					.toLowerCase();
 				name = member.getString('display_name') || user.getString('name') || '';
 			} catch (_) {
 				continue;

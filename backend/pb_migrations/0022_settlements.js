@@ -14,18 +14,43 @@ migrate(
 			type: 'base',
 			name: 'settlements',
 			fields: [
-				{ type: 'relation', name: 'trip', required: true, collectionId: trips.id, maxSelect: 1, cascadeDelete: true },
-				{ type: 'relation', name: 'from_member', required: true, collectionId: tripMembers.id, maxSelect: 1 },
-				{ type: 'relation', name: 'to_member', required: true, collectionId: tripMembers.id, maxSelect: 1 },
+				{
+					type: 'relation',
+					name: 'trip',
+					required: true,
+					collectionId: trips.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				},
+				{
+					type: 'relation',
+					name: 'from_member',
+					required: true,
+					collectionId: tripMembers.id,
+					maxSelect: 1
+				},
+				{
+					type: 'relation',
+					name: 'to_member',
+					required: true,
+					collectionId: tripMembers.id,
+					maxSelect: 1
+				},
 				{ type: 'number', name: 'amount_usd', required: true, min: 0.01 },
 				{ type: 'date', name: 'date', required: true },
 				{ type: 'text', name: 'note', max: 500 },
-				{ type: 'relation', name: 'created_by', required: true, collectionId: tripMembers.id, maxSelect: 1 },
+				{
+					type: 'relation',
+					name: 'created_by',
+					required: true,
+					collectionId: tripMembers.id,
+					maxSelect: 1
+				}
 			],
 			indexes: [
 				'CREATE INDEX idx_settlements_trip ON settlements (trip)',
 				'CREATE INDEX idx_settlements_from ON settlements (from_member)',
-				'CREATE INDEX idx_settlements_to ON settlements (to_member)',
+				'CREATE INDEX idx_settlements_to ON settlements (to_member)'
 			],
 			listRule: MEMBER_VIA_TRIP,
 			viewRule: MEMBER_VIA_TRIP,
@@ -34,7 +59,7 @@ migrate(
 			// Update: creator only.
 			updateRule: MEMBER_VIA_TRIP + ' && created_by.user = @request.auth.id',
 			// Delete: creator or owner/co_owner — hook-enforced.
-			deleteRule: MEMBER_VIA_TRIP,
+			deleteRule: MEMBER_VIA_TRIP
 		});
 
 		app.save(collection);

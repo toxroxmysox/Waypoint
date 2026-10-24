@@ -82,14 +82,14 @@
 			/>
 		{/each}
 		{#if visibleTasks.length === 0}
-			<p class="text-ink-muted py-3 text-xs italic">
+			<p class="py-3 text-xs text-ink-muted italic">
 				{tasks.length === 0 ? 'Nothing on this list.' : 'All done — nothing left to show.'}
 			</p>
 		{/if}
 	</div>
 
 	{#if !readonly}
-		<div class="border-line border-t px-4">
+		<div class="border-t border-line px-4">
 			<form
 				method="POST"
 				action={addAction}
@@ -102,10 +102,15 @@
 			>
 				<input type="hidden" name="checklist_id" value={checklistId} />
 				<span
-					class="border-moss text-moss flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] border-[1.5px] border-dashed"
+					class="flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] border-[1.5px] border-dashed border-moss text-moss"
 				>
 					<svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-						<path d="M6 2.5v7M2.5 6h7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+						<path
+							d="M6 2.5v7M2.5 6h7"
+							stroke="currentColor"
+							stroke-width="1.8"
+							stroke-linecap="round"
+						/>
 					</svg>
 				</span>
 				<input
@@ -114,7 +119,7 @@
 					required
 					enterkeyhint="done"
 					placeholder={addLabel}
-					class="text-ink placeholder:text-moss flex-1 bg-transparent text-sm font-medium focus:outline-none"
+					class="flex-1 bg-transparent text-sm font-medium text-ink placeholder:text-moss focus:outline-none"
 				/>
 			</form>
 		</div>

@@ -9,7 +9,8 @@
 ## HITL vs AFK
 
 Default **AFK**; HITL is the exception. HITL when:
-- schema/migration *design* calls (shape, not mechanics)
+
+- schema/migration _design_ calls (shape, not mechanics)
 - a product decision will surface mid-task
 - first slice of a new domain (the engine is born inside its first consumer)
 - acceptance is visual taste, not criteria
@@ -32,7 +33,7 @@ Default **AFK**; HITL is the exception. HITL when:
 
 ## Escalate vs decide (quick test)
 
-Would Scott's answer change based on *what he wants the app to be*? → escalate.
-Would it only change based on *how software works*? → decide, log it in the wave report.
+Would Scott's answer change based on _what he wants the app to be_? → escalate.
+Would it only change based on _how software works_? → decide, log it in the wave report.
 Net-new scope you originated → propose, confirm before dispatch.
 Touches real/dogfood data → always stop, always surface.

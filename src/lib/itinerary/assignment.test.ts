@@ -11,10 +11,16 @@ import {
 describe('applyGoing (#440, optimistic mirror of goingPatch)', () => {
 	const lists = { assigned_to: ['a', 'b'], not_going: ['c'] };
 	it('going: appended to assigned_to, removed from not_going', () => {
-		expect(applyGoing(lists, 'c', 'going')).toEqual({ assigned_to: ['a', 'b', 'c'], not_going: [] });
+		expect(applyGoing(lists, 'c', 'going')).toEqual({
+			assigned_to: ['a', 'b', 'c'],
+			not_going: []
+		});
 	});
 	it('not going: moves out of assigned_to', () => {
-		expect(applyGoing(lists, 'a', 'not_going')).toEqual({ assigned_to: ['b'], not_going: ['c', 'a'] });
+		expect(applyGoing(lists, 'a', 'not_going')).toEqual({
+			assigned_to: ['b'],
+			not_going: ['c', 'a']
+		});
 	});
 	it('no answer: out of both', () => {
 		expect(applyGoing(lists, 'b', 'no_answer')).toEqual({ assigned_to: ['a'], not_going: ['c'] });

@@ -41,9 +41,9 @@ describe('isArchiveVisible (#241)', () => {
 	});
 
 	it('accepts a full PB datetime in archive_publish_at (date portion compared)', () => {
-		expect(
-			isArchiveVisible(trip({ archive_publish_at: '2026-06-15 00:00:00.000Z' }), now)
-		).toBe(true);
+		expect(isArchiveVisible(trip({ archive_publish_at: '2026-06-15 00:00:00.000Z' }), now)).toBe(
+			true
+		);
 	});
 
 	describe('trip-local timezone boundary (#167)', () => {
@@ -88,7 +88,7 @@ describe('export ↔ page visibility parity (#282)', () => {
 		['kept-private', { archive_enabled: false, archive_publish_at: '' }, false],
 		['reopened (publish date cleared)', { archive_publish_at: '   ' }, false],
 		['scheduled-future', { archive_publish_at: '2026-06-20' }, false],
-		['published (live)', { archive_publish_at: '2026-06-01' }, true],
+		['published (live)', { archive_publish_at: '2026-06-01' }, true]
 	];
 
 	for (const [name, overrides, shouldServe] of cases) {
@@ -165,7 +165,10 @@ describe('resolvePublishDay (#301)', () => {
 		const t = trip({ timezone: 'America/New_York' });
 		const day = resolvePublishDay('', t, n);
 		expect(day).toBe('2026-06-27');
-		const stored = trip({ timezone: 'America/New_York', archive_publish_at: `${day} 00:00:00.000Z` });
+		const stored = trip({
+			timezone: 'America/New_York',
+			archive_publish_at: `${day} 00:00:00.000Z`
+		});
 		expect(publishStatus(stored, n)).toEqual({ status: 'live' });
 		expect(isArchiveVisible(stored, n)).toBe(true);
 	});

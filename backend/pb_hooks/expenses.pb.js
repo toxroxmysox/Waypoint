@@ -46,9 +46,17 @@ onRecordCreateRequest((e) => {
 
 	// PB JSON fields may come as byte array in hooks.
 	if (Array.isArray(splitData) && splitData.length > 0 && typeof splitData[0] === 'number') {
-		try { splitData = JSON.parse(String.fromCharCode.apply(null, splitData)); } catch (_) { splitData = {}; }
+		try {
+			splitData = JSON.parse(String.fromCharCode.apply(null, splitData));
+		} catch (_) {
+			splitData = {};
+		}
 	} else if (typeof splitData === 'string') {
-		try { splitData = JSON.parse(splitData); } catch (_) { splitData = {}; }
+		try {
+			splitData = JSON.parse(splitData);
+		} catch (_) {
+			splitData = {};
+		}
 	}
 
 	if (splitMode === 'equal') {
@@ -69,7 +77,13 @@ onRecordCreateRequest((e) => {
 		}
 		// Allow 1 cent tolerance for rounding.
 		if (Math.abs(sum - amountUsd) > 0.01) {
-			throw new BadRequestError('split_data amounts (' + sum.toFixed(2) + ') must sum to expense amount (' + amountUsd.toFixed(2) + ')');
+			throw new BadRequestError(
+				'split_data amounts (' +
+					sum.toFixed(2) +
+					') must sum to expense amount (' +
+					amountUsd.toFixed(2) +
+					')'
+			);
 		}
 	}
 
@@ -86,9 +100,17 @@ onRecordUpdateRequest((e) => {
 	let splitData = record.get('split_data');
 
 	if (Array.isArray(splitData) && splitData.length > 0 && typeof splitData[0] === 'number') {
-		try { splitData = JSON.parse(String.fromCharCode.apply(null, splitData)); } catch (_) { splitData = {}; }
+		try {
+			splitData = JSON.parse(String.fromCharCode.apply(null, splitData));
+		} catch (_) {
+			splitData = {};
+		}
 	} else if (typeof splitData === 'string') {
-		try { splitData = JSON.parse(splitData); } catch (_) { splitData = {}; }
+		try {
+			splitData = JSON.parse(splitData);
+		} catch (_) {
+			splitData = {};
+		}
 	}
 
 	if (splitMode === 'equal') {
@@ -108,7 +130,13 @@ onRecordUpdateRequest((e) => {
 			sum += Number(splitData.amounts[keys[i]]) || 0;
 		}
 		if (Math.abs(sum - amountUsd) > 0.01) {
-			throw new BadRequestError('split_data amounts (' + sum.toFixed(2) + ') must sum to expense amount (' + amountUsd.toFixed(2) + ')');
+			throw new BadRequestError(
+				'split_data amounts (' +
+					sum.toFixed(2) +
+					') must sum to expense amount (' +
+					amountUsd.toFixed(2) +
+					')'
+			);
 		}
 	}
 
@@ -177,8 +205,10 @@ onRecordValidate((e) => {
 		}
 	};
 	const paidBy = r.getString('paid_by');
-	if (paidBy && (changed('paid_by') || changed('trip')) && !sameTrip('trip_members', paidBy)) throw new BadRequestError(M);
-	if (paidBy && (changed('paid_by') || changed('trip')) && isViewer(paidBy)) throw new BadRequestError(V);
+	if (paidBy && (changed('paid_by') || changed('trip')) && !sameTrip('trip_members', paidBy))
+		throw new BadRequestError(M);
+	if (paidBy && (changed('paid_by') || changed('trip')) && isViewer(paidBy))
+		throw new BadRequestError(V);
 	const linked = r.getString('linked_item');
 	if (linked && (changed('linked_item') || changed('trip')) && !sameTrip('items', linked)) {
 		throw new BadRequestError("That item isn't on this trip.");

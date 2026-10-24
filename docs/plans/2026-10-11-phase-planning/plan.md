@@ -22,7 +22,7 @@
 - Span copy everywhere: `N days · M nights` (1 day → `1 day`). Trip adds ` · K phases`.
 - UI labels: **In** / **Staying** / **Out**; **Do this**; menu heading **On which day?**; toast **Planned on <Ddd D>** with **Undo**; toggle **Compact** / **Details**; section **Edit phases**; notes prompt **Add phase notes** / **Add trip notes**.
 - Glossary nouns in code: `arrival`, `departure`, `staying`, `phaseNotes`/`notes`, `LevelHeader`. Never "transfer", "getting in".
-- Notes edit permission = day notes: any non-viewer member. Phase *structure* (name/dates/location) stays owner/co_owner only.
+- Notes edit permission = day notes: any non-viewer member. Phase _structure_ (name/dates/location) stays owner/co_owner only.
 - "Do this" visible only when the viewer may plan the idea: idea's `created_by` is the viewer's member, or viewer role is owner/co_owner. Never on ghost cards.
 - No drag on Phase Detail. No trip-wide swipe launcher. No lists or Flights & stays on the Overview. Forming / wrap-up / closed Overview branches untouched.
 - E2E: `goto` then click a client control → `waitUntil: 'networkidle'`. Seed via API, never UI. Read `BASE` from `tests/e2e/e2e-env.ts`.
@@ -31,8 +31,8 @@
 
 ## Review Focus
 
-1. **Travel Day sharing** — a train on the shared boundary day must show as Tokyo's Out *and* Kanazawa's In; and a placement menu for Kanazawa must include that shared day. (Tests: Task 3 `phaseArrival/phaseDeparture` shared-day case; Task 3 `dayMenuRows` travel case.)
-2. **Multi-day lodging & transport don't count as day items** — a lodging span starting on the phase's first day must appear in Staying, not In; a multi-day car rental (transportation with `end_date`) on day 1 *is* an Arrival only if its start day is the first day. (Test: Task 3 `phaseArrival excludes lodging`, `rental car counted on its start day`.)
+1. **Travel Day sharing** — a train on the shared boundary day must show as Tokyo's Out _and_ Kanazawa's In; and a placement menu for Kanazawa must include that shared day. (Tests: Task 3 `phaseArrival/phaseDeparture` shared-day case; Task 3 `dayMenuRows` travel case.)
+2. **Multi-day lodging & transport don't count as day items** — a lodging span starting on the phase's first day must appear in Staying, not In; a multi-day car rental (transportation with `end_date`) on day 1 _is_ an Arrival only if its start day is the first day. (Test: Task 3 `phaseArrival excludes lodging`, `rental car counted on its start day`.)
 3. **Undo after the day was edited elsewhere / double-tap** — Undo restores the idea's prior `day` and `sort_order` and status `unplanned`; a second Undo or a stale Undo after the item was deleted fails softly with an error toast, not a 500. (Test: Task 6 e2e `undo twice`, server returns `fail(404)` on missing item.)
 4. **Viewer and non-creator traveler** — viewers can't save notes (403 surfaced in-context) and see no Edit affordance; a traveler sees Do this only on their own ideas. (Tests: Task 1 harness `viewer_notes deny`; Task 6 e2e traveler visibility.)
 5. **Phase with zero days / dateless trip / single-day phase** — span reads `1 day` (no nights), Staying shows nothing to cover (no Add), In and Out are the same day. (Test: Task 3 `spanLabel single day`, `phaseStaying single-day phase has 0 nights`.)
@@ -44,6 +44,7 @@
 ### Task 1: Notes fields + hook gates
 
 **Files:**
+
 - Create: `backend/pb_migrations/0084_phase_trip_notes.js`
 - Modify: `backend/pb_hooks/phases.pb.js` (update gate, ~line 54)
 - Modify: `backend/pb_hooks/trips.pb.js` (update gate, ~line 21)
@@ -51,6 +52,7 @@
 - Test: `backend/test-rules.mjs` (new `runNotesGateCases`, modeled on `runDaysNotificationsGateCases` ~line 3123)
 
 **Interfaces:**
+
 - Produces: `Phase.notes: string`, `Trip.notes: string` (PB text field `notes`, max 5000, not required) on both collections.
 
 - [ ] **Step 1: Write the failing harness cases** — `NOTES_OPS = ['phase_notes_traveler','phase_notes_viewer','phase_name_traveler','trip_notes_traveler','trip_notes_viewer']`. Expectations: traveler PATCH `phases/{phaseId}` `{notes:'x'}` → allow; viewer same → deny; traveler `{name:'y'}` → deny (unchanged rule); traveler PATCH `trips/{tripId}` `{notes:'x'}` → allow; viewer → deny. Wire into the main run + a `printNotesReport()`.
@@ -65,12 +67,14 @@
 ### Task 2: Notes in portability and MCP
 
 **Files:**
+
 - Modify: `src/lib/portability/types.ts`, `export.ts` (~line 94), `import.ts` (phase + trip create)
 - Modify: `src/lib/server/mcp/writes/registry.ts` (`trips.fields`, `phases.fields`)
 - Modify: `src/lib/server/mcp/tools/get-trip.ts` (~line 81 phase card lines; trip heading)
 - Test: `src/lib/portability/export.test.ts`, `import.test.ts`, the get-trip test beside the tool (create `get-trip.test.ts` if absent, following `audit.test.ts` style)
 
 **Interfaces:**
+
 - Consumes: `Phase.notes`, `Trip.notes` (Task 1).
 - Produces: export JSON `phases[].notes: string`, `trip.notes: string`; import accepts them optional (older exports without notes import as `''`).
 
@@ -83,11 +87,13 @@
 ### Task 3: Pure derivations
 
 **Files:**
+
 - Create: `src/lib/itinerary/phase-logistics.ts`, `src/lib/itinerary/phase-logistics.test.ts`
 - Create: `src/lib/itinerary/span-label.ts`, `src/lib/itinerary/span-label.test.ts`
 - Modify: `src/lib/itinerary/day-card.ts` (`DayCardSummary.plannedCount`), `day-card.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `spanLabel(start: string, end: string, phaseCount?: number): string` — `'5 days · 4 nights'`, `'1 day'`, with count `'10 days · 9 nights · 3 phases'` (`'1 phase'`). Dates are `YYYY-MM-DD…`; empty → `''`.
   - `phaseArrival(items: Item[], days: Day[], phase: Phase): Item[]` — transportation|flight items whose start day (`item.day`) is the phase's first day, any status except `considered`, sorted by `start_time`.
@@ -111,12 +117,14 @@
 ### Task 4: LevelHeader + NotesEditor primitives; day page adopts them
 
 **Files:**
+
 - Create: `src/lib/itinerary/components/LevelHeader.svelte`
 - Create: `src/lib/itinerary/components/NotesEditor.svelte`
 - Modify: `src/routes/(app)/trips/[slug]/days/[dayId]/+page.svelte` (header ~lines 66–87, notes card ~91–135)
 - Test: `tests/e2e/day-notes.spec.ts` (new; no existing spec covers day notes)
 
 **Interfaces:**
+
 - Produces:
   - `NotesEditor` props: `{ notes: string; action: string /* e.g. '?/updateNotes' */; canEdit: boolean; emptyPrompt: string /* 'Add phase notes' */; savedToast?: string /* default 'Notes saved' */ }`. Read mode shows the full text (`whitespace-pre-wrap`) with **no label** — no "Trip notes"/"Phase notes" heading — plus a small pencil icon button (`aria-label="Edit notes"`, ≥44px target) when `canEdit`; empty + `canEdit` shows only the prompt (`Add trip notes` / `Add phase notes` / `Add day notes`) as a button; editing = textarea + Save/Cancel via `use:enhance`; posts field `notes`. Hidden entirely when empty and `!canEdit`.
   - `interface LevelChip { label: string; href: string; sub?: string; filled?: boolean; travel?: boolean }`
@@ -131,10 +139,12 @@
 ### Task 5: Toast action (Undo)
 
 **Files:**
+
 - Modify: `src/lib/shell/stores/toast.ts`, `src/lib/ui/Toast.svelte`
 - Test: `src/lib/shell/stores/toast.test.ts`
 
 **Interfaces:**
+
 - Produces: `toast.show(message: string, variant?: ToastVariant, opts?: { action?: { label: string; run: () => void } })`; `Toast.action?: { label; run }`. A toast with an action lasts 6000 ms; running the action dismisses it.
 - [ ] **Step 1: Failing test** — `show with action exposes it and run dismisses`; `action toast lasts 6000ms` (fake timers).
 - [ ] **Step 2: Run** → FAIL. **Step 3: Implement** (button in `Toast.svelte`, ≥44px tap target). **Step 4: Run** → PASS.
@@ -143,6 +153,7 @@
 ### Task 6: Phase Detail — header, notes, In/Staying/Out, Rate, Do this
 
 **Files:**
+
 - Create: `src/lib/server/plan-idea.ts` (+ `plan-idea.test.ts` if the codebase has a PB-mock pattern; otherwise covered by e2e)
 - Create: `src/lib/itinerary/components/PhaseLogistics.svelte`, `PlanOnDayMenu.svelte`
 - Modify: `src/routes/(app)/trips/[slug]/phases/[phaseId]/+page.server.ts` (load + actions `updateNotes`, `planIdea`, `unplanIdea`)
@@ -153,6 +164,7 @@
 - Test: `tests/e2e/phase-detail.spec.ts`
 
 **Interfaces:**
+
 - Consumes: Task 3 (`phaseArrival`, `phaseDeparture`, `phaseStaying`, `dayMenuRows`, `spanLabel`), Task 4 (`LevelHeader`, `NotesEditor`), Task 5 (`toast.show` with action).
 - Produces:
   - `planIdeaOnDay(pb: PocketBase, itemId: string, dayId: string): Promise<{ prevDay: string; prevSortOrder: number }>` — appends at the day's tail (`sort_order` = tail + GAP), sets `status: 'planned'`; returns prior values. Used by day `pullToPlan` (no-order branch) and phase `planIdea`.
@@ -176,10 +188,12 @@
 ### Task 7: Swipe returns to its origin
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/swipe/[phaseId]/+page.svelte` (~lines 16, 95–112, 171–175)
 - Test: extend `tests/e2e/phase-detail.spec.ts`
 
 **Interfaces:** Consumes `resolveBack(url, fallbackHref)` from `src/lib/shell/back-nav.ts`. "Next phase" links carry the same `from`.
+
 - [ ] **Step 1: Failing e2e** — from Phase Detail, **Rate N** → close deck → URL is the Phase Detail.
 - [ ] **Step 2: Run** → FAIL. **Step 3:** `phasesHref` → `resolveBack(page.url, '/trips/{slug}/phases')`; next-phase `goto` keeps `?from=`. Rename "Back to phases" → **Back** (grep `tests/` for the old text). **Step 4: Run** → PASS.
 - [ ] **Step 5: Commit** `feat(#401): swipe deck returns to where it was opened`
@@ -187,12 +201,14 @@
 ### Task 8: Phase Overview (Phases tab) — closes #391
 
 **Files:**
+
 - Create: `src/lib/itinerary/components/PhaseOverviewCard.svelte`
 - Modify: `src/routes/(app)/trips/[slug]/phases/+page.server.ts` (load), `+page.svelte`
 - Modify: `src/lib/itinerary/components/PhaseCalendarEditor.svelte` (remove the `›` link ~line 375)
 - Test: `tests/e2e/phase-overview.spec.ts`; fix `tests/e2e/phase-calendar-editor.spec.ts` if it uses the `›`/"Open {name}" link or the swipe banner
 
 **Interfaces:**
+
 - Consumes: `LevelHeader` (size `card`, `href` = Phase Detail), `spanLabel`, `summarizeDays` (`plannedCount`).
 - Produces: load `cards: { phase: Phase; days: Day[]; plannedByDay: Record<string, number>; ideaCount: number; unratedCount: number }[]` (one query each for items/votes, bucketed by phase; drop `unratedTotal`/`launchPhaseId`). `orphans` unchanged.
 - Card = LevelHeader (name, location, span, full notes read-only, day chips → day pages) + swipe row: one link wrapping label `N ideas · M to rate` and **Swipe** → `/swipe/{phaseId}?from=/trips/{slug}/phases`; `M = 0` → `N ideas · all rated`, not a link; `N = 0` → row hidden. Everything else on the card links to Phase Detail. No In/Staying/Out.
@@ -209,10 +225,12 @@
 ### Task 9: Trip level header
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/+page.svelte` (stats card ~lines 356–400), `+page.server.ts` (action `updateTripNotes`; `canEditNotes`)
 - Test: `tests/e2e/trip-overview.spec.ts`
 
 **Interfaces:** Consumes `LevelHeader`, `NotesEditor`, `spanLabel(start, end, phases.length)`.
+
 - Header (below unchanged NavBar + SubTabs): title, `location_summary`, span, timezone as `meta`, `NotesEditor` (`?/updateTripNotes`, prompt `Add trip notes`), phase chips (`label` = name, `sub` = `5d`, href Phase Detail), Trip Mode button in `actions` when active. Remove **Capture ideas**. Planning/active branch only.
 - [ ] **Step 1: Failing e2e** — header shows `· 3 phases`; chip → Phase Detail; trip notes persist; no `Capture ideas`; viewer sees no notes Edit.
 - [ ] **Step 2: Run** → FAIL. **Step 3: Implement.** **Step 4: Run** → PASS; grep `tests/` for `Capture ideas`.
@@ -221,12 +239,14 @@
 ### Task 10: Itinerary — Compact/Details, bordered phase cards; drop lists and Flights & stays
 
 **Files:**
+
 - Create: `src/lib/shell/stores/itinerary-density.ts` (persisted like `day-card-metric`)
 - Create: `src/lib/itinerary/components/ItineraryDensityToggle.svelte`, `CompactDayRow.svelte`
 - Modify: `src/routes/(app)/trips/[slug]/+page.svelte` (~lines 505–645), `+page.server.ts` (drop `keyItems`, trip lists loads if unused elsewhere)
 - Test: `tests/e2e/trip-overview.spec.ts`
 
 **Interfaces:**
+
 - Produces: `itineraryDensity: Writable<'compact' | 'details'>` (default `'compact'`, `localStorage` key `wp.itineraryDensity`, try/catch).
 - `CompactDayRow` props `{ day: Day; href: string; plannedCount: number; travel: boolean }` → `Thu 18 [⇄]` … `N planned` (0 muted).
 - Each phase = bordered card: LevelHeader (`size 'card'`, `href` Phase Detail, full phase notes) + days (Compact rows, or existing `DayCard` in Details). No phase lists, no trip lists, no Flights & stays, no `DayMetricToggle` on Overview. No phases → flat CompactDayRow/DayCard list.

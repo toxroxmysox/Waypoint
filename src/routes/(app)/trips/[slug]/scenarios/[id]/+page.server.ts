@@ -40,7 +40,10 @@ export const load: PageServerLoad = async ({ parent, locals, params }) => {
 	const myVote = votes.find((v) => v.member === membership.id) ?? null;
 	const champion = scenario.expand?.champion;
 	const championName =
-		champion?.display_name || champion?.placeholder_name || champion?.expand?.user?.name || 'Someone';
+		champion?.display_name ||
+		champion?.placeholder_name ||
+		champion?.expand?.user?.name ||
+		'Someone';
 
 	const isChampion = scenario.champion === membership.id;
 	const isOwnerTier = membership.role === 'owner' || membership.role === 'co_owner';
@@ -109,7 +112,9 @@ export const actions: Actions = {
 			}
 			const existing = await locals.pb
 				.collection('scenario_votes')
-				.getFirstListItem<ScenarioVote>(`scenario = "${scenario.id}" && member = "${membership.id}"`)
+				.getFirstListItem<ScenarioVote>(
+					`scenario = "${scenario.id}" && member = "${membership.id}"`
+				)
 				.catch(() => null);
 			if (existing) {
 				await locals.pb.collection('scenario_votes').update(existing.id, { value });
@@ -129,7 +134,9 @@ export const actions: Actions = {
 			const { membership, scenario } = await resolve(locals, params.slug, params.id);
 			const existing = await locals.pb
 				.collection('scenario_votes')
-				.getFirstListItem<ScenarioVote>(`scenario = "${scenario.id}" && member = "${membership.id}"`)
+				.getFirstListItem<ScenarioVote>(
+					`scenario = "${scenario.id}" && member = "${membership.id}"`
+				)
 				.catch(() => null);
 			if (existing) await locals.pb.collection('scenario_votes').delete(existing.id);
 			return { voted: true };
@@ -175,7 +182,9 @@ export const actions: Actions = {
 			await locals.pb.collection('scenarios').delete(scenario.id);
 		} catch (err: unknown) {
 			if (isRedirect(err)) throw err;
-			return fail(403, { error: err instanceof Error ? err.message : 'Only the champion can delete this.' });
+			return fail(403, {
+				error: err instanceof Error ? err.message : 'Only the champion can delete this.'
+			});
 		}
 		redirect(303, `/trips/${params.slug}`);
 	},

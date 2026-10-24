@@ -163,7 +163,9 @@
 
 	// #445: phase of the idea being dragged (null when a day item, or nothing, is).
 	let draggingIdeaPhase = $state<string | null>(null);
-	const planDrop = $derived(draggingIdeaPhase !== null && canPlanOnDay(draggingIdeaPhase, dayPhaseIds));
+	const planDrop = $derived(
+		draggingIdeaPhase !== null && canPlanOnDay(draggingIdeaPhase, dayPhaseIds)
+	);
 
 	function onTimelineConsider(e: CustomEvent<DndEvent<Item>>) {
 		timelineItems = e.detail.items;
@@ -282,15 +284,33 @@
 <!-- reorder/pullToPlan rebalance the WHOLE day to the resulting display order
      (#237) — `order` is the comma-joined item ids; an empty `order` on pull means
      tap-to-plan (append to the tail). -->
-<form bind:this={reorderForm} method="POST" action="?/reorder" use:enhance={revertOnFailure} class="hidden">
+<form
+	bind:this={reorderForm}
+	method="POST"
+	action="?/reorder"
+	use:enhance={revertOnFailure}
+	class="hidden"
+>
 	<input type="hidden" name="item_id" value={formItemId} />
 	<input type="hidden" name="order" value={formOrder} />
 </form>
-<form bind:this={pullForm} method="POST" action="?/pullToPlan" use:enhance={revertOnFailure} class="hidden">
+<form
+	bind:this={pullForm}
+	method="POST"
+	action="?/pullToPlan"
+	use:enhance={revertOnFailure}
+	class="hidden"
+>
 	<input type="hidden" name="item_id" value={formItemId} />
 	<input type="hidden" name="order" value={formOrder} />
 </form>
-<form bind:this={pushForm} method="POST" action="?/pushToParking" use:enhance={revertOnFailure} class="hidden">
+<form
+	bind:this={pushForm}
+	method="POST"
+	action="?/pushToParking"
+	use:enhance={revertOnFailure}
+	class="hidden"
+>
 	<input type="hidden" name="item_id" value={formItemId} />
 </form>
 

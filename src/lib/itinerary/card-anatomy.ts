@@ -21,7 +21,16 @@ export interface CardItemFields extends TimeFields {
 
 // --- Rail geometry (D9) -------------------------------------------------------
 /** px: rule-to-text, text height, text-to-segment, segment-to-icon, icon disc. */
-export const RAIL = { column: 48, gap: 8, rulePad: 5, text: 11, textSeg: 4, segIcon: 4, icon: 24, minSeg: 6 } as const;
+export const RAIL = {
+	column: 48,
+	gap: 8,
+	rulePad: 5,
+	text: 11,
+	textSeg: 4,
+	segIcon: 4,
+	icon: 24,
+	minSeg: 6
+} as const;
 /** A card with a time label is at least this tall (D8/D9: "about 62px"). */
 export const TIMED_MIN_HEIGHT = 62;
 
@@ -69,8 +78,14 @@ export interface StripMeasure {
  * strip doesn't fit, the lowest-priority entry still `full` shrinks to its icon;
  * then it drops; then the next lowest does the same.
  */
-export function fitStrip(entries: StripMeasure[], available: number, gap = 8): Record<string, StripFit> {
-	const state: Record<string, StripFit> = Object.fromEntries(entries.map((e) => [e.key, 'full' as StripFit]));
+export function fitStrip(
+	entries: StripMeasure[],
+	available: number,
+	gap = 8
+): Record<string, StripFit> {
+	const state: Record<string, StripFit> = Object.fromEntries(
+		entries.map((e) => [e.key, 'full' as StripFit])
+	);
 	const width = () => {
 		const shown = entries.filter((e) => state[e.key] !== 'dropped');
 		const sum = shown.reduce((n, e) => n + (state[e.key] === 'icon' ? e.icon : e.full), 0);
@@ -116,7 +131,9 @@ export interface StripCode {
  * The Trip Mode `✓ {code}` chip: the first non-blank code, `+n` for the rest.
  * Null when the item has no usable code (it then keeps `✓ Booked`).
  */
-export function stripCode(codes: { label?: string; value?: string }[] | undefined): StripCode | null {
+export function stripCode(
+	codes: { label?: string; value?: string }[] | undefined
+): StripCode | null {
 	const usable = (codes ?? []).map((c) => (c.value ?? '').trim()).filter(Boolean);
 	if (usable.length === 0) return null;
 	const extra = usable.length - 1;
@@ -160,12 +177,32 @@ export function stripEntries(p: {
 			tone: overlap.shared ? 'red' : 'ink'
 		});
 	if (p.needsBooking)
-		out.push({ key: 'needs', kind: 'needs-booking', text: words.chip, label: words.needs, tone: 'gold' });
+		out.push({
+			key: 'needs',
+			kind: 'needs-booking',
+			text: words.chip,
+			label: words.needs,
+			tone: 'gold'
+		});
 	else if (p.booked) {
 		const code = p.mode === 'trip' ? stripCode(p.codes) : null;
 		if (code)
-			out.push({ key: 'code', kind: 'code', text: code.text, label: code.label, tone: 'ink', copy: code.value });
-		else out.push({ key: 'booked', kind: 'booked', text: words.done, label: words.done, tone: 'quiet' });
+			out.push({
+				key: 'code',
+				kind: 'code',
+				text: code.text,
+				label: code.label,
+				tone: 'ink',
+				copy: code.value
+			});
+		else
+			out.push({
+				key: 'booked',
+				kind: 'booked',
+				text: words.done,
+				label: words.done,
+				tone: 'quiet'
+			});
 	}
 	if (p.docCount > 0)
 		out.push({
@@ -186,16 +223,28 @@ const AIRPORT = /\(([A-Z0-9]{3,4})\)/;
  * line. '' when the item has none.
  */
 export function cardMeta(
-	item: Pick<CardItemFields, 'type' | 'location_name' | 'description'> & { title?: string; flight_number?: string }
+	item: Pick<CardItemFields, 'type' | 'location_name' | 'description'> & {
+		title?: string;
+		flight_number?: string;
+	}
 ): string {
 	if (item.type === 'note') {
-		return (item.description ?? '').split('\n').find((l) => l.trim())?.trim() ?? '';
+		return (
+			(item.description ?? '')
+				.split('\n')
+				.find((l) => l.trim())
+				?.trim() ?? ''
+		);
 	}
 	if (item.type === 'flight') {
 		const from = AIRPORT.exec(item.location_name ?? '')?.[1];
 		const to = AIRPORT.exec(item.description ?? '')?.[1];
 		if (from && to)
-			return flightPlaceLine({ title: item.title ?? '', flight_number: item.flight_number, route: `${from} → ${to}` });
+			return flightPlaceLine({
+				title: item.title ?? '',
+				flight_number: item.flight_number,
+				route: `${from} → ${to}`
+			});
 	}
 	return item.location_name?.trim() ?? '';
 }
@@ -251,7 +300,12 @@ export function overlapPairs(items: CardItemFields[]): Map<string, OverlapInfo> 
 		.map((i) => ({ i, s: clockMinutes(i.start_time), e: clockMinutes(i.end_time) }))
 		.sort((a, b) => a.s - b.s);
 	const out = new Map<string, OverlapInfo>();
-	const note = (self: CardItemFields, other: CardItemFields, shared: boolean, role: 'earlier' | 'later') => {
+	const note = (
+		self: CardItemFields,
+		other: CardItemFields,
+		shared: boolean,
+		role: 'earlier' | 'later'
+	) => {
 		const cur = out.get(self.id);
 		const redStart = (cur?.redStart ?? false) || (shared && role === 'later');
 		const redEnd = (cur?.redEnd ?? false) || (shared && role === 'earlier');
@@ -297,7 +351,11 @@ export function freeTimeGaps(items: CardItemFields[]): Map<string, FreeGap> {
 		if (shape === 'range' || shape === 'start-only') {
 			const start = clockMinutes(item.start_time);
 			if (lastEnd !== null && start - lastEnd >= 60) {
-				out.set(item.id, { minutes: start - lastEnd, from: formatClock(lastEndStr), to: formatClock(item.start_time ?? '') });
+				out.set(item.id, {
+					minutes: start - lastEnd,
+					from: formatClock(lastEndStr),
+					to: formatClock(item.start_time ?? '')
+				});
 			}
 		}
 		if (shape === 'start-only') {
@@ -336,7 +394,9 @@ export function spokenTime(item: TimeFields): string {
 	const e = spoken(item.end_time);
 	if (shape === 'start-only') return `${s.clock} ${s.mer}`;
 	if (shape === 'end-only') return `by ${e.clock} ${e.mer}`;
-	return s.mer === e.mer ? `${s.clock} to ${e.clock} ${e.mer}` : `${s.clock} ${s.mer} to ${e.clock} ${e.mer}`;
+	return s.mer === e.mer
+		? `${s.clock} to ${e.clock} ${e.mer}`
+		: `${s.clock} ${s.mer} to ${e.clock} ${e.mer}`;
 }
 
 /**

@@ -27,7 +27,11 @@ function allowedUrl(id: string): boolean {
 	}
 	if (u.protocol === 'https:') return clientHosts().includes(u.hostname.toLowerCase());
 	// The e2e test client is served by the preview itself over plain http.
-	return env.WAYPOINT_DEV_MODE === 'true' && u.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(u.hostname);
+	return (
+		env.WAYPOINT_DEV_MODE === 'true' &&
+		u.protocol === 'http:' &&
+		['localhost', '127.0.0.1'].includes(u.hostname)
+	);
 }
 
 export async function resolveClient(client_id: string): Promise<OAuthClient | { error: string }> {
@@ -43,9 +47,17 @@ export async function resolveClient(client_id: string): Promise<OAuthClient | { 
 		if (!res.ok) return { error: UNREADABLE };
 		const body = await res.text();
 		if (body.length > MAX_DOC_BYTES) return { error: UNREADABLE };
-		const doc = JSON.parse(body) as { client_id?: string; client_name?: string; redirect_uris?: unknown };
+		const doc = JSON.parse(body) as {
+			client_id?: string;
+			client_name?: string;
+			redirect_uris?: unknown;
+		};
 		if (doc.client_id !== client_id) return { error: UNREADABLE };
-		if (!Array.isArray(doc.redirect_uris) || !doc.redirect_uris.length || !doc.redirect_uris.every((r) => typeof r === 'string'))
+		if (
+			!Array.isArray(doc.redirect_uris) ||
+			!doc.redirect_uris.length ||
+			!doc.redirect_uris.every((r) => typeof r === 'string')
+		)
 			return { error: UNREADABLE };
 		const client: OAuthClient = {
 			client_id,

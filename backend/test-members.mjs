@@ -86,11 +86,16 @@ console.log('\n[add-placeholder]');
 
 // Owner can add a traveler placeholder.
 {
-	const r = await api('POST', '/api/members/add-placeholder', {
-		trip_id: tripId,
-		display_name: 'Jake Placeholder',
-		role: 'traveler'
-	}, tokens.owner);
+	const r = await api(
+		'POST',
+		'/api/members/add-placeholder',
+		{
+			trip_id: tripId,
+			display_name: 'Jake Placeholder',
+			role: 'traveler'
+		},
+		tokens.owner
+	);
 	if (r.status === 200 && r.json?.member_id) {
 		pass('owner adds traveler placeholder → 200');
 		globalThis.jakePlaceholderId = r.json.member_id;
@@ -101,22 +106,34 @@ console.log('\n[add-placeholder]');
 
 // Owner can add a co_owner placeholder.
 {
-	const r = await api('POST', '/api/members/add-placeholder', {
-		trip_id: tripId,
-		display_name: 'Co-Owner Placeholder',
-		role: 'co_owner'
-	}, tokens.owner);
-	r.status === 200 ? pass('owner adds co_owner placeholder → 200') : fail('owner adds co_owner placeholder → 200', `got ${r.status}`);
+	const r = await api(
+		'POST',
+		'/api/members/add-placeholder',
+		{
+			trip_id: tripId,
+			display_name: 'Co-Owner Placeholder',
+			role: 'co_owner'
+		},
+		tokens.owner
+	);
+	r.status === 200
+		? pass('owner adds co_owner placeholder → 200')
+		: fail('owner adds co_owner placeholder → 200', `got ${r.status}`);
 	if (r.status === 200) globalThis.coOwnerPlaceholderId = r.json.member_id;
 }
 
 // Traveler can add a traveler placeholder.
 {
-	const r = await api('POST', '/api/members/add-placeholder', {
-		trip_id: tripId,
-		display_name: 'Traveler-Added Placeholder',
-		role: 'traveler'
-	}, tokens.traveler);
+	const r = await api(
+		'POST',
+		'/api/members/add-placeholder',
+		{
+			trip_id: tripId,
+			display_name: 'Traveler-Added Placeholder',
+			role: 'traveler'
+		},
+		tokens.traveler
+	);
 	if (r.status === 200) {
 		pass('traveler adds traveler placeholder → 200');
 		globalThis.travelerAddedId = r.json.member_id;
@@ -127,42 +144,70 @@ console.log('\n[add-placeholder]');
 
 // Traveler CANNOT add a co_owner placeholder.
 {
-	const r = await api('POST', '/api/members/add-placeholder', {
-		trip_id: tripId,
-		display_name: 'Nope',
-		role: 'co_owner'
-	}, tokens.traveler);
-	r.status === 403 ? pass('traveler cannot add co_owner placeholder → 403') : fail('traveler cannot add co_owner placeholder → 403', `got ${r.status}`);
+	const r = await api(
+		'POST',
+		'/api/members/add-placeholder',
+		{
+			trip_id: tripId,
+			display_name: 'Nope',
+			role: 'co_owner'
+		},
+		tokens.traveler
+	);
+	r.status === 403
+		? pass('traveler cannot add co_owner placeholder → 403')
+		: fail('traveler cannot add co_owner placeholder → 403', `got ${r.status}`);
 }
 
 // Viewer CANNOT add any placeholder.
 {
-	const r = await api('POST', '/api/members/add-placeholder', {
-		trip_id: tripId,
-		display_name: 'Nope',
-		role: 'viewer'
-	}, tokens.viewer);
-	r.status === 403 ? pass('viewer cannot add placeholder → 403') : fail('viewer cannot add placeholder → 403', `got ${r.status}`);
+	const r = await api(
+		'POST',
+		'/api/members/add-placeholder',
+		{
+			trip_id: tripId,
+			display_name: 'Nope',
+			role: 'viewer'
+		},
+		tokens.viewer
+	);
+	r.status === 403
+		? pass('viewer cannot add placeholder → 403')
+		: fail('viewer cannot add placeholder → 403', `got ${r.status}`);
 }
 
 // Non-member cannot add.
 {
-	const r = await api('POST', '/api/members/add-placeholder', {
-		trip_id: tripId,
-		display_name: 'Nope',
-		role: 'viewer'
-	}, tokens.non_member);
-	r.status === 403 ? pass('non-member cannot add placeholder → 403') : fail('non-member cannot add placeholder → 403', `got ${r.status}`);
+	const r = await api(
+		'POST',
+		'/api/members/add-placeholder',
+		{
+			trip_id: tripId,
+			display_name: 'Nope',
+			role: 'viewer'
+		},
+		tokens.non_member
+	);
+	r.status === 403
+		? pass('non-member cannot add placeholder → 403')
+		: fail('non-member cannot add placeholder → 403', `got ${r.status}`);
 }
 
 // Anon cannot add.
 {
-	const r = await api('POST', '/api/members/add-placeholder', {
-		trip_id: tripId,
-		display_name: 'Nope',
-		role: 'viewer'
-	}, null);
-	r.status === 401 ? pass('anon cannot add placeholder → 401') : fail('anon cannot add placeholder → 401', `got ${r.status}`);
+	const r = await api(
+		'POST',
+		'/api/members/add-placeholder',
+		{
+			trip_id: tripId,
+			display_name: 'Nope',
+			role: 'viewer'
+		},
+		null
+	);
+	r.status === 401
+		? pass('anon cannot add placeholder → 401')
+		: fail('anon cannot add placeholder → 401', `got ${r.status}`);
 }
 
 // Placeholder with email — non_member already has a user account (created by
@@ -172,25 +217,39 @@ console.log('\n[add-placeholder]');
 // "person signs up later" path.
 const claimEmail = EMAILS.non_member;
 {
-	const r = await api('POST', '/api/members/add-placeholder', {
-		trip_id: tripId,
-		display_name: 'Future Claimer',
-		placeholder_email: claimEmail,
-		role: 'viewer'
-	}, tokens.owner);
-	r.status === 200 ? pass('owner adds placeholder with email → 200') : fail('owner adds placeholder with email → 200', `got ${r.status}`);
+	const r = await api(
+		'POST',
+		'/api/members/add-placeholder',
+		{
+			trip_id: tripId,
+			display_name: 'Future Claimer',
+			placeholder_email: claimEmail,
+			role: 'viewer'
+		},
+		tokens.owner
+	);
+	r.status === 200
+		? pass('owner adds placeholder with email → 200')
+		: fail('owner adds placeholder with email → 200', `got ${r.status}`);
 	if (r.status === 200) globalThis.emailPlaceholderId = r.json.member_id;
 }
 
 // Duplicate placeholder email rejected.
 {
-	const r = await api('POST', '/api/members/add-placeholder', {
-		trip_id: tripId,
-		display_name: 'Dupe',
-		placeholder_email: claimEmail,
-		role: 'viewer'
-	}, tokens.owner);
-	r.status === 400 ? pass('duplicate placeholder email → 400') : fail('duplicate placeholder email → 400', `got ${r.status}`);
+	const r = await api(
+		'POST',
+		'/api/members/add-placeholder',
+		{
+			trip_id: tripId,
+			display_name: 'Dupe',
+			placeholder_email: claimEmail,
+			role: 'viewer'
+		},
+		tokens.owner
+	);
+	r.status === 400
+		? pass('duplicate placeholder email → 400')
+		: fail('duplicate placeholder email → 400', `got ${r.status}`);
 }
 
 console.log('\n[auto-merge / claimable_by]');
@@ -205,7 +264,9 @@ console.log('\n[auto-merge / claimable_by]');
 	if (r.status === 200 && Array.isArray(r.json?.claims)) {
 		const match = r.json.claims.find((c) => c.member_id === globalThis.emailPlaceholderId);
 		if (match) {
-			pass('my-claims returns claimable placeholder (user already existed at add-placeholder time)');
+			pass(
+				'my-claims returns claimable placeholder (user already existed at add-placeholder time)'
+			);
 			pass('claim entry has trip_title: ' + (match.trip_title ? 'yes' : 'MISSING'));
 			pass('claim entry has placeholder_name: ' + (match.placeholder_name ? 'yes' : 'MISSING'));
 			globalThis.claimToken = claimToken;
@@ -227,10 +288,15 @@ console.log('\n[claim]');
 
 {
 	// Accept the claim.
-	const r = await api('POST', '/api/members/claim', {
-		member_id: globalThis.emailPlaceholderId,
-		display_name: 'Jake Claimed'
-	}, globalThis.claimToken);
+	const r = await api(
+		'POST',
+		'/api/members/claim',
+		{
+			member_id: globalThis.emailPlaceholderId,
+			display_name: 'Jake Claimed'
+		},
+		globalThis.claimToken
+	);
 	if (r.status === 200 && r.json?.ok) {
 		pass('claim accept → 200');
 	} else {
@@ -240,30 +306,51 @@ console.log('\n[claim]');
 
 // Re-claiming already-claimed member → 400.
 {
-	const r = await api('POST', '/api/members/claim', {
-		member_id: globalThis.emailPlaceholderId
-	}, globalThis.claimToken);
-	r.status === 400 ? pass('re-claim already claimed → 400') : fail('re-claim already claimed → 400', `got ${r.status}`);
+	const r = await api(
+		'POST',
+		'/api/members/claim',
+		{
+			member_id: globalThis.emailPlaceholderId
+		},
+		globalThis.claimToken
+	);
+	r.status === 400
+		? pass('re-claim already claimed → 400')
+		: fail('re-claim already claimed → 400', `got ${r.status}`);
 }
 
 // my-claims now empty for this user.
 {
 	const r = await api('GET', '/api/members/my-claims', null, globalThis.claimToken);
 	const empty = r.status === 200 && r.json?.claims?.length === 0;
-	empty ? pass('my-claims empty after claim') : fail('my-claims empty after claim', `got ${r.status} ${JSON.stringify(r.json)}`);
+	empty
+		? pass('my-claims empty after claim')
+		: fail('my-claims empty after claim', `got ${r.status} ${JSON.stringify(r.json)}`);
 }
 
 // Claim with wrong user → 403.
 {
-	const r = await api('POST', '/api/members/claim', {
-		member_id: globalThis.emailPlaceholderId
-	}, tokens.owner);
-	r.status === 403 ? pass('claim wrong user → 403') : fail('claim wrong user → 403', `got ${r.status}`);
+	const r = await api(
+		'POST',
+		'/api/members/claim',
+		{
+			member_id: globalThis.emailPlaceholderId
+		},
+		tokens.owner
+	);
+	r.status === 403
+		? pass('claim wrong user → 403')
+		: fail('claim wrong user → 403', `got ${r.status}`);
 }
 
 // Claim requires auth.
 {
-	const r = await api('POST', '/api/members/claim', { member_id: globalThis.emailPlaceholderId }, null);
+	const r = await api(
+		'POST',
+		'/api/members/claim',
+		{ member_id: globalThis.emailPlaceholderId },
+		null
+	);
 	r.status === 401 ? pass('claim anon → 401') : fail('claim anon → 401', `got ${r.status}`);
 }
 
@@ -273,81 +360,147 @@ console.log('\n[promote]');
 const promoteTarget = globalThis.jakePlaceholderId;
 {
 	const r = await api('POST', '/api/members/promote', { member_id: promoteTarget }, tokens.owner);
-	r.status === 200 ? pass('owner promotes traveler → 200') : fail('owner promotes traveler → 200', `got ${r.status}`);
+	r.status === 200
+		? pass('owner promotes traveler → 200')
+		: fail('owner promotes traveler → 200', `got ${r.status}`);
 }
 
 // Trying to promote again (now co_owner) → 400.
 {
 	const r = await api('POST', '/api/members/promote', { member_id: promoteTarget }, tokens.owner);
-	r.status === 400 ? pass('promote non-traveler → 400') : fail('promote non-traveler → 400', `got ${r.status}`);
+	r.status === 400
+		? pass('promote non-traveler → 400')
+		: fail('promote non-traveler → 400', `got ${r.status}`);
 }
 
 // Traveler cannot promote.
 {
-	const r = await api('POST', '/api/members/promote', { member_id: globalThis.travelerAddedId }, tokens.traveler);
-	r.status === 403 ? pass('traveler cannot promote → 403') : fail('traveler cannot promote → 403', `got ${r.status}`);
+	const r = await api(
+		'POST',
+		'/api/members/promote',
+		{ member_id: globalThis.travelerAddedId },
+		tokens.traveler
+	);
+	r.status === 403
+		? pass('traveler cannot promote → 403')
+		: fail('traveler cannot promote → 403', `got ${r.status}`);
 }
 
 // Viewer cannot promote.
 {
-	const r = await api('POST', '/api/members/promote', { member_id: globalThis.travelerAddedId }, tokens.viewer);
-	r.status === 403 ? pass('viewer cannot promote → 403') : fail('viewer cannot promote → 403', `got ${r.status}`);
+	const r = await api(
+		'POST',
+		'/api/members/promote',
+		{ member_id: globalThis.travelerAddedId },
+		tokens.viewer
+	);
+	r.status === 403
+		? pass('viewer cannot promote → 403')
+		: fail('viewer cannot promote → 403', `got ${r.status}`);
 }
 
 // Non-member cannot promote.
 {
-	const r = await api('POST', '/api/members/promote', { member_id: globalThis.travelerAddedId }, tokens.non_member);
-	r.status === 403 ? pass('non-member cannot promote → 403') : fail('non-member cannot promote → 403', `got ${r.status}`);
+	const r = await api(
+		'POST',
+		'/api/members/promote',
+		{ member_id: globalThis.travelerAddedId },
+		tokens.non_member
+	);
+	r.status === 403
+		? pass('non-member cannot promote → 403')
+		: fail('non-member cannot promote → 403', `got ${r.status}`);
 }
 
 // Anon cannot promote.
 {
-	const r = await api('POST', '/api/members/promote', { member_id: globalThis.travelerAddedId }, null);
-	r.status === 401 ? pass('anon cannot promote → 401') : fail('anon cannot promote → 401', `got ${r.status}`);
+	const r = await api(
+		'POST',
+		'/api/members/promote',
+		{ member_id: globalThis.travelerAddedId },
+		null
+	);
+	r.status === 401
+		? pass('anon cannot promote → 401')
+		: fail('anon cannot promote → 401', `got ${r.status}`);
 }
 
 console.log('\n[remove]');
 
 // Owner removes the traveler-added placeholder.
 {
-	const r = await api('POST', '/api/members/remove', { member_id: globalThis.travelerAddedId }, tokens.owner);
-	r.status === 200 ? pass('owner removes traveler placeholder → 200') : fail('owner removes traveler placeholder → 200', `got ${r.status}`);
+	const r = await api(
+		'POST',
+		'/api/members/remove',
+		{ member_id: globalThis.travelerAddedId },
+		tokens.owner
+	);
+	r.status === 200
+		? pass('owner removes traveler placeholder → 200')
+		: fail('owner removes traveler placeholder → 200', `got ${r.status}`);
 }
 
 // Co-owner removes the promoted-to-co_owner placeholder.
 {
-	const r = await api('POST', '/api/members/remove', { member_id: globalThis.coOwnerPlaceholderId }, tokens.co_owner);
-	r.status === 200 ? pass('co_owner removes co_owner placeholder → 200') : fail('co_owner removes co_owner placeholder → 200', `got ${r.status}`);
+	const r = await api(
+		'POST',
+		'/api/members/remove',
+		{ member_id: globalThis.coOwnerPlaceholderId },
+		tokens.co_owner
+	);
+	r.status === 200
+		? pass('co_owner removes co_owner placeholder → 200')
+		: fail('co_owner removes co_owner placeholder → 200', `got ${r.status}`);
 }
 
 // Traveler cannot remove.
 {
 	const r = await api('POST', '/api/members/remove', { member_id: promoteTarget }, tokens.traveler);
-	r.status === 403 ? pass('traveler cannot remove → 403') : fail('traveler cannot remove → 403', `got ${r.status}`);
+	r.status === 403
+		? pass('traveler cannot remove → 403')
+		: fail('traveler cannot remove → 403', `got ${r.status}`);
 }
 
 // Viewer cannot remove.
 {
 	const r = await api('POST', '/api/members/remove', { member_id: promoteTarget }, tokens.viewer);
-	r.status === 403 ? pass('viewer cannot remove → 403') : fail('viewer cannot remove → 403', `got ${r.status}`);
+	r.status === 403
+		? pass('viewer cannot remove → 403')
+		: fail('viewer cannot remove → 403', `got ${r.status}`);
 }
 
 // Non-member cannot remove.
 {
-	const r = await api('POST', '/api/members/remove', { member_id: promoteTarget }, tokens.non_member);
-	r.status === 403 ? pass('non-member cannot remove → 403') : fail('non-member cannot remove → 403', `got ${r.status}`);
+	const r = await api(
+		'POST',
+		'/api/members/remove',
+		{ member_id: promoteTarget },
+		tokens.non_member
+	);
+	r.status === 403
+		? pass('non-member cannot remove → 403')
+		: fail('non-member cannot remove → 403', `got ${r.status}`);
 }
 
 // Anon cannot remove.
 {
 	const r = await api('POST', '/api/members/remove', { member_id: promoteTarget }, null);
-	r.status === 401 ? pass('anon cannot remove → 401') : fail('anon cannot remove → 401', `got ${r.status}`);
+	r.status === 401
+		? pass('anon cannot remove → 401')
+		: fail('anon cannot remove → 401', `got ${r.status}`);
 }
 
 // Cannot remove sole owner.
 {
-	const r = await api('POST', '/api/members/remove', { member_id: fx.memberIds.owner }, tokens.owner);
-	r.status === 400 ? pass('cannot remove sole owner → 400') : fail('cannot remove sole owner → 400', `got ${r.status}`);
+	const r = await api(
+		'POST',
+		'/api/members/remove',
+		{ member_id: fx.memberIds.owner },
+		tokens.owner
+	);
+	r.status === 400
+		? pass('cannot remove sole owner → 400')
+		: fail('cannot remove sole owner → 400', `got ${r.status}`);
 }
 
 // ─── #338: concurrent read-check-then-write ─────────────────────────────────
@@ -405,12 +558,17 @@ async function countActive(filter) {
 	const attempts = 5;
 	const results = await Promise.all(
 		Array.from({ length: attempts }, (_, i) =>
-			api('POST', '/api/members/add-placeholder', {
-				trip_id: raceTripId,
-				display_name: `Race Placeholder ${i}`,
-				placeholder_email: email,
-				role: 'traveler'
-			}, tokens.owner)
+			api(
+				'POST',
+				'/api/members/add-placeholder',
+				{
+					trip_id: raceTripId,
+					display_name: `Race Placeholder ${i}`,
+					placeholder_email: email,
+					role: 'traveler'
+				},
+				tokens.owner
+			)
 		)
 	);
 
@@ -419,13 +577,17 @@ async function countActive(filter) {
 
 	created.length === 1
 		? pass('concurrent add-placeholder (same email) → exactly 1 accepted')
-		: fail('concurrent add-placeholder (same email) → exactly 1 accepted',
-			`got ${created.length} of ${attempts}: [${results.map((r) => r.status).join(',')}]`);
+		: fail(
+				'concurrent add-placeholder (same email) → exactly 1 accepted',
+				`got ${created.length} of ${attempts}: [${results.map((r) => r.status).join(',')}]`
+			);
 
 	rejected.length === attempts - 1
 		? pass('concurrent add-placeholder → the rest rejected as duplicates')
-		: fail('concurrent add-placeholder → the rest rejected as duplicates',
-			`got ${rejected.length}, statuses [${results.map((r) => r.status).join(',')}]`);
+		: fail(
+				'concurrent add-placeholder → the rest rejected as duplicates',
+				`got ${rejected.length}, statuses [${results.map((r) => r.status).join(',')}]`
+			);
 
 	// The durable check: the database holds exactly one active row.
 	const rows = await countActive(
@@ -441,12 +603,17 @@ async function countActive(filter) {
 // try whose catch tested `err.code`, which is always null on PB's JSVM, so the
 // error was swallowed and a duplicate membership was created instead.
 {
-	const r = await api('POST', '/api/members/add-placeholder', {
-		trip_id: raceTripId,
-		display_name: 'Owner Duplicate',
-		placeholder_email: EMAILS.owner,
-		role: 'traveler'
-	}, tokens.owner);
+	const r = await api(
+		'POST',
+		'/api/members/add-placeholder',
+		{
+			trip_id: raceTripId,
+			display_name: 'Owner Duplicate',
+			placeholder_email: EMAILS.owner,
+			role: 'traveler'
+		},
+		tokens.owner
+	);
 	r.status === 400
 		? pass('add-placeholder for an existing active member’s email → 400')
 		: fail('add-placeholder for an existing active member’s email → 400', `got ${r.status}`);
@@ -464,12 +631,17 @@ async function countActive(filter) {
 // Concurrent claim of the SAME placeholder → one winner, one membership.
 {
 	// Seed a placeholder addressed to the non-member so it is claimable by them.
-	const seed = await api('POST', '/api/members/add-placeholder', {
-		trip_id: raceTripId,
-		display_name: 'Claim Race Target',
-		placeholder_email: EMAILS.non_member,
-		role: 'traveler'
-	}, tokens.owner);
+	const seed = await api(
+		'POST',
+		'/api/members/add-placeholder',
+		{
+			trip_id: raceTripId,
+			display_name: 'Claim Race Target',
+			placeholder_email: EMAILS.non_member,
+			role: 'traveler'
+		},
+		tokens.owner
+	);
 
 	if (seed.status !== 200) {
 		fail('seed claimable placeholder for claim race', `got ${seed.status}`);
@@ -485,8 +657,10 @@ async function countActive(filter) {
 		const won = results.filter((r) => r.status === 200);
 		won.length === 1
 			? pass('concurrent claim of one placeholder → exactly 1 accepted')
-			: fail('concurrent claim of one placeholder → exactly 1 accepted',
-				`got ${won.length} of ${attempts}: [${results.map((r) => r.status).join(',')}]`);
+			: fail(
+					'concurrent claim of one placeholder → exactly 1 accepted',
+					`got ${won.length} of ${attempts}: [${results.map((r) => r.status).join(',')}]`
+				);
 
 		// And the claimer ends up with exactly one active membership on the trip.
 		// The user id comes from the PB JWT payload — `users.emailVisibility` is

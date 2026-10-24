@@ -5,7 +5,7 @@
 </script>
 
 <div class="flex items-center gap-3 py-1" data-slot-divider>
-	<div class="border-line flex-1 border-t"></div>
-	<span class="text-ink-muted text-[11px] font-medium tracking-wider uppercase">{label}</span>
-	<div class="border-line flex-1 border-t"></div>
+	<div class="flex-1 border-t border-line"></div>
+	<span class="text-[11px] font-medium tracking-wider text-ink-muted uppercase">{label}</span>
+	<div class="flex-1 border-t border-line"></div>
 </div>

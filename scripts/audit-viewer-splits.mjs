@@ -103,9 +103,7 @@ for (const e of expenses) {
 	const amounts = sd.amounts && typeof sd.amounts === 'object' ? sd.amounts : {};
 	const viewerPayer = isViewer(e.paid_by);
 	const viewersInSplit =
-		e.split_mode === 'by_amount'
-			? Object.keys(amounts).filter(isViewer)
-			: equal.filter(isViewer);
+		e.split_mode === 'by_amount' ? Object.keys(amounts).filter(isViewer) : equal.filter(isViewer);
 	if (!viewerPayer && viewersInSplit.length === 0) continue;
 	const rest = equal.filter((id) => !isViewer(id));
 	let fix;
@@ -132,7 +130,9 @@ if (AS_JSON) {
 	log(`  ${expenses.length} expenses, ${members.length} memberships\n`);
 	if (hits.length === 0) log('  ✓ no expense names a viewer\n');
 	for (const h of hits) {
-		log(`  • ${h.trip} — ${h.date} "${h.description}" $${h.amount_usd} (${h.split_mode}), paid by ${h.paid_by}`);
+		log(
+			`  • ${h.trip} — ${h.date} "${h.description}" $${h.amount_usd} (${h.split_mode}), paid by ${h.paid_by}`
+		);
 		log(`      viewers: ${h.viewers.join(', ')}  →  ${h.proposed_fix}   [${h.id}]`);
 	}
 	if (hits.length) log(`\n  ${hits.length} expense(s) to review.\n`);

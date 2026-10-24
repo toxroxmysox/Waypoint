@@ -19,14 +19,20 @@
 
 <a
 	{href}
-	class="border-line bg-surface-2 hover:bg-surface active:bg-surface flex items-center gap-2.5 rounded-[10px] border px-3 py-2"
+	class="flex items-center gap-2.5 rounded-[10px] border border-line bg-surface-2 px-3 py-2 hover:bg-surface active:bg-surface"
 >
 	<ProgressDonut {done} {total} size={20} stroke={3} />
-	<span class="text-ink min-w-0 flex-1 truncate text-[12.5px] font-semibold">{title}</span>
-	<span class="text-ink-muted font-mono text-[11px] tabular-nums">{done}/{total}</span>
-	<span class="text-ink-muted inline-flex shrink-0">
+	<span class="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-ink">{title}</span>
+	<span class="font-mono text-[11px] text-ink-muted tabular-nums">{done}/{total}</span>
+	<span class="inline-flex shrink-0 text-ink-muted">
 		<svg width="14" height="14" viewBox="0 0 20 20" fill="none">
-			<path d="M8 5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+			<path
+				d="M8 5l5 5-5 5"
+				stroke="currentColor"
+				stroke-width="1.8"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			/>
 		</svg>
 	</span>
 </a>

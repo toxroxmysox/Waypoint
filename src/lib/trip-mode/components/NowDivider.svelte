@@ -3,7 +3,7 @@
 </script>
 
 <div class="flex items-center gap-3 py-2">
-	<div class="bg-line h-px flex-1"></div>
-	<span class="text-ink-muted text-xs font-semibold uppercase tracking-widest">{label}</span>
-	<div class="bg-line h-px flex-1"></div>
+	<div class="h-px flex-1 bg-line"></div>
+	<span class="text-xs font-semibold tracking-widest text-ink-muted uppercase">{label}</span>
+	<div class="h-px flex-1 bg-line"></div>
 </div>

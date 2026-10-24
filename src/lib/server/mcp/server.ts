@@ -29,9 +29,14 @@ export function buildServer(ctx: McpContext): McpServer {
 		{ instructions: writes ? `${INSTRUCTIONS} ${WRITE_INSTRUCTIONS}` : INSTRUCTIONS }
 	);
 
-	server.registerResource('waypoint-cards', UI_URI, { mimeType: UI_MIME, description: 'Waypoint card view' }, async () => ({
-		contents: [{ uri: UI_URI, mimeType: UI_MIME, text: CARD_HTML }]
-	}));
+	server.registerResource(
+		'waypoint-cards',
+		UI_URI,
+		{ mimeType: UI_MIME, description: 'Waypoint card view' },
+		async () => ({
+			contents: [{ uri: UI_URI, mimeType: UI_MIME, text: CARD_HTML }]
+		})
+	);
 
 	for (const tool of writes ? [...TOOLS, ...WRITE_TOOLS] : TOOLS) {
 		server.registerTool(
@@ -47,7 +52,15 @@ export function buildServer(ctx: McpContext): McpServer {
 				try {
 					return await tool.run(ctx, args);
 				} catch (err) {
-					return { content: [{ type: 'text' as const, text: scrub((err as Error).message || 'Something went wrong.') }], isError: true };
+					return {
+						content: [
+							{
+								type: 'text' as const,
+								text: scrub((err as Error).message || 'Something went wrong.')
+							}
+						],
+						isError: true
+					};
 				}
 			}
 		);

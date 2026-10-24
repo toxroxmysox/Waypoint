@@ -27,11 +27,11 @@
 <BottomSheet bind:open title="Add document">
 	<div class="space-y-4">
 		<div>
-			<label for="doc-scope" class="text-ink-soft mb-1 block text-sm font-medium">Attach to</label>
+			<label for="doc-scope" class="mb-1 block text-sm font-medium text-ink-soft">Attach to</label>
 			<select
 				id="doc-scope"
 				bind:value={scope}
-				class="border-line bg-surface text-ink w-full rounded-md border px-3 py-2 text-sm"
+				class="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 			>
 				<option value="">Whole trip</option>
 				{#each itemOptions as opt (opt.id)}
@@ -49,9 +49,9 @@
 		/>
 
 		<div class="flex items-center gap-3">
-			<span class="bg-line h-px flex-1"></span>
-			<span class="text-ink-muted text-[12px]">or</span>
-			<span class="bg-line h-px flex-1"></span>
+			<span class="h-px flex-1 bg-line"></span>
+			<span class="text-[12px] text-ink-muted">or</span>
+			<span class="h-px flex-1 bg-line"></span>
 		</div>
 
 		<DocumentPaste action={uploadAction} itemId={scope} listen={open} onUploaded={done} />

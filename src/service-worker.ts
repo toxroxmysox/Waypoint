@@ -79,10 +79,7 @@ self.addEventListener('message', (event) => {
 			(isDocumentFilePath(pathname) ? byteUrls : pageUrls).push(u);
 		}
 		event.waitUntil(
-			Promise.all([
-				prefetchManifest(pageUrls, DATA_CACHE),
-				prefetchManifest(byteUrls, DOCS_CACHE)
-			])
+			Promise.all([prefetchManifest(pageUrls, DATA_CACHE), prefetchManifest(byteUrls, DOCS_CACHE)])
 		);
 	} else if (data?.type === 'PRECACHE_DOCS') {
 		// Precache the active trip's documents while online. Per-URL fetch+put so
@@ -95,9 +92,11 @@ self.addEventListener('message', (event) => {
 		// Logout: caches hold authenticated SSR HTML + data, so they're device-scoped
 		// and wiped on sign-out (ADR-0010). Drop every waypoint-* cache.
 		event.waitUntil(
-			caches.keys().then((keys) =>
-				Promise.all(keys.filter((k) => k.startsWith('waypoint-')).map((k) => caches.delete(k)))
-			)
+			caches
+				.keys()
+				.then((keys) =>
+					Promise.all(keys.filter((k) => k.startsWith('waypoint-')).map((k) => caches.delete(k)))
+				)
 		);
 	}
 });

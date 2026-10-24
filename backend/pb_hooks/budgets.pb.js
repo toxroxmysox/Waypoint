@@ -33,9 +33,17 @@ onRecordCreateRequest((e) => {
 	// Validate categories structure.
 	let categories = record.get('categories');
 	if (Array.isArray(categories) && categories.length > 0 && typeof categories[0] === 'number') {
-		try { categories = JSON.parse(String.fromCharCode.apply(null, categories)); } catch (_) { categories = []; }
+		try {
+			categories = JSON.parse(String.fromCharCode.apply(null, categories));
+		} catch (_) {
+			categories = [];
+		}
 	} else if (typeof categories === 'string') {
-		try { categories = JSON.parse(categories); } catch (_) { categories = []; }
+		try {
+			categories = JSON.parse(categories);
+		} catch (_) {
+			categories = [];
+		}
 	}
 
 	if (!Array.isArray(categories)) {
@@ -87,9 +95,17 @@ onRecordUpdateRequest((e) => {
 
 	let categories = record.get('categories');
 	if (Array.isArray(categories) && categories.length > 0 && typeof categories[0] === 'number') {
-		try { categories = JSON.parse(String.fromCharCode.apply(null, categories)); } catch (_) { categories = []; }
+		try {
+			categories = JSON.parse(String.fromCharCode.apply(null, categories));
+		} catch (_) {
+			categories = [];
+		}
 	} else if (typeof categories === 'string') {
-		try { categories = JSON.parse(categories); } catch (_) { categories = []; }
+		try {
+			categories = JSON.parse(categories);
+		} catch (_) {
+			categories = [];
+		}
 	}
 
 	if (!Array.isArray(categories)) {

@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-	CLONEABLE_ITEM_TYPES,
-	cloneItemStatus,
-	cloneItemPlacement
-} from './clone-items';
+import { CLONEABLE_ITEM_TYPES, cloneItemStatus, cloneItemPlacement } from './clone-items';
 
 describe('CLONEABLE_ITEM_TYPES (#173 — flights were dropped)', () => {
 	it('includes flight (the type silently dropped from the copy set)', () => {
@@ -97,17 +93,32 @@ describe('cloneItemPlacement (#196 — never day-less-but-planned)', () => {
 describe('cloneItemPlacement — unplanned items keep a phase (#411)', () => {
 	it('an idea lands in its mapped phase', () => {
 		expect(
-			cloneItemPlacement({ sourceStatus: 'unplanned', mappedDay: '', mappedPhase: 'p2', fallbackPhase: 'p1' })
+			cloneItemPlacement({
+				sourceStatus: 'unplanned',
+				mappedDay: '',
+				mappedPhase: 'p2',
+				fallbackPhase: 'p1'
+			})
 		).toEqual({ status: 'unplanned', day: '', phase: 'p2' });
 	});
 	it('an idea with no mapped phase lands in the fallback phase', () => {
 		expect(
-			cloneItemPlacement({ sourceStatus: 'unplanned', mappedDay: '', mappedPhase: '', fallbackPhase: 'p1' })
+			cloneItemPlacement({
+				sourceStatus: 'unplanned',
+				mappedDay: '',
+				mappedPhase: '',
+				fallbackPhase: 'p1'
+			})
 		).toEqual({ status: 'unplanned', day: '', phase: 'p1' });
 	});
 	it('a planned item whose day did not resolve parks in a phase too', () => {
 		expect(
-			cloneItemPlacement({ sourceStatus: 'planned', mappedDay: '', mappedPhase: '', fallbackPhase: 'p1' })
+			cloneItemPlacement({
+				sourceStatus: 'planned',
+				mappedDay: '',
+				mappedPhase: '',
+				fallbackPhase: 'p1'
+			})
 		).toEqual({ status: 'unplanned', day: '', phase: 'p1' });
 	});
 });

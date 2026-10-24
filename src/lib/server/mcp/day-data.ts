@@ -56,7 +56,9 @@ export function resolveDate(tz: string, date: string, now: Date): string {
 	if (d === 'tomorrow') return shift(today, 1);
 	if (d === 'yesterday') return shift(today, -1);
 	if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
-	throw new Error(`Use a date as YYYY-MM-DD, or "today", "tomorrow" or "yesterday" (got "${date}").`);
+	throw new Error(
+		`Use a date as YYYY-MM-DD, or "today", "tomorrow" or "yesterday" (got "${date}").`
+	);
 }
 
 export async function loadTripDays(ctx: McpContext, trip: Trip): Promise<Day[]> {
@@ -105,7 +107,9 @@ export function itemCard(i: Item, date?: string): Card {
 		emoji: EMOJI[i.type] ?? '•',
 		title: i.title,
 		tag: i.booked ? 'booked' : i.requires_booking ? 'not booked' : undefined,
-		lines: [formatTimeText(i, { date }), i.location_name || i.location_address].filter(Boolean) as string[]
+		lines: [formatTimeText(i, { date }), i.location_name || i.location_address].filter(
+			Boolean
+		) as string[]
 	};
 }
 
@@ -114,7 +118,10 @@ export function dayCards(d: DayData): Card[] {
 		emoji: EMOJI[s.type] ?? '•',
 		title: s.title,
 		tag: s.booked ? 'booked' : undefined,
-		lines: [spanBandText(s, d.days, d.date)?.text ?? '', s.location_name || s.location_address].filter(Boolean) as string[]
+		lines: [
+			spanBandText(s, d.days, d.date)?.text ?? '',
+			s.location_name || s.location_address
+		].filter(Boolean) as string[]
 	}));
 	const cards = [...stays, ...d.items.map((i) => itemCard(i))];
 	if (d.notes) cards.push({ emoji: '📝', title: 'Day notes', lines: [d.notes] });

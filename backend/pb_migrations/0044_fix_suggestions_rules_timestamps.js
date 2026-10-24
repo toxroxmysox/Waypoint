@@ -18,7 +18,8 @@ migrate(
 	(app) => {
 		const collection = app.findCollectionByNameOrId('suggestions');
 
-		const memberRead = '@request.auth.id != "" && trip.trip_members_via_trip.user ?= @request.auth.id';
+		const memberRead =
+			'@request.auth.id != "" && trip.trip_members_via_trip.user ?= @request.auth.id';
 		collection.listRule = memberRead;
 		collection.viewRule = memberRead;
 

@@ -53,28 +53,32 @@
 	);
 </script>
 
-<Card {href} class={treatment === 'outline' ? 'outline-accent outline-2 -outline-offset-1' : ''}>
+<Card {href} class={treatment === 'outline' ? 'outline-2 -outline-offset-1 outline-accent' : ''}>
 	<div class="flex items-center gap-3 px-3 py-2.5" data-day-card data-today={treatment}>
 		<!-- Date anchor: centred vertically on the card (#426) -->
 		<div class="flex w-11 shrink-0 flex-col items-center justify-center text-center">
-			<span class="text-ink-muted text-[10px] font-bold tracking-wide uppercase">{dow}</span>
-			<span class="text-ink font-mono text-lg leading-none font-semibold">{dayNum}</span>
-			<span class="text-ink-muted text-[10px] uppercase">{mon}</span>
+			<span class="text-[10px] font-bold tracking-wide text-ink-muted uppercase">{dow}</span>
+			<span class="font-mono text-lg leading-none font-semibold text-ink">{dayNum}</span>
+			<span class="text-[10px] text-ink-muted uppercase">{mon}</span>
 		</div>
 
-		<div class="border-line/60 min-w-0 flex-1 self-stretch border-l pl-3">
+		<div class="min-w-0 flex-1 self-stretch border-l border-line/60 pl-3">
 			<div class="flex items-center gap-2">
 				<p class="min-w-0 flex-1 truncate text-sm {isEmpty ? 'text-ink-muted italic' : 'text-ink'}">
 					{headline}
 				</p>
 				{#if treatment === 'pill'}
-					<span class="bg-accent text-paper shrink-0 rounded-full px-1.5 py-[1px] text-[9.5px] font-bold tracking-wide uppercase">
+					<span
+						class="shrink-0 rounded-full bg-accent px-1.5 py-[1px] text-[9.5px] font-bold tracking-wide text-paper uppercase"
+					>
 						Today
 					</span>
 				{/if}
 			</div>
 
-			<div class="text-ink-muted mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[11px]">
+			<div
+				class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[11px] text-ink-muted"
+			>
 				<span class:text-ink-soft={summary.itemCount > 0}>
 					{summary.itemCount} item{summary.itemCount === 1 ? '' : 's'}
 				</span>
@@ -88,10 +92,20 @@
 					<span class="text-line">·</span>
 					<!-- Same chip as the #420 strip: gold is the open loop, nothing else. -->
 					<span
-						class="bg-gold-tint border-gold/30 text-gold-deep inline-flex items-center gap-1 rounded-full border px-2 py-[1px] font-sans text-[11px] leading-4 font-semibold tracking-wide uppercase"
+						class="inline-flex items-center gap-1 rounded-full border border-gold/30 bg-gold-tint px-2 py-[1px] font-sans text-[11px] leading-4 font-semibold tracking-wide text-gold-deep uppercase"
 						data-day-needs-booking
 					>
-						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<svg
+							width="12"
+							height="12"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2.4"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
 							<circle cx="12" cy="12" r="9" /><path d="M12 7v6M12 17h.01" />
 						</svg>
 						<span aria-hidden="true">{summary.needsBookingCount} to book</span>
@@ -100,18 +114,22 @@
 				{:else if summary.bookableCount > 0}
 					<!-- All set (Scott, 2026-10-09): a quiet count, no colour — nothing to act on. -->
 					<span class="text-line">·</span>
-					<span class="text-ink-soft" data-day-all-booked>✓ {summary.bookedCount}/{summary.bookableCount} booked</span>
+					<span class="text-ink-soft" data-day-all-booked
+						>✓ {summary.bookedCount}/{summary.bookableCount} booked</span
+					>
 				{/if}
 			</div>
 
 			{#if isEmpty}
 				<!-- Spec #418 empty day: suggest the next step (adding / dragging happens on the day page this card opens). -->
-				<p class="text-ink-muted mt-1 text-[12px]" data-day-empty-hint>Add something, or drag an idea here</p>
+				<p class="mt-1 text-[12px] text-ink-muted" data-day-empty-hint>
+					Add something, or drag an idea here
+				</p>
 			{/if}
 
 			{#each summary.stays as chip (chip.kind + chip.name)}
 				<!-- Plain ink, lodging icon: a stay is context, not something to act on (D10). -->
-				<p class="text-ink-soft mt-1 flex min-w-0 items-center gap-1.5 text-[12px]" data-day-stay>
+				<p class="mt-1 flex min-w-0 items-center gap-1.5 text-[12px] text-ink-soft" data-day-stay>
 					<span class="shrink-0"><MonoTypeIcon type="lodging" size={16} /></span>
 					<span class="truncate">{chip.text}</span>
 				</p>

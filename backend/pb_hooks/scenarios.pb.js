@@ -118,7 +118,8 @@ routerAdd('POST', '/api/scenarios/promote', (e) => {
 	if (!dateStart || !dateEnd) {
 		throw new BadRequestError('This scenario needs both dates before it can be chosen');
 	}
-	if (dateEnd < dateStart) throw new BadRequestError('The scenario’s end date is before its start date');
+	if (dateEnd < dateStart)
+		throw new BadRequestError('The scenario’s end date is before its start date');
 
 	// Inlined date helpers (goja).
 	const addDays = (day, n) => {
@@ -133,21 +134,43 @@ routerAdd('POST', '/api/scenarios/promote', (e) => {
 	const readJsonArray = (raw) => {
 		if (Array.isArray(raw) && (raw.length === 0 || typeof raw[0] !== 'number')) return raw;
 		if (Array.isArray(raw) && typeof raw[0] === 'number') {
-			try { return JSON.parse(String.fromCharCode.apply(null, raw)); } catch (_) { return []; }
+			try {
+				return JSON.parse(String.fromCharCode.apply(null, raw));
+			} catch (_) {
+				return [];
+			}
 		}
-		if (typeof raw === 'string') { try { return JSON.parse(raw); } catch (_) { return []; } }
+		if (typeof raw === 'string') {
+			try {
+				return JSON.parse(raw);
+			} catch (_) {
+				return [];
+			}
+		}
 		return [];
 	};
 
 	// Active members (for the budget envelope + chooser name in the snapshot).
-	const members = e.app.findRecordsByFilter('trip_members', 'trip = {:trip} && removed_at = ""', '', 0, 0, { trip: tripId });
+	const members = e.app.findRecordsByFilter(
+		'trip_members',
+		'trip = {:trip} && removed_at = ""',
+		'',
+		0,
+		0,
+		{ trip: tripId }
+	);
 	const memberName = (id) => {
 		for (const m of members) {
 			if (m.id === id) {
 				let nm = m.get('display_name') || m.get('placeholder_name') || '';
 				if (!nm) {
 					const uid = m.get('user');
-					if (uid) { try { const u = e.app.findRecordById('users', uid); nm = u.get('name') || ''; } catch (_) {} }
+					if (uid) {
+						try {
+							const u = e.app.findRecordById('users', uid);
+							nm = u.get('name') || '';
+						} catch (_) {}
+					}
 				}
 				return nm || 'Someone';
 			}
@@ -161,7 +184,9 @@ routerAdd('POST', '/api/scenarios/promote', (e) => {
 	// window is GREEN iff every day is green (all active members marked available),
 	// YELLOW if any responded day isn't all-green, null if no responses in the window.
 	const activeMemberIds = members.map((m) => m.id);
-	const availRows = e.app.findRecordsByFilter('availability', 'trip = {:trip}', '', 0, 0, { trip: tripId });
+	const availRows = e.app.findRecordsByFilter('availability', 'trip = {:trip}', '', 0, 0, {
+		trip: tripId
+	});
 	// day -> Map<memberId, value> (active only).
 	const availByDay = {};
 	for (const r of availRows) {
@@ -182,7 +207,9 @@ routerAdd('POST', '/api/scenarios/promote', (e) => {
 	};
 	const windowStatus = (ds, de) => {
 		if (!ds || !de || de < ds) return null;
-		let cursor = ds, anyResponded = false, allGreen = true;
+		let cursor = ds,
+			anyResponded = false,
+			allGreen = true;
 		let guard = 0;
 		while (cursor <= de && guard < 4000) {
 			const st = dayGreen(cursor);
@@ -197,17 +224,29 @@ routerAdd('POST', '/api/scenarios/promote', (e) => {
 
 	// All scenarios on the trip + their votes/points — the decision snapshot (built
 	// BEFORE any mutation, capturing the pre-promotion board).
-	const allScenarios = e.app.findRecordsByFilter('scenarios', 'trip = {:trip}', '', 0, 0, { trip: tripId });
+	const allScenarios = e.app.findRecordsByFilter('scenarios', 'trip = {:trip}', '', 0, 0, {
+		trip: tripId
+	});
 	const snapshots = [];
 	for (const s of allScenarios) {
 		const votes = { love: 0, like: 0, flexible: 0, dislike: 0 };
-		const vrows = e.app.findRecordsByFilter('scenario_votes', 'scenario = {:s}', '', 0, 0, { s: s.id });
+		const vrows = e.app.findRecordsByFilter('scenario_votes', 'scenario = {:s}', '', 0, 0, {
+			s: s.id
+		});
 		for (const v of vrows) {
 			const val = v.get('value');
 			if (votes[val] !== undefined) votes[val] += 1;
 		}
-		const pros = [], cons = [];
-		const prows = e.app.findRecordsByFilter('scenario_points', 'scenario = {:s}', '+created', 0, 0, { s: s.id });
+		const pros = [],
+			cons = [];
+		const prows = e.app.findRecordsByFilter(
+			'scenario_points',
+			'scenario = {:s}',
+			'+created',
+			0,
+			0,
+			{ s: s.id }
+		);
 		for (const p of prows) {
 			(p.get('kind') === 'pro' ? pros : cons).push(p.get('text'));
 		}
@@ -218,14 +257,22 @@ routerAdd('POST', '/api/scenarios/promote', (e) => {
 			champName = cm.get('display_name') || cm.get('placeholder_name') || 'Someone';
 			if (!champName || champName === 'Someone') {
 				const cu = cm.get('user');
-				if (cu) { try { const u = e.app.findRecordById('users', cu); champName = u.get('name') || champName; } catch (_) {} }
+				if (cu) {
+					try {
+						const u = e.app.findRecordById('users', cu);
+						champName = u.get('name') || champName;
+					} catch (_) {}
+				}
 			}
 		} catch (_) {}
 		// Keystone labels.
 		const keystoneLabels = [];
 		const ks = s.get('keystones') || [];
 		for (const kid of ks) {
-			try { const it = e.app.findRecordById('items', kid); keystoneLabels.push(it.get('title')); } catch (_) {}
+			try {
+				const it = e.app.findRecordById('items', kid);
+				keystoneLabels.push(it.get('title'));
+			} catch (_) {}
 		}
 		const sketch = readJsonArray(s.get('phase_sketch'));
 		const sDs = s.getString('date_start').substring(0, 10);
@@ -298,14 +345,22 @@ routerAdd('POST', '/api/scenarios/promote', (e) => {
 		} else {
 			norm = [];
 			for (let i = 0; i < legs.length; i++) {
-				norm.push({ name: legs[i].name, days: i < legs.length - 1 ? Math.max(1, legs[i].days) : 0 });
+				norm.push({
+					name: legs[i].name,
+					days: i < legs.length - 1 ? Math.max(1, legs[i].days) : 0
+				});
 			}
 			let headSum = 0;
 			for (let i = 0; i < norm.length - 1; i++) headSum += norm[i].days;
 			while (headSum > window - 1 && norm.length > 1) {
 				const ti = norm.length - 2;
-				if (norm[ti].days > 1) { norm[ti].days -= 1; headSum -= 1; }
-				else { norm.splice(ti, 1); headSum -= 1; }
+				if (norm[ti].days > 1) {
+					norm[ti].days -= 1;
+					headSum -= 1;
+				} else {
+					norm.splice(ti, 1);
+					headSum -= 1;
+				}
 			}
 			norm[norm.length - 1] = { name: norm[norm.length - 1].name, days: window - headSum };
 		}
@@ -319,8 +374,14 @@ routerAdd('POST', '/api/scenarios/promote', (e) => {
 
 	// Create the phases at their layout starts. Any pre-existing phases (there should
 	// be none on a forming trip) are cleared first so the layout is authoritative.
-	const preexisting = e.app.findRecordsByFilter('phases', 'trip = {:trip}', '', 0, 0, { trip: tripId });
-	for (const p of preexisting) { try { e.app.delete(p); } catch (_) {} }
+	const preexisting = e.app.findRecordsByFilter('phases', 'trip = {:trip}', '', 0, 0, {
+		trip: tripId
+	});
+	for (const p of preexisting) {
+		try {
+			e.app.delete(p);
+		} catch (_) {}
+	}
 	const phasesCol = e.app.findCollectionByNameOrId('phases');
 	for (let i = 0; i < layout.length; i++) {
 		const end = i < layout.length - 1 ? layout[i + 1].start : dateEnd; // shared boundary
@@ -335,7 +396,9 @@ routerAdd('POST', '/api/scenarios/promote', (e) => {
 
 	// Generate the day records for every date in the window, bucketed into the phases
 	// whose range contains them (shared boundary → a travel day belongs to two).
-	const phases = e.app.findRecordsByFilter('phases', 'trip = {:trip}', '+order', 0, 0, { trip: tripId });
+	const phases = e.app.findRecordsByFilter('phases', 'trip = {:trip}', '+order', 0, 0, {
+		trip: tripId
+	});
 	const daysCol = e.app.findCollectionByNameOrId('days');
 	let cursor = dateStart;
 	while (cursor <= dateEnd) {
@@ -359,23 +422,37 @@ routerAdd('POST', '/api/scenarios/promote', (e) => {
 	// orphaned once the trip is dated.
 	if (phases.length > 0) {
 		const firstPhaseId = phases[0].id;
-		const orphanItems = e.app.findRecordsByFilter('items', 'trip = {:trip} && phase = ""', '', 0, 0, { trip: tripId });
+		const orphanItems = e.app.findRecordsByFilter(
+			'items',
+			'trip = {:trip} && phase = ""',
+			'',
+			0,
+			0,
+			{ trip: tripId }
+		);
 		for (const it of orphanItems) {
 			it.set('phase', firstPhaseId);
-			try { e.app.save(it); } catch (_) {}
+			try {
+				e.app.save(it);
+			} catch (_) {}
 		}
 	}
 
 	// --- 3. budget_per_person → seed a trip budget envelope (best-effort).
 	if (winnerBudget > 0) {
 		let hasBudget = false;
-		try { e.app.findFirstRecordByFilter('trip_budgets', 'trip = {:trip}', { trip: tripId }); hasBudget = true; } catch (_) {}
+		try {
+			e.app.findFirstRecordByFilter('trip_budgets', 'trip = {:trip}', { trip: tripId });
+			hasBudget = true;
+		} catch (_) {}
 		if (!hasBudget) {
 			try {
 				const groupTotal = winnerBudget * Math.max(1, members.length);
 				const b = new Record(e.app.findCollectionByNameOrId('trip_budgets'));
 				b.set('trip', tripId);
-				b.set('categories', [{ category: 'other', mode: 'total', daily_amount: null, total: groupTotal }]);
+				b.set('categories', [
+					{ category: 'other', mode: 'total', daily_amount: null, total: groupTotal }
+				]);
 				e.app.save(b);
 			} catch (_) {}
 		}
@@ -391,11 +468,18 @@ routerAdd('POST', '/api/scenarios/promote', (e) => {
 		const next = s.id === winner.id ? 'won' : 'archived';
 		if (s.get('status') !== next) {
 			s.set('status', next);
-			try { e.app.save(s); } catch (_) {}
+			try {
+				e.app.save(s);
+			} catch (_) {}
 		}
 	}
 
-	return e.json(200, { ok: true, decision_id: decision.id, date_start: dateStart, date_end: dateEnd });
+	return e.json(200, {
+		ok: true,
+		decision_id: decision.id,
+		date_start: dateStart,
+		date_end: dateEnd
+	});
 });
 
 // ---------------------------------------------------------------------------
@@ -416,13 +500,20 @@ onRecordValidate((e) => {
 		}
 	};
 	const keys = r.getStringSlice('keystones');
-	if (tripChanged || JSON.stringify(keys) !== JSON.stringify(r.original().getStringSlice('keystones'))) {
+	if (
+		tripChanged ||
+		JSON.stringify(keys) !== JSON.stringify(r.original().getStringSlice('keystones'))
+	) {
 		for (let i = 0; i < keys.length; i++) {
 			if (!sameTrip('items', keys[i])) throw new BadRequestError("That item isn't on this trip.");
 		}
 	}
 	const fork = r.getString('fork_of');
-	if (fork && (tripChanged || fork !== r.original().getString('fork_of')) && !sameTrip('scenarios', fork)) {
+	if (
+		fork &&
+		(tripChanged || fork !== r.original().getString('fork_of')) &&
+		!sameTrip('scenarios', fork)
+	) {
 		throw new BadRequestError("That scenario isn't on this trip.");
 	}
 	e.next();

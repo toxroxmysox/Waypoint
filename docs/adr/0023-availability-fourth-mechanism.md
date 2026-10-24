@@ -12,17 +12,17 @@ Unblocked by forming (#270), now shipped.
 ## Decision
 
 Availability is the **fourth group-input mechanism** — alongside the Vote, pros/cons, and the
-availability-*less* scenario weighing — and it is **not a Vote**. Each member paints, on a calendar
+availability-_less_ scenario weighing — and it is **not a Vote**. Each member paints, on a calendar
 for a **forming** trip, when they are free. The tool **surfaces** consensus; it never ranks.
 
 1. **Not a Vote.** A new `availability` collection, never a reskin of `votes` / `goal_votes` /
    `suggestion_votes` (ADR-0004/0009 keep vote-likes split, and this one diverges harder: a "maybe"
    has no Vote analog and aggregation is consensus-surfacing, not score-sort).
 2. **Two paint values: `available` | `maybe`.** No "unavailable", **no red**; a blank day = no
-   response. (This *narrows* the CAPABILITY_MAP's documented "yes/maybe/no" — see Consequences.)
+   response. (This _narrows_ the CAPABILITY_MAP's documented "yes/maybe/no" — see Consequences.)
 3. **Per-(trip, member, day) cells.** One row per painted day with its value; blank persists nothing.
    Aggregation is a pure per-day group — no interval math.
-4. **No ranking — surface, don't score.** A day is **green** only when *every trip member* marked
+4. **No ranking — surface, don't score.** A day is **green** only when _every trip member_ marked
    `available`; any `maybe` or blank → **yellow**. The organiser reads the marks and picks; the
    system never orders windows. Green legitimately un-greens as new members join (green means
    "everyone currently in the group is confirmed").
@@ -37,18 +37,18 @@ for a **forming** trip, when they are free. The tool **surfaces** consensus; it 
      **paint your days, then give a name only** → a **name-only Placeholder Member** is created and
      your availability cells are saved. No email, no code — the availability poll is the low-friction
      surface. A soft cookie identity (`soft_token`) keys re-entry so the same person re-paints the
-     *same* placeholder instead of spawning duplicates; a "that's me" re-entry picker (the existing
+     _same_ placeholder instead of spawning duplicates; a "that's me" re-entry picker (the existing
      name-only placeholder list from `lookup`) is the fallback.
    - **Tier 2 — full member (OTP).** To leave the poll and enter **the rest of the trip** (ideas,
      scenarios, itinerary — everything beyond availability), verify email via OTP. That **claims the
      placeholder into a real member** (`user` set on the same row — the existing email-match / claim
      machinery), so no availability cells are orphaned.
-   This is a deliberate, scoped acceptance of a **new anonymous write path** (a `/api/poll/paint`
-   sibling to `accept`) — the one place we trade the unique-`(trip,user)`-index dedup guarantee for
-   zero-friction poll entry, bounded to the availability surface and mitigated by the cookie + re-entry
-   picker. Green counts name-only respondents (they *are* the poll's point); duplicate-across-devices
-   is an accepted residual, softened by the cookie, and an organiser can merge/eject via the existing
-   tombstone. (Amends the CAPABILITY_MAP's "flat participants / no tombstone" line — see Consequences.)
+     This is a deliberate, scoped acceptance of a **new anonymous write path** (a `/api/poll/paint`
+     sibling to `accept`) — the one place we trade the unique-`(trip,user)`-index dedup guarantee for
+     zero-friction poll entry, bounded to the availability surface and mitigated by the cookie + re-entry
+     picker. Green counts name-only respondents (they _are_ the poll's point); duplicate-across-devices
+     is an accepted residual, softened by the cookie, and an organiser can merge/eject via the existing
+     tombstone. (Amends the CAPABILITY_MAP's "flat participants / no tombstone" line — see Consequences.)
 8. **First-class direct promotion.** Pick a window → "set these dates" → the forming→dated cascade
    (the same one forming set-dates and scenario promotion fire). A trip can find dates via the poll
    with **no scenario at all**; when scenarios exist, availability also colours each scenario's
@@ -98,7 +98,7 @@ for a **forming** trip, when they are free. The tool **surfaces** consensus; it 
      is (a forcing function, not optional).
   4. Every availability read filters **`removed_at = ""`**, so a tombstoned member's cells drop out of
      the green computation automatically.
-  A `soft_token` field on `trip_members` backs cookie re-entry for Tier-1 respondents.
+     A `soft_token` field on `trip_members` backs cookie re-entry for Tier-1 respondents.
 - **Green un-greens as members join** — accepted and correct; the denominator is the live active
   member set (`removed_at = ""`).
 - **Migration path to user-level availability** stays open (trip-scoped now is a strict subset).

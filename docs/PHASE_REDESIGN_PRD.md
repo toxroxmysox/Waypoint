@@ -1,7 +1,7 @@
 # Phase Sub-tab Redesign — PRD
 
 > Milestone: [#2 Phase sub-tab redesign](https://github.com/toxroxmysox/Waypoint/milestone/2)
-> Grilled: 2026-06-07. Status: **Shipped** (milestone #2 complete — 10 issues closed). *Was "ready-for-agent"; trued up 2026-06-19.*
+> Grilled: 2026-06-07. Status: **Shipped** (milestone #2 complete — 10 issues closed). _Was "ready-for-agent"; trued up 2026-06-19._
 > Domain language: see `CONTEXT.md` (Phase, Day, Item, Parking Lot, Item Status, Sort Order, Multi-day Item).
 > Field→slot content contract for the item/day cards: see `docs/CARD_CONTENT_SPEC.md` (grilled 2026-06-10) — binding reference the card build wires against.
 
@@ -9,7 +9,7 @@
 
 The **Parking Lot** (a phase's unplanned items — colloquially "ideas") is scattered, inconsistent, and barely usable on mobile:
 
-- It appears in three places that don't agree: a read-only list on **Phase Detail**, an "Ideas" drag section on **Day Detail**, and a standalone `/parking-lot` page under the **More** menu. The standalone page shows *all trip* unplanned items, contradicting the glossary, which defines the Parking Lot as **phase-scoped**.
+- It appears in three places that don't agree: a read-only list on **Phase Detail**, an "Ideas" drag section on **Day Detail**, and a standalone `/parking-lot` page under the **More** menu. The standalone page shows _all trip_ unplanned items, contradicting the glossary, which defines the Parking Lot as **phase-scoped**.
 - There is **no way to add an idea directly to the parking lot** — every "+ Add" entry point forces a Day, producing a planned item. The only path to an unplanned item is to create one and omit the day, which the UI doesn't surface (#57).
 - Drag-to-reorder and drag-to-park are built on native HTML5 drag-and-drop, which **never fires on iOS touch** — so on the primary device the feature is dead and a long-press just pops Safari's "Open in New Tab" callout (#60).
 - The day cards on the trip overview look "small and empty" and differ from the day cards inside the phase view for no clear reason (#65); the "Promote to primary" control no longer matches the current model (#58).
@@ -53,11 +53,13 @@ Make the **Phase** the home of phase-scoped planning, and make ideas first-class
 ## Implementation Decisions
 
 ### Domain / scope
+
 - **Parking Lot is phase-scoped, full stop.** Reaffirms `CONTEXT.md`. The standalone trip-wide `/parking-lot` route is removed (or redirected); no "trip parking lot" concept is introduced. Introducing phase-less unplanned items would be a separate model change requiring its own grill + ADR — explicitly not done here.
 - **Phase is sticky under drag.** Dragging an item between a day timeline and a parking lot changes its `status` and `day` but **never** its `phase`. Cross-phase moves remain an explicit edit on the item.
 - **Eject-to-park unschedules.** Pushing any item to the parking lot sets `status=unplanned`, clears `day`, and clears `start_time`/`end_time`. For an already-untimed item this is a no-op on the time fields.
 
 ### Modules
+
 - **`resolveDrop()` (new, deep module).** Pure function that maps a drag result to a domain action. Input: the source zone, the target zone, the moved item, the neighbor `sort_order` values at the drop position, and the set of `phase` ids the target day belongs to. Output: a tagged action — `{ kind: 'reorder', before, after }` | `{ kind: 'pull', before, after }` | `{ kind: 'push' }` | `{ kind: 'reject' }` | `{ kind: 'snapback' }`. Encodes all the rules: untimed reorder, timed in-place → `snapback`, eject → `push`, pull-from-parking → `pull` (only if the idea's phase is among the day's phases, else `reject`). This is the single source of truth for drag semantics; the Svelte components and server actions are thin around it.
 - **`neighborsForMove()` (new).** Given a flat ordered list and a moved id, returns `{ before, after }` `sort_order` values for `insertBetween`.
 - **`buildTimelineFlat()` (new, in the timeline module).** Returns the day's items in display order as a flat list (timed items pinned by time, untimed by `sort_order`, interleaved) with each item's `anchored` flag and an optional `slotLabel` (Morning/Afternoon/Evening). Exists so `svelte-dnd-action` can bind a flat array whose DOM children map 1:1, with time-slot dividers folded into per-item labels.
@@ -65,16 +67,19 @@ Make the **Phase** the home of phase-scoped planning, and make ideas first-class
 - **Day→Phases mapping.** Reuse the existing day/phase relation to compute, for a day, the set of phases whose parking lots its divider must render.
 
 ### Surfaces
+
 - **Phase Detail** becomes the interactive parking-lot home: ideas list with an "Add idea" affordance (creates `status=unplanned`, `phase` set, no `day`) and drag-reorder among ideas.
 - **Day Detail** renders a collapsed parking divider below the timeline, one droppable section per phase the day belongs to, always present as a drop target. The day timeline itself is a droppable for pulling ideas in and a drag source for reordering/ejecting.
 - **More menu** no longer links to a parking-lot page; the route is retired.
 
 ### Drag mechanics
+
 - `svelte-dnd-action` replaces native HTML5 DnD on both the day timeline and the parking surfaces (same drag `type` so items move between zones). Drag is **handle-only** via the existing grip icon (the `dragDisabled`-toggle pattern), so card taps open detail and vertical swipes scroll. Touch, mouse, and keyboard dragging all supported.
 - iOS long-press callout suppressed on draggable cards (`-webkit-touch-callout: none`, `user-select: none`).
 - Persistence stays on the existing SvelteKit form actions (`reorder` / `pullToPlan` / `pushToParking`), fired on the drag library's `finalize`. `pullToPlan` becomes position-aware (accepts before/after); `pushToParking` clears time fields. `reorder` is reused unchanged.
 
 ### Status / schema
+
 - No schema change. Uses existing `items` fields: `status`, `phase`, `day`, `sort_order`, `start_time`, `end_time`. Migrations remain append-only (none needed).
 
 ## Testing Decisions

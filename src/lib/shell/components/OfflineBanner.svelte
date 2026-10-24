@@ -33,13 +33,13 @@
 
 {#if isOffline}
 	<div
-		class="border-clay/30 bg-clay-tint text-ink flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium"
+		class="flex items-center gap-2.5 border-clay/30 bg-clay-tint px-4 py-2.5 text-sm font-medium text-ink"
 		role="status"
 		aria-live="polite"
 		data-testid="offline-banner"
 	>
 		<svg
-			class="text-clay shrink-0"
+			class="shrink-0 text-clay"
 			width="18"
 			height="18"
 			viewBox="0 0 24 24"

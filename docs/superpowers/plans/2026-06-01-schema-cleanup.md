@@ -13,6 +13,7 @@
 ### Task 1: PocketBase migration
 
 **Files:**
+
 - Create: `backend/pb_migrations/0027_v3_schema_cleanup.js`
 
 - [ ] **Step 1: Write the migration file**
@@ -33,7 +34,7 @@ migrate(
 		items.fields.add(
 			new NumberField({
 				name: 'sort_order',
-				min: 0,
+				min: 0
 			})
 		);
 
@@ -43,7 +44,15 @@ migrate(
 
 		// Add 'flight' to type enum
 		const typeField = items.fields.getByName('type');
-		typeField.values = ['lodging', 'transportation', 'activity', 'meal', 'note', 'checklist', 'flight'];
+		typeField.values = [
+			'lodging',
+			'transportation',
+			'activity',
+			'meal',
+			'note',
+			'checklist',
+			'flight'
+		];
 
 		// Update indexes: remove slot-based index, add sort_order index
 		items.indexes = items.indexes.filter((idx) => !idx.includes('idx_items_trip_day_slot'));
@@ -72,20 +81,20 @@ migrate(
 			new SelectField({
 				name: 'slot',
 				values: ['morning', 'afternoon', 'evening', 'anytime'],
-				maxSelect: 1,
+				maxSelect: 1
 			})
 		);
 		items.fields.add(
 			new NumberField({
 				name: 'rank',
-				min: 0,
+				min: 0
 			})
 		);
 		items.fields.add(
 			new SelectField({
 				name: 'parking_lot_scope',
 				values: ['none', 'trip', 'phase', 'day'],
-				maxSelect: 1,
+				maxSelect: 1
 			})
 		);
 
@@ -110,7 +119,7 @@ migrate(
 		phases.fields.add(
 			new TextField({
 				name: 'color',
-				max: 7,
+				max: 7
 			})
 		);
 		app.save(phases);
@@ -137,6 +146,7 @@ git commit -m "feat(#31): PB migration — remove slot/parking_lot_scope/color, 
 ### Task 2: TypeScript types cleanup
 
 **Files:**
+
 - Modify: `src/lib/itinerary/types.ts`
 - Modify: `src/lib/portability/types.ts`
 
@@ -185,7 +195,14 @@ export interface Day extends RecordModel {
 	notes: string;
 }
 
-export type ItemType = 'lodging' | 'transportation' | 'activity' | 'meal' | 'note' | 'checklist' | 'flight';
+export type ItemType =
+	| 'lodging'
+	| 'transportation'
+	| 'activity'
+	| 'meal'
+	| 'note'
+	| 'checklist'
+	| 'flight';
 export type ItemStatus = 'planned' | 'done' | 'considered' | 'unplanned';
 
 export interface ConfirmationCode {
@@ -238,13 +255,15 @@ export interface ChecklistItem extends RecordModel {
 Remove `slot` from the items array type in `TripExport`. Remove `color` from the phases array type.
 
 In the `phases` array type, remove:
+
 ```ts
-		color: string;
+color: string;
 ```
 
 In the `items` array type, remove:
+
 ```ts
-		slot: string;
+slot: string;
 ```
 
 - [ ] **Step 3: Run `pnpm check`**
@@ -264,6 +283,7 @@ git commit -m "feat(#31): update TypeScript types — remove slot/parking_lot_sc
 ### Task 3: Item fields config cleanup
 
 **Files:**
+
 - Modify: `src/lib/itinerary/item-fields.ts`
 - Modify: `src/lib/itinerary/item-fields.test.ts`
 - Modify: `src/lib/itinerary/components/ItemFormFields.ts`
@@ -271,6 +291,7 @@ git commit -m "feat(#31): update TypeScript types — remove slot/parking_lot_sc
 - [ ] **Step 1: Update `src/lib/itinerary/item-fields.ts`**
 
 1. Add `flight` entry to `itemFieldConfig`:
+
 ```ts
 	flight: {
 		subtype: false,
@@ -286,6 +307,7 @@ git commit -m "feat(#31): update TypeScript types — remove slot/parking_lot_sc
 ```
 
 2. Add `flight` entry to `itemTypeLabels`:
+
 ```ts
 	flight: 'Flight',
 ```
@@ -306,18 +328,20 @@ Remove `preselectedSlot?: string;` from `ItemFormContext` interface.
 - [ ] **Step 3: Update tests in `src/lib/itinerary/item-fields.test.ts`**
 
 Remove or update these tests:
+
 - Delete the test `'slot defaults to anytime'` (line ~81-83)
 - In the test `'uses defaults from config: slot, status, booked, costs'` — rename to `'uses defaults from config: status, booked, costs'` and remove the `expect(data.slot)` assertion
 - In the `'form data has correct shape for each type'` test — remove `expect(typeof data.slot).toBe('string')` assertion
 - Add a test for the new `flight` type:
+
 ```ts
-	it('returns config for flight type', () => {
-		const config = getFieldConfig('flight');
-		expect(config.visibility.location).toBe(true);
-		expect(config.visibility.times).toBe(true);
-		expect(config.visibility.booking).toBe(true);
-		expect(config.visibility.subtype).toBe(false);
-	});
+it('returns config for flight type', () => {
+	const config = getFieldConfig('flight');
+	expect(config.visibility.location).toBe(true);
+	expect(config.visibility.times).toBe(true);
+	expect(config.visibility.booking).toBe(true);
+	expect(config.visibility.subtype).toBe(false);
+});
 ```
 
 - [ ] **Step 4: Run tests**
@@ -337,6 +361,7 @@ git commit -m "feat(#31): update item-fields config — add flight type, remove 
 ### Task 4: Trip-mode module cleanup
 
 **Files:**
+
 - Modify: `src/lib/trip-mode/trip-mode.ts`
 - Modify: `src/lib/trip-mode/trip-mode.test.ts`
 
@@ -347,6 +372,7 @@ Replace `sortBySlotThenTime` with `sortBySortOrder` — items now sort by `sort_
 Delete `SLOT_ORDER` constant.
 
 Replace the `sortBySlotThenTime` function:
+
 ```ts
 function sortBySortOrder(items: Item[]): Item[] {
 	return [...items].sort((a, b) => {
@@ -364,22 +390,24 @@ Replace all 4 calls to `sortBySlotThenTime(...)` with `sortBySortOrder(...)`.
 In `makeItem` defaults: remove `slot: 'morning'`, remove `parking_lot_scope: 'none'`, rename `rank: 0` to `sort_order: 0`.
 
 Update test descriptions and assertions:
+
 - Rename `'sorts todayItems by slot order then start_time'` → `'sorts todayItems by sort_order then start_time'`
 - Remove `slot` from all `makeItem()` calls
 - Update the sorting test to use `sort_order` values instead of slot values:
+
 ```ts
-	it('sorts todayItems by sort_order then start_time', () => {
-		const state = getTripModeState(
-			[
-				makeItem({ id: 'a', day: 'day1', sort_order: 300 }),
-				makeItem({ id: 'b', day: 'day1', sort_order: 100, start_time: '2026-10-15 09:00:00.000Z' }),
-				makeItem({ id: 'c', day: 'day1', sort_order: 100, start_time: '2026-10-15 10:00:00.000Z' })
-			],
-			days,
-			now
-		);
-		expect(state.now.todayItems.map((i) => i.id)).toEqual(['b', 'c', 'a']);
-	});
+it('sorts todayItems by sort_order then start_time', () => {
+	const state = getTripModeState(
+		[
+			makeItem({ id: 'a', day: 'day1', sort_order: 300 }),
+			makeItem({ id: 'b', day: 'day1', sort_order: 100, start_time: '2026-10-15 09:00:00.000Z' }),
+			makeItem({ id: 'c', day: 'day1', sort_order: 100, start_time: '2026-10-15 10:00:00.000Z' })
+		],
+		days,
+		now
+	);
+	expect(state.now.todayItems.map((i) => i.id)).toEqual(['b', 'c', 'a']);
+});
 ```
 
 - Rename `'sorts tomorrowItems by slot order'` → `'sorts tomorrowItems by sort_order'`
@@ -404,6 +432,7 @@ git commit -m "feat(#31): update trip-mode — sort by sort_order instead of slo
 ### Task 5: Export/import/archive cleanup
 
 **Files:**
+
 - Modify: `src/lib/portability/export.ts`
 - Modify: `src/lib/portability/export.test.ts`
 - Modify: `src/lib/portability/components/ArchiveDaySection.svelte`
@@ -428,11 +457,13 @@ This component currently groups items by slot. Replace slot-based grouping with 
 
 Remove the `slotOrder` constant and `itemsBySlot` derived.
 Replace with a simple sorted list:
+
 ```ts
 const sortedItems = $derived([...items].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)));
 ```
 
 Replace the slot-grouped template with a flat iteration:
+
 ```svelte
 {#each sortedItems as item (item.id)}
 	<!-- existing item rendering -->
@@ -473,6 +504,7 @@ git commit -m "feat(#31): update export/import/archive — remove slot/color, us
 ### Task 6: Item CRUD routes cleanup
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/items/new/+page.server.ts`
 - Modify: `src/routes/(app)/trips/[slug]/items/new/+page.svelte`
 - Modify: `src/routes/(app)/trips/[slug]/items/[itemId]/+page.server.ts`
@@ -550,6 +582,7 @@ git commit -m "feat(#31): update item CRUD routes — remove slot, rename rank�
 ### Task 7: ItemForm and MoveItemSheet cleanup
 
 **Files:**
+
 - Modify: `src/lib/itinerary/components/ItemForm.svelte`
 - Modify: `src/lib/itinerary/components/MoveItemSheet.svelte`
 - Modify: `src/lib/itinerary/components/InlineQuickAdd.svelte`
@@ -593,6 +626,7 @@ git commit -m "feat(#31): remove slot UI from ItemForm, MoveItemSheet, InlineQui
 ### Task 8: Day view, today page, closeout, and parking lot cleanup
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/days/[dayId]/+page.svelte`
 - Modify: `src/routes/(app)/trips/[slug]/days/[dayId]/+page.server.ts`
 - Modify: `src/routes/(app)/trips/[slug]/today/+page.svelte`
@@ -656,12 +690,15 @@ Line 100: Remove `slot={item.slot}` prop passed to InlineQuickAdd.
 Replace `parking_lot_scope`-based filtering with `status`-based filtering.
 
 Lines 20-22: Replace:
+
 ```ts
 const tripLevel = $derived(items.filter((i) => i.parking_lot_scope === 'trip'));
 const phaseLevel = $derived(items.filter((i) => i.parking_lot_scope === 'phase'));
 const dayLevel = $derived(items.filter((i) => i.parking_lot_scope === 'day'));
 ```
+
 With:
+
 ```ts
 const unplannedItems = $derived(items.filter((i) => i.status === 'unplanned'));
 ```
@@ -689,6 +726,7 @@ git commit -m "feat(#31): update day/today/closeout/parking-lot views — remove
 ### Task 9: Clone, phases, and remaining references
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/clone/+page.server.ts`
 - Modify: `src/routes/(app)/trips/[slug]/phases/[phaseId]/+page.svelte`
 - Modify: `src/routes/(app)/trips/[slug]/phases/[phaseId]/+page.server.ts`
@@ -705,6 +743,7 @@ git commit -m "feat(#31): update day/today/closeout/parking-lot views — remove
 - [ ] **Step 2: Update `src/routes/(app)/trips/[slug]/phases/[phaseId]/+page.svelte`**
 
 Line 17: Replace `parking_lot_scope === 'phase'` with `status === 'unplanned'`:
+
 ```ts
 const parkingLotItems = $derived(data.phaseItems.filter((it) => it.status === 'unplanned'));
 ```
@@ -732,6 +771,7 @@ git commit -m "feat(#31): update clone/phases/suggestions — remove slot/parkin
 ### Task 10: Final verification and cleanup
 
 **Files:**
+
 - No new files
 
 - [ ] **Step 1: Grep for any remaining references**

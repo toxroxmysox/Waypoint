@@ -70,7 +70,10 @@ function isEligible(item: DeckCandidate, votedItemIds: Set<string>): boolean {
  * Resolution-8 comparator: vote-quantity desc, ties + zero-vote by creation
  * oldest-first. Drives the unplanned tail here, and the capture deck's reaction lane.
  */
-function byVoteQtyThenOldest(a: { voteCount: number; created: string }, b: { voteCount: number; created: string }): number {
+function byVoteQtyThenOldest(
+	a: { voteCount: number; created: string },
+	b: { voteCount: number; created: string }
+): number {
 	if (b.voteCount !== a.voteCount) return b.voteCount - a.voteCount;
 	return a.created < b.created ? -1 : a.created > b.created ? 1 : 0;
 }
@@ -95,9 +98,7 @@ function orderPlanned(planned: DeckCandidate[]): DeckCandidate[] {
 		if (group) group.push(item);
 		else byDay.set(item.dayDate, [item]);
 	}
-	return [...byDay.keys()]
-		.sort(byDayDate)
-		.flatMap((date) => orderDayItems(byDay.get(date)!));
+	return [...byDay.keys()].sort(byDayDate).flatMap((date) => orderDayItems(byDay.get(date)!));
 }
 
 /**
@@ -193,7 +194,10 @@ export type CaptureCard = { kind: 'reaction'; id: string } | { kind: 'prompt'; i
  * Reactions are ordered by Resolution 8; prompts keep the caller's order (the
  * caller shuffles + does once-per-session dedup). Pure, no mutation.
  */
-export function buildCaptureDeck(reactions: ReactionCandidate[], promptIds: string[]): CaptureCard[] {
+export function buildCaptureDeck(
+	reactions: ReactionCandidate[],
+	promptIds: string[]
+): CaptureCard[] {
 	const ordered = [...reactions].sort(byVoteQtyThenOldest);
 	const deck: CaptureCard[] = [];
 	let ri = 0;

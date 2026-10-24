@@ -16,7 +16,10 @@
 		if (green.length === 0) return { start: '', end: '' };
 		const sorted = [...green].sort();
 		// Longest contiguous run.
-		let bestStart = sorted[0], bestEnd = sorted[0], curStart = sorted[0], curEnd = sorted[0];
+		let bestStart = sorted[0],
+			bestEnd = sorted[0],
+			curStart = sorted[0],
+			curEnd = sorted[0];
 		const nextDay = (d: string) => {
 			const dt = new Date(d + 'T00:00:00.000Z');
 			dt.setUTCDate(dt.getUTCDate() + 1);
@@ -30,9 +33,12 @@
 				curEnd = sorted[i];
 			}
 			// track longest
-			const curLen = (new Date(curEnd).getTime() - new Date(curStart).getTime());
-			const bestLen = (new Date(bestEnd).getTime() - new Date(bestStart).getTime());
-			if (curLen > bestLen) { bestStart = curStart; bestEnd = curEnd; }
+			const curLen = new Date(curEnd).getTime() - new Date(curStart).getTime();
+			const bestLen = new Date(bestEnd).getTime() - new Date(bestStart).getTime();
+			if (curLen > bestLen) {
+				bestStart = curStart;
+				bestEnd = curEnd;
+			}
 		}
 		return { start: bestStart, end: bestEnd };
 	}
@@ -49,19 +55,15 @@
 	});
 </script>
 
-<NavBar
-	title="When can everyone go?"
-	back
-	backHref="/trips/{data.trip.slug}"
-/>
+<NavBar title="When can everyone go?" back backHref="/trips/{data.trip.slug}" />
 
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-10 space-y-4">
+<main class="mx-auto w-full max-w-lg flex-1 space-y-4 px-4 pt-4 pb-10 md-desktop:max-w-2xl">
 	<div class="px-0.5">
-		<p class="font-display text-ink-soft text-base italic">Paint the days you're free.</p>
-		<p class="text-ink-muted mt-1 text-sm">
+		<p class="font-display text-base text-ink-soft italic">Paint the days you're free.</p>
+		<p class="mt-1 text-sm text-ink-muted">
 			{#if data.canPaint}
-				Mark yourself free or maybe on a day. When everyone's free, the day turns green — then
-				an organizer can lock in the dates.
+				Mark yourself free or maybe on a day. When everyone's free, the day turns green — then an
+				organizer can lock in the dates.
 			{:else}
 				The dates are set, so the poll is closed. Here's how everyone's availability landed.
 			{/if}
@@ -83,27 +85,37 @@
 	{#if data.canPaint && data.poll.greenDays.length > 0}
 		<Card>
 			<div class="p-4">
-				<div class="text-ink-muted text-[9.5px] font-bold tracking-[0.14em] uppercase">
+				<div class="text-[9.5px] font-bold tracking-[0.14em] text-ink-muted uppercase">
 					Everyone's free
 				</div>
-				<p class="text-ink-soft mt-1 text-sm">
+				<p class="mt-1 text-sm text-ink-soft">
 					<span class="font-mono">{data.poll.greenDays.length}</span>
 					{data.poll.greenDays.length === 1 ? 'day works' : 'days work'} for the whole group so far.
 				</p>
 
 				{#if data.canPromote}
 					{#if form?.error}
-						<p role="alert" class="text-error-deep mt-2 text-sm">{form.error}</p>
+						<p role="alert" class="mt-2 text-sm text-error-deep">{form.error}</p>
 					{/if}
 					{#if !promoteOpen}
 						<button
 							type="button"
 							onclick={() => (promoteOpen = true)}
-							class="text-moss hover:text-ink active:text-ink mt-3 inline-flex items-center gap-1 text-xs font-semibold"
+							class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-moss hover:text-ink active:text-ink"
 							data-testid="promote-toggle"
 						>
 							Go with a window — set the dates
-							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+							<svg
+								width="12"
+								height="12"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2.5"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg
+							>
 						</button>
 					{:else}
 						<form
@@ -119,30 +131,49 @@
 							}}
 							class="mt-3"
 						>
-							<p class="text-ink-muted text-xs">
+							<p class="text-xs text-ink-muted">
 								Setting the dates builds the day-by-day itinerary and closes the poll. One-way.
 							</p>
 							<div class="mt-2 flex items-end gap-3">
 								<div class="min-w-0 flex-1">
-									<label for="win-start" class="text-ink-soft block text-xs font-medium">Start</label>
-									<input type="date" id="win-start" name="start" bind:value={winStart} required
-										class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm" />
+									<label for="win-start" class="block text-xs font-medium text-ink-soft"
+										>Start</label
+									>
+									<input
+										type="date"
+										id="win-start"
+										name="start"
+										bind:value={winStart}
+										required
+										class="mt-1 block w-full min-w-0 rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
+									/>
 								</div>
 								<div class="min-w-0 flex-1">
-									<label for="win-end" class="text-ink-soft block text-xs font-medium">End</label>
-									<input type="date" id="win-end" name="end" bind:value={winEnd} required
-										class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm" />
+									<label for="win-end" class="block text-xs font-medium text-ink-soft">End</label>
+									<input
+										type="date"
+										id="win-end"
+										name="end"
+										bind:value={winEnd}
+										required
+										class="mt-1 block w-full min-w-0 rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
+									/>
 								</div>
 							</div>
-							<Button type="submit" variant="moss" size="md" class="mt-3 w-full" disabled={promoting} loading={promoting}>
+							<Button
+								type="submit"
+								variant="moss"
+								size="md"
+								class="mt-3 w-full"
+								disabled={promoting}
+								loading={promoting}
+							>
 								{promoting ? 'Setting up the days…' : 'Set these dates'}
 							</Button>
 						</form>
 					{/if}
 				{:else}
-					<p class="text-ink-muted mt-1 text-xs">
-						An owner can pick a window and set the dates.
-					</p>
+					<p class="mt-1 text-xs text-ink-muted">An owner can pick a window and set the dates.</p>
 				{/if}
 			</div>
 		</Card>

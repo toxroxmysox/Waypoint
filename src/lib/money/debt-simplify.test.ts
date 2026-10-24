@@ -2,7 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { computeBalances, simplifyDebts } from './debt-simplify';
 import type { Expense, Settlement } from '$lib/types';
 
-function makeExpense(overrides: Partial<Expense> & Pick<Expense, 'paid_by' | 'amount_usd' | 'split_mode' | 'split_data'>): Expense {
+function makeExpense(
+	overrides: Partial<Expense> &
+		Pick<Expense, 'paid_by' | 'amount_usd' | 'split_mode' | 'split_data'>
+): Expense {
 	return {
 		id: 'exp-' + Math.random().toString(36).slice(2, 8),
 		trip: 'trip1',
@@ -13,7 +16,7 @@ function makeExpense(overrides: Partial<Expense> & Pick<Expense, 'paid_by' | 'am
 		created_by: overrides.paid_by,
 		created: '',
 		updated: '',
-		...overrides,
+		...overrides
 	};
 }
 
@@ -28,7 +31,7 @@ function makeSettlement(from: string, to: string, amount: number): Settlement {
 		note: '',
 		created_by: from,
 		created: '',
-		updated: '',
+		updated: ''
 	};
 }
 
@@ -43,7 +46,7 @@ describe('computeBalances', () => {
 			paid_by: 'alice',
 			amount_usd: 90,
 			split_mode: 'equal',
-			split_data: { members: ['alice', 'bob', 'charlie'] },
+			split_data: { members: ['alice', 'bob', 'charlie'] }
 		});
 
 		const balances = computeBalances([expense], []);
@@ -57,7 +60,7 @@ describe('computeBalances', () => {
 			paid_by: 'alice',
 			amount_usd: 100,
 			split_mode: 'by_amount',
-			split_data: { amounts: { alice: 40, bob: 35, charlie: 25 } },
+			split_data: { amounts: { alice: 40, bob: 35, charlie: 25 } }
 		});
 
 		const balances = computeBalances([expense], []);
@@ -71,7 +74,7 @@ describe('computeBalances', () => {
 			paid_by: 'alice',
 			amount_usd: 60,
 			split_mode: 'equal',
-			split_data: { members: ['alice', 'bob'] },
+			split_data: { members: ['alice', 'bob'] }
 		});
 		const settlement = makeSettlement('bob', 'alice', 30);
 
@@ -91,7 +94,7 @@ describe('simplifyDebts', () => {
 			paid_by: 'alice',
 			amount_usd: 60,
 			split_mode: 'equal',
-			split_data: { members: ['alice', 'bob'] },
+			split_data: { members: ['alice', 'bob'] }
 		});
 		const settlement = makeSettlement('bob', 'alice', 30);
 
@@ -103,7 +106,7 @@ describe('simplifyDebts', () => {
 			paid_by: 'alice',
 			amount_usd: 100,
 			split_mode: 'equal',
-			split_data: { members: ['alice', 'bob'] },
+			split_data: { members: ['alice', 'bob'] }
 		});
 
 		const debts = simplifyDebts([expense], []);
@@ -119,14 +122,14 @@ describe('simplifyDebts', () => {
 				paid_by: 'alice',
 				amount_usd: 90,
 				split_mode: 'equal',
-				split_data: { members: ['alice', 'bob', 'charlie'] },
+				split_data: { members: ['alice', 'bob', 'charlie'] }
 			}),
 			makeExpense({
 				paid_by: 'bob',
 				amount_usd: 30,
 				split_mode: 'equal',
-				split_data: { members: ['alice', 'bob', 'charlie'] },
-			}),
+				split_data: { members: ['alice', 'bob', 'charlie'] }
+			})
 		];
 
 		const debts = simplifyDebts(expenses, []);
@@ -146,7 +149,7 @@ describe('simplifyDebts', () => {
 			paid_by: 'alice',
 			amount_usd: 100,
 			split_mode: 'equal',
-			split_data: { members: ['alice', 'bob'] },
+			split_data: { members: ['alice', 'bob'] }
 		});
 		const settlement = makeSettlement('bob', 'alice', 20);
 
@@ -163,14 +166,14 @@ describe('simplifyDebts', () => {
 				paid_by: 'alice',
 				amount_usd: 120,
 				split_mode: 'equal',
-				split_data: { members: ['alice', 'bob', 'charlie', 'dave'] },
+				split_data: { members: ['alice', 'bob', 'charlie', 'dave'] }
 			}),
 			makeExpense({
 				paid_by: 'bob',
 				amount_usd: 40,
 				split_mode: 'equal',
-				split_data: { members: ['alice', 'bob', 'charlie', 'dave'] },
-			}),
+				split_data: { members: ['alice', 'bob', 'charlie', 'dave'] }
+			})
 		];
 
 		const debts = simplifyDebts(expenses, []);

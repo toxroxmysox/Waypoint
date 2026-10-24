@@ -15,7 +15,10 @@ export const listTrips: ToolDef = {
 			emoji: open ? '🧭' : '🔒',
 			title: trip.title,
 			tag: open ? role : `${role} · AI access off`,
-			lines: [tripDates(trip), [trip.location_summary, `slug: ${trip.slug}`].filter(Boolean).join(' · ')]
+			lines: [
+				tripDates(trip),
+				[trip.location_summary, `slug: ${trip.slug}`].filter(Boolean).join(' · ')
+			]
 		}));
 		return result(`${ctx.user.name}'s trips`, cards);
 	}

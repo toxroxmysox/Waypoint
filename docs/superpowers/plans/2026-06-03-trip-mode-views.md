@@ -9,6 +9,7 @@
 **Tech Stack:** SvelteKit, Svelte 5 ($state/$derived), Tailwind v4, Vitest, Playwright
 
 **Existing infrastructure (already shipped):**
+
 - `src/lib/trip-mode/trip-mode.ts` — `getTripModeState()` returns `NowState`, `UpNext`, `Timeline`
 - `src/lib/trip-mode/types.ts` — `TripModeState`, `NowState`, `DayGroup` interfaces
 - `src/lib/trip-mode/activation.ts` — `isTripActive()`, `TripViewMode` type
@@ -29,31 +30,32 @@
 
 ## File Map
 
-| File | Action | Responsibility |
-|------|--------|---------------|
-| `src/lib/trip-mode/now-state.ts` | Create | Pure function `getNowViewState()` — derives mid-event/between-things/day-wrapped from items + time |
-| `src/lib/trip-mode/now-state.test.ts` | Create | Unit tests for all three Now states + edge cases |
-| `src/lib/trip-mode/types.ts` | Modify | Add `NowViewState` discriminated union type |
-| `src/lib/shell/format.ts` | Modify | Add `formatCountdown()` helper |
-| `src/lib/shell/format.test.ts` | Create | Unit test for `formatCountdown()` |
-| `src/routes/(app)/trips/[slug]/now/+page.server.ts` | Modify | Load today's items + server time |
-| `src/routes/(app)/trips/[slug]/now/+page.svelte` | Modify | Render the three Now states |
-| `src/lib/trip-mode/components/NowMidEvent.svelte` | Create | Mid-event state: expanded current item + UP NEXT + tomorrow preview |
-| `src/lib/trip-mode/components/NowBetweenThings.svelte` | Create | Between-things state: FREE TIME countdown + UP NEXT |
-| `src/lib/trip-mode/components/NowDayWrapped.svelte` | Create | Day-wrapped state: end-of-day summary |
-| `src/routes/(app)/trips/[slug]/today/+page.server.ts` | Modify | Load today's items (already does this — minor adjustments) |
-| `src/routes/(app)/trips/[slug]/today/+page.svelte` | Modify | Replace TripModeCard list with TodayTimeline |
-| `src/lib/trip-mode/components/TodayTimeline.svelte` | Create | Trip-mode timeline: dimming, RIGHT NOW indicator, auto-scroll, progress |
-| `src/lib/trip-mode/components/TodayItemCard.svelte` | Create | Item card variant with past/current/future states |
-| `src/lib/trip-mode/components/AddSheet.svelte` | Create | Bottom sheet with "Add item" and "Add expense" choices |
-| `src/lib/shell/nav-tabs.ts` | Modify | Change Add tab to dispatch sheet open event instead of linking |
-| `src/lib/shell/components/AppShell.svelte` | Modify | Mount AddSheet, wire open state from nav |
+| File                                                   | Action | Responsibility                                                                                     |
+| ------------------------------------------------------ | ------ | -------------------------------------------------------------------------------------------------- |
+| `src/lib/trip-mode/now-state.ts`                       | Create | Pure function `getNowViewState()` — derives mid-event/between-things/day-wrapped from items + time |
+| `src/lib/trip-mode/now-state.test.ts`                  | Create | Unit tests for all three Now states + edge cases                                                   |
+| `src/lib/trip-mode/types.ts`                           | Modify | Add `NowViewState` discriminated union type                                                        |
+| `src/lib/shell/format.ts`                              | Modify | Add `formatCountdown()` helper                                                                     |
+| `src/lib/shell/format.test.ts`                         | Create | Unit test for `formatCountdown()`                                                                  |
+| `src/routes/(app)/trips/[slug]/now/+page.server.ts`    | Modify | Load today's items + server time                                                                   |
+| `src/routes/(app)/trips/[slug]/now/+page.svelte`       | Modify | Render the three Now states                                                                        |
+| `src/lib/trip-mode/components/NowMidEvent.svelte`      | Create | Mid-event state: expanded current item + UP NEXT + tomorrow preview                                |
+| `src/lib/trip-mode/components/NowBetweenThings.svelte` | Create | Between-things state: FREE TIME countdown + UP NEXT                                                |
+| `src/lib/trip-mode/components/NowDayWrapped.svelte`    | Create | Day-wrapped state: end-of-day summary                                                              |
+| `src/routes/(app)/trips/[slug]/today/+page.server.ts`  | Modify | Load today's items (already does this — minor adjustments)                                         |
+| `src/routes/(app)/trips/[slug]/today/+page.svelte`     | Modify | Replace TripModeCard list with TodayTimeline                                                       |
+| `src/lib/trip-mode/components/TodayTimeline.svelte`    | Create | Trip-mode timeline: dimming, RIGHT NOW indicator, auto-scroll, progress                            |
+| `src/lib/trip-mode/components/TodayItemCard.svelte`    | Create | Item card variant with past/current/future states                                                  |
+| `src/lib/trip-mode/components/AddSheet.svelte`         | Create | Bottom sheet with "Add item" and "Add expense" choices                                             |
+| `src/lib/shell/nav-tabs.ts`                            | Modify | Change Add tab to dispatch sheet open event instead of linking                                     |
+| `src/lib/shell/components/AppShell.svelte`             | Modify | Mount AddSheet, wire open state from nav                                                           |
 
 ---
 
 ### Task 1: Now view state derivation — types + pure function + tests
 
 **Files:**
+
 - Modify: `src/lib/trip-mode/types.ts`
 - Create: `src/lib/trip-mode/now-state.ts`
 - Create: `src/lib/trip-mode/now-state.test.ts`
@@ -61,6 +63,7 @@
 The Now tab has three mutually exclusive states. This task defines the discriminated union and the pure function that picks the right one.
 
 **State rules (from PRD §3.3):**
+
 - **mid-event**: current time falls within an item's `start_time..end_time` range (or item is a multi-day span with no end_time today)
 - **between-things**: no item is ongoing, but at least one item has a future `start_time` today
 - **day-wrapped**: all timed items are in the past (or it's past 10pm), OR no items exist today
@@ -71,7 +74,13 @@ Add the following after the existing `TripModeState` interface in `src/lib/trip-
 
 ```typescript
 export type NowViewState =
-	| { kind: 'mid-event'; currentItem: Item; nextItem: Item | null; tomorrowFirstItem: Item | null; minutesRemaining: number }
+	| {
+			kind: 'mid-event';
+			currentItem: Item;
+			nextItem: Item | null;
+			tomorrowFirstItem: Item | null;
+			minutesRemaining: number;
+	  }
 	| { kind: 'between-things'; nextItem: Item; minutesUntilNext: number }
 	| { kind: 'day-wrapped'; completedCount: number; totalCount: number }
 	| { kind: 'no-day' };
@@ -311,9 +320,7 @@ describe('getNowViewState', () => {
 
 	describe('untimed items', () => {
 		it('untimed items do not trigger mid-event', () => {
-			const items = [
-				makeItem({ id: 'untimed', start_time: '', end_time: '' })
-			];
+			const items = [makeItem({ id: 'untimed', start_time: '', end_time: '' })];
 			const result = getNowViewState(items, new Date('2026-10-15T14:00:00Z'), true);
 			expect(result.kind).not.toBe('mid-event');
 		});
@@ -363,21 +370,20 @@ function findCurrentItem(items: Item[], now: Date): Item | null {
 }
 
 function findNextTimedItem(items: Item[], now: Date): Item | null {
-	return items
-		.filter((i) => i.start_time && parseDateTime(i.start_time).getTime() > now.getTime())
-		.sort((a, b) => parseDateTime(a.start_time).getTime() - parseDateTime(b.start_time).getTime())
-		[0] ?? null;
+	return (
+		items
+			.filter((i) => i.start_time && parseDateTime(i.start_time).getTime() > now.getTime())
+			.sort(
+				(a, b) => parseDateTime(a.start_time).getTime() - parseDateTime(b.start_time).getTime()
+			)[0] ?? null
+	);
 }
 
 function minutesBetween(from: Date, to: Date): number {
 	return Math.round((to.getTime() - from.getTime()) / 60000);
 }
 
-export function getNowViewState(
-	todayItems: Item[],
-	now: Date,
-	hasToday: boolean
-): NowViewState {
+export function getNowViewState(todayItems: Item[], now: Date, hasToday: boolean): NowViewState {
 	if (!hasToday) return { kind: 'no-day' };
 
 	const hour = now.getUTCHours();
@@ -428,6 +434,7 @@ git commit -m "feat(#33): add getNowViewState pure function with mid-event/betwe
 ### Task 2: Countdown formatter
 
 **Files:**
+
 - Modify: `src/lib/shell/format.ts`
 - Create: `src/lib/shell/format.test.ts`
 
@@ -504,6 +511,7 @@ git commit -m "feat(#33): add formatCountdown utility for trip mode time display
 ### Task 3: Now tab — server data loader
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/now/+page.server.ts`
 
 The Now page needs today's items, tomorrow's first item (for mid-event preview), and the server timestamp. The parent layout already provides `trip` and `days`. Load items for today + tomorrow.
@@ -570,6 +578,7 @@ git commit -m "feat(#33): load today/tomorrow items for Now tab"
 ### Task 4: Now tab — sub-components (MidEvent, BetweenThings, DayWrapped)
 
 **Files:**
+
 - Create: `src/lib/trip-mode/components/NowMidEvent.svelte`
 - Create: `src/lib/trip-mode/components/NowBetweenThings.svelte`
 - Create: `src/lib/trip-mode/components/NowDayWrapped.svelte`
@@ -608,7 +617,7 @@ Create `src/lib/trip-mode/components/NowMidEvent.svelte`:
 <section class="space-y-4">
 	<div>
 		<Pill variant="trip" size="sm">Right now</Pill>
-		<p class="text-ink-muted mt-1 text-xs">{formatCountdown(minutesRemaining)} remaining</p>
+		<p class="mt-1 text-xs text-ink-muted">{formatCountdown(minutesRemaining)} remaining</p>
 	</div>
 
 	<TripModeCard item={currentItem} {slug} />
@@ -619,9 +628,9 @@ Create `src/lib/trip-mode/components/NowMidEvent.svelte`:
 			<div class="flex items-center gap-3 p-3">
 				<TypeIcon type={nextItem.type} sub={nextItem.subtype} size={32} />
 				<div class="min-w-0 flex-1">
-					<h4 class="text-ink truncate text-sm font-semibold">{nextItem.title}</h4>
+					<h4 class="truncate text-sm font-semibold text-ink">{nextItem.title}</h4>
 					{#if nextItem.start_time}
-						<p class="text-ink-muted font-mono text-xs">{formatTime(nextItem.start_time)}</p>
+						<p class="font-mono text-xs text-ink-muted">{formatTime(nextItem.start_time)}</p>
 					{/if}
 				</div>
 			</div>
@@ -629,15 +638,17 @@ Create `src/lib/trip-mode/components/NowMidEvent.svelte`:
 	{/if}
 
 	{#if tomorrowFirstItem}
-		<div class="border-line border-t pt-4">
-			<p class="text-ink-muted mb-2 text-xs font-medium uppercase tracking-wide">Tomorrow</p>
+		<div class="border-t border-line pt-4">
+			<p class="mb-2 text-xs font-medium tracking-wide text-ink-muted uppercase">Tomorrow</p>
 			<Card href="/trips/{slug}/items/{tomorrowFirstItem.id}">
 				<div class="flex items-center gap-3 p-3">
 					<TypeIcon type={tomorrowFirstItem.type} sub={tomorrowFirstItem.subtype} size={28} />
 					<div class="min-w-0 flex-1">
-						<h4 class="text-ink truncate text-sm">{tomorrowFirstItem.title}</h4>
+						<h4 class="truncate text-sm text-ink">{tomorrowFirstItem.title}</h4>
 						{#if tomorrowFirstItem.start_time}
-							<p class="text-ink-muted font-mono text-[11px]">{formatTime(tomorrowFirstItem.start_time)}</p>
+							<p class="font-mono text-[11px] text-ink-muted">
+								{formatTime(tomorrowFirstItem.start_time)}
+							</p>
 						{/if}
 					</div>
 				</div>
@@ -673,9 +684,11 @@ Create `src/lib/trip-mode/components/NowBetweenThings.svelte`:
 <section class="space-y-4">
 	<Card>
 		<div class="p-6 text-center">
-			<p class="text-ink-muted text-xs font-medium uppercase tracking-wide">Free time</p>
-			<p class="text-ink font-display mt-2 text-3xl font-semibold">{formatCountdown(minutesUntilNext)}</p>
-			<p class="text-ink-muted mt-1 text-sm">until next activity</p>
+			<p class="text-xs font-medium tracking-wide text-ink-muted uppercase">Free time</p>
+			<p class="mt-2 font-display text-3xl font-semibold text-ink">
+				{formatCountdown(minutesUntilNext)}
+			</p>
+			<p class="mt-1 text-sm text-ink-muted">until next activity</p>
 		</div>
 	</Card>
 
@@ -685,12 +698,12 @@ Create `src/lib/trip-mode/components/NowBetweenThings.svelte`:
 		<div class="flex items-center gap-3 p-4">
 			<TypeIcon type={nextItem.type} sub={nextItem.subtype} size={36} />
 			<div class="min-w-0 flex-1">
-				<h4 class="text-ink text-base font-semibold">{nextItem.title}</h4>
+				<h4 class="text-base font-semibold text-ink">{nextItem.title}</h4>
 				{#if nextItem.start_time}
-					<p class="text-ink-muted font-mono mt-0.5 text-sm">{formatTime(nextItem.start_time)}</p>
+					<p class="mt-0.5 font-mono text-sm text-ink-muted">{formatTime(nextItem.start_time)}</p>
 				{/if}
 				{#if nextItem.location_name}
-					<p class="text-ink-muted mt-0.5 text-sm">{nextItem.location_name}</p>
+					<p class="mt-0.5 text-sm text-ink-muted">{nextItem.location_name}</p>
 				{/if}
 			</div>
 		</div>
@@ -718,13 +731,14 @@ Create `src/lib/trip-mode/components/NowDayWrapped.svelte`:
 <section>
 	<Card>
 		<div class="p-6 text-center">
-			<p class="text-ink font-display text-xl font-semibold">Day wrapped</p>
+			<p class="font-display text-xl font-semibold text-ink">Day wrapped</p>
 			{#if totalCount > 0}
-				<p class="text-ink-muted mt-2 text-sm">
-					{completedCount} of {totalCount} {totalCount === 1 ? 'item' : 'items'} completed
+				<p class="mt-2 text-sm text-ink-muted">
+					{completedCount} of {totalCount}
+					{totalCount === 1 ? 'item' : 'items'} completed
 				</p>
 			{:else}
-				<p class="text-ink-muted mt-2 text-sm">Nothing was scheduled for today.</p>
+				<p class="mt-2 text-sm text-ink-muted">Nothing was scheduled for today.</p>
 			{/if}
 		</div>
 	</Card>
@@ -748,6 +762,7 @@ git commit -m "feat(#33): add Now tab sub-components — MidEvent, BetweenThings
 ### Task 5: Now tab — page assembly
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/now/+page.svelte`
 
 Wire the server data through `getNowViewState()` and render the correct sub-component.
@@ -769,9 +784,7 @@ Replace the entire contents of `src/routes/(app)/trips/[slug]/now/+page.svelte`:
 	let { data } = $props();
 
 	const now = new Date(untrack(() => data.now));
-	const viewState = $derived(
-		getNowViewState(data.todayItems, now, data.hasToday)
-	);
+	const viewState = $derived(getNowViewState(data.todayItems, now, data.hasToday));
 </script>
 
 <NavBar title="Now" subtitle={data.trip.title} subtitleStyle="tagline" />
@@ -792,15 +805,12 @@ Replace the entire contents of `src/routes/(app)/trips/[slug]/now/+page.svelte`:
 			slug={data.trip.slug}
 		/>
 	{:else if viewState.kind === 'day-wrapped'}
-		<NowDayWrapped
-			completedCount={viewState.completedCount}
-			totalCount={viewState.totalCount}
-		/>
+		<NowDayWrapped completedCount={viewState.completedCount} totalCount={viewState.totalCount} />
 	{:else}
 		<Card>
 			<div class="p-6 text-center">
-				<p class="text-ink-soft font-semibold">No itinerary for today</p>
-				<p class="text-ink-muted mt-1 text-sm">Today doesn't fall within this trip's dates.</p>
+				<p class="font-semibold text-ink-soft">No itinerary for today</p>
+				<p class="mt-1 text-sm text-ink-muted">Today doesn't fall within this trip's dates.</p>
 			</div>
 		</Card>
 	{/if}
@@ -824,6 +834,7 @@ git commit -m "feat(#33): wire Now page to getNowViewState with state-based rend
 ### Task 6: Today tab — TodayItemCard component
 
 **Files:**
+
 - Create: `src/lib/trip-mode/components/TodayItemCard.svelte`
 
 A card variant that shows past/current/future states. Past items are dimmed, current item gets a "RIGHT NOW" indicator, future items render normally. Distinct from `TimelineItemCard` (Planning Mode) — no drag handles, adds time-awareness.
@@ -854,13 +865,9 @@ Create `src/lib/trip-mode/components/TodayItemCard.svelte`:
 	const dimmed = $derived(temporal === 'past');
 </script>
 
-<div
-	class="relative transition-opacity"
-	class:opacity-50={dimmed}
-	id="item-{item.id}"
->
+<div class="relative transition-opacity" class:opacity-50={dimmed} id="item-{item.id}">
 	{#if temporal === 'current'}
-		<div class="bg-clay absolute -left-2 top-0 bottom-0 w-1 rounded-full"></div>
+		<div class="absolute top-0 bottom-0 -left-2 w-1 rounded-full bg-clay"></div>
 	{/if}
 
 	<Card href="/trips/{tripSlug}/items/{item.id}">
@@ -868,7 +875,7 @@ Create `src/lib/trip-mode/components/TodayItemCard.svelte`:
 			<TypeIcon type={item.type} sub={item.subtype} size={32} />
 			<div class="min-w-0 flex-1">
 				<div class="flex items-center gap-2">
-					<h4 class="text-ink truncate text-sm font-semibold">{item.title}</h4>
+					<h4 class="truncate text-sm font-semibold text-ink">{item.title}</h4>
 					{#if temporal === 'current'}
 						<Pill variant="trip" size="sm">Right now</Pill>
 					{/if}
@@ -877,10 +884,12 @@ Create `src/lib/trip-mode/components/TodayItemCard.svelte`:
 					{/if}
 				</div>
 				{#if item.start_time || item.location_name}
-					<p class="text-ink-muted mt-0.5 text-[12px]">
+					<p class="mt-0.5 text-[12px] text-ink-muted">
 						{#if item.start_time}
 							<span class="font-mono">
-								{formatTime(item.start_time)}{item.end_time ? ` – ${formatTime(item.end_time)}` : ''}
+								{formatTime(item.start_time)}{item.end_time
+									? ` – ${formatTime(item.end_time)}`
+									: ''}
 							</span>
 						{/if}
 						{#if item.start_time && item.location_name}<span class="text-line"> · </span>{/if}
@@ -888,16 +897,27 @@ Create `src/lib/trip-mode/components/TodayItemCard.svelte`:
 					</p>
 				{/if}
 				{#if item.subtype}
-					<p class="text-ink-muted mt-1 text-[11px] uppercase tracking-wide">{titleCase(item.subtype)}</p>
+					<p class="mt-1 text-[11px] tracking-wide text-ink-muted uppercase">
+						{titleCase(item.subtype)}
+					</p>
 				{/if}
 			</div>
 			<a
 				href="/trips/{tripSlug}/items/{item.id}/edit"
-				class="text-ink-muted hover:text-ink shrink-0 p-1"
+				class="shrink-0 p-1 text-ink-muted hover:text-ink"
 				aria-label="Edit {item.title}"
 				onclick={(e) => e.stopPropagation()}
 			>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<svg
+					width="16"
+					height="16"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
 					<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
 				</svg>
 			</a>
@@ -923,6 +943,7 @@ git commit -m "feat(#33): add TodayItemCard with past/current/future temporal st
 ### Task 7: Today tab — TodayTimeline component
 
 **Files:**
+
 - Create: `src/lib/trip-mode/components/TodayTimeline.svelte`
 
 Renders the day's items as a timeline with trip-mode styling. Uses `buildTimeline()` from the existing timeline module for consistent ordering, but renders with `TodayItemCard` instead of `TimelineItemCard`. Adds progress indicator and auto-scrolls to the current item on mount.
@@ -959,9 +980,7 @@ Create `src/lib/trip-mode/components/TodayTimeline.svelte`:
 			return item.status === 'done' ? 'past' : 'future';
 		}
 		const start = new Date(item.start_time.replace(' ', 'T')).getTime();
-		const end = item.end_time
-			? new Date(item.end_time.replace(' ', 'T')).getTime()
-			: start;
+		const end = item.end_time ? new Date(item.end_time.replace(' ', 'T')).getTime() : start;
 		const nowMs = now.getTime();
 		if (nowMs >= start && nowMs < end) return 'current';
 		if (nowMs >= end) return 'past';
@@ -995,23 +1014,21 @@ Create `src/lib/trip-mode/components/TodayTimeline.svelte`:
 
 {#if timeline.length === 0}
 	<div class="rounded-xl border border-line bg-surface p-6 text-center">
-		<p class="text-ink-muted text-sm">Nothing scheduled for today.</p>
+		<p class="text-sm text-ink-muted">Nothing scheduled for today.</p>
 	</div>
 {:else}
 	<div class="space-y-2">
 		{#each timeline as entry}
 			{#if entry.kind === 'divider'}
 				<div class="flex items-center gap-3 py-1">
-					<div class="border-line flex-1 border-t"></div>
-					<span class="text-ink-muted text-[11px] font-medium uppercase tracking-wider">{entry.label}</span>
-					<div class="border-line flex-1 border-t"></div>
+					<div class="flex-1 border-t border-line"></div>
+					<span class="text-[11px] font-medium tracking-wider text-ink-muted uppercase"
+						>{entry.label}</span
+					>
+					<div class="flex-1 border-t border-line"></div>
 				</div>
 			{:else if entry.kind === 'item'}
-				<TodayItemCard
-					item={entry.item}
-					{tripSlug}
-					temporal={getTemporalState(entry.item)}
-				/>
+				<TodayItemCard item={entry.item} {tripSlug} temporal={getTemporalState(entry.item)} />
 			{/if}
 		{/each}
 	</div>
@@ -1035,6 +1052,7 @@ git commit -m "feat(#33): add TodayTimeline with temporal states, progress, and 
 ### Task 8: Today tab — page update
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/today/+page.svelte`
 
 Replace the current TripModeCard-based list with the new TodayTimeline. Keep the SubTabs (Today / Next 3 Days) and the Tomorrow section.
@@ -1086,53 +1104,57 @@ Replace the entire contents of `src/routes/(app)/trips/[slug]/today/+page.svelte
 	{/snippet}
 </NavBar>
 
-<SubTabs tabs={[
-	{ id: 'today', label: 'Today', href: `/trips/${data.trip.slug}/today` },
-	{ id: 'upcoming', label: 'Next 3 Days', href: `/trips/${data.trip.slug}/today/upcoming` }
-]} />
+<SubTabs
+	tabs={[
+		{ id: 'today', label: 'Today', href: `/trips/${data.trip.slug}/today` },
+		{ id: 'upcoming', label: 'Next 3 Days', href: `/trips/${data.trip.slug}/today/upcoming` }
+	]}
+/>
 
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-4">
+<main class="mx-auto w-full max-w-lg flex-1 space-y-4 px-4 pt-4 pb-8 md-desktop:max-w-2xl">
 	{#if !tripMode.now.today}
 		<Card>
 			<div class="p-6 text-center">
-				<p class="text-ink-soft font-semibold">No itinerary for today</p>
-				<p class="text-ink-muted mt-1 text-sm">Today doesn't fall within this trip's dates.</p>
+				<p class="font-semibold text-ink-soft">No itinerary for today</p>
+				<p class="mt-1 text-sm text-ink-muted">Today doesn't fall within this trip's dates.</p>
 			</div>
 		</Card>
 	{:else}
-		<h2 class="font-display text-ink text-xl font-semibold">{dayLabel(tripMode.now.today.date)}</h2>
+		<h2 class="font-display text-xl font-semibold text-ink">{dayLabel(tripMode.now.today.date)}</h2>
 
-		<TodayTimeline
-			items={tripMode.now.todayItems}
-			tripSlug={data.trip.slug}
-			{now}
-		/>
+		<TodayTimeline items={tripMode.now.todayItems} tripSlug={data.trip.slug} {now} />
 
 		{#if tripMode.upNext.tomorrowDay}
 			{@const tomorrowItems = tripMode.upNext.tomorrowItems}
-			<div class="border-line border-t pt-4">
+			<div class="border-t border-line pt-4">
 				<SectionH>
 					{#snippet right()}
-						<a href="/trips/{data.trip.slug}/today/upcoming" class="text-ink-muted hover:text-ink-soft text-xs">See all</a>
+						<a
+							href="/trips/{data.trip.slug}/today/upcoming"
+							class="text-xs text-ink-muted hover:text-ink-soft">See all</a
+						>
 					{/snippet}
 					Tomorrow
 				</SectionH>
 				{#if tomorrowItems.length > 0}
 					<div class="mt-2 space-y-1">
 						{#each tomorrowItems.slice(0, 3) as item}
-							<a href="/trips/{data.trip.slug}/items/{item.id}" class="border-line hover:border-ink-muted flex items-center gap-2 rounded-lg border px-3 py-2">
-								<span class="font-mono text-ink-muted text-xs">
+							<a
+								href="/trips/{data.trip.slug}/items/{item.id}"
+								class="flex items-center gap-2 rounded-lg border border-line px-3 py-2 hover:border-ink-muted"
+							>
+								<span class="font-mono text-xs text-ink-muted">
 									{item.start_time ? formatTime(item.start_time) : '—'}
 								</span>
-								<span class="text-ink text-sm truncate">{item.title}</span>
+								<span class="truncate text-sm text-ink">{item.title}</span>
 							</a>
 						{/each}
 						{#if tomorrowItems.length > 3}
-							<p class="text-ink-muted text-center text-xs">+{tomorrowItems.length - 3} more</p>
+							<p class="text-center text-xs text-ink-muted">+{tomorrowItems.length - 3} more</p>
 						{/if}
 					</div>
 				{:else}
-					<p class="text-ink-muted mt-2 text-xs">Nothing scheduled.</p>
+					<p class="mt-2 text-xs text-ink-muted">Nothing scheduled.</p>
 				{/if}
 			</div>
 		{/if}
@@ -1157,6 +1179,7 @@ git commit -m "feat(#33): replace Today tab card list with TodayTimeline compone
 ### Task 9: Add button — choice sheet
 
 **Files:**
+
 - Create: `src/lib/trip-mode/components/AddSheet.svelte`
 - Modify: `src/lib/shell/nav-tabs.ts`
 - Modify: `src/lib/shell/components/AppShell.svelte`
@@ -1199,33 +1222,55 @@ Create `src/lib/trip-mode/components/AddSheet.svelte`:
 	<div class="space-y-2">
 		<button
 			type="button"
-			class="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left hover:bg-surface-2 transition-colors"
+			class="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-surface-2"
 			onclick={addItem}
 		>
-			<div class="bg-clay-tint text-clay flex h-10 w-10 items-center justify-center rounded-full">
-				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
+			<div class="flex h-10 w-10 items-center justify-center rounded-full bg-clay-tint text-clay">
+				<svg
+					width="20"
+					height="20"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<path
+						d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"
+					/>
 				</svg>
 			</div>
 			<div>
-				<p class="text-ink text-sm font-semibold">Add item to today</p>
-				<p class="text-ink-muted text-xs">Activity, meal, transport, etc.</p>
+				<p class="text-sm font-semibold text-ink">Add item to today</p>
+				<p class="text-xs text-ink-muted">Activity, meal, transport, etc.</p>
 			</div>
 		</button>
 
 		<button
 			type="button"
-			class="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left hover:bg-surface-2 transition-colors"
+			class="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-surface-2"
 			onclick={addExpense}
 		>
-			<div class="bg-clay-tint text-clay flex h-10 w-10 items-center justify-center rounded-full">
-				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+			<div class="flex h-10 w-10 items-center justify-center rounded-full bg-clay-tint text-clay">
+				<svg
+					width="20"
+					height="20"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<line x1="12" y1="1" x2="12" y2="23" /><path
+						d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"
+					/>
 				</svg>
 			</div>
 			<div>
-				<p class="text-ink text-sm font-semibold">Add expense</p>
-				<p class="text-ink-muted text-xs">Log a cost for this trip</p>
+				<p class="text-sm font-semibold text-ink">Add expense</p>
+				<p class="text-xs text-ink-muted">Log a cost for this trip</p>
 			</div>
 		</button>
 	</div>
@@ -1288,7 +1333,8 @@ export function getActiveTab(pathname: string, mode: TripViewMode): string {
 	}
 	if (pathname.includes('/expenses') || pathname.includes('/budget')) return 'money';
 	if (pathname.includes('/members')) return 'members';
-	if (pathname.includes('/more') || pathname.includes('/inbox') || pathname.includes('/settings')) return 'more';
+	if (pathname.includes('/more') || pathname.includes('/inbox') || pathname.includes('/settings'))
+		return 'more';
 	return 'itinerary';
 }
 ```
@@ -1306,16 +1352,19 @@ This step requires reading the current `AppShell.svelte` to understand its struc
 Read `src/lib/shell/components/AppShell.svelte` first, then make the following changes:
 
 - Add imports at the top of the script:
+
 ```typescript
 import AddSheet from '$lib/trip-mode/components/AddSheet.svelte';
 ```
 
 - Add state after existing state declarations:
+
 ```typescript
 let addSheetOpen = $state(false);
 ```
 
 - Derive `todayDayId` from the layout data:
+
 ```typescript
 const todayDayId = $derived.by(() => {
 	const todayStr = new Date().toISOString().split('T')[0];
@@ -1327,6 +1376,7 @@ const todayDayId = $derived.by(() => {
 - Where BottomNav renders tab buttons, add a check: if `tab.action === 'add-sheet'`, the button's click handler should set `addSheetOpen = true` instead of navigating. (The exact implementation depends on how BottomNav renders — it may need an `onAction` callback prop.)
 
 - Add before the closing tag of the component:
+
 ```svelte
 {#if data.trip}
 	<AddSheet bind:open={addSheetOpen} slug={data.trip.slug} {todayDayId} />
@@ -1360,6 +1410,7 @@ Run: `pnpm dev` (frontend) and `./backend/start.sh` (PocketBase) if not already 
 - [ ] **Step 2: Verify Now tab states**
 
 Navigate to an active trip's Now tab. Verify:
+
 - If the current time falls within an item's time range → mid-event card renders with "Right now" pill, countdown, UP NEXT preview
 - If between items → FREE TIME countdown card renders with UP NEXT preview
 - If past 10pm or all items done → day-wrapped summary renders
@@ -1370,6 +1421,7 @@ To test different states, temporarily adjust item times in PocketBase admin or m
 - [ ] **Step 3: Verify Today tab**
 
 Navigate to the Today tab. Verify:
+
 - Past items are dimmed (opacity-50)
 - Current item has clay left border accent and "Right now" pill
 - Future items render normally
@@ -1382,6 +1434,7 @@ Navigate to the Today tab. Verify:
 - [ ] **Step 4: Verify Add button**
 
 Tap the Add (center) button in trip mode nav. Verify:
+
 - Bottom sheet opens with "Add item to today" and "Add expense" options
 - "Add item to today" navigates to `/trips/{slug}/items/new?from=trip&day={todayDayId}`
 - "Add expense" navigates to `/trips/{slug}/expenses?action=add`
@@ -1399,6 +1452,7 @@ Expected: All checks pass, all tests pass
 - [ ] **Step 7: Commit any fixes from verification**
 
 If fixes were needed, commit them:
+
 ```bash
 git add -A
 git commit -m "fix(#33): address visual verification issues"
@@ -1409,6 +1463,7 @@ git commit -m "fix(#33): address visual verification issues"
 ### Task 11: E2E tests
 
 **Files:**
+
 - Create: `tests/e2e/trip-mode-views.spec.ts`
 
 Critical-path E2E tests from the PRD testing strategy (§4). These verify the integration works end-to-end.
@@ -1491,23 +1546,24 @@ git commit -m "test(#33): add E2E tests for Trip Mode Now, Today, and Add"
 
 ## Summary
 
-| Task | What | Commits |
-|------|------|---------|
-| 1 | Now state derivation (types + pure function + tests) | 1 |
-| 2 | Countdown formatter | 1 |
-| 3 | Now page server loader | 1 |
-| 4 | Now sub-components (MidEvent, BetweenThings, DayWrapped) | 1 |
-| 5 | Now page assembly | 1 |
-| 6 | TodayItemCard component | 1 |
-| 7 | TodayTimeline component | 1 |
-| 8 | Today page update | 1 |
-| 9 | Add button choice sheet + nav wiring | 1 |
-| 10 | Visual verification + fixes | 0-1 |
-| 11 | E2E tests | 1 |
+| Task | What                                                     | Commits |
+| ---- | -------------------------------------------------------- | ------- |
+| 1    | Now state derivation (types + pure function + tests)     | 1       |
+| 2    | Countdown formatter                                      | 1       |
+| 3    | Now page server loader                                   | 1       |
+| 4    | Now sub-components (MidEvent, BetweenThings, DayWrapped) | 1       |
+| 5    | Now page assembly                                        | 1       |
+| 6    | TodayItemCard component                                  | 1       |
+| 7    | TodayTimeline component                                  | 1       |
+| 8    | Today page update                                        | 1       |
+| 9    | Add button choice sheet + nav wiring                     | 1       |
+| 10   | Visual verification + fixes                              | 0-1     |
+| 11   | E2E tests                                                | 1       |
 
 **Total: 10-11 commits, ~11 new/modified files**
 
 Dependencies within the plan:
+
 ```
 Task 1 (now-state logic)
  └── Task 3 (server loader) ──┐

@@ -91,128 +91,138 @@
 
 <!-- Dashed border = "pending", distinct from a solid idea card. -->
 <div aria-label="Pending idea: {title}" role="group">
-<Card class="border-dashed">
-	<div class="px-3 py-2">
-		<div class="flex items-start justify-between gap-2">
-			<p class="text-ink min-w-0 truncate text-sm font-semibold" title={title}>{title}</p>
-			<Pill variant="pending" size="sm">Pending</Pill>
+	<Card class="border-dashed">
+		<div class="px-3 py-2">
+			<div class="flex items-start justify-between gap-2">
+				<p class="min-w-0 truncate text-sm font-semibold text-ink" {title}>{title}</p>
+				<Pill variant="pending" size="sm">Pending</Pill>
+			</div>
+			{#if sub}
+				<p class="mt-0.5 truncate text-xs text-ink-muted" data-idea-sub>{sub}</p>
+			{/if}
+			<p class="mt-0.5 text-xs text-ink-muted">Suggested by {authorName}</p>
+			{#if !isAuthor}
+				<WhatIsLink {title} {place} />
+			{/if}
+			<div class="mt-1.5 w-fit">
+				<VotePills
+					{votes}
+					{members}
+					{myMemberId}
+					canVote={showVoteButtons}
+					voteAction={actions.vote}
+					unvoteAction={actions.unvote}
+					extraFields={{ suggestion_id: suggestion.id }}
+				/>
+			</div>
 		</div>
-		{#if sub}
-			<p class="text-ink-muted mt-0.5 truncate text-xs" data-idea-sub>{sub}</p>
-		{/if}
-		<p class="text-ink-muted mt-0.5 text-xs">Suggested by {authorName}</p>
-		{#if !isAuthor}
-			<WhatIsLink {title} {place} />
-		{/if}
-		<div class="mt-1.5 w-fit">
-			<VotePills
-				{votes}
-				{members}
-				{myMemberId}
-				canVote={showVoteButtons}
-				voteAction={actions.vote}
-				unvoteAction={actions.unvote}
-				extraFields={{ suggestion_id: suggestion.id }}
-			/>
-		</div>
-	</div>
 
-	{#if canReview}
-		<!-- The tray (#444). Approve promotes the suggestion to a real item (author-
+		{#if canReview}
+			<!-- The tray (#444). Approve promotes the suggestion to a real item (author-
 		     attributed, votes carried). Reject demands a one-line note. Edit opens the
 		     edit view (Reject / Save / Approve). -->
-		<div class="border-line/70 space-y-2 border-t border-dashed px-3 py-2">
-			{#if !rejectOpen}
-				<div class="flex flex-wrap items-center gap-2" role="group" aria-label="Review this pending idea">
+			<div class="space-y-2 border-t border-dashed border-line/70 px-3 py-2">
+				{#if !rejectOpen}
+					<div
+						class="flex flex-wrap items-center gap-2"
+						role="group"
+						aria-label="Review this pending idea"
+					>
+						<form
+							method="POST"
+							action={actions.approve}
+							use:enhance={() => {
+								reviewing = true;
+								return async ({ update, result }) => {
+									reviewing = false;
+									if (result.type === 'success') toast.show('Suggestion approved');
+									await update();
+								};
+							}}
+						>
+							<input type="hidden" name="suggestion_id" value={suggestion.id} />
+							<button
+								type="submit"
+								disabled={reviewing}
+								class="{TRAY_BTN} border-moss bg-moss text-paper"
+							>
+								{reviewing ? 'Approving…' : 'Approve'}
+							</button>
+						</form>
+						{#if review === 'inbox'}
+							<a
+								href={withOrigin(
+									`/trips/${tripSlug}/items/new?suggestion=${suggestion.id}`,
+									page.url.pathname
+								)}
+								class="{TRAY_BTN} border-line text-ink-soft hover:bg-surface-2 active:bg-surface-2"
+							>
+								Edit
+							</a>
+						{/if}
+						<button
+							type="button"
+							onclick={() => (rejectOpen = true)}
+							disabled={reviewing}
+							class="{TRAY_BTN} border-line text-ink-muted hover:border-clay/40 hover:text-clay active:border-clay/40 active:text-clay"
+						>
+							Reject
+						</button>
+					</div>
+				{:else}
 					<form
 						method="POST"
-						action={actions.approve}
+						action={actions.reject}
 						use:enhance={() => {
-							reviewing = true;
-							return async ({ update, result }) => {
-								reviewing = false;
-								if (result.type === 'success') toast.show('Suggestion approved');
+							rejectSubmitting = true;
+							return async ({ result, update }) => {
+								rejectSubmitting = false;
+								if (result.type === 'success') {
+									rejectOpen = false;
+									rejectNote = '';
+									toast.show('Suggestion rejected');
+								}
 								await update();
 							};
 						}}
+						class="space-y-2"
 					>
 						<input type="hidden" name="suggestion_id" value={suggestion.id} />
-						<button
-							type="submit"
-							disabled={reviewing}
-							class="{TRAY_BTN} bg-moss text-paper border-moss"
-						>
-							{reviewing ? 'Approving…' : 'Approve'}
-						</button>
+						<label class="block text-xs font-medium text-ink-soft" for="{uid}-reject-note">
+							Reason for rejecting (required)
+						</label>
+						<input
+							id="{uid}-reject-note"
+							name="review_note"
+							type="text"
+							required
+							bind:value={rejectNote}
+							placeholder="Why isn’t this a fit?"
+							class="block min-h-[44px] w-full rounded-md border border-line bg-surface px-3 text-sm text-ink"
+						/>
+						<div class="flex items-center gap-2">
+							<button
+								type="submit"
+								disabled={rejectSubmitting || !rejectNote.trim()}
+								class="{TRAY_BTN} border-clay bg-clay text-paper"
+							>
+								{rejectSubmitting ? 'Rejecting…' : 'Confirm reject'}
+							</button>
+							<button
+								type="button"
+								onclick={() => {
+									rejectOpen = false;
+									rejectNote = '';
+								}}
+								disabled={rejectSubmitting}
+								class="inline-flex min-h-[44px] items-center px-3 text-sm font-semibold text-ink-muted hover:text-ink-soft active:text-ink-soft disabled:opacity-50"
+							>
+								Cancel
+							</button>
+						</div>
 					</form>
-					{#if review === 'inbox'}
-						<a
-							href={withOrigin(`/trips/${tripSlug}/items/new?suggestion=${suggestion.id}`, page.url.pathname)}
-							class="{TRAY_BTN} border-line text-ink-soft hover:bg-surface-2 active:bg-surface-2"
-						>
-							Edit
-						</a>
-					{/if}
-					<button
-						type="button"
-						onclick={() => (rejectOpen = true)}
-						disabled={reviewing}
-						class="{TRAY_BTN} border-line text-ink-muted hover:border-clay/40 active:border-clay/40 hover:text-clay active:text-clay"
-					>
-						Reject
-					</button>
-				</div>
-			{:else}
-				<form
-					method="POST"
-					action={actions.reject}
-					use:enhance={() => {
-						rejectSubmitting = true;
-						return async ({ result, update }) => {
-							rejectSubmitting = false;
-							if (result.type === 'success') {
-								rejectOpen = false;
-								rejectNote = '';
-								toast.show('Suggestion rejected');
-							}
-							await update();
-						};
-					}}
-					class="space-y-2"
-				>
-					<input type="hidden" name="suggestion_id" value={suggestion.id} />
-					<label class="text-ink-soft block text-xs font-medium" for="{uid}-reject-note">
-						Reason for rejecting (required)
-					</label>
-					<input
-						id="{uid}-reject-note"
-						name="review_note"
-						type="text"
-						required
-						bind:value={rejectNote}
-						placeholder="Why isn’t this a fit?"
-						class="border-line bg-surface text-ink block min-h-[44px] w-full rounded-md border px-3 text-sm"
-					/>
-					<div class="flex items-center gap-2">
-						<button
-							type="submit"
-							disabled={rejectSubmitting || !rejectNote.trim()}
-							class="{TRAY_BTN} bg-clay text-paper border-clay"
-						>
-							{rejectSubmitting ? 'Rejecting…' : 'Confirm reject'}
-						</button>
-						<button
-							type="button"
-							onclick={() => { rejectOpen = false; rejectNote = ''; }}
-							disabled={rejectSubmitting}
-							class="text-ink-muted hover:text-ink-soft active:text-ink-soft inline-flex min-h-[44px] items-center px-3 text-sm font-semibold disabled:opacity-50"
-						>
-							Cancel
-						</button>
-					</div>
-				</form>
-			{/if}
-		</div>
-	{/if}
-</Card>
+				{/if}
+			</div>
+		{/if}
+	</Card>
 </div>

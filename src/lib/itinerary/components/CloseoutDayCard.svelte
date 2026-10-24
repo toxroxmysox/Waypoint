@@ -32,19 +32,21 @@
 		return phaseMap.get(day.phases[0])?.name || null;
 	});
 
-	const sortedItems = $derived([...items].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)));
+	const sortedItems = $derived(
+		[...items].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+	);
 
 	const pendingItems = $derived(items.filter((i) => i.status !== 'done'));
 	let bulkSubmitting = $state(false);
 	let bulkDone = $state(false);
 </script>
 
-<div class="bg-surface border-border overflow-hidden rounded-xl border shadow-sm">
-	<div class="flex items-center justify-between border-b border-border/50 px-4 py-3">
+<div class="border-border overflow-hidden rounded-xl border bg-surface shadow-sm">
+	<div class="border-border/50 flex items-center justify-between border-b px-4 py-3">
 		<div>
-			<h3 class="text-ink text-base font-semibold">{dayDate}</h3>
+			<h3 class="text-base font-semibold text-ink">{dayDate}</h3>
 			{#if phaseName}
-				<p class="text-ink-muted text-xs">{phaseName}</p>
+				<p class="text-xs text-ink-muted">{phaseName}</p>
 			{/if}
 		</div>
 
@@ -82,7 +84,7 @@
 	</div>
 
 	{#if items.length === 0}
-		<p class="text-ink-muted px-4 py-6 text-center text-sm">No items for this day.</p>
+		<p class="px-4 py-6 text-center text-sm text-ink-muted">No items for this day.</p>
 	{:else}
 		{#each sortedItems as item (item.id)}
 			<CloseoutItemRow

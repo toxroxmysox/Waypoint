@@ -12,19 +12,40 @@ migrate(
 			type: 'base',
 			name: 'votes',
 			fields: [
-				{ type: 'relation', name: 'trip', required: true, collectionId: trips.id, maxSelect: 1, cascadeDelete: true },
-				{ type: 'relation', name: 'item', required: true, collectionId: items.id, maxSelect: 1, cascadeDelete: true },
-				{ type: 'relation', name: 'member', required: true, collectionId: tripMembers.id, maxSelect: 1, cascadeDelete: true },
+				{
+					type: 'relation',
+					name: 'trip',
+					required: true,
+					collectionId: trips.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				},
+				{
+					type: 'relation',
+					name: 'item',
+					required: true,
+					collectionId: items.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				},
+				{
+					type: 'relation',
+					name: 'member',
+					required: true,
+					collectionId: tripMembers.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				}
 			],
 			indexes: [
 				'CREATE UNIQUE INDEX idx_votes_item_member ON votes (item, member)',
 				'CREATE INDEX idx_votes_trip ON votes (trip)',
-				'CREATE INDEX idx_votes_item ON votes (item)',
+				'CREATE INDEX idx_votes_item ON votes (item)'
 			],
 			listRule: MEMBER_VIA_TRIP,
 			viewRule: MEMBER_VIA_TRIP,
 			createRule: MEMBER_VIA_TRIP,
-			deleteRule: MEMBER_VIA_TRIP + ' && member.user = @request.auth.id',
+			deleteRule: MEMBER_VIA_TRIP + ' && member.user = @request.auth.id'
 		});
 
 		app.save(collection);

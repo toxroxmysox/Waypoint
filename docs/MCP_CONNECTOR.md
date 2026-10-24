@@ -29,16 +29,16 @@ Waypoint → **Account → Connected apps → Disconnect**. Claude's access ends
 
 ## Tools
 
-| Tool | Returns |
-|---|---|
-| `list_trips` | Your trips, with your role and AI Access state |
-| `trip_brief` | Now on a trip: where, what's on now and next, tonight's lodging, today's and tomorrow's codes |
-| `get_trip` | Phases, nightly lodging, members, goals, ideas with votes |
-| `get_day` | One day: stays, items in timeline order, day notes |
-| `search` | Items, day notes, codes, expenses, goals across trips, with filters |
-| `get_item` | One item in full: codes, comments, who's going, votes, expenses |
-| `get_money` | Balances, who owes whom, budget, spend by category |
-| `audit_trip` | What's missing: nights without lodging, unbooked, code-less flights, overlaps, ideas, open tasks |
-| `what_changed` | What was added or edited since a time |
-| `get_lists` | Checklists and tasks, with assignees |
-| `get_memories` | Memory thoughts by day |
+| Tool           | Returns                                                                                          |
+| -------------- | ------------------------------------------------------------------------------------------------ |
+| `list_trips`   | Your trips, with your role and AI Access state                                                   |
+| `trip_brief`   | Now on a trip: where, what's on now and next, tonight's lodging, today's and tomorrow's codes    |
+| `get_trip`     | Phases, nightly lodging, members, goals, ideas with votes                                        |
+| `get_day`      | One day: stays, items in timeline order, day notes                                               |
+| `search`       | Items, day notes, codes, expenses, goals across trips, with filters                              |
+| `get_item`     | One item in full: codes, comments, who's going, votes, expenses                                  |
+| `get_money`    | Balances, who owes whom, budget, spend by category                                               |
+| `audit_trip`   | What's missing: nights without lodging, unbooked, code-less flights, overlaps, ideas, open tasks |
+| `what_changed` | What was added or edited since a time                                                            |
+| `get_lists`    | Checklists and tasks, with assignees                                                             |
+| `get_memories` | Memory thoughts by day                                                                           |

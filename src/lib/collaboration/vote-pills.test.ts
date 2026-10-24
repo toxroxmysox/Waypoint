@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { votePills, votePillsLabel, withMyVote, scoreVotes, sortByVoteScore, type DisplayVote } from './voting';
+import {
+	votePills,
+	votePillsLabel,
+	withMyVote,
+	scoreVotes,
+	sortByVoteScore,
+	type DisplayVote
+} from './voting';
 
 // #425 — tap-to-vote pills on ideas
 function vote(value: DisplayVote['value'], member: string): DisplayVote {
@@ -46,7 +53,9 @@ describe('votePillsLabel', () => {
 		expect(votePillsLabel(votePills([], 'me', name))).toBe('no votes');
 	});
 	it('names my vote when it is a pass', () => {
-		expect(votePillsLabel(votePills([vote('dislike', 'me')], 'me', name))).toBe('1 pass, your vote pass');
+		expect(votePillsLabel(votePills([vote('dislike', 'me')], 'me', name))).toBe(
+			'1 pass, your vote pass'
+		);
 	});
 });
 

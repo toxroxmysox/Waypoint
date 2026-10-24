@@ -2,7 +2,12 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Day, Item, Phase, Vote } from '$lib/types';
 import { toDateOnly } from '$lib/itinerary/multi-day';
-import { validateNewPhaseStart, validateMovePhaseStart, retilePhases, toDay } from '$lib/itinerary/phase-tiling';
+import {
+	validateNewPhaseStart,
+	validateMovePhaseStart,
+	retilePhases,
+	toDay
+} from '$lib/itinerary/phase-tiling';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
 	const { trip, membership, phases } = await parent();
@@ -31,7 +36,9 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 	const cards = (phases as Phase[]).map((phase) => {
 		const phaseDays = days.filter((d) => (d.phases ?? []).includes(phase.id));
 		// "N ideas · M to rate": M counts the same ideas N does, unvoted by this member.
-		const ideas = items.filter((it) => it.phase === phase.id && it.status === 'unplanned' && !it.day);
+		const ideas = items.filter(
+			(it) => it.phase === phase.id && it.status === 'unplanned' && !it.day
+		);
 		return {
 			phase,
 			days: phaseDays,

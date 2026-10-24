@@ -2,7 +2,15 @@ import { describe, it, expect } from 'vitest';
 import { getFieldConfig, buildEmptyFormData } from './item-fields';
 import type { ItemType } from '$lib/types';
 
-const ALL_TYPES: ItemType[] = ['lodging', 'transportation', 'activity', 'meal', 'note', 'checklist', 'flight'];
+const ALL_TYPES: ItemType[] = [
+	'lodging',
+	'transportation',
+	'activity',
+	'meal',
+	'note',
+	'checklist',
+	'flight'
+];
 
 describe('getFieldConfig', () => {
 	it('returns a config for every ItemType', () => {

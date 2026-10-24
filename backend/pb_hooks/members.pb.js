@@ -100,7 +100,8 @@ routerAdd('GET', '/api/members/placeholder-emails', (e) => {
 	if (!authRecord) throw new UnauthorizedError('Authentication required');
 
 	const query = e.requestInfo().query || {};
-	const tripId = '' + (Array.isArray(query['trip_id']) ? query['trip_id'][0] : query['trip_id'] || '');
+	const tripId =
+		'' + (Array.isArray(query['trip_id']) ? query['trip_id'][0] : query['trip_id'] || '');
 	if (!tripId) throw new BadRequestError('trip_id is required');
 
 	let callerMember;
@@ -248,7 +249,9 @@ routerAdd('POST', '/api/members/add-placeholder', (e) => {
 	const info = e.requestInfo();
 	const tripId = (info.body && info.body['trip_id']) || '';
 	const displayName = ((info.body && info.body['display_name']) || '').trim();
-	const placeholderEmail = ((info.body && info.body['placeholder_email']) || '').trim().toLowerCase();
+	const placeholderEmail = ((info.body && info.body['placeholder_email']) || '')
+		.trim()
+		.toLowerCase();
 	const role = (info.body && info.body['role']) || '';
 
 	if (!tripId) throw new BadRequestError('trip_id is required');
@@ -458,7 +461,9 @@ routerAdd('GET', '/api/members/can-purge', (e) => {
 	// requestInfo().query — e.request.url is not valid in the PB 0.27 sandbox
 	// (see suggestions.pb.js). Values may be a string or string array; normalize.
 	const query = e.requestInfo().query || {};
-	const memberId = Array.isArray(query['member_id']) ? query['member_id'][0] : (query['member_id'] || '');
+	const memberId = Array.isArray(query['member_id'])
+		? query['member_id'][0]
+		: query['member_id'] || '';
 	if (!memberId) throw new BadRequestError('member_id is required');
 
 	let target;
@@ -533,22 +538,33 @@ routerAdd('GET', '/api/members/can-purge', (e) => {
 	// referenced. Decode the byte-array JSON exactly as the remove hook does.
 	let expenses = [];
 	try {
-		expenses = e.app.findRecordsByFilter('expenses', 'trip = {:tripId}', '', 0, 0, { tripId: tripId });
+		expenses = e.app.findRecordsByFilter('expenses', 'trip = {:tripId}', '', 0, 0, {
+			tripId: tripId
+		});
 	} catch (_) {
 		expenses = [];
 	}
 	for (const exp of expenses) {
 		let split = exp.get('split_data');
 		if (Array.isArray(split) && split.length > 0 && typeof split[0] === 'number') {
-			try { split = JSON.parse(String.fromCharCode.apply(null, split)); } catch (_) { split = null; }
+			try {
+				split = JSON.parse(String.fromCharCode.apply(null, split));
+			} catch (_) {
+				split = null;
+			}
 		} else if (typeof split === 'string') {
-			try { split = JSON.parse(split); } catch (_) { split = null; }
+			try {
+				split = JSON.parse(split);
+			} catch (_) {
+				split = null;
+			}
 		}
 		if (!split || typeof split !== 'object') continue;
 		const mem = split.members;
 		if (mem && mem.length) {
 			for (let i = 0; i < mem.length; i++) {
-				if (mem[i] === memberId) return e.json(200, { ok: true, member_id: memberId, zero_ref: false });
+				if (mem[i] === memberId)
+					return e.json(200, { ok: true, member_id: memberId, zero_ref: false });
 			}
 		}
 		const amounts = split.amounts;
@@ -803,7 +819,13 @@ routerAdd('POST', '/api/members/remove', (e) => {
 	// explicitly. This also makes a vote-only member zero-ref (→ purged, ADR-0013):
 	// suggestion_votes was missing from this loop pre-#238, so a member whose only
 	// reference was a suggestion vote would have wrongly blocked the purge.
-	for (const col of ['votes', 'goal_votes', 'suggestion_votes', 'scenario_votes', 'scenario_points']) {
+	for (const col of [
+		'votes',
+		'goal_votes',
+		'suggestion_votes',
+		'scenario_votes',
+		'scenario_points'
+	]) {
 		let rows = [];
 		try {
 			rows = e.app.findRecordsByFilter(col, 'member = {:mid}', '', 0, 0, { mid: target.id });
@@ -830,7 +852,9 @@ routerAdd('POST', '/api/members/remove', (e) => {
 			try {
 				e.app.save(r);
 			} catch (err) {
-				console.log('members.remove: ' + col + '.' + field + ' rewrite failed for ' + r.id + ': ' + err);
+				console.log(
+					'members.remove: ' + col + '.' + field + ' rewrite failed for ' + r.id + ': ' + err
+				);
 			}
 		}
 	};
@@ -864,7 +888,9 @@ routerAdd('POST', '/api/members/remove', (e) => {
 			try {
 				e.app.save(r);
 			} catch (err) {
-				console.log('members.remove: ' + col + '.' + field + ' multi-rewrite failed for ' + r.id + ': ' + err);
+				console.log(
+					'members.remove: ' + col + '.' + field + ' multi-rewrite failed for ' + r.id + ': ' + err
+				);
 			}
 		}
 	};
@@ -899,16 +925,26 @@ routerAdd('POST', '/api/members/remove', (e) => {
 		if (!fromId || !toId || fromId === toId) return;
 		let expenses = [];
 		try {
-			expenses = e.app.findRecordsByFilter('expenses', 'trip = {:tripId}', '', 0, 0, { tripId: tripId });
+			expenses = e.app.findRecordsByFilter('expenses', 'trip = {:tripId}', '', 0, 0, {
+				tripId: tripId
+			});
 		} catch (_) {
 			return;
 		}
 		for (const exp of expenses) {
 			let split = exp.get('split_data');
 			if (Array.isArray(split) && split.length > 0 && typeof split[0] === 'number') {
-				try { split = JSON.parse(String.fromCharCode.apply(null, split)); } catch (_) { split = null; }
+				try {
+					split = JSON.parse(String.fromCharCode.apply(null, split));
+				} catch (_) {
+					split = null;
+				}
 			} else if (typeof split === 'string') {
-				try { split = JSON.parse(split); } catch (_) { split = null; }
+				try {
+					split = JSON.parse(split);
+				} catch (_) {
+					split = null;
+				}
 			}
 			if (!split || typeof split !== 'object') continue;
 
@@ -950,7 +986,9 @@ routerAdd('POST', '/api/members/remove', (e) => {
 				try {
 					e.app.save(exp);
 				} catch (err) {
-					console.log('members.remove: split_data transfer failed for expense ' + exp.id + ': ' + err);
+					console.log(
+						'members.remove: split_data transfer failed for expense ' + exp.id + ': ' + err
+					);
 				}
 			}
 		}
@@ -1028,7 +1066,9 @@ routerAdd('POST', '/api/members/remove', (e) => {
 				// of the same trip), so the scan stays small.
 				let expenses = [];
 				try {
-					expenses = e.app.findRecordsByFilter('expenses', 'trip = {:tripId}', '', 0, 0, { tripId: tripId });
+					expenses = e.app.findRecordsByFilter('expenses', 'trip = {:tripId}', '', 0, 0, {
+						tripId: tripId
+					});
 				} catch (_) {
 					expenses = [];
 				}
@@ -1039,9 +1079,17 @@ routerAdd('POST', '/api/members/remove', (e) => {
 					// a member who only owes a share would wrongly purge (money-integrity bug).
 					let split = exp.get('split_data');
 					if (Array.isArray(split) && split.length > 0 && typeof split[0] === 'number') {
-						try { split = JSON.parse(String.fromCharCode.apply(null, split)); } catch (_) { split = null; }
+						try {
+							split = JSON.parse(String.fromCharCode.apply(null, split));
+						} catch (_) {
+							split = null;
+						}
 					} else if (typeof split === 'string') {
-						try { split = JSON.parse(split); } catch (_) { split = null; }
+						try {
+							split = JSON.parse(split);
+						} catch (_) {
+							split = null;
+						}
 					}
 					if (!split || typeof split !== 'object') continue;
 					// equal split: members: [ids]

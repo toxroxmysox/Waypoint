@@ -28,7 +28,7 @@ A trip may exist **without dates**. Such a trip is in the **`forming`** lifecycl
 5. **Promotion is one-way.** Setting dates on a forming trip promotes it: the create-time seeding
    (auto "Phase 1" + day generation) runs at first-dating via the update path. Clearing dates on a
    dated trip is blocked (hook + form) — days/phases/items exist by then and un-dating is
-   destructive. Date *edits* remain allowed (day reconciliation already exists). Revisit backward
+   destructive. Date _edits_ remain allowed (day reconciliation already exists). Revisit backward
    transition only on real demand.
 6. **List presentation:** forming trips live in the same trips list with a subtle "No dates yet"
    badge, sorting ahead of past trips. "Forming" stays internal vocabulary — never a UI label.

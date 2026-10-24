@@ -4,13 +4,14 @@
 
 **Goal:** Let lodging / transportation / flight / activity / note items span a date range (e.g. a hotel Jun 8–12), rendered as a context-aware banner at the top of every spanned day.
 
-**Architecture:** Add a single plain `end_date` date field to `items`. The start anchor stays the existing `day` relation (it carries phase membership, notes, indexes — see [ADR-0002](../../adr/0002-multi-day-item-storage-asymmetry.md)). "Multi-day" is *derived* (`end_date > startDayDate`), never stored. Span→day bucketing is a pure, Vitest-tested helper (`multi-day.ts`), mirroring `timeline.ts`/`now-state.ts`/`trip-mode.ts`. Multi-day items are excluded from timeline slots and rendered as a banner instead. Phase is start-context only; spans cross phases freely.
+**Architecture:** Add a single plain `end_date` date field to `items`. The start anchor stays the existing `day` relation (it carries phase membership, notes, indexes — see [ADR-0002](../../adr/0002-multi-day-item-storage-asymmetry.md)). "Multi-day" is _derived_ (`end_date > startDayDate`), never stored. Span→day bucketing is a pure, Vitest-tested helper (`multi-day.ts`), mirroring `timeline.ts`/`now-state.ts`/`trip-mode.ts`. Multi-day items are excluded from timeline slots and rendered as a banner instead. Phase is start-context only; spans cross phases freely.
 
 **Tech Stack:** PocketBase (JS migrations + relations), SvelteKit 2 / Svelte 5 runes, TypeScript, Vitest, Playwright, Tailwind.
 
 **Scope sources:** Issue #41, the grill decision table (storage = `end_date` field; types = lodging/transportation/flight/activity/note; banner on every spanned day; Now excludes already-started; closeout once-on-start-day with editable end; client-side validation).
 
 **Out of scope / deferred:**
+
 - **Now-page "approaching check-in" reminder** — exploratory; documented at the end, not built here.
 - **Server-side (PB hook) validation** — validation is client/action-side only.
 - **meal / checklist spans** — excluded.
@@ -21,12 +22,14 @@
 ## File Structure
 
 **New files:**
+
 - `backend/pb_migrations/0028_items_end_date.js` — append `end_date` date field.
 - `src/lib/itinerary/multi-day.ts` — pure span helpers (`toDateOnly`, `isMultiDay`, `itemDateRange`, `spanningItemsForDate`, `nightInfo`).
 - `src/lib/itinerary/multi-day.test.ts` — Vitest for the above.
 - `src/lib/itinerary/components/MultiDayBanner.svelte` — the context-aware banner.
 
 **Modified files:**
+
 - `src/lib/itinerary/types.ts` — `Item.end_date`.
 - `src/lib/itinerary/components/ItemFormFields.ts` — `ItemFormData.end_date`, `ItemFormContext.tripStartDate/tripEndDate`.
 - `src/lib/itinerary/item-fields.ts` (+ `.test.ts`) — `endDate` visibility flag.
@@ -46,6 +49,7 @@
 ## Task 1: Migration — add `end_date` field
 
 **Files:**
+
 - Create: `backend/pb_migrations/0028_items_end_date.js`
 
 - [ ] **Step 1: Write the migration** (append-only; defaults empty; down removes it). Mirrors the field-add pattern in `0027_v3_schema_cleanup.js`.
@@ -93,6 +97,7 @@ git commit -m "feat(#41): add items.end_date field (append-only migration)"
 ## Task 2: Types — `end_date` on Item, form data, export
 
 **Files:**
+
 - Modify: `src/lib/itinerary/types.ts:59-62`
 - Modify: `src/lib/itinerary/components/ItemFormFields.ts:5-34`
 - Modify: `src/lib/portability/types.ts:30-52`
@@ -100,10 +105,10 @@ git commit -m "feat(#41): add items.end_date field (append-only migration)"
 - [ ] **Step 1: Add `end_date` to the `Item` interface.** In `src/lib/itinerary/types.ts`, after the `end_tz` line inside `interface Item`:
 
 ```ts
-	start_tz: string;
-	end_tz: string;
-	end_date: string;
-	status: ItemStatus;
+start_tz: string;
+end_tz: string;
+end_date: string;
+status: ItemStatus;
 ```
 
 - [ ] **Step 2: Add `end_date` to `ItemFormData` and trip dates to `ItemFormContext`.** In `ItemFormFields.ts`:
@@ -147,9 +152,9 @@ export interface ItemFormContext {
 - [ ] **Step 3: Add `end_date` to the export item shape.** In `src/lib/portability/types.ts`, inside the `items: Array<{ ... }>` member, after `end_tz: string;`:
 
 ```ts
-		end_tz: string;
-		end_date: string | null;
-		status: string;
+end_tz: string;
+end_date: string | null;
+status: string;
 ```
 
 - [ ] **Step 4: Verify types compile** (will surface required-field gaps fixed in later tasks; that's expected).
@@ -169,6 +174,7 @@ git commit -m "feat(#41): add end_date to Item, form data, export types"
 ## Task 3: Field visibility — `endDate` flag
 
 **Files:**
+
 - Modify: `src/lib/itinerary/item-fields.ts:5-95`
 - Test: `src/lib/itinerary/item-fields.test.ts`
 
@@ -264,6 +270,7 @@ git commit -m "feat(#41): add endDate field-visibility flag"
 ## Task 4: Pure span helpers + tests
 
 **Files:**
+
 - Create: `src/lib/itinerary/multi-day.ts`
 - Test: `src/lib/itinerary/multi-day.test.ts`
 
@@ -271,7 +278,13 @@ git commit -m "feat(#41): add endDate field-visibility flag"
 
 ```ts
 import { describe, it, expect } from 'vitest';
-import { toDateOnly, isMultiDay, itemDateRange, spanningItemsForDate, nightInfo } from './multi-day';
+import {
+	toDateOnly,
+	isMultiDay,
+	itemDateRange,
+	spanningItemsForDate,
+	nightInfo
+} from './multi-day';
 import type { Item, Day } from '$lib/types';
 
 const days = [
@@ -391,7 +404,11 @@ export function spanningItemsForDate(items: Item[], days: Day[], targetDate: str
 }
 
 /** 'night X of N' for a spanned target date. total = number of nights. null if not multi-day. */
-export function nightInfo(item: Item, days: Day[], targetDate: string): { night: number; total: number } | null {
+export function nightInfo(
+	item: Item,
+	days: Day[],
+	targetDate: string
+): { night: number; total: number } | null {
 	const range = itemDateRange(item, days);
 	if (!range) return null;
 	const total = daysBetween(range.start, range.end);
@@ -417,6 +434,7 @@ git commit -m "feat(#41): pure multi-day span helpers"
 ## Task 5: `formatDateRange` helper
 
 **Files:**
+
 - Modify: `src/lib/shell/format.ts`
 - Test: `src/lib/shell/format.test.ts`
 
@@ -474,6 +492,7 @@ git commit -m "feat(#41): formatDateRange helper"
 ## Task 6: ItemForm — end-date control
 
 **Files:**
+
 - Modify: `src/lib/itinerary/components/ItemForm.svelte`
 
 The control lives in the "When" card, after the Day select. It is shown only when `fields.endDate` is true **and** a day is selected (per validation rule 3: unplanned items have no span). Its `min` is the selected day's date, `max` is the trip end date.
@@ -481,64 +500,62 @@ The control lives in the "When" card, after the Day select. It is shown only whe
 - [ ] **Step 1: Track the selected day reactively.** In the `<script>` of `ItemForm.svelte`, after the existing `endTimeValue` state (line ~41), add:
 
 ```ts
-	let endDateValue = $state(untrack(() => initialData.end_date));
-	let selectedDay = $state(
-		untrack(() =>
-			mode === 'create' ? (context.preselectedDay ?? '') : initialData.day
-		)
-	);
-	let selectedDayDate = $derived(
-		context.days.find((d) => d.id === selectedDay)?.date.split(/[T ]/)[0] ?? ''
-	);
+let endDateValue = $state(untrack(() => initialData.end_date));
+let selectedDay = $state(
+	untrack(() => (mode === 'create' ? (context.preselectedDay ?? '') : initialData.day))
+);
+let selectedDayDate = $derived(
+	context.days.find((d) => d.id === selectedDay)?.date.split(/[T ]/)[0] ?? ''
+);
 ```
 
 - [ ] **Step 2: Bind the Day `<select>` to `selectedDay`.** Replace the existing Day select (lines ~396-415) so its value is bound and the `selected` attribute is dropped in favor of `bind:value`:
 
 ```svelte
-				<select
-					id="day"
-					name="day"
-					bind:value={selectedDay}
-					class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
-				>
-					<option value="">Unscheduled</option>
-					{#each context.days as d}
-						<option value={d.id}>
-							{new Date(d.date.replace(' ', 'T')).toLocaleDateString('en-US', {
-								weekday: 'short',
-								month: 'short',
-								day: 'numeric',
-								timeZone: 'UTC'
-							})}
-						</option>
-					{/each}
-				</select>
+<select
+	id="day"
+	name="day"
+	bind:value={selectedDay}
+	class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
+>
+	<option value="">Unscheduled</option>
+	{#each context.days as d}
+		<option value={d.id}>
+			{new Date(d.date.replace(' ', 'T')).toLocaleDateString('en-US', {
+				weekday: 'short',
+				month: 'short',
+				day: 'numeric',
+				timeZone: 'UTC'
+			})}
+		</option>
+	{/each}
+</select>
 ```
 
 - [ ] **Step 3: Add the end-date control.** Inside the `{#if fields.times}` block's parent "When" card, AFTER the `{#if fields.times}…{/if}` time grid (after line ~462, still inside the card `div`), add:
 
 ```svelte
-				{#if fields.endDate && selectedDay}
-					<div>
-						<label for="end_date" class="text-ink-soft block text-sm font-medium">
-							End date <span class="text-ink-muted font-normal">(multi-day)</span>
-						</label>
-						<input
-							type="date"
-							id="end_date"
-							name="end_date"
-							bind:value={endDateValue}
-							min={selectedDayDate}
-							max={context.tripEndDate}
-							class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
-						/>
-						<p class="text-ink-muted mt-1 text-xs">
-							Leave empty for a single-day item. End time above applies to the end date.
-						</p>
-					</div>
-				{:else if fields.endDate}
-					<input type="hidden" name="end_date" value="" />
-				{/if}
+{#if fields.endDate && selectedDay}
+	<div>
+		<label for="end_date" class="block text-sm font-medium text-ink-soft">
+			End date <span class="font-normal text-ink-muted">(multi-day)</span>
+		</label>
+		<input
+			type="date"
+			id="end_date"
+			name="end_date"
+			bind:value={endDateValue}
+			min={selectedDayDate}
+			max={context.tripEndDate}
+			class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
+		/>
+		<p class="mt-1 text-xs text-ink-muted">
+			Leave empty for a single-day item. End time above applies to the end date.
+		</p>
+	</div>
+{:else if fields.endDate}
+	<input type="hidden" name="end_date" value="" />
+{/if}
 ```
 
 (The `{:else if}` hidden input guarantees the field posts empty when no day is selected, so the server clears any prior span.)
@@ -560,6 +577,7 @@ git commit -m "feat(#41): end-date control in ItemForm"
 ## Task 7: New-item action — persist, validate, context
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/items/new/+page.server.ts`
 
 - [ ] **Step 1: Pass trip dates into the page context.** In the `load` return object (line ~63), add:
@@ -576,59 +594,59 @@ git commit -m "feat(#41): end-date control in ItemForm"
 - [ ] **Step 2: Parse, validate, and store `end_date` in the action.** In the `default` action, after `const endTime = data.get('end_time')?.toString() || '';` (line ~105), add:
 
 ```ts
-			const endDateRaw = (data.get('end_date')?.toString() || '').split(/[T ]/)[0];
+const endDateRaw = (data.get('end_date')?.toString() || '').split(/[T ]/)[0];
 ```
 
 Then replace the `dayDate` resolution + `payload` build (lines ~134-168) so the end date is validated against the day and trip, cleared when there is no day, and `end_time` combines with the end date:
 
 ```ts
-			// Resolve the owning day's date so item times carry the real calendar
-			// date (naive trip-local), not a 1970 placeholder. No day = no anchor.
-			let dayDate = '';
-			if (day) {
-				try {
-					const dayRec = await locals.pb.collection('days').getOne(day);
-					dayDate = String(dayRec.date || '').split(/[T ]/)[0];
-				} catch {
-					dayDate = '';
-				}
-			}
+// Resolve the owning day's date so item times carry the real calendar
+// date (naive trip-local), not a 1970 placeholder. No day = no anchor.
+let dayDate = '';
+if (day) {
+	try {
+		const dayRec = await locals.pb.collection('days').getOne(day);
+		dayDate = String(dayRec.date || '').split(/[T ]/)[0];
+	} catch {
+		dayDate = '';
+	}
+}
 
-			// Multi-day span: only valid when a day is set and end is strictly after
-			// the start day and within the trip. Otherwise the field is inert/cleared.
-			const tripEnd = String(trip.end_date || '').split(/[T ]/)[0];
-			let endDate = '';
-			if (day && dayDate && endDateRaw && endDateRaw > dayDate) {
-				if (tripEnd && endDateRaw > tripEnd) {
-					return fail(400, { error: 'End date is after the trip ends.' });
-				}
-				endDate = endDateRaw;
-			}
+// Multi-day span: only valid when a day is set and end is strictly after
+// the start day and within the trip. Otherwise the field is inert/cleared.
+const tripEnd = String(trip.end_date || '').split(/[T ]/)[0];
+let endDate = '';
+if (day && dayDate && endDateRaw && endDateRaw > dayDate) {
+	if (tripEnd && endDateRaw > tripEnd) {
+		return fail(400, { error: 'End date is after the trip ends.' });
+	}
+	endDate = endDateRaw;
+}
 
-			const payload = {
-				trip: trip.id,
-				phase: phase || '',
-				day: day || '',
-				type,
-				subtype,
-				title,
-				description,
-				location_name: locationName,
-				location_address: locationAddress,
-				location_coords: locationCoords,
-				google_place_id: googlePlaceId,
-				start_time: combineDateTime(dayDate, startTime),
-				end_time: combineDateTime(endDate || dayDate, endTime),
-				end_date: endDate ? `${endDate} 00:00:00.000Z` : '',
-				booked,
-				confirmation_codes: confirmationCodes,
-				reservation_url: reservationUrl,
-				free_cancellation: freeCancellation,
-				cost_estimate_usd: costEstimate,
-				cost_actual_usd: costActual,
-				assigned_to: assignedTo,
-				parent_item: parentItem || ''
-			};
+const payload = {
+	trip: trip.id,
+	phase: phase || '',
+	day: day || '',
+	type,
+	subtype,
+	title,
+	description,
+	location_name: locationName,
+	location_address: locationAddress,
+	location_coords: locationCoords,
+	google_place_id: googlePlaceId,
+	start_time: combineDateTime(dayDate, startTime),
+	end_time: combineDateTime(endDate || dayDate, endTime),
+	end_date: endDate ? `${endDate} 00:00:00.000Z` : '',
+	booked,
+	confirmation_codes: confirmationCodes,
+	reservation_url: reservationUrl,
+	free_cancellation: freeCancellation,
+	cost_estimate_usd: costEstimate,
+	cost_actual_usd: costActual,
+	assigned_to: assignedTo,
+	parent_item: parentItem || ''
+};
 ```
 
 (`end_time` now combines with the **end date** when the item spans, so a checkout time lands on the checkout day.)
@@ -650,61 +668,62 @@ git commit -m "feat(#41): persist + validate end_date on item create"
 ## Task 8: Edit-item action — load, persist, validate, context
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/items/[itemId]/edit/+page.server.ts`
 
 - [ ] **Step 1: Load `end_date` (date-only) into the form + pass trip dates.** In `load`, change the return (lines ~34-44):
 
 ```ts
-	return {
-		item: {
-			...item,
-			start_time: datetimeToTime(item.start_time ?? ''),
-			end_time: datetimeToTime(item.end_time ?? ''),
-			end_date: String(item.end_date ?? '').split(/[T ]/)[0]
-		},
-		checklistItems,
-		members,
-		phases,
-		days,
-		tripStartDate: String(trip.start_date || '').split(/[T ]/)[0],
-		tripEndDate: String(trip.end_date || '').split(/[T ]/)[0]
-	};
+return {
+	item: {
+		...item,
+		start_time: datetimeToTime(item.start_time ?? ''),
+		end_time: datetimeToTime(item.end_time ?? ''),
+		end_date: String(item.end_date ?? '').split(/[T ]/)[0]
+	},
+	checklistItems,
+	members,
+	phases,
+	days,
+	tripStartDate: String(trip.start_date || '').split(/[T ]/)[0],
+	tripEndDate: String(trip.end_date || '').split(/[T ]/)[0]
+};
 ```
 
 - [ ] **Step 2: Parse + validate + store in the `update` action.** After `const endTime = data.get('end_time')?.toString() || '';` (line ~69), add:
 
 ```ts
-			const endDateRaw = (data.get('end_date')?.toString() || '').split(/[T ]/)[0];
+const endDateRaw = (data.get('end_date')?.toString() || '').split(/[T ]/)[0];
 ```
 
 Inside the `try` block, the action already loads `item` and resolves `dayDate` (lines ~91-117). Change the `dayDate` resolution to strip time, then compute the span and clear it when unplanned. Replace lines ~107-117 (`// Resolve the owning day's date …` through the `dayDate` block) with:
 
 ```ts
-				// Resolve the owning day's date so item times carry the real calendar
-				// date (naive trip-local), not a 1970 placeholder. No day = no anchor.
-				let dayDate = '';
-				if (day) {
-					try {
-						const dayRec = await locals.pb.collection('days').getOne(day);
-						dayDate = String(dayRec.date || '').split(/[T ]/)[0];
-					} catch {
-						dayDate = '';
-					}
-				}
+// Resolve the owning day's date so item times carry the real calendar
+// date (naive trip-local), not a 1970 placeholder. No day = no anchor.
+let dayDate = '';
+if (day) {
+	try {
+		const dayRec = await locals.pb.collection('days').getOne(day);
+		dayDate = String(dayRec.date || '').split(/[T ]/)[0];
+	} catch {
+		dayDate = '';
+	}
+}
 
-				// Multi-day span: cleared when unscheduled; else must be after the
-				// start day and within the trip.
-				const trip = await locals.pb
-					.collection('trips')
-					.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
-				const tripEnd = String(trip.end_date || '').split(/[T ]/)[0];
-				let endDate = '';
-				if (resolvedStatus !== 'unplanned' && day && dayDate && endDateRaw && endDateRaw > dayDate) {
-					if (tripEnd && endDateRaw > tripEnd) {
-						return fail(400, { error: 'End date is after the trip ends.' });
-					}
-					endDate = endDateRaw;
-				}
+// Multi-day span: cleared when unscheduled; else must be after the
+// start day and within the trip.
+const trip = await locals.pb
+	.collection('trips')
+	.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+const tripEnd = String(trip.end_date || '').split(/[T ]/)[0];
+let endDate = '';
+if (resolvedStatus !== 'unplanned' && day && dayDate && endDateRaw && endDateRaw > dayDate) {
+	if (tripEnd && endDateRaw > tripEnd) {
+		return fail(400, { error: 'End date is after the trip ends.' });
+	}
+	endDate = endDateRaw;
+}
 ```
 
 - [ ] **Step 3: Write `end_date` + end-aware `end_time` in the update call.** In the `items.update` payload (lines ~119-139), change the two relevant lines:
@@ -743,6 +762,7 @@ git commit -m "feat(#41): load + persist + validate end_date on item edit"
 ## Task 9: MultiDayBanner component
 
 **Files:**
+
 - Create: `src/lib/itinerary/components/MultiDayBanner.svelte`
 
 - [ ] **Step 1: Build the banner.** It renders the date range, a context-aware label (check-in time on the start day, checkout time on the end day, "night X of N" in between), an optional ONGOING pill, and links to the item.
@@ -787,9 +807,9 @@ git commit -m "feat(#41): load + persist + validate end_date on item edit"
 {#if range}
 	<a
 		href="/trips/{tripSlug}/items/{item.id}"
-		class="bg-clay text-paper flex items-center gap-3 rounded-xl px-4 py-3 shadow-sm transition-opacity hover:opacity-95"
+		class="flex items-center gap-3 rounded-xl bg-clay px-4 py-3 text-paper shadow-sm transition-opacity hover:opacity-95"
 	>
-		<span class="bg-paper/20 flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
+		<span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-paper/20">
 			<TypeIcon type={item.type} size={18} />
 		</span>
 		<div class="min-w-0 flex-1">
@@ -799,7 +819,7 @@ git commit -m "feat(#41): load + persist + validate end_date on item edit"
 					<Pill variant="default" size="sm">Ongoing</Pill>
 				{/if}
 			</div>
-			<p class="text-paper/80 text-xs">
+			<p class="text-xs text-paper/80">
 				{formatDateRange(range.start, range.end)}{context ? ` · ${context}` : ''}
 			</p>
 		</div>
@@ -826,6 +846,7 @@ git commit -m "feat(#41): MultiDayBanner component"
 ## Task 10: Day view — exclude from timeline, render banners
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/days/[dayId]/+page.server.ts`
 - Modify: `src/routes/(app)/trips/[slug]/days/[dayId]/+page.svelte`
 
@@ -853,7 +874,15 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 
 	// ... existing votes / parkingLot logic (unchanged) ...
 
-	return { day, dayItems: items, dayPhases, voteCounts, parkingLotItems, spanningItems, allDays: days };
+	return {
+		day,
+		dayItems: items,
+		dayPhases,
+		voteCounts,
+		parkingLotItems,
+		spanningItems,
+		allDays: days
+	};
 };
 ```
 
@@ -862,20 +891,19 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 - [ ] **Step 2: Render the banners.** In the day `+page.svelte`, import the banner and place it directly above the `<DragDropTimeline>` block (after the notes `</Card>`, line ~122):
 
 ```svelte
-	import MultiDayBanner from '$lib/itinerary/components/MultiDayBanner.svelte';
-	// ...
-	{#if data.spanningItems.length > 0}
-		<div class="space-y-2">
-			{#each data.spanningItems as item (item.id)}
-				<MultiDayBanner
-					{item}
-					days={data.allDays}
-					dayDate={data.day.date.split(/[T ]/)[0]}
-					tripSlug={data.trip.slug}
-				/>
-			{/each}
-		</div>
-	{/if}
+import MultiDayBanner from '$lib/itinerary/components/MultiDayBanner.svelte'; // ...
+{#if data.spanningItems.length > 0}
+	<div class="space-y-2">
+		{#each data.spanningItems as item (item.id)}
+			<MultiDayBanner
+				{item}
+				days={data.allDays}
+				dayDate={data.day.date.split(/[T ]/)[0]}
+				tripSlug={data.trip.slug}
+			/>
+		{/each}
+	</div>
+{/if}
 ```
 
 - [ ] **Step 3: Verify in the browser.** Start the app (`pnpm dev` + `./backend/start.sh`), create a hotel with an end date a few days out, then visit each spanned day.
@@ -900,29 +928,31 @@ git commit -m "feat(#41): day view renders multi-day banners, excludes from time
 ## Task 11: Today view — banner with ONGOING, exclude from timeline
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/today/+page.server.ts`
 - Modify: `src/routes/(app)/trips/[slug]/today/+page.svelte`
 
 - [ ] **Step 1: Exclude multi-day from the timeline query + fetch spanning items.** In the today `+page.server.ts` `load`, scope the items query and add a multi-day fetch:
 
 ```ts
-	const items = todayAndUpcomingIds.length > 0
+const items =
+	todayAndUpcomingIds.length > 0
 		? await locals.pb.collection('items').getFullList<Item>({
 				filter: `(${todayAndUpcomingIds.map((id) => `day = "${id}"`).join(' || ')}) && end_date = ""`,
 				sort: 'day,start_time,sort_order'
 			})
 		: [];
 
-	const multiDayItems = await locals.pb.collection('items').getFullList<Item>({
-		filter: `trip = "${trip.id}" && end_date != ""`,
-		sort: 'day'
-	});
+const multiDayItems = await locals.pb.collection('items').getFullList<Item>({
+	filter: `trip = "${trip.id}" && end_date != ""`,
+	sort: 'day'
+});
 
-	return {
-		items,
-		multiDayItems,
-		now: now.toISOString()
-	};
+return {
+	items,
+	multiDayItems,
+	now: now.toISOString()
+};
 ```
 
 (The parenthesised day-OR group `&& end_date = ""` keeps spanning items out of the timeline; they render as banners. `getTripModeState` therefore receives only single-day items and its tests stay green.)
@@ -930,31 +960,28 @@ git commit -m "feat(#41): day view renders multi-day banners, excludes from time
 - [ ] **Step 2: Render the banner above the timeline with ONGOING.** In the today `+page.svelte`:
 
 ```svelte
-	import MultiDayBanner from '$lib/itinerary/components/MultiDayBanner.svelte';
-	import { spanningItemsForDate } from '$lib/itinerary/multi-day';
-	// ...
-	const todayDate = $derived(tripMode.now.today ? tripMode.now.today.date.split(/[T ]/)[0] : '');
-	const spanningToday = $derived(
-		todayDate ? spanningItemsForDate(data.multiDayItems, data.days, todayDate) : []
-	);
+import MultiDayBanner from '$lib/itinerary/components/MultiDayBanner.svelte'; import {spanningItemsForDate}
+from '$lib/itinerary/multi-day'; // ... const todayDate = $derived(tripMode.now.today ? tripMode.now.today.date.split(/[T
+]/)[0] : ''); const spanningToday = $derived( todayDate ? spanningItemsForDate(data.multiDayItems, data.days,
+todayDate) : [] );
 ```
 
 Then, inside the `{:else}` branch (after the `<h2>` day label, before `<TodayTimeline>`, line ~57):
 
 ```svelte
-			{#if spanningToday.length > 0}
-				<div class="space-y-2">
-					{#each spanningToday as item (item.id)}
-						<MultiDayBanner
-							{item}
-							days={data.days}
-							dayDate={todayDate}
-							tripSlug={data.trip.slug}
-							ongoing={true}
-						/>
-					{/each}
-				</div>
-			{/if}
+{#if spanningToday.length > 0}
+	<div class="space-y-2">
+		{#each spanningToday as item (item.id)}
+			<MultiDayBanner
+				{item}
+				days={data.days}
+				dayDate={todayDate}
+				tripSlug={data.trip.slug}
+				ongoing={true}
+			/>
+		{/each}
+	</div>
+{/if}
 ```
 
 (Everything in `spanningToday` includes the current date by construction, so `ongoing={true}` is correct — the item is being lived right now.)
@@ -983,6 +1010,7 @@ git commit -m "feat(#41): Today view renders ongoing multi-day banner"
 Closeout already groups by the `day` relation (`sort: 'day,sort_order'`), so a multi-day item appears exactly once — under its start day. No exclusion needed. We add the date-range display and an inline trim control ("planned 4 nights, did 3").
 
 **Files:**
+
 - Modify: `src/lib/itinerary/components/CloseoutItemRow.svelte`
 - Modify: `src/routes/(app)/trips/[slug]/closeout/+page.server.ts`
 
@@ -1046,38 +1074,38 @@ Closeout already groups by the `day` relation (`sort: 'day,sort_order'`), so a m
 In the title block, below the existing `{#if item.start_time}` line (line ~40-42), add:
 
 ```svelte
-				{#if range}
-					<button
-						type="button"
-						onclick={() => (editingEnd = !editingEnd)}
-						class="text-ink-muted text-xs hover:underline"
-					>
-						{formatDateRange(range.start, range.end)} · adjust
-					</button>
-					{#if editingEnd}
-						<form
-							method="POST"
-							action="?/trimEnd"
-							use:enhance={() => {
-								return async ({ result, update }) => {
-									if (result.type === 'success') editingEnd = false;
-									await update();
-								};
-							}}
-							class="mt-1 flex items-center gap-1"
-						>
-							<input type="hidden" name="item_id" value={item.id} />
-							<input
-								type="date"
-								name="end_date"
-								value={range.end}
-								min={range.start}
-								class="border-line bg-surface text-ink rounded border px-1.5 py-1 text-xs"
-							/>
-							<button type="submit" class="text-sky text-xs font-medium">Save</button>
-						</form>
-					{/if}
-				{/if}
+{#if range}
+	<button
+		type="button"
+		onclick={() => (editingEnd = !editingEnd)}
+		class="text-xs text-ink-muted hover:underline"
+	>
+		{formatDateRange(range.start, range.end)} · adjust
+	</button>
+	{#if editingEnd}
+		<form
+			method="POST"
+			action="?/trimEnd"
+			use:enhance={() => {
+				return async ({ result, update }) => {
+					if (result.type === 'success') editingEnd = false;
+					await update();
+				};
+			}}
+			class="mt-1 flex items-center gap-1"
+		>
+			<input type="hidden" name="item_id" value={item.id} />
+			<input
+				type="date"
+				name="end_date"
+				value={range.end}
+				min={range.start}
+				class="rounded border border-line bg-surface px-1.5 py-1 text-xs text-ink"
+			/>
+			<button type="submit" class="text-xs font-medium text-sky">Save</button>
+		</form>
+	{/if}
+{/if}
 ```
 
 - [ ] **Step 3: Pass `days` from the closeout day card.** Open `src/lib/itinerary/components/CloseoutDayCard.svelte`, find where it renders `<CloseoutItemRow ... />`, and forward a `days` prop. The card receives its data from the closeout page; thread `days` from `closeout/+page.svelte` → `CloseoutDayCard` → `CloseoutItemRow`. If `CloseoutDayCard` doesn't currently get `days`, add a `days` prop to it and pass `days={data.days}` at the call site in `closeout/+page.svelte`.
@@ -1100,6 +1128,7 @@ git commit -m "feat(#41): closeout shows + trims multi-day end date"
 ## Task 13: Portability — export / import / clone round-trip
 
 **Files:**
+
 - Modify: `src/lib/portability/export.ts`
 - Modify: `src/routes/(app)/trips/import/+page.server.ts`
 - Modify: `src/routes/(app)/trips/[slug]/clone/+page.server.ts`
@@ -1113,7 +1142,16 @@ it('includes end_date for multi-day items', () => {
 		makeTrip(),
 		[],
 		[{ id: 'd1', date: '2026-06-18 00:00:00.000Z' } as Day],
-		[{ id: 'i1', day: 'd1', type: 'lodging', title: 'Hotel', status: 'planned', end_date: '2026-06-22 00:00:00.000Z' } as Item],
+		[
+			{
+				id: 'i1',
+				day: 'd1',
+				type: 'lodging',
+				title: 'Hotel',
+				status: 'planned',
+				end_date: '2026-06-22 00:00:00.000Z'
+			} as Item
+		],
 		null
 	);
 	expect(result.items[0].end_date).toBe('2026-06-22 00:00:00.000Z');
@@ -1175,6 +1213,7 @@ git commit -m "feat(#41): round-trip end_date through export/import/clone"
 ## Task 14: Full verification + E2E
 
 **Files:**
+
 - Modify: `tests/e2e/m1-happy-path.spec.ts` (or create `tests/e2e/multi-day.spec.ts`)
 
 - [ ] **Step 1: Add an E2E that spans an item and asserts the banner.** Follow the existing spec patterns (`tests/e2e/m1-happy-path.spec.ts`). Outline:

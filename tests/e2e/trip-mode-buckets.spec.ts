@@ -38,14 +38,18 @@ test.describe('Now buckets (#431)', () => {
 		test.beforeAll(() => seed(BUCKETS, 'buckets'));
 		test.beforeEach(({ page }) => open(page, BUCKETS));
 
-		test('a started start-only item is a Hero reading NOW · since, not vanished', async ({ page }) => {
+		test('a started start-only item is a Hero reading NOW · since, not vanished', async ({
+			page
+		}) => {
 			const hero = page.locator('[data-hero]').filter({ visible: true });
 			await expect(hero).toHaveCount(1);
 			await expect(hero).toContainText('Lunch at Fika');
 			await expect(hero.getByTestId('hero-status')).toHaveText(/^NOW · since \d{1,2}:\d{2}[ap]$/);
 		});
 
-		test('Earlier today holds the ended start-only item and the passed deadline', async ({ page }) => {
+		test('Earlier today holds the ended start-only item and the passed deadline', async ({
+			page
+		}) => {
 			const earlier = section(page, 'Earlier today');
 			await expect(earlier).toContainText('Bike rental');
 			await expect(earlier).toContainText('Return rental clubs');
@@ -55,7 +59,9 @@ test.describe('Now buckets (#431)', () => {
 			await expect(earlier).not.toContainText('Lunch at Fika');
 		});
 
-		test('Coming up holds the future deadline, a timed item and the untimed one', async ({ page }) => {
+		test('Coming up holds the future deadline, a timed item and the untimed one', async ({
+			page
+		}) => {
 			const coming = section(page, 'Coming up');
 			await expect(coming).toContainText('Return kayaks');
 			await expect(coming).toContainText('Sunset cruise');
@@ -74,7 +80,12 @@ test.describe('Now buckets (#431)', () => {
 			]) {
 				await expect(count(page, title), title).toHaveCount(1);
 			}
-			await expect(page.locator('[data-hero]').filter({ visible: true }).getByText('Lunch at Fika', { exact: true })).toHaveCount(1);
+			await expect(
+				page
+					.locator('[data-hero]')
+					.filter({ visible: true })
+					.getByText('Lunch at Fika', { exact: true })
+			).toHaveCount(1);
 		});
 	});
 
@@ -82,7 +93,9 @@ test.describe('Now buckets (#431)', () => {
 		test.beforeAll(() => seed(DEADLINE, 'deadline'));
 		test.beforeEach(({ page }) => open(page, DEADLINE));
 
-		test('free-time card: FREE TIME / countdown / until {deadline title}, centred, no second line', async ({ page }) => {
+		test('free-time card: FREE TIME / countdown / until {deadline title}, centred, no second line', async ({
+			page
+		}) => {
 			const card = page.getByTestId('free-time').filter({ visible: true });
 			await expect(card).toBeVisible();
 			await expect(card).toContainText('Free time');

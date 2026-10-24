@@ -12,19 +12,19 @@
 
 ## Coverage map — what is already owned elsewhere (skipped here, cited)
 
-| Territory | Owner — do not re-propose |
-|---|---|
-| Replanning doors (ideas-from-free-time, skip→replace, promote-to-today, weighted Now) | `docs/TRIP_REPLANNING_PRD.md` (approved; absorbs SPEC_BACKLOG "Ideas from Free Time" + "Inline contextual parking lot") |
-| Wrap-up third state (settle→closeout→archive sequence) | Charter D5, WP-A-001 — pre-flagged P1, routed grill→PRD |
-| Memory capture/review (Note Before Bed, composer, closeout retro) | `docs/TRIP_MEMORY_PRD.md` (shelved firm) — TRIP_REPLANNING explicitly excludes Memory touchpoints; so does this doc |
-| Goals review step in closeout wizard | V4_GROUP_INPUT_PRD "Closeout integration — DEFERRED out of v4"; taskpath #33 flags the CONTEXT.md doc-vs-code mismatch |
-| Item↔expense two-way **navigation** | SPEC_BACKLOG Money (target v4); item-side "View in expenses" shipped per #128 comment in `items/[itemId]/+page.server.ts:54` |
-| Booking smart list, tri-state pill, packing/grocery views, task_assigned notification | SPEC_BACKLOG Tasks + TASKS_PRD §9/§10 (deferred) |
-| Calendar feed, weather, maps deep-links, email digest | SPEC_BACKLOG Integrations (deferred) |
-| Mid-trip money **glance**, trip-mode add-flow exits, offline doc path, archive share UX, clone bugs (flights, day collision), export gaps, first-five-minutes landing, suggestion visibility, leave-trip, /account reach | findings.json WP-A-004/005/008/009/011/013/014/016/017/018/019/020/024 + fresh-findings equivalents |
-| Per-member flights / item↔member association | WP-A-017 (taskpath #14 "gap, not in backlog") |
-| Day density (taskpath #12 "clean"), traveler-initiated invite (taskpath #3 "clean"), browse goals+votes (taskpath #10 "findable, split by design per ADR-0004") | judged clean/intentional — no pathway needed |
-| Trip-level messaging, push, realtime, multi-currency, embedded maps, native, AI itineraries | CLAUDE.md / charter NOT-list — dead on arrival |
+| Territory                                                                                                                                                                                                                | Owner — do not re-propose                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| Replanning doors (ideas-from-free-time, skip→replace, promote-to-today, weighted Now)                                                                                                                                    | `docs/TRIP_REPLANNING_PRD.md` (approved; absorbs SPEC_BACKLOG "Ideas from Free Time" + "Inline contextual parking lot")      |
+| Wrap-up third state (settle→closeout→archive sequence)                                                                                                                                                                   | Charter D5, WP-A-001 — pre-flagged P1, routed grill→PRD                                                                      |
+| Memory capture/review (Note Before Bed, composer, closeout retro)                                                                                                                                                        | `docs/TRIP_MEMORY_PRD.md` (shelved firm) — TRIP_REPLANNING explicitly excludes Memory touchpoints; so does this doc          |
+| Goals review step in closeout wizard                                                                                                                                                                                     | V4_GROUP_INPUT_PRD "Closeout integration — DEFERRED out of v4"; taskpath #33 flags the CONTEXT.md doc-vs-code mismatch       |
+| Item↔expense two-way **navigation**                                                                                                                                                                                      | SPEC_BACKLOG Money (target v4); item-side "View in expenses" shipped per #128 comment in `items/[itemId]/+page.server.ts:54` |
+| Booking smart list, tri-state pill, packing/grocery views, task_assigned notification                                                                                                                                    | SPEC_BACKLOG Tasks + TASKS_PRD §9/§10 (deferred)                                                                             |
+| Calendar feed, weather, maps deep-links, email digest                                                                                                                                                                    | SPEC_BACKLOG Integrations (deferred)                                                                                         |
+| Mid-trip money **glance**, trip-mode add-flow exits, offline doc path, archive share UX, clone bugs (flights, day collision), export gaps, first-five-minutes landing, suggestion visibility, leave-trip, /account reach | findings.json WP-A-004/005/008/009/011/013/014/016/017/018/019/020/024 + fresh-findings equivalents                          |
+| Per-member flights / item↔member association                                                                                                                                                                             | WP-A-017 (taskpath #14 "gap, not in backlog")                                                                                |
+| Day density (taskpath #12 "clean"), traveler-initiated invite (taskpath #3 "clean"), browse goals+votes (taskpath #10 "findable, split by design per ADR-0004")                                                          | judged clean/intentional — no pathway needed                                                                                 |
+| Trip-level messaging, push, realtime, multi-currency, embedded maps, native, AI itineraries                                                                                                                              | CLAUDE.md / charter NOT-list — dead on arrival                                                                               |
 
 Everything below is checked against this map; each proposal cites its nearest neighbor and how it differs.
 
@@ -54,7 +54,7 @@ trip has exactly one phase.
 
 **Why.** The group-input cluster has capture (`/goals/capture`) and harvest (goal votes) but no
 **commit** moment: today the only way a goal becomes plan is to start from the item form and
-remember to tag it, or retro-link from goal detail (verified: goal detail offers link-*existing*
+remember to tag it, or retro-link from goal detail (verified: goal detail offers link-_existing_
 only, line 155; V4_GROUP_INPUT_PRD specs no creation door). "Try paella" rots as a wish unless
 someone re-enters it as an item by hand. Charter: Plan+Collaborate pillars; V2-adjacent — the
 contributor's aspiration is heard but never carried into the plan; goal status derivation
@@ -74,7 +74,7 @@ success state renders a one-tap chip inline at the upload spot: **"Booked? Mark 
 `booked=true, booked_by` write the booking Smart List does (`lists/booking/+page.server.ts:82`).
 Dismissable, never modal, state-based only (no content inspection).
 
-**Why.** Uploading a confirmation PDF *is* evidence of booking — the app watches the proof arrive
+**Why.** Uploading a confirmation PDF _is_ evidence of booking — the app watches the proof arrive
 and still counts the item unbooked. Booking Readiness (`needsBooking()` pill, booking Smart List,
 the pre-departure sweep scenario #13) stays wrong until someone separately visits the list. V3
 seam: booking truth drops between the Documents context and the Itinerary projection. Connective
@@ -120,7 +120,7 @@ votes are sparse → "Hear from everyone" → swipe deck of the busiest phase; (
 documents` (→ those items) + `unassigned tasks` (→ lists). One action shown at a time, never a
 checklist wall, never blocking.
 
-**Why.** D2 names the *joiner's* first five minutes; the **owner's** first session and the
+**Why.** D2 names the _joiner's_ first five minutes; the **owner's** first session and the
 **group's last week before departure** have the same unowned-momentum problem. The planning→trip
 seam (charter V3) currently has zero proactive surface: nothing ever says "you leave Saturday and
 the riad isn't booked." Scenario 13 (pre-departure sweep) resolves today only if the novice guesses
@@ -137,7 +137,7 @@ that fix. WP-A-014/D2 stay joiner-side. Booking Smart List itself is shipped; th
 
 **What.** When a member drains a phase's deck (`swipe/[phaseId]/+page.svelte:83` — "All caught up",
 currently offers only "Continue to {next phase}"), write one in-app notification to owner/co-owners:
-*"{name} finished voting on {phase}"* — a new notification type alongside the existing three
+_"{name} finished voting on {phase}"_ — a new notification type alongside the existing three
 (suggestion_added, comment_added, member_joined; verified only those exist). The notification —
 and a small "{k} of {n} have voted" line on the phase card that hosts the swipe entry — deep-link
 to that phase's **vote-sorted parking lot**, which already ranks by aggregate score.
@@ -145,7 +145,7 @@ to that phase's **vote-sorted parking lot**, which already ranks by aggregate sc
 **Why.** The harvest half of group input is write-only today: a traveler swipes 30 cards and the
 act is invisible — nobody is told the preferences landed, and the owner never learns the group is
 ready to decide. That's charter V2 downstream: the contribution happened but goes unheard, so
-decisions still get made in the group text ("did everyone vote? what won?"  = V1). Completes the
+decisions still get made in the group text ("did everyone vote? what won?" = V1). Completes the
 capture→harvest→**decide** loop with the decide door. Async, in-app only — respects
 V4_GROUP_INPUT's rejection of synchronous sessions and the no-push rule.
 
@@ -158,7 +158,7 @@ lands in existing contextual surfaces (bell, phase card), no hub.
 ### P-6. Assigning a task to a placeholder → join-link nudge
 
 **What.** In the Task assignee picker (lists/[listId]), choosing a **placeholder member** renders
-an inline one-liner under the row: *"{name} isn't here yet — share the join link"* → copy action
+an inline one-liner under the row: _"{name} isn't here yet — share the join link"_ → copy action
 reusing the Members page's existing per-role link (or deep-link to Members if none is live). Shown
 at assignment time only; placeholder assignment itself stays fully allowed.
 
@@ -180,8 +180,8 @@ WP-A-014 is post-join; this is pre-join.
 ### T-1. Phase-exit sweep — "Leaving {phase} tomorrow, N ideas still parked"
 
 **What.** On the **last day of a phase** (computable: today is the max date of the phase's days and
-a later phase exists), Today renders one card below the tomorrow preview: *"Last night in Paris —
-4 ideas you never got to."* Two actions: **Carry to {next phase}** — bottom sheet listing that
+a later phase exists), Today renders one card below the tomorrow preview: _"Last night in Paris —
+4 ideas you never got to."_ Two actions: **Carry to {next phase}** — bottom sheet listing that
 phase's remaining unplanned items with per-item keep/let-go, writing only the `phase` field
 (unplanned items are day-less, so re-homing them touches no day and stays inside the D3 temporal
 boundary); and **Review in planning** — the working door (mode pill semantics) for anything
@@ -190,15 +190,15 @@ heavier. Solo and single-phase trips: card never renders.
 **Why.** The charter names two seams (planning→trip, trip→record) but multi-phase trips have a
 third **inside** the trip: phase→phase. Parking-lot ideas are phase-scoped by definition
 (CONTEXT.md [[Parking Lot]]), so when the group leaves Paris, Paris's un-promoted ideas silently
-exit reachability-by-relevance — TRIP_REPLANNING's doors only ever surface the *current* phase's
+exit reachability-by-relevance — TRIP*REPLANNING's doors only ever surface the \_current* phase's
 ideas, and the closeout unplanned review (itself flagged missing by a fresh post-P2 finding)
 arrives weeks too late to act. This is D4 ("doors open proactively at the states where the need
 arises") applied to a state nobody listed: the phase boundary. V3 seam-drop, mid-trip.
 
-**Adjacency.** TRIP_REPLANNING_PRD = today-scoped, same-phase promote/skip; explicitly out-of-scope
+**Adjacency.** TRIP*REPLANNING_PRD = today-scoped, same-phase promote/skip; explicitly out-of-scope
 for future days — carry-by-phase-field mutation is the one legal inline move, and the PRD's "Just
 skip" sheet pattern is reused. Closeout findings cover the end-of-trip review; this is the only
-surface that can still *rescue* an idea into the same trip.
+surface that can still \_rescue* an idea into the same trip.
 
 ---
 
@@ -212,12 +212,12 @@ offline cache on active trips, so the chip works on the jetway.
 **Why.** The signature Trip-Mode moment — boarding pass at the gate, voucher at the tour desk — is
 currently a three-hop hunt (card → item detail → Documents section → open) or a context switch to
 the Documents tab and a scan of the grouped Ledger. The card-content spec places documents on
-**detail only** (CARD_CONTENT_SPEC.md §"Documents → DocumentSection"); nothing marks *which*
+**detail only** (CARD*CONTENT_SPEC.md §"Documents → DocumentSection"); nothing marks \_which*
 timeline entries carry their papers. One-handed, one-tap artifact access from the glance is the
 "one job" on its most critical path; its absence is exactly what re-opens the email folder (V1).
 
 **Adjacency.** Fresh trip-P1s cover the **offline route** to documents and the cold-open 503 —
-plumbing below this. S4 (#72) is preview *rendering*, S3 (#73) paste-in — neither adds a timeline
+plumbing below this. S4 (#72) is preview _rendering_, S3 (#73) paste-in — neither adds a timeline
 affordance. WP-A-016 is text codes on the Documents tab. All cited; none place documents on cards.
 
 ---
@@ -260,7 +260,7 @@ that member exists in the new trip, else trip-owner-attributed. Verified today: 
 the four-pillar loop is open at the back. Closeout deliberately curates regret — `considered` means
 "we wanted this and didn't do it" — then clone discards exactly that data and fabricates a plan
 where everything is already committed (also semantically wrong for scenario 36). "Start next
-year's trip from this one" should start from what last year *taught*, or the planning session
+year's trip from this one" should start from what last year _taught_, or the planning session
 starts in the old stack ("what was that place we never got to? scroll the doc").
 
 **Adjacency.** Fresh post-P2s cover clone **bugs** (flight type omitted, day-record collision,
@@ -276,12 +276,12 @@ export/import datetime) — mechanical fixes this rides on. WP-A-020/scenario 39
 `Σ cost_estimate_usd` (plan) vs `Σ expenses` (reality), plus per-member paid/owed totals — rendered
 as the landing context of the **settle** step in the D5 wrap-up sequence. Explicitly routed as
 **input to the charter-D5 grill→PRD**, not a standalone build — D5 owns settle→closeout→archive,
-and this defines what "settle" should open *with*.
+and this defines what "settle" should open _with_.
 
 **Why.** The trip-day→record seam (V3) drops the money story today: expenses remain a flat list
 forever, settle-up shows only who-owes-whom, and the one question every group asks at the end —
 "what did it actually cost vs what we said?" — has no surface, so someone rebuilds it in a
-spreadsheet (V1, the literal Sheet in the Doc/Sheet/Splitwise stack). Item Cost is *defined* as the
+spreadsheet (V1, the literal Sheet in the Doc/Sheet/Splitwise stack). Item Cost is _defined_ as the
 forward-looking estimate (CONTEXT.md) — nothing ever closes the loop against the authoritative
 Expense record. Pairs with P-3: booked-moment expenses make this recap honest.
 
@@ -294,13 +294,13 @@ it in.
 
 ## Guardrail check (all proposals)
 
-| Guardrail | Status |
-|---|---|
-| NOT-list / off-the-table | No realtime, push, AI, embedded maps, multi-currency, messaging, native. P-5 uses the existing in-app notification channel only. T-3 is Documents-domain artifacts, not a photo album. |
-| D1 no-hub | Every surface is contextual (goal detail, upload success, booked toggle, overview strip, deck-drain, assignee picker, today card, expense row, clone form, settle step). No aggregation home proposed. |
-| D3 temporal boundary | T-1's inline action mutates `phase` on day-less unplanned items only; anything day-touching goes through the working door. T-2 read-only. No future-day pickers anywhere. |
-| Scale invariant | Solo trips: P-4 suppresses the invite step; P-5/P-6/T-1 carry/vote surfaces require members/phases to exist or never render; everything else solo-useful. |
-| Documented-deferred respected | Goals-in-closeout, calendar/weather/maps/digest, tri-state pill, task notifications, memory touchpoints, archive extensions — all cited in the coverage map, none re-proposed. |
+| Guardrail                     | Status                                                                                                                                                                                                 |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| NOT-list / off-the-table      | No realtime, push, AI, embedded maps, multi-currency, messaging, native. P-5 uses the existing in-app notification channel only. T-3 is Documents-domain artifacts, not a photo album.                 |
+| D1 no-hub                     | Every surface is contextual (goal detail, upload success, booked toggle, overview strip, deck-drain, assignee picker, today card, expense row, clone form, settle step). No aggregation home proposed. |
+| D3 temporal boundary          | T-1's inline action mutates `phase` on day-less unplanned items only; anything day-touching goes through the working door. T-2 read-only. No future-day pickers anywhere.                              |
+| Scale invariant               | Solo trips: P-4 suppresses the invite step; P-5/P-6/T-1 carry/vote surfaces require members/phases to exist or never render; everything else solo-useful.                                              |
+| Documented-deferred respected | Goals-in-closeout, calendar/weather/maps/digest, tri-state pill, task notifications, memory touchpoints, archive extensions — all cited in the coverage map, none re-proposed.                         |
 
 ## Dependency notes for Phase 3
 

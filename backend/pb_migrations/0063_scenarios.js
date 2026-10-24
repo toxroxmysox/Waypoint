@@ -115,8 +115,7 @@ migrate(
 		collection.viewRule = MEMBER_VIA_TRIP;
 		// create: member authoring as self, non-viewer (champion is a single relation
 		// so the role check is unambiguous — mirrors trip_goals / memories).
-		collection.createRule =
-			MEMBER_VIA_TRIP + CHAMPION_SELF + ' && champion.role != "viewer"';
+		collection.createRule = MEMBER_VIA_TRIP + CHAMPION_SELF + ' && champion.role != "viewer"';
 		// edit/delete: rule stays at membership; scenarios.pb.js (0067) enforces
 		// champion-only (the acting user can't be correlated in a single rule).
 		collection.updateRule = MEMBER_VIA_TRIP;

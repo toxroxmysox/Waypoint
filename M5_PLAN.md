@@ -38,13 +38,13 @@
 
 ## Sub-Milestone Overview
 
-| Sub-milestone | Scope | Depends on |
-|---|---|---|
-| **M5a** | Migration (`considered` status), archive settings actions, token generation, export/import utils | -- |
-| **M5b** | Closeout Wizard UI (full-screen guided flow) | M5a |
-| **M5c** | Public Archive view (`/archive/[token]`) | M5a |
-| **M5d** | JSON export + import UI | M5a |
-| **M5e** | E2E tests + polish | M5a-M5d |
+| Sub-milestone | Scope                                                                                            | Depends on |
+| ------------- | ------------------------------------------------------------------------------------------------ | ---------- |
+| **M5a**       | Migration (`considered` status), archive settings actions, token generation, export/import utils | --         |
+| **M5b**       | Closeout Wizard UI (full-screen guided flow)                                                     | M5a        |
+| **M5c**       | Public Archive view (`/archive/[token]`)                                                         | M5a        |
+| **M5d**       | JSON export + import UI                                                                          | M5a        |
+| **M5e**       | E2E tests + polish                                                                               | M5a-M5d    |
 
 ---
 
@@ -52,36 +52,36 @@
 
 ### New files
 
-| File | Responsibility |
-|---|---|
-| `backend/pb_migrations/0026_item_considered_status.js` | Migration: add `considered` to items status field options |
-| `src/lib/utils/archive-token.ts` | Server-side: generate URL-safe random token (32 bytes hex) |
-| `src/lib/utils/export.ts` | Build JSON export payload from trip data |
-| `src/lib/utils/export.test.ts` | Unit tests for export builder |
-| `src/lib/utils/import.ts` | Parse and validate JSON import, create trip + related records |
-| `src/lib/utils/import.test.ts` | Unit tests for import parser/validator |
+| File                                                     | Responsibility                                                                     |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `backend/pb_migrations/0026_item_considered_status.js`   | Migration: add `considered` to items status field options                          |
+| `src/lib/utils/archive-token.ts`                         | Server-side: generate URL-safe random token (32 bytes hex)                         |
+| `src/lib/utils/export.ts`                                | Build JSON export payload from trip data                                           |
+| `src/lib/utils/export.test.ts`                           | Unit tests for export builder                                                      |
+| `src/lib/utils/import.ts`                                | Parse and validate JSON import, create trip + related records                      |
+| `src/lib/utils/import.test.ts`                           | Unit tests for import parser/validator                                             |
 | `src/routes/(app)/trips/[slug]/closeout/+page.server.ts` | Closeout wizard server: load all days/items, handle mark-done/skip/replace actions |
-| `src/routes/(app)/trips/[slug]/closeout/+page.svelte` | Closeout wizard UI: day-by-day, slot-by-slot guided flow |
-| `src/lib/components/CloseoutDayCard.svelte` | Single day card within closeout wizard showing items by slot |
-| `src/lib/components/CloseoutItemRow.svelte` | Single item row with Done/Did something else/Skip buttons |
-| `src/lib/components/InlineQuickAdd.svelte` | Inline quick-add form for "did something else" replacement items |
-| `src/routes/archive/[token]/+page.server.ts` | Public archive data loader (no auth required) |
-| `src/routes/archive/[token]/+page.svelte` | Public archive view: read-only trip retrospective |
-| `src/lib/components/ArchiveDaySection.svelte` | Archive day section: done items grouped by slot |
-| `src/routes/(app)/trips/[slug]/export/+server.ts` | JSON export endpoint (GET, returns downloadable JSON file) |
-| `src/routes/(app)/trips/import/+page.server.ts` | JSON import server action: validate + create trip |
-| `src/routes/(app)/trips/import/+page.svelte` | JSON import UI: file upload + preview + confirm |
-| `tests/e2e/m5-closure.spec.ts` | M5 Playwright happy-path tests |
+| `src/routes/(app)/trips/[slug]/closeout/+page.svelte`    | Closeout wizard UI: day-by-day, slot-by-slot guided flow                           |
+| `src/lib/components/CloseoutDayCard.svelte`              | Single day card within closeout wizard showing items by slot                       |
+| `src/lib/components/CloseoutItemRow.svelte`              | Single item row with Done/Did something else/Skip buttons                          |
+| `src/lib/components/InlineQuickAdd.svelte`               | Inline quick-add form for "did something else" replacement items                   |
+| `src/routes/archive/[token]/+page.server.ts`             | Public archive data loader (no auth required)                                      |
+| `src/routes/archive/[token]/+page.svelte`                | Public archive view: read-only trip retrospective                                  |
+| `src/lib/components/ArchiveDaySection.svelte`            | Archive day section: done items grouped by slot                                    |
+| `src/routes/(app)/trips/[slug]/export/+server.ts`        | JSON export endpoint (GET, returns downloadable JSON file)                         |
+| `src/routes/(app)/trips/import/+page.server.ts`          | JSON import server action: validate + create trip                                  |
+| `src/routes/(app)/trips/import/+page.svelte`             | JSON import UI: file upload + preview + confirm                                    |
+| `tests/e2e/m5-closure.spec.ts`                           | M5 Playwright happy-path tests                                                     |
 
 ### Modified files
 
-| File | Changes |
-|---|---|
-| `src/routes/(app)/trips/[slug]/settings/+page.server.ts` | Add `toggleArchive` action (enable/disable archive, generate token) |
-| `src/routes/(app)/trips/[slug]/settings/+page.svelte` | Add archive settings section (enable toggle, publish delay, share URL) |
-| `src/routes/(app)/trips/[slug]/more/+page.svelte` | Add closeout wizard link (owner/co-owner only), add export link |
-| `src/routes/(app)/trips/+page.svelte` | Add import button on trips list page |
-| `src/lib/types.ts` | Add `'considered'` to ItemStatus, add TripExport interface |
+| File                                                     | Changes                                                                |
+| -------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `src/routes/(app)/trips/[slug]/settings/+page.server.ts` | Add `toggleArchive` action (enable/disable archive, generate token)    |
+| `src/routes/(app)/trips/[slug]/settings/+page.svelte`    | Add archive settings section (enable toggle, publish delay, share URL) |
+| `src/routes/(app)/trips/[slug]/more/+page.svelte`        | Add closeout wizard link (owner/co-owner only), add export link        |
+| `src/routes/(app)/trips/+page.svelte`                    | Add import button on trips list page                                   |
+| `src/lib/types.ts`                                       | Add `'considered'` to ItemStatus, add TripExport interface             |
 
 ---
 
@@ -90,6 +90,7 @@
 ### Task 1: Migration + ItemStatus Update
 
 **Files:**
+
 - Create: `backend/pb_migrations/0026_item_considered_status.js`
 - Modify: `src/lib/types.ts`
 
@@ -119,6 +120,7 @@ migrate(
 - [ ] **Step 2: Update ItemStatus type**
 
 In `src/lib/types.ts`, change:
+
 ```typescript
 export type ItemStatus = 'planned' | 'done' | 'considered';
 ```
@@ -133,6 +135,7 @@ git commit -m "M5a: add 'considered' status to items collection + type"
 ### Task 2: Archive Token Utility
 
 **Files:**
+
 - Create: `src/lib/utils/archive-token.ts`
 
 - [ ] **Step 1: Write the utility**
@@ -157,11 +160,13 @@ git commit -m "M5a: add archive token generator utility"
 ### Task 3: Archive Settings Action
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/settings/+page.server.ts`
 
 - [ ] **Step 1: Add `toggleArchive` action**
 
 Add a new form action that:
+
 1. Reads `archive_enabled` (boolean toggle) and `archive_publish_after_days` (number, default 7) from form data
 2. Verifies the user is owner/co-owner
 3. If enabling archive and `public_share_token` is empty, generates one via `generateArchiveToken()`
@@ -208,7 +213,7 @@ toggleArchive: async ({ request, locals, params }) => {
 		const message = err instanceof Error ? err.message : 'Failed to update archive settings.';
 		return fail(500, { archiveError: message });
 	}
-}
+};
 ```
 
 - [ ] **Step 2: Add `archiveTrip` action (manual close + archive)**
@@ -242,12 +247,13 @@ archiveTrip: async ({ locals, params }) => {
 		const message = err instanceof Error ? err.message : 'Failed to archive trip.';
 		return fail(500, { error: message });
 	}
-}
+};
 ```
 
 - [ ] **Step 3: Import `generateArchiveToken` at top of file**
 
 Add the import:
+
 ```typescript
 import { generateArchiveToken } from '$lib/utils/archive-token';
 ```
@@ -268,6 +274,7 @@ git commit -m "M5a: add archive toggle + token generation in trip settings"
 ### Task 4: Export Utility + Tests
 
 **Files:**
+
 - Create: `src/lib/utils/export.ts`
 - Create: `src/lib/utils/export.test.ts`
 - Modify: `src/lib/types.ts`
@@ -352,7 +359,11 @@ export function buildTripExport(
 	phases: Phase[],
 	days: Day[],
 	items: Item[],
-	budget: { total: number; currency: string; categories: Array<{ name: string; budgeted: number }> } | null
+	budget: {
+		total: number;
+		currency: string;
+		categories: Array<{ name: string; budgeted: number }>;
+	} | null
 ): TripExport {
 	const phaseMap = new Map(phases.map((p) => [p.id, p]));
 	const dayMap = new Map(days.map((d) => [d.id, d]));
@@ -469,13 +480,64 @@ describe('buildTripExport', () => {
 
 	it('resolves day dates and phase names for items', () => {
 		const phases: Phase[] = [
-			{ id: 'p1', trip: 'trip1', name: 'Barcelona', location: 'Barcelona', country_code: 'ES', start_date: '2026-06-01', end_date: '2026-06-03', color: '#ff0000', order: 0, created: '', updated: '' }
+			{
+				id: 'p1',
+				trip: 'trip1',
+				name: 'Barcelona',
+				location: 'Barcelona',
+				country_code: 'ES',
+				start_date: '2026-06-01',
+				end_date: '2026-06-03',
+				color: '#ff0000',
+				order: 0,
+				created: '',
+				updated: ''
+			}
 		];
 		const days: Day[] = [
-			{ id: 'd1', trip: 'trip1', phase: 'p1', date: '2026-06-01', notes: '', created: '', updated: '' }
+			{
+				id: 'd1',
+				trip: 'trip1',
+				phase: 'p1',
+				date: '2026-06-01',
+				notes: '',
+				created: '',
+				updated: ''
+			}
 		];
 		const items: Item[] = [
-			{ id: 'i1', trip: 'trip1', phase: 'p1', day: 'd1', slot: 'morning', type: 'activity', subtype: '', title: 'Sagrada Familia', description: '', location_name: '', location_address: '', location_coords: null, google_place_id: '', start_time: null, end_time: null, start_tz: '', end_tz: '', status: 'done', booked: true, booked_by: '', paid_by: '', confirmation_codes: [], cost: 0, currency: 'USD', url: '', phone: '', notes: '', order: 0, created: '', updated: '' } as Item
+			{
+				id: 'i1',
+				trip: 'trip1',
+				phase: 'p1',
+				day: 'd1',
+				slot: 'morning',
+				type: 'activity',
+				subtype: '',
+				title: 'Sagrada Familia',
+				description: '',
+				location_name: '',
+				location_address: '',
+				location_coords: null,
+				google_place_id: '',
+				start_time: null,
+				end_time: null,
+				start_tz: '',
+				end_tz: '',
+				status: 'done',
+				booked: true,
+				booked_by: '',
+				paid_by: '',
+				confirmation_codes: [],
+				cost: 0,
+				currency: 'USD',
+				url: '',
+				phone: '',
+				notes: '',
+				order: 0,
+				created: '',
+				updated: ''
+			} as Item
 		];
 
 		const result = buildTripExport(makeTrip(), phases, days, items, null);
@@ -487,7 +549,10 @@ describe('buildTripExport', () => {
 	it('strips sensitive fields (no vault_password_hash, no member IDs)', () => {
 		const result = buildTripExport(
 			makeTrip({ vault_password_hash: 'secret:hash' }),
-			[], [], [], null
+			[],
+			[],
+			[],
+			null
 		);
 		expect(result.trip).not.toHaveProperty('vault_password_hash');
 		expect(result.trip).not.toHaveProperty('id');
@@ -517,6 +582,7 @@ git commit -m "M5a: add trip JSON export builder + tests"
 ### Task 5: Import Utility + Tests
 
 **Files:**
+
 - Create: `src/lib/utils/import.ts`
 - Create: `src/lib/utils/import.test.ts`
 
@@ -555,8 +621,10 @@ export function validateTripImport(raw: unknown): ImportValidationResult {
 
 	const trip = obj.trip as Record<string, unknown>;
 	if (!trip.title || typeof trip.title !== 'string') errors.push('Trip title is required.');
-	if (!trip.start_date || typeof trip.start_date !== 'string') errors.push('Trip start_date is required.');
-	if (!trip.end_date || typeof trip.end_date !== 'string') errors.push('Trip end_date is required.');
+	if (!trip.start_date || typeof trip.start_date !== 'string')
+		errors.push('Trip start_date is required.');
+	if (!trip.end_date || typeof trip.end_date !== 'string')
+		errors.push('Trip end_date is required.');
 
 	if (!Array.isArray(obj.phases)) errors.push('"phases" must be an array.');
 	if (!Array.isArray(obj.days)) errors.push('"days" must be an array.');
@@ -693,6 +761,7 @@ git commit -m "M5a complete: archive token, export/import utils, settings action
 ### Task 1: Closeout Server Load + Actions
 
 **Files:**
+
 - Create: `src/routes/(app)/trips/[slug]/closeout/+page.server.ts`
 
 - [ ] **Step 1: Write the server loader**
@@ -786,7 +855,9 @@ export const actions: Actions = {
 			});
 			return { replacementAdded: true };
 		} catch (err: unknown) {
-			return fail(500, { error: err instanceof Error ? err.message : 'Failed to create replacement.' });
+			return fail(500, {
+				error: err instanceof Error ? err.message : 'Failed to create replacement.'
+			});
 		}
 	},
 
@@ -829,6 +900,7 @@ git commit -m "M5b: closeout wizard server loader + actions (markDone, bulk, rep
 ### Task 2: Closeout Wizard UI Components
 
 **Files:**
+
 - Create: `src/lib/components/CloseoutItemRow.svelte`
 - Create: `src/lib/components/InlineQuickAdd.svelte`
 - Create: `src/lib/components/CloseoutDayCard.svelte`
@@ -836,11 +908,13 @@ git commit -m "M5b: closeout wizard server loader + actions (markDone, bulk, rep
 - [ ] **Step 1: Write CloseoutItemRow.svelte**
 
 A single row showing the item title, type icon, time, and three action buttons:
+
 - "Done" (green check) — submits markDone form action
 - "Did something else" (orange swap icon) — expands InlineQuickAdd below
 - "Skip" (gray X) — no action needed (item stays planned, UI just dims the row)
 
 The row should have three visual states:
+
 - Default (pending): normal appearance
 - Marked done: green left border, check icon, dimmed buttons
 - Skipped: grayed out, strikethrough title
@@ -900,6 +974,7 @@ git commit -m "M5b: closeout wizard UI components — item row, inline quick-add
 ### Task 3: Closeout Wizard Page
 
 **Files:**
+
 - Create: `src/routes/(app)/trips/[slug]/closeout/+page.svelte`
 
 - [ ] **Step 1: Write the wizard page**
@@ -917,11 +992,13 @@ Full-screen guided flow. Architecture:
    - "Go Back" link to review
 
 State management:
+
 - `currentDayIndex: number` — which day is being reviewed
 - `itemStates: Map<string, 'done' | 'skipped' | 'pending'>` — tracks local UI state per item
 - Items marked done via form action update server immediately; skip is local-only (leaves as planned)
 
 Layout:
+
 - Full-screen (no bottom nav)
 - NavBar with "Closeout" title and a close/X button that goes back to trip overview
 - Mobile-first: large touch targets, single-column
@@ -947,6 +1024,7 @@ git commit -m "M5b: closeout wizard page — day-by-day guided flow with bulk ac
 ### Task 4: Add Closeout Link to More Page
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/more/+page.svelte`
 
 - [ ] **Step 1: Add closeout wizard link**
@@ -968,6 +1046,7 @@ git commit -m "M5b: add closeout wizard link to More page"
 ### Task 5: Archive Settings UI
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/settings/+page.svelte`
 
 - [ ] **Step 1: Add archive settings section**
@@ -1000,6 +1079,7 @@ git commit -m "M5b complete: closeout wizard + archive settings UI"
 ### Task 1: Archive Page Server Loader
 
 **Files:**
+
 - Create: `src/routes/archive/[token]/+page.server.ts`
 
 - [ ] **Step 1: Write the loader**
@@ -1028,9 +1108,7 @@ export const load: PageServerLoad = async ({ params }) => {
 	try {
 		trip = await pb
 			.collection('trips')
-			.getFirstListItem<Trip>(
-				pb.filter('public_share_token = {:token}', { token: params.token })
-			);
+			.getFirstListItem<Trip>(pb.filter('public_share_token = {:token}', { token: params.token }));
 	} catch {
 		error(404, 'Archive not found');
 	}
@@ -1096,7 +1174,9 @@ export const load: PageServerLoad = async ({ params }) => {
 		days,
 		items: sanitizedItems,
 		doneItems: sanitizedItems.filter((i) => i.status === 'done'),
-		consideredItems: sanitizedItems.filter((i) => i.status === 'planned' || i.status === 'considered')
+		consideredItems: sanitizedItems.filter(
+			(i) => i.status === 'planned' || i.status === 'considered'
+		)
 	};
 };
 ```
@@ -1105,15 +1185,13 @@ export const load: PageServerLoad = async ({ params }) => {
 
 ```typescript
 // At the top of the loader, after creating pb:
-await pb.collection('_superusers').authWithPassword(
-	PB_ADMIN_EMAIL,
-	PB_ADMIN_PASSWORD
-);
+await pb.collection('_superusers').authWithPassword(PB_ADMIN_EMAIL, PB_ADMIN_PASSWORD);
 ```
 
 - [ ] **Step 2: Add PB admin env vars to `.env.example`**
 
 Add:
+
 ```
 PB_ADMIN_EMAIL=admin@example.com
 PB_ADMIN_PASSWORD=your-admin-password
@@ -1129,12 +1207,14 @@ git commit -m "M5c: public archive server loader — admin auth, sanitized data,
 ### Task 2: Archive Page UI
 
 **Files:**
+
 - Create: `src/routes/archive/[token]/+page.svelte`
 - Create: `src/lib/components/ArchiveDaySection.svelte`
 
 - [ ] **Step 1: Write ArchiveDaySection.svelte**
 
 A read-only day section for the archive. Shows:
+
 - Day date (formatted, e.g. "Monday, June 1")
 - Phase badge (colored pill with phase name)
 - Done items grouped by slot, each showing: type icon, title, location, times
@@ -1145,6 +1225,7 @@ No edit buttons, no action forms. Pure presentation.
 - [ ] **Step 2: Write the archive page**
 
 Layout:
+
 1. **Hero header**: Trip title (large), location summary (Fraunces italic), date range, cover image if available
 2. **Photo album link**: If photo_album_url exists, prominent "View Photos" button
 3. **Day-by-day timeline**: ArchiveDaySection for each day, showing done items
@@ -1180,6 +1261,7 @@ git commit -m "M5c complete: public archive view — hero, timeline, considered 
 ### Task 1: Export Endpoint
 
 **Files:**
+
 - Create: `src/routes/(app)/trips/[slug]/export/+server.ts`
 
 - [ ] **Step 1: Write the GET endpoint**
@@ -1267,6 +1349,7 @@ git commit -m "M5d: JSON export endpoint + download link on More page"
 ### Task 2: Import Page
 
 **Files:**
+
 - Create: `src/routes/(app)/trips/import/+page.server.ts`
 - Create: `src/routes/(app)/trips/import/+page.svelte`
 
@@ -1275,6 +1358,7 @@ git commit -m "M5d: JSON export endpoint + download link on More page"
 `src/routes/(app)/trips/import/+page.server.ts`:
 
 The action:
+
 1. Reads the uploaded JSON file from form data
 2. Parses and validates via `validateTripImport()`
 3. If valid, creates a new trip + phases + days + items in PocketBase
@@ -1421,6 +1505,7 @@ export const actions: Actions = {
 `src/routes/(app)/trips/import/+page.svelte`:
 
 Simple page with:
+
 1. NavBar with "Import Trip" title and back button to `/trips`
 2. File input (accept `.json`)
 3. After file selected, show preview: trip title, dates, phase count, item count
@@ -1452,6 +1537,7 @@ git commit -m "M5d complete: JSON export endpoint + import page with preview"
 ### Task 1: Playwright Happy-Path Tests
 
 **Files:**
+
 - Create: `tests/e2e/m5-closure.spec.ts`
 
 - [ ] **Step 1: Write E2E tests**
@@ -1567,6 +1653,7 @@ git commit -m "M5e complete: all tests passing, M5 Closure milestone done"
 ### Task 3: M5 Status File
 
 **Files:**
+
 - Create: `M5_STATUS.md`
 
 - [ ] **Step 1: Write status file**
@@ -1597,11 +1684,11 @@ All open decisions have been resolved:
 
 ## Acceptance Criteria Mapping
 
-| Criterion | Where it's built |
-|---|---|
-| Closeout wizard completes 7-day trip in <5 min | M5b (bulk "mark entire day as done" action) |
-| Public archive contains zero member names, expenses, vault entries | M5c (sanitized loader strips PII) |
-| Archive URL works without login | M5c (public route outside (app), no auth check) |
-| Trip JSON export round-trips losslessly via import | M5a (export builder) + M5d (import creates matching trip) |
-| Owner can enable archive early (before N days) | M5a Task 2 (toggleArchive action) + M5b Task 5 (archive settings UI) |
-| Auto-publish after end_date + N days | M5c Task 1 (on-demand date check in archive loader) |
+| Criterion                                                          | Where it's built                                                     |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------- |
+| Closeout wizard completes 7-day trip in <5 min                     | M5b (bulk "mark entire day as done" action)                          |
+| Public archive contains zero member names, expenses, vault entries | M5c (sanitized loader strips PII)                                    |
+| Archive URL works without login                                    | M5c (public route outside (app), no auth check)                      |
+| Trip JSON export round-trips losslessly via import                 | M5a (export builder) + M5d (import creates matching trip)            |
+| Owner can enable archive early (before N days)                     | M5a Task 2 (toggleArchive action) + M5b Task 5 (archive settings UI) |
+| Auto-publish after end_date + N days                               | M5c Task 1 (on-demand date check in archive loader)                  |

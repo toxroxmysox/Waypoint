@@ -5,6 +5,7 @@
 **Goal:** at >=1280px (`lg-desktop`, where `ContextRail` exists) Now's content column stays on today; Ideas for now (#432 `IdeasStrip`) and tomorrow's Rows (#434) move into the rail. Below 1280 and on phones nothing changes.
 
 ## Decisions
+
 - `ContextRail` gets a Now branch (pathname `/trips/{slug}/now`) reading the Now load from merged `page.data`, the same plumb the day page's Ideas use. It replaces the generic Today / Up Next blocks there (today IS the content column).
 - Tomorrow preview extracted to `TomorrowPreview.svelte`, used by the page and the rail (no fork).
 - The page hides its in-column IdeasStrip door and tomorrow block with `lg-desktop:hidden` (CSS, not JS: matches how AppShell already splits trees).
@@ -13,6 +14,7 @@
 - 44px hit areas: IdeasStrip's "Do this" and VotePills already meet it; Rows are 44px+.
 
 ## Steps
+
 - [ ] `TomorrowPreview.svelte` + use in page
 - [ ] `now-rail.svelte.ts`; page sets on skip
 - [ ] page: `lg-desktop:hidden` wrappers

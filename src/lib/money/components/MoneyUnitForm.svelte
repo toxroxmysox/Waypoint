@@ -34,9 +34,7 @@
 
 	// Seed: edit → the unit's members; create → just me. untrack mirrors the prop-seeded
 	// $state pattern used across the money forms.
-	let selected = $state<Set<string>>(
-		untrack(() => new Set(unit ? unit.members : [membershipId]))
-	);
+	let selected = $state<Set<string>>(untrack(() => new Set(unit ? unit.members : [membershipId])));
 	// PB stores unset number fields as 0 (can't hold null), so treat 0 as "no custom
 	// budget" — prefill blank, not "0", when there's no real override.
 	let budget = $state(untrack(() => (unit?.budget_usd ? String(unit.budget_usd) : '')));
@@ -77,7 +75,7 @@
 	{/if}
 
 	<div>
-		<p class="text-ink-soft mb-2 text-sm font-medium">Who shares a card?</p>
+		<p class="mb-2 text-sm font-medium text-ink-soft">Who shares a card?</p>
 		<div class="space-y-1">
 			{#each members as member (member.id)}
 				<label class="flex cursor-pointer items-center gap-3 rounded-lg px-1 py-2">
@@ -85,11 +83,11 @@
 						type="checkbox"
 						checked={selected.has(member.id)}
 						onchange={() => toggle(member.id)}
-						class="border-line text-moss accent-moss h-4 w-4 rounded"
+						class="h-4 w-4 rounded border-line text-moss accent-moss"
 					/>
-					<span class="text-ink text-sm">{memberName(member.id)}</span>
+					<span class="text-sm text-ink">{memberName(member.id)}</span>
 					{#if assignedElsewhere.has(member.id)}
-						<span class="text-ink-muted text-[11px]">(in another group)</span>
+						<span class="text-[11px] text-ink-muted">(in another group)</span>
 					{/if}
 				</label>
 			{/each}
@@ -97,8 +95,8 @@
 	</div>
 
 	<div>
-		<label for="unit-budget" class="text-ink-soft mb-1 block text-sm font-medium">
-			Custom budget <span class="text-ink-muted font-normal">(optional)</span>
+		<label for="unit-budget" class="mb-1 block text-sm font-medium text-ink-soft">
+			Custom budget <span class="font-normal text-ink-muted">(optional)</span>
 		</label>
 		<input
 			id="unit-budget"
@@ -109,9 +107,9 @@
 			min="0"
 			bind:value={budget}
 			placeholder="Even-share default"
-			class="border-line bg-surface text-ink placeholder:text-ink-muted/40 focus:border-moss w-full rounded-md border px-3 py-2 font-mono text-sm focus:outline-none"
+			class="w-full rounded-md border border-line bg-surface px-3 py-2 font-mono text-sm text-ink placeholder:text-ink-muted/40 focus:border-moss focus:outline-none"
 		/>
-		<p class="text-ink-muted mt-1 text-[11px]">
+		<p class="mt-1 text-[11px] text-ink-muted">
 			An absolute target — it doesn't change the trip budget or other groups.
 		</p>
 	</div>
@@ -119,7 +117,7 @@
 	<input type="hidden" name="members" value={[...selected].join(',')} />
 
 	{#if saveError}
-		<p role="alert" class="text-error text-sm">{saveError}</p>
+		<p role="alert" class="text-sm text-error">{saveError}</p>
 	{/if}
 
 	<div class="flex gap-2 pt-1">

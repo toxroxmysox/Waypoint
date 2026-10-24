@@ -49,7 +49,7 @@
 	style="transform:translate({fromX}px,{fromY}px) rotate({fromRot}deg);"
 >
 	<div
-		class="bg-surface border-line rounded-[20px] border p-5 shadow-modal"
+		class="rounded-[20px] border border-line bg-surface p-5 shadow-modal"
 		class:outline={vote === 'love'}
 		style={vote === 'love' ? 'outline:3px solid var(--color-moss);' : ''}
 	>

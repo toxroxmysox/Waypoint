@@ -61,17 +61,26 @@ function must(label, r) {
 
 // The field is present with its real value, or absent (hidden), as expected.
 function shows(name, record, field, value, visible) {
-	const has = record != null && Object.prototype.hasOwnProperty.call(record, field) && record[field] === value;
+	const has =
+		record != null &&
+		Object.prototype.hasOwnProperty.call(record, field) &&
+		record[field] === value;
 	const absent = record != null && !Object.prototype.hasOwnProperty.call(record, field);
 	assert(name, visible ? has : absent, record ? { [field]: record[field] } : 'no record');
 }
 
 async function main() {
 	console.log(`PB: ${PB_URL}`);
-	const fx = must('rules-fixture', await pb('POST', '/api/dev/rules-fixture', { body: { emails: EMAILS } }));
+	const fx = must(
+		'rules-fixture',
+		await pb('POST', '/api/dev/rules-fixture', { body: { emails: EMAILS } })
+	);
 	const tokens = {};
 	for (const role of ROLES) {
-		tokens[role] = must('auth ' + role, await pb('POST', '/api/dev/auth-bypass', { body: { email: EMAILS[role] } })).token;
+		tokens[role] = must(
+			'auth ' + role,
+			await pb('POST', '/api/dev/auth-bypass', { body: { email: EMAILS[role] } })
+		).token;
 	}
 	const su = must(
 		'superuser',
@@ -84,15 +93,32 @@ async function main() {
 	// Seed the three secrets (the share token as the owner: the trips gate has no
 	// superuser bypass; the others as superuser).
 	const shareToken = 'share-' + Date.now() + '-abcdefghij';
-	must('set share token', await pb('PATCH', `/api/collections/trips/records/${fx.tripId}`, { token: tokens.owner, body: { public_share_token: shareToken } }));
+	must(
+		'set share token',
+		await pb('PATCH', `/api/collections/trips/records/${fx.tripId}`, {
+			token: tokens.owner,
+			body: { public_share_token: shareToken }
+		})
+	);
 	const softToken = 'soft-' + Date.now() + '-abcdefghij';
-	must('set soft token', await pb('PATCH', `/api/collections/trip_members/records/${fx.memberIds.traveler}`, { token: su, body: { soft_token: softToken } }));
+	must(
+		'set soft token',
+		await pb('PATCH', `/api/collections/trip_members/records/${fx.memberIds.traveler}`, {
+			token: su,
+			body: { soft_token: softToken }
+		})
+	);
 	const joinValue = 'join-' + Date.now() + '-abcdefghij';
 	const join = must(
 		'join token',
 		await pb('POST', '/api/collections/join_tokens/records', {
 			token: su,
-			body: { trip: fx.tripId, role: 'traveler', token: joinValue, expires_at: '2099-01-01 00:00:00.000Z' }
+			body: {
+				trip: fx.tripId,
+				role: 'traveler',
+				token: joinValue,
+				expires_at: '2099-01-01 00:00:00.000Z'
+			}
 		})
 	);
 
@@ -102,22 +128,72 @@ async function main() {
 		const isSu = role === 'superuser';
 		console.log(`\n[${role}]`);
 
-		const trip = (await pb('GET', `/api/collections/trips/records/${fx.tripId}`, { token: t })).data;
-		shows('trips.view public_share_token', trip, 'public_share_token', shareToken, role !== 'viewer');
-		const trips = (await pb('GET', `/api/collections/trips/records?filter=${q(`id="${fx.tripId}"`)}`, { token: t })).data;
-		shows('trips.list public_share_token', trips?.items?.[0], 'public_share_token', shareToken, role !== 'viewer');
-		const items = (await pb('GET', `/api/collections/items/records?filter=${q(`trip="${fx.tripId}"`)}&expand=trip&perPage=1`, { token: t })).data;
-		shows('items?expand=trip public_share_token', items?.items?.[0]?.expand?.trip, 'public_share_token', shareToken, role !== 'viewer');
+		const trip = (await pb('GET', `/api/collections/trips/records/${fx.tripId}`, { token: t }))
+			.data;
+		shows(
+			'trips.view public_share_token',
+			trip,
+			'public_share_token',
+			shareToken,
+			role !== 'viewer'
+		);
+		const trips = (
+			await pb('GET', `/api/collections/trips/records?filter=${q(`id="${fx.tripId}"`)}`, {
+				token: t
+			})
+		).data;
+		shows(
+			'trips.list public_share_token',
+			trips?.items?.[0],
+			'public_share_token',
+			shareToken,
+			role !== 'viewer'
+		);
+		const items = (
+			await pb(
+				'GET',
+				`/api/collections/items/records?filter=${q(`trip="${fx.tripId}"`)}&expand=trip&perPage=1`,
+				{ token: t }
+			)
+		).data;
+		shows(
+			'items?expand=trip public_share_token',
+			items?.items?.[0]?.expand?.trip,
+			'public_share_token',
+			shareToken,
+			role !== 'viewer'
+		);
 
-		const member = (await pb('GET', `/api/collections/trip_members/records/${fx.memberIds.traveler}`, { token: t })).data;
+		const member = (
+			await pb('GET', `/api/collections/trip_members/records/${fx.memberIds.traveler}`, {
+				token: t
+			})
+		).data;
 		shows('trip_members.view soft_token', member, 'soft_token', softToken, isSu);
-		const members = (await pb('GET', `/api/collections/trip_members/records?filter=${q(`id="${fx.memberIds.traveler}"`)}`, { token: t })).data;
+		const members = (
+			await pb(
+				'GET',
+				`/api/collections/trip_members/records?filter=${q(`id="${fx.memberIds.traveler}"`)}`,
+				{ token: t }
+			)
+		).data;
 		shows('trip_members.list soft_token', members?.items?.[0], 'soft_token', softToken, isSu);
 
-		const jt = (await pb('GET', `/api/collections/join_tokens/records/${join.id}`, { token: t })).data;
+		const jt = (await pb('GET', `/api/collections/join_tokens/records/${join.id}`, { token: t }))
+			.data;
 		shows('join_tokens.view token', jt, 'token', joinValue, role !== 'viewer');
-		const jts = (await pb('GET', `/api/collections/join_tokens/records?filter=${q(`trip="${fx.tripId}"`)}`, { token: t })).data;
-		shows('join_tokens.list token', jts?.items?.find((x) => x.id === join.id), 'token', joinValue, role !== 'viewer');
+		const jts = (
+			await pb('GET', `/api/collections/join_tokens/records?filter=${q(`trip="${fx.tripId}"`)}`, {
+				token: t
+			})
+		).data;
+		shows(
+			'join_tokens.list token',
+			jts?.items?.find((x) => x.id === join.id),
+			'token',
+			joinValue,
+			role !== 'viewer'
+		);
 	}
 
 	console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'}: ${pass}/${pass + fail}`);

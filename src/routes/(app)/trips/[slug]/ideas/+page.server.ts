@@ -21,12 +21,10 @@ export const actions: Actions = {
 	create: async ({ request, params, locals }) => {
 		let trip: { id: string; start_date: string };
 		try {
-			trip = await locals.pb
-				.collection('trips')
-				.getFirstListItem<{
-					id: string;
-					start_date: string;
-				}>(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+			trip = await locals.pb.collection('trips').getFirstListItem<{
+				id: string;
+				start_date: string;
+			}>(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
 		} catch {
 			return fail(404, { error: 'Trip not found.' });
 		}
@@ -94,7 +92,12 @@ export const actions: Actions = {
 		// real 303) and the destination phase page reads + clears ?ideaToast, so the
 		// toast text lives in the query param rather than action-return state.
 		const queued = status === 'pending';
-		const toastMsg = queued ? `Sent for review — pending in ${phase.name}` : `Added to ${phase.name}`;
-		redirect(303, `/trips/${params.slug}/phases/${phaseId}?ideaToast=${encodeURIComponent(toastMsg)}`);
+		const toastMsg = queued
+			? `Sent for review — pending in ${phase.name}`
+			: `Added to ${phase.name}`;
+		redirect(
+			303,
+			`/trips/${params.slug}/phases/${phaseId}?ideaToast=${encodeURIComponent(toastMsg)}`
+		);
 	}
 };

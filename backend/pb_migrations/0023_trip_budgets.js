@@ -17,19 +17,24 @@ migrate(
 			type: 'base',
 			name: 'trip_budgets',
 			fields: [
-				{ type: 'relation', name: 'trip', required: true, collectionId: trips.id, maxSelect: 1, cascadeDelete: true },
-				{ type: 'json', name: 'categories', required: true, maxSize: 50000 },
+				{
+					type: 'relation',
+					name: 'trip',
+					required: true,
+					collectionId: trips.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				},
+				{ type: 'json', name: 'categories', required: true, maxSize: 50000 }
 			],
-			indexes: [
-				'CREATE UNIQUE INDEX idx_trip_budgets_trip ON trip_budgets (trip)',
-			],
+			indexes: ['CREATE UNIQUE INDEX idx_trip_budgets_trip ON trip_budgets (trip)'],
 			listRule: MEMBER_VIA_TRIP,
 			viewRule: MEMBER_VIA_TRIP,
 			// Create/update: hook-enforced to owner/co_owner since PB rule syntax
 			// for role checks on the same back-relation is unreliable with ?= operator.
 			createRule: MEMBER_VIA_TRIP,
 			updateRule: MEMBER_VIA_TRIP,
-			deleteRule: null,
+			deleteRule: null
 		});
 
 		app.save(collection);

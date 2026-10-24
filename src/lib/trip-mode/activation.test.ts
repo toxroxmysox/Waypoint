@@ -29,7 +29,9 @@ describe('isTripActive', () => {
 	});
 
 	it('returns false when archived', () => {
-		expect(isTripActive(trip('2026-06-01', '2026-06-10', true), new Date('2026-06-05'))).toBe(false);
+		expect(isTripActive(trip('2026-06-01', '2026-06-10', true), new Date('2026-06-05'))).toBe(
+			false
+		);
 	});
 
 	it('returns false when start_date is empty', () => {
@@ -41,7 +43,9 @@ describe('isTripActive', () => {
 	});
 
 	it('ignores time portion of now — compares dates only', () => {
-		expect(isTripActive(trip('2026-06-05', '2026-06-05'), new Date('2026-06-05T23:59:59Z'))).toBe(true);
+		expect(isTripActive(trip('2026-06-05', '2026-06-05'), new Date('2026-06-05T23:59:59Z'))).toBe(
+			true
+		);
 	});
 
 	describe('timezone boundaries (#167)', () => {
@@ -102,7 +106,12 @@ describe('isTripActive', () => {
 
 		it('falls back to UTC when timezone is invalid', () => {
 			const now = new Date('2026-06-06T00:00:00Z');
-			const bad = { start_date: '2026-06-01', end_date: '2026-06-05', archived: false, timezone: 'Mars/Olympus' };
+			const bad = {
+				start_date: '2026-06-01',
+				end_date: '2026-06-05',
+				archived: false,
+				timezone: 'Mars/Olympus'
+			};
 			// Invalid zone -> tripTz -> UTC -> today is 2026-06-06 -> inactive.
 			expect(isTripActive(bad, now)).toBe(false);
 		});

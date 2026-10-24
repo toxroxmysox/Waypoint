@@ -12,14 +12,14 @@
 
 ## Sub-Milestone Overview
 
-| Sub-milestone | Scope | Depends on |
-|---|---|---|
-| **M4a** | Data models, hooks, types, unit-tested utilities | — |
-| **M4b** | Voting + alternates + item move UI | M4a |
-| **M4c** | Vault UI (encrypted entries) | M4a |
-| **M4d** | Trip Mode (today/tomorrow/next 3 days) | M4a |
-| **M4e** | Offline & PWA (service worker, offline toggle, A2HS) | M4a |
-| **M4f** | E2E tests + polish | M4a-M4e |
+| Sub-milestone | Scope                                                | Depends on |
+| ------------- | ---------------------------------------------------- | ---------- |
+| **M4a**       | Data models, hooks, types, unit-tested utilities     | —          |
+| **M4b**       | Voting + alternates + item move UI                   | M4a        |
+| **M4c**       | Vault UI (encrypted entries)                         | M4a        |
+| **M4d**       | Trip Mode (today/tomorrow/next 3 days)               | M4a        |
+| **M4e**       | Offline & PWA (service worker, offline toggle, A2HS) | M4a        |
+| **M4f**       | E2E tests + polish                                   | M4a-M4e    |
 
 ---
 
@@ -27,48 +27,48 @@
 
 ### New files
 
-| File | Responsibility |
-|---|---|
-| `backend/pb_migrations/0024_votes.js` | Votes collection |
-| `backend/pb_migrations/0025_vault_entries.js` | Vault entries collection |
-| `backend/pb_migrations/0026_trip_vault_password.js` | Add vault_password_hash to trips |
-| `backend/pb_hooks/votes.pb.js` | Enforce one-vote-per-member-per-item |
-| `src/lib/utils/crypto.ts` | Client-side AES-GCM encrypt/decrypt with PBKDF2 key derivation |
-| `src/lib/utils/crypto.test.ts` | Unit tests for encrypt/decrypt round-trip, wrong password fails |
-| `src/lib/utils/trip-mode.ts` | findNextItem, isToday, groupItemsByDay helpers |
-| `src/lib/utils/trip-mode.test.ts` | Unit tests for time-based item logic |
-| `src/lib/utils/vault-password.ts` | Server-side scrypt hash/verify for vault password |
-| `src/lib/components/VoteButtons.svelte` | Upvote button + count display |
-| `src/lib/components/MoveItemSheet.svelte` | Bottom sheet with day/slot/phase picker for moving items |
-| `src/lib/components/A2HSBanner.svelte` | Add-to-Home-Screen banner (iOS + Android) |
-| `src/lib/components/NowDivider.svelte` | "Now" time indicator between items |
-| `src/lib/components/TripModeCard.svelte` | Large item card for Trip Mode |
-| `src/routes/(app)/trips/[slug]/today/+page.server.ts` | Trip Mode data loader |
-| `src/routes/(app)/trips/[slug]/today/+page.svelte` | Trip Mode today view |
-| `src/routes/(app)/trips/[slug]/today/upcoming/+page.server.ts` | Next-3-days data loader |
-| `src/routes/(app)/trips/[slug]/today/upcoming/+page.svelte` | Next-3-days view |
-| `src/routes/(app)/trips/[slug]/vault/+page.server.ts` | Vault server actions (create, delete entries, set/verify password) |
-| `src/routes/(app)/trips/[slug]/vault/+page.svelte` | Vault UI (unlock, list, create, view) |
-| `src/routes/api/vault/unlock/+server.ts` | SvelteKit proxy for vault password verification |
-| `tests/e2e/m4-execution.spec.ts` | M4 Playwright happy-path tests |
+| File                                                           | Responsibility                                                     |
+| -------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `backend/pb_migrations/0024_votes.js`                          | Votes collection                                                   |
+| `backend/pb_migrations/0025_vault_entries.js`                  | Vault entries collection                                           |
+| `backend/pb_migrations/0026_trip_vault_password.js`            | Add vault_password_hash to trips                                   |
+| `backend/pb_hooks/votes.pb.js`                                 | Enforce one-vote-per-member-per-item                               |
+| `src/lib/utils/crypto.ts`                                      | Client-side AES-GCM encrypt/decrypt with PBKDF2 key derivation     |
+| `src/lib/utils/crypto.test.ts`                                 | Unit tests for encrypt/decrypt round-trip, wrong password fails    |
+| `src/lib/utils/trip-mode.ts`                                   | findNextItem, isToday, groupItemsByDay helpers                     |
+| `src/lib/utils/trip-mode.test.ts`                              | Unit tests for time-based item logic                               |
+| `src/lib/utils/vault-password.ts`                              | Server-side scrypt hash/verify for vault password                  |
+| `src/lib/components/VoteButtons.svelte`                        | Upvote button + count display                                      |
+| `src/lib/components/MoveItemSheet.svelte`                      | Bottom sheet with day/slot/phase picker for moving items           |
+| `src/lib/components/A2HSBanner.svelte`                         | Add-to-Home-Screen banner (iOS + Android)                          |
+| `src/lib/components/NowDivider.svelte`                         | "Now" time indicator between items                                 |
+| `src/lib/components/TripModeCard.svelte`                       | Large item card for Trip Mode                                      |
+| `src/routes/(app)/trips/[slug]/today/+page.server.ts`          | Trip Mode data loader                                              |
+| `src/routes/(app)/trips/[slug]/today/+page.svelte`             | Trip Mode today view                                               |
+| `src/routes/(app)/trips/[slug]/today/upcoming/+page.server.ts` | Next-3-days data loader                                            |
+| `src/routes/(app)/trips/[slug]/today/upcoming/+page.svelte`    | Next-3-days view                                                   |
+| `src/routes/(app)/trips/[slug]/vault/+page.server.ts`          | Vault server actions (create, delete entries, set/verify password) |
+| `src/routes/(app)/trips/[slug]/vault/+page.svelte`             | Vault UI (unlock, list, create, view)                              |
+| `src/routes/api/vault/unlock/+server.ts`                       | SvelteKit proxy for vault password verification                    |
+| `tests/e2e/m4-execution.spec.ts`                               | M4 Playwright happy-path tests                                     |
 
 ### Modified files
 
-| File | Changes |
-|---|---|
-| `src/lib/types.ts` | Add Vote, VaultEntry, VaultEntryDecrypted types |
-| `src/routes/(app)/trips/[slug]/items/[itemId]/+page.server.ts` | Add vote, unvote, promote, demote, moveItem actions; load votes |
-| `src/routes/(app)/trips/[slug]/items/[itemId]/+page.svelte` | Add VoteButtons, promote/demote buttons, move button |
-| `src/routes/(app)/trips/[slug]/days/[dayId]/+page.server.ts` | Load vote counts per item |
-| `src/routes/(app)/trips/[slug]/days/[dayId]/+page.svelte` | Show vote counts on item cards, NowDivider |
-| `src/routes/(app)/trips/[slug]/+page.svelte` | Add Trip Mode toggle link |
-| `src/routes/(app)/trips/[slug]/settings/+page.server.ts` | Add setVaultPassword action |
-| `src/routes/(app)/trips/[slug]/settings/+page.svelte` | Add vault password setup section |
-| `src/routes/(app)/trips/[slug]/more/+page.svelte` | Activate vault link (remove "coming in M4") |
-| `src/routes/(app)/trips/[slug]/+layout.svelte` | Conditionally show Trip Mode nav |
-| `src/service-worker.ts` | Full rewrite: cache API responses, offline toggle, background refresh |
-| `src/routes/+layout.svelte` | Add A2HSBanner, offline indicator |
-| `src/lib/components/BottomNav.svelte` | Add Today tab when in Trip Mode |
+| File                                                           | Changes                                                               |
+| -------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `src/lib/types.ts`                                             | Add Vote, VaultEntry, VaultEntryDecrypted types                       |
+| `src/routes/(app)/trips/[slug]/items/[itemId]/+page.server.ts` | Add vote, unvote, promote, demote, moveItem actions; load votes       |
+| `src/routes/(app)/trips/[slug]/items/[itemId]/+page.svelte`    | Add VoteButtons, promote/demote buttons, move button                  |
+| `src/routes/(app)/trips/[slug]/days/[dayId]/+page.server.ts`   | Load vote counts per item                                             |
+| `src/routes/(app)/trips/[slug]/days/[dayId]/+page.svelte`      | Show vote counts on item cards, NowDivider                            |
+| `src/routes/(app)/trips/[slug]/+page.svelte`                   | Add Trip Mode toggle link                                             |
+| `src/routes/(app)/trips/[slug]/settings/+page.server.ts`       | Add setVaultPassword action                                           |
+| `src/routes/(app)/trips/[slug]/settings/+page.svelte`          | Add vault password setup section                                      |
+| `src/routes/(app)/trips/[slug]/more/+page.svelte`              | Activate vault link (remove "coming in M4")                           |
+| `src/routes/(app)/trips/[slug]/+layout.svelte`                 | Conditionally show Trip Mode nav                                      |
+| `src/service-worker.ts`                                        | Full rewrite: cache API responses, offline toggle, background refresh |
+| `src/routes/+layout.svelte`                                    | Add A2HSBanner, offline indicator                                     |
+| `src/lib/components/BottomNav.svelte`                          | Add Today tab when in Trip Mode                                       |
 
 ---
 
@@ -77,6 +77,7 @@
 ### Task 1: Votes Migration
 
 **Files:**
+
 - Create: `backend/pb_migrations/0024_votes.js`
 
 - [ ] **Step 1: Write the migration**
@@ -96,19 +97,40 @@ migrate(
 			type: 'base',
 			name: 'votes',
 			fields: [
-				{ type: 'relation', name: 'trip', required: true, collectionId: trips.id, maxSelect: 1, cascadeDelete: true },
-				{ type: 'relation', name: 'item', required: true, collectionId: items.id, maxSelect: 1, cascadeDelete: true },
-				{ type: 'relation', name: 'member', required: true, collectionId: tripMembers.id, maxSelect: 1, cascadeDelete: true },
+				{
+					type: 'relation',
+					name: 'trip',
+					required: true,
+					collectionId: trips.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				},
+				{
+					type: 'relation',
+					name: 'item',
+					required: true,
+					collectionId: items.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				},
+				{
+					type: 'relation',
+					name: 'member',
+					required: true,
+					collectionId: tripMembers.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				}
 			],
 			indexes: [
 				'CREATE UNIQUE INDEX idx_votes_item_member ON votes (item, member)',
 				'CREATE INDEX idx_votes_trip ON votes (trip)',
-				'CREATE INDEX idx_votes_item ON votes (item)',
+				'CREATE INDEX idx_votes_item ON votes (item)'
 			],
 			listRule: MEMBER_VIA_TRIP,
 			viewRule: MEMBER_VIA_TRIP,
 			createRule: MEMBER_VIA_TRIP,
-			deleteRule: MEMBER_VIA_TRIP + ' && member.user = @request.auth.id',
+			deleteRule: MEMBER_VIA_TRIP + ' && member.user = @request.auth.id'
 		});
 
 		app.save(collection);
@@ -135,6 +157,7 @@ git commit -m "M4a: add votes collection migration"
 ### Task 2: Vault Migrations
 
 **Files:**
+
 - Create: `backend/pb_migrations/0025_vault_entries.js`
 - Create: `backend/pb_migrations/0026_trip_vault_password.js`
 
@@ -154,19 +177,30 @@ migrate(
 			type: 'base',
 			name: 'vault_entries',
 			fields: [
-				{ type: 'relation', name: 'trip', required: true, collectionId: trips.id, maxSelect: 1, cascadeDelete: true },
+				{
+					type: 'relation',
+					name: 'trip',
+					required: true,
+					collectionId: trips.id,
+					maxSelect: 1,
+					cascadeDelete: true
+				},
 				{ type: 'text', name: 'encrypted_title', required: true, max: 5000 },
 				{ type: 'text', name: 'encrypted_body', required: true, max: 100000 },
-				{ type: 'relation', name: 'created_by', required: true, collectionId: tripMembers.id, maxSelect: 1 },
+				{
+					type: 'relation',
+					name: 'created_by',
+					required: true,
+					collectionId: tripMembers.id,
+					maxSelect: 1
+				}
 			],
-			indexes: [
-				'CREATE INDEX idx_vault_entries_trip ON vault_entries (trip)',
-			],
+			indexes: ['CREATE INDEX idx_vault_entries_trip ON vault_entries (trip)'],
 			listRule: MEMBER_VIA_TRIP,
 			viewRule: MEMBER_VIA_TRIP,
 			createRule: MEMBER_VIA_TRIP,
 			updateRule: MEMBER_VIA_TRIP + ' && created_by.user = @request.auth.id',
-			deleteRule: MEMBER_VIA_TRIP + ' && created_by.user = @request.auth.id',
+			deleteRule: MEMBER_VIA_TRIP + ' && created_by.user = @request.auth.id'
 		});
 
 		app.save(collection);
@@ -185,9 +219,7 @@ migrate(
 migrate(
 	(app) => {
 		const trips = app.findCollectionByNameOrId('trips');
-		trips.fields.add(
-			new TextField({ name: 'vault_password_hash', max: 500 })
-		);
+		trips.fields.add(new TextField({ name: 'vault_password_hash', max: 500 }));
 		app.save(trips);
 	},
 	(app) => {
@@ -213,6 +245,7 @@ git commit -m "M4a: add vault_entries collection + vault_password_hash on trips"
 ### Task 3: Votes Hook
 
 **Files:**
+
 - Create: `backend/pb_hooks/votes.pb.js`
 
 - [ ] **Step 1: Write the hook**
@@ -265,6 +298,7 @@ git commit -m "M4a: add votes hook — enforce vote-as-self"
 ### Task 4: TypeScript Types
 
 **Files:**
+
 - Modify: `src/lib/types.ts`
 
 - [ ] **Step 1: Add Vote and VaultEntry types**
@@ -324,6 +358,7 @@ git commit -m "M4a: add Vote, VaultEntry types + vault_password_hash on Trip"
 ### Task 5: Vault Password Hashing Utility
 
 **Files:**
+
 - Create: `src/lib/utils/vault-password.ts`
 
 - [ ] **Step 1: Write the utility**
@@ -360,6 +395,7 @@ git commit -m "M4a: add server-side vault password hash/verify utility"
 ### Task 6: Client-Side Crypto Utility + Tests
 
 **Files:**
+
 - Create: `src/lib/utils/crypto.ts`
 - Create: `src/lib/utils/crypto.test.ts`
 
@@ -405,10 +441,7 @@ describe('crypto', () => {
 		const plaintext = 'Confirmation: Htel de la Paix #4829';
 		const password = 'trip-pass';
 
-		const decrypted = await decryptText(
-			await encryptText(plaintext, password),
-			password
-		);
+		const decrypted = await decryptText(await encryptText(plaintext, password), password);
 		expect(decrypted).toBe(plaintext);
 	});
 });
@@ -428,13 +461,9 @@ const IV_BYTES = 12;
 
 async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
 	const enc = new TextEncoder();
-	const keyMaterial = await crypto.subtle.importKey(
-		'raw',
-		enc.encode(password),
-		'PBKDF2',
-		false,
-		['deriveKey']
-	);
+	const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, [
+		'deriveKey'
+	]);
 	return crypto.subtle.deriveKey(
 		{ name: 'PBKDF2', salt, iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
 		keyMaterial,
@@ -468,11 +497,7 @@ export async function decryptText(packed64: string, password: string): Promise<s
 	const iv = packed.slice(SALT_BYTES, SALT_BYTES + IV_BYTES);
 	const ciphertext = packed.slice(SALT_BYTES + IV_BYTES);
 	const key = await deriveKey(password, salt);
-	const plainBuf = await crypto.subtle.decrypt(
-		{ name: 'AES-GCM', iv },
-		key,
-		ciphertext
-	);
+	const plainBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
 	return new TextDecoder().decode(plainBuf);
 }
 ```
@@ -492,6 +517,7 @@ git commit -m "M4a: add client-side AES-GCM encrypt/decrypt with PBKDF2 + 5 test
 ### Task 7: Trip Mode Utilities + Tests
 
 **Files:**
+
 - Create: `src/lib/utils/trip-mode.ts`
 - Create: `src/lib/utils/trip-mode.test.ts`
 
@@ -674,9 +700,7 @@ export function groupItemsByDay(items: Item[], days: Day[]): DayGroup[] {
 		dayMap.set(item.day, existing);
 	}
 
-	return days
-		.filter((d) => dayMap.has(d.id))
-		.map((d) => ({ day: d, items: dayMap.get(d.id)! }));
+	return days.filter((d) => dayMap.has(d.id)).map((d) => ({ day: d, items: dayMap.get(d.id)! }));
 }
 ```
 
@@ -718,6 +742,7 @@ git commit -m "M4a complete: data models, hooks, types, tested utilities"
 ### Task 1: Load Votes on Item Detail
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/items/[itemId]/+page.server.ts`
 
 - [ ] **Step 1: Update load function to fetch votes**
@@ -883,6 +908,7 @@ git commit -m "M4b: add vote/unvote/promote/demote/moveItem server actions + loa
 ### Task 2: VoteButtons Component
 
 **Files:**
+
 - Create: `src/lib/components/VoteButtons.svelte`
 
 - [ ] **Step 1: Write the component**
@@ -921,7 +947,7 @@ git commit -m "M4b: add vote/unvote/promote/demote/moveItem server actions + loa
 		<button
 			type="submit"
 			disabled={submitting}
-			class="bg-moss/15 text-moss border-moss/30 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-semibold transition-colors"
+			class="inline-flex items-center gap-1.5 rounded-full border border-moss/30 bg-moss/15 px-3 py-1 text-sm font-semibold text-moss transition-colors"
 			aria-label="Remove vote"
 		>
 			<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
@@ -947,10 +973,19 @@ git commit -m "M4b: add vote/unvote/promote/demote/moveItem server actions + loa
 		<button
 			type="submit"
 			disabled={submitting}
-			class="border-line text-ink-muted hover:border-moss/40 hover:text-moss inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium transition-colors"
+			class="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1 text-sm font-medium text-ink-muted transition-colors hover:border-moss/40 hover:text-moss"
 			aria-label="Vote for this option"
 		>
-			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<svg
+				width="16"
+				height="16"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
 				<path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z" />
 				<path d="M1 21h4V10H1z" />
 			</svg>
@@ -975,6 +1010,7 @@ git commit -m "M4b: add VoteButtons component"
 ### Task 3: MoveItemSheet Component
 
 **Files:**
+
 - Create: `src/lib/components/MoveItemSheet.svelte`
 
 - [ ] **Step 1: Write the component**
@@ -1050,12 +1086,12 @@ git commit -m "M4b: add VoteButtons component"
 		class="space-y-4"
 	>
 		<div>
-			<label for="move-day" class="text-ink-soft block text-sm font-medium">Day</label>
+			<label for="move-day" class="block text-sm font-medium text-ink-soft">Day</label>
 			<select
 				id="move-day"
 				name="day"
 				bind:value={selectedDay}
-				class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+				class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 			>
 				<option value="">No day (unscheduled)</option>
 				{#each days as d}
@@ -1065,12 +1101,12 @@ git commit -m "M4b: add VoteButtons component"
 		</div>
 
 		<div>
-			<label for="move-slot" class="text-ink-soft block text-sm font-medium">Time slot</label>
+			<label for="move-slot" class="block text-sm font-medium text-ink-soft">Time slot</label>
 			<select
 				id="move-slot"
 				name="slot"
 				bind:value={selectedSlot}
-				class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+				class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 			>
 				{#each slotOptions as s}
 					<option value={s.id}>{s.label}</option>
@@ -1080,12 +1116,12 @@ git commit -m "M4b: add VoteButtons component"
 
 		{#if phases.length > 0}
 			<div>
-				<label for="move-phase" class="text-ink-soft block text-sm font-medium">Phase</label>
+				<label for="move-phase" class="block text-sm font-medium text-ink-soft">Phase</label>
 				<select
 					id="move-phase"
 					name="phase"
 					bind:value={selectedPhase}
-					class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+					class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 				>
 					<option value="">No phase</option>
 					{#each phases as p}
@@ -1117,6 +1153,7 @@ git commit -m "M4b: add MoveItemSheet component"
 ### Task 4: Wire Voting + Promote/Demote + Move into Item Detail Page
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/items/[itemId]/+page.svelte`
 
 - [ ] **Step 1: Add imports and state**
@@ -1145,11 +1182,7 @@ After the title `<h2>` in the header card, add:
 
 ```svelte
 <div class="mt-3 flex items-center gap-3">
-	<VoteButtons
-		voteCount={data.votes.length}
-		myVoteId={data.myVote?.id ?? null}
-		{itemUrl}
-	/>
+	<VoteButtons voteCount={data.votes.length} myVoteId={data.myVote?.id ?? null} {itemUrl} />
 	{#if isAlternate}
 		<form
 			method="POST"
@@ -1165,7 +1198,7 @@ After the title `<h2>` in the header card, add:
 			<button
 				type="submit"
 				disabled={promoteLoading}
-				class="border-moss/40 text-moss hover:bg-moss/10 rounded-full border px-3 py-1 text-xs font-semibold"
+				class="rounded-full border border-moss/40 px-3 py-1 text-xs font-semibold text-moss hover:bg-moss/10"
 			>
 				{promoteLoading ? '...' : 'Promote to primary'}
 			</button>
@@ -1186,7 +1219,7 @@ After the title `<h2>` in the header card, add:
 			<button
 				type="submit"
 				disabled={demoteLoading}
-				class="border-clay/40 text-clay hover:bg-clay/10 rounded-full border px-3 py-1 text-xs font-semibold"
+				class="rounded-full border border-clay/40 px-3 py-1 text-xs font-semibold text-clay hover:bg-clay/10"
 			>
 				{demoteLoading ? '...' : 'Demote'}
 			</button>
@@ -1202,26 +1235,28 @@ After the Schedule card, add:
 ```svelte
 {#if data.alternates.length > 0}
 	<Card>
-		<div class="p-4 space-y-2">
+		<div class="space-y-2 p-4">
 			<SectionH>
 				{#snippet right()}
-					<span class="text-ink-muted text-xs">{data.alternates.length} alternate{data.alternates.length === 1 ? '' : 's'}</span>
+					<span class="text-xs text-ink-muted"
+						>{data.alternates.length} alternate{data.alternates.length === 1 ? '' : 's'}</span
+					>
 				{/snippet}
 				Alternates
 			</SectionH>
 			{#each data.alternates as alt}
 				<a
 					href="/trips/{data.trip.slug}/items/{alt.id}"
-					class="border-line hover:border-ink-muted flex items-center gap-3 rounded-lg border p-3"
+					class="flex items-center gap-3 rounded-lg border border-line p-3 hover:border-ink-muted"
 				>
 					<TypeIcon type={alt.type} sub={alt.subtype} size={28} />
 					<div class="min-w-0 flex-1">
-						<p class="text-ink text-sm font-semibold truncate">{alt.title}</p>
+						<p class="truncate text-sm font-semibold text-ink">{alt.title}</p>
 						{#if alt.location_name}
-							<p class="text-ink-muted text-[12px] truncate">{alt.location_name}</p>
+							<p class="truncate text-[12px] text-ink-muted">{alt.location_name}</p>
 						{/if}
 					</div>
-					<span class="text-ink-muted text-[11px]">Rank {alt.rank}</span>
+					<span class="text-[11px] text-ink-muted">Rank {alt.rank}</span>
 				</a>
 			{/each}
 		</div>
@@ -1238,7 +1273,7 @@ After the Edit link in the NavBar, or as a separate action row below the header 
 	<button
 		type="button"
 		onclick={() => (moveSheetOpen = true)}
-		class="border-line text-ink-muted hover:text-ink-soft rounded-md border px-3 py-1.5 text-xs font-semibold"
+		class="rounded-md border border-line px-3 py-1.5 text-xs font-semibold text-ink-muted hover:text-ink-soft"
 	>
 		Move
 	</button>
@@ -1274,6 +1309,7 @@ git commit -m "M4b: wire voting, promote/demote, move into item detail page"
 ### Task 5: Show Vote Counts on Day Detail
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/days/[dayId]/+page.server.ts`
 - Modify: `src/routes/(app)/trips/[slug]/days/[dayId]/+page.svelte`
 
@@ -1289,11 +1325,12 @@ After the items fetch, load all votes for those items:
 
 ```typescript
 const itemIds = items.map((i) => i.id);
-const votes = itemIds.length > 0
-	? await locals.pb.collection('votes').getFullList<Vote>({
-			filter: itemIds.map((id) => `item = "${id}"`).join(' || ')
-		})
-	: [];
+const votes =
+	itemIds.length > 0
+		? await locals.pb.collection('votes').getFullList<Vote>({
+				filter: itemIds.map((id) => `item = "${id}"`).join(' || ')
+			})
+		: [];
 
 const voteCounts: Record<string, number> = {};
 for (const v of votes) {
@@ -1309,7 +1346,7 @@ In the day detail Svelte file, within each item card, after the booked pill, add
 
 ```svelte
 {#if data.voteCounts[item.id]}
-	<span class="text-moss inline-flex items-center gap-0.5 text-[11px] font-semibold">
+	<span class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-moss">
 		<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none">
 			<path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z" />
 			<path d="M1 21h4V10H1z" />
@@ -1336,6 +1373,7 @@ git commit -m "M4b: show vote counts on day detail item cards"
 - [ ] **Step 1: Visual verification at 375px**
 
 Start dev server, navigate to an item detail page. Verify:
+
 - Vote button renders
 - Promote/demote buttons appear for alternates/primaries
 - Move button opens bottom sheet
@@ -1360,6 +1398,7 @@ git commit -m "M4b complete: voting, promote/demote, item move UI"
 ### Task 1: Vault Password Setup in Settings
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/settings/+page.server.ts`
 - Modify: `src/routes/(app)/trips/[slug]/settings/+page.svelte`
 
@@ -1415,30 +1454,30 @@ In `settings/+page.svelte`, after the main settings Card and before the danger z
 
 ```svelte
 <Card>
-	<div class="p-4 space-y-3">
-		<h3 class="text-ink text-sm font-semibold">Vault Password</h3>
-		<div class="border-clay/20 bg-clay/5 rounded-md p-3">
-			<p class="text-clay text-xs font-semibold">No recovery</p>
-			<p class="text-ink-muted mt-1 text-xs">
-				If you forget the vault password, encrypted entries cannot be recovered. There is no reset mechanism.
+	<div class="space-y-3 p-4">
+		<h3 class="text-sm font-semibold text-ink">Vault Password</h3>
+		<div class="rounded-md border-clay/20 bg-clay/5 p-3">
+			<p class="text-xs font-semibold text-clay">No recovery</p>
+			<p class="mt-1 text-xs text-ink-muted">
+				If you forget the vault password, encrypted entries cannot be recovered. There is no reset
+				mechanism.
 			</p>
 		</div>
 
 		{#if form?.vaultError}
-			<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">{form.vaultError}</div>
+			<div class="rounded-md border border-clay/30 bg-clay/10 p-3 text-sm text-clay">
+				{form.vaultError}
+			</div>
 		{/if}
 		{#if form?.vaultSuccess}
-			<div class="border-moss/30 bg-moss-tint text-moss rounded-md border p-3 text-sm">Vault password set.</div>
+			<div class="rounded-md border border-moss/30 bg-moss-tint p-3 text-sm text-moss">
+				Vault password set.
+			</div>
 		{/if}
 
-		<form
-			method="POST"
-			action="?/setVaultPassword"
-			use:enhance
-			class="space-y-3"
-		>
+		<form method="POST" action="?/setVaultPassword" use:enhance class="space-y-3">
 			<div>
-				<label for="vault_password" class="text-ink-soft block text-sm font-medium">
+				<label for="vault_password" class="block text-sm font-medium text-ink-soft">
 					{data.trip.vault_password_hash ? 'Change password' : 'Set password'}
 				</label>
 				<input
@@ -1447,19 +1486,21 @@ In `settings/+page.svelte`, after the main settings Card and before the danger z
 					name="vault_password"
 					required
 					minlength={4}
-					class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+					class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 					placeholder="Enter vault password"
 				/>
 			</div>
 			<div>
-				<label for="vault_password_confirm" class="text-ink-soft block text-sm font-medium">Confirm</label>
+				<label for="vault_password_confirm" class="block text-sm font-medium text-ink-soft"
+					>Confirm</label
+				>
 				<input
 					type="password"
 					id="vault_password_confirm"
 					name="vault_password_confirm"
 					required
 					minlength={4}
-					class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+					class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 					placeholder="Confirm password"
 				/>
 			</div>
@@ -1486,6 +1527,7 @@ git commit -m "M4c: vault password setup in trip settings with no-recovery warni
 ### Task 2: Vault Unlock API Route
 
 **Files:**
+
 - Create: `src/routes/api/vault/unlock/+server.ts`
 
 - [ ] **Step 1: Write the unlock endpoint**
@@ -1546,6 +1588,7 @@ git commit -m "M4c: add vault unlock API endpoint"
 ### Task 3: Vault Page — Server Actions
 
 **Files:**
+
 - Create: `src/routes/(app)/trips/[slug]/vault/+page.server.ts`
 
 - [ ] **Step 1: Write the server load + actions**
@@ -1631,6 +1674,7 @@ git commit -m "M4c: vault page server — load entries, create/delete actions"
 ### Task 4: Vault Page — UI
 
 **Files:**
+
 - Create: `src/routes/(app)/trips/[slug]/vault/+page.svelte`
 
 - [ ] **Step 1: Write the vault page**
@@ -1743,17 +1787,29 @@ This page handles three states: (1) no vault password set, (2) vault locked, (3)
 
 <NavBar title="Vault" subtitle={data.trip.title} back backHref="/trips/{data.trip.slug}/more" />
 
-<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-24 space-y-4">
+<main class="mx-auto w-full max-w-lg flex-1 space-y-4 px-4 pt-4 pb-24">
 	{#if !data.hasVaultPassword}
 		<!-- No vault password set -->
 		<Card>
 			<div class="p-6 text-center">
-				<svg class="text-ink-muted mx-auto" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+				<svg
+					class="mx-auto text-ink-muted"
+					width="48"
+					height="48"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.5"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
 					<rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
 					<path d="M7 11V7a5 5 0 0 1 10 0v4" />
 				</svg>
-				<p class="text-ink mt-3 font-semibold">Vault not set up</p>
-				<p class="text-ink-muted mt-1 text-sm">A trip owner must set a vault password in Settings before entries can be created.</p>
+				<p class="mt-3 font-semibold text-ink">Vault not set up</p>
+				<p class="mt-1 text-sm text-ink-muted">
+					A trip owner must set a vault password in Settings before entries can be created.
+				</p>
 				<Button href="/trips/{data.trip.slug}/settings" variant="ghost" size="sm" class="mt-3">
 					Go to Settings
 				</Button>
@@ -1762,18 +1818,32 @@ This page handles three states: (1) no vault password set, (2) vault locked, (3)
 	{:else if !unlocked}
 		<!-- Vault locked -->
 		<Card>
-			<div class="p-6 space-y-4">
+			<div class="space-y-4 p-6">
 				<div class="text-center">
-					<svg class="text-ink-muted mx-auto" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+					<svg
+						class="mx-auto text-ink-muted"
+						width="48"
+						height="48"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
 						<rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
 						<path d="M7 11V7a5 5 0 0 1 10 0v4" />
 					</svg>
-					<p class="text-ink mt-3 font-semibold">Vault locked</p>
-					<p class="text-ink-muted mt-1 text-sm">Enter the trip vault password to view encrypted entries.</p>
+					<p class="mt-3 font-semibold text-ink">Vault locked</p>
+					<p class="mt-1 text-sm text-ink-muted">
+						Enter the trip vault password to view encrypted entries.
+					</p>
 				</div>
 
 				{#if unlockError}
-					<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">{unlockError}</div>
+					<div class="rounded-md border border-clay/30 bg-clay/10 p-3 text-sm text-clay">
+						{unlockError}
+					</div>
 				{/if}
 
 				<div>
@@ -1781,12 +1851,20 @@ This page handles three states: (1) no vault password set, (2) vault locked, (3)
 						type="password"
 						bind:value={vaultPassword}
 						placeholder="Vault password"
-						class="border-line bg-surface text-ink block w-full rounded-md border px-3 py-2 text-sm"
-						onkeydown={(e) => { if (e.key === 'Enter') handleUnlock(); }}
+						class="block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') handleUnlock();
+						}}
 					/>
 				</div>
 
-				<Button onclick={handleUnlock} disabled={unlockLoading || !vaultPassword.trim()} variant="moss" size="md" class="w-full">
+				<Button
+					onclick={handleUnlock}
+					disabled={unlockLoading || !vaultPassword.trim()}
+					variant="moss"
+					size="md"
+					class="w-full"
+				>
 					{unlockLoading ? 'Unlocking...' : 'Unlock'}
 				</Button>
 			</div>
@@ -1796,20 +1874,24 @@ This page handles three states: (1) no vault password set, (2) vault locked, (3)
 		<div class="flex items-center justify-between">
 			<SectionH>
 				{#snippet right()}
-					<button onclick={handleLock} class="text-ink-muted hover:text-ink-soft text-xs">Lock</button>
+					<button onclick={handleLock} class="text-xs text-ink-muted hover:text-ink-soft"
+						>Lock</button
+					>
 				{/snippet}
 				Entries ({decryptedEntries.length})
 			</SectionH>
 		</div>
 
 		{#if form?.error}
-			<div class="border-clay/30 bg-clay/10 text-clay rounded-md border p-3 text-sm">{form.error}</div>
+			<div class="rounded-md border border-clay/30 bg-clay/10 p-3 text-sm text-clay">
+				{form.error}
+			</div>
 		{/if}
 
 		{#if decryptedEntries.length === 0}
 			<Card>
 				<div class="p-6 text-center">
-					<p class="text-ink-muted text-sm">No vault entries yet.</p>
+					<p class="text-sm text-ink-muted">No vault entries yet.</p>
 				</div>
 			</Card>
 		{:else}
@@ -1821,16 +1903,23 @@ This page handles three states: (1) no vault password set, (2) vault locked, (3)
 						class="w-full p-4 text-left"
 					>
 						<div class="flex items-center justify-between">
-							<h3 class="text-ink text-sm font-semibold">{entry.title}</h3>
+							<h3 class="text-sm font-semibold text-ink">{entry.title}</h3>
 							<svg
-								class="text-ink-muted shrink-0 transition-transform {viewEntry?.id === entry.id ? 'rotate-180' : ''}"
-								width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+								class="shrink-0 text-ink-muted transition-transform {viewEntry?.id === entry.id
+									? 'rotate-180'
+									: ''}"
+								width="16"
+								height="16"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
 							>
 								<path d="m6 9 6 6 6-6" />
 							</svg>
 						</div>
 						{#if viewEntry?.id === entry.id}
-							<p class="text-ink-soft mt-2 text-sm whitespace-pre-wrap">{entry.body}</p>
+							<p class="mt-2 text-sm whitespace-pre-wrap text-ink-soft">{entry.body}</p>
 							<form
 								method="POST"
 								action="?/deleteEntry"
@@ -1850,7 +1939,7 @@ This page handles three states: (1) no vault password set, (2) vault locked, (3)
 								<button
 									type="submit"
 									disabled={deleteLoading && deleteId === entry.id}
-									class="text-clay hover:text-clay/80 text-xs font-semibold"
+									class="text-xs font-semibold text-clay hover:text-clay/80"
 								>
 									{deleteLoading && deleteId === entry.id ? 'Deleting...' : 'Delete entry'}
 								</button>
@@ -1870,7 +1959,10 @@ This page handles three states: (1) no vault password set, (2) vault locked, (3)
 				method="POST"
 				action="?/createEntry"
 				use:enhance={async ({ formData, cancel }) => {
-					if (!newTitle.trim() || !newBody.trim()) { cancel(); return; }
+					if (!newTitle.trim() || !newBody.trim()) {
+						cancel();
+						return;
+					}
 					createLoading = true;
 
 					const encTitle = await encryptText(newTitle, vaultPassword);
@@ -1892,28 +1984,34 @@ This page handles three states: (1) no vault password set, (2) vault locked, (3)
 				class="space-y-4"
 			>
 				<div>
-					<label for="vault-title" class="text-ink-soft block text-sm font-medium">Title</label>
+					<label for="vault-title" class="block text-sm font-medium text-ink-soft">Title</label>
 					<input
 						type="text"
 						id="vault-title"
 						bind:value={newTitle}
 						required
-						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+						class="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 						placeholder="e.g. Hotel safe code"
 					/>
 				</div>
 				<div>
-					<label for="vault-body" class="text-ink-soft block text-sm font-medium">Content</label>
+					<label for="vault-body" class="block text-sm font-medium text-ink-soft">Content</label>
 					<textarea
 						id="vault-body"
 						bind:value={newBody}
 						required
 						rows="4"
-						class="border-line bg-surface text-ink mt-1 block w-full rounded-md border px-3 py-2 text-sm resize-none"
+						class="mt-1 block w-full resize-none rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 						placeholder="Sensitive information..."
 					></textarea>
 				</div>
-				<Button type="submit" disabled={createLoading || !newTitle.trim() || !newBody.trim()} variant="moss" size="md" class="w-full">
+				<Button
+					type="submit"
+					disabled={createLoading || !newTitle.trim() || !newBody.trim()}
+					variant="moss"
+					size="md"
+					class="w-full"
+				>
 					{createLoading ? 'Encrypting...' : 'Save encrypted'}
 				</Button>
 			</form>
@@ -1937,6 +2035,7 @@ git commit -m "M4c: vault page — unlock, list, create, view, delete encrypted 
 ### Task 5: Activate Vault Link on More Page
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/more/+page.svelte`
 
 - [ ] **Step 1: Replace the placeholder vault card with a real link**
@@ -1946,15 +2045,35 @@ Replace the vault Card (the one with `opacity-50` and "coming in M4") with:
 ```svelte
 <Card href="/trips/{data.trip.slug}/vault">
 	<div class="flex items-center gap-3 p-4">
-		<svg class="text-ink-soft shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+		<svg
+			class="shrink-0 text-ink-soft"
+			width="20"
+			height="20"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="1.75"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+		>
 			<rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
 			<path d="M7 11V7a5 5 0 0 1 10 0v4" />
 		</svg>
 		<div class="min-w-0 flex-1">
-			<p class="text-ink text-sm font-semibold">Vault</p>
-			<p class="text-ink-muted text-[12px]">Encrypted trip documents</p>
+			<p class="text-sm font-semibold text-ink">Vault</p>
+			<p class="text-[12px] text-ink-muted">Encrypted trip documents</p>
 		</div>
-		<svg class="text-ink-muted shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		<svg
+			class="shrink-0 text-ink-muted"
+			width="16"
+			height="16"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="2"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+		>
 			<path d="m9 18 6-6-6-6" />
 		</svg>
 	</div>
@@ -1978,6 +2097,7 @@ git commit -m "M4c: activate vault link on More page"
 - [ ] **Step 1: Visual verification at 375px**
 
 Verify vault flow:
+
 1. Navigate to Settings → vault password section renders with no-recovery warning
 2. Set a vault password
 3. Navigate to More → Vault → locked screen renders
@@ -2005,6 +2125,7 @@ git commit -m "M4c complete: vault with client-side encryption, password setup, 
 ### Task 1: TripModeCard Component
 
 **Files:**
+
 - Create: `src/lib/components/TripModeCard.svelte`
 
 - [ ] **Step 1: Write the component**
@@ -2049,7 +2170,7 @@ Large, one-handed-friendly item card for Trip Mode.
 		<div class="min-w-0 flex-1">
 			<div class="flex flex-wrap items-center gap-1.5">
 				{#if item.start_time}
-					<span class="font-mono text-ink text-base font-semibold">
+					<span class="font-mono text-base font-semibold text-ink">
 						{formatTime(item.start_time)}
 					</span>
 				{/if}
@@ -2060,12 +2181,14 @@ Large, one-handed-friendly item card for Trip Mode.
 					<Pill variant="booked" size="sm">Booked</Pill>
 				{/if}
 			</div>
-			<h3 class="text-ink mt-1 text-lg leading-snug font-semibold">{item.title}</h3>
+			<h3 class="mt-1 text-lg leading-snug font-semibold text-ink">{item.title}</h3>
 			{#if item.location_name}
-				<p class="text-ink-muted mt-1 text-sm">{item.location_name}</p>
+				<p class="mt-1 text-sm text-ink-muted">{item.location_name}</p>
 			{/if}
 			{#if item.subtype}
-				<p class="text-ink-muted mt-1 text-[11px] uppercase tracking-wide">{titleCase(item.subtype)}</p>
+				<p class="mt-1 text-[11px] tracking-wide text-ink-muted uppercase">
+					{titleCase(item.subtype)}
+				</p>
 			{/if}
 		</div>
 	</div>
@@ -2073,9 +2196,9 @@ Large, one-handed-friendly item card for Trip Mode.
 	{#if item.confirmation_codes.length > 0}
 		<div class="mt-3 space-y-1">
 			{#each item.confirmation_codes as code}
-				<div class="bg-surface-2 flex items-center justify-between rounded px-3 py-1.5">
-					<span class="text-ink-muted text-xs uppercase tracking-wide">{code.label}</span>
-					<span class="font-mono text-ink text-sm font-semibold">{code.value}</span>
+				<div class="flex items-center justify-between rounded bg-surface-2 px-3 py-1.5">
+					<span class="text-xs tracking-wide text-ink-muted uppercase">{code.label}</span>
+					<span class="font-mono text-sm font-semibold text-ink">{code.value}</span>
 				</div>
 			{/each}
 		</div>
@@ -2093,6 +2216,7 @@ git commit -m "M4d: add TripModeCard component — large one-handed item card"
 ### Task 2: NowDivider Component
 
 **Files:**
+
 - Create: `src/lib/components/NowDivider.svelte`
 
 - [ ] **Step 1: Write the component**
@@ -2103,9 +2227,9 @@ git commit -m "M4d: add TripModeCard component — large one-handed item card"
 </script>
 
 <div class="flex items-center gap-3 py-2">
-	<div class="bg-clay h-0.5 flex-1"></div>
-	<span class="text-clay text-xs font-bold uppercase tracking-widest">{label}</span>
-	<div class="bg-clay h-0.5 flex-1"></div>
+	<div class="h-0.5 flex-1 bg-clay"></div>
+	<span class="text-xs font-bold tracking-widest text-clay uppercase">{label}</span>
+	<div class="h-0.5 flex-1 bg-clay"></div>
 </div>
 ```
 
@@ -2119,6 +2243,7 @@ git commit -m "M4d: add NowDivider component"
 ### Task 3: Trip Mode Today Page — Server
 
 **Files:**
+
 - Create: `src/routes/(app)/trips/[slug]/today/+page.server.ts`
 
 - [ ] **Step 1: Write the server load**
@@ -2162,12 +2287,13 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 
 	// Load items for upcoming days
 	const upcomingDayIds = upcomingDays.map((d) => d.id);
-	const upcomingItems = upcomingDayIds.length > 0
-		? await locals.pb.collection('items').getFullList<Item>({
-				filter: upcomingDayIds.map((id) => `day = "${id}"`).join(' || '),
-				sort: 'day,slot,start_time,rank'
-			})
-		: [];
+	const upcomingItems =
+		upcomingDayIds.length > 0
+			? await locals.pb.collection('items').getFullList<Item>({
+					filter: upcomingDayIds.map((id) => `day = "${id}"`).join(' || '),
+					sort: 'day,slot,start_time,rank'
+				})
+			: [];
 
 	return {
 		today,
@@ -2195,6 +2321,7 @@ git commit -m "M4d: trip mode today page server — loads today + upcoming items
 ### Task 4: Trip Mode Today Page — UI
 
 **Files:**
+
 - Create: `src/routes/(app)/trips/[slug]/today/+page.svelte`
 
 - [ ] **Step 1: Write the today view**
@@ -2259,26 +2386,28 @@ git commit -m "M4d: trip mode today page server — loads today + upcoming items
 	{/snippet}
 </NavBar>
 
-<SubTabs tabs={[
-	{ id: 'today', label: 'Today', href: `/trips/${data.trip.slug}/today` },
-	{ id: 'upcoming', label: 'Next 3 Days', href: `/trips/${data.trip.slug}/today/upcoming` }
-]} />
+<SubTabs
+	tabs={[
+		{ id: 'today', label: 'Today', href: `/trips/${data.trip.slug}/today` },
+		{ id: 'upcoming', label: 'Next 3 Days', href: `/trips/${data.trip.slug}/today/upcoming` }
+	]}
+/>
 
-<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-24 space-y-4">
+<main class="mx-auto w-full max-w-lg flex-1 space-y-4 px-4 pt-4 pb-24">
 	{#if !data.today}
 		<Card>
 			<div class="p-6 text-center">
-				<p class="text-ink-soft font-semibold">No itinerary for today</p>
-				<p class="text-ink-muted mt-1 text-sm">Today doesn't fall within this trip's dates.</p>
+				<p class="font-semibold text-ink-soft">No itinerary for today</p>
+				<p class="mt-1 text-sm text-ink-muted">Today doesn't fall within this trip's dates.</p>
 			</div>
 		</Card>
 	{:else}
-		<h2 class="font-display text-ink text-xl font-semibold">{dayLabel(data.today.date)}</h2>
+		<h2 class="font-display text-xl font-semibold text-ink">{dayLabel(data.today.date)}</h2>
 
 		{#if data.todayItems.length === 0}
 			<Card>
 				<div class="p-6 text-center">
-					<p class="text-ink-muted text-sm">Nothing scheduled for today.</p>
+					<p class="text-sm text-ink-muted">Nothing scheduled for today.</p>
 				</div>
 			</Card>
 		{:else}
@@ -2291,11 +2420,7 @@ git commit -m "M4d: trip mode today page server — loads today + upcoming items
 							{#if nextItem && nextItem.id === item.id}
 								<NowDivider label="Up next" />
 							{/if}
-							<TripModeCard
-								{item}
-								slug={data.trip.slug}
-								isNext={nextItem?.id === item.id}
-							/>
+							<TripModeCard {item} slug={data.trip.slug} isNext={nextItem?.id === item.id} />
 						{/each}
 					</section>
 				{/if}
@@ -2303,10 +2428,13 @@ git commit -m "M4d: trip mode today page server — loads today + upcoming items
 		{/if}
 
 		{#if data.tomorrowDay}
-			<div class="border-line border-t pt-4">
+			<div class="border-t border-line pt-4">
 				<SectionH>
 					{#snippet right()}
-						<a href="/trips/{data.trip.slug}/today/upcoming" class="text-ink-muted hover:text-ink-soft text-xs">See all</a>
+						<a
+							href="/trips/{data.trip.slug}/today/upcoming"
+							class="text-xs text-ink-muted hover:text-ink-soft">See all</a
+						>
 					{/snippet}
 					Tomorrow
 				</SectionH>
@@ -2314,19 +2442,28 @@ git commit -m "M4d: trip mode today page server — loads today + upcoming items
 				{#if tomorrowItems.length > 0}
 					<div class="mt-2 space-y-1">
 						{#each tomorrowItems.slice(0, 3) as item}
-							<a href="/trips/{data.trip.slug}/items/{item.id}" class="border-line hover:border-ink-muted flex items-center gap-2 rounded-lg border px-3 py-2">
-								<span class="font-mono text-ink-muted text-xs">
-									{item.start_time ? new Date(item.start_time.replace(' ', 'T')).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }) : item.slot}
+							<a
+								href="/trips/{data.trip.slug}/items/{item.id}"
+								class="flex items-center gap-2 rounded-lg border border-line px-3 py-2 hover:border-ink-muted"
+							>
+								<span class="font-mono text-xs text-ink-muted">
+									{item.start_time
+										? new Date(item.start_time.replace(' ', 'T')).toLocaleTimeString('en-US', {
+												hour: 'numeric',
+												minute: '2-digit',
+												timeZone: 'UTC'
+											})
+										: item.slot}
 								</span>
-								<span class="text-ink text-sm truncate">{item.title}</span>
+								<span class="truncate text-sm text-ink">{item.title}</span>
 							</a>
 						{/each}
 						{#if tomorrowItems.length > 3}
-							<p class="text-ink-muted text-center text-xs">+{tomorrowItems.length - 3} more</p>
+							<p class="text-center text-xs text-ink-muted">+{tomorrowItems.length - 3} more</p>
 						{/if}
 					</div>
 				{:else}
-					<p class="text-ink-muted mt-2 text-xs">Nothing scheduled.</p>
+					<p class="mt-2 text-xs text-ink-muted">Nothing scheduled.</p>
 				{/if}
 			</div>
 		{/if}
@@ -2349,6 +2486,7 @@ git commit -m "M4d: trip mode today view — large cards, now indicator, tomorro
 ### Task 5: Upcoming (Next 3 Days) Page
 
 **Files:**
+
 - Create: `src/routes/(app)/trips/[slug]/today/upcoming/+page.server.ts`
 - Create: `src/routes/(app)/trips/[slug]/today/upcoming/+page.svelte`
 
@@ -2375,12 +2513,13 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 	}
 
 	const dayIds = upcomingDays.map((d) => d.id);
-	const items = dayIds.length > 0
-		? await locals.pb.collection('items').getFullList<Item>({
-				filter: dayIds.map((id) => `day = "${id}"`).join(' || '),
-				sort: 'day,slot,start_time,rank'
-			})
-		: [];
+	const items =
+		dayIds.length > 0
+			? await locals.pb.collection('items').getFullList<Item>({
+					filter: dayIds.map((id) => `day = "${id}"`).join(' || '),
+					sort: 'day,slot,start_time,rank'
+				})
+			: [];
 
 	return { upcomingDays, upcomingItems: items };
 };
@@ -2427,25 +2566,27 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 	{/snippet}
 </NavBar>
 
-<SubTabs tabs={[
-	{ id: 'today', label: 'Today', href: `/trips/${data.trip.slug}/today` },
-	{ id: 'upcoming', label: 'Next 3 Days', href: `/trips/${data.trip.slug}/today/upcoming` }
-]} />
+<SubTabs
+	tabs={[
+		{ id: 'today', label: 'Today', href: `/trips/${data.trip.slug}/today` },
+		{ id: 'upcoming', label: 'Next 3 Days', href: `/trips/${data.trip.slug}/today/upcoming` }
+	]}
+/>
 
-<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-24 space-y-6">
+<main class="mx-auto w-full max-w-lg flex-1 space-y-6 px-4 pt-4 pb-24">
 	{#if data.upcomingDays.length === 0}
 		<Card>
 			<div class="p-6 text-center">
-				<p class="text-ink-muted text-sm">No upcoming days within the next 3 days.</p>
+				<p class="text-sm text-ink-muted">No upcoming days within the next 3 days.</p>
 			</div>
 		</Card>
 	{:else}
 		{#each data.upcomingDays as day}
 			{@const dayItems = data.upcomingItems.filter((i: Item) => i.day === day.id)}
 			<section class="space-y-2">
-				<h3 class="font-display text-ink text-lg font-semibold">{dayLabel(day.date)}</h3>
+				<h3 class="font-display text-lg font-semibold text-ink">{dayLabel(day.date)}</h3>
 				{#if dayItems.length === 0}
-					<p class="text-ink-muted text-sm">Nothing scheduled.</p>
+					<p class="text-sm text-ink-muted">Nothing scheduled.</p>
 				{:else}
 					{#each dayItems as item}
 						<TripModeCard {item} slug={data.trip.slug} />
@@ -2472,6 +2613,7 @@ git commit -m "M4d: next-3-days upcoming view"
 ### Task 6: Trip Mode Toggle on Overview
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/+page.svelte`
 
 - [ ] **Step 1: Add Trip Mode toggle link**
@@ -2481,9 +2623,18 @@ In the trip overview page, add a "Trip Mode" button in the trip stats card area.
 ```svelte
 <a
 	href="/trips/{data.trip.slug}/today"
-	class="bg-clay text-paper inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
+	class="inline-flex items-center gap-1.5 rounded-full bg-clay px-3 py-1.5 text-xs font-semibold text-paper"
 >
-	<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+	<svg
+		width="14"
+		height="14"
+		viewBox="0 0 24 24"
+		fill="none"
+		stroke="currentColor"
+		stroke-width="2"
+		stroke-linecap="round"
+		stroke-linejoin="round"
+	>
 		<circle cx="12" cy="12" r="10" />
 		<polyline points="12 6 12 12 16 14" />
 	</svg>
@@ -2510,6 +2661,7 @@ git commit -m "M4d: add Trip Mode toggle link on overview page"
 - [ ] **Step 1: Visual verification at 375px**
 
 Verify:
+
 1. Trip overview shows "Trip Mode" button with clay accent
 2. Navigating to /today shows Today view with large cards
 3. "Up next" NowDivider appears before the correct item
@@ -2536,6 +2688,7 @@ git commit -m "M4d complete: Trip Mode with today view, now indicator, upcoming 
 ### Task 1: Service Worker Rewrite
 
 **Files:**
+
 - Modify: `src/service-worker.ts`
 
 - [ ] **Step 1: Rewrite the service worker**
@@ -2566,9 +2719,7 @@ self.addEventListener('message', (event) => {
 });
 
 self.addEventListener('install', (event) => {
-	event.waitUntil(
-		caches.open(STATIC_CACHE).then((cache) => cache.addAll(ASSETS))
-	);
+	event.waitUntil(caches.open(STATIC_CACHE).then((cache) => cache.addAll(ASSETS)));
 	self.skipWaiting();
 });
 
@@ -2598,9 +2749,12 @@ self.addEventListener('fetch', (event) => {
 			// In explicit offline mode, serve from cache only
 			event.respondWith(
 				caches.match(event.request).then((cached) => {
-					return cached ?? new Response(
-						JSON.stringify({ error: 'Offline' }),
-						{ status: 503, headers: { 'Content-Type': 'application/json' } }
+					return (
+						cached ??
+						new Response(JSON.stringify({ error: 'Offline' }), {
+							status: 503,
+							headers: { 'Content-Type': 'application/json' }
+						})
 					);
 				})
 			);
@@ -2619,9 +2773,12 @@ self.addEventListener('fetch', (event) => {
 				})
 				.catch(() =>
 					caches.match(event.request).then((cached) => {
-						return cached ?? new Response(
-							JSON.stringify({ error: 'Offline' }),
-							{ status: 503, headers: { 'Content-Type': 'application/json' } }
+						return (
+							cached ??
+							new Response(JSON.stringify({ error: 'Offline' }), {
+								status: 503,
+								headers: { 'Content-Type': 'application/json' }
+							})
 						);
 					})
 				)
@@ -2632,9 +2789,7 @@ self.addEventListener('fetch', (event) => {
 	// Navigation requests — network-first with cache fallback
 	if (event.request.mode === 'navigate') {
 		event.respondWith(
-			fetch(event.request).catch(() =>
-				caches.match(event.request) as Promise<Response>
-			)
+			fetch(event.request).catch(() => caches.match(event.request) as Promise<Response>)
 		);
 		return;
 	}
@@ -2663,6 +2818,7 @@ git commit -m "M4e: rewrite service worker — cache API responses, offline mode
 ### Task 2: A2HSBanner Component
 
 **Files:**
+
 - Create: `src/lib/components/A2HSBanner.svelte`
 
 - [ ] **Step 1: Write the component**
@@ -2726,14 +2882,24 @@ Handles both iOS (manual instructions) and Android (`beforeinstallprompt`). Dism
 </script>
 
 {#if show}
-	<div class="border-moss/30 bg-moss-tint mx-4 mt-2 rounded-lg border p-4">
+	<div class="mx-4 mt-2 rounded-lg border border-moss/30 bg-moss-tint p-4">
 		<div class="flex items-start justify-between gap-3">
 			<div class="min-w-0 flex-1">
-				<p class="text-ink text-sm font-semibold">Add Waypoint to Home Screen</p>
+				<p class="text-sm font-semibold text-ink">Add Waypoint to Home Screen</p>
 				{#if isIOS}
-					<p class="text-ink-muted mt-1 text-xs">
+					<p class="mt-1 text-xs text-ink-muted">
 						Tap the Share button
-						<svg class="inline-block align-text-bottom" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<svg
+							class="inline-block align-text-bottom"
+							width="14"
+							height="14"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						>
 							<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
 							<polyline points="16 6 12 2 8 6" />
 							<line x1="12" y1="2" x2="12" y2="15" />
@@ -2741,12 +2907,25 @@ Handles both iOS (manual instructions) and Android (`beforeinstallprompt`). Dism
 						then "Add to Home Screen" for the best experience.
 					</p>
 				{:else}
-					<p class="text-ink-muted mt-1 text-xs">Get quick access and offline support.</p>
+					<p class="mt-1 text-xs text-ink-muted">Get quick access and offline support.</p>
 					<Button onclick={installAndroid} variant="moss" size="sm" class="mt-2">Install</Button>
 				{/if}
 			</div>
-			<button onclick={dismiss} class="text-ink-muted hover:text-ink-soft shrink-0 p-1" aria-label="Dismiss">
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<button
+				onclick={dismiss}
+				class="shrink-0 p-1 text-ink-muted hover:text-ink-soft"
+				aria-label="Dismiss"
+			>
+				<svg
+					width="16"
+					height="16"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
 					<path d="M18 6 6 18M6 6l12 12" />
 				</svg>
 			</button>
@@ -2770,6 +2949,7 @@ git commit -m "M4e: add A2HS banner — iOS instructions + Android install promp
 ### Task 3: Wire Offline Toggle + A2HS into Root Layout
 
 **Files:**
+
 - Modify: `src/routes/+layout.svelte`
 
 - [ ] **Step 1: Add offline toggle and A2HS banner**
@@ -2834,9 +3014,11 @@ Update the root layout:
 </svelte:head>
 
 {#if offline}
-	<div class="bg-clay/90 text-paper px-4 py-1.5 text-center text-xs font-semibold">
+	<div class="bg-clay/90 px-4 py-1.5 text-center text-xs font-semibold text-paper">
 		Offline mode
-		<button onclick={toggleOffline} class="text-paper/80 hover:text-paper ml-2 underline">Go online</button>
+		<button onclick={toggleOffline} class="ml-2 text-paper/80 underline hover:text-paper"
+			>Go online</button
+		>
 	</div>
 {/if}
 
@@ -2864,7 +3046,17 @@ The offline toggle should be accessible from a user menu. For now, add it to the
 		}}
 		class="flex w-full items-center gap-3 p-4"
 	>
-		<svg class="text-ink-soft shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+		<svg
+			class="shrink-0 text-ink-soft"
+			width="20"
+			height="20"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="1.75"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+		>
 			<line x1="1" y1="1" x2="23" y2="23" />
 			<path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55" />
 			<path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39" />
@@ -2874,8 +3066,8 @@ The offline toggle should be accessible from a user menu. For now, add it to the
 			<line x1="12" y1="20" x2="12.01" y2="20" />
 		</svg>
 		<div class="min-w-0 flex-1 text-left">
-			<p class="text-ink text-sm font-semibold">Offline mode</p>
-			<p class="text-ink-muted text-[12px]">Toggle offline to use cached trip data</p>
+			<p class="text-sm font-semibold text-ink">Offline mode</p>
+			<p class="text-[12px] text-ink-muted">Toggle offline to use cached trip data</p>
 		</div>
 	</button>
 </Card>
@@ -2898,6 +3090,7 @@ git commit -m "M4e: wire offline toggle + A2HS banner into app"
 - [ ] **Step 1: Visual verification**
 
 Verify:
+
 1. A2HS banner appears on first visit (test in Chrome DevTools with cleared localStorage)
 2. Dismiss button hides banner, does not reappear for 30 days
 3. Offline mode toggle shows clay banner at top
@@ -2923,6 +3116,7 @@ git commit -m "M4e complete: offline support, service worker data caching, A2HS 
 ### Task 1: Playwright Happy-Path Tests
 
 **Files:**
+
 - Create: `tests/e2e/m4-execution.spec.ts`
 
 - [ ] **Step 1: Write E2E tests**
@@ -3086,6 +3280,7 @@ git commit -m "M4f complete: all tests passing, M4 Execution milestone done"
 ### Task 3: M4 Status File
 
 **Files:**
+
 - Create: `M4_STATUS.md`
 
 - [ ] **Step 1: Write status file**
@@ -3113,10 +3308,10 @@ git commit -m "M4 complete: Execution milestone — voting, vault, trip mode, of
 
 ## Acceptance Criteria Mapping
 
-| Criterion | Where it's built |
-|---|---|
-| Trip Mode loads in <1s on a 4-year-old phone | M4d (large cards, minimal data), M4e (SW cache) |
-| Full trip works offline after one online load | M4e (network-first SW caches API responses) |
-| Vault entries encrypted at rest | M4a (crypto.ts), M4c (client-side encrypt before save) |
-| Password required per session | M4c (sessionStorage, cleared on tab close) |
-| Cannot accidentally lose vault data | M4c (no-recovery warning, delete confirmation) |
+| Criterion                                     | Where it's built                                       |
+| --------------------------------------------- | ------------------------------------------------------ |
+| Trip Mode loads in <1s on a 4-year-old phone  | M4d (large cards, minimal data), M4e (SW cache)        |
+| Full trip works offline after one online load | M4e (network-first SW caches API responses)            |
+| Vault entries encrypted at rest               | M4a (crypto.ts), M4c (client-side encrypt before save) |
+| Password required per session                 | M4c (sessionStorage, cleared on tab close)             |
+| Cannot accidentally lose vault data           | M4c (no-recovery warning, delete confirmation)         |

@@ -8,7 +8,6 @@ import { rowContent } from '$lib/itinerary/row';
 // !booked). Checking a row writes booked=true to the source Item, dropping it
 // from the projection. Mirrors the `needsBooking` predicate (unit-tested).
 
-
 export const load: PageServerLoad = async ({ parent, locals }) => {
 	const { trip, phases, days } = await parent();
 
@@ -48,7 +47,9 @@ export const actions: Actions = {
 
 		const membership = await locals.pb
 			.collection('trip_members')
-			.getFirstListItem<TripMember>(`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`);
+			.getFirstListItem<TripMember>(
+				`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`
+			);
 		if (membership.role === 'viewer') return fail(403, { error: 'Viewers cannot book items.' });
 
 		const data = await request.formData();

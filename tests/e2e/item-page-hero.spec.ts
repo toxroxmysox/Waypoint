@@ -51,7 +51,9 @@ const vis = (page: Page, sel: string) => page.locator(sel).filter({ visible: tru
 
 async function openItem(page: Page, id: string, title: string) {
 	await page.goto(`${BASE}/trips/${SLUG}/items/${id}`, { waitUntil: 'networkidle' });
-	await expect(page.getByRole('heading', { name: title }).filter({ visible: true }).first()).toBeVisible({
+	await expect(
+		page.getByRole('heading', { name: title }).filter({ visible: true }).first()
+	).toBeVisible({
 		timeout: 10000
 	});
 	await page.waitForLoadState('networkidle');
@@ -68,7 +70,10 @@ test.describe('Item page Hero + body (#438)', () => {
 
 	test.beforeAll(async () => {
 		const owner = await bypass(EMAILS.owner);
-		const fx = await pb(owner.token, 'POST', '/api/dev/rules-fixture', { emails: EMAILS, slug: SLUG });
+		const fx = await pb(owner.token, 'POST', '/api/dev/rules-fixture', {
+			emails: EMAILS,
+			slug: SLUG
+		});
 		const day = (
 			await pb(
 				owner.token,
@@ -115,7 +120,9 @@ test.describe('Item page Hero + body (#438)', () => {
 		});
 		if (!up.ok) throw new Error(`document upload: ${up.status} ${await up.text()}`);
 		// The fixture seeds one goal ("Test Goal"); link it to the rich item.
-		await pb(owner.token, 'PATCH', `/api/collections/trip_goals/records/${fx.goalId}`, { items: [richId] });
+		await pb(owner.token, 'PATCH', `/api/collections/trip_goals/records/${fx.goalId}`, {
+			items: [richId]
+		});
 		for (const text of ['First comment', 'Second comment']) {
 			await pb(owner.token, 'POST', '/api/comments/add', { item_id: richId, comment_text: text });
 			await new Promise((r) => setTimeout(r, 1100)); // distinct `created` seconds
@@ -138,7 +145,9 @@ test.describe('Item page Hero + body (#438)', () => {
 			await expect(hero).toBeVisible();
 			await expect(hero).toHaveAttribute('data-live', 'false'); // Planning Mode: no accent
 			await expect(hero).toContainText('Meal · Dinner'); // type in words
-			await expect(hero.getByTestId('hero-time')).toHaveText(/^[A-Z][a-z]{2} [A-Z][a-z]{2} \d{1,2} · 6:30p$/);
+			await expect(hero.getByTestId('hero-time')).toHaveText(
+				/^[A-Z][a-z]{2} [A-Z][a-z]{2} \d{1,2} · 6:30p$/
+			);
 			// The place line is the Maps link.
 			const place = hero.getByTestId('hero-place');
 			await expect(place).toHaveAttribute('href', /google\.com\/maps/);
@@ -150,17 +159,27 @@ test.describe('Item page Hero + body (#438)', () => {
 			await expect(hero.getByTestId('hero-going')).toContainText('Going');
 
 			// Body: description, one Details card (estimate, payment, booking, cancellation).
-			await expect(vis(page, '[data-testid="item-description"]').first()).toContainText('corner table');
+			await expect(vis(page, '[data-testid="item-description"]').first()).toContainText(
+				'corner table'
+			);
 			const details = vis(page, '[data-testid="item-details"]').first();
 			await expect(details.locator('[data-detail="cost"]')).toContainText('$240.00');
 			await expect(details.locator('[data-detail="payment"]')).toContainText('Log payment');
 			await expect(details.locator('[data-detail="booking"]')).toContainText('opentable.com');
-			await expect(details.locator('[data-detail="cancellation"]')).toContainText('Free cancellation');
+			await expect(details.locator('[data-detail="cancellation"]')).toContainText(
+				'Free cancellation'
+			);
 			// Goals, a Documents section (has one), and no add line for Documents.
 			await expect(page.getByText('Test Goal').filter({ visible: true }).first()).toBeVisible();
-			await expect(page.getByRole('heading', { name: 'Documents' }).filter({ visible: true }).first()).toBeVisible();
-			await expect(page.getByRole('button', { name: '+ Document', exact: true }).filter({ visible: true })).toHaveCount(0);
-			await expect(page.getByRole('button', { name: '+ Checklist', exact: true }).filter({ visible: true })).toHaveCount(1);
+			await expect(
+				page.getByRole('heading', { name: 'Documents' }).filter({ visible: true }).first()
+			).toBeVisible();
+			await expect(
+				page.getByRole('button', { name: '+ Document', exact: true }).filter({ visible: true })
+			).toHaveCount(0);
+			await expect(
+				page.getByRole('button', { name: '+ Checklist', exact: true }).filter({ visible: true })
+			).toHaveCount(1);
 		} finally {
 			await ctx.close();
 		}
@@ -189,17 +208,25 @@ test.describe('Item page Hero + body (#438)', () => {
 			const line = vis(page, '[data-testid="item-add-line"]').first();
 			await expect(line).toContainText('+ Document');
 			await expect(line).toContainText('+ Checklist');
-			await expect(page.getByRole('heading', { name: 'Documents' }).filter({ visible: true })).toHaveCount(0);
+			await expect(
+				page.getByRole('heading', { name: 'Documents' }).filter({ visible: true })
+			).toHaveCount(0);
 			// No estimate: Log payment is still its own Details row.
-			await expect(vis(page, '[data-testid="item-details"] [data-detail="payment"]').first()).toContainText('Log payment');
+			await expect(
+				vis(page, '[data-testid="item-details"] [data-detail="payment"]').first()
+			).toContainText('Log payment');
 			await expect(vis(page, '[data-testid="item-details"] [data-detail="cost"]')).toHaveCount(0);
 			// + Document opens the section and drops itself from the line.
 			await line.getByRole('button', { name: '+ Document' }).click();
-			await expect(page.getByRole('heading', { name: 'Documents' }).filter({ visible: true }).first()).toBeVisible();
+			await expect(
+				page.getByRole('heading', { name: 'Documents' }).filter({ visible: true }).first()
+			).toBeVisible();
 			await expect(line).not.toContainText('+ Document');
 			// + Checklist attaches in place (form action) and the line goes.
 			await line.getByRole('button', { name: '+ Checklist' }).click();
-			await expect(page.getByPlaceholder('Add an item').filter({ visible: true }).first()).toBeVisible();
+			await expect(
+				page.getByPlaceholder('Add an item').filter({ visible: true }).first()
+			).toBeVisible();
 			await expect(vis(page, '[data-testid="item-add-line"]')).toHaveCount(0);
 		} finally {
 			await ctx.close();
@@ -211,14 +238,26 @@ test.describe('Item page Hero + body (#438)', () => {
 		try {
 			await openItem(page, richId, RICH);
 			const hero = await vis(page, '[data-hero]').first().boundingBox();
-			const comments = await page.getByPlaceholder('Add a comment…').filter({ visible: true }).first().boundingBox();
-			const docs = await page.getByRole('heading', { name: 'Documents' }).filter({ visible: true }).first().boundingBox();
+			const comments = await page
+				.getByPlaceholder('Add a comment…')
+				.filter({ visible: true })
+				.first()
+				.boundingBox();
+			const docs = await page
+				.getByRole('heading', { name: 'Documents' })
+				.filter({ visible: true })
+				.first()
+				.boundingBox();
 			expect(comments!.x).toBeGreaterThan(hero!.x + hero!.width - 1);
 			expect(docs!.x).toBeGreaterThan(hero!.x + hero!.width - 1);
 			// One-column on a phone: the Hero sits above everything.
 			await page.setViewportSize({ width: 375, height: 812 });
 			const heroM = await vis(page, '[data-hero]').first().boundingBox();
-			const commentsM = await page.getByPlaceholder('Add a comment…').filter({ visible: true }).first().boundingBox();
+			const commentsM = await page
+				.getByPlaceholder('Add a comment…')
+				.filter({ visible: true })
+				.first()
+				.boundingBox();
 			expect(commentsM!.y).toBeGreaterThan(heroM!.y + heroM!.height);
 		} finally {
 			await ctx.close();
@@ -231,7 +270,9 @@ test.describe('Item page Hero + body (#438)', () => {
 			await openItem(page, sparseId, SPARSE);
 			await expect(vis(page, '[data-hero]').first()).toBeVisible();
 			await expect(vis(page, '[data-testid="item-add-line"]')).toHaveCount(0);
-			await expect(vis(page, '[data-testid="item-details"] [data-detail="payment"]')).toHaveCount(0);
+			await expect(vis(page, '[data-testid="item-details"] [data-detail="payment"]')).toHaveCount(
+				0
+			);
 		} finally {
 			await ctx.close();
 		}

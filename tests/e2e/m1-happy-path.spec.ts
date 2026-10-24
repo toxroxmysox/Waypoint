@@ -57,17 +57,30 @@ test.describe('M1 Happy Path', () => {
 		await expect(dayLinks.first()).toBeVisible({ timeout: 5000 });
 
 		// --- Add phase ---
-		await page.getByRole('link', { name: 'Phases', exact: true }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('link', { name: 'Phases', exact: true })
+			.filter({ visible: true })
+			.first()
+			.click();
 		await page.waitForURL(`${BASE_URL}/trips/${tripSlug}/phases`);
 
 		// #330 calendar editor: a phase is added by tapping a day to split the seed phase.
 		// The trip is 8 days (today..+7); tapping day 4 (strictly inside) splits it in two.
 		await page.locator('[data-day="4"]:visible').first().click();
-		await expect(page.getByText(/2 phases/).filter({ visible: true }).first()).toBeVisible({ timeout: 5000 });
+		await expect(
+			page
+				.getByText(/2 phases/)
+				.filter({ visible: true })
+				.first()
+		).toBeVisible({ timeout: 5000 });
 		await expect(page.getByText('New phase').filter({ visible: true }).first()).toBeVisible();
 
 		// --- Navigate to first day via overview ---
-		await page.getByRole('link', { name: 'Overview', exact: true }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('link', { name: 'Overview', exact: true })
+			.filter({ visible: true })
+			.first()
+			.click();
 		await page.waitForURL(`${BASE_URL}/trips/${tripSlug}`);
 
 		const firstDay = dayLinks.first();
@@ -75,15 +88,26 @@ test.describe('M1 Happy Path', () => {
 		await firstDay.click();
 		// "Add item" matches both the inline link and the FAB → filter visible + first.
 		await expect(
-			page.getByRole('link', { name: /^Add item$/i }).filter({ visible: true }).first()
+			page
+				.getByRole('link', { name: /^Add item$/i })
+				.filter({ visible: true })
+				.first()
 		).toBeVisible();
 
 		// --- Add an item ---
-		await page.getByRole('link', { name: /^Add item$/i }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('link', { name: /^Add item$/i })
+			.filter({ visible: true })
+			.first()
+			.click();
 		await page.waitForURL(/\/items\/new/);
 
 		await page.locator('input[name="title"]:visible').first().fill('Test Activity');
-		await page.getByRole('button', { name: /create|save/i }).filter({ visible: true }).first().click();
+		await page
+			.getByRole('button', { name: /create|save/i })
+			.filter({ visible: true })
+			.first()
+			.click();
 
 		await page.waitForURL(new RegExp(dayHref!.replace(/\//g, '\\/')), { timeout: 10000 });
 		await expect(page.getByText('Test Activity').filter({ visible: true }).first()).toBeVisible();

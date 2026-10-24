@@ -139,15 +139,17 @@
 {#if !isForming}
 	<!-- #270: Phases/Lists are date-scoped surfaces — hidden until the trip is
 	     dated (Goals lives in the forming bottom nav instead). -->
-	<SubTabs tabs={[
-		{ id: 'overview', label: 'Overview', href: `/trips/${data.trip.slug}` },
-		{ id: 'phases', label: 'Phases', href: `/trips/${data.trip.slug}/phases` },
-		{ id: 'lists', label: 'Lists', href: `/trips/${data.trip.slug}/lists` },
-		{ id: 'goals', label: 'Goals', href: `/trips/${data.trip.slug}/goals` }
-	]} />
+	<SubTabs
+		tabs={[
+			{ id: 'overview', label: 'Overview', href: `/trips/${data.trip.slug}` },
+			{ id: 'phases', label: 'Phases', href: `/trips/${data.trip.slug}/phases` },
+			{ id: 'lists', label: 'Lists', href: `/trips/${data.trip.slug}/lists` },
+			{ id: 'goals', label: 'Goals', href: `/trips/${data.trip.slug}/goals` }
+		]}
+	/>
 {/if}
 
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-6">
+<main class="mx-auto w-full max-w-lg flex-1 space-y-6 px-4 pt-4 pb-8 md-desktop:max-w-2xl">
 	{#if isForming}
 		<!-- #337 / ADR-0022 — the forming home IS the scenario board. Weigh candidate
 		     scenarios (where/when/how much); the winner promotes the trip out of
@@ -163,33 +165,55 @@
 			/>
 		{/if}
 
-			<!-- #271 / ADR-0023 — availability poll: a SIBLING surface to the board (not a
+		<!-- #271 / ADR-0023 — availability poll: a SIBLING surface to the board (not a
 			     competing date-setter). Paint the days you're free; the group heatmap
 			     surfaces consensus, and an owner can promote a green window. -->
-			<a
-				href="/trips/{data.trip.slug}/availability"
-				class="border-line bg-surface hover:bg-surface-2 active:bg-surface-2 flex items-center gap-3 rounded-lg border px-4 py-3"
-				data-testid="availability-entry"
+		<a
+			href="/trips/{data.trip.slug}/availability"
+			class="flex items-center gap-3 rounded-lg border border-line bg-surface px-4 py-3 hover:bg-surface-2 active:bg-surface-2"
+			data-testid="availability-entry"
+		>
+			<svg
+				width="22"
+				height="22"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="var(--color-moss)"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"
 			>
-				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-moss)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-					<rect x="3" y="4" width="18" height="18" rx="2" />
-					<path d="M16 2v4M8 2v4M3 10h18" />
-				</svg>
-				<div class="min-w-0 flex-1">
-					<p class="text-ink text-sm font-semibold">When can everyone go?</p>
-					<p class="text-ink-muted mt-0.5 text-xs">
-						{#if data.availabilitySummary && data.availabilitySummary.greenDayCount > 0}
-							{data.availabilitySummary.greenDayCount}
-							{data.availabilitySummary.greenDayCount === 1 ? 'day works' : 'days work'} for everyone so far
-						{:else if data.availabilitySummary && !data.availabilitySummary.iHavePainted}
-							Paint the days you're free
-						{:else}
-							Mark your availability
-						{/if}
-					</p>
-				</div>
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-ink-muted" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
-			</a>
+				<rect x="3" y="4" width="18" height="18" rx="2" />
+				<path d="M16 2v4M8 2v4M3 10h18" />
+			</svg>
+			<div class="min-w-0 flex-1">
+				<p class="text-sm font-semibold text-ink">When can everyone go?</p>
+				<p class="mt-0.5 text-xs text-ink-muted">
+					{#if data.availabilitySummary && data.availabilitySummary.greenDayCount > 0}
+						{data.availabilitySummary.greenDayCount}
+						{data.availabilitySummary.greenDayCount === 1 ? 'day works' : 'days work'} for everyone so
+						far
+					{:else if data.availabilitySummary && !data.availabilitySummary.iHavePainted}
+						Paint the days you're free
+					{:else}
+						Mark your availability
+					{/if}
+				</p>
+			</div>
+			<svg
+				width="14"
+				height="14"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2.5"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				class="text-ink-muted"
+				aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg
+			>
+		</a>
 
 		<!-- The direct set-dates escape hatch — collapsed by default (the board is the
 		     primary promotion path). Owner-tier: skip scenarios and date now. -->
@@ -199,7 +223,7 @@
 					<button
 						type="button"
 						onclick={() => (setDatesOpen = true)}
-						class="text-ink-muted hover:text-ink active:text-ink text-xs font-medium underline decoration-dotted underline-offset-2"
+						class="text-xs font-medium text-ink-muted underline decoration-dotted underline-offset-2 hover:text-ink active:text-ink"
 						data-testid="set-dates-toggle"
 					>
 						Already know the dates? Set them directly
@@ -219,33 +243,37 @@
 							}}
 							class="p-4"
 						>
-							<p class="text-ink text-sm font-semibold">Set the dates</p>
-							<p class="text-ink-muted mt-0.5 text-xs">
-								Skips the scenario vote and builds the day-by-day itinerary now. Your ideas
-								come along. One-way.
+							<p class="text-sm font-semibold text-ink">Set the dates</p>
+							<p class="mt-0.5 text-xs text-ink-muted">
+								Skips the scenario vote and builds the day-by-day itinerary now. Your ideas come
+								along. One-way.
 							</p>
 							{#if dateError}
-								<p role="alert" class="text-error-deep mt-2 text-sm">{dateError}</p>
+								<p role="alert" class="mt-2 text-sm text-error-deep">{dateError}</p>
 							{/if}
 							<div class="mt-3 flex items-end gap-3">
 								<div class="min-w-0 flex-1">
-									<label for="forming-start" class="text-ink-soft block text-xs font-medium">Start</label>
+									<label for="forming-start" class="block text-xs font-medium text-ink-soft"
+										>Start</label
+									>
 									<input
 										type="date"
 										id="forming-start"
 										name="start_date"
 										required
-										class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
+										class="mt-1 block w-full min-w-0 rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 									/>
 								</div>
 								<div class="min-w-0 flex-1">
-									<label for="forming-end" class="text-ink-soft block text-xs font-medium">End</label>
+									<label for="forming-end" class="block text-xs font-medium text-ink-soft"
+										>End</label
+									>
 									<input
 										type="date"
 										id="forming-end"
 										name="end_date"
 										required
-										class="border-line bg-surface text-ink mt-1 block w-full min-w-0 rounded-md border px-3 py-2 text-sm"
+										class="mt-1 block w-full min-w-0 rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
 									/>
 								</div>
 							</div>
@@ -268,14 +296,26 @@
 		<!-- Ideas — the forming trip's working surface. Phase-less until promotion. -->
 		<section class="space-y-1.5">
 			<div class="flex items-center justify-between px-0.5">
-				<span class="text-ink-muted text-[9.5px] font-bold tracking-[0.14em] uppercase">Ideas</span>
+				<span class="text-[9.5px] font-bold tracking-[0.14em] text-ink-muted uppercase">Ideas</span>
 				<button
 					type="button"
 					onclick={() => (ideaSheetOpen = true)}
-					class="text-moss hover:text-ink active:text-ink inline-flex items-center gap-1 text-xs font-semibold"
+					class="inline-flex items-center gap-1 text-xs font-semibold text-moss hover:text-ink active:text-ink"
 				>
-					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-						<path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z" />
+					<svg
+						width="13"
+						height="13"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path
+							d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"
+						/>
 					</svg>
 					Add an idea
 				</button>
@@ -296,8 +336,8 @@
 			{:else}
 				<Card>
 					<div class="p-4 text-center">
-						<p class="font-display text-ink-soft text-sm italic">Nothing collected yet.</p>
-						<p class="text-ink-muted mt-1 text-xs">
+						<p class="font-display text-sm text-ink-soft italic">Nothing collected yet.</p>
+						<p class="mt-1 text-xs text-ink-muted">
 							Anything goes — a restaurant someone mentioned, a town worth a detour.
 						</p>
 					</div>
@@ -310,24 +350,44 @@
 		<div class="grid grid-cols-2 gap-1.5">
 			<a
 				href="/trips/{data.trip.slug}/members"
-				class="border-line bg-surface hover:bg-surface-2 active:bg-surface-2 flex flex-col rounded-lg border px-3 py-3"
+				class="flex flex-col rounded-lg border border-line bg-surface px-3 py-3 hover:bg-surface-2 active:bg-surface-2"
 			>
-				<p class="text-ink text-sm font-semibold">People</p>
-				<p class="text-ink-muted mt-0.5 text-xs">Invite the group early</p>
-				<span class="text-moss mt-2 inline-flex items-center gap-1 text-xs font-semibold">
+				<p class="text-sm font-semibold text-ink">People</p>
+				<p class="mt-0.5 text-xs text-ink-muted">Invite the group early</p>
+				<span class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-moss">
 					Invite people
-					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+					<svg
+						width="12"
+						height="12"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg
+					>
 				</span>
 			</a>
 			<a
 				href="/trips/{data.trip.slug}/goals"
-				class="border-line bg-surface hover:bg-surface-2 active:bg-surface-2 flex flex-col rounded-lg border px-3 py-3"
+				class="flex flex-col rounded-lg border border-line bg-surface px-3 py-3 hover:bg-surface-2 active:bg-surface-2"
 			>
-				<p class="text-ink text-sm font-semibold">Goals</p>
-				<p class="text-ink-muted mt-0.5 text-xs">What do you want out of it?</p>
-				<span class="text-moss mt-2 inline-flex items-center gap-1 text-xs font-semibold">
+				<p class="text-sm font-semibold text-ink">Goals</p>
+				<p class="mt-0.5 text-xs text-ink-muted">What do you want out of it?</p>
+				<span class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-moss">
 					Add a goal
-					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+					<svg
+						width="12"
+						height="12"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg
+					>
 				</span>
 			</a>
 		</div>
@@ -350,57 +410,66 @@
 			balanceOwed={data.wrapUp?.balanceOwed ?? false}
 		/>
 	{:else}
-	<!-- #401 — the trip Level Header: span · phases, timezone, trip notes, phase chips. -->
-	<LevelHeader
-		title={data.trip.title}
-		place={data.trip.location_summary}
-		dates={dateRangeLabel(data.trip.start_date, data.trip.end_date, { year: true })}
-		span={spanLabel(data.trip.start_date, data.trip.end_date, data.phases.length)}
-		meta={data.trip.timezone}
-		chips={data.phases.map((p: Phase) => ({
-			label: p.name,
-			sub: `${daysInPhase(p).length}d`,
-			href: `/trips/${data.trip.slug}/phases/${p.id}`
-		}))}
-	>
-		{#snippet actions()}
-			{#if tripActive}
-				<a
-					href="/trips/{data.trip.slug}/now"
-					class="bg-clay text-paper inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-xs font-semibold"
-				>
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-						<circle cx="12" cy="12" r="10" />
-						<polyline points="12 6 12 12 16 14" />
-					</svg>
-					Trip Mode
-				</a>
-			{/if}
-		{/snippet}
-		{#snippet notes()}
-			<NotesEditor
-				notes={data.trip.notes ?? ''}
-				action="?/updateTripNotes"
-				canEdit={data.membership.role !== 'viewer'}
-				emptyPrompt="Add trip notes"
-			/>
-		{/snippet}
-	</LevelHeader>
-
+		<!-- #401 — the trip Level Header: span · phases, timezone, trip notes, phase chips. -->
+		<LevelHeader
+			title={data.trip.title}
+			place={data.trip.location_summary}
+			dates={dateRangeLabel(data.trip.start_date, data.trip.end_date, { year: true })}
+			span={spanLabel(data.trip.start_date, data.trip.end_date, data.phases.length)}
+			meta={data.trip.timezone}
+			chips={data.phases.map((p: Phase) => ({
+				label: p.name,
+				sub: `${daysInPhase(p).length}d`,
+				href: `/trips/${data.trip.slug}/phases/${p.id}`
+			}))}
+		>
+			{#snippet actions()}
+				{#if tripActive}
+					<a
+						href="/trips/{data.trip.slug}/now"
+						class="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-clay px-3 text-xs font-semibold text-paper"
+					>
+						<svg
+							width="14"
+							height="14"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<circle cx="12" cy="12" r="10" />
+							<polyline points="12 6 12 12 16 14" />
+						</svg>
+						Trip Mode
+					</a>
+				{/if}
+			{/snippet}
+			{#snippet notes()}
+				<NotesEditor
+					notes={data.trip.notes ?? ''}
+					action="?/updateTripNotes"
+					canEdit={data.membership.role !== 'viewer'}
+					emptyPrompt="Add trip notes"
+				/>
+			{/snippet}
+		</LevelHeader>
 	{/if}
 
 	{#if !isClosed && !isForming}
-	{#if showWelcomeCard}
-		<!-- #274 Onboarding spine — the unified welcome card. Renders ABOVE the day list
+		{#if showWelcomeCard}
+			<!-- #274 Onboarding spine — the unified welcome card. Renders ABOVE the day list
 		     (the days stay — they teach the trip's shape). Two keys folded (PRD §6, ES-1
 		     absorbed): `welcomeMode` is the member-keyed onboarding state (auto-shows on a
 		     member's first visit, REGARDLESS of trip content — the fix for the ES-1 gap);
 		     otherwise `isEmptyTrip` is the structural blank-itinerary guidance for an
 		     already-onboarded veteran on a new empty trip. One card, never two stacked. -->
-		<Card>
-			<div class="p-6 text-center" data-testid="welcome-card">
-				{#if welcomeMode && !isEmptyTrip}
-					<!-- Member-keyed welcome on a POPULATED trip — the common invited case ES-1
+			<Card>
+				<div class="p-6 text-center" data-testid="welcome-card">
+					{#if welcomeMode && !isEmptyTrip}
+						<!-- Member-keyed welcome on a POPULATED trip — the common invited case ES-1
 					     misses today. Orientation: name all the doors, one ADAPTIVE primary CTA
 					     (#275). The invited member usually lands in an already-populated trip, so
 					     a one-tap VOTE is the lowest-friction first win — but only when there's
@@ -408,158 +477,192 @@
 					     unrated content → "Weigh in on what's been suggested" (→ swipe deck);
 					     nothing to rate (all voted) → "Add what you want" (→ /goals/capture). The
 					     other doors are always NAMED in the copy regardless. -->
-					<p class="font-display text-ink-soft text-base italic">Welcome aboard.</p>
-					<p class="text-ink-muted mt-1 text-sm">
-						This is the trip's home. From here you can <strong class="text-ink-soft">see the plan</strong>,
-						<strong class="text-ink-soft">weigh in on ideas</strong>, and
-						<strong class="text-ink-soft">add what you want</strong> out of it.
-					</p>
-					<div class="mt-4 flex flex-wrap items-center justify-center gap-2">
-						<!-- Primary CTA = first action. Stamps the once-ever signal, then forwards
+						<p class="font-display text-base text-ink-soft italic">Welcome aboard.</p>
+						<p class="mt-1 text-sm text-ink-muted">
+							This is the trip's home. From here you can <strong class="text-ink-soft"
+								>see the plan</strong
+							>,
+							<strong class="text-ink-soft">weigh in on ideas</strong>, and
+							<strong class="text-ink-soft">add what you want</strong> out of it.
+						</p>
+						<div class="mt-4 flex flex-wrap items-center justify-center gap-2">
+							<!-- Primary CTA = first action. Stamps the once-ever signal, then forwards
 						     (server redirect → works without JS). Adaptive target. -->
-						{#if data.votable.hasVotable && data.votable.swipeHref}
+							{#if data.votable.hasVotable && data.votable.swipeHref}
+								<form method="POST" action="?/completeOnboarding" use:enhance={onboardEnhance}>
+									<input type="hidden" name="redirect_to" value={data.votable.swipeHref} />
+									<Button type="submit" variant="moss" size="sm" loading={onboardSubmitting}>
+										Weigh in on what's been suggested
+									</Button>
+								</form>
+							{:else}
+								<form method="POST" action="?/completeOnboarding" use:enhance={onboardEnhance}>
+									<input
+										type="hidden"
+										name="redirect_to"
+										value="/trips/{data.trip.slug}/goals/capture"
+									/>
+									<Button type="submit" variant="moss" size="sm" loading={onboardSubmitting}>
+										Add what you want
+									</Button>
+								</form>
+							{/if}
+							<!-- Dismiss = "Got it". Stamps + stays. -->
 							<form method="POST" action="?/completeOnboarding" use:enhance={onboardEnhance}>
-								<input type="hidden" name="redirect_to" value={data.votable.swipeHref} />
-								<Button type="submit" variant="moss" size="sm" loading={onboardSubmitting}>
-									Weigh in on what's been suggested
-								</Button>
-							</form>
-						{:else}
-							<form method="POST" action="?/completeOnboarding" use:enhance={onboardEnhance}>
-								<input type="hidden" name="redirect_to" value="/trips/{data.trip.slug}/goals/capture" />
-								<Button type="submit" variant="moss" size="sm" loading={onboardSubmitting}>
-									Add what you want
-								</Button>
-							</form>
-						{/if}
-						<!-- Dismiss = "Got it". Stamps + stays. -->
-						<form method="POST" action="?/completeOnboarding" use:enhance={onboardEnhance}>
-							<Button type="submit" variant="ghost" size="sm" loading={onboardSubmitting}>Got it</Button>
-						</form>
-					</div>
-				{:else if isOwnerTier}
-					<!-- Empty-trip, owner-tier: ES-1's "blank itinerary" doors (absorbed). -->
-					<p class="font-display text-ink-soft text-base italic">A blank itinerary.</p>
-					<p class="text-ink-muted mt-1 text-sm">
-						Your days are ready. Group them into phases — city, leg, whatever fits — or drop the
-						first plan straight onto a day.
-					</p>
-					<div class="mt-4 flex flex-wrap items-center justify-center gap-2">
-						<Button href="/trips/{data.trip.slug}/phases" variant="moss" size="sm">Add a phase</Button>
-						{#if firstDayId}
-							<Button href="/trips/{data.trip.slug}/days/{firstDayId}" variant="ghost" size="sm">
-								Open day one
-							</Button>
-						{/if}
-						<Button href="/trips/{data.trip.slug}/members" variant="ghost" size="sm">
-							Invite the group
-						</Button>
-					</div>
-					{#if welcomeMode}
-						<!-- Onboarding on an empty trip (brand-new creator's first visit): one
-						     dismiss folds the welcome + ES-1 into a single card. -->
-						<div class="mt-3 flex items-center justify-center">
-							<form method="POST" action="?/completeOnboarding" use:enhance={onboardEnhance}>
-								<Button type="submit" variant="ghost" size="sm" loading={onboardSubmitting}>Got it</Button>
+								<Button type="submit" variant="ghost" size="sm" loading={onboardSubmitting}
+									>Got it</Button
+								>
 							</form>
 						</div>
-					{/if}
-				{:else}
-					<!-- Empty-trip, traveler/viewer: ES-1's goals-capture door (absorbed). -->
-					<p class="font-display text-ink-soft text-base italic">Nothing planned yet.</p>
-					<p class="text-ink-muted mt-1 text-sm">
-						Start with what you want out of this trip — the itinerary grows from there.
-					</p>
-					<div class="mt-4 flex flex-wrap items-center justify-center gap-2">
-						{#if welcomeMode}
-							<form method="POST" action="?/completeOnboarding" use:enhance={onboardEnhance}>
-								<input type="hidden" name="redirect_to" value="/trips/{data.trip.slug}/goals/capture" />
-								<Button type="submit" variant="moss" size="sm" loading={onboardSubmitting}>
-									Add what you want
+					{:else if isOwnerTier}
+						<!-- Empty-trip, owner-tier: ES-1's "blank itinerary" doors (absorbed). -->
+						<p class="font-display text-base text-ink-soft italic">A blank itinerary.</p>
+						<p class="mt-1 text-sm text-ink-muted">
+							Your days are ready. Group them into phases — city, leg, whatever fits — or drop the
+							first plan straight onto a day.
+						</p>
+						<div class="mt-4 flex flex-wrap items-center justify-center gap-2">
+							<Button href="/trips/{data.trip.slug}/phases" variant="moss" size="sm"
+								>Add a phase</Button
+							>
+							{#if firstDayId}
+								<Button href="/trips/{data.trip.slug}/days/{firstDayId}" variant="ghost" size="sm">
+									Open day one
 								</Button>
-							</form>
-							<form method="POST" action="?/completeOnboarding" use:enhance={onboardEnhance}>
-								<Button type="submit" variant="ghost" size="sm" loading={onboardSubmitting}>Got it</Button>
-							</form>
-						{:else}
-							<Button href="/trips/{data.trip.slug}/goals/capture" variant="moss" size="sm">
-								Add &amp; review goals
+							{/if}
+							<Button href="/trips/{data.trip.slug}/members" variant="ghost" size="sm">
+								Invite the group
 							</Button>
+						</div>
+						{#if welcomeMode}
+							<!-- Onboarding on an empty trip (brand-new creator's first visit): one
+						     dismiss folds the welcome + ES-1 into a single card. -->
+							<div class="mt-3 flex items-center justify-center">
+								<form method="POST" action="?/completeOnboarding" use:enhance={onboardEnhance}>
+									<Button type="submit" variant="ghost" size="sm" loading={onboardSubmitting}
+										>Got it</Button
+									>
+								</form>
+							</div>
 						{/if}
-					</div>
-				{/if}
-			</div>
-		</Card>
-	{/if}
-
-	{#if data.days.length > 0}
-		<div class="flex items-center justify-between px-0.5">
-			<span class="text-ink-muted text-[9.5px] font-bold tracking-[0.14em] uppercase">Itinerary</span>
-			<ItineraryDensityToggle />
-		</div>
-	{/if}
-
-	{#snippet dayList(days: Day[])}
-		{#if $itineraryDensity === 'compact'}
-			<div class="divide-line divide-y">
-				{#each days as day (day.id)}
-					<CompactDayRow
-						{day}
-						href="/trips/{data.trip.slug}/days/{day.id}"
-						plannedCount={data.daySummaries[day.id]?.plannedCount ?? 0}
-						travel={(day.phases?.length ?? 0) > 1}
-					/>
-				{/each}
-			</div>
-		{:else}
-			<div class="space-y-1">
-				{#each days as day (day.id)}
-					<DayCard {day} href="/trips/{data.trip.slug}/days/{day.id}" summary={data.daySummaries[day.id]} {today} />
-				{/each}
-			</div>
+					{:else}
+						<!-- Empty-trip, traveler/viewer: ES-1's goals-capture door (absorbed). -->
+						<p class="font-display text-base text-ink-soft italic">Nothing planned yet.</p>
+						<p class="mt-1 text-sm text-ink-muted">
+							Start with what you want out of this trip — the itinerary grows from there.
+						</p>
+						<div class="mt-4 flex flex-wrap items-center justify-center gap-2">
+							{#if welcomeMode}
+								<form method="POST" action="?/completeOnboarding" use:enhance={onboardEnhance}>
+									<input
+										type="hidden"
+										name="redirect_to"
+										value="/trips/{data.trip.slug}/goals/capture"
+									/>
+									<Button type="submit" variant="moss" size="sm" loading={onboardSubmitting}>
+										Add what you want
+									</Button>
+								</form>
+								<form method="POST" action="?/completeOnboarding" use:enhance={onboardEnhance}>
+									<Button type="submit" variant="ghost" size="sm" loading={onboardSubmitting}
+										>Got it</Button
+									>
+								</form>
+							{:else}
+								<Button href="/trips/{data.trip.slug}/goals/capture" variant="moss" size="sm">
+									Add &amp; review goals
+								</Button>
+							{/if}
+						</div>
+					{/if}
+				</div>
+			</Card>
 		{/if}
-	{/snippet}
 
-	{#if data.phases.length > 0}
-		<!-- #401 — each phase is a bordered card: its Level Header (opens Phase Detail,
-		     full phase notes) over its days, Compact or Details. -->
-		{@const orphanDays = data.days.filter((d) => !data.phases.some((p) => (d.phases ?? []).includes(p.id)))}
-		{#each data.phases as phase (phase.id)}
-			{@const pDays = daysInPhase(phase)}
-			<section class="border-line bg-surface space-y-3 rounded-lg border p-3" data-phase-card={phase.id}>
-				<LevelHeader
-					title={phase.name}
-					place={phase.location}
-					dates={dateRangeLabel(phase.start_date, phase.end_date)}
-					span={spanLabel(phase.start_date, phase.end_date)}
-					href="/trips/{data.trip.slug}/phases/{phase.id}"
-					size="card"
+		{#if data.days.length > 0}
+			<div class="flex items-center justify-between px-0.5">
+				<span class="text-[9.5px] font-bold tracking-[0.14em] text-ink-muted uppercase"
+					>Itinerary</span
 				>
-					{#snippet notes()}
-						{#if phase.notes}
-							<!-- Part of the card's tap target into Phase Detail (trip story 10). -->
-							<a href="/trips/{data.trip.slug}/phases/{phase.id}" tabindex="-1" class="text-ink-soft block text-sm whitespace-pre-wrap">{phase.notes}</a>
-						{/if}
-					{/snippet}
-				</LevelHeader>
-				{#if pDays.length > 0}
-					{@render dayList(pDays)}
-				{/if}
-			</section>
-		{/each}
-		{#if orphanDays.length > 0}
+				<ItineraryDensityToggle />
+			</div>
+		{/if}
+
+		{#snippet dayList(days: Day[])}
+			{#if $itineraryDensity === 'compact'}
+				<div class="divide-y divide-line">
+					{#each days as day (day.id)}
+						<CompactDayRow
+							{day}
+							href="/trips/{data.trip.slug}/days/{day.id}"
+							plannedCount={data.daySummaries[day.id]?.plannedCount ?? 0}
+							travel={(day.phases?.length ?? 0) > 1}
+						/>
+					{/each}
+				</div>
+			{:else}
+				<div class="space-y-1">
+					{#each days as day (day.id)}
+						<DayCard
+							{day}
+							href="/trips/{data.trip.slug}/days/{day.id}"
+							summary={data.daySummaries[day.id]}
+							{today}
+						/>
+					{/each}
+				</div>
+			{/if}
+		{/snippet}
+
+		{#if data.phases.length > 0}
+			<!-- #401 — each phase is a bordered card: its Level Header (opens Phase Detail,
+		     full phase notes) over its days, Compact or Details. -->
+			{@const orphanDays = data.days.filter(
+				(d) => !data.phases.some((p) => (d.phases ?? []).includes(p.id))
+			)}
+			{#each data.phases as phase (phase.id)}
+				{@const pDays = daysInPhase(phase)}
+				<section
+					class="space-y-3 rounded-lg border border-line bg-surface p-3"
+					data-phase-card={phase.id}
+				>
+					<LevelHeader
+						title={phase.name}
+						place={phase.location}
+						dates={dateRangeLabel(phase.start_date, phase.end_date)}
+						span={spanLabel(phase.start_date, phase.end_date)}
+						href="/trips/{data.trip.slug}/phases/{phase.id}"
+						size="card"
+					>
+						{#snippet notes()}
+							{#if phase.notes}
+								<!-- Part of the card's tap target into Phase Detail (trip story 10). -->
+								<a
+									href="/trips/{data.trip.slug}/phases/{phase.id}"
+									tabindex="-1"
+									class="block text-sm whitespace-pre-wrap text-ink-soft">{phase.notes}</a
+								>
+							{/if}
+						{/snippet}
+					</LevelHeader>
+					{#if pDays.length > 0}
+						{@render dayList(pDays)}
+					{/if}
+				</section>
+			{/each}
+			{#if orphanDays.length > 0}
+				<section class="space-y-1.5">
+					<SectionH>Unassigned days</SectionH>
+					{@render dayList(orphanDays)}
+				</section>
+			{/if}
+		{:else if data.days.length > 0}
+			<!-- No phases: a flat day list. #217 seeds a phase on every dated trip, so this
+		     is legacy data only; the welcome card above still teaches the next step. -->
 			<section class="space-y-1.5">
-				<SectionH>Unassigned days</SectionH>
-				{@render dayList(orphanDays)}
+				{@render dayList(data.days)}
 			</section>
 		{/if}
-	{:else if data.days.length > 0}
-		<!-- No phases: a flat day list. #217 seeds a phase on every dated trip, so this
-		     is legacy data only; the welcome card above still teaches the next step. -->
-		<section class="space-y-1.5">
-			{@render dayList(data.days)}
-		</section>
-	{/if}
 	{/if}
 </main>
 
@@ -570,4 +673,9 @@
 {#if (data.phases.length > 0 || isForming) && !isClosed}
 	<FAB onclick={() => (ideaSheetOpen = true)} label="Add idea or plan" />
 {/if}
-<IdeaCaptureSheet bind:open={ideaSheetOpen} slug={data.trip.slug} phases={data.phases} forming={isForming} />
+<IdeaCaptureSheet
+	bind:open={ideaSheetOpen}
+	slug={data.trip.slug}
+	phases={data.phases}
+	forming={isForming}
+/>

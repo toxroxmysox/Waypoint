@@ -17,5 +17,5 @@
 	aria-label="{name} phase"
 	title={name}
 >
-	<span class="font-semibold leading-none text-white" aria-hidden="true">{letter}</span>
+	<span class="leading-none font-semibold text-white" aria-hidden="true">{letter}</span>
 </span>

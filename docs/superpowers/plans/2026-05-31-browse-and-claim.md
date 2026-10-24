@@ -14,17 +14,18 @@
 
 ## File Map
 
-| File | Action | Responsibility |
-|------|--------|----------------|
-| `backend/pb_hooks/invites.pb.js` | Modify | Add placeholder query to lookup; add claim_placeholder path to accept |
+| File                                       | Action | Responsibility                                                                 |
+| ------------------------------------------ | ------ | ------------------------------------------------------------------------------ |
+| `backend/pb_hooks/invites.pb.js`           | Modify | Add placeholder query to lookup; add claim_placeholder path to accept          |
 | `src/routes/invite/[code]/+page.server.ts` | Modify | Pass placeholders from lookup to page; send claim_placeholder in accept action |
-| `src/routes/invite/[code]/+page.svelte` | Modify | Render placeholder selection list in match state |
+| `src/routes/invite/[code]/+page.svelte`    | Modify | Render placeholder selection list in match state                               |
 
 ---
 
 ### Task 1: Extend invite lookup to return unclaimed placeholders
 
 **Files:**
+
 - Modify: `backend/pb_hooks/invites.pb.js:140-193` (the `POST /api/invites/lookup` handler)
 
 The lookup endpoint is anon-accessible. We only return placeholders when the caller is authenticated AND their email matches the invite email — otherwise the response is unchanged.
@@ -34,57 +35,57 @@ The lookup endpoint is anon-accessible. We only return placeholders when the cal
 In `backend/pb_hooks/invites.pb.js`, replace the return statement at the end of the lookup handler (lines 186-192) with auth-aware placeholder fetching:
 
 ```js
-	// Return base metadata for anon callers or email-mismatch.
-	const baseResponse = {
-		email: invite.getString('email'),
-		role: invite.getString('role'),
-		trip_title: tripTitle,
-		inviter_name: inviterName,
-		expired: expired,
-		unclaimed_placeholders: []
-	};
+// Return base metadata for anon callers or email-mismatch.
+const baseResponse = {
+	email: invite.getString('email'),
+	role: invite.getString('role'),
+	trip_title: tripTitle,
+	inviter_name: inviterName,
+	expired: expired,
+	unclaimed_placeholders: []
+};
 
-	// Only fetch placeholders for authenticated users whose email matches.
-	const auth = e.auth;
-	if (!auth || expired) {
-		return e.json(200, baseResponse);
-	}
-
-	const authEmail = (auth.email() || '').trim().toLowerCase();
-	const lookupEmail = invite.getString('email').trim().toLowerCase();
-	if (authEmail !== lookupEmail) {
-		return e.json(200, baseResponse);
-	}
-
-	// Find name-only placeholders: no user, no email, just a display name.
-	const tripId = invite.getString('trip');
-	let placeholders = [];
-	try {
-		placeholders = e.app.findRecordsByFilter(
-			'trip_members',
-			'trip = {:tripId} && user = "" && placeholder_email = ""',
-			'',
-			0,
-			0,
-			{ tripId: tripId }
-		);
-	} catch (_) {
-		// No placeholders; fine.
-	}
-
-	const unclaimedPlaceholders = [];
-	for (const p of placeholders) {
-		const name = p.getString('display_name') || p.getString('placeholder_name') || '';
-		if (!name) continue;
-		unclaimedPlaceholders.push({
-			member_id: p.id,
-			display_name: name,
-			role: p.getString('role')
-		});
-	}
-
-	baseResponse.unclaimed_placeholders = unclaimedPlaceholders;
+// Only fetch placeholders for authenticated users whose email matches.
+const auth = e.auth;
+if (!auth || expired) {
 	return e.json(200, baseResponse);
+}
+
+const authEmail = (auth.email() || '').trim().toLowerCase();
+const lookupEmail = invite.getString('email').trim().toLowerCase();
+if (authEmail !== lookupEmail) {
+	return e.json(200, baseResponse);
+}
+
+// Find name-only placeholders: no user, no email, just a display name.
+const tripId = invite.getString('trip');
+let placeholders = [];
+try {
+	placeholders = e.app.findRecordsByFilter(
+		'trip_members',
+		'trip = {:tripId} && user = "" && placeholder_email = ""',
+		'',
+		0,
+		0,
+		{ tripId: tripId }
+	);
+} catch (_) {
+	// No placeholders; fine.
+}
+
+const unclaimedPlaceholders = [];
+for (const p of placeholders) {
+	const name = p.getString('display_name') || p.getString('placeholder_name') || '';
+	if (!name) continue;
+	unclaimedPlaceholders.push({
+		member_id: p.id,
+		display_name: name,
+		role: p.getString('role')
+	});
+}
+
+baseResponse.unclaimed_placeholders = unclaimedPlaceholders;
+return e.json(200, baseResponse);
 ```
 
 - [ ] **Step 2: Test manually with curl**
@@ -122,6 +123,7 @@ git commit -m "feat(#13): return unclaimed name-only placeholders in invite look
 ### Task 2: Extend invite accept to support claim_placeholder
 
 **Files:**
+
 - Modify: `backend/pb_hooks/invites.pb.js:195-306` (the `POST /api/invites/accept` handler)
 
 Add a third claim path: if `claim_placeholder` is provided in the request body, validate and claim that placeholder instead of creating a new member. Existing email-match claiming and new-member-creation paths remain unchanged.
@@ -131,86 +133,84 @@ Add a third claim path: if `claim_placeholder` is provided in the request body, 
 In `backend/pb_hooks/invites.pb.js`, insert the new path between the already-member short-circuit (line 258) and the existing placeholder-claim-by-email path (line 260). Replace lines 260-296 with:
 
 ```js
-	// Name-only placeholder claim path: user explicitly selected a placeholder
-	// from the browse-and-claim UI during invite acceptance.
-	const claimPlaceholderId = (info.body && info.body['claim_placeholder']) || '';
-	if (claimPlaceholderId) {
-		let target;
-		try {
-			target = e.app.findRecordById('trip_members', claimPlaceholderId);
-		} catch (_) {
-			throw new BadRequestError('Placeholder not found');
-		}
-
-		// Validate: belongs to the same trip.
-		if (target.getString('trip') !== tripId) {
-			throw new BadRequestError('Placeholder does not belong to this trip');
-		}
-		// Validate: actually unclaimed (no user, no placeholder_email).
-		if (target.getString('user')) {
-			throw new BadRequestError('This placeholder has already been claimed');
-		}
-		if (target.getString('placeholder_email')) {
-			throw new BadRequestError('This placeholder is managed by email matching');
-		}
-
-		const joinedAt =
-			new Date().toISOString().replace('T', ' ').replace('Z', '') + 'Z';
-		target.set('user', auth.id);
-		target.set('joined_at', joinedAt);
-		target.set('placeholder_name', '');
-		e.app.save(target);
-
-		e.app.delete(invite);
-		return e.json(200, {
-			trip_id: tripId,
-			member_id: target.id,
-			already_member: false
-		});
-	}
-
-	// Placeholder-claim path: if there's a placeholder row matching this email,
-	// claim it (set user, clear placeholder fields, set joined_at). Otherwise
-	// create a fresh trip_members row with the invited role.
-	let placeholder = null;
+// Name-only placeholder claim path: user explicitly selected a placeholder
+// from the browse-and-claim UI during invite acceptance.
+const claimPlaceholderId = (info.body && info.body['claim_placeholder']) || '';
+if (claimPlaceholderId) {
+	let target;
 	try {
-		placeholder = e.app.findFirstRecordByFilter(
-			'trip_members',
-			'trip = {:tripId} && placeholder_email = {:email}',
-			{ tripId: tripId, email: inviteEmail }
-		);
+		target = e.app.findRecordById('trip_members', claimPlaceholderId);
 	} catch (_) {
-		// No placeholder; fine.
+		throw new BadRequestError('Placeholder not found');
 	}
 
-	const joinedAt =
-		new Date().toISOString().replace('T', ' ').replace('Z', '') + 'Z';
-
-	let member;
-	if (placeholder) {
-		placeholder.set('user', auth.id);
-		placeholder.set('placeholder_email', '');
-		placeholder.set('joined_at', joinedAt);
-		e.app.save(placeholder);
-		member = placeholder;
-	} else {
-		const tripMembersCol = e.app.findCollectionByNameOrId('trip_members');
-		member = new Record(tripMembersCol);
-		member.set('trip', tripId);
-		member.set('user', auth.id);
-		member.set('role', invite.getString('role'));
-		member.set('joined_at', joinedAt);
-		e.app.save(member);
+	// Validate: belongs to the same trip.
+	if (target.getString('trip') !== tripId) {
+		throw new BadRequestError('Placeholder does not belong to this trip');
+	}
+	// Validate: actually unclaimed (no user, no placeholder_email).
+	if (target.getString('user')) {
+		throw new BadRequestError('This placeholder has already been claimed');
+	}
+	if (target.getString('placeholder_email')) {
+		throw new BadRequestError('This placeholder is managed by email matching');
 	}
 
-	// Remove the consumed invite.
+	const joinedAt = new Date().toISOString().replace('T', ' ').replace('Z', '') + 'Z';
+	target.set('user', auth.id);
+	target.set('joined_at', joinedAt);
+	target.set('placeholder_name', '');
+	e.app.save(target);
+
 	e.app.delete(invite);
-
 	return e.json(200, {
 		trip_id: tripId,
-		member_id: member.id,
+		member_id: target.id,
 		already_member: false
 	});
+}
+
+// Placeholder-claim path: if there's a placeholder row matching this email,
+// claim it (set user, clear placeholder fields, set joined_at). Otherwise
+// create a fresh trip_members row with the invited role.
+let placeholder = null;
+try {
+	placeholder = e.app.findFirstRecordByFilter(
+		'trip_members',
+		'trip = {:tripId} && placeholder_email = {:email}',
+		{ tripId: tripId, email: inviteEmail }
+	);
+} catch (_) {
+	// No placeholder; fine.
+}
+
+const joinedAt = new Date().toISOString().replace('T', ' ').replace('Z', '') + 'Z';
+
+let member;
+if (placeholder) {
+	placeholder.set('user', auth.id);
+	placeholder.set('placeholder_email', '');
+	placeholder.set('joined_at', joinedAt);
+	e.app.save(placeholder);
+	member = placeholder;
+} else {
+	const tripMembersCol = e.app.findCollectionByNameOrId('trip_members');
+	member = new Record(tripMembersCol);
+	member.set('trip', tripId);
+	member.set('user', auth.id);
+	member.set('role', invite.getString('role'));
+	member.set('joined_at', joinedAt);
+	e.app.save(member);
+}
+
+// Remove the consumed invite.
+e.app.delete(invite);
+
+return e.json(200, {
+	trip_id: tripId,
+	member_id: member.id,
+	already_member: false
+});
 ```
 
 - [ ] **Step 2: Test manually with curl**
@@ -247,6 +247,7 @@ git commit -m "feat(#13): support claim_placeholder in invite accept"
 ### Task 3: Wire up the SvelteKit invite page server
 
 **Files:**
+
 - Modify: `src/routes/invite/[code]/+page.server.ts`
 
 Pass unclaimed placeholders from the lookup response to the page data. Add `claim_placeholder` to the accept form action.
@@ -258,33 +259,33 @@ In `src/routes/invite/[code]/+page.server.ts`, the load function calls `/api/inv
 Replace the `return` block (lines 54-62) with:
 
 ```ts
-	return {
-		code: params.code,
-		status,
-		email: lookup.email || '',
-		role: lookup.role || '',
-		tripTitle: lookup.trip_title || '',
-		authEmail: locals.user?.email ?? '',
-		unclaimedPlaceholders: (lookup.unclaimed_placeholders ?? []) as {
-			member_id: string;
-			display_name: string;
-			role: string;
-		}[]
-	};
+return {
+	code: params.code,
+	status,
+	email: lookup.email || '',
+	role: lookup.role || '',
+	tripTitle: lookup.trip_title || '',
+	authEmail: locals.user?.email ?? '',
+	unclaimedPlaceholders: (lookup.unclaimed_placeholders ?? []) as {
+		member_id: string;
+		display_name: string;
+		role: string;
+	}[]
+};
 ```
 
 Also update the `not_found` early return (lines 34-40) to include the field:
 
 ```ts
-		return {
-			code: params.code,
-			status: 'not_found' as InviteStatus,
-			email: '',
-			role: '',
-			tripTitle: '',
-			authEmail: locals.user?.email ?? '',
-			unclaimedPlaceholders: []
-		};
+return {
+	code: params.code,
+	status: 'not_found' as InviteStatus,
+	email: '',
+	role: '',
+	tripTitle: '',
+	authEmail: locals.user?.email ?? '',
+	unclaimedPlaceholders: []
+};
 ```
 
 - [ ] **Step 2: Update the lookup fetch to pass auth token**
@@ -354,6 +355,7 @@ git commit -m "feat(#13): wire placeholder data and claim_placeholder through in
 ### Task 4: Render placeholder selection in the invite UI
 
 **Files:**
+
 - Modify: `src/routes/invite/[code]/+page.svelte`
 
 Add the inline placeholder list to the `match` status block. When placeholders exist, show a selectable list above the accept button. When the user picks one, its `member_id` is sent as `claim_placeholder` in the accept form.
@@ -363,8 +365,8 @@ Add the inline placeholder list to the `match` status block. When placeholders e
 In the `<script>` block, add:
 
 ```ts
-	let selectedPlaceholder = $state<string | null>(null);
-	const placeholders = $derived(data.unclaimedPlaceholders ?? []);
+let selectedPlaceholder = $state<string | null>(null);
+const placeholders = $derived(data.unclaimedPlaceholders ?? []);
 ```
 
 - [ ] **Step 2: Add the placeholder list to the match block**
@@ -372,31 +374,29 @@ In the `<script>` block, add:
 In the `{:else if data.status === 'match'}` block (line 76), after the intro text and before the error/form section, add the placeholder selection UI:
 
 ```svelte
-			{#if placeholders.length > 0}
-				<div class="mt-6 space-y-2">
-					<p class="text-ink-soft text-sm">
-						Were you already added to this trip?
-					</p>
+{#if placeholders.length > 0}
+	<div class="mt-6 space-y-2">
+		<p class="text-sm text-ink-soft">Were you already added to this trip?</p>
 
-					{#each placeholders as ph (ph.member_id)}
-						<button
-							type="button"
-							class="border-line w-full rounded-lg border p-3 text-left transition-colors
+		{#each placeholders as ph (ph.member_id)}
+			<button
+				type="button"
+				class="w-full rounded-lg border border-line p-3 text-left transition-colors
 								{selectedPlaceholder === ph.member_id
-									? 'border-moss bg-moss-tint'
-									: 'bg-surface hover:bg-surface-2'}"
-							onclick={() => {
-								selectedPlaceholder = selectedPlaceholder === ph.member_id ? null : ph.member_id;
-							}}
-						>
-							<span class="text-ink font-medium">{ph.display_name}</span>
-							<span class="text-ink-muted ml-1 text-sm">
-								{roleLabel[ph.role] ?? ph.role}
-							</span>
-						</button>
-					{/each}
-				</div>
-			{/if}
+					? 'border-moss bg-moss-tint'
+					: 'bg-surface hover:bg-surface-2'}"
+				onclick={() => {
+					selectedPlaceholder = selectedPlaceholder === ph.member_id ? null : ph.member_id;
+				}}
+			>
+				<span class="font-medium text-ink">{ph.display_name}</span>
+				<span class="ml-1 text-sm text-ink-muted">
+					{roleLabel[ph.role] ?? ph.role}
+				</span>
+			</button>
+		{/each}
+	</div>
+{/if}
 ```
 
 - [ ] **Step 3: Update the accept form to include claim_placeholder**
@@ -404,37 +404,35 @@ In the `{:else if data.status === 'match'}` block (line 76), after the intro tex
 In the existing accept form (around line 95), add the hidden input and update the button label:
 
 ```svelte
-			<form
-				method="POST"
-				action="?/accept"
-				use:enhance={() => {
-					loading = true;
-					return async ({ update }) => {
-						loading = false;
-						await update();
-					};
-				}}
-				class="mt-6"
-			>
-				{#if selectedPlaceholder}
-					<input type="hidden" name="claim_placeholder" value={selectedPlaceholder} />
-				{/if}
-				<Button type="submit" disabled={loading} loading={loading} variant="moss" size="lg" class="w-full">
-					{#if loading}
-						Joining…
-					{:else if selectedPlaceholder}
-						Join as {placeholders.find(p => p.member_id === selectedPlaceholder)?.display_name}
-					{:else}
-						Accept invite
-					{/if}
-				</Button>
-			</form>
+<form
+	method="POST"
+	action="?/accept"
+	use:enhance={() => {
+		loading = true;
+		return async ({ update }) => {
+			loading = false;
+			await update();
+		};
+	}}
+	class="mt-6"
+>
+	{#if selectedPlaceholder}
+		<input type="hidden" name="claim_placeholder" value={selectedPlaceholder} />
+	{/if}
+	<Button type="submit" disabled={loading} {loading} variant="moss" size="lg" class="w-full">
+		{#if loading}
+			Joining…
+		{:else if selectedPlaceholder}
+			Join as {placeholders.find((p) => p.member_id === selectedPlaceholder)?.display_name}
+		{:else}
+			Accept invite
+		{/if}
+	</Button>
+</form>
 
-			{#if placeholders.length > 0 && !selectedPlaceholder}
-				<p class="text-ink-muted mt-2 text-center text-xs">
-					None of those are me — join as a new member
-				</p>
-			{/if}
+{#if placeholders.length > 0 && !selectedPlaceholder}
+	<p class="mt-2 text-center text-xs text-ink-muted">None of those are me — join as a new member</p>
+{/if}
 ```
 
 - [ ] **Step 4: Run `pnpm check`**
@@ -468,6 +466,7 @@ pnpm dev
 - [ ] **Step 2: Create test data**
 
 Using the PB admin UI or dev login:
+
 1. Create a trip
 2. Add 2 name-only placeholder members (e.g. "Greg" as traveler, "Abby" as co_owner)
 3. Send an invite to a test email
@@ -475,6 +474,7 @@ Using the PB admin UI or dev login:
 - [ ] **Step 3: Test the invite page at mobile (375px)**
 
 Navigate to `/invite/[code]` as the invited user. Verify:
+
 - [ ] Placeholder list appears after auth with "Were you already added to this trip?"
 - [ ] Each placeholder shows name + role
 - [ ] Selecting a placeholder highlights it with moss border

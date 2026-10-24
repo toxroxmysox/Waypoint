@@ -111,7 +111,7 @@
 				if (predictions.length > 0) showDropdown = true;
 			}}
 			placeholder="Search for a place..."
-			class="border-line bg-surface text-ink w-full rounded-md border px-3 py-2 pr-8 text-sm"
+			class="w-full rounded-md border border-line bg-surface px-3 py-2 pr-8 text-sm text-ink"
 		/>
 		{#if resolving}
 			<!-- #377: was a literal "..." text node. A shimmer dot matches the
@@ -126,25 +126,22 @@
 		<!-- #377: skeleton rows sized like real predictions, so the dropdown
 			 doesn't jump when suggestions land. Replaces the stale list while a
 			 newer query is in flight. -->
-		<div class="border-line bg-surface absolute z-modal mt-1 w-full rounded-md border shadow-lg">
+		<div class="absolute z-modal mt-1 w-full rounded-md border border-line bg-surface shadow-lg">
 			<div class="px-3 py-2"><Skeleton height="1.25rem" width="80%" /></div>
 			<div class="px-3 py-2"><Skeleton height="1.25rem" width="55%" /></div>
 		</div>
 		<span role="status" class="sr-only">Searching places…</span>
 	{:else if showDropdown}
 		<ul
-			class="border-line bg-surface absolute z-modal mt-1 max-h-60 w-full overflow-y-auto rounded-md border shadow-lg"
+			class="absolute z-modal mt-1 max-h-60 w-full overflow-y-auto rounded-md border border-line bg-surface shadow-lg"
 		>
 			{#each predictions as suggestion (suggestion.placePrediction.placeId)}
 				<li>
 					<button
 						type="button"
-						class="text-ink hover:bg-surface-hover active:bg-surface-hover w-full px-3 py-2 text-left text-sm"
+						class="hover:bg-surface-hover active:bg-surface-hover w-full px-3 py-2 text-left text-sm text-ink"
 						onclick={() =>
-							selectPlace(
-								suggestion.placePrediction.placeId,
-								suggestion.placePrediction.text.text
-							)}
+							selectPlace(suggestion.placePrediction.placeId, suggestion.placePrediction.text.text)}
 					>
 						{suggestion.placePrediction.text.text}
 					</button>
@@ -154,10 +151,10 @@
 	{/if}
 
 	{#if lookupFailed}
-		<p class="text-error mt-1 text-xs">
+		<p class="mt-1 text-xs text-error">
 			Couldn't load that place. Try again, or type the address manually.
 		</p>
 	{/if}
 
-	<p class="text-ink-muted mt-1 text-[10px]">Powered by Google</p>
+	<p class="mt-1 text-[10px] text-ink-muted">Powered by Google</p>
 </div>

@@ -27,7 +27,13 @@
 	>
 		{#if on}
 			<svg width="8" height="8" viewBox="0 0 12 12" fill="none">
-				<path d="M2.5 6.2l2.3 2.3L9.5 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+				<path
+					d="M2.5 6.2l2.3 2.3L9.5 3.5"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				/>
 			</svg>
 		{/if}
 	</span>

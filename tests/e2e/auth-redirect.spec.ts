@@ -27,7 +27,9 @@ test.describe('Auth deep-link redirect (#179)', () => {
 
 	test('the login send-code form carries the redirect as a hidden field', async ({ page }) => {
 		const deep = '/trips/some-trip/today';
-		await page.goto(`${BASE}/login?redirect=${encodeURIComponent(deep)}`, { waitUntil: 'networkidle' });
+		await page.goto(`${BASE}/login?redirect=${encodeURIComponent(deep)}`, {
+			waitUntil: 'networkidle'
+		});
 		const hidden = page.locator('input[name="redirect"]').first();
 		await expect(hidden).toHaveValue(deep);
 	});
@@ -41,7 +43,9 @@ test.describe('Auth deep-link redirect (#179)', () => {
 
 	test('an off-site redirect param is dropped, not honored', async ({ page }) => {
 		// Open-redirect guard: a cross-origin target must fall back, never carry.
-		await page.goto(`${BASE}/login?redirect=${encodeURIComponent('//evil.test/phish')}`, { waitUntil: 'networkidle' });
+		await page.goto(`${BASE}/login?redirect=${encodeURIComponent('//evil.test/phish')}`, {
+			waitUntil: 'networkidle'
+		});
 		const hidden = page.locator('input[name="redirect"]').first();
 		// safeRedirect() collapses the hostile value to '' before it reaches the form.
 		await expect(hidden).toHaveValue('');

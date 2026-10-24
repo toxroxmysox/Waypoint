@@ -31,7 +31,7 @@
 <form
 	method="POST"
 	action="?/addReplacement"
-	class="bg-surface-2 mt-2 flex flex-col gap-2 rounded-lg p-3"
+	class="mt-2 flex flex-col gap-2 rounded-lg bg-surface-2 p-3"
 	use:enhance={() => {
 		submitting = true;
 		return async ({ result }) => {
@@ -52,14 +52,14 @@
 			name="title"
 			type="text"
 			placeholder="What did you do instead?"
-			class="border-border bg-surface text-ink min-w-0 flex-1 rounded-md border px-3 py-2 text-sm"
+			class="border-border min-w-0 flex-1 rounded-md border bg-surface px-3 py-2 text-sm text-ink"
 			required
 		/>
 		<select
 			bind:value={type}
 			name="type"
 			aria-label="Item type"
-			class="border-border bg-surface text-ink rounded-md border px-2 py-2 text-sm"
+			class="border-border rounded-md border bg-surface px-2 py-2 text-sm text-ink"
 		>
 			<option value="activity">Activity</option>
 			<option value="meal">Meal</option>
@@ -70,17 +70,13 @@
 	</div>
 
 	<div class="flex justify-end gap-2">
-		<button
-			type="button"
-			onclick={onCancel}
-			class="text-ink-muted px-3 py-1.5 text-sm"
-		>
+		<button type="button" onclick={onCancel} class="px-3 py-1.5 text-sm text-ink-muted">
 			Cancel
 		</button>
 		<button
 			type="submit"
 			disabled={submitting || !title.trim()}
-			class="bg-ink text-paper rounded-md px-3 py-1.5 text-sm font-medium disabled:opacity-40"
+			class="rounded-md bg-ink px-3 py-1.5 text-sm font-medium text-paper disabled:opacity-40"
 		>
 			{submitting ? 'Adding...' : 'Add replacement'}
 		</button>

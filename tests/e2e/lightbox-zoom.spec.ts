@@ -159,7 +159,9 @@ async function openLightbox(page: Page): Promise<Rect> {
 	await view.first().click();
 	await expect(dialog(page)).toHaveCount(1, { timeout: 5000 });
 	await expect
-		.poll(async () => stageImg(page).evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0))
+		.poll(async () =>
+			stageImg(page).evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0)
+		)
 		.toBe(true);
 	expect(await counter(page)).toBe('1/2');
 	return waitForImageAtRest(page);
@@ -243,7 +245,9 @@ test.describe('DocumentLightbox gestures (#371)', () => {
 		await setupFixture();
 	});
 
-	test('pinch zooms the image; pan moves it; swipe does not page while zoomed', async ({ browser }) => {
+	test('pinch zooms the image; pan moves it; swipe does not page while zoomed', async ({
+		browser
+	}) => {
 		const { ctx, page, cdp } = await devLogin(browser);
 		try {
 			const rest = await openLightbox(page);
@@ -390,7 +394,9 @@ test.describe('DocumentLightbox gestures (#371)', () => {
 		const { ctx, page } = await devLogin(browser);
 		try {
 			await openLightbox(page);
-			const controls = dialog(page).locator('button:not([aria-label="Close"][class*="inset-0"]), a');
+			const controls = dialog(page).locator(
+				'button:not([aria-label="Close"][class*="inset-0"]), a'
+			);
 			const n = await controls.count();
 			expect(n).toBeGreaterThan(2);
 			for (let i = 0; i < n; i++) {

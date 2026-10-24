@@ -59,14 +59,24 @@
 </script>
 
 {#if show}
-	<div class="border-moss/30 bg-moss-tint mx-4 mt-2 rounded-lg border p-4">
+	<div class="mx-4 mt-2 rounded-lg border border-moss/30 bg-moss-tint p-4">
 		<div class="flex items-start justify-between gap-3">
 			<div class="min-w-0 flex-1">
-				<p class="text-ink text-sm font-semibold">Add Waypoint to Home Screen</p>
+				<p class="text-sm font-semibold text-ink">Add Waypoint to Home Screen</p>
 				{#if isIOS}
-					<p class="text-ink-muted mt-1 text-xs">
+					<p class="mt-1 text-xs text-ink-muted">
 						Tap the Share button
-						<svg class="inline-block align-text-bottom" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<svg
+							class="inline-block align-text-bottom"
+							width="14"
+							height="14"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						>
 							<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
 							<polyline points="16 6 12 2 8 6" />
 							<line x1="12" y1="2" x2="12" y2="15" />
@@ -74,12 +84,25 @@
 						then "Add to Home Screen" for the best experience.
 					</p>
 				{:else}
-					<p class="text-ink-muted mt-1 text-xs">Get quick access and offline support.</p>
+					<p class="mt-1 text-xs text-ink-muted">Get quick access and offline support.</p>
 					<Button onclick={installAndroid} variant="moss" size="sm" class="mt-2">Install</Button>
 				{/if}
 			</div>
-			<button onclick={dismiss} class="text-ink-muted hover:text-ink-soft active:text-ink-soft hit-44 shrink-0 p-1" aria-label="Dismiss">
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<button
+				onclick={dismiss}
+				class="hit-44 shrink-0 p-1 text-ink-muted hover:text-ink-soft active:text-ink-soft"
+				aria-label="Dismiss"
+			>
+				<svg
+					width="16"
+					height="16"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
 					<path d="M18 6 6 18M6 6l12 12" />
 				</svg>
 			</button>

@@ -3,21 +3,51 @@ import { cloneChecklistPayloads } from './clone-checklists';
 import type { Checklist, Task } from '$lib/types';
 
 function cl(o: Partial<Checklist>): Checklist {
-	return { id: 'c', trip: 'src', phase: '', item: '', title: 'L', kind: 'manual', order: 0, ...o } as Checklist;
+	return {
+		id: 'c',
+		trip: 'src',
+		phase: '',
+		item: '',
+		title: 'L',
+		kind: 'manual',
+		order: 0,
+		...o
+	} as Checklist;
 }
 function tk(o: Partial<Task>): Task {
-	return { id: 't', checklist: 'c', title: 'T', checked: false, assignee: '', order: 0, ...o } as Task;
+	return {
+		id: 't',
+		checklist: 'c',
+		title: 'T',
+		checked: false,
+		assignee: '',
+		order: 0,
+		...o
+	} as Task;
 }
 
 describe('cloneChecklistPayloads (#53)', () => {
 	it('resets checked to false and drops assignee', () => {
 		const checklists = [cl({ id: 'c1', title: 'Packing' })];
 		const tasks = [
-			tk({ id: 't1', checklist: 'c1', title: 'Passport', checked: true, assignee: 'mem1', order: 0 }),
+			tk({
+				id: 't1',
+				checklist: 'c1',
+				title: 'Passport',
+				checked: true,
+				assignee: 'mem1',
+				order: 0
+			}),
 			tk({ id: 't2', checklist: 'c1', title: 'Socks', checked: false, order: 1 })
 		];
 		const [out] = cloneChecklistPayloads(checklists, tasks, new Map(), 'newTrip');
-		expect(out.checklist).toMatchObject({ trip: 'newTrip', phase: '', item: '', title: 'Packing', kind: 'manual' });
+		expect(out.checklist).toMatchObject({
+			trip: 'newTrip',
+			phase: '',
+			item: '',
+			title: 'Packing',
+			kind: 'manual'
+		});
 		expect(out.tasks).toEqual([
 			{ title: 'Passport', checked: false, order: 0 },
 			{ title: 'Socks', checked: false, order: 1 }

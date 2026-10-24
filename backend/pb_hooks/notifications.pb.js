@@ -27,7 +27,8 @@ onRecordAfterCreateSuccess((e) => {
 	let authorName = 'Someone';
 	try {
 		const authorMember = e.app.findRecordById('trip_members', authorMemberId);
-		authorName = authorMember.get('display_name') || authorMember.get('placeholder_name') || 'Someone';
+		authorName =
+			authorMember.get('display_name') || authorMember.get('placeholder_name') || 'Someone';
 	} catch (_) {}
 
 	// Load the suggestion payload for a title hint.
@@ -35,9 +36,13 @@ onRecordAfterCreateSuccess((e) => {
 	try {
 		let rawPayload = e.record.get('payload');
 		if (Array.isArray(rawPayload)) {
-			try { rawPayload = JSON.parse(String.fromCharCode.apply(null, rawPayload)); } catch (_) {}
+			try {
+				rawPayload = JSON.parse(String.fromCharCode.apply(null, rawPayload));
+			} catch (_) {}
 		} else if (typeof rawPayload === 'string') {
-			try { rawPayload = JSON.parse(rawPayload); } catch (_) {}
+			try {
+				rawPayload = JSON.parse(rawPayload);
+			} catch (_) {}
 		}
 		if (rawPayload && rawPayload.title) payloadTitle = rawPayload.title;
 	} catch (_) {}
@@ -61,7 +66,9 @@ onRecordAfterCreateSuccess((e) => {
 		recipients = e.app.findRecordsByFilter(
 			'trip_members',
 			'trip = {:tripId} && (role = "owner" || role = "co_owner") && id != {:authorId}',
-			'-id', 0, 0,
+			'-id',
+			0,
+			0,
 			{ tripId: tripId, authorId: authorMemberId }
 		);
 	} catch (_) {
@@ -95,7 +102,8 @@ onRecordAfterCreateSuccess((e) => {
 	let authorName = 'Someone';
 	try {
 		const authorMember = e.app.findRecordById('trip_members', authorMemberId);
-		authorName = authorMember.get('display_name') || authorMember.get('placeholder_name') || 'Someone';
+		authorName =
+			authorMember.get('display_name') || authorMember.get('placeholder_name') || 'Someone';
 	} catch (_) {}
 
 	// Get item title + trip slug for the link.
@@ -121,7 +129,9 @@ onRecordAfterCreateSuccess((e) => {
 		recipients = e.app.findRecordsByFilter(
 			'trip_members',
 			'trip = {:tripId} && id != {:authorId}',
-			'-id', 0, 0,
+			'-id',
+			0,
+			0,
 			{ tripId: tripId, authorId: authorMemberId }
 		);
 	} catch (_) {
@@ -187,7 +197,9 @@ onRecordAfterCreateSuccess((e) => {
 		recipients = e.app.findRecordsByFilter(
 			'trip_members',
 			'trip = {:tripId} && (role = "owner" || role = "co_owner" || id = {:newMemberId})',
-			'-id', 0, 0,
+			'-id',
+			0,
+			0,
 			{ tripId: tripId, newMemberId: newMemberId }
 		);
 	} catch (_) {
@@ -220,7 +232,7 @@ routerAdd('GET', '/api/notifications/list', (e) => {
 	}
 
 	const query = e.requestInfo().query || {};
-	const limitRaw = Array.isArray(query['limit']) ? query['limit'][0] : (query['limit'] || '20');
+	const limitRaw = Array.isArray(query['limit']) ? query['limit'][0] : query['limit'] || '20';
 	const limit = Math.min(parseInt(limitRaw, 10) || 20, 100);
 
 	// Find all trip_member records for this user.
@@ -231,7 +243,9 @@ routerAdd('GET', '/api/notifications/list', (e) => {
 			'user = {:uid}',
 			// (sort, limit, offset) — was (…, 0, 0): limit=0 returned NO members, so the
 			// list was always empty. Cap memberships high; offset 0. (#260 follow-up bug.)
-			'-id', 500, 0,
+			'-id',
+			500,
+			0,
 			{ uid: authRecord.id }
 		);
 		memberIds = members.map((m) => m.id);
@@ -256,7 +270,9 @@ routerAdd('GET', '/api/notifications/list', (e) => {
 					// #390: `-created` (0069 added it); PB ids are random, so `-id`
 					// alone never meant newest-first. id breaks ties between rows that
 					// predate 0069.
-					'-created,-id', limit, 0,
+					'-created,-id',
+					limit,
+					0,
 					{ mid: memberId }
 				);
 				records = records.concat(recs);
@@ -302,7 +318,7 @@ routerAdd('POST', '/api/notifications/mark-read', (e) => {
 	}
 
 	const info = e.requestInfo();
-	const ids = (info.body && Array.isArray(info.body['ids'])) ? info.body['ids'] : [];
+	const ids = info.body && Array.isArray(info.body['ids']) ? info.body['ids'] : [];
 	const markAll = !!(info.body && info.body['all']);
 
 	const now = new Date().toISOString().replace('T', ' ').replace('Z', '') + 'Z';
@@ -311,17 +327,21 @@ routerAdd('POST', '/api/notifications/mark-read', (e) => {
 		// Find all unread notifs for this user's members.
 		let members;
 		try {
-			members = e.app.findRecordsByFilter(
-				'trip_members', 'user = {:uid}', '-id', 0, 0, { uid: authRecord.id }
-			);
-		} catch (_) { members = []; }
+			members = e.app.findRecordsByFilter('trip_members', 'user = {:uid}', '-id', 0, 0, {
+				uid: authRecord.id
+			});
+		} catch (_) {
+			members = [];
+		}
 
 		for (const member of members) {
 			try {
 				const unread = e.app.findRecordsByFilter(
 					'notifications',
 					'recipient = {:mid} && read_at = ""',
-					'-id', 0, 0,
+					'-id',
+					0,
+					0,
 					{ mid: member.id }
 				);
 				for (const notif of unread) {

@@ -64,7 +64,7 @@
 	backHref="/trips/{data.trip.slug}/items/{data.item.id}"
 />
 
-<main class="mx-auto w-full max-w-lg md-desktop:max-w-2xl flex-1 px-4 pt-4 pb-8 space-y-4">
+<main class="mx-auto w-full max-w-lg flex-1 space-y-4 px-4 pt-4 pb-8 md-desktop:max-w-2xl">
 	<ServerErrorAlert {form} />
 
 	<form
@@ -109,13 +109,13 @@
 	</form>
 
 	{#if data.canDelete}
-		<div class="border-error/30 rounded-lg border p-4">
-			<h3 class="text-error text-sm font-semibold">Delete item</h3>
+		<div class="rounded-lg border border-error/30 p-4">
+			<h3 class="text-sm font-semibold text-error">Delete item</h3>
 			{#if !confirmDelete}
 				<button
 					type="button"
 					onclick={() => (confirmDelete = true)}
-					class="hit-44 border-error/40 text-error hover:bg-error/10 active:bg-error/10 mt-2 rounded-md border px-3 py-1.5 text-sm font-semibold"
+					class="hit-44 mt-2 rounded-md border border-error/40 px-3 py-1.5 text-sm font-semibold text-error hover:bg-error/10 active:bg-error/10"
 				>
 					Delete
 				</button>
@@ -140,7 +140,7 @@
 					<button
 						type="submit"
 						disabled={deleting}
-						class="hit-44 bg-error text-paper hover:bg-error/90 active:bg-error/90 rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-40"
+						class="hit-44 rounded-md bg-error px-3 py-1.5 text-sm font-semibold text-paper hover:bg-error/90 active:bg-error/90 disabled:opacity-40"
 					>
 						{deleting ? 'Deleting…' : 'Confirm delete'}
 					</button>
@@ -150,24 +150,21 @@
 							confirmDelete = false;
 							deleteError = '';
 						}}
-						class="hit-44 text-ink-muted hover:text-ink-soft active:text-ink-soft text-sm"
+						class="hit-44 text-sm text-ink-muted hover:text-ink-soft active:text-ink-soft"
 					>
 						Cancel
 					</button>
 				</form>
 			{/if}
 			{#if deleteError || form?.deleteError}
-				<p role="alert" class="text-error mt-2 text-sm">{deleteError || form?.deleteError}</p>
+				<p role="alert" class="mt-2 text-sm text-error">{deleteError || form?.deleteError}</p>
 			{/if}
 		</div>
 	{/if}
 	<div class="save-bar-spacer" aria-hidden="true"></div>
 </main>
 
-<UnsavedChangesGuard
-	dirty={guardDirty}
-	body="Your edits to this item have not been saved yet."
-/>
+<UnsavedChangesGuard dirty={guardDirty} body="Your edits to this item have not been saved yet." />
 
 <style>
 	/* Reserve scroll room so the last fields + Delete clear the fixed SaveBar

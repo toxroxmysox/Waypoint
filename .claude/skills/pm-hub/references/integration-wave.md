@@ -7,7 +7,7 @@ Trigger: one or more sessions/agents report done (handoff-issue<N>.md, PR, or ag
 1. **Inventory.** `git worktree list` + `gh pr list`; match by PR title / issue number. Read every handoff and every diff.
 2. **Intent check — before anything merges.** Diff vs the issue's acceptance criteria + the binding contract. Drift → return it to the source with what's off, or fix inline if small. Wrong-but-green does not merge. This is the north star applied.
 3. **Integration branch** off current `main`. Merge PRs in collision-aware order (see decision-frameworks).
-4. **Seam read.** After merging anything that shares files with another PR or recent main, read the combined hot spots. 0 conflicts ≠ correct — git happily nests a button inside an anchor. Also reconcile cross-session *rules*: UI gating must match hook/rule tightening from sibling PRs.
+4. **Seam read.** After merging anything that shares files with another PR or recent main, read the combined hot spots. 0 conflicts ≠ correct — git happily nests a button inside an anchor. Also reconcile cross-session _rules_: UI gating must match hook/rule tightening from sibling PRs.
 5. **`pnpm install`** if any PR touched `package.json` — before judging `pnpm check` failures.
 6. **Fresh-PB verify** (:8097 via `scripts/e2e-clean-pb.sh` — confirm no session is mid-E2E there first):
    - `pnpm check` → 0 errors — always

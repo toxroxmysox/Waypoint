@@ -23,7 +23,6 @@
 			day: 'numeric'
 		});
 	}
-
 </script>
 
 <!-- #366: the arrows are sized to 44px rather than given a `hit-44` overlay.
@@ -40,33 +39,51 @@
      minmax(0,…) not 1fr: a bare 1fr floors at min-content, so a long date label
      would widen its own track and push the counter off-centre again. -->
 <nav
-	class="border-line grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center border-b px-4"
+	class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center border-b border-line px-4"
 >
 	{#if prevDay}
 		<a
 			href="/trips/{tripSlug}/days/{prevDay.id}"
-			class="text-ink-muted hover:text-ink active:text-ink flex min-h-11 min-w-11 items-center justify-start justify-self-start gap-1 text-sm"
+			class="flex min-h-11 min-w-11 items-center justify-start gap-1 justify-self-start text-sm text-ink-muted hover:text-ink active:text-ink"
 			aria-label="Previous day: {dayLabel(prevDay)}"
 		>
-			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<svg
+				width="16"
+				height="16"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
 				<path d="M15 18l-6-6 6-6" />
 			</svg>
-			<span class="hidden xs:inline">{dayLabel(prevDay)}</span>
+			<span class="xs:inline hidden">{dayLabel(prevDay)}</span>
 		</a>
 	{:else}
 		<span class="min-h-11"></span>
 	{/if}
 
-	<span class="text-ink-muted font-mono text-xs">{currentIndex + 1} / {days.length}</span>
+	<span class="font-mono text-xs text-ink-muted">{currentIndex + 1} / {days.length}</span>
 
 	{#if nextDay}
 		<a
 			href="/trips/{tripSlug}/days/{nextDay.id}"
-			class="text-ink-muted hover:text-ink active:text-ink flex min-h-11 min-w-11 items-center justify-end justify-self-end gap-1 text-sm"
+			class="flex min-h-11 min-w-11 items-center justify-end gap-1 justify-self-end text-sm text-ink-muted hover:text-ink active:text-ink"
 			aria-label="Next day: {dayLabel(nextDay)}"
 		>
-			<span class="hidden xs:inline">{dayLabel(nextDay)}</span>
-			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<span class="xs:inline hidden">{dayLabel(nextDay)}</span>
+			<svg
+				width="16"
+				height="16"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
 				<path d="M9 18l6-6-6-6" />
 			</svg>
 		</a>

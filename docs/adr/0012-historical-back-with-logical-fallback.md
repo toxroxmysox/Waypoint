@@ -5,7 +5,7 @@ Issue: #214
 
 ## Context
 
-The global `NavBar` back arrow hard-codes one static destination per screen via a `backHref` prop — the screen's *logical home*. Item-detail, for example, computes it as `?from=trip ? Today : itemDay ? day : itemPhase ? phase : Overview` (#197 made it mode-aware). But many screens are reachable from several entry points, and a single static target can't be right for all of them.
+The global `NavBar` back arrow hard-codes one static destination per screen via a `backHref` prop — the screen's _logical home_. Item-detail, for example, computes it as `?from=trip ? Today : itemDay ? day : itemPhase ? phase : Overview` (#197 made it mode-aware). But many screens are reachable from several entry points, and a single static target can't be right for all of them.
 
 Concretely (#214): opening a multi-day item from the trip Overview and tapping back sent the user to the item's **day view** (its logical home — a multi-day item has a start day), not the **Overview** they came from. The back arrow answered "what is this screen's parent?" when the user expected "where was I?"
 

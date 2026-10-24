@@ -52,7 +52,7 @@ initials fallback and inherit the real avatar automatically on [[Claim]].
    so deferring costs nothing.
 3. **Co-travelers can read each other's `users` row — name + avatar only.** `users.viewRule` loosens from
    self-only to "the caller shares a trip with this user." `listRule` stays self-only (no user
-   enumeration). `emailVisibility` stays **off** — email is *not* exposed through this path. PB hides
+   enumeration). `emailVisibility` stays **off** — email is _not_ exposed through this path. PB hides
    `password`/`tokenKey` on auth collections regardless of rule. See ADR-0006.
 4. **No proxy, no superuser, no denormalization.** Because the row is now readable, the caller's own
    authed `locals.pb` can `expand:user` and read the avatar. The documents-style file proxy is **not**
@@ -62,7 +62,7 @@ initials fallback and inherit the real avatar automatically on [[Claim]].
    claimer's real avatar appears with zero extra code.
 6. **Upload lives on a new global `/account` route.** Outside any trip ("user-focused, persists across
    trips"). Edits avatar + `user.name`. Self-edit only — covered by the existing `users.updateRule =
-   self-only`. Entry point from the `/trips` home.
+self-only`. Entry point from the `/trips` home.
 7. **Client-side image pipeline before upload.** Recenter (drag) + zoom over a circular-masked viewport →
    draw the framed region to an offscreen canvas at **512×512** → encode **webp** → upload (~tens of KB).
    The server's 5 MB + mime caps stay as a backstop. `object-cover` handles final circular framing.
@@ -74,7 +74,7 @@ initials fallback and inherit the real avatar automatically on [[Claim]].
 **No new collection. No new field.** This is the notable property of #59 — the data already exists.
 
 - `users.avatar` — `FileField`, `maxSelect:1`, `maxSize:5_242_880`, `mimeTypes:[image/jpeg, image/png,
-  image/webp]`. From [0001](../backend/pb_migrations/0001_users_auth.js). Unchanged.
+image/webp]`. From [0001](../backend/pb_migrations/0001_users_auth.js). Unchanged.
 - `users.name` — `TextField`, max 100. From 0001. Now editable via `/account`.
 
 The only backend change is **rule text** on the `users` collection (a new migration; rules are not data,
@@ -87,16 +87,16 @@ users.viewRule (new):
   @request.auth.id != "" && trip_members_via_user.trip.trip_members_via_trip.user ?= @request.auth.id
 ```
 
-Reads: *the caller is authenticated AND the target user has some membership whose trip also has a
-membership for the caller* → caller shares a trip with the target.
+Reads: _the caller is authenticated AND the target user has some membership whose trip also has a
+membership for the caller_ → caller shares a trip with the target.
 
 - `trip_members_via_user` — back-relation from `users` (because `trip_members.user → users`). The target
   user's memberships.
 - `.trip.trip_members_via_trip.user ?= @request.auth.id` — for those trips, does any member's user equal
   the caller.
 
-**⚠ Technical risk — this is a *two-level* nested back-relation.** Every existing rule in the codebase
-uses only one level (`trip.trip_members_via_trip.user ?= …`). PB 0.27 *should* evaluate two, but it is
+**⚠ Technical risk — this is a _two-level_ nested back-relation.** Every existing rule in the codebase
+uses only one level (`trip.trip_members_via_trip.user ?= …`). PB 0.27 _should_ evaluate two, but it is
 **unproven here**. The backend slice must prove it green in `backend/test-rules.mjs` (a co-traveler can
 view a co-traveler's row; a non-member 404s; `list` still self-only; email absent from the payload).
 **Fallback if PB chokes:** a `pb_hooks` endpoint `GET /api/trips/:tripId/members/:memberId/avatar` that
@@ -115,15 +115,15 @@ the user is absent (placeholder) or has no avatar.
 
 All already render `<Avatar>` with `initial=` only:
 
-| Surface | File |
-|---|---|
-| Vote stacks | [`VoteStacks.svelte`](../src/lib/collaboration/components/VoteStacks.svelte) |
-| Members list | [`members/+page.svelte`](<../src/routes/(app)/trips/[slug]/members/+page.svelte>) |
-| Assignee picker | [`AssignMemberSheet.svelte`](../src/lib/itinerary/components/AssignMemberSheet.svelte) |
-| Task assignee | [`TaskRow.svelte`](../src/lib/itinerary/components/TaskRow.svelte) |
-| Checklist index stack | [`ListIndexRow.svelte`](../src/lib/itinerary/components/ListIndexRow.svelte) |
-| Goal author | [`goals/+page.svelte`](<../src/routes/(app)/trips/[slug]/goals/+page.svelte>) |
-| Comments / notifications | author chips in the collaboration components |
+| Surface                  | File                                                                                   |
+| ------------------------ | -------------------------------------------------------------------------------------- |
+| Vote stacks              | [`VoteStacks.svelte`](../src/lib/collaboration/components/VoteStacks.svelte)           |
+| Members list             | [`members/+page.svelte`](<../src/routes/(app)/trips/[slug]/members/+page.svelte>)      |
+| Assignee picker          | [`AssignMemberSheet.svelte`](../src/lib/itinerary/components/AssignMemberSheet.svelte) |
+| Task assignee            | [`TaskRow.svelte`](../src/lib/itinerary/components/TaskRow.svelte)                     |
+| Checklist index stack    | [`ListIndexRow.svelte`](../src/lib/itinerary/components/ListIndexRow.svelte)           |
+| Goal author              | [`goals/+page.svelte`](<../src/routes/(app)/trips/[slug]/goals/+page.svelte>)          |
+| Comments / notifications | author chips in the collaboration components                                           |
 
 ## `/account` page
 
@@ -146,7 +146,7 @@ All already render `<Avatar>` with `initial=` only:
 - Per-trip avatar override (deferred; the read path leaves the door open).
 - Uploading avatars for placeholder/offline members.
 - Exposing co-traveler email.
-- An interactive cropper *library* / heavy dep — the recenter+zoom is hand-rolled.
+- An interactive cropper _library_ / heavy dep — the recenter+zoom is hand-rolled.
 - Account deletion, other account settings (the `/account` page is the future home, not this issue's job).
 
 ## Acceptance

@@ -46,7 +46,9 @@ export interface Labels {
 
 /** `9:40 am` from a stored time or a bare HH:MM. '' for ''. */
 export function clockAm(t: string): string {
-	const m = /(\d{1,2}):(\d{2})/.exec((t ?? '').includes(' ') ? t.split(' ')[1] : t.includes('T') ? t.split('T')[1] : t ?? '');
+	const m = /(\d{1,2}):(\d{2})/.exec(
+		(t ?? '').includes(' ') ? t.split(' ')[1] : t.includes('T') ? t.split('T')[1] : (t ?? '')
+	);
 	if (!m) return '';
 	const h = parseInt(m[1], 10);
 	return `${h % 12 || 12}:${m[2]} ${h >= 12 ? 'pm' : 'am'}`;
@@ -60,16 +62,38 @@ export function dayText(d: string, year?: string): string {
 	return year && d.slice(0, 4) !== year ? `${base} ${d.slice(0, 4)}` : base;
 }
 
-export const rangeText = (r: [string, string] | null) => (r ? `${dayText(r[0])} → ${dayText(r[1])}` : 'none');
+export const rangeText = (r: [string, string] | null) =>
+	r ? `${dayText(r[0])} → ${dayText(r[1])}` : 'none';
 
 const sentence = (f: string) => {
 	const s = f.replace(/_usd$/, '').replace(/_/g, ' ');
 	return s.charAt(0).toUpperCase() + s.slice(1);
 };
 
-const MEMBER_FIELDS = new Set(['paid_by', 'booked_by', 'assigned_to', 'not_going', 'assignee', 'checked_by', 'from_member', 'to_member', 'members', 'created_by', 'member', 'author', 'champion', 'uploaded_by']);
+const MEMBER_FIELDS = new Set([
+	'paid_by',
+	'booked_by',
+	'assigned_to',
+	'not_going',
+	'assignee',
+	'checked_by',
+	'from_member',
+	'to_member',
+	'members',
+	'created_by',
+	'member',
+	'author',
+	'champion',
+	'uploaded_by'
+]);
 
-function show(collection: string, field: string, v: unknown, labels: Labels, year?: string): string {
+function show(
+	collection: string,
+	field: string,
+	v: unknown,
+	labels: Labels,
+	year?: string
+): string {
 	if (v === undefined || v === null || v === '' || (Array.isArray(v) && !v.length)) return '—';
 	const spec = WRITABLE[collection];
 	if (spec?.timeFields?.includes(field)) return clockAm(String(v));
@@ -83,7 +107,9 @@ function show(collection: string, field: string, v: unknown, labels: Labels, yea
 	if (typeof v === 'boolean') return v ? 'Yes' : 'No';
 	if (typeof v === 'number') return field.endsWith('_usd') ? `$${v}` : String(v);
 	if (field === 'confirmation_codes' && Array.isArray(v)) {
-		return v.map((c: { label?: string; value?: string }) => `${c.label || 'Code'}: ${c.value ?? ''}`).join(', ');
+		return v
+			.map((c: { label?: string; value?: string }) => `${c.label || 'Code'}: ${c.value ?? ''}`)
+			.join(', ');
 	}
 	if (typeof v === 'object') {
 		const s = JSON.stringify(v);
@@ -120,18 +146,27 @@ function cascadeCard(c: Cascade): Card {
 	}
 	for (const g of groups.values()) {
 		const n = g.titles.length;
-		const what = g.idea ? `become${n === 1 ? 's an idea' : ' ideas'} in` : `move${n === 1 ? 's' : ''} to`;
+		const what = g.idea
+			? `become${n === 1 ? 's an idea' : ' ideas'} in`
+			: `move${n === 1 ? 's' : ''} to`;
 		lines.push(`${n} item${n === 1 ? '' : 's'} ${what} ${g.to}: ${g.titles.join(', ')}`);
 	}
 	return { emoji: '🗓️', title: 'What else changes', lines };
 }
 
-export function previewCards(changes: PlannedChange[], cascade: Cascade | null, trip: Trip, labels: Labels = {}): Card[] {
+export function previewCards(
+	changes: PlannedChange[],
+	cascade: Cascade | null,
+	trip: Trip,
+	labels: Labels = {}
+): Card[] {
 	const year = (trip.start_date ?? '').slice(0, 4) || undefined;
 	const cards: Card[] = cascade ? [cascadeCard(cascade)] : [];
 	for (const ch of changes) {
 		const rows = Object.keys(ch.after)
-			.filter((f) => f !== 'trip' && !(ch.action === 'create' && WRITABLE[ch.collection]?.stamp?.[f]))
+			.filter(
+				(f) => f !== 'trip' && !(ch.action === 'create' && WRITABLE[ch.collection]?.stamp?.[f])
+			)
 			.map((f) => ({
 				field: f === WRITABLE[ch.collection]?.dayField ? 'Day' : sentence(f),
 				from: ch.before ? show(ch.collection, f, ch.before[f], labels, year) : '',
@@ -139,10 +174,16 @@ export function previewCards(changes: PlannedChange[], cascade: Cascade | null, 
 			}));
 		const type = (ch.after.type as ItemType | undefined) ?? undefined;
 		cards.push({
-			emoji: ch.collection === 'items' && type && EMOJI[type] ? EMOJI[type] : COLLECTION_EMOJI[ch.collection] ?? '✏️',
+			emoji:
+				ch.collection === 'items' && type && EMOJI[type]
+					? EMOJI[type]
+					: (COLLECTION_EMOJI[ch.collection] ?? '✏️'),
 			title: ch.collection === 'trips' ? trip.title : ch.title,
 			tag: ch.action === 'create' ? (ch.via === 'suggestion' ? 'suggestion' : 'new') : 'edit',
-			lines: [...rows.map((r) => (r.from ? `${r.field}: ${r.from} → ${r.to}` : `${r.field}: ${r.to}`)), OUTCOME_TEXT[ch.outcome]],
+			lines: [
+				...rows.map((r) => (r.from ? `${r.field}: ${r.from} → ${r.to}` : `${r.field}: ${r.to}`)),
+				OUTCOME_TEXT[ch.outcome]
+			],
 			changes: rows
 		});
 	}

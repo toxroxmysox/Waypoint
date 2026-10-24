@@ -31,17 +31,25 @@ export function lodgingForNight(items: Item[], days: Day[], date: string): Item[
 /** Every trip day but the last is a night. */
 export const nightsOf = (days: Day[]) => days.slice(0, -1).map((d) => toDateOnly(d.date));
 
-export function auditTrip(input: { trip: Trip; days: Day[]; items: Item[]; codeDocs: CodeDoc[]; tasks: Task[] }): AuditGap[] {
+export function auditTrip(input: {
+	trip: Trip;
+	days: Day[];
+	items: Item[];
+	codeDocs: CodeDoc[];
+	tasks: Task[];
+}): AuditGap[] {
 	const { days, items, codeDocs, tasks } = input;
 	const dayDate = new Map(days.map((d) => [d.id, toDateOnly(d.date)]));
 	const placed = items.filter((i) => i.day && dayDate.has(i.day));
 	const gaps: AuditGap[] = [];
 
 	for (const date of nightsOf(days)) {
-		if (!lodgingForNight(items, days, date).length) gaps.push({ kind: 'no_lodging', title: 'No lodging', date });
+		if (!lodgingForNight(items, days, date).length)
+			gaps.push({ kind: 'no_lodging', title: 'No lodging', date });
 	}
 	for (const i of placed) {
-		if (needsBooking(i)) gaps.push({ kind: 'unbooked', title: i.title, date: dayDate.get(i.day), itemId: i.id });
+		if (needsBooking(i))
+			gaps.push({ kind: 'unbooked', title: i.title, date: dayDate.get(i.day), itemId: i.id });
 	}
 	for (const i of placed) {
 		if (i.type === 'flight' && !codesForItem(codeDocs, i.id).length) {
@@ -56,7 +64,8 @@ export function auditTrip(input: { trip: Trip; days: Day[]; items: Item[]; codeD
 			gaps.push({ kind: 'overlap', title: names.join(' / '), date: toDateOnly(d.date) });
 		}
 	}
-	for (const i of items.filter((x) => !x.day)) gaps.push({ kind: 'unplaced_idea', title: i.title, itemId: i.id });
+	for (const i of items.filter((x) => !x.day))
+		gaps.push({ kind: 'unplaced_idea', title: i.title, itemId: i.id });
 	for (const t of tasks.filter((x) => !x.checked)) gaps.push({ kind: 'open_task', title: t.title });
 	return gaps;
 }

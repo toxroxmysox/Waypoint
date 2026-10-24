@@ -1,6 +1,6 @@
 # Claude Design Prompt — Document the Waypoint Design System
 
-**Goal:** Audit the *existing, shipped* Waypoint UI and produce one canonical design-system document that every future Claude Design prompt cites for consistency. You are **documenting reality, not redesigning.** Do not invent values, propose changes, or "improve" anything. If something is inconsistent in the live app, record the dominant pattern and flag the outlier in a "Drift" note — don't resolve it.
+**Goal:** Audit the _existing, shipped_ Waypoint UI and produce one canonical design-system document that every future Claude Design prompt cites for consistency. You are **documenting reality, not redesigning.** Do not invent values, propose changes, or "improve" anything. If something is inconsistent in the live app, record the dominant pattern and flag the outlier in a "Drift" note — don't resolve it.
 
 ---
 
@@ -16,15 +16,15 @@ Mobile-first: BottomNav < 768px, icon SideRail at ≥900px. Always design at 375
 
 Extract every value from the code and the running app. Where they disagree, the code wins; note the discrepancy.
 
-| Source | What to pull from it |
-|--------|----------------------|
-| `src/routes/layout.css` (`@theme` block) | **Canonical tokens** — colors, fonts, radii, shadows, z-index. This is THE source of truth. Transcribe exact hex/px values. |
-| `src/lib/ui/*.svelte` | Primitive components: `Button`, `Card`, `Pill`, `Avatar`, `NavBar`, `BottomSheet`, `SectionH`, `PhaseChip`, `SubTabs`, `Skeleton`, `Toast`, `TypeIcon`, `StarIcons`. Document each one's real props (variants, sizes), not idealized ones. |
-| `src/lib/shell/components/*.svelte` | Layout/navigation shell: `AppShell`, `BottomNav`, `SideRail`, `FAB`, `TripTabs`, `DayNav`, `ContextRail`, `ModePill`, `A2HSBanner`. |
-| `src/app.html` | Fonts loaded (Inter, Fraunces), theme-color, PWA meta. |
-| `static/brand/` | Logo + mark assets (star-mark, lockups, app icons, sparkle, star-stamp). |
-| The running app (Preview MCP) | Navigate every core route at **375px**, then 900px and 1280px. Screenshot. `preview_inspect` real computed values for type scale, spacing rhythm, component states. Spacing has **no custom tokens** — it's the Tailwind 8pt scale applied via utilities; document the scale you actually observe. |
-| `docs/SPEC.md` §2 + design-decision log | Locked decisions (palette adoption, fonts, accent-per-mode rule, accessibility target WCAG 2.1 AA / contrast ≥4.5:1). |
+| Source                                   | What to pull from it                                                                                                                                                                                                                                                                               |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/routes/layout.css` (`@theme` block) | **Canonical tokens** — colors, fonts, radii, shadows, z-index. This is THE source of truth. Transcribe exact hex/px values.                                                                                                                                                                        |
+| `src/lib/ui/*.svelte`                    | Primitive components: `Button`, `Card`, `Pill`, `Avatar`, `NavBar`, `BottomSheet`, `SectionH`, `PhaseChip`, `SubTabs`, `Skeleton`, `Toast`, `TypeIcon`, `StarIcons`. Document each one's real props (variants, sizes), not idealized ones.                                                         |
+| `src/lib/shell/components/*.svelte`      | Layout/navigation shell: `AppShell`, `BottomNav`, `SideRail`, `FAB`, `TripTabs`, `DayNav`, `ContextRail`, `ModePill`, `A2HSBanner`.                                                                                                                                                                |
+| `src/app.html`                           | Fonts loaded (Inter, Fraunces), theme-color, PWA meta.                                                                                                                                                                                                                                             |
+| `static/brand/`                          | Logo + mark assets (star-mark, lockups, app icons, sparkle, star-stamp).                                                                                                                                                                                                                           |
+| The running app (Preview MCP)            | Navigate every core route at **375px**, then 900px and 1280px. Screenshot. `preview_inspect` real computed values for type scale, spacing rhythm, component states. Spacing has **no custom tokens** — it's the Tailwind 8pt scale applied via utilities; document the scale you actually observe. |
+| `docs/SPEC.md` §2 + design-decision log  | Locked decisions (palette adoption, fonts, accent-per-mode rule, accessibility target WCAG 2.1 AA / contrast ≥4.5:1).                                                                                                                                                                              |
 
 Tooling: Tailwind v4 with tokens in the `@theme` block (utilities like `bg-moss`, `text-ink-muted` map to tokens). Svelte 5 runes (`$props`, `$derived`, snippets). Don't assume shadcn/Melt — verify what's actually used.
 

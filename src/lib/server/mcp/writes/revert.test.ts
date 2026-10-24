@@ -16,8 +16,15 @@ const update: CommittedChange = {
 
 describe('inverseOf', () => {
 	it('restores every field nobody has touched since', () => {
-		const inv = inverseOf(update, { title: 'Lunch at Taberna', start_time: '2026-11-03 09:40:00.000Z' });
-		expect(inv).toEqual({ data: { title: 'Picnic lunch', start_time: '2026-11-03 09:00:00.000Z' }, delete: false, skipped: [] });
+		const inv = inverseOf(update, {
+			title: 'Lunch at Taberna',
+			start_time: '2026-11-03 09:40:00.000Z'
+		});
+		expect(inv).toEqual({
+			data: { title: 'Picnic lunch', start_time: '2026-11-03 09:00:00.000Z' },
+			delete: false,
+			skipped: []
+		});
 	});
 
 	it('skips, by name, a field someone changed since (story 27)', () => {
@@ -27,7 +34,11 @@ describe('inverseOf', () => {
 	});
 
 	it('skips a record that was deleted since (Review Focus 5)', () => {
-		expect(inverseOf(update, null)).toEqual({ data: null, delete: false, skipped: ['Picnic lunch was deleted'] });
+		expect(inverseOf(update, null)).toEqual({
+			data: null,
+			delete: false,
+			skipped: ['Picnic lunch was deleted']
+		});
 	});
 
 	it('removes a record it created (story 28)', () => {
@@ -37,7 +48,14 @@ describe('inverseOf', () => {
 	});
 
 	it('withdraws a pending suggestion, but not one already approved', () => {
-		const sug: CommittedChange = { ...update, action: 'create', via: 'suggestion', before: null, title: 'Cooking class', suggestionId: 's1' };
+		const sug: CommittedChange = {
+			...update,
+			action: 'create',
+			via: 'suggestion',
+			before: null,
+			title: 'Cooking class',
+			suggestionId: 's1'
+		};
 		expect(inverseOf(sug, { status: 'pending' }).delete).toBe(true);
 		expect(inverseOf(sug, { status: 'approved' })).toEqual({
 			data: null,
@@ -47,17 +65,33 @@ describe('inverseOf', () => {
 	});
 
 	it('leaves alone a change that never went through', () => {
-		expect(inverseOf({ ...update, committed: false }, null)).toEqual({ data: null, delete: false, skipped: [] });
+		expect(inverseOf({ ...update, committed: false }, null)).toEqual({
+			data: null,
+			delete: false,
+			skipped: []
+		});
 	});
 });
 
 describe('inverseOf — undo never clobbers (review I5)', () => {
 	it('leaves a created record someone has edited since', () => {
-		const create: CommittedChange = { ...update, action: 'create', before: null, title: 'Lunch at Taberna' };
-		expect(inverseOf(create, { title: 'Lunch at Taberna (moved)', start_time: '2026-11-03 09:40:00.000Z' })).toEqual({
+		const create: CommittedChange = {
+			...update,
+			action: 'create',
+			before: null,
+			title: 'Lunch at Taberna'
+		};
+		expect(
+			inverseOf(create, {
+				title: 'Lunch at Taberna (moved)',
+				start_time: '2026-11-03 09:40:00.000Z'
+			})
+		).toEqual({
 			data: null,
 			delete: false,
-			skipped: ['Lunch at Taberna was changed since — remove it in the app if you still want it gone']
+			skipped: [
+				'Lunch at Taberna was changed since — remove it in the app if you still want it gone'
+			]
 		});
 	});
 });

@@ -21,7 +21,8 @@ const handle: RequestHandler = async ({ request, url }) => {
 	const auth = request.headers.get('authorization') ?? '';
 	const grant = auth.startsWith('Bearer ') ? await lookupAccess(auth.slice(7)) : null;
 	if (!grant) return unauthorized(url.origin, auth ? 'token unknown or expired' : 'missing token');
-	if (request.method !== 'POST') return new Response(null, { status: 405, headers: { allow: 'POST' } });
+	if (request.method !== 'POST')
+		return new Response(null, { status: 405, headers: { allow: 'POST' } });
 
 	const pb = await userPb(grant.userId);
 	const user = await pb
@@ -34,7 +35,10 @@ const handle: RequestHandler = async ({ request, url }) => {
 		now: new Date(),
 		connectionId: grant.connectionId
 	});
-	const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
+	const transport = new WebStandardStreamableHTTPServerTransport({
+		sessionIdGenerator: undefined,
+		enableJsonResponse: true
+	});
 	await server.connect(transport);
 	return transport.handleRequest(request);
 };

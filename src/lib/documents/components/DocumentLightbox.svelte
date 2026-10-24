@@ -378,7 +378,13 @@
 			if (!e.ctrlKey) return;
 			e.preventDefault();
 			const { img, box } = sizes();
-			const z = zoomAbout(view, view.s * Math.exp(-e.deltaY / 100), local({ x: e.clientX, y: e.clientY }), img, box);
+			const z = zoomAbout(
+				view,
+				view.s * Math.exp(-e.deltaY / 100),
+				local({ x: e.clientX, y: e.clientY }),
+				img,
+				box
+			);
 			view = isZoomed(z) ? z : IDENTITY;
 		};
 		const block = (e: Event) => e.preventDefault();
@@ -440,19 +446,36 @@
 <svelte:window onkeydown={doc ? onkeydown : undefined} />
 
 {#if doc}
-	<div class="z-overlay fixed inset-0 flex flex-col" role="dialog" aria-modal="true" aria-label={label}>
+	<div
+		class="fixed inset-0 z-overlay flex flex-col"
+		role="dialog"
+		aria-modal="true"
+		aria-label={label}
+	>
 		<!-- Backdrop layer, separate so swipe-down can fade it without fading the image. -->
-		<div class="absolute inset-0 bg-ink/90 backdrop-blur-sm" style={fadeStyle} aria-hidden="true"></div>
+		<div
+			class="absolute inset-0 bg-ink/90 backdrop-blur-sm"
+			style={fadeStyle}
+			aria-hidden="true"
+		></div>
 
 		<!-- Toolbar -->
-		<div class="relative flex items-center justify-between gap-2 py-1.5 pr-2 pl-4 text-paper" style={fadeStyle}>
+		<div
+			class="relative flex items-center justify-between gap-2 py-1.5 pr-2 pl-4 text-paper"
+			style={fadeStyle}
+		>
 			<div class="flex min-w-0 flex-1 items-center gap-2">
 				<p class="min-w-0 truncate text-sm font-medium">{label}</p>
 				{#if gallery.length > 1}
-					<span class="text-paper/60 shrink-0 font-mono text-xs tabular-nums">{(index ?? 0) + 1}/{gallery.length}</span>
+					<span class="shrink-0 font-mono text-xs text-paper/60 tabular-nums"
+						>{(index ?? 0) + 1}/{gallery.length}</span
+					>
 				{/if}
 				{#if savedOffline}
-					<span class="bg-moss/20 text-moss-tint shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold">Saved offline</span>
+					<span
+						class="shrink-0 rounded-full bg-moss/20 px-2 py-0.5 text-[10px] font-semibold text-moss-tint"
+						>Saved offline</span
+					>
 				{/if}
 			</div>
 			<div class="flex shrink-0 items-center gap-0.5">
@@ -463,7 +486,8 @@
 				<a href="{doc.file_href}?download=1" download class={toolBtn}>Save</a>
 				{#if deletable}
 					{#if !confirming}
-						<button type="button" onclick={() => (confirming = true)} class={toolBtn}>Delete</button>
+						<button type="button" onclick={() => (confirming = true)} class={toolBtn}>Delete</button
+						>
 					{:else}
 						<form
 							method="POST"
@@ -487,16 +511,28 @@
 							<button
 								type="submit"
 								disabled={deleting}
-								class="bg-error text-paper inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-2.5 text-xs font-semibold disabled:opacity-40"
+								class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md bg-error px-2.5 text-xs font-semibold text-paper disabled:opacity-40"
 							>
 								{deleting ? 'Deleting…' : 'Confirm'}
 							</button>
-							<button type="button" onclick={() => (confirming = false)} class="{toolBtn} text-paper/70 font-normal">Cancel</button>
+							<button
+								type="button"
+								onclick={() => (confirming = false)}
+								class="{toolBtn} font-normal text-paper/70">Cancel</button
+							>
 						</form>
 					{/if}
 				{/if}
 				<button type="button" onclick={close} class={toolBtn} aria-label="Close">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+					<svg
+						width="20"
+						height="20"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg
+					>
 				</button>
 			</div>
 		</div>
@@ -528,18 +564,52 @@
 				draggable="false"
 				data-lightbox-image
 				data-zoomed={zoomed ? 'true' : 'false'}
-				class="relative max-h-full max-w-full object-contain will-change-transform {zoomed ? 'cursor-grab' : 'cursor-zoom-in'}"
+				class="relative max-h-full max-w-full object-contain will-change-transform {zoomed
+					? 'cursor-grab'
+					: 'cursor-zoom-in'}"
 				style={imgStyle}
 			/>
 
 			{#if hasPrev}
-				<button type="button" data-lightbox-control onclick={prev} aria-label="Previous" class="absolute left-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-ink/40 text-paper hover:bg-ink/60 active:bg-ink/60" style={fadeStyle}>
-					<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+				<button
+					type="button"
+					data-lightbox-control
+					onclick={prev}
+					aria-label="Previous"
+					class="absolute top-1/2 left-2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-ink/40 text-paper hover:bg-ink/60 active:bg-ink/60"
+					style={fadeStyle}
+				>
+					<svg
+						width="22"
+						height="22"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"><path d="m15 18-6-6 6-6" /></svg
+					>
 				</button>
 			{/if}
 			{#if hasNext}
-				<button type="button" data-lightbox-control onclick={next} aria-label="Next" class="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-ink/40 text-paper hover:bg-ink/60 active:bg-ink/60" style={fadeStyle}>
-					<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+				<button
+					type="button"
+					data-lightbox-control
+					onclick={next}
+					aria-label="Next"
+					class="absolute top-1/2 right-2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-ink/40 text-paper hover:bg-ink/60 active:bg-ink/60"
+					style={fadeStyle}
+				>
+					<svg
+						width="22"
+						height="22"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg
+					>
 				</button>
 			{/if}
 		</div>
