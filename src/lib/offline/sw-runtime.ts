@@ -84,24 +84,75 @@ export async function prefetchManifest(urls: string[], cacheName: string): Promi
 }
 
 /**
+ * How long network-first waits on the network before serving a cached copy
+ * (#533). Weak signal ("lie-fi": captive portals, one bar of LTE) stalls a fetch
+ * for tens of seconds instead of rejecting it, so without this a good cached
+ * page sits unused behind a hung request. Only applies when a cached copy exists.
+ */
+export const NETWORK_TIMEOUT_MS = 3000;
+
+/**
+ * What a network-first request learned about connectivity. `network`: a response
+ * arrived (the server is reachable). `degraded`: the fetch rejected or stalled
+ * past the timeout, so the cache (or shell) answered instead.
+ */
+export type NetworkOutcome = 'network' | 'degraded';
+
+export interface NetworkFirstOptions {
+	/** Reported once per outcome; a timed-out fetch that later lands reports `network` too. */
+	onOutcome?: (outcome: NetworkOutcome) => void;
+	/** Keeps the SW alive for a timed-out fetch still refreshing the cache (`event.waitUntil`). */
+	waitUntil?: (promise: Promise<unknown>) => void;
+	timeoutMs?: number;
+}
+
+const TIMED_OUT = Symbol('timed-out');
+
+/**
  * network-first: try the network (refreshing `cacheName`), fall back to the
- * cached copy when offline. For a navigation, a cache miss while offline yields
- * the precached shell (`fallbackToShell`) instead of a 503.
+ * cached copy when offline. When a cached copy exists the network gets
+ * `timeoutMs`; past that the cache is served and the fetch keeps running in the
+ * background to refresh it. With nothing cached it waits on the network, so a
+ * slow first load still works. For a navigation, a miss while offline yields the
+ * precached shell (`fallbackToShell`) instead of a 503.
  */
 export async function networkFirst(
 	request: Request,
 	cacheName: string,
-	fallbackToShell: boolean
+	fallbackToShell: boolean,
+	{ onOutcome, waitUntil, timeoutMs = NETWORK_TIMEOUT_MS }: NetworkFirstOptions = {}
 ): Promise<Response> {
-	try {
-		const response = await fetch(request);
+	// The cache write runs beside the response, not before it: awaiting it would
+	// hold the page's first byte until the whole body had downloaded.
+	let refreshed: Promise<unknown> = Promise.resolve();
+	const network = fetch(request).then((response) => {
+		onOutcome?.('network');
 		if (response.ok) {
-			const cache = await caches.open(cacheName);
-			cache.put(request, response.clone());
+			const copy = response.clone();
+			refreshed = caches
+				.open(cacheName)
+				.then((cache) => cache.put(request, copy))
+				.catch(() => undefined); // a failed cache write (quota) must not fail the page
+			waitUntil?.(refreshed);
 		}
 		return response;
+	});
+	const cached = await caches.match(request);
+
+	try {
+		if (!cached) return await network;
+		let timer: ReturnType<typeof setTimeout> | undefined;
+		const timeout = new Promise<typeof TIMED_OUT>((resolve) => {
+			timer = setTimeout(() => resolve(TIMED_OUT), timeoutMs);
+		});
+		const winner = await Promise.race([network, timeout]).finally(() => clearTimeout(timer));
+		if (winner !== TIMED_OUT) return winner;
+		onOutcome?.('degraded');
+		// Let the stalled fetch finish refreshing the cache; swallow its failure.
+		waitUntil?.(network.then(() => refreshed).catch(() => undefined));
+		return cached;
 	} catch {
-		const cached = await caches.match(request);
+		onOutcome?.('degraded');
 		if (cached) return cached;
 		if (fallbackToShell) {
 			const shell = await caches.match(SHELL_URL);
