@@ -36,25 +36,19 @@ jobs:
       - name: pnpm test:unit
         run: pnpm test:unit --run
 
-  # ── REPORTING ONLY ───────────────────────────────────────────────────────
+  # prettier --check + eslint. Gate since #359 cleaned main; run `pnpm format`
+  # before pushing.
   lint:
-    name: lint (non-blocking)
+    name: lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # NOT a gate yet, and not because linting is optional: `pnpm lint` is red on
-    # main today — 439 files fail `prettier --check` and eslint reports 753
-    # errors, ~500 of them in backend/pb_hooks where the goja idioms
-    # (triple-slash refs, `catch (_) {}`, inlined-helper duplication) trip rules
-    # that were never scoped to that directory. Making it blocking now would
-    # red-light every PR; running `pnpm format` here would bury real diffs under
-    # a 439-file reformat. Tracked in #359 — flip this to a gate once clean.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
       - name: pnpm lint
         run: pnpm lint
 
+  # ── REPORTING ONLY ───────────────────────────────────────────────────────
   backend:
     name: PocketBase harnesses (non-blocking)
     runs-on: ubuntu-latest
