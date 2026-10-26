@@ -27,6 +27,8 @@
 	/** A place-details lookup is in flight (after picking a suggestion). */
 	let resolving = $state(false);
 	let lookupFailed = $state(false);
+	/** The last autocomplete request failed (vs. legitimately found nothing). */
+	let searchFailed = $state(false);
 	let debounceTimer: ReturnType<typeof setTimeout>;
 
 	// #377: latest-wins + AbortController. Without it a slow earlier response
@@ -40,6 +42,7 @@
 			predictions = [];
 			showDropdown = false;
 			searching = false;
+			searchFailed = false;
 			return;
 		}
 		debounceTimer = setTimeout(async () => {
@@ -48,7 +51,8 @@
 			// null = superseded by a newer keystroke: leave the UI to that request,
 			// and leave `searching` on — the newer one is still running.
 			if (result === null) return;
-			predictions = result;
+			searchFailed = result === 'failed';
+			predictions = result === 'failed' ? [] : result;
 			showDropdown = predictions.length > 0;
 			searching = false;
 		}, 300);
@@ -148,6 +152,12 @@
 				</li>
 			{/each}
 		</ul>
+	{/if}
+
+	{#if searchFailed}
+		<p class="mt-1 text-xs text-error">
+			Place search isn't working right now. Type the address manually.
+		</p>
 	{/if}
 
 	{#if lookupFailed}

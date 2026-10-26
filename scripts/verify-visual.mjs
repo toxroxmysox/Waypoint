@@ -23,7 +23,8 @@
 // Route tokens: {slug} {tripId} {phase1} {goalId} {formingSlug} {day1}..{day6} (day ids, 1-indexed), {item1} {item2} (the `now` seed: ongoing dinner, later night walk; needs VISUAL_SEED='{"now":"hero"}').
 // Flags: --widths 375,768  --viewport (no full-page)  --out DIR  --keep
 //        --click SELECTOR (repeatable: click the first VISIBLE match before the shot,
-//        e.g. to open a menu; a `scroll:SELECTOR` entry scrolls it to the top instead)  --tag NAME (suffix on the filenames)
+//        e.g. to open a menu; a `scroll:SELECTOR` entry scrolls it to the top instead;
+//        `type:SELECTOR|TEXT` types TEXT into it, keystroke by keystroke, so oninput fires)  --tag NAME (suffix on the filenames)
 //        --timeout SECONDS.  VISUAL_DEBUG=1 surfaces PB/vite stderr.
 //
 // Shots are full-page by default, which means position:fixed chrome (BottomNav,
@@ -305,6 +306,15 @@ for (const width of widths) {
 					.filter({ visible: true })
 					.first()
 					.evaluate((el) => el.scrollIntoView({ block: 'start' }));
+			} else if (sel.startsWith('type:')) {
+				const bar = sel.lastIndexOf('|');
+				await page
+					.locator(sel.slice(5, bar))
+					.filter({ visible: true })
+					.first()
+					.pressSequentially(sel.slice(bar + 1));
+				// Covers a typical input debounce (e.g. places search, 300ms).
+				await page.waitForTimeout(1000);
 			} else {
 				await page.locator(sel).filter({ visible: true }).first().click();
 			}

@@ -292,7 +292,7 @@
 
 		<div>
 			<label for="phase" class="block text-sm font-medium text-ink-soft">
-				Phase{#if phaseRequired}<span class="text-clay" aria-hidden="true"> *</span>{/if}
+				Phase
 			</label>
 			<select
 				id="phase"
