@@ -101,22 +101,24 @@ describe('createPlacesSearch — stale-response race (#377)', () => {
 		await expect(inflight).resolves.toBeNull();
 	});
 
-	it('returns an empty list (not null) on a real upstream failure', async () => {
+	// A failed lookup must not read as "no matches": a blocked API key looked
+	// exactly like an empty dropdown, so search seemed silently broken.
+	it("returns 'failed' (not [] or null) on a real upstream failure", async () => {
 		const f = deferredFetch();
 		const s = createPlacesSearch(f.fetchImpl);
 
 		const p = s.search('par', 'tok');
 		f.fail(0);
-		await expect(p).resolves.toEqual([]);
+		await expect(p).resolves.toBe('failed');
 	});
 
-	it('returns an empty list when the network itself throws', async () => {
+	it("returns 'failed' when the network itself throws", async () => {
 		const f = deferredFetch();
 		const s = createPlacesSearch(f.fetchImpl);
 
 		const p = s.search('par', 'tok');
 		f.calls[0].reject(new TypeError('Failed to fetch'));
-		await expect(p).resolves.toEqual([]);
+		await expect(p).resolves.toBe('failed');
 	});
 
 	it('tolerates a body with no suggestions key', async () => {

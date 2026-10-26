@@ -30,9 +30,10 @@ export const PLACES_MIN_QUERY = 3;
 /**
  * A search outcome. `null` means "superseded or aborted" — the caller must
  * leave its current state alone; a newer search owns the UI. `[]` means a real
- * empty result (or a failed lookup), which the caller SHOULD render.
+ * empty result. `'failed'` means the lookup itself failed (upstream error,
+ * offline) — the caller says so, rather than showing it as "no matches".
  */
-export type SearchResult = PlaceSuggestion[] | null;
+export type SearchResult = PlaceSuggestion[] | 'failed' | null;
 
 export interface PlacesSearch {
 	/** Run a search. Aborts any in-flight one. Resolves `null` when superseded. */
@@ -78,7 +79,7 @@ export function createPlacesSearch(
 				if (mySeq !== seq) return null;
 				// #340: the proxy returns a real status on upstream failure — don't
 				// parse an error body as if it were results.
-				if (!res.ok) return [];
+				if (!res.ok) return 'failed';
 				const body = (await res.json()) as { suggestions?: PlaceSuggestion[] } | null;
 				// Re-check: `json()` is a second await point, so a newer search can
 				// have started between the headers and the body.
@@ -86,8 +87,8 @@ export function createPlacesSearch(
 				return body?.suggestions ?? [];
 			} catch (e) {
 				if (mySeq !== seq || isAbortError(e)) return null;
-				// Real failure (offline, parse error): an empty list, never a crash.
-				return [];
+				// Real failure (offline, parse error): reported, never a crash.
+				return 'failed';
 			} finally {
 				if (ctrl === myCtrl) ctrl = null;
 			}
