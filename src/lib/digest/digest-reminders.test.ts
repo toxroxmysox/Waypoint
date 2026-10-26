@@ -44,6 +44,16 @@ describe('booking reminders (#522)', () => {
 		expect(r14.booking.map((b) => b.title)).toEqual(['Trip only']);
 		expect(composeReminders({ ...trip, today: '2026-10-30', items }).booking).toEqual([]);
 	});
+	it('never nags about a considered (abandoned) option (#537)', () => {
+		const maybe = item({
+			title: 'Maybe hotel',
+			type: 'lodging',
+			status: 'considered',
+			dayDate: '2026-11-30',
+			requiresBooking: true
+		});
+		expect(composeReminders({ ...trip, today: '2026-10-31', items: [maybe] }).booking).toEqual([]);
+	});
 	it('nothing on an archived trip', () => {
 		expect(
 			hasReminders(composeReminders({ ...trip, archived: true, today: '2026-10-31', items }))
@@ -54,6 +64,8 @@ describe('booking reminders (#522)', () => {
 describe('pre-trip brief + closeout (#522)', () => {
 	const items = [
 		item({ title: 'Ryokan', type: 'lodging', dayDate: '2026-11-07' }),
+		// #537 — an abandoned option isn't a stay.
+		item({ title: 'Maybe inn', type: 'lodging', status: 'considered', dayDate: '2026-11-08' }),
 		item({ title: 'Flight', type: 'flight', dayDate: '2026-11-06' }),
 		item({ title: 'Train', type: 'transportation', dayDate: '2026-11-09' }),
 		item({ title: 'Kaiseki', dayDate: '2026-11-08', requiresBooking: true })

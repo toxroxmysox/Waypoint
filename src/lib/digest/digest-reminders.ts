@@ -18,6 +18,8 @@ export interface ReminderItem {
 	dayDate: string;
 	/** YYYY-MM-DD start of the item's phase, '' when none. */
 	phaseStart: string;
+	/** Item status; `considered` (an abandoned option) never reminds (#537). */
+	status?: string;
 	requiresBooking: boolean;
 	booked: boolean;
 	/** trip_members ids of members going (assigned_to). */
@@ -80,7 +82,9 @@ export function composeReminders(input: ReminderInput): TripReminders {
 	const start = (input.tripStart || '').slice(0, 10);
 	const end = (input.tripEnd || '').slice(0, 10);
 
-	for (const item of input.items) {
+	// #537 — a considered item is an abandoned option: no reminder, not a stay.
+	const items = input.items.filter((i) => i.status !== 'considered');
+	for (const item of items) {
 		if (!item.requiresBooking || item.booked) continue;
 		const date = neededBy(item, start).slice(0, 10);
 		const daysOut = daysBetween(input.today, date);
@@ -99,7 +103,7 @@ export function composeReminders(input: ReminderInput): TripReminders {
 		const stays: BriefLine[] = [];
 		const travel: BriefLine[] = [];
 		const unbooked: BriefLine[] = [];
-		for (const item of input.items) {
+		for (const item of items) {
 			const date = neededBy(item, start).slice(0, 10);
 			if (item.type === 'lodging') stays.push({ title: item.title, date: date });
 			else if (item.type === 'flight' || item.type === 'transportation')

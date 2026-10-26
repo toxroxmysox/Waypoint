@@ -1,6 +1,7 @@
 import type { Item, Day, Phase } from '$lib/types';
 import type { DayCardSummary } from './day-card';
 import { toDateOnly } from './multi-day';
+import { coversNight } from './lodging-nights';
 import { formatCalendarDate } from '$lib/shell/format';
 
 // #401 — Phase Detail's In / Staying / Out answers and the "On which day?" menu.
@@ -52,9 +53,9 @@ function addDays(date: string, n: number): string {
 }
 
 /**
- * Lodging covering at least one of the phase's nights. The night of date d is
- * covered when the stay starts on or before d and checks out after d. A phase's
- * nights are its first day up to (not including) its last day.
+ * Lodging covering at least one of the phase's nights, by the shared night rule
+ * (lodging-nights.ts, #537). A phase's nights are its first day up to (not
+ * including) its last day.
  */
 export function phaseStaying(items: Item[], days: Day[], phase: Phase): PhaseStaying {
 	const start = toDateOnly(phase.start_date);
@@ -66,12 +67,11 @@ export function phaseStaying(items: Item[], days: Day[], phase: Phase): PhaseSta
 	const lines: StayLine[] = [];
 	const covered = new Set<string>();
 	const lodging = items
-		.filter((i) => i.type === 'lodging' && i.status !== 'considered')
-		.map((i) => ({ item: i, from: startDateOf(i, dayById), to: toDateOnly(i.end_date ?? '') }))
-		.filter((s) => s.from && s.to > s.from)
+		.filter((i) => i.type === 'lodging')
+		.map((i) => ({ item: i, from: startDateOf(i, dayById) }))
 		.sort((a, b) => a.from.localeCompare(b.from));
 	for (const s of lodging) {
-		const mine = nights.filter((n) => s.from <= n && n < s.to);
+		const mine = nights.filter((n) => coversNight(s.item, days, n));
 		if (!mine.length) continue;
 		mine.forEach((n) => covered.add(n));
 		lines.push({ item: s.item, nights: mine.length });

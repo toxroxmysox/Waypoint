@@ -10,7 +10,8 @@ import { isSpanning } from '$lib/trip-mode/spanning';
 import { currentPhaseId } from '$lib/trip-mode/current-phase';
 import { myTrips, resolveTrip, type TripRef } from '../context';
 import { dayFrom, dayHeading, loadTripDays, loadTripItems, resolveDate } from '../day-data';
-import { lodgingForNight, type CodeDoc } from '../audit';
+import type { CodeDoc } from '../audit';
+import { lodgingForNight } from '$lib/itinerary/lodging-nights';
 import { offTrip, result, ymd, EMOJI, type Card } from '../present';
 import type { ToolDef } from './types';
 
