@@ -167,7 +167,7 @@ export async function compileOps(
 		const notesOnly =
 			op.collection === 'phases' &&
 			op.action === 'update' &&
-			Object.keys(op.data ?? {}).every((k) => k === 'notes');
+			Object.keys(op.data ?? {}).join() === 'notes';
 		if (OWNERS_ONLY[op.collection] && !isPrivileged(ref) && !notesOnly)
 			throw new Error(`Only the trip's owners can change ${OWNERS_ONLY[op.collection]}.`);
 
