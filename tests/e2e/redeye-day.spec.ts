@@ -52,7 +52,12 @@ test('departure day: a card by take-off, saying when it lands', async ({ page })
 	);
 });
 
-test('landing day: a card by landing time that cannot be dragged off', async ({ page }) => {
+// svelte-dnd-action's live region: "Started dragging item <label>…" on a drag start.
+const dndAlert = (page: Page) => page.locator('#dnd-action-aria-alert');
+
+// Keyboard path, not a mouse drag: deterministic on CI (mouse drags flake there,
+// #529), and pinGuard stops mousedown/touchstart/Space at the same capture point.
+test('landing day: a card by landing time that cannot be dragged', async ({ page }) => {
 	await page.setViewportSize({ width: 375, height: 812 });
 	await openDay(page, day2);
 	const card = wrappers(page).first();
@@ -61,48 +66,28 @@ test('landing day: a card by landing time that cannot be dragged off', async ({ 
 	await expect(card).toContainText('Lands 6:40a · departed yesterday');
 	await expect(card).toContainText('Morning');
 
-	// Mouse-drag it onto the parking strip. A movable card would be unscheduled
-	// (pushToParking); a pinned one never starts a drag.
-	const from = (await card.boundingBox())!;
-	const strip = page.locator('.parking-dropzone').filter({ visible: true }).first();
-	const to = (await strip.boundingBox())!;
-	await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
-	await page.mouse.down();
-	for (let i = 1; i <= 12; i++)
-		await page.mouse.move(
-			from.x + from.width / 2,
-			from.y + from.height / 2 + ((to.y + to.height / 2 - from.y - from.height / 2) * i) / 12
-		);
-	await page.mouse.up();
-	await page.waitForTimeout(500);
+	await card.focus();
+	await page.keyboard.press('Space');
+	await page.keyboard.press('ArrowDown');
+	await page.keyboard.press('Space');
+	await expect(dndAlert(page)).not.toContainText(`Started dragging item ${FLIGHT}`);
 
 	await page.reload({ waitUntil: 'networkidle' });
 	await expect(wrappers(page).first()).toHaveAttribute('aria-label', FLIGHT);
-
 	// Still scheduled on its departure day.
 	await page.goto(`${BASE}/trips/${SLUG}/days/${day1}`, { waitUntil: 'networkidle' });
 	await expect(wrappers(page).filter({ hasText: FLIGHT })).toHaveCount(1);
 });
 
-test('control: an ordinary card on the landing day still drags', async ({ page }) => {
-	// Proves the gesture above is a real drag — otherwise the pinned test is vacuous.
+test('control: an ordinary card on the landing day still starts a drag', async ({ page }) => {
+	// Proves the keypress above would start a drag — otherwise the pinned test is vacuous.
 	await page.setViewportSize({ width: 375, height: 812 });
 	await openDay(page, day2);
 	const card = wrappers(page).nth(1);
-	const title = await card.getAttribute('aria-label');
+	const title = (await card.getAttribute('aria-label'))!;
 	await expect(card).not.toHaveAttribute('data-pinned');
-	const from = (await card.boundingBox())!;
-	const strip = page.locator('.parking-dropzone').filter({ visible: true }).first();
-	const to = (await strip.boundingBox())!;
-	await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
-	await page.mouse.down();
-	for (let i = 1; i <= 12; i++)
-		await page.mouse.move(
-			from.x + from.width / 2,
-			from.y + from.height / 2 + ((to.y + to.height / 2 - from.y - from.height / 2) * i) / 12
-		);
-	await page.mouse.up();
-	await expect(zone(page).locator(`> div[aria-label="${title}"]`)).toHaveCount(0, {
-		timeout: 10000
-	});
+	await card.focus();
+	await page.keyboard.press('Space');
+	await expect(dndAlert(page)).toContainText(`Started dragging item ${title}`);
+	await page.keyboard.press('Escape');
 });
