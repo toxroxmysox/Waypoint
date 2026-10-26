@@ -408,9 +408,13 @@ export function cardAccessibleName(p: {
 	needsBooking: boolean;
 	booked: boolean;
 	overlapWith?: string;
+	/** #538 — a red-eye's spoken line; on its landing day it replaces the time. */
+	overnight?: string;
 }): string {
+	const time = spokenTime(p.item);
 	return [
-		spokenTime(p.item),
+		p.overnight && timeShape(p.item) === 'end-only' ? '' : time,
+		p.overnight ?? '',
 		p.item.title,
 		p.item.type,
 		p.overlapWith ? `overlaps ${p.overlapWith}` : '',

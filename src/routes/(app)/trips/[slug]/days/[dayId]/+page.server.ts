@@ -7,6 +7,7 @@ import { rebalanceDayOrder } from '$lib/itinerary/sort-order';
 import { spanningItemsForDate } from '$lib/itinerary/multi-day';
 import { summarizeDays } from '$lib/itinerary/day-card';
 import { withAvatarUrls } from '$lib/collaboration/member-avatar';
+import { DISCRETE_FILTER, SPANNING_FILTER } from '$lib/trip-mode/spanning';
 
 // A failed PB call's status when it is an HTTP error, else 500 (#499: a refused
 // move is a 403, not a 500).
@@ -45,15 +46,24 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		error(404, 'Day not found');
 	}
 
+	// #538 — the day's discrete items: a red-eye that departs today is one of
+	// them (#498's rule, shared with Now), not a Span banner.
 	const items = await locals.pb.collection('items').getFullList<Item>({
-		filter: `day = "${day.id}" && end_date = ""`,
+		filter: `day = "${day.id}" && ${DISCRETE_FILTER}`,
 		sort: 'sort_order'
 	});
 
-	// Multi-day items that span this calendar date (rendered as banners, not timeline).
+	// #538 — a red-eye that departed on an earlier day and lands today: a card here
+	// too, placed by landing time. It belongs to its departure day (no drag here).
 	const dayDate = day.date.split(/[T ]/)[0];
+	const landingItems = await locals.pb.collection('items').getFullList<Item>({
+		filter: `trip = "${trip.id}" && type = "flight" && day != "${day.id}" && end_date >= "${dayDate} 00:00:00" && end_date <= "${dayDate} 23:59:59"`,
+		sort: 'end_time'
+	});
+
+	// Multi-day items that span this calendar date (rendered as banners, not timeline).
 	const allMultiDay = await locals.pb.collection('items').getFullList<Item>({
-		filter: `trip = "${trip.id}" && end_date != ""`,
+		filter: `trip = "${trip.id}" && ${SPANNING_FILTER}`,
 		sort: 'day'
 	});
 	const spanningItems = spanningItemsForDate(allMultiDay, days as Day[], dayDate);
@@ -74,7 +84,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	// votesByItem, and ideas are what votes exist to rank. One trip-scoped query
 	// (votes carry `trip`), kept to the shown ids below: an id-per-clause OR chain
 	// grows with the parking lot and would hit PB's filter-length limit.
-	const shownIds = new Set([...items, ...parkingLotItems].map((i) => i.id));
+	const shownIds = new Set([...items, ...landingItems, ...parkingLotItems].map((i) => i.id));
 	const [votes, members] = await Promise.all([
 		shownIds.size > 0
 			? locals.pb
@@ -93,7 +103,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 
 	// #420 — the strip's documents count: attached FILES per day item (codes are
 	// Documents too, ADR-0016, but they get their own chip in Trip Mode).
-	const dayItemIds = new Set(items.map((i) => i.id));
+	const dayItemIds = new Set([...items, ...landingItems].map((i) => i.id));
 	const docCountByItem: Record<string, number> = {};
 	if (dayItemIds.size > 0) {
 		const docs = await locals.pb
@@ -118,6 +128,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		day,
 		daySummaries,
 		dayItems: items,
+		landingItems,
 		dayPhases,
 		votesByItem,
 		docCountByItem,
@@ -155,10 +166,11 @@ export const actions: Actions = {
 		// (orderDayItems re-weaves untimed items against timed anchors whose
 		// sort_order is unrelated to the clock). The client sends the full resulting
 		// display order; rebalance the WHOLE day to match it so the drop round-trips.
-		// Scope matches the timeline the user sees (load uses `end_date = ""`) so
+		// Scope matches the timeline the user sees (load uses DISCRETE_FILTER) so
 		// multi-day banner items aren't renumbered — they never appear in `order`.
+		// A landing red-eye (#538) lives on another day, so it drops out here too.
 		const day = await locals.pb.collection('items').getFullList<Item>({
-			filter: `day = "${params.dayId}" && end_date = ""`,
+			filter: `day = "${params.dayId}" && ${DISCRETE_FILTER}`,
 			fields: 'id'
 		});
 		const dayIds = new Set(day.map((i) => i.id));
@@ -214,9 +226,9 @@ export const actions: Actions = {
 			// whole-day rebalance renumbers.
 			await locals.pb.collection('items').update(itemId, { day: params.dayId, status: 'planned' });
 
-			// Scope matches the visible timeline (load uses `end_date = ""`).
+			// Scope matches the visible timeline (load uses DISCRETE_FILTER).
 			const day = await locals.pb.collection('items').getFullList<Item>({
-				filter: `day = "${params.dayId}" && end_date = ""`,
+				filter: `day = "${params.dayId}" && ${DISCRETE_FILTER}`,
 				fields: 'id'
 			});
 			const dayIds = new Set(day.map((i) => i.id));

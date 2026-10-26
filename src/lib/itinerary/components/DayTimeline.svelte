@@ -10,6 +10,7 @@
 	import ItemCard from './ItemCard.svelte';
 	import TimeSlotDivider from './TimeSlotDivider.svelte';
 	import FreeTimeLabel from './FreeTimeLabel.svelte';
+	import type { OvernightNote } from '$lib/itinerary/overnight';
 
 	let {
 		items,
@@ -20,7 +21,9 @@
 		onConsider = () => {},
 		onFinalize = () => {},
 		planDrop = false,
-		dragDisabled = false
+		dragDisabled = false,
+		pinnedIds = new Set<string>(),
+		overnightById = {}
 	}: {
 		items: Item[];
 		tripSlug: string;
@@ -34,7 +37,36 @@
 		planDrop?: boolean;
 		/** #499 — the viewer can't rearrange the day (server refuses the rebalance). */
 		dragDisabled?: boolean;
+		/** #538 — items shown here that belong to another day (a landing red-eye): no drag. */
+		pinnedIds?: ReadonlySet<string>;
+		/** #538 — a red-eye's card line, by item id (`Lands tomorrow 6:40a`). */
+		overnightById?: Record<string, OvernightNote>;
 	} = $props();
+
+	// #538 — svelte-dnd-action has no per-item disable: it listens on every zone
+	// child. Catch a press (or Enter/Space on the focused wrapper) on a pinned
+	// child in the capture phase, at the zone, so it never reaches the child's
+	// drag listener. Clicks still go through, so the card's link opens.
+	function pinGuard(node: HTMLElement) {
+		const stop = (e: Event) => {
+			const pinned = (e.target as Element | null)?.closest?.('[data-pinned]');
+			if (!pinned || !node.contains(pinned)) return;
+			if (
+				e instanceof KeyboardEvent &&
+				(e.target !== pinned || (e.key !== 'Enter' && e.key !== ' '))
+			)
+				return;
+			e.stopPropagation();
+		};
+		const opts = { capture: true, passive: true };
+		for (const t of ['mousedown', 'touchstart', 'keydown']) node.addEventListener(t, stop, opts);
+		return {
+			destroy() {
+				for (const t of ['mousedown', 'touchstart', 'keydown'])
+					node.removeEventListener(t, stop, opts);
+			}
+		};
+	}
 
 	// Per-item slot label, keyed for O(1) lookup. `items` already arrives in
 	// display order from the orchestrator; this maps 1:1.
@@ -87,6 +119,7 @@
 			useCursorForDetection: true,
 			delayTouchStart: LONG_PRESS_MS
 		}}
+		use:pinGuard
 		onconsider={onConsider}
 		onfinalize={onFinalize}
 	>
@@ -98,7 +131,12 @@
 		     item's name has to live here: the library reads `aria-label` off
 		     THIS element for its "started dragging <item>" announcements. The
 		     card's own link carries the full accessible name (#420). -->
-			<div animate:flip={{ duration: FLIP_MS }} class="rounded-lg" aria-label={item.title}>
+			<div
+				animate:flip={{ duration: FLIP_MS }}
+				class="rounded-lg"
+				aria-label={item.title}
+				data-pinned={pinnedIds.has(item.id) || undefined}
+			>
 				{#if meta?.slotLabel}
 					<TimeSlotDivider label={meta.slotLabel} />
 				{/if}
@@ -111,6 +149,7 @@
 					{members}
 					overlap={overlaps.get(item.id)}
 					docCount={docCountByItem[item.id] ?? 0}
+					overnight={overnightById[item.id]}
 				/>
 			</div>
 		{/each}
