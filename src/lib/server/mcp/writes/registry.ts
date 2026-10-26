@@ -22,7 +22,7 @@ export interface WritableSpec {
 	label: string;
 	/** Relation path from a record to its trip id ('id' for trips itself). */
 	tripPath: string;
-	/** Fields the AI may set, with a short hint each, for describe. Informational: the gate is the blocklist + PB. */
+	/** Fields the AI may set, with a short hint each, for describe. This is the allowlist compile gates on; PB still has the final say. */
 	fields: Record<string, string>;
 	/** Author fields the server fills on create (never the AI): 'user' = users id, 'member' = trip_members id. */
 	stamp?: Record<string, 'user' | 'member'>;
@@ -115,13 +115,9 @@ export const WRITABLE: Record<string, WritableSpec> = {
 			location_name: 'place name',
 			location_address: 'address',
 			booked: 'true when booked',
-			booked_by: 'member id',
-			paid_by: 'member id',
-			confirmation_codes: 'list of {label, value}',
 			reservation_url: 'booking link',
 			free_cancellation: 'true/false',
 			cost_estimate_usd: 'number',
-			cost_actual_usd: 'number',
 			assigned_to: 'member ids going',
 			not_going: 'member ids not going (your own only)',
 			requires_booking: 'true/false',

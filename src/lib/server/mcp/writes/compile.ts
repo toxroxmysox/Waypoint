@@ -60,7 +60,6 @@ const LINKS: Record<string, string> = {
 	scenario: 'scenarios',
 	suggestion: 'suggestions',
 	paid_by: 'trip_members',
-	booked_by: 'trip_members',
 	assigned_to: 'trip_members',
 	not_going: 'trip_members',
 	assignee: 'trip_members',
@@ -164,7 +163,12 @@ export async function compileOps(
 			throw new Error(`I can only edit ${spec.label}, not add new ones.`);
 		if (op.action === 'update' && spec.createOnly)
 			throw new Error(`I can only add ${spec.label}, not edit them.`);
-		if (OWNERS_ONLY[op.collection] && !isPrivileged(ref))
+		// #535: phases.pb.js lets a traveler change a phase's notes and nothing else.
+		const notesOnly =
+			op.collection === 'phases' &&
+			op.action === 'update' &&
+			Object.keys(op.data ?? {}).every((k) => k === 'notes');
+		if (OWNERS_ONLY[op.collection] && !isPrivileged(ref) && !notesOnly)
 			throw new Error(`Only the trip's owners can change ${OWNERS_ONLY[op.collection]}.`);
 
 		const raw = { ...(op.data ?? {}) };
