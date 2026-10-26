@@ -60,6 +60,9 @@ test.describe('Offline — read-only active trip on a plane (#255)', () => {
 		// ── Go offline and cold-launch (reload) the Now surface. The shell +
 		// cached trip must render — never a raw 503 'Offline'.
 		await context.setOffline(true);
+		// #534: the cold launch happens 3h after the snapshot. The banner must show
+		// when the cache was saved, not the (page-clock) time of the launch.
+		await page.clock.install({ time: Date.now() + 3 * 3600_000 });
 		await page.goto(`${BASE}/trips/${slug}/now`);
 		await page.waitForLoadState('domcontentloaded');
 
@@ -72,6 +75,10 @@ test.describe('Offline — read-only active trip on a plane (#255)', () => {
 		const banner = page.locator('[data-testid="offline-banner"]:visible').first();
 		await expect(banner).toBeVisible();
 		await expect(banner).toContainText(/Offline — showing .* as of/);
+		const launchTime = await page.evaluate(() =>
+			new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(Date.now())
+		);
+		await expect(banner).not.toContainText(launchTime);
 
 		// ── Read navigation offline: open the cached day (its page + payload were
 		// warmed online). It renders from cache, not a 503.
