@@ -5,7 +5,7 @@
 //
 // $env/dynamic/private is mocked so the handlers see API keys present.
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('$env/dynamic/private', () => ({
 	env: {
@@ -63,8 +63,15 @@ const callAutocomplete = (input: string, userId: string) =>
 		})
 	);
 
+// #528: the buckets refill off Date.now() (2 tokens/s). Under a loaded full run
+// the 241-call floods took >0.5s, a token refilled, and call 241 got a 200.
+// Freeze Date only — promises and timers stay real.
 beforeEach(() => {
 	vi.restoreAllMocks();
+	vi.useFakeTimers({ toFake: ['Date'] });
+});
+afterEach(() => {
+	vi.useRealTimers();
 });
 
 describe('places/details route', () => {
