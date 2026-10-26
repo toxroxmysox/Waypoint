@@ -291,9 +291,7 @@
 		</div>
 
 		<div>
-			<label for="phase" class="block text-sm font-medium text-ink-soft">
-				Phase
-			</label>
+			<label for="phase" class="block text-sm font-medium text-ink-soft"> Phase </label>
 			<select
 				id="phase"
 				name="phase"

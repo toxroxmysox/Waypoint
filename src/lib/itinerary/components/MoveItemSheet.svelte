@@ -90,9 +90,7 @@
 
 		{#if phases.length > 0}
 			<div>
-				<label for="move-phase" class="block text-sm font-medium text-ink-soft">
-					Phase
-				</label>
+				<label for="move-phase" class="block text-sm font-medium text-ink-soft"> Phase </label>
 				<select
 					id="move-phase"
 					name="phase"
