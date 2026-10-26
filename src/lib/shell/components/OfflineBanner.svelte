@@ -1,34 +1,39 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import { online } from '$lib/shell/stores/online';
+	import { cachedAt, formatAsOf } from '$lib/offline/snapshot-time';
 
 	// App-wide offline banner (#255). Automatic — keyed off the reactive `online`
 	// store (navigator.onLine + online/offline events + the SW's weak-signal
 	// report, #533), no toggle to find. When
-	// offline it announces that the trip is a snapshot and roughly how fresh it is;
+	// offline it announces that the trip is a snapshot and how fresh it is;
 	// it clears the instant signal returns. Most prominent in Trip Mode, where the
 	// trip title is passed in.
 	let { tripTitle = '' }: { tripTitle?: string } = $props();
 
 	const isOffline = $derived(!$online);
 
-	// Snapshot freshness = the last moment we had signal (the data on screen is as
-	// fresh as that). Stamp it whenever online; freeze it while offline so the
-	// "as of" time reflects the snapshot, not the clock. PRD: "the snapshot time is
-	// the last successful cache write for the trip" — last-online is its honest,
-	// client-observable proxy.
-	let lastOnlineAt = $state<number>(Date.now());
+	// Snapshot freshness (#534) = when the cached copy on screen was fetched, read
+	// from the Cache API so it survives a cold launch. Unknown (served the shell,
+	// no Cache API) → no time at all rather than a wrong one.
+	let savedAt = $state<number | null>(null);
 	$effect(() => {
-		if ($online) lastOnlineAt = Date.now();
+		if (!isOffline) return;
+		const url = page.url;
+		let stale = false;
+		cachedAt(url).then((t) => {
+			if (!stale) savedAt = t;
+		});
+		return () => {
+			stale = true;
+		};
 	});
 
-	const snapshotTime = $derived(
-		new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(lastOnlineAt)
-	);
-
+	const asOf = $derived(formatAsOf(savedAt, Date.now()));
 	const label = $derived(
-		tripTitle
-			? `Offline — showing ${tripTitle} as of ${snapshotTime}`
-			: `Offline — showing your trip as of ${snapshotTime}`
+		asOf
+			? `Offline — showing ${tripTitle || 'your trip'} as of ${asOf}`
+			: `Offline — showing ${tripTitle ? `a saved copy of ${tripTitle}` : 'your saved trip'}`
 	);
 </script>
 
