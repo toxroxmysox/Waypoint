@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { compileOps, type RecordLoader } from './compile';
+import { WRITABLE } from './registry';
 import { tripRef } from '../context';
 import type { MemberRole, Trip } from '$lib/types';
 import type { WriteOp } from './types';
@@ -267,8 +268,10 @@ describe('compileOps — links stay in the trip (review I6)', () => {
 			compile([{ action: 'update', collection: 'items', id: 'lunch', data: { phase: 'pElse' } }])
 		).rejects.toThrow("That phase isn't in Porto.");
 		await expect(
-			compile([{ action: 'update', collection: 'items', id: 'lunch', data: { paid_by: 'mElse' } }])
-		).rejects.toThrow("That paid by isn't in Porto.");
+			compile([
+				{ action: 'update', collection: 'items', id: 'lunch', data: { assigned_to: ['mElse'] } }
+			])
+		).rejects.toThrow("That assigned to isn't in Porto.");
 		await expect(
 			compile([
 				{
@@ -287,7 +290,7 @@ describe('compileOps — links stay in the trip (review I6)', () => {
 					action: 'update',
 					collection: 'items',
 					id: 'lunch',
-					data: { phase: 'pLisbon', paid_by: 'mTrav' }
+					data: { phase: 'pLisbon', assigned_to: ['mTrav'] }
 				}
 			])
 		).resolves.toHaveLength(1);
@@ -391,5 +394,40 @@ describe('compileOps — phase rules the hooks enforce, refused at preview (inte
 				'traveler'
 			)
 		).rejects.toThrow(/owners/);
+	});
+	it('lets a traveler edit Phase Notes and nothing else on a phase (#535, phases.pb.js)', async () => {
+		await expect(
+			compile(
+				[{ action: 'update', collection: 'phases', id: 'pPorto', data: { notes: 'Ferry 9am' } }],
+				'traveler'
+			)
+		).resolves.toHaveLength(1);
+		await expect(
+			compile(
+				[
+					{
+						action: 'update',
+						collection: 'phases',
+						id: 'pPorto',
+						data: { notes: 'x', name: 'Coast' }
+					}
+				],
+				'traveler'
+			)
+		).rejects.toThrow(/owners/);
+	});
+});
+
+describe('compileOps — dead Item fields are not writable (#536)', () => {
+	it.each(['booked_by', 'paid_by', 'confirmation_codes', 'cost_actual_usd'])(
+		'refuses %s on an item',
+		async (field) => {
+			await expect(
+				compile([{ action: 'update', collection: 'items', id: 'lunch', data: { [field]: 'x' } }])
+			).rejects.toThrow(`"${field}" isn't something I can set`);
+		}
+	);
+	it('keeps paid_by on expenses, where it lives', () => {
+		expect(WRITABLE.expenses.fields).toHaveProperty('paid_by');
 	});
 });
