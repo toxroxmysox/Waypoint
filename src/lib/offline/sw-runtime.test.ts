@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { cacheFirst, networkFirst, prefetchManifest, SHELL_URL, SHELL_HTML } from './sw-runtime';
+import {
+	cacheFirst,
+	networkFirst,
+	prefetchManifest,
+	NETWORK_TIMEOUT_MS,
+	SHELL_URL,
+	SHELL_HTML
+} from './sw-runtime';
 import { buildOfflineManifest } from './offline-manifest';
 
 // ── Minimal in-memory Cache Storage mock ──────────────────────────────────────
@@ -196,6 +203,104 @@ describe('networkFirst', () => {
 		expect(res.status).toBe(500);
 		const stored = await mockCaches.match(new Request(`${ORIGIN}/trips/x`));
 		expect(stored).toBeUndefined();
+	});
+});
+
+describe('networkFirst on weak signal ("lie-fi", #533)', () => {
+	// A fetch that never settles: what a stalled connection looks like to the SW.
+	const hang = () => vi.fn(() => new Promise<Response>(() => {}));
+
+	beforeEach(() => vi.useFakeTimers());
+	afterEach(() => vi.useRealTimers());
+
+	it('serves the cached copy after the timeout when the network stalls', async () => {
+		await seed('data', `${ORIGIN}/trips/paris`, 'CACHED');
+		vi.stubGlobal('fetch', hang());
+		const onOutcome = vi.fn();
+
+		const pending = networkFirst(new Request(`${ORIGIN}/trips/paris`), 'data', true, {
+			onOutcome
+		});
+		await vi.advanceTimersByTimeAsync(NETWORK_TIMEOUT_MS);
+
+		expect(await (await pending).text()).toBe('CACHED');
+		expect(onOutcome).toHaveBeenCalledWith('degraded');
+	});
+
+	it('does not time out before NETWORK_TIMEOUT_MS', async () => {
+		await seed('data', `${ORIGIN}/trips/paris`, 'CACHED');
+		vi.stubGlobal('fetch', hang());
+		let settled = false;
+
+		void networkFirst(new Request(`${ORIGIN}/trips/paris`), 'data', true).then(() => {
+			settled = true;
+		});
+		await vi.advanceTimersByTimeAsync(NETWORK_TIMEOUT_MS - 1);
+
+		expect(settled).toBe(false);
+	});
+
+	it('keeps waiting on the network when nothing is cached (slow first load still works)', async () => {
+		let resolve!: (r: Response) => void;
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(() => new Promise<Response>((r) => (resolve = r)))
+		);
+		const onOutcome = vi.fn();
+
+		const pending = networkFirst(new Request(`${ORIGIN}/trips/new`), 'data', true, { onOutcome });
+		await vi.advanceTimersByTimeAsync(NETWORK_TIMEOUT_MS * 5);
+		resolve(new Response('SLOW-BUT-FRESH', { status: 200 }));
+
+		expect(await (await pending).text()).toBe('SLOW-BUT-FRESH');
+		expect(onOutcome).toHaveBeenCalledWith('network');
+		expect(onOutcome).not.toHaveBeenCalledWith('degraded');
+	});
+
+	it('a timed-out fetch keeps running and refreshes the cache when it lands', async () => {
+		await seed('data', `${ORIGIN}/trips/paris`, 'STALE');
+		let resolve!: (r: Response) => void;
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(() => new Promise<Response>((r) => (resolve = r)))
+		);
+		const background: Promise<unknown>[] = [];
+		const onOutcome = vi.fn();
+
+		const pending = networkFirst(new Request(`${ORIGIN}/trips/paris`), 'data', true, {
+			onOutcome,
+			waitUntil: (p) => background.push(p)
+		});
+		await vi.advanceTimersByTimeAsync(NETWORK_TIMEOUT_MS);
+		expect(await (await pending).text()).toBe('STALE');
+
+		resolve(new Response('FRESH', { status: 200 }));
+		await Promise.all(background);
+
+		const stored = await mockCaches.match(new Request(`${ORIGIN}/trips/paris`));
+		expect(await stored!.text()).toBe('FRESH');
+		// The late success is reported too, so the client can clear "degraded".
+		expect(onOutcome).toHaveBeenLastCalledWith('network');
+	});
+
+	it('reports degraded on a network error, and network on a fast success', async () => {
+		await seed('data', `${ORIGIN}/trips/paris`, 'CACHED');
+		const onOutcome = vi.fn();
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => {
+				throw new TypeError('Failed to fetch');
+			})
+		);
+		await networkFirst(new Request(`${ORIGIN}/trips/paris`), 'data', true, { onOutcome });
+		expect(onOutcome).toHaveBeenLastCalledWith('degraded');
+
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => new Response('FRESH', { status: 200 }))
+		);
+		await networkFirst(new Request(`${ORIGIN}/trips/paris`), 'data', true, { onOutcome });
+		expect(onOutcome).toHaveBeenLastCalledWith('network');
 	});
 });
 
