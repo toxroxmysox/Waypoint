@@ -3,7 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 import type { Trip, TripMember } from '$lib/types';
 import { tripToday, tripTz } from '$lib/shell/trip-time';
 import { pbFileUrl } from '$lib/shell/pb-file-url';
-import { PUBLIC_PB_URL } from '$env/static/public';
+import { pbBaseUrl } from '$lib/shell/pb';
 
 export const load: PageServerLoad = async ({ locals, fetch }) => {
 	// Get all trip memberships for the current user
@@ -76,7 +76,7 @@ export const load: PageServerLoad = async ({ locals, fetch }) => {
 		(async () => {
 			try {
 				const token = locals.pb.authStore.token;
-				const res = await fetch(`${PUBLIC_PB_URL}/api/members/my-claims`, {
+				const res = await fetch(`${pbBaseUrl()}/api/members/my-claims`, {
 					headers: { Authorization: `Bearer ${token}` }
 				});
 				if (res.ok) {

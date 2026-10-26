@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { PUBLIC_PB_URL } from '$env/static/public';
 import { safeRedirect } from '$lib/shell/safe-redirect';
+import { pbBaseUrl } from '$lib/shell/pb';
 
 export interface Claim {
 	member_id: string;
@@ -17,7 +17,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	// Deep-link destination threaded from login through the claim gate (#179).
 	const dest = safeRedirect(url.searchParams.get('redirect'));
 
-	const res = await fetch(`${PUBLIC_PB_URL}/api/members/my-claims`, {
+	const res = await fetch(`${pbBaseUrl()}/api/members/my-claims`, {
 		headers: { Authorization: `Bearer ${token}` }
 	});
 
@@ -50,7 +50,7 @@ export const actions: Actions = {
 
 		const token = locals.pb.authStore.token;
 
-		const res = await fetch(`${PUBLIC_PB_URL}/api/members/claim`, {
+		const res = await fetch(`${pbBaseUrl()}/api/members/claim`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',

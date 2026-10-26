@@ -2,18 +2,18 @@ import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import type { Trip, Phase, Day, Item } from '$lib/types';
 import PocketBase from 'pocketbase';
-import { PUBLIC_PB_URL } from '$env/static/public';
 import { env } from '$env/dynamic/private';
 import { buildPublicTripExport } from '$lib/portability/export';
 import { fetchManualChecklists } from '$lib/itinerary/checklist-loaders';
 import { isArchiveVisible } from '$lib/portability/archive-visibility';
+import { pbBaseUrl } from '$lib/shell/pb';
 
 // #208 — public "Use as template / Export plan" download. Same gating as the
 // archive page (superuser-auth, published-only), but returns a PII-STRIPPED
 // plan JSON a non-member can import as their own new trip. No member auth: the
 // archive token is the capability. See buildPublicTripExport for the PII scope.
 export const GET: RequestHandler = async ({ params }) => {
-	const pb = new PocketBase(PUBLIC_PB_URL);
+	const pb = new PocketBase(pbBaseUrl());
 	await pb.collection('_superusers').authWithPassword(env.PB_ADMIN_EMAIL!, env.PB_ADMIN_PASSWORD!);
 
 	let trip: Trip;
