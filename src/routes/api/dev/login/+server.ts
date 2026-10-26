@@ -1,7 +1,7 @@
 import { redirect, error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
-import { PUBLIC_PB_URL } from '$env/static/public';
 import type { RequestHandler } from './$types';
+import { pbBaseUrl } from '$lib/shell/pb';
 
 // Dev-only: hits the PB bypass endpoint, saves the token onto locals.pb's
 // authStore so hooks.server.ts exports it as the response cookie. Env-gated so
@@ -18,7 +18,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		error(400, 'email query param or E2E_TEST_EMAIL env required');
 	}
 
-	const res = await fetch(`${PUBLIC_PB_URL}/api/dev/auth-bypass`, {
+	const res = await fetch(`${pbBaseUrl()}/api/dev/auth-bypass`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ email })

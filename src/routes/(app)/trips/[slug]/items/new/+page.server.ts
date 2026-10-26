@@ -6,8 +6,7 @@ import { combineDateTime } from '$lib/shell/trip-time';
 import { nextSortOrder } from '$lib/itinerary/sort-order';
 import { syncGoalLinks } from '$lib/itinerary/goal-links';
 import { reconcileItemCodes } from '$lib/documents/reconcile-codes';
-
-const PB_BASE = process.env.PUBLIC_PB_URL || 'http://127.0.0.1:8090';
+import { pbBaseUrl } from '$lib/shell/pb';
 
 export const load: PageServerLoad = async ({ url, locals, parent }) => {
 	const { trip, membership, phases, days } = await parent();
@@ -78,9 +77,12 @@ export const load: PageServerLoad = async ({ url, locals, parent }) => {
 	if (suggestionId) {
 		try {
 			const token = locals.pb.authStore.token;
-			const res = await fetch(`${PB_BASE}/api/suggestions/list?trip_id=${trip.id}&status=pending`, {
-				headers: { Authorization: `Bearer ${token}` }
-			});
+			const res = await fetch(
+				`${pbBaseUrl()}/api/suggestions/list?trip_id=${trip.id}&status=pending`,
+				{
+					headers: { Authorization: `Bearer ${token}` }
+				}
+			);
 			const resData = await res.json();
 			const s = (resData.items ?? []).find((item: { id: string }) => item.id === suggestionId);
 			if (s) {
@@ -210,7 +212,7 @@ export const actions: Actions = {
 			if (!reviewNote)
 				return fail(400, { error: 'A note is required to reject.', field: 'review_note' });
 			try {
-				const res = await fetch(`${PB_BASE}/api/suggestions/review`, {
+				const res = await fetch(`${pbBaseUrl()}/api/suggestions/review`, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
@@ -335,7 +337,7 @@ export const actions: Actions = {
 		// only, enforced by /api/suggestions/update). Stays on the edit view.
 		if (suggestionId && intent === 'save') {
 			try {
-				const res = await fetch(`${PB_BASE}/api/suggestions/update`, {
+				const res = await fetch(`${pbBaseUrl()}/api/suggestions/update`, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
@@ -360,7 +362,7 @@ export const actions: Actions = {
 		// Edit-and-approve path: owner approving a suggestion with possible edits.
 		if (suggestionId) {
 			try {
-				const reviewRes = await fetch(`${PB_BASE}/api/suggestions/review`, {
+				const reviewRes = await fetch(`${pbBaseUrl()}/api/suggestions/review`, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
@@ -392,7 +394,7 @@ export const actions: Actions = {
 
 		if (submitAsSuggestion) {
 			try {
-				const suggestRes = await fetch(`${PB_BASE}/api/suggestions/create`, {
+				const suggestRes = await fetch(`${pbBaseUrl()}/api/suggestions/create`, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',

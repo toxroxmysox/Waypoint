@@ -9,7 +9,7 @@ import { PUBLIC_PB_URL } from '$env/static/public';
 // call and — on a cold tunnel connection — intermittently reset with EOF,
 // which surfaced as auth-refresh failures that wiped a just-created session
 // (login "succeeded" then immediately bounced back to the code screen).
-function pbBaseUrl(): string {
+export function pbBaseUrl(): string {
 	if (!browser && typeof process !== 'undefined' && process.env.PB_INTERNAL_URL) {
 		return process.env.PB_INTERNAL_URL;
 	}

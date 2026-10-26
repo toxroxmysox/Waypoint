@@ -4,7 +4,7 @@ import type { TripMember, PendingInvite, User, JoinToken } from '$lib/types';
 import { memberAvatarUrl } from '$lib/collaboration/member-avatar';
 import { memberDisplayName } from '$lib/itinerary/member-name';
 import { pbFileUrl } from '$lib/shell/pb-file-url';
-import { PUBLIC_PB_URL } from '$env/static/public';
+import { pbBaseUrl } from '$lib/shell/pb';
 
 // Hydrated row for the members list. Display name resolution:
 //   placeholder → display_name (set at creation) || placeholder_name
@@ -367,7 +367,7 @@ export const actions: Actions = {
 				.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
 
 			const token = locals.pb.authStore.token;
-			const res = await fetch(`${PUBLIC_PB_URL}/api/members/add-placeholder`, {
+			const res = await fetch(`${pbBaseUrl()}/api/members/add-placeholder`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -403,7 +403,7 @@ export const actions: Actions = {
 		if (!memberId) return fail(400, { action: { error: 'Missing member id.' } });
 
 		const token = locals.pb.authStore.token;
-		const res = await fetch(`${PUBLIC_PB_URL}/api/members/promote`, {
+		const res = await fetch(`${pbBaseUrl()}/api/members/promote`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -430,7 +430,7 @@ export const actions: Actions = {
 		if (!memberId) return fail(400, { action: { error: 'Missing member id.' } });
 
 		const token = locals.pb.authStore.token;
-		const res = await fetch(`${PUBLIC_PB_URL}/api/members/remove`, {
+		const res = await fetch(`${pbBaseUrl()}/api/members/remove`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -471,7 +471,7 @@ export const actions: Actions = {
 		if (!memberId) return fail(400, { leave: { error: 'Missing member id.' } });
 
 		const token = locals.pb.authStore.token;
-		const res = await fetch(`${PUBLIC_PB_URL}/api/members/remove`, {
+		const res = await fetch(`${pbBaseUrl()}/api/members/remove`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',

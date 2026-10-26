@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { PUBLIC_PB_URL } from '$env/static/public';
+import { pbBaseUrl } from '$lib/shell/pb';
 
 // Status the page renders different UI for.
 //   not_found    — code doesn't exist
@@ -26,7 +26,7 @@ export const load: PageServerLoad = async ({ params, locals, fetch }) => {
 		headers['Authorization'] = `Bearer ${locals.pb.authStore.token}`;
 	}
 	try {
-		const res = await fetch(PUBLIC_PB_URL + '/api/invites/lookup', {
+		const res = await fetch(pbBaseUrl() + '/api/invites/lookup', {
 			method: 'POST',
 			headers,
 			body: JSON.stringify({ code: params.code })

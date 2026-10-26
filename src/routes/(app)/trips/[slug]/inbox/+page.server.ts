@@ -3,8 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 import type { Suggestion, SuggestionVote, TripMember } from '$lib/types';
 import { withAvatarUrls } from '$lib/collaboration/member-avatar';
 import type { DisplayVote } from '$lib/collaboration/voting';
-
-const PB_BASE = process.env.PUBLIC_PB_URL || 'http://127.0.0.1:8090';
+import { pbBaseUrl } from '$lib/shell/pb';
 
 // #251 — a Suggestion plus the votes cast on its ghost (suggestion_votes), so each
 // Inbox tab can show a vote tally. Approved suggestions keep their suggestion_votes
@@ -27,13 +26,13 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 	try {
 		// #251 — three tabs: Pending / Approved / Rejected.
 		const [pendingRes, approvedRes, rejectedRes] = await Promise.all([
-			fetch(`${PB_BASE}/api/suggestions/list?trip_id=${trip.id}&status=pending`, {
+			fetch(`${pbBaseUrl()}/api/suggestions/list?trip_id=${trip.id}&status=pending`, {
 				headers: { Authorization: `Bearer ${token}` }
 			}),
-			fetch(`${PB_BASE}/api/suggestions/list?trip_id=${trip.id}&status=approved`, {
+			fetch(`${pbBaseUrl()}/api/suggestions/list?trip_id=${trip.id}&status=approved`, {
 				headers: { Authorization: `Bearer ${token}` }
 			}),
-			fetch(`${PB_BASE}/api/suggestions/list?trip_id=${trip.id}&status=rejected`, {
+			fetch(`${pbBaseUrl()}/api/suggestions/list?trip_id=${trip.id}&status=rejected`, {
 				headers: { Authorization: `Bearer ${token}` }
 			})
 		]);
@@ -159,7 +158,7 @@ export const actions: Actions = {
 		const token = locals.pb.authStore.token;
 
 		try {
-			const res = await fetch(`${PB_BASE}/api/suggestions/review`, {
+			const res = await fetch(`${pbBaseUrl()}/api/suggestions/review`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -193,7 +192,7 @@ export const actions: Actions = {
 		const token = locals.pb.authStore.token;
 
 		try {
-			const res = await fetch(`${PB_BASE}/api/suggestions/review`, {
+			const res = await fetch(`${pbBaseUrl()}/api/suggestions/review`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',

@@ -1,6 +1,5 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { PUBLIC_PB_URL } from '$env/static/public';
 import {
 	daysInExtent,
 	rollupByDay,
@@ -9,6 +8,7 @@ import {
 } from '$lib/ideation/availability';
 import { toDay } from '$lib/ideation/scenario-planning';
 import type { PollDay } from '$lib/ideation/availability-poll.server';
+import { pbBaseUrl } from '$lib/shell/pb';
 
 // #271 / ADR-0023 Decision 7 — the PUBLIC poll page ("the poll is the invite").
 // Lives OUTSIDE the (app) auth gate (like /join, /invite). A tapper paints their
@@ -55,7 +55,7 @@ export const load: PageServerLoad = async ({ params, cookies, fetch }) => {
 	let lookupStatus = 0;
 	try {
 		const qs = new URLSearchParams({ token: params.token, soft_token: soft });
-		const res = await fetch(`${PUBLIC_PB_URL}/api/poll/lookup?${qs.toString()}`);
+		const res = await fetch(`${pbBaseUrl()}/api/poll/lookup?${qs.toString()}`);
 		lookupStatus = res.status;
 		if (res.ok) lookup = await res.json();
 	} catch {
@@ -169,7 +169,7 @@ export const actions: Actions = {
 		}
 
 		try {
-			const res = await fetch(`${PUBLIC_PB_URL}/api/poll/paint`, {
+			const res = await fetch(`${pbBaseUrl()}/api/poll/paint`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({

@@ -14,11 +14,11 @@ import {
 } from '$lib/itinerary/phase-logistics';
 import { formatCalendarDate } from '$lib/shell/format';
 import { planIdeaOnDay } from '$lib/server/plan-idea';
+import { pbBaseUrl } from '$lib/shell/pb';
 
 // #249/#250 — ghost approve/reject reuse the same /api/suggestions/review hook
 // endpoint the Inbox uses (server-side: owner gate + author attribution + vote
 // migration + author notification). Hit it server-to-server with the caller's token.
-const PB_BASE = process.env.PUBLIC_PB_URL || 'http://127.0.0.1:8090';
 
 const IDEA_TYPES = ['activity', 'meal', 'lodging', 'transportation', 'flight', 'note'] as const;
 
@@ -466,7 +466,7 @@ export const actions: Actions = {
 
 		const token = locals.pb.authStore.token;
 		try {
-			const res = await fetch(`${PB_BASE}/api/suggestions/review`, {
+			const res = await fetch(`${pbBaseUrl()}/api/suggestions/review`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
 				body: JSON.stringify({ suggestion_id: suggestionId, action: 'approve' })
@@ -497,7 +497,7 @@ export const actions: Actions = {
 
 		const token = locals.pb.authStore.token;
 		try {
-			const res = await fetch(`${PB_BASE}/api/suggestions/review`, {
+			const res = await fetch(`${pbBaseUrl()}/api/suggestions/review`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
 				body: JSON.stringify({

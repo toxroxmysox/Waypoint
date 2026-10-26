@@ -2,13 +2,13 @@ import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import type { Trip, Phase, Day, Item, Expense, TripMember } from '$lib/types';
 import PocketBase from 'pocketbase';
-import { PUBLIC_PB_URL } from '$env/static/public';
 import { env } from '$env/dynamic/private';
 import { buildArchiveView } from '$lib/portability/archive-view';
 import { isArchiveVisible, publishStatus } from '$lib/portability/archive-visibility';
+import { pbBaseUrl } from '$lib/shell/pb';
 
 export const load: PageServerLoad = async ({ params }) => {
-	const pb = new PocketBase(PUBLIC_PB_URL);
+	const pb = new PocketBase(pbBaseUrl());
 	await pb.collection('_superusers').authWithPassword(env.PB_ADMIN_EMAIL!, env.PB_ADMIN_PASSWORD!);
 
 	let trip: Trip;
