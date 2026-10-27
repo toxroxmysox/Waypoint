@@ -37,7 +37,7 @@ export const POST: RequestHandler = async ({ request }) => {
 				: ({ error: 'unsupported_grant_type' } satisfies OAuthError);
 
 	return json(r, {
-		status: 'error' in r ? 400 : 200,
+		status: 'error' in r ? (r.error === 'server_error' ? 503 : 400) : 200,
 		headers: { 'cache-control': 'no-store', pragma: 'no-cache' }
 	});
 };

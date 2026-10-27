@@ -4,7 +4,7 @@
 import { z } from 'zod';
 import { resolveTrip } from '../context';
 import { offTrip, result, ymd, type Card } from '../present';
-import { WRITABLE } from '../writes/registry';
+import { WRITABLE, allowedValues } from '../writes/registry';
 import { loadMembers, memberName } from './get-trip';
 import type { ToolDef } from './types';
 
@@ -23,17 +23,30 @@ export const describe: ToolDef = {
 	inputSchema: { trip: z.string().optional().describe('Trip slug, id, or name (optional)') },
 	write: true,
 	async run(ctx, { trip }: { trip?: string }) {
-		const collections = Object.entries(WRITABLE).map(([name, spec]) => ({
-			name,
-			label: spec.label,
-			fields: spec.fields,
-			...(spec.updateOnly ? { only: 'update' } : spec.createOnly ? { only: 'create' } : {})
-		}));
+		const collections = Object.entries(WRITABLE).map(([name, spec]) => {
+			// #520 — the choices a select field takes, so the AI doesn't guess at them.
+			const values = Object.fromEntries(
+				Object.entries(spec.fields)
+					.map(([f, hint]) => [f, allowedValues(hint)] as const)
+					.filter((e): e is readonly [string, string[]] => !!e[1])
+			);
+			return {
+				name,
+				label: spec.label,
+				fields: spec.fields,
+				...(Object.keys(values).length ? { values } : {}),
+				...(spec.updateOnly ? { only: 'update' } : spec.createOnly ? { only: 'create' } : {})
+			};
+		});
 		const cards: Card[] = collections.map((c) => ({
 			emoji: '✏️',
 			title: c.label,
 			tag: c.name,
-			lines: [Object.keys(c.fields).join(', ') + (c.only ? ` (${c.only} only)` : '')]
+			lines: [
+				Object.keys(c.fields)
+					.map((f) => (c.values?.[f] ? `${f} (${c.values[f].join(' | ')})` : f))
+					.join(', ') + (c.only ? ` (${c.only} only)` : '')
+			]
 		}));
 		const extra: Record<string, unknown> = { collections, how: HOW, note: HOW };
 		if (!trip) return result('What I can change', cards, extra);

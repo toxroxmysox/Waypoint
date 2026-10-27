@@ -408,6 +408,41 @@ test.describe('revert_change', () => {
 		);
 		expect(JSON.stringify(sug.json)).not.toContain(`Cooking class ${seed.suffix}`);
 	});
+
+	test('#520 — a field someone changed since is left alone; the rest is restored', async () => {
+		const owner = await pbAs(MCP_EMAILS.owner);
+		const p = await propose('owner', seed.trips.current, 'retitle the surf lesson', [
+			{
+				action: 'update',
+				collection: 'items',
+				id: seed.items.idea,
+				data: { title: 'Surf at dawn', location_name: 'Praia de Matosinhos' }
+			}
+		]);
+		expect(p.isError, p.text).toBeFalsy();
+		expect((await commit('owner', p.structured.proposal.id)).isError).toBeFalsy();
+		await owner('PATCH', `/api/collections/items/records/${seed.items.idea}`, {
+			location_name: 'Ana edited this'
+		});
+		const [row] = (await myAiChanges(MCP_EMAILS.owner)).filter(
+			(x) => x.quote === 'retitle the surf lesson'
+		);
+		const r = await callTool(tokens.owner, 'revert_change', { change_id: row.id });
+		expect(r.isError, r.text).toBeFalsy();
+		expect(r.text).toContain('location name changed since');
+		const after = (await owner('GET', `/api/collections/items/records/${seed.items.idea}`)).json;
+		expect(after.title).toBe('Surf lesson in Matosinhos');
+		expect(after.location_name).toBe('Ana edited this');
+	});
+
+	test('#520 — undoing the date shrink names the plan that stays an idea', async () => {
+		const [row] = (await myAiChanges(MCP_EMAILS.owner)).filter(
+			(x) => x.quote === 'cut the last day'
+		);
+		const r = await callTool(tokens.owner, 'revert_change', { change_id: row.id });
+		expect(r.isError, r.text).toBeFalsy();
+		expect(r.text).toMatch(/Taberna da Rua [^:]*stays an idea/);
+	});
 });
 
 test.describe('final review fixes', () => {

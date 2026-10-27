@@ -15,7 +15,8 @@
 		created: string;
 		reverted: boolean;
 		trip: string;
-		count: number;
+		/** #520 — which records it touched, e.g. "Lunch, Dinner and 2 more". */
+		summary: string;
 	}
 
 	interface Connection {
@@ -28,6 +29,8 @@
 	let { connections, aiChanges = [] }: { connections: Connection[]; aiChanges?: AiChange[] } =
 		$props();
 	let pending = $state('');
+	// #520 — a failed Revert says why, on its row (in-context, not a toast).
+	let revertFailed = $state<{ id: string; message: string } | null>(null);
 
 	// #503 — created is a real instant: show it in the viewer's zone, as "9:40 am".
 	const when = (d: string) => {
@@ -98,10 +101,13 @@
 							<div class="min-w-0">
 								<p class="text-sm text-ink">“{a.quote}”</p>
 								<p class="text-[12px] text-ink-muted">
-									{a.trip ? `${a.trip} · ` : ''}{a.count} change{a.count === 1 ? '' : 's'} · {when(
-										a.created
-									)}
+									{a.trip ? `${a.trip} · ` : ''}{a.summary} · {when(a.created)}
 								</p>
+								{#if revertFailed?.id === a.id}
+									<p class="mt-1 text-[12px] text-error-deep" role="alert">
+										{revertFailed.message}
+									</p>
+								{/if}
 							</div>
 							{#if a.reverted}
 								<span class="shrink-0 text-[12px] text-ink-muted">Undone</span>
@@ -111,8 +117,21 @@
 									action="?/revertAiChange"
 									use:enhance={() => {
 										pending = a.id;
+										revertFailed = null;
 										return async ({ result, update }) => {
 											pending = '';
+											if (result.type === 'failure')
+												revertFailed = {
+													id: a.id,
+													message:
+														(result.data?.revertError as string | undefined) ??
+														'Could not undo that change.'
+												};
+											else if (result.type === 'error')
+												revertFailed = {
+													id: a.id,
+													message: 'Could not undo that change. Try again.'
+												};
 											if (result.type === 'success') {
 												const skipped = (result.data?.skipped as string[] | undefined) ?? [];
 												toast.show(

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { previewCards, outcomeLine, clockAm, rangeText } from './preview';
+import { previewCards, outcomeLine, clockAm, rangeText, changeSummary } from './preview';
 import type { Cascade, PlannedChange } from './types';
 import type { Trip } from '$lib/types';
 
@@ -118,5 +118,84 @@ describe('wording (intent review)', () => {
 			after: { name: 'Lisbon', start_date: '2026-11-05 00:00:00.000Z' }
 		};
 		expect(previewCards([inYear], null, trip)[0].lines).toContain('Start date: Thu 5 Nov');
+	});
+});
+
+describe('previewCards — no raw data (#520)', () => {
+	const labels = {
+		members: new Map([
+			['m1', 'Ana'],
+			['m2', 'Ben']
+		]),
+		records: new Map([
+			['it1', 'Cooking class'],
+			['cl1', 'Packing'],
+			['sc1', 'Coast first']
+		])
+	};
+	const mk = (collection: string, after: Record<string, unknown>): PlannedChange => ({
+		action: 'create',
+		collection,
+		id: 'x',
+		via: 'record',
+		before: null,
+		after,
+		outcome: 'saved',
+		title: 'T'
+	});
+	const lines = (c: PlannedChange) => previewCards([c], null, trip, labels)[0].lines;
+
+	it('an expense split reads as names and amounts', () => {
+		expect(lines(mk('expenses', { split_data: { members: ['m1', 'm2'] } }))).toContain(
+			'Split data: Equally: Ana, Ben'
+		);
+		expect(lines(mk('expenses', { split_data: { amounts: { m1: 20, m2: 30.5 } } }))).toContain(
+			'Split data: Ana $20, Ben $30.50'
+		);
+		expect(lines(mk('expenses', { category: 'food', split_mode: 'by_amount' }))).toEqual(
+			expect.arrayContaining(['Category: Food', 'Split mode: By amount'])
+		);
+	});
+
+	it('a vote names the item, not its id', () => {
+		expect(lines(mk('votes', { item: 'it1', value: 'love' }))).toContain('Item: Cooking class');
+	});
+
+	it('a budget lists its categories in words', () => {
+		expect(
+			lines(
+				mk('trip_budgets', {
+					categories: [
+						{ category: 'lodging', mode: 'per_day', total: 120 },
+						{ category: 'food', mode: 'total', total: 500 }
+					]
+				})
+			)
+		).toContain('Categories: Lodging $120/day, Food $500 total');
+	});
+
+	it('tasks, points and codes name their parent', () => {
+		expect(lines(mk('tasks', { checklist: 'cl1', title: 'Pack' }))).toContain('Checklist: Packing');
+		expect(lines(mk('scenario_points', { scenario: 'sc1', kind: 'pro' }))).toContain(
+			'Scenario: Coast first'
+		);
+		expect(lines(mk('documents', { item: 'it1', code_value: 'X1' }))).toContain(
+			'Item: Cooking class'
+		);
+		expect(lines(mk('tasks', { checklist: 'gone' }))).toContain('Checklist: a list');
+	});
+});
+
+describe('changeSummary — what an AI Change touched, for Account (#520)', () => {
+	const c = (title: string, committed = true) => ({ title, committed });
+	it('names up to two records, then counts the rest', () => {
+		expect(changeSummary([c('Picnic lunch')])).toBe('Picnic lunch');
+		expect(changeSummary([c('Lunch'), c('Dinner'), c('Lunch')])).toBe('Lunch, Dinner');
+		expect(changeSummary([c('A'), c('B'), c('C'), c('D')])).toBe('A, B and 2 more');
+	});
+	it('skips changes that never went through, and falls back to a count', () => {
+		expect(changeSummary([c('A', false), c('B')])).toBe('B');
+		expect(changeSummary([])).toBe('No changes');
+		expect(changeSummary([{ title: '', committed: true }])).toBe('1 change');
 	});
 });

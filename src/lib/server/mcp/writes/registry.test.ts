@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { WRITABLE, BLOCKED_COLLECTIONS, blockedReason } from './registry';
+import { WRITABLE, BLOCKED_COLLECTIONS, allowedValues, blockedReason } from './registry';
 import type { Trip } from '$lib/types';
 
 const dated = {
@@ -84,5 +84,34 @@ describe('registry validate — rules the app checked only in its forms', () => 
 				{ action: 'create', trip: dated }
 			)
 		).toBeNull();
+	});
+});
+
+describe('allowedValues — describe lists the choices (#520)', () => {
+	it('reads a | b | c hints as the allowed values', () => {
+		expect(allowedValues(WRITABLE.expenses.fields.category)).toEqual([
+			'lodging',
+			'transportation',
+			'food',
+			'activity',
+			'other'
+		]);
+		expect(allowedValues(WRITABLE.expenses.fields.split_mode)).toEqual(['equal', 'by_amount']);
+		expect(allowedValues(WRITABLE.trip_goals.fields.manual_status)).toEqual([
+			'unplanned',
+			'planned',
+			'done',
+			'considered'
+		]);
+	});
+	it('ignores free-text hints, even ones with a pipe in a sentence', () => {
+		expect(allowedValues('what it is')).toBeNull();
+		expect(allowedValues(WRITABLE.trip_budgets.fields.categories)).toBeNull();
+		expect(allowedValues(WRITABLE.items.fields.status)).toEqual([
+			'planned',
+			'done',
+			'considered',
+			'unplanned'
+		]);
 	});
 });

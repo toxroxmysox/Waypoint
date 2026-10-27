@@ -94,13 +94,18 @@ export const getItem: ToolDef = {
 				].filter(Boolean)
 			});
 		}
+		// #520 — the user's own vote id, so a change of mind is an update, not a second vote.
+		const mine = votes.find((v) => v.member === ref.memberId);
 		if (votes.length) {
 			const { counts, total } = tallyVotes(votes);
 			cards.push({
 				emoji: '🗳️',
 				title: `${total} vote${total === 1 ? '' : 's'}`,
 				lines: votes
-					.map((v) => `${name.get(v.member) ?? 'member'}: ${v.value}`)
+					.map(
+						(v) =>
+							`${name.get(v.member) ?? 'member'}: ${v.value}${v === mine ? ` (your vote, id ${v.id})` : ''}`
+					)
 					.concat(
 						Object.entries(counts)
 							.filter(([, n]) => n)
@@ -127,6 +132,11 @@ export const getItem: ToolDef = {
 				lines: [c.comment_text]
 			});
 		}
-		return result(item.title, cards, { id: item.id, trip: ref.trip.slug, date });
+		return result(item.title, cards, {
+			id: item.id,
+			trip: ref.trip.slug,
+			date,
+			...(mine ? { your_vote: { id: mine.id, value: mine.value } } : {})
+		});
 	}
 };

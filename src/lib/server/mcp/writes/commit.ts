@@ -12,7 +12,8 @@ import { adminPb } from '../admin-pb';
 import { myTrips, type McpContext } from '../context';
 import { scrub } from '../present';
 import { assertCanWrite, writesEnabled } from './gate';
-import { pbLoader } from './loader';
+import { cascadeFor, sameCascade } from './cascade';
+import { loadSnapshot, pbLoader } from './loader';
 import { outcomeLine } from './preview';
 import { markCommitted, staleFields, takeProposal } from './proposals';
 import { WRITABLE } from './registry';
@@ -115,6 +116,16 @@ async function commitClaimed(
 			);
 	}
 
+	// #520 — a phase, day or item added since the preview changes what the
+	// re-tile does; commit only the cascade the user saw.
+	if (
+		p.cascade &&
+		!sameCascade(p.cascade, cascadeFor(p.changes, await loadSnapshot(ctx.pb, ref.trip)))
+	)
+		throw new Error(
+			"The trip's phases or plans changed since the preview, so the date change would do something else now. Ask me to propose again."
+		);
+
 	const records = p.changes.filter((c) => c.via === 'record');
 	if (records.length) {
 		const batch = ctx.pb.createBatch();
@@ -170,7 +181,8 @@ async function commitClaimed(
 				connection: ctx.connectionId,
 				trip: p.tripId,
 				quote: p.quote.slice(0, QUOTE_MAX),
-				changes: committed
+				changes: committed,
+				cascade: p.cascade
 			},
 			{ requestKey: null }
 		);

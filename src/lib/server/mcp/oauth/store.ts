@@ -17,7 +17,8 @@ export interface TokenSet {
 }
 
 export interface OAuthError {
-	error: 'invalid_grant' | 'invalid_request' | 'unsupported_grant_type';
+	/** server_error (#520): a transient PB failure; the client retries the same refresh token. */
+	error: 'invalid_grant' | 'invalid_request' | 'unsupported_grant_type' | 'server_error';
 	error_description?: string;
 }
 
@@ -53,7 +54,7 @@ async function mint(connectionId: string, rotatedFrom = ''): Promise<TokenSet> {
 	const refresh_token = randomToken();
 	const now = Date.now();
 	const ttl = accessTtlS();
-	await pb.collection('mcp_tokens').create(
+	const refresh = await pb.collection('mcp_tokens').create(
 		{
 			connection: connectionId,
 			kind: 'refresh',
@@ -63,15 +64,24 @@ async function mint(connectionId: string, rotatedFrom = ''): Promise<TokenSet> {
 		},
 		{ requestKey: null }
 	);
-	await pb.collection('mcp_tokens').create(
-		{
-			connection: connectionId,
-			kind: 'access',
-			hash: sha256Hex(access_token),
-			expires_at: pbDate(now + ttl * 1000)
-		},
-		{ requestKey: null }
-	);
+	try {
+		await pb.collection('mcp_tokens').create(
+			{
+				connection: connectionId,
+				kind: 'access',
+				hash: sha256Hex(access_token),
+				expires_at: pbDate(now + ttl * 1000)
+			},
+			{ requestKey: null }
+		);
+	} catch (err) {
+		// #520 — don't orphan the refresh row (it would also hold rotated_from's unique slot).
+		await pb
+			.collection('mcp_tokens')
+			.delete(refresh.id, { requestKey: null })
+			.catch(() => {});
+		throw err;
+	}
 	return { access_token, refresh_token, token_type: 'Bearer', expires_in: ttl };
 }
 
@@ -177,14 +187,25 @@ export async function rotateRefresh(p: {
 	}
 	const conn = row.expand?.connection as RecordModel | undefined;
 	if (!conn || conn.client_id !== p.client_id) return grantError('client mismatch');
+	const pb = await adminPb();
 	let tokens: TokenSet;
 	try {
 		tokens = await mint(conn.id, row.id);
 	} catch {
-		// #512 — a concurrent refresh with this token won the rotation.
-		return grantError('refresh token already used or expired');
+		// #512 — a concurrent refresh with this token won the rotation (its row
+		// holds rotated_from). Anything else is transient (#520): the old token
+		// is still live, so the client can retry instead of re-authorizing.
+		const won = await pb
+			.collection('mcp_tokens')
+			.getFirstListItem(pb.filter('rotated_from = {:r}', { r: row.id }), {
+				fields: 'id',
+				requestKey: null
+			})
+			.catch(() => null);
+		return won
+			? grantError('refresh token already used or expired')
+			: { error: 'server_error', error_description: 'try again' };
 	}
-	const pb = await adminPb();
 	await pb
 		.collection('mcp_tokens')
 		.update(row.id, { expires_at: pbDate(Date.now()) }, { requestKey: null });
