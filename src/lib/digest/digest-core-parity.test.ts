@@ -306,7 +306,14 @@ describe('#522 reminders parity: digest-core.js vs digest-reminders.ts + digest-
 		item({ title: 'Sushi class', dayDate: '2026-11-17', requiresBooking: true, going: ['m3'] }),
 		item({ title: 'Onsen day', phaseStart: '2026-12-31', requiresBooking: true }),
 		item({ title: 'Booked dinner', dayDate: '2026-12-01', requiresBooking: true, booked: true }),
-		item({ title: 'Flight HND', type: 'flight', dayDate: '2026-11-06' })
+		item({ title: 'Flight HND', type: 'flight', dayDate: '2026-11-06' }),
+		item({
+			title: 'Maybe inn',
+			type: 'lodging',
+			status: 'considered',
+			dayDate: '2026-11-08',
+			requiresBooking: true
+		})
 	];
 	const cases: rem.ReminderInput[] = [
 		{
