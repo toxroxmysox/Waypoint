@@ -93,7 +93,11 @@ function goTime(instant: Date, zone: string) {
 					.formatToParts(instant)
 					.find((x) => x.type === 'hour')!.value
 			),
-		format: () => new Intl.DateTimeFormat('sv-SE', { timeZone: zone }).format(instant),
+		format: (layout: string) => {
+			// Only the Go date layout digest-core uses is faked.
+			if (layout !== '2006-01-02') throw new Error('unfaked layout ' + layout);
+			return new Intl.DateTimeFormat('sv-SE', { timeZone: zone }).format(instant);
+		},
 		in: (tz: TimezoneShim) => goTime(instant, tz.id)
 	};
 }

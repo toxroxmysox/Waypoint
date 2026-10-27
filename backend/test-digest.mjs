@@ -161,15 +161,35 @@ async function main() {
 		after.digest_state
 	);
 
-	console.log('\n— outside the 8am window without force, nothing is due');
+	console.log('\n— without force, the trip is composed only at 8am trip-local');
+	// The hour PB's run saw is the hour now; re-check it after so a run that
+	// straddled the boundary is reported as such rather than as a failure.
+	const detroitHour = () =>
+		Number(
+			new Intl.DateTimeFormat('en-US', {
+				timeZone: 'America/Detroit',
+				hour: 'numeric',
+				hourCycle: 'h23'
+			})
+				.formatToParts(new Date())
+				.find((x) => x.type === 'hour').value
+		);
+	const before = detroitHour();
 	const unforced = must('dry run 3', await run({}));
+	const hour = detroitHour();
 	assert('the run reports no errors', unforced.errors.length === 0, unforced.errors);
-	// Either it happens to be 8am in Detroit right now, or the trip is skipped.
-	assert(
-		'fixture trip is composed only in the window',
-		unforced.not_due > 0 || unforced.emails.some((e) => e.trips.includes(trip.slug)),
-		unforced
-	);
+	const composed = unforced.emails.some((e) => e.trips.includes(trip.slug));
+	if (before !== hour) {
+		console.log('  SKIP  window check (run straddled an hour boundary)');
+	} else if (hour === 8) {
+		assert('at 8am Detroit the fixture trip is composed', composed, unforced);
+	} else {
+		assert(
+			'at ' + hour + 'h Detroit the fixture trip is not due',
+			!composed && unforced.not_due >= 1,
+			unforced
+		);
+	}
 
 	console.log(`\n${pass} passed, ${fail} failed`);
 	exit(fail === 0 ? 0 : 1);
