@@ -1,12 +1,21 @@
+// #542 — runs against the real hook module (the TS copy is gone).
 import { describe, it, expect } from 'vitest';
-import {
-	composeReminders,
-	remindersFor,
-	hasReminders,
-	daysBetween,
-	type ReminderItem
-} from './digest-reminders';
-import { renderDigestEmail } from './digest-email';
+import { core } from './load-digest-core';
+
+const { composeReminders, remindersFor, hasReminders, daysBetween, renderDigestEmail } = core;
+
+type Titled = { title: string };
+
+interface ReminderItem {
+	title: string;
+	type: string;
+	dayDate: string;
+	phaseStart: string;
+	status?: string;
+	requiresBooking: boolean;
+	booked: boolean;
+	going: string[];
+}
 
 const item = (o: Partial<ReminderItem>): ReminderItem => ({
 	title: 'x',
@@ -38,10 +47,10 @@ describe('booking reminders (#522)', () => {
 	];
 	it('fires at exactly 60/30/14 days, using day → phase start → trip start', () => {
 		const r30 = composeReminders({ ...trip, today: '2026-10-31', items });
-		expect(r30.booking.map((b) => b.title)).toEqual(['On day', 'Phase only']);
+		expect(r30.booking.map((b: Titled) => b.title)).toEqual(['On day', 'Phase only']);
 		expect(r30.booking[0].daysOut).toBe(30);
 		const r14 = composeReminders({ ...trip, today: '2026-10-23', items });
-		expect(r14.booking.map((b) => b.title)).toEqual(['Trip only']);
+		expect(r14.booking.map((b: Titled) => b.title)).toEqual(['Trip only']);
 		expect(composeReminders({ ...trip, today: '2026-10-30', items }).booking).toEqual([]);
 	});
 	it('never nags about a considered (abandoned) option (#537)', () => {
@@ -72,9 +81,9 @@ describe('pre-trip brief + closeout (#522)', () => {
 	];
 	it('brief exactly 3 days before the trip starts', () => {
 		const r = composeReminders({ ...trip, today: '2026-11-03', items });
-		expect(r.brief?.stays.map((x) => x.title)).toEqual(['Ryokan']);
-		expect(r.brief?.travel.map((x) => x.title)).toEqual(['Flight', 'Train']);
-		expect(r.brief?.unbooked.map((x) => x.title)).toEqual(['Kaiseki']);
+		expect(r.brief?.stays.map((x: Titled) => x.title)).toEqual(['Ryokan']);
+		expect(r.brief?.travel.map((x: Titled) => x.title)).toEqual(['Flight', 'Train']);
+		expect(r.brief?.unbooked.map((x: Titled) => x.title)).toEqual(['Kaiseki']);
 		expect(composeReminders({ ...trip, today: '2026-11-04', items }).brief).toBeNull();
 	});
 	it('brief lists only unbooked items during the trip, never one already in Still to book', () => {
@@ -87,8 +96,8 @@ describe('pre-trip brief + closeout (#522)', () => {
 				item({ title: 'Due now', dayDate: '2026-11-17', requiresBooking: true })
 			]
 		});
-		expect(r.booking.map((b) => b.title)).toEqual(['Due now']);
-		expect(r.brief?.unbooked.map((x) => x.title)).toEqual(['In trip']);
+		expect(r.booking.map((b: Titled) => b.title)).toEqual(['Due now']);
+		expect(r.brief?.unbooked.map((x: Titled) => x.title)).toEqual(['In trip']);
 	});
 	it('closeout exactly 3 days after the trip ends, not when dateless', () => {
 		expect(composeReminders({ ...trip, today: '2026-11-23', items }).closeout).toBe(true);
@@ -112,7 +121,7 @@ describe('remindersFor (#522 recipients)', () => {
 	it('planners get all booking reminders, travelers only theirs, viewers none', () => {
 		expect(remindersFor(r, 'owner', 'x').booking).toHaveLength(2);
 		expect(remindersFor(r, 'co_owner', 'x').booking).toHaveLength(2);
-		expect(remindersFor(r, 'traveler', 'me').booking.map((b) => b.title)).toEqual(['Mine']);
+		expect(remindersFor(r, 'traveler', 'me').booking.map((b: Titled) => b.title)).toEqual(['Mine']);
 		expect(remindersFor(r, 'viewer', 'me').booking).toEqual([]);
 	});
 	it('closeout to planners only; brief to everyone', () => {

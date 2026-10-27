@@ -1,50 +1,39 @@
 import { test, expect } from '@playwright/test';
 import { E2E_BASE } from './e2e-env';
+import { loginOwner, seedOwnTrip } from './japan-fixture';
 
 // playwright.config.ts boots `npm run build && npm run preview` on :4173.
 const BASE = E2E_BASE;
 
-// E2E_TEST_EMAIL's first trip is active → loads in trip mode (no "More" tab).
-// Secondary pages are surfaced on the /more page (planning mode) or reached by
-// direct route; navigate by URL to stay mode- and viewport-independent.
-async function openTripSlug(page: import('@playwright/test').Page): Promise<string> {
-	await page.goto(`${BASE}/trips`, { waitUntil: 'networkidle' });
-	await page.locator('a[href*="/trips/"]').first().click();
-	await page.waitForURL('**/trips/**');
-	return page.url().split('/trips/')[1].split(/[/?#]/)[0];
-}
+// #563 — this spec seeds its own trips instead of clicking whichever trip the shared
+// E2E_TEST_EMAIL user saw first: an active one (Trip Mode, no "More" tab — secondary
+// pages are reached by URL) and a wrap-up one for the lifecycle-gated closeout wizard.
+const SLUG = 'e2e-m5-closure-563';
+const CLOSEOUT_SLUG = 'e2e-m5-closeout-563';
 
 test.describe('M5 Closure', () => {
+	test.describe.configure({ mode: 'serial' });
+
+	test.beforeAll(async () => {
+		await seedOwnTrip(SLUG, { active: true });
+		// Left on the fixture's June 1–3, 2026 dates → past its end, not archived → wrap-up.
+		await seedOwnTrip(CLOSEOUT_SLUG);
+	});
+
 	test.beforeEach(async ({ page }) => {
-		await page.goto(`${BASE}/api/dev/login`);
-		await page.waitForURL('**/trips');
+		await loginOwner(page);
 	});
 
 	test('closeout wizard link visible on More page for owner', async ({ page }) => {
-		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/more`, { waitUntil: 'networkidle' });
+		await page.goto(`${BASE}/trips/${SLUG}/more`, { waitUntil: 'networkidle' });
 		await expect(page.getByText('Closeout').filter({ visible: true }).first()).toBeVisible();
 	});
 
 	test('closeout wizard renders day cards', async ({ page }) => {
-		// #240: closeout is lifecycle-gated to wrap-up/closed. The shared first trip is
-		// active (loads in trip mode) → an active trip is now redirected OFF /closeout,
-		// so create a dedicated past-dated (wrap-up) trip to reach the wizard.
-		const stamp = Date.now().toString(36);
-		const slug = `e2e-m5-closeout-${stamp}`;
-		await page.getByRole('link', { name: 'New Trip' }).click();
-		await page.waitForURL(`${BASE}/trips/new`);
-		await page.fill('input[name="title"]', `E2E M5 Closeout ${stamp}`);
-		const start = new Date(Date.now() - 37 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-		const end = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-		await page.fill('input[name="start_date"]', start);
-		await page.fill('input[name="end_date"]', end);
-		await page.fill('input[name="location_summary"]', 'Test Location');
-		await page.getByRole('button', { name: /create|save/i }).click();
-		await page.waitForURL(`${BASE}/trips/${slug}`, { timeout: 10000 });
-
-		await page.goto(`${BASE}/trips/${slug}/closeout`, { waitUntil: 'networkidle' });
-		await page.waitForURL('**/closeout');
+		// #240: closeout is lifecycle-gated to wrap-up/closed; an active trip is
+		// redirected OFF /closeout, so use the wrap-up trip.
+		await page.goto(`${BASE}/trips/${CLOSEOUT_SLUG}/closeout`, { waitUntil: 'networkidle' });
+		await expect(page).toHaveURL(new RegExp(`/trips/${CLOSEOUT_SLUG}/closeout$`));
 
 		const progress = page
 			.getByText(/Day \d+ of \d+/)
@@ -54,17 +43,17 @@ test.describe('M5 Closure', () => {
 	});
 
 	test('archive settings section in trip settings', async ({ page }) => {
-		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/settings`, { waitUntil: 'networkidle' });
-		await page.waitForURL('**/settings');
+		await page.goto(`${BASE}/trips/${SLUG}/settings`, { waitUntil: 'networkidle' });
+		await expect(page).toHaveURL(new RegExp(`/trips/${SLUG}/settings$`));
 
-		// Section heading is "Public Archive" — substring match on "Archive".
-		await expect(page.getByText('Archive').filter({ visible: true }).first()).toBeVisible();
+		// Section heading is "Public Archive".
+		await expect(
+			page.getByRole('heading', { name: 'Public Archive' }).filter({ visible: true }).first()
+		).toBeVisible();
 	});
 
 	test('export link on More page triggers download', async ({ page }) => {
-		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/more`, { waitUntil: 'networkidle' });
+		await page.goto(`${BASE}/trips/${SLUG}/more`, { waitUntil: 'networkidle' });
 		await expect(page.getByText('Export').filter({ visible: true }).first()).toBeVisible();
 	});
 

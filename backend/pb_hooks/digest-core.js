@@ -6,11 +6,11 @@
 // works and was probe-verified on this build, including goja globals like
 // DateTime/Timezone inside required functions).
 //
-// DUPLICATION NOTE: the pure functions here (buildSignature, snapshotItems,
-// composeTripDiff, hasChanges, formatDigestDay, renderDigestEmail) are a
-// line-for-line JS port of src/lib/digest/digest-diff.ts + digest-email.ts
-// (the canonical, typed copies). src/lib/digest/digest-core-parity.test.ts
-// runs the same Vitest vectors against BOTH copies — change them together.
+// TESTS (#542): this file is the only copy — there is no TS twin. Vitest
+// evaluates it directly (src/lib/digest/load-digest-core.ts): the pure parts in
+// digest-diff/digest-reminders/digest-core tests, runDigest under fakes via its
+// `deps` seam in digest-run.test.ts. backend/test-digest.mjs smoke-tests the
+// real goja run on a fresh PB.
 //
 // Deletions cap note (grill resolution 2026-07-03): no notification event
 // records item deletes, so an `updated > last_digest_at` window could never
@@ -61,7 +61,7 @@ function tripLocalDate(nowDt, tzRaw) {
 	}
 }
 
-// --- pure diff (port of src/lib/digest/digest-diff.ts) ----------------------
+// --- pure diff ---------------------------------------------------------------
 
 function buildSignature(fields) {
 	return [
@@ -138,7 +138,7 @@ function hasChanges(diff) {
 	);
 }
 
-// --- pure reminders (port of src/lib/digest/digest-reminders.ts) — #522 -----
+// --- pure reminders — #522 ----------------------------------------------------
 
 const BOOKING_LEADS = [60, 30, 14];
 const BRIEF_LEAD = 3;
@@ -224,7 +224,7 @@ function hasReminders(r) {
 	return !!r && (r.booking.length > 0 || !!r.brief || r.closeout);
 }
 
-// --- pure email render (port of src/lib/digest/digest-email.ts) -------------
+// --- pure email render -------------------------------------------------------
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -411,7 +411,7 @@ function renderDigestEmail(opts) {
 	};
 }
 
-// --- PB-side plumbing (goja-only; never imported by Vitest) ------------------
+// --- PB-side plumbing (goja globals only via runDigest's default deps) --------
 
 /**
  * Parse the trips.digest_state json field, tolerating the shapes goja hands
@@ -446,6 +446,14 @@ function parseDigestState(raw) {
  *   toOverride — send every composed email ONLY to this address, subject
  *                labeled "[Waypoint digest test]" (manual verification)
  *
+ * deps (#542 test seam — the hooks pass none; every field optional):
+ *   now        — clock, a PB DateTime (.string(), .time()); default new DateTime()
+ *   env(key)   — env reader; default $os.getenv
+ *   send(req)  — the $http.send request in, { statusCode } out; default $http.send
+ * `app` is already injected (PB reads + save), so together with deps a Vitest
+ * test runs this with fakes (src/lib/digest/digest-run.test.ts). The goja
+ * globals are only touched in the defaults below.
+ *
  * Flow per non-archived trip:
  *   1. No digest_state yet → write a silent baseline (any hour — so the first
  *      real digest can go out the very next morning), send nothing.
@@ -461,15 +469,26 @@ function parseDigestState(raw) {
  *      least one successful send (all-fail → retried next morning). A due
  *      trip with changes but zero recipients is consumed silently.
  */
-function runDigest(app, opts) {
+function runDigest(app, opts, deps) {
 	opts = opts || {};
+	deps = deps || {};
 	const force = !!opts.force;
 	const dryRun = !!opts.dryRun;
 	const toOverride = opts.toOverride || '';
+	const env =
+		deps.env ||
+		function (key) {
+			return $os.getenv(key);
+		};
+	const send =
+		deps.send ||
+		function (req) {
+			return $http.send(req);
+		};
 
-	const apiKey = $os.getenv('RESEND_API_KEY');
-	const from = $os.getenv('RESEND_FROM');
-	const appUrl = $os.getenv('PUBLIC_APP_URL') || 'http://localhost:5173';
+	const apiKey = env('RESEND_API_KEY');
+	const from = env('RESEND_FROM');
+	const appUrl = env('PUBLIC_APP_URL') || 'http://localhost:5173';
 
 	const summary = {
 		trips_checked: 0,
@@ -482,7 +501,7 @@ function runDigest(app, opts) {
 		errors: []
 	};
 
-	const nowDt = new DateTime();
+	const nowDt = deps.now || new DateTime();
 	const nowStr = nowDt.string();
 
 	let trips = [];
@@ -698,7 +717,7 @@ function runDigest(app, opts) {
 		}
 
 		try {
-			const res = $http.send({
+			const res = send({
 				method: 'POST',
 				url: 'https://api.resend.com/emails',
 				headers: {
