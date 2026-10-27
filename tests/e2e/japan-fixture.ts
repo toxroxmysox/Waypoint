@@ -159,3 +159,37 @@ export async function seedJapanTrip(SLUG: string): Promise<JapanFx> {
 	};
 	return fx;
 }
+
+// #563/#552 — a spec's own rules-fixture trip, so parallel workers never share
+// "whichever trip E2E_TEST_EMAIL saw first". The fixture is dated June 1–3, 2026
+// (past → `wrap-up`); `active: true` re-dates it 3 days ago → +4 days so it loads
+// in Trip Mode. Log in as EMAILS.owner to reach it.
+export async function seedOwnTrip(
+	slug: string,
+	opts: { active?: boolean } = {}
+): Promise<{ tripId: string; phaseId: string }> {
+	const owner = await token(EMAILS.owner);
+	const res = await fetch(`${PB_BASE}/api/dev/rules-fixture`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${owner}` },
+		body: JSON.stringify({ emails: EMAILS, slug })
+	});
+	expect(res.ok, `rules-fixture: ${res.status}`).toBe(true);
+	const { tripId, phaseId } = (await res.json()) as { tripId: string; phaseId: string };
+	if (opts.active) {
+		const ymd = (offset: number) =>
+			new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
+		await pb(owner, 'PATCH', `/api/collections/trips/records/${tripId}`, {
+			// Starts before mcp-seed's Porto trip (yesterday): the rules users are
+			// shared, and MCP trip_brief briefs the current trip with the latest start.
+			start_date: `${ymd(-3)} 00:00:00.000Z`,
+			end_date: `${ymd(4)} 00:00:00.000Z`
+		});
+	}
+	return { tripId, phaseId };
+}
+
+export async function loginOwner(page: Page): Promise<void> {
+	await page.goto(`${BASE}/api/dev/login?email=${encodeURIComponent(EMAILS.owner)}`);
+	await page.waitForURL('**/trips');
+}
