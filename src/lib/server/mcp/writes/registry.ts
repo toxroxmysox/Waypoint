@@ -201,7 +201,8 @@ export const WRITABLE: Record<string, WritableSpec> = {
 		validate: (d) => (negative(d.budget_usd) ? 'A group budget must be a positive number.' : null)
 	},
 	votes: {
-		label: "the user's own vote on an item (only one they state)",
+		label:
+			"the user's own vote on an item (only one they state; to change it, update the vote id get_item gives as your_vote)",
 		tripPath: 'trip',
 		stamp: { member: 'member' },
 		fields: { item: 'item id', value: 'love | like | flexible | dislike' }
@@ -379,4 +380,10 @@ export function blockedReason(collection: string, field?: string): string | null
 		return `I can't change ${field.replace(/_/g, ' ')} on ${collection.replace(/_/g, ' ')}.`;
 	}
 	return null;
+}
+
+/** #520 — the choices a select field's hint lists ('a | b | c', maybe a trailing '(note)'), or null for free text. */
+export function allowedValues(hint: string): string[] | null {
+	const m = /^\s*([a-z_]+(?:\s*\|\s*[a-z_]+)+)\s*(?:\(.*\))?\s*$/.exec(hint);
+	return m ? m[1].split('|').map((v) => v.trim()) : null;
 }

@@ -7,7 +7,8 @@ import { loadMembers, memberName } from '../tools/get-trip';
 import type { McpContext } from '../context';
 import type { RecordLoader } from './compile';
 import type { CascadeSnapshot } from './cascade';
-import type { Labels } from './preview';
+import { RECORD_FIELDS, type Labels } from './preview';
+import type { PlannedChange } from './types';
 import { WRITABLE } from './registry';
 
 /** Which collection a tripPath's first hop points at. */
@@ -72,23 +73,63 @@ export async function loadSnapshot(pb: PocketBase, trip: Trip): Promise<CascadeS
 	};
 }
 
+/** #520 — titles for the parent records changes point at: this proposal's own creates first, then PB (as the user). */
+async function loadRecordNames(
+	pb: PocketBase,
+	changes: PlannedChange[]
+): Promise<Map<string, string>> {
+	const names = new Map(changes.filter((c) => c.action === 'create').map((c) => [c.id, c.title]));
+	const wanted = new Map<string, Set<string>>();
+	for (const c of changes)
+		for (const [f, v] of Object.entries(c.after)) {
+			const rel = RECORD_FIELDS[f];
+			if (!rel) continue;
+			for (const id of Array.isArray(v) ? v : [v])
+				if (id && !names.has(String(id)))
+					wanted.set(rel.collection, (wanted.get(rel.collection) ?? new Set()).add(String(id)));
+		}
+	await Promise.all(
+		[...wanted].map(async ([collection, ids]) => {
+			const rows = await pb
+				.collection(collection)
+				.getFullList({
+					filter: [...ids].map((id) => pb.filter('id = {:id}', { id })).join(' || '),
+					fields: collection === 'suggestions' ? 'id,payload' : 'id,title',
+					requestKey: null
+				})
+				.catch(() => []);
+			for (const r of rows) {
+				const title =
+					collection === 'suggestions'
+						? (r.payload as { title?: string } | null)?.title
+						: (r.title as string);
+				if (title) names.set(r.id, title);
+			}
+		})
+	);
+	return names;
+}
+
 export async function loadLabels(
 	ctx: McpContext,
 	tripId: string,
-	snapshot?: CascadeSnapshot
+	snapshot?: CascadeSnapshot,
+	changes: PlannedChange[] = []
 ): Promise<Labels> {
 	const pb = ctx.pb;
 	const byTrip = { filter: pb.filter('trip = {:t}', { t: tripId }), requestKey: null };
-	const [members, phases, days] = await Promise.all([
+	const [members, phases, days, records] = await Promise.all([
 		loadMembers(ctx, tripId),
 		snapshot
 			? snapshot.phases
 			: pb.collection('phases').getFullList({ ...byTrip, fields: 'id,name' }),
-		snapshot ? snapshot.days : pb.collection('days').getFullList({ ...byTrip, fields: 'id,date' })
+		snapshot ? snapshot.days : pb.collection('days').getFullList({ ...byTrip, fields: 'id,date' }),
+		loadRecordNames(pb, changes)
 	]);
 	return {
 		members: new Map(members.map((m) => [m.id, memberName(m)])),
 		phases: new Map((phases as { id: string; name: string }[]).map((p) => [p.id, p.name])),
-		days: new Map((days as { id: string; date: string }[]).map((d) => [d.id, d.date]))
+		days: new Map((days as { id: string; date: string }[]).map((d) => [d.id, d.date])),
+		records
 	};
 }

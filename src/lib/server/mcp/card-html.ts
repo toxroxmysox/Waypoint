@@ -25,7 +25,7 @@ h2{font:600 13px/1.2 system-ui;letter-spacing:.04em;text-transform:uppercase;col
 (function(){
   var id=0, waiting={};
   function send(msg){ window.parent.postMessage(Object.assign({jsonrpc:'2.0'},msg),'*'); }
-  function request(method,params){ var i=++id; send({id:i,method:method,params:params}); return new Promise(function(r){waiting[i]=r;}); }
+  function request(method,params){ var i=++id; send({id:i,method:method,params:params}); return new Promise(function(r,j){waiting[i]={ok:r,fail:j};}); }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function size(){ send({method:'ui/notifications/size-changed',params:{height:document.documentElement.scrollHeight}}); }
   function theme(ctx){ if(ctx&&ctx.theme) document.documentElement.dataset.theme=ctx.theme; }
@@ -63,15 +63,19 @@ h2{font:600 13px/1.2 system-ui;letter-spacing:.04em;text-transform:uppercase;col
     var ok=document.getElementById('ok');
     if(ok) ok.onclick=function(){
       ok.disabled=true; ok.textContent='Saving…';
+      // #520 — a host error or no answer re-arms the button; a retry is safe (commit says "already saved").
+      var retry=function(msg){ ok.disabled=false; ok.textContent=msg; size(); };
+      var timer=setTimeout(function(){ retry('No answer yet — tap to try again'); },30000);
       request('tools/call',{name:'commit_changes',arguments:{proposal_id:p.id}}).then(function(res){
-        if(res&&res.structuredContent) render(res); else { ok.textContent=(res&&res.content&&res.content[0]&&res.content[0].text)||'Could not save'; }
-      });
+        clearTimeout(timer);
+        if(res&&res.structuredContent&&!res.isError) render(res); else retry((res&&res.content&&res.content[0]&&res.content[0].text)||'Could not save — tap to try again');
+      }).catch(function(){ clearTimeout(timer); retry('Could not save — tap to try again'); });
     };
     size();
   }
   window.addEventListener('message',function(ev){
     var m=ev.data; if(!m||m.jsonrpc!=='2.0') return;
-    if(m.id!=null && waiting[m.id]){ waiting[m.id](m.result); delete waiting[m.id]; return; }
+    if(m.id!=null && waiting[m.id]){ var w=waiting[m.id]; delete waiting[m.id]; if(m.error) w.fail(m.error); else w.ok(m.result); return; }
     if(m.method==='ui/notifications/tool-result') render(m.params);
     else if(m.method==='ui/notifications/host-context-changed') theme(m.params);
     else if(m.method==='ui/resource-teardown' && m.id!=null) send({id:m.id,result:{}});

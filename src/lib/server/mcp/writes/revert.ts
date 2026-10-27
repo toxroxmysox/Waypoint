@@ -8,7 +8,8 @@
 import type PocketBase from 'pocketbase';
 import { adminPb } from '../admin-pb';
 import { pbErrorText } from './commit';
-import type { CommittedChange } from './types';
+import { ideasLeft } from './cascade';
+import type { Cascade, CommittedChange } from './types';
 
 export const ALREADY_UNDONE = 'Already undone.';
 const CASCADE_NOTE =
@@ -80,6 +81,9 @@ async function hasOthersWork(pb: PocketBase, itemId: string): Promise<boolean> {
 	return counts.some((n) => n > 0);
 }
 
+/** #520 — mark the change undone unless every step that ran failed (a transient PB error), so a retry can still run. */
+export const revertSettled = (restored: number, failed: number) => restored > 0 || failed === 0;
+
 const touchesDates = (c: CommittedChange) =>
 	(c.collection === 'trips' && ('start_date' in c.after || 'end_date' in c.after)) ||
 	(c.collection === 'phases' && 'start_date' in c.after);
@@ -116,6 +120,7 @@ export async function revertChange(
 
 	const restored: string[] = [];
 	const skipped: string[] = [];
+	const failed: string[] = [];
 	const changes = ((row.changes as CommittedChange[]) ?? []).slice().reverse();
 	for (const c of changes) {
 		const target =
@@ -160,11 +165,21 @@ export async function revertChange(
 				);
 			}
 		} catch (err) {
-			skipped.push(`${c.title}: ${pbErrorText(err)}`);
+			failed.push(`${c.title}: ${pbErrorText(err)}`);
 		}
 	}
-	if ((row.changes as CommittedChange[] | undefined)?.some(touchesDates))
-		skipped.push(CASCADE_NOTE);
+	if (!revertSettled(restored.length, failed.length))
+		throw new Error(`Couldn't undo that, so nothing changed. Try again. (${failed.join('; ')})`);
+	skipped.push(...failed);
+	if ((row.changes as CommittedChange[] | undefined)?.some(touchesDates)) {
+		// #520 — name the items the date change made ideas (rows from before 0090 have no cascade).
+		const ideas = ideasLeft((row.cascade as Cascade | null) ?? null);
+		skipped.push(
+			ideas.length
+				? `${CASCADE_NOTE}: ${ideas.join(', ')} ${ideas.length === 1 ? 'stays an idea' : 'stay ideas'}`
+				: CASCADE_NOTE
+		);
+	}
 
 	await (await adminPb())
 		.collection('ai_changes')

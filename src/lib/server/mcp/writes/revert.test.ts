@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { inverseOf } from './revert';
+import { inverseOf, revertSettled } from './revert';
 import type { CommittedChange } from './types';
 
 const update: CommittedChange = {
@@ -93,5 +93,15 @@ describe('inverseOf — undo never clobbers (review I5)', () => {
 				'Lunch at Taberna was changed since — remove it in the app if you still want it gone'
 			]
 		});
+	});
+});
+
+describe('revertSettled (#520)', () => {
+	it('marks undone when something was put back or nothing failed', () => {
+		expect(revertSettled(1, 1)).toBe(true);
+		expect(revertSettled(0, 0)).toBe(true);
+	});
+	it("doesn't mark undone when every step failed, so a retry can run", () => {
+		expect(revertSettled(0, 2)).toBe(false);
 	});
 });

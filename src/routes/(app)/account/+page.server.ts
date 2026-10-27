@@ -2,7 +2,9 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { pbFileUrl } from '$lib/shell/pb-file-url';
 import { revertChange } from '$lib/server/mcp/writes/revert';
+import { changeSummary } from '$lib/server/mcp/writes/preview';
 import type { User } from '$lib/types';
+import { ClientResponseError } from 'pocketbase';
 
 // /account ("Profile") — the first user-level settings surface (#104 / PRD #59).
 // Self-edit only; covered by the existing users.updateRule = self-only, so no
@@ -25,7 +27,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 		.getFullList({ sort: '-created', fields: 'id,client_name,created,last_used_at' })
 		.catch(() => []);
 	// #503 — Recent AI changes: the last 30 days of this member's AI Changes
-	// (ai_changes list rule = own rows only), newest first.
+	// (ai_changes list rule = own rows only), newest first. Only each change's
+	// title + committed flag are kept (#520), for the "what changed" line.
 	const since = new Date(Date.now() - 30 * 86400_000).toISOString().replace('T', ' ');
 	const aiChanges = await locals.pb
 		.collection('ai_changes')
@@ -74,7 +77,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 			created: c.created as string,
 			reverted: !!c.reverted_at,
 			trip: (c.expand?.trip?.title as string) ?? '',
-			count: Array.isArray(c.changes) ? c.changes.length : 0
+			summary: changeSummary(Array.isArray(c.changes) ? c.changes : [])
 		}))
 	};
 };
@@ -98,7 +101,9 @@ export const actions: Actions = {
 			const r = await revertChange(locals.pb, locals.user!.id, id);
 			return { reverted: id, skipped: r.skipped };
 		} catch (err) {
-			return fail(400, { revertError: (err as Error).message || 'Could not undo that change.' });
+			// revertChange's own errors are written for the member; a raw PB one isn't.
+			const message = err instanceof ClientResponseError ? '' : (err as Error).message;
+			return fail(400, { revertError: message || 'Could not undo that change. Try again.' });
 		}
 	},
 

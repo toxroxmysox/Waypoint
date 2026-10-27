@@ -5,7 +5,7 @@
 import type { ItemType, Trip } from '$lib/types';
 import { formatCalendarDate } from '$lib/shell/format';
 import { EMOJI, scrub, type Card } from '../present';
-import { WRITABLE } from './registry';
+import { WRITABLE, allowedValues } from './registry';
 import type { Cascade, Outcome, PlannedChange } from './types';
 
 export const OUTCOME_TEXT: Record<Outcome, string> = {
@@ -37,12 +37,33 @@ const COLLECTION_EMOJI: Record<string, string> = {
 	documents: '🔖'
 };
 
-/** Names for the ids a change refers to (members, phases, days). */
+/** Names for the ids a change refers to (members, phases, days, parent records). */
 export interface Labels {
 	members?: Map<string, string>;
 	phases?: Map<string, string>;
 	days?: Map<string, string>;
+	/** #520 — titles of the items, lists, goals, scenarios and suggestions a change points at. */
+	records?: Map<string, string>;
 }
+
+/** #520 — relation fields that point at another record, and what to call one we can't name. */
+export const RECORD_FIELDS: Record<string, { collection: string; unknown: string }> = {
+	item: { collection: 'items', unknown: 'an item' },
+	linked_item: { collection: 'items', unknown: 'an item' },
+	parent_item: { collection: 'items', unknown: 'an item' },
+	items: { collection: 'items', unknown: 'an item' },
+	keystones: { collection: 'items', unknown: 'an item' },
+	checklist: { collection: 'checklists', unknown: 'a list' },
+	goal: { collection: 'trip_goals', unknown: 'a goal' },
+	scenario: { collection: 'scenarios', unknown: 'a scenario' },
+	fork_of: { collection: 'scenarios', unknown: 'a scenario' },
+	suggestion: { collection: 'suggestions', unknown: 'a suggestion' }
+};
+
+const usd = (n: unknown) => {
+	const v = Number(n);
+	return `$${Number.isInteger(v) ? v : v.toFixed(2)}`;
+};
 
 /** `9:40 am` from a stored time or a bare HH:MM. '' for ''. */
 export function clockAm(t: string): string {
@@ -104,6 +125,39 @@ function show(
 		const ids = Array.isArray(v) ? v : [v];
 		return ids.map((id) => labels.members?.get(String(id)) ?? 'a member').join(', ');
 	}
+	if (RECORD_FIELDS[field]) {
+		const ids = Array.isArray(v) ? v : [v];
+		return ids
+			.map((id) => labels.records?.get(String(id)) ?? RECORD_FIELDS[field].unknown)
+			.join(', ');
+	}
+	const member = (id: string) => labels.members?.get(id) ?? 'a member';
+	if (field === 'split_data' && typeof v === 'object') {
+		const d = v as { members?: string[]; amounts?: Record<string, number> };
+		if (Array.isArray(d.members)) return `Equally: ${d.members.map(member).join(', ')}`;
+		if (d.amounts)
+			return Object.entries(d.amounts)
+				.map(([id, n]) => `${member(id)} ${usd(n)}`)
+				.join(', ');
+	}
+	if (field === 'categories' && Array.isArray(v)) {
+		return v
+			.map(
+				(c: { category?: string; mode?: string; total?: number }) =>
+					`${sentence(c.category ?? 'other')} ${usd(c.total ?? 0)}${c.mode === 'per_day' ? '/day' : ' total'}`
+			)
+			.join(', ');
+	}
+	if (field === 'phase_sketch' && Array.isArray(v)) {
+		return v
+			.map(
+				(p: { name?: string; nights?: number }) =>
+					`${p.name ?? 'a phase'} ${p.nights ?? 0} night${p.nights === 1 ? '' : 's'}`
+			)
+			.join(', ');
+	}
+	if (typeof v === 'string' && allowedValues(spec?.fields[field] ?? '')?.includes(v))
+		return sentence(v);
 	if (typeof v === 'boolean') return v ? 'Yes' : 'No';
 	if (typeof v === 'number') return field.endsWith('_usd') ? `$${v}` : String(v);
 	if (field === 'confirmation_codes' && Array.isArray(v)) {
@@ -188,4 +242,14 @@ export function previewCards(
 		});
 	}
 	return scrub(cards);
+}
+
+/** #520 — Account → Recent AI changes: which records one AI Change touched, in a few words. */
+export function changeSummary(changes: { title?: string; committed?: boolean }[]): string {
+	const done = changes.filter((c) => c.committed !== false);
+	if (!done.length) return 'No changes';
+	const titles = [...new Set(done.map((c) => c.title).filter((t): t is string => !!t))];
+	if (!titles.length) return `${done.length} change${done.length === 1 ? '' : 's'}`;
+	const rest = titles.length - 2;
+	return rest > 0 ? `${titles.slice(0, 2).join(', ')} and ${rest} more` : titles.join(', ');
 }

@@ -57,7 +57,7 @@ export const proposeChanges: ToolDef = {
 		);
 		const snapshot = touchesDates ? await loadSnapshot(ctx.pb, ref.trip) : undefined;
 		const cascade = snapshot ? cascadeFor(changes, snapshot) : null;
-		const labels = await loadLabels(ctx, ref.trip.id, snapshot);
+		const labels = await loadLabels(ctx, ref.trip.id, snapshot, changes);
 
 		const proposal = saveProposal({
 			userId: ctx.user.id,

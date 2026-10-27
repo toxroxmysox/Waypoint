@@ -144,3 +144,19 @@ export function cascadeFor(changes: PlannedChange[], snapshot: CascadeSnapshot):
 		moves
 	};
 }
+
+/** #520 — the same cascade, ignoring list order (PB lists phases and items in no fixed order). */
+export function sameCascade(a: Cascade | null, b: Cascade | null): boolean {
+	const canon = (c: Cascade | null) =>
+		c &&
+		JSON.stringify({
+			...c,
+			phases: c.phases.map((p) => JSON.stringify(p)).sort(),
+			moves: c.moves.map((m) => JSON.stringify(m)).sort()
+		});
+	return canon(a) === canon(b);
+}
+
+/** #520 — items a dropped day turned into ideas; an undo leaves them as ideas. */
+export const ideasLeft = (c: Cascade | null): string[] =>
+	(c?.moves ?? []).filter((m) => /^\d{4}-\d{2}-\d{2}$/.test(m.from)).map((m) => m.title);

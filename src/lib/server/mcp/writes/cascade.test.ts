@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { cascadeFor, type CascadeSnapshot } from './cascade';
-import type { PlannedChange } from './types';
+import { cascadeFor, ideasLeft, sameCascade, type CascadeSnapshot } from './cascade';
+import type { Cascade, PlannedChange } from './types';
 
 // Mirrors backend/test-tiling.mjs: what trips.pb.js / phases.pb.js do on commit.
 const D = (n: number) => `2026-08-${String(n).padStart(2, '0')}`;
@@ -132,5 +132,58 @@ describe('cascadeFor', () => {
 			id: 'C'
 		};
 		expect(cascadeFor([rename], snap([['C', 1]]))).toBeNull();
+	});
+});
+
+describe('sameCascade — commit re-checks the cascade it previewed (#520)', () => {
+	const base = (): Cascade => ({
+		tripBefore: ['2026-08-01', '2026-08-10'],
+		tripAfter: ['2026-08-01', '2026-08-08'],
+		daysAdded: [],
+		daysRemoved: ['2026-08-09', '2026-08-10'],
+		phases: [
+			{ name: 'A', before: ['2026-08-01', '2026-08-05'], after: ['2026-08-01', '2026-08-05'] },
+			{ name: 'B', before: ['2026-08-05', '2026-08-10'], after: ['2026-08-05', '2026-08-08'] }
+		],
+		moves: [
+			{ title: 'X', from: '2026-08-09', to: 'B' },
+			{ title: 'Y', from: '2026-08-10', to: 'B' }
+		]
+	});
+	it('ignores the order PB happened to list phases and items in', () => {
+		const b = base();
+		b.phases.reverse();
+		b.moves.reverse();
+		expect(sameCascade(base(), b)).toBe(true);
+	});
+	it('notices a phase or an item added since the preview', () => {
+		const p = base();
+		p.phases.push({ name: 'C', before: ['2026-08-09', '2026-08-10'], after: null });
+		expect(sameCascade(base(), p)).toBe(false);
+		const m = base();
+		m.moves.push({ title: 'Z', from: '2026-08-10', to: 'B' });
+		expect(sameCascade(base(), m)).toBe(false);
+		expect(sameCascade(base(), null)).toBe(false);
+		expect(sameCascade(null, null)).toBe(true);
+	});
+});
+
+describe('ideasLeft — revert names what it left as ideas (#520)', () => {
+	it('lists the items a dropped day turned into ideas, not phase moves', () => {
+		expect(
+			ideasLeft({
+				tripBefore: null,
+				tripAfter: null,
+				daysAdded: [],
+				daysRemoved: [],
+				phases: [],
+				moves: [
+					{ title: 'Cooking class', from: '2026-08-09', to: 'B' },
+					{ title: 'Idea in F', from: 'F', to: 'C' },
+					{ title: 'Port tasting', from: '2026-08-10', to: 'B' }
+				]
+			})
+		).toEqual(['Cooking class', 'Port tasting']);
+		expect(ideasLeft(null)).toEqual([]);
 	});
 });
