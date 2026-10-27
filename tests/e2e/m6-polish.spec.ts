@@ -1,34 +1,34 @@
 import { test, expect } from '@playwright/test';
 import { E2E_BASE } from './e2e-env';
+import { loginOwner, seedOwnTrip } from './japan-fixture';
 
 // playwright.config.ts boots `npm run build && npm run preview` on :4173.
 const BASE = E2E_BASE;
 
-// E2E_TEST_EMAIL's first trip is active → loads in trip mode (no "More" tab).
-// Navigate by URL (mode- and viewport-independent) instead of clicking nav chrome.
-async function openTripSlug(page: import('@playwright/test').Page): Promise<string> {
-	await page.goto(`${BASE}/trips`, { waitUntil: 'networkidle' });
-	await page.locator('a[href*="/trips/"]').first().click();
-	await page.waitForURL('**/trips/**');
-	return page.url().split('/trips/')[1].split(/[/?#]/)[0];
-}
+// #563 — this spec seeds its own active trip (Trip Mode, no "More" tab) instead of
+// clicking whichever trip the shared E2E_TEST_EMAIL user saw first. Navigate by URL
+// (mode- and viewport-independent) instead of clicking nav chrome.
+const SLUG = 'e2e-m6-polish-563';
 
 test.describe('M6 Polish', () => {
+	test.describe.configure({ mode: 'serial' });
+
+	test.beforeAll(async () => {
+		await seedOwnTrip(SLUG, { active: true });
+	});
+
 	test.beforeEach(async ({ page }) => {
-		await page.goto(`${BASE}/api/dev/login`);
-		await page.waitForURL('**/trips');
+		await loginOwner(page);
 	});
 
 	test('clone trip link visible on More page for owner', async ({ page }) => {
-		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/more`, { waitUntil: 'networkidle' });
+		await page.goto(`${BASE}/trips/${SLUG}/more`, { waitUntil: 'networkidle' });
 		await expect(page.getByText('Clone trip').filter({ visible: true }).first()).toBeVisible();
 	});
 
 	test('clone trip page renders with form', async ({ page }) => {
-		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/clone`, { waitUntil: 'networkidle' });
-		await page.waitForURL('**/clone');
+		await page.goto(`${BASE}/trips/${SLUG}/clone`, { waitUntil: 'networkidle' });
+		await expect(page).toHaveURL(new RegExp(`/trips/${SLUG}/clone$`));
 
 		await expect(page.locator('input[name="title"]:visible').first()).toBeVisible();
 		await expect(page.locator('input[name="start_date"]:visible').first()).toBeVisible();
@@ -38,8 +38,7 @@ test.describe('M6 Polish', () => {
 	// #86: the trip-wide Parking Lot page is retired (Parking Lot is phase-scoped).
 	// The More menu must no longer link to it.
 	test('parking lot link is gone from More page (#86)', async ({ page }) => {
-		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/more`, { waitUntil: 'networkidle' });
+		await page.goto(`${BASE}/trips/${SLUG}/more`, { waitUntil: 'networkidle' });
 		// Wait for the menu to render via a sibling card that stays (Export is always present).
 		await expect(page.getByText('Export').filter({ visible: true }).first()).toBeVisible();
 		await expect(page.getByText('Parking lot')).toHaveCount(0);
@@ -47,10 +46,9 @@ test.describe('M6 Polish', () => {
 
 	// #86: the old /parking-lot route redirects to the phases list.
 	test('trip-wide /parking-lot redirects to phases list (#86)', async ({ page }) => {
-		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/parking-lot`, { waitUntil: 'networkidle' });
-		await page.waitForURL(`**/trips/${slug}/phases`);
-		expect(page.url()).toContain(`/trips/${slug}/phases`);
+		await page.goto(`${BASE}/trips/${SLUG}/parking-lot`, { waitUntil: 'networkidle' });
+		await page.waitForURL(`**/trips/${SLUG}/phases`);
+		expect(page.url()).toContain(`/trips/${SLUG}/phases`);
 	});
 
 	// NOTE: the Print itinerary feature was removed (#209) — its More-page button
@@ -62,7 +60,7 @@ test.describe('M6 Polish', () => {
 
 	test('responsive: bottom nav visible at mobile width', async ({ page }) => {
 		await page.setViewportSize({ width: 375, height: 812 });
-		await openTripSlug(page);
+		await page.goto(`${BASE}/trips/${SLUG}`, { waitUntil: 'networkidle' });
 
 		// At 375px only the mobile subtree is visible.
 		const bottomNav = page.locator('nav:visible').last();
@@ -71,11 +69,12 @@ test.describe('M6 Polish', () => {
 
 	test('responsive: side rail visible at desktop width', async ({ page }) => {
 		await page.setViewportSize({ width: 1024, height: 768 });
-		await openTripSlug(page);
+		await page.goto(`${BASE}/trips/${SLUG}`, { waitUntil: 'networkidle' });
 
-		const sideRail = page.locator('.side-rail');
-		if (await sideRail.count()) {
-			await expect(sideRail.filter({ visible: true }).first()).toBeVisible();
-		}
+		// SideRail shows from md-desktop (900px). The old `.side-rail` selector matched
+		// nothing, so its count guard skipped the assertion every run.
+		await expect(
+			page.getByRole('navigation', { name: 'Trip navigation' }).filter({ visible: true }).first()
+		).toBeVisible();
 	});
 });
