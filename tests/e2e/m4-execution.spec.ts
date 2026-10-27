@@ -5,7 +5,7 @@ import { EMAILS, pb, token } from './japan-fixture';
 // playwright.config.ts boots `npm run build && npm run preview` on :4173.
 const BASE = E2E_BASE;
 
-// #552 — this spec seeds its own trip (rules-fixture, re-dated yesterday → +7 days
+// #552 — this spec seeds its own trip (rules-fixture, re-dated 3 days ago → +4 days
 // so it is active and loads in Trip Mode) with one planned item, instead of clicking whichever
 // trip the shared E2E_TEST_EMAIL user saw first. Secondary pages live at known
 // routes, so navigate by URL rather than clicking nav chrome.
@@ -28,8 +28,10 @@ test.describe('M4 Execution', () => {
 		const ymd = (offset: number) =>
 			new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
 		await pb(owner, 'PATCH', `/api/collections/trips/records/${tripId}`, {
-			start_date: `${ymd(-1)} 00:00:00.000Z`,
-			end_date: `${ymd(7)} 00:00:00.000Z`
+			// Starts before mcp-seed's Porto trip (yesterday): the rules users are
+			// shared, and MCP trip_brief briefs the current trip with the latest start.
+			start_date: `${ymd(-3)} 00:00:00.000Z`,
+			end_date: `${ymd(4)} 00:00:00.000Z`
 		});
 		const days = (
 			await pb(
