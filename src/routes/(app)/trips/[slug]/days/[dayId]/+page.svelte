@@ -17,6 +17,7 @@
 	import ServerErrorAlert from '$lib/ui/ServerErrorAlert.svelte';
 	import LevelHeader from '$lib/itinerary/components/LevelHeader.svelte';
 	import NotesEditor from '$lib/itinerary/components/NotesEditor.svelte';
+	import { landingView, overnightNote, type OvernightNote } from '$lib/itinerary/overnight';
 
 	let { data, form } = $props();
 
@@ -38,6 +39,24 @@
 			day: 'numeric'
 		});
 	}
+
+	// #538 — red-eyes: a landing one joins the timeline at its landing time and
+	// can't be dragged (it belongs to its departure day); both cards say which end
+	// of the flight this day is.
+	const timelineInput = $derived([...data.dayItems, ...data.landingItems.map(landingView)]);
+	const landingIds = $derived(new Set(data.landingItems.map((i) => i.id)));
+	const overnightById = $derived.by(() => {
+		const notes: Record<string, OvernightNote> = {};
+		for (const i of data.dayItems) {
+			const n = overnightNote(i, 'departure');
+			if (n) notes[i.id] = n;
+		}
+		for (const i of data.landingItems) {
+			const n = overnightNote(i, 'landing');
+			if (n) notes[i.id] = n;
+		}
+		return notes;
+	});
 
 	let backHref = $derived(
 		data.dayPhases.length > 0
@@ -92,7 +111,8 @@
 	{/if}
 
 	<DragDropTimeline
-		dayItems={data.dayItems}
+		dayItems={timelineInput}
+		pinnedIds={landingIds}
 		parkingByPhase={data.dayPhases.map((p) => ({
 			phaseId: p.id,
 			items: data.parkingLotItems.filter((i) => i.phase === p.id)
@@ -142,6 +162,8 @@
 					onFinalize={onTimelineFinalize}
 					{planDrop}
 					{dragDisabled}
+					pinnedIds={landingIds}
+					{overnightById}
 				/>
 			</section>
 

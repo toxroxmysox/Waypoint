@@ -32,6 +32,7 @@
 
 	let {
 		dayItems,
+		pinnedIds = new Set<string>(),
 		parkingByPhase = [],
 		dayPhaseIds = [],
 		scoreById = {},
@@ -40,6 +41,12 @@
 		children
 	}: {
 		dayItems: Item[];
+		/**
+		 * #538 — timeline items that belong to another day (a red-eye landing here):
+		 * shown in place, never moved. DayTimeline keeps them from starting a drag;
+		 * these guards keep them out of every write regardless.
+		 */
+		pinnedIds?: ReadonlySet<string>;
 		/** One entry per phase the day belongs to (two on a boundary day). #87. */
 		parkingByPhase?: ParkingZoneInput[];
 		dayPhaseIds?: string[];
@@ -178,7 +185,9 @@
 		timelineItems = next;
 
 		const moved = next.find((i) => i.id === movedId);
-		if (moved) {
+		if (moved && pinnedIds.has(movedId)) {
+			reseed();
+		} else if (moved) {
 			const wasInTimeline = dayItems.some((i) => i.id === movedId);
 			const { before, after } = neighborsForMove(refs(next), movedId);
 			const action = resolveDrop({
@@ -192,7 +201,7 @@
 			// The full resulting display order drives the whole-day sort_order
 			// rebalance (#237) so an untimed item sticks anywhere — between/below
 			// timed items — instead of re-weaving back to the top.
-			const order = next.map((i) => i.id);
+			const order = next.map((i) => i.id).filter((id) => !pinnedIds.has(id));
 			switch (action.kind) {
 				case 'reorder':
 					submit(reorderForm, movedId, action.before, action.after, order);
@@ -228,7 +237,10 @@
 			);
 			const moved = next.find((i) => i.id === movedId);
 
-			if (fromTimeline) {
+			if (pinnedIds.has(movedId)) {
+				// #538 — another day's red-eye: never ejected from here.
+				reseed();
+			} else if (fromTimeline) {
 				// Ejected from the timeline → park it (server strips the time).
 				submit(pushForm, movedId, null, null);
 			} else if (!wasHere && moved) {

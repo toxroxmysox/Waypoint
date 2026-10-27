@@ -18,6 +18,7 @@
 	import CardStrip from './CardStrip.svelte';
 	import { needsBooking } from '$lib/itinerary/booking-projection';
 	import { timeShape } from '$lib/itinerary/timeline';
+	import type { OvernightNote } from '$lib/itinerary/overnight';
 	import {
 		cardAccessibleName,
 		cardMeta,
@@ -35,6 +36,7 @@
 		docCount = 0,
 		mode = 'planning',
 		muted = false,
+		overnight,
 		menu
 	}: {
 		item: Item;
@@ -49,6 +51,8 @@
 		/** Earlier today (#429): same shape, no white fill, ink-muted text (never
 		 *  opacity), a lighter rail rule and an outlined node. Still a link. */
 		muted?: boolean;
+		/** #538 — a red-eye's line: which end of the flight this day is. */
+		overnight?: OvernightNote;
 		/** The head's top-right slot: Trip Mode's `⋯` (Coming up, #429). Role logic
 		 *  stays with the caller; this only hosts it. */
 		menu?: Snippet;
@@ -82,7 +86,8 @@
 			item,
 			needsBooking: showNeedsBooking,
 			booked: !!item.booked,
-			overlapWith: overlapNote?.partnerTitle
+			overlapWith: overlapNote?.partnerTitle,
+			overnight: overnight?.spoken
 		})
 	);
 	const showGoing = $derived(members.length > 1);
@@ -138,6 +143,11 @@
 
 			{#if meta}
 				<p class="mt-0.5 truncate text-[12px] leading-4 text-ink-muted" data-card="meta">{meta}</p>
+			{/if}
+			{#if overnight}
+				<p class="mt-0.5 truncate text-[12px] leading-4 text-ink-soft" data-card="overnight">
+					{overnight.text}
+				</p>
 			{/if}
 
 			{#snippet going()}

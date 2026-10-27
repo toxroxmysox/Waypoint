@@ -6,6 +6,8 @@ import { tripToday } from '$lib/shell/trip-time';
 import { formatDayDate, formatTimeText } from '$lib/shell/format';
 import { orderDayItems } from '$lib/itinerary/timeline';
 import { spanBandText, spanningItemsForDate, toDateOnly } from '$lib/itinerary/multi-day';
+import { isOvernightFlight, landingView, overnightNote } from '$lib/itinerary/overnight';
+import { isSpanning } from '$lib/trip-mode/spanning';
 import type { McpContext } from './context';
 import { EMOJI, stripHtml, type Card } from './present';
 
@@ -96,9 +98,16 @@ export async function loadDay(ctx: McpContext, trip: Trip, date: string): Promis
 export function dayFrom(days: Day[], all: Item[], date: string): DayData {
 	const day = days.find((d) => toDateOnly(d.date) === date) ?? null;
 	if (!day) return { date, day: null, days, stays: [], items: [], notes: '' };
-	const stays = spanningItemsForDate(all, days, date);
+	// #538 — a red-eye is an item on both days (as on the Day page and Now), never a
+	// stay. On its landing day it's ordered by landing time.
+	const stays = spanningItemsForDate(all.filter(isSpanning), days, date);
 	const stayIds = new Set(stays.map((s) => s.id));
-	const items = orderDayItems(all.filter((i) => i.day === day.id && !stayIds.has(i.id)));
+	const own = all.filter((i) => i.day === day.id && !isSpanning(i) && !stayIds.has(i.id));
+	const landing = all.filter(
+		(i) => i.day !== day.id && isOvernightFlight(i) && toDateOnly(i.end_date!) === date
+	);
+	const byId = new Map(all.map((i) => [i.id, i]));
+	const items = orderDayItems([...own, ...landing.map(landingView)]).map((i) => byId.get(i.id)!);
 	return { date, day, days, stays, items, notes: stripHtml(day.notes ?? '') };
 }
 
@@ -123,7 +132,15 @@ export function dayCards(d: DayData): Card[] {
 			s.location_name || s.location_address
 		].filter(Boolean) as string[]
 	}));
-	const cards = [...stays, ...d.items.map((i) => itemCard(i))];
+	const cards = [
+		...stays,
+		...d.items.map((i) => {
+			const c = itemCard(i);
+			const note = overnightNote(i, i.day === d.day?.id ? 'departure' : 'landing');
+			if (note) c.lines.splice(1, 0, note.text);
+			return c;
+		})
+	];
 	if (d.notes) cards.push({ emoji: '📝', title: 'Day notes', lines: [d.notes] });
 	return cards;
 }

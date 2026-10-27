@@ -1194,6 +1194,31 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 		});
 	}
 
+	// Optional { redeye: true } (#538): a red-eye as FlightLookup saves it, with an
+	// end_date: departs day 1 at 23:30, lands day 2 at 06:40. Day 1 shows it by take-off,
+	// day 2 by landing. Off by default: the `days` summary does not count it.
+	if (info.body && info.body['redeye'] && days.length >= 2) {
+		const d1 = days[0].getString('date').substring(0, 10);
+		const d2 = days[1].getString('date').substring(0, 10);
+		const rec = new Record(itemsCol);
+		rec.set('trip', trip.id);
+		if (phaseId) rec.set('phase', phaseId);
+		rec.set('day', days[0].id);
+		rec.set('type', 'flight');
+		rec.set('title', 'UA 1 to Denver');
+		rec.set('flight_number', 'UA 1');
+		rec.set('status', 'planned');
+		rec.set('booked', true);
+		rec.set('sort_order', 95);
+		rec.set('start_time', d1 + ' 23:30:00.000Z');
+		rec.set('end_time', d2 + ' 06:40:00.000Z');
+		rec.set('end_date', d2 + ' 00:00:00.000Z');
+		rec.set('location_name', 'Milwaukee Mitchell Intl (MKE)');
+		rec.set('description', '→ Denver Intl (DEN)');
+		rec.set('created_by', ownerMember.id);
+		e.app.save(rec);
+	}
+
 	// Optional { ideas: true } (#424): unplanned ideas across five type groups in the
 	// trip's first phase, with places, costs and a few votes (so the in-group sort has
 	// something to order), for the grouped Parking Lot. Off by default: the fullness
