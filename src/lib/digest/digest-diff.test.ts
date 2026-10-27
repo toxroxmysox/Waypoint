@@ -1,13 +1,24 @@
+// #542 — runs against the real hook module (the TS copy is gone).
 import { describe, it, expect } from 'vitest';
-import {
+import { core } from './load-digest-core';
+
+const {
 	buildSignature,
 	snapshotItems,
 	composeTripDiff,
 	hasChanges,
-	type DigestSourceItem,
-	type DigestSnapshot
-} from './digest-diff';
-import { renderDigestEmail, formatDigestDay } from './digest-email';
+	renderDigestEmail,
+	formatDigestDay
+} = core;
+
+interface DigestSourceItem {
+	id: string;
+	title: string;
+	/** 'YYYY-MM-DD' of the owning day, or '' for unscheduled. */
+	dayDate: string;
+	status: string;
+	signature: string;
+}
 
 function item(overrides: Partial<DigestSourceItem> & { id: string }): DigestSourceItem {
 	return {
@@ -58,7 +69,7 @@ describe('composeTripDiff', () => {
 		signature: buildSignature({ type: 'activity' })
 	});
 	const tapas = item({ id: 'i2', title: 'Tapas crawl', status: 'unplanned' });
-	const prev: DigestSnapshot = snapshotItems([kayak, tapas]);
+	const prev = snapshotItems([kayak, tapas]);
 
 	it('reports nothing when nothing changed', () => {
 		const diff = composeTripDiff(prev, [kayak, tapas]);
@@ -155,7 +166,12 @@ describe('composeTripDiff', () => {
 			item({ id: 'c', title: 'Early', dayDate: '2026-06-02', status: 'planned' }),
 			item({ id: 'd', title: 'Alpha idea' })
 		]);
-		expect(diff.added.map((a) => a.title)).toEqual(['Early', 'Late', 'Alpha idea', 'Zed idea']);
+		expect(diff.added.map((a: { title: string }) => a.title)).toEqual([
+			'Early',
+			'Late',
+			'Alpha idea',
+			'Zed idea'
+		]);
 	});
 });
 

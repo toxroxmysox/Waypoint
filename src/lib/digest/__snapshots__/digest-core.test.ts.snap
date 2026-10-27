@@ -1,0 +1,255 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`digest-core.js pinned output > composeReminders across brief / booking / closeout / archived / no dates 1`] = `
+[
+  {
+    "booking": [
+      {
+        "date": "2026-11-17",
+        "daysOut": 14,
+        "going": [
+          "m3",
+        ],
+        "title": "Sushi class",
+      },
+    ],
+    "brief": {
+      "start": "2026-11-06",
+      "stays": [
+        {
+          "date": "2026-12-01",
+          "title": "Ryokan",
+        },
+      ],
+      "travel": [
+        {
+          "date": "2026-11-06",
+          "title": "Flight HND",
+        },
+      ],
+      "unbooked": [],
+    },
+    "closeout": false,
+  },
+  {
+    "booking": [],
+    "brief": null,
+    "closeout": false,
+  },
+  {
+    "booking": [],
+    "brief": null,
+    "closeout": true,
+  },
+  {
+    "booking": [],
+    "brief": null,
+    "closeout": false,
+  },
+  {
+    "booking": [
+      {
+        "date": "2026-11-17",
+        "daysOut": 14,
+        "going": [
+          "m3",
+        ],
+        "title": "Sushi class",
+      },
+    ],
+    "brief": null,
+    "closeout": false,
+  },
+]
+`;
+
+exports[`digest-core.js pinned output > composeTripDiff on a mixed add/edit/move/remove scenario 1`] = `
+{
+  "added": [
+    {
+      "dayDate": "2026-06-04",
+      "title": "Museum",
+    },
+  ],
+  "edited": [
+    {
+      "dayDate": "",
+      "renamedFrom": "Tapas crawl",
+      "title": "Tapas crawl (old town)",
+    },
+  ],
+  "moved": [
+    {
+      "fromDay": "2026-06-05",
+      "title": "Sunset kayak",
+      "toDay": "2026-06-06",
+    },
+  ],
+  "removed": [
+    {
+      "title": "Bus tour",
+    },
+  ],
+}
+`;
+
+exports[`digest-core.js pinned output > renderDigestEmail — reminders alone, alongside changes, multi-trip 1`] = `
+{
+  "html": "<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.5; color: #1a1a1a; max-width: 560px;"><p>Hi Abby,</p><p>Here’s what’s coming up on Japan.</p><p style="margin: 12px 0 2px; font-weight: 600; color: #3e5a3a;">Still to book</p><ul style="margin: 2px 0 8px; padding-left: 20px; color: #333;"><li>Sushi class — needed Nov 17 (in 14 days)</li></ul><p style="margin: 12px 0 2px; font-weight: 600; color: #3e5a3a;">Starts in 3 days (Nov 6)</p><ul style="margin: 2px 0 8px; padding-left: 20px; color: #333;"><li>Stay: Ryokan — Dec 1</li><li>Travel: Flight HND — Nov 6</li><li>Your trip: https://app.example.com/trips/japan</li></ul><p style="margin-top: 20px;">&mdash; Waypoint</p><p style="color: #67625a; font-size: 13px;">Prefer not to get these? Turn off digest emails in <a href="https://app.example.com/trips/japan/settings" style="color: #67625a;">trip settings</a>, or for all your trips in <a href="https://app.example.com/account" style="color: #67625a;">your profile</a>.</p></div>",
+  "subject": "Coming up on Japan",
+  "text": "Hi Abby,
+
+Here’s what’s coming up on Japan.
+
+Still to book
+  • Sushi class — needed Nov 17 (in 14 days)
+
+Starts in 3 days (Nov 6)
+  • Stay: Ryokan — Dec 1
+  • Travel: Flight HND — Nov 6
+  • Your trip: https://app.example.com/trips/japan
+
+— Waypoint
+
+Prefer not to get these? Turn off digest emails in trip settings:
+https://app.example.com/trips/japan/settings
+Or for all your trips in your profile: https://app.example.com/account
+",
+}
+`;
+
+exports[`digest-core.js pinned output > renderDigestEmail — reminders alone, alongside changes, multi-trip 2`] = `
+{
+  "html": "<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.5; color: #1a1a1a; max-width: 560px;"><p>Hi Abby,</p><p>Here’s what changed on Japan since the last digest.</p><p style="margin: 12px 0 2px; font-weight: 600; color: #3e5a3a;">Added</p><ul style="margin: 2px 0 8px; padding-left: 20px; color: #333;"><li>New bar — Nov 7</li></ul><p style="margin: 12px 0 2px; font-weight: 600; color: #3e5a3a;">Still to book</p><ul style="margin: 2px 0 8px; padding-left: 20px; color: #333;"><li>Sushi class — needed Nov 17 (in 14 days)</li></ul><p style="margin: 12px 0 2px; font-weight: 600; color: #3e5a3a;">Starts in 3 days (Nov 6)</p><ul style="margin: 2px 0 8px; padding-left: 20px; color: #333;"><li>Stay: Ryokan — Dec 1</li><li>Travel: Flight HND — Nov 6</li><li>Your trip: https://app.example.com/trips/japan</li></ul><p style="margin-top: 20px;">&mdash; Waypoint</p><p style="color: #67625a; font-size: 13px;">Prefer not to get these? Turn off digest emails in <a href="https://app.example.com/trips/japan/settings" style="color: #67625a;">trip settings</a>, or for all your trips in <a href="https://app.example.com/account" style="color: #67625a;">your profile</a>.</p></div>",
+  "subject": "What changed on Japan",
+  "text": "Hi Abby,
+
+Here’s what changed on Japan since the last digest.
+
+Added
+  • New bar — Nov 7
+
+Still to book
+  • Sushi class — needed Nov 17 (in 14 days)
+
+Starts in 3 days (Nov 6)
+  • Stay: Ryokan — Dec 1
+  • Travel: Flight HND — Nov 6
+  • Your trip: https://app.example.com/trips/japan
+
+— Waypoint
+
+Prefer not to get these? Turn off digest emails in trip settings:
+https://app.example.com/trips/japan/settings
+Or for all your trips in your profile: https://app.example.com/account
+",
+}
+`;
+
+exports[`digest-core.js pinned output > renderDigestEmail — reminders alone, alongside changes, multi-trip 3`] = `
+{
+  "html": "<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.5; color: #1a1a1a; max-width: 560px;"><p>Hi Abby,</p><p>Here’s what’s coming up on your trips.</p><h3 style="margin: 20px 0 4px;">Japan</h3><p style="margin: 12px 0 2px; font-weight: 600; color: #3e5a3a;">Still to book</p><ul style="margin: 2px 0 8px; padding-left: 20px; color: #333;"><li>Sushi class — needed Nov 17 (in 14 days)</li></ul><p style="margin: 12px 0 2px; font-weight: 600; color: #3e5a3a;">Starts in 3 days (Nov 6)</p><ul style="margin: 2px 0 8px; padding-left: 20px; color: #333;"><li>Stay: Ryokan — Dec 1</li><li>Travel: Flight HND — Nov 6</li><li>Your trip: https://app.example.com/trips/japan</li></ul><h3 style="margin: 20px 0 4px;">Lisbon</h3><p style="margin: 12px 0 2px; font-weight: 600; color: #3e5a3a;">Wrap up</p><ul style="margin: 2px 0 8px; padding-left: 20px; color: #333;"><li>The trip ended 3 days ago. Close it out: https://app.example.com/trips/lisbon/closeout</li></ul><p style="margin-top: 20px;">&mdash; Waypoint</p><p style="color: #67625a; font-size: 13px;">Prefer not to get these? Turn off digest emails in <a href="https://app.example.com/trips/japan/settings" style="color: #67625a;">Japan settings</a> &middot; <a href="https://app.example.com/trips/lisbon/settings" style="color: #67625a;">Lisbon settings</a>, or for all your trips in <a href="https://app.example.com/account" style="color: #67625a;">your profile</a>.</p></div>",
+  "subject": "Coming up on 2 of your trips",
+  "text": "Hi Abby,
+
+Here’s what’s coming up on your trips.
+
+Japan
+
+Still to book
+  • Sushi class — needed Nov 17 (in 14 days)
+
+Starts in 3 days (Nov 6)
+  • Stay: Ryokan — Dec 1
+  • Travel: Flight HND — Nov 6
+  • Your trip: https://app.example.com/trips/japan
+
+Lisbon
+
+Wrap up
+  • The trip ended 3 days ago. Close it out: https://app.example.com/trips/lisbon/closeout
+
+— Waypoint
+
+Prefer not to get these? Turn off digest emails in each trip’s settings:
+  Japan: https://app.example.com/trips/japan/settings
+  Lisbon: https://app.example.com/trips/lisbon/settings
+Or for all your trips in your profile: https://app.example.com/account
+",
+}
+`;
+
+exports[`digest-core.js pinned output > renderDigestEmail — single, multi + test label 1`] = `
+{
+  "html": "<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.5; color: #1a1a1a; max-width: 560px;"><p>Hi Scott,</p><p>Here’s what changed on Barcelona 2026 since the last digest.</p><p style="margin: 12px 0 2px; font-weight: 600; color: #3e5a3a;">Added</p><ul style="margin: 2px 0 8px; padding-left: 20px; color: #333;"><li>Museum — Jun 4</li></ul><p style="margin: 12px 0 2px; font-weight: 600; color: #3e5a3a;">Moved</p><ul style="margin: 2px 0 8px; padding-left: 20px; color: #333;"><li>Sunset kayak — Jun 5 → Jun 6</li></ul><p style="margin: 12px 0 2px; font-weight: 600; color: #3e5a3a;">Edited</p><ul style="margin: 2px 0 8px; padding-left: 20px; color: #333;"><li>Tapas crawl (old town) (renamed from “Tapas crawl”)</li></ul><p style="margin: 12px 0 2px; font-weight: 600; color: #3e5a3a;">Removed</p><ul style="margin: 2px 0 8px; padding-left: 20px; color: #333;"><li>Bus tour</li></ul><p style="margin-top: 20px;">&mdash; Waypoint</p><p style="color: #67625a; font-size: 13px;">Prefer not to get these? Turn off digest emails in <a href="https://app.vandenwarsen.com/trips/barcelona-2026/settings" style="color: #67625a;">trip settings</a>, or for all your trips in <a href="https://app.vandenwarsen.com/account" style="color: #67625a;">your profile</a>.</p></div>",
+  "subject": "What changed on Barcelona 2026",
+  "text": "Hi Scott,
+
+Here’s what changed on Barcelona 2026 since the last digest.
+
+Added
+  • Museum — Jun 4
+
+Moved
+  • Sunset kayak — Jun 5 → Jun 6
+
+Edited
+  • Tapas crawl (old town) (renamed from “Tapas crawl”)
+
+Removed
+  • Bus tour
+
+— Waypoint
+
+Prefer not to get these? Turn off digest emails in trip settings:
+https://app.vandenwarsen.com/trips/barcelona-2026/settings
+Or for all your trips in your profile: https://app.vandenwarsen.com/account
+",
+}
+`;
+
+exports[`digest-core.js pinned output > renderDigestEmail — single, multi + test label 2`] = `
+{
+  "html": "<div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.5; color: #1a1a1a; max-width: 560px;"><p>Hi,</p><p>Here’s what changed on your trips since the last digest.</p><h3 style="margin: 20px 0 4px;">Barcelona 2026</h3><p style="margin: 12px 0 2px; font-weight: 600; color: #3e5a3a;">Added</p><ul style="margin: 2px 0 8px; padding-left: 20px; color: #333;"><li>Museum — Jun 4</li></ul><p style="margin: 12px 0 2px; font-weight: 600; color: #3e5a3a;">Moved</p><ul style="margin: 2px 0 8px; padding-left: 20px; color: #333;"><li>Sunset kayak — Jun 5 → Jun 6</li></ul><p style="margin: 12px 0 2px; font-weight: 600; color: #3e5a3a;">Edited</p><ul style="margin: 2px 0 8px; padding-left: 20px; color: #333;"><li>Tapas crawl (old town) (renamed from “Tapas crawl”)</li></ul><p style="margin: 12px 0 2px; font-weight: 600; color: #3e5a3a;">Removed</p><ul style="margin: 2px 0 8px; padding-left: 20px; color: #333;"><li>Bus tour</li></ul><h3 style="margin: 20px 0 4px;">Tokyo 2027</h3><p style="margin: 12px 0 2px; font-weight: 600; color: #3e5a3a;">Added</p><ul style="margin: 2px 0 8px; padding-left: 20px; color: #333;"><li>Museum — Jun 4</li></ul><p style="margin: 12px 0 2px; font-weight: 600; color: #3e5a3a;">Moved</p><ul style="margin: 2px 0 8px; padding-left: 20px; color: #333;"><li>Sunset kayak — Jun 5 → Jun 6</li></ul><p style="margin: 12px 0 2px; font-weight: 600; color: #3e5a3a;">Edited</p><ul style="margin: 2px 0 8px; padding-left: 20px; color: #333;"><li>Tapas crawl (old town) (renamed from “Tapas crawl”)</li></ul><p style="margin: 12px 0 2px; font-weight: 600; color: #3e5a3a;">Removed</p><ul style="margin: 2px 0 8px; padding-left: 20px; color: #333;"><li>Bus tour</li></ul><p style="margin-top: 20px;">&mdash; Waypoint</p><p style="color: #67625a; font-size: 13px;">Prefer not to get these? Turn off digest emails in <a href="https://app.vandenwarsen.com/trips/barcelona-2026/settings" style="color: #67625a;">Barcelona 2026 settings</a> &middot; <a href="https://app.vandenwarsen.com/trips/tokyo-2027/settings" style="color: #67625a;">Tokyo 2027 settings</a>, or for all your trips in <a href="https://app.vandenwarsen.com/account" style="color: #67625a;">your profile</a>.</p></div>",
+  "subject": "[Waypoint digest test] What changed on 2 of your trips",
+  "text": "Hi,
+
+Here’s what changed on your trips since the last digest.
+
+Barcelona 2026
+
+Added
+  • Museum — Jun 4
+
+Moved
+  • Sunset kayak — Jun 5 → Jun 6
+
+Edited
+  • Tapas crawl (old town) (renamed from “Tapas crawl”)
+
+Removed
+  • Bus tour
+
+Tokyo 2027
+
+Added
+  • Museum — Jun 4
+
+Moved
+  • Sunset kayak — Jun 5 → Jun 6
+
+Edited
+  • Tapas crawl (old town) (renamed from “Tapas crawl”)
+
+Removed
+  • Bus tour
+
+— Waypoint
+
+Prefer not to get these? Turn off digest emails in each trip’s settings:
+  Barcelona 2026: https://app.vandenwarsen.com/trips/barcelona-2026/settings
+  Tokyo 2027: https://app.vandenwarsen.com/trips/tokyo-2027/settings
+Or for all your trips in your profile: https://app.vandenwarsen.com/account
+",
+}
+`;
