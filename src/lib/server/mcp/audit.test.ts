@@ -60,6 +60,20 @@ describe('auditTrip', () => {
 		expect(gaps.map((g) => g.date)).toEqual(['2026-07-03']);
 	});
 
+	// #537 — an abandoned option doesn't put anyone in a bed.
+	it('a considered stay leaves its nights flagged', () => {
+		const maybe = item({
+			type: 'lodging',
+			status: 'considered',
+			end_date: '2026-07-04 00:00:00.000Z'
+		});
+		expect(kinds(run([maybe]), 'no_lodging').map((g) => g.date)).toEqual([
+			'2026-07-01',
+			'2026-07-02',
+			'2026-07-03'
+		]);
+	});
+
 	it('flags a placed flight with no confirmation code', () => {
 		const f = item({ type: 'flight', title: 'UA 1', booked: true });
 		const g = item({ type: 'flight', title: 'UA 2', booked: true });

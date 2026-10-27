@@ -133,6 +133,18 @@ describe('phaseStaying', () => {
 		expect(phaseStaying([long], days, tokyo).lines[0].nights).toBe(1);
 		expect(phaseStaying([long], days, kanazawa).lines[0].nights).toBe(2);
 	});
+	// #537 — same rule as the AI audit (lodging-nights.ts).
+	it('a lodging with no end date covers the night of its day', () => {
+		const inn = item({ id: 'inn', type: 'lodging', day: 'n19' });
+		const s = phaseStaying([inn], days, tokyo);
+		expect(s.lines.map((l) => [l.item.id, l.nights])).toEqual([['inn', 1]]);
+		expect(s.coveredNights).toBe(1);
+	});
+	it('a considered stay covers nothing', () => {
+		const s = phaseStaying([{ ...hotel, status: 'considered' } as Item], days, tokyo);
+		expect(s.lines).toEqual([]);
+		expect(s.coveredNights).toBe(0);
+	});
 	it('single-day phase has 0 nights', () => {
 		const s = phaseStaying([hotel], days, single);
 		expect(s.totalNights).toBe(0);

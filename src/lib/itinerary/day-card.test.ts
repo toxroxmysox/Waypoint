@@ -121,6 +121,11 @@ describe('summarizeDay — stay line: Night N of M (#426)', () => {
 		]);
 	});
 
+	it('a considered stay shows no stay line (#537)', () => {
+		const maybe = { ...hotel, status: 'considered' } as Item;
+		expect(summarizeDay([maybe], days, days[0]).stays).toEqual([]);
+	});
+
 	it('a blank lodging title drops the separator', () => {
 		const bare = item({
 			id: 'h',

@@ -167,7 +167,9 @@ function composeReminders(input) {
 	const start = (input.tripStart || '').slice(0, 10);
 	const end = (input.tripEnd || '').slice(0, 10);
 
-	for (const item of input.items) {
+	// #537 — a considered item is an abandoned option: no reminder, not a stay.
+	const items = input.items.filter((i) => i.status !== 'considered');
+	for (const item of items) {
 		if (!item.requiresBooking || item.booked) continue;
 		const date = neededBy(item, start).slice(0, 10);
 		const daysOut = daysBetween(input.today, date);
@@ -186,7 +188,7 @@ function composeReminders(input) {
 		const stays = [];
 		const travel = [];
 		const unbooked = [];
-		for (const item of input.items) {
+		for (const item of items) {
 			const date = neededBy(item, start).slice(0, 10);
 			if (item.type === 'lodging') stays.push({ title: item.title, date: date });
 			else if (item.type === 'flight' || item.type === 'transportation')
@@ -533,6 +535,7 @@ function runDigest(app, opts) {
 				reminderItems.push({
 					title: r.getString('title'),
 					type: r.getString('type'),
+					status: r.getString('status'),
 					dayDate: dayDates[r.getString('day')] || '',
 					phaseStart: phaseStarts[r.getString('phase')] || '',
 					requiresBooking: r.getBool('requires_booking'),

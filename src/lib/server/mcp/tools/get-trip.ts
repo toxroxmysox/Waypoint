@@ -5,7 +5,7 @@ import { deriveGoalStatus } from '$lib/itinerary/goal-status';
 import { scoreVotes, sortByVoteScore, tallyVotes } from '$lib/collaboration/voting';
 import { resolveTrip } from '../context';
 import { loadTripDays, loadTripItems } from '../day-data';
-import { lodgingForNight, nightsOf } from '../audit';
+import { lodgingForNight, nightsOf } from '$lib/itinerary/lodging-nights';
 import { offTrip, result, stripHtml, tripDates, ymd, EMOJI, type Card } from '../present';
 import type { ToolDef } from './types';
 

@@ -56,7 +56,8 @@ export function summarizeDay(items: Item[], days: Day[], day: Day): DayCardSumma
 
 	const date = toDateOnly(day.date);
 	const lodging = spanningItemsForDate(
-		items.filter((i) => i.type === 'lodging'),
+		// #537 — a considered stay is an abandoned option, not where you sleep.
+		items.filter((i) => i.type === 'lodging' && i.status !== 'considered'),
 		days,
 		date
 	);

@@ -7,6 +7,7 @@ import { needsBooking } from '$lib/itinerary/booking-projection';
 import { codesForItem } from '$lib/documents/codes';
 import { detectOverlaps } from '$lib/itinerary/timeline';
 import { itemDateRange, toDateOnly } from '$lib/itinerary/multi-day';
+import { lodgingForNight, nightsOf } from '$lib/itinerary/lodging-nights';
 
 export type CodeDoc = Pick<Document, 'item' | 'code_label' | 'code_value' | 'kind'>;
 
@@ -16,20 +17,6 @@ export interface AuditGap {
 	date?: string;
 	itemId?: string;
 }
-
-/** Lodging the group sleeps in on night `date`: a stay whose [start, end) covers it,
- *  or a single-night lodging item placed on that day. */
-export function lodgingForNight(items: Item[], days: Day[], date: string): Item[] {
-	const dayDate = new Map(days.map((d) => [d.id, toDateOnly(d.date)]));
-	return items.filter((l) => {
-		if (l.type !== 'lodging' || !l.day) return false;
-		const r = itemDateRange(l, days);
-		return r ? r.start <= date && date < r.end : dayDate.get(l.day) === date;
-	});
-}
-
-/** Every trip day but the last is a night. */
-export const nightsOf = (days: Day[]) => days.slice(0, -1).map((d) => toDateOnly(d.date));
 
 export function auditTrip(input: {
 	trip: Trip;
