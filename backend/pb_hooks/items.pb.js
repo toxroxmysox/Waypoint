@@ -423,6 +423,9 @@ onRecordCreate((e) => {
 	}
 	if (keep.length !== notGoing.length) e.record.set('not_going', keep);
 
+	// #576 — only done items carry a rating.
+	if ('' + e.record.get('status') !== 'done') e.record.set('rating', '');
+
 	e.next();
 }, 'items');
 
@@ -460,6 +463,9 @@ onRecordUpdate((e) => {
 			notGoing.filter((id) => dropFromNot.indexOf(id) === -1)
 		);
 	}
+
+	// #576 — only done items carry a rating (any write path, incl. status edits).
+	if ('' + e.record.get('status') !== 'done') e.record.set('rating', '');
 
 	e.next();
 }, 'items');

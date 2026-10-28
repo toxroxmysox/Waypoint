@@ -286,6 +286,41 @@ async function main() {
 		stayAfter?.end_date
 	);
 
+	// #576 — rating: only `done` items carry one; leaving done clears it.
+	{
+		const day0 = days[0];
+		const r = (
+			await pb('POST', '/api/collections/items/records', {
+				token: owner,
+				body: { ...base, day: day0.id, status: 'done' }
+			})
+		).data;
+		const patch = (body) =>
+			pb('PATCH', `/api/collections/items/records/${r.id}`, { token: owner, body });
+		const read = async () =>
+			(await pb('GET', `/api/collections/items/records/${r.id}`, { token: owner })).data?.rating;
+		await patch({ rating: 'recommend' });
+		assert('rating: set recommend on a done item', (await read()) === 'recommend', await read());
+		await patch({ status: 'planned', rating: 'recommend' });
+		assert('rating: set on a planned item is cleared', (await read()) === '', await read());
+		await patch({ status: 'done', rating: 'not_recommend' });
+		await patch({ status: 'considered' });
+		assert('rating: done -> considered clears it', (await read()) === '', await read());
+		await patch({ status: 'done' });
+		assert('rating: considered -> done stays unrated', (await read()) === '', await read());
+		const bad = await patch({ rating: 'meh' });
+		assert('rating: bad value rejected', bad.status === 400, bad.status);
+		const created = await pb('POST', '/api/collections/items/records', {
+			token: owner,
+			body: { ...base, day: day0.id, status: 'planned', rating: 'recommend' }
+		});
+		assert(
+			'rating: create on a planned item is cleared',
+			created.status === 200 && created.data.rating === '',
+			created.data?.rating
+		);
+	}
+
 	console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'}: ${pass}/${pass + fail}`);
 	exit(fail === 0 ? 0 : 1);
 }
