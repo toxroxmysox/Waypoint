@@ -27,6 +27,7 @@ export const ITEM_FIELDS = [
 	'end_time',
 	'end_date',
 	'status',
+	'rating',
 	'booked',
 	'requires_booking',
 	'cost_estimate_usd',
@@ -111,14 +112,22 @@ export function dayFrom(days: Day[], all: Item[], date: string): DayData {
 	return { date, day, days, stays, items, notes: stripHtml(day.notes ?? '') };
 }
 
+const RATING_TEXT: Record<string, string> = {
+	recommend: 'Recommended',
+	not_recommend: 'Not recommended'
+};
+
 export function itemCard(i: Item, date?: string): Card {
 	return {
 		emoji: EMOJI[i.type] ?? '•',
 		title: i.title,
 		tag: i.booked ? 'booked' : i.requires_booking ? 'not booked' : undefined,
-		lines: [formatTimeText(i, { date }), i.location_name || i.location_address].filter(
-			Boolean
-		) as string[]
+		lines: [
+			formatTimeText(i, { date }),
+			i.location_name || i.location_address,
+			// #576 — closeout rating, as words.
+			RATING_TEXT[i.rating ?? '']
+		].filter(Boolean) as string[]
 	};
 }
 

@@ -111,6 +111,7 @@ export const WRITABLE: Record<string, WritableSpec> = {
 			end_time: 'HH:MM, trip-local',
 			end_date: 'YYYY-MM-DD, for multi-day stays',
 			status: 'planned | done | considered | unplanned (closeout)',
+			rating: 'recommend | not_recommend | empty to clear; done items only (closeout)',
 			description: 'details',
 			location_name: 'place name',
 			location_address: 'address',

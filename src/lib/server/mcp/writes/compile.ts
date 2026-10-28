@@ -38,6 +38,8 @@ const ITEM_EDIT_REFUSED =
 	"Only the trip's owners can edit items. I can leave a comment for them instead.";
 /** #226 / #402: a traveler may change who's going on any item (PB keeps it self-only). */
 const SELF_FIELDS = new Set(['assigned_to', 'not_going']);
+/** #576: a traveler may rate any item; items.pb.js allows it only once the trip has ended. */
+const TRAVELER_FIELDS = new Set([...SELF_FIELDS, 'rating']);
 /** Collections the app lets only owners/co-owners change (#175, budgets.pb.js). */
 const OWNERS_ONLY: Record<string, string> = { phases: 'phases', trip_budgets: 'the budget' };
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -213,7 +215,7 @@ export async function compileOps(
 				outcome = trip.auto_approve_suggestions ? 'idea' : 'suggested';
 			} else {
 				const own = record?.created_by === ref.memberId;
-				const selfOnly = Object.keys(data).every((f) => SELF_FIELDS.has(f));
+				const selfOnly = Object.keys(data).every((f) => TRAVELER_FIELDS.has(f));
 				if (!own && !selfOnly) throw new Error(ITEM_EDIT_REFUSED);
 			}
 		}

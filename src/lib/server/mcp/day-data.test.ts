@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dayCards, dayFrom, resolveDate } from './day-data';
+import { dayCards, dayFrom, resolveDate, ITEM_FIELDS, itemCard } from './day-data';
 import type { Day, Item } from '$lib/types';
 
 describe('resolveDate', () => {
@@ -80,5 +80,30 @@ describe('dayFrom — red-eye flights (#538)', () => {
 		expect(dayCards(d).find((c) => c.title === 'UA 1')?.lines).toContain(
 			'Lands 6:40a · departed yesterday'
 		);
+	});
+});
+
+describe('rating on items (#576)', () => {
+	const mk = (rating: string, status = 'done') =>
+		({
+			id: 'safari',
+			title: 'Safari',
+			type: 'activity',
+			status,
+			rating,
+			start_time: '',
+			end_time: '',
+			end_date: '',
+			assigned_to: []
+		}) as unknown as Item;
+	it('ITEM_FIELDS asks PB for rating, so every item read carries it', () => {
+		expect(ITEM_FIELDS.split(',')).toContain('rating');
+	});
+	it('a rated item card says so, in words (get_day, search, get_item, trip_brief)', () => {
+		expect(itemCard(mk('recommend')).lines).toContain('Recommended');
+		expect(itemCard(mk('not_recommend')).lines).toContain('Not recommended');
+	});
+	it('an unrated item card says nothing', () => {
+		expect(itemCard(mk('')).lines.join()).not.toMatch(/ecommend/);
 	});
 });

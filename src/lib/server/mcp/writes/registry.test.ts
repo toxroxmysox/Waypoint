@@ -126,3 +126,11 @@ describe('vote labels name the read that gives your_vote (#520, #567)', () => {
 		expect(WRITABLE[collection].label).toContain(`${read} gives as your_vote`);
 	});
 });
+
+describe('items.rating is writable (#576)', () => {
+	it('is described with its values and closeout rule', () => {
+		expect(WRITABLE.items.fields.rating).toBe(
+			'recommend | not_recommend | empty to clear; done items only (closeout)'
+		);
+	});
+});

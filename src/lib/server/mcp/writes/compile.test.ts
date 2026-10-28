@@ -431,3 +431,47 @@ describe('compileOps — dead Item fields are not writable (#536)', () => {
 		expect(WRITABLE.expenses.fields).toHaveProperty('paid_by');
 	});
 });
+
+describe('compileOps — rating (#576)', () => {
+	it('carries rating through unchanged on an update (the PB items hook clears it on a non-done item)', async () => {
+		const [u] = await compile([
+			{ action: 'update', collection: 'items', id: 'lunch', data: { rating: 'recommend' } }
+		]);
+		expect(u.after).toEqual({ rating: 'recommend' });
+		expect(u.before).toEqual({ rating: null });
+		const [c] = await compile([
+			{ action: 'update', collection: 'items', id: 'lunch', data: { rating: '' } }
+		]);
+		expect(c.after).toEqual({ rating: '' });
+	});
+	it("lets a traveler rate any item (PB enforces 'trip ended, done only'), but nothing else", async () => {
+		await expect(
+			compile(
+				[{ action: 'update', collection: 'items', id: 'lunch', data: { rating: 'not_recommend' } }],
+				'traveler'
+			)
+		).resolves.toHaveLength(1);
+		await expect(
+			compile(
+				[
+					{
+						action: 'update',
+						collection: 'items',
+						id: 'lunch',
+						data: { rating: 'recommend', title: 'x' }
+					}
+				],
+				'traveler'
+			)
+		).rejects.toThrow(/Only the trip's owners/);
+	});
+	it('does not refuse an archived trip', async () => {
+		await expect(
+			compile(
+				[{ action: 'update', collection: 'items', id: 'lunch', data: { rating: 'recommend' } }],
+				'owner',
+				{ archived: true }
+			)
+		).resolves.toHaveLength(1);
+	});
+});
