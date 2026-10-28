@@ -470,6 +470,53 @@ async function main() {
 		const r9 = await patch(endsToday.it.id, { status: 'done' }, traveler);
 		assert('closeout: end_date today is not ended yet', r9.status === 403, r9.status);
 
+		// Unplanned ideas are owner curation: a traveler can't resolve one.
+		const idea = (
+			await pb('POST', '/api/collections/items/records', {
+				token: owner,
+				body: { ...base, phase: fx.phaseId, status: 'unplanned' }
+			})
+		).data;
+		const r11 = await patch(idea.id, { status: 'considered' }, traveler);
+		assert('closeout: traveler resolves an unplanned idea', r11.status === 403, r11.status);
+
+		// Replacement may not smuggle other fields.
+		const r12 = await create(
+			{ day: day0.id, status: 'done', created_by: fx.memberIds.traveler },
+			traveler
+		);
+		assert('closeout: traveler done create with created_by', r12.status === 403, r12.status);
+		const r13 = await create({ day: day0.id, status: 'done', cost_actual_usd: 50 }, traveler);
+		assert('closeout: traveler done create with cost_actual_usd', r13.status === 403, r13.status);
+		const r13b = await create(
+			{ day: day0.id, status: 'done', assigned_to: [fx.memberIds.owner] },
+			traveler
+		);
+		assert('closeout: traveler done create with assigned_to', r13b.status === 403, r13b.status);
+		// The exact addReplacement payload still works.
+		const r13c = await pb('POST', '/api/collections/items/records', {
+			token: traveler,
+			body: {
+				trip: fx.tripId,
+				day: day0.id,
+				phase: '',
+				type: 'activity',
+				title: 'Swap',
+				status: 'done',
+				booked: false,
+				sort_order: 999
+			}
+		});
+		assert('closeout: addReplacement payload accepted', r13c.status === 200, {
+			status: r13c.status,
+			msg: r13c.data?.message
+		});
+
+		// Status change + assigning someone else is not a closeout step.
+		const d = await mk('planned');
+		const r14 = await patch(d.id, { status: 'done', assigned_to: [fx.memberIds.owner] }, traveler);
+		assert('closeout: status change plus assigned_to other', r14.status === 403, r14.status);
+
 		// Owner unaffected.
 		const r10 = await patch(active.it.id, { status: 'done' }, owner);
 		assert('closeout: owner unaffected on an active trip', r10.status === 200, r10.status);
