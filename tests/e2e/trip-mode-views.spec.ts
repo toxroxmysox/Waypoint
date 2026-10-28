@@ -79,7 +79,7 @@ test.describe('Trip Mode Views (#244 merged Now)', () => {
 		await expect(bottomNav.locator(':scope > a, :scope > button')).toHaveCount(4);
 	});
 
-	test('Money tab navigates to the /money glance', async ({ page }) => {
+	test('Money tab navigates to the /money summary', async ({ page }) => {
 		await page.setViewportSize({ width: 375, height: 812 });
 		const slug = await goToActiveTrip(page);
 		await page.goto(`${BASE}/trips/${slug}/now`, { waitUntil: 'networkidle' });

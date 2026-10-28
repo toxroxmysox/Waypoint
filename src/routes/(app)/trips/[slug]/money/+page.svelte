@@ -28,11 +28,11 @@
 		unreadCount = data.unreadCount ?? 0;
 	});
 
-	const g = $derived(data.glance);
+	const g = $derived(data.summary);
 	const slug = $derived(data.trip.slug);
 
 	function fmt(n: number): string {
-		// Whole-dollar for the hero rates/totals (a per-day budget is a glance, not a
+		// Whole-dollar for the hero rates/totals (a per-day budget is a summary, not a
 		// ledger); the planning pages show cents.
 		const r = Math.round(n);
 		return r.toLocaleString('en-US');
@@ -63,7 +63,7 @@
 <main
 	class="mx-auto w-full max-w-lg flex-1 space-y-4 px-4 pt-4 pb-[calc(2rem+env(safe-area-inset-bottom))] md-desktop:max-w-2xl"
 >
-	<!-- #230 / ADR-0015 — auto-scoped UNIT glance. Shown only when the viewer is in a
+	<!-- #230 / ADR-0015 — auto-scoped UNIT summary. Shown only when the viewer is in a
 	     declared multi-member Money Unit ("are my wife and I on budget?"). Unit budget =
 	     custom override OR the even share; unit spent = Σ the unit members' shares. Sits
 	     above the per-person figures; deep-links to expenses to manage the unit. -->
@@ -111,7 +111,7 @@
 			</div>
 		</Card>
 	{:else}
-		<!-- N1 — LEFT TO SPEND (hero: per-day rate). The whole point of the glance. -->
+		<!-- N1 — LEFT TO SPEND (hero: per-day rate). The whole point of the summary. -->
 		<a href={expensesHref} class="block">
 			<Card>
 				<div class="p-5 text-center">

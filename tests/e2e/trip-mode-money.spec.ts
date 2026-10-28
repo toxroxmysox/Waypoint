@@ -10,7 +10,7 @@ import { E2E_BASE } from './e2e-env';
 // whitelisted users — direct trip_members.create is admin-only by rule) under its OWN
 // slug, then PATCHes the trip dates ACTIVE (owner can update trip dates) so the trip
 // renders Trip-Mode (clay) chrome, and seeds a budget + two equally-split expenses + a
-// couple of unbooked items. Verifies the per-person glance shows BOTH N1 (left to
+// couple of unbooked items. Verifies the per-person summary shows BOTH N1 (left to
 // spend) and N2 (left for unplanned) and screenshots it at 375px (clay) + desktop.
 
 const BASE = E2E_BASE;
@@ -163,7 +163,7 @@ test.describe('Trip-Mode Money summary (#227)', () => {
 		}
 	});
 
-	test('glance renders both N1 and N2, labeled, per-person', async ({ browser }) => {
+	test('summary renders both N1 and N2, labeled, per-person', async ({ browser }) => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 		try {
 			await page.goto(`${BASE}/trips/${SLUG}/money`, { waitUntil: 'networkidle' });
@@ -197,7 +197,7 @@ test.describe('Trip-Mode Money summary (#227)', () => {
 				page.getByText('Snorkeling tour').filter({ visible: true }).first()
 			).toBeVisible();
 
-			// Read-only: no expense/budget edit controls on the glance.
+			// Read-only: no expense/budget edit controls on the summary.
 			await expect(page.getByRole('button', { name: /add expense/i })).toHaveCount(0);
 			await expect(page.getByRole('button', { name: /save budget/i })).toHaveCount(0);
 		} finally {
@@ -216,7 +216,7 @@ test.describe('Trip-Mode Money summary (#227)', () => {
 		}
 	});
 
-	test('visual: clay glance at 375px', async ({ browser }) => {
+	test('visual: clay summary at 375px', async ({ browser }) => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 		try {
 			await page.setViewportSize({ width: 375, height: 812 });
@@ -242,7 +242,7 @@ test.describe('Trip-Mode Money summary (#227)', () => {
 		}
 	});
 
-	test('visual: glance at desktop', async ({ browser }) => {
+	test('visual: summary at desktop', async ({ browser }) => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 		try {
 			await page.setViewportSize({ width: 1280, height: 900 });

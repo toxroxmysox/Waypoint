@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
-	moneyGlance,
+	moneySummary,
 	groupBudgetTotal,
 	myShareOfExpenses,
 	remainingPlannedTotal,
 	remainingDays,
-	type GlanceItem
-} from './money-glance';
+	type SummaryItem
+} from './money-summary';
 import type { Expense, TripBudget, BudgetCategory } from './types';
 
 // --- builders -------------------------------------------------------------
@@ -37,7 +37,7 @@ function makeBudget(categories: BudgetCategory[]): TripBudget {
 	return { id: 'b1', trip: 'trip1', categories, created: '', updated: '' };
 }
 
-function makeItem(id: string, over: Partial<GlanceItem>): GlanceItem & { id: string } {
+function makeItem(id: string, over: Partial<SummaryItem>): SummaryItem & { id: string } {
 	return { id, booked: false, cost_estimate_usd: 0, ...over };
 }
 
@@ -210,9 +210,9 @@ describe('remainingDays', () => {
 	});
 });
 
-// --- moneyGlance (the whole per-person figure) ----------------------------
+// --- moneySummary (the whole per-person figure) ----------------------------
 
-describe('moneyGlance', () => {
+describe('moneySummary', () => {
 	const baseInput = {
 		meId: 'bob',
 		memberCount: 2,
@@ -223,7 +223,7 @@ describe('moneyGlance', () => {
 
 	it('computes my budget = group total / members', () => {
 		const budget = makeBudget([cat({ category: 'lodging', mode: 'total', total: 1000 })]);
-		const g = moneyGlance([], budget, [], baseInput);
+		const g = moneySummary([], budget, [], baseInput);
 		expect(g.groupBudgetTotal).toBe(1000);
 		expect(g.myBudget).toBe(500); // 1000 / 2
 	});
@@ -237,7 +237,7 @@ describe('moneyGlance', () => {
 			split_mode: 'equal',
 			split_data: { members: ['alice', 'bob'] }
 		});
-		const g = moneyGlance([dinner], budget, [], baseInput);
+		const g = moneySummary([dinner], budget, [], baseInput);
 		expect(g.myBudget).toBe(500); // 1000 / 2
 		expect(g.myShare).toBeCloseTo(150);
 		expect(g.n1LeftToSpend).toBeCloseTo(350); // 500 - 150
@@ -253,7 +253,7 @@ describe('moneyGlance', () => {
 		});
 		// $400 of remaining planned (unbooked, unlinked) -> my share $200.
 		const items = [makeItem('i1', { booked: false, cost_estimate_usd: 400 })];
-		const g = moneyGlance([dinner], budget, items, baseInput);
+		const g = moneySummary([dinner], budget, items, baseInput);
 		expect(g.remainingPlannedTotal).toBe(400);
 		expect(g.myRemainingPlanned).toBe(200); // 400 / 2
 		expect(g.n1LeftToSpend).toBeCloseTo(350); // 500 - 150
@@ -269,7 +269,7 @@ describe('moneyGlance', () => {
 			split_data: { members: ['alice', 'bob'] }
 		});
 		const items = [makeItem('i1', { booked: false, cost_estimate_usd: 400 })];
-		const g = moneyGlance([dinner], budget, items, baseInput);
+		const g = moneySummary([dinner], budget, items, baseInput);
 		expect(g.remainingDays).toBe(4);
 		expect(g.n1PerDay).toBeCloseTo(87.5); // 350 / 4
 		expect(g.n2PerDay).toBeCloseTo(37.5); // 150 / 4
@@ -279,7 +279,7 @@ describe('moneyGlance', () => {
 		const budget = makeBudget([
 			cat({ category: 'food', mode: 'per_day', daily_amount: 60, total: 0 })
 		]);
-		const g = moneyGlance([], budget, [], baseInput);
+		const g = moneySummary([], budget, [], baseInput);
 		expect(g.groupBudgetTotal).toBe(300); // 60 x 5
 		expect(g.myBudget).toBe(150); // 300 / 2
 	});
@@ -288,7 +288,7 @@ describe('moneyGlance', () => {
 
 	it('EMPTY: no expenses, no items, no spend -> N1 = my budget, share 0', () => {
 		const budget = makeBudget([cat({ category: 'lodging', mode: 'total', total: 1000 })]);
-		const g = moneyGlance([], budget, [], baseInput);
+		const g = moneySummary([], budget, [], baseInput);
 		expect(g.myShare).toBe(0);
 		expect(g.remainingPlannedTotal).toBe(0);
 		expect(g.n1LeftToSpend).toBe(500);
@@ -303,7 +303,7 @@ describe('moneyGlance', () => {
 			split_mode: 'equal',
 			split_data: { members: ['alice', 'bob'] }
 		});
-		const g = moneyGlance([dinner], null, [], baseInput);
+		const g = moneySummary([dinner], null, [], baseInput);
 		expect(g.groupBudgetTotal).toBeNull();
 		expect(g.myBudget).toBeNull();
 		expect(g.myShare).toBeCloseTo(150); // still shows what I've consumed
@@ -323,7 +323,7 @@ describe('moneyGlance', () => {
 			split_mode: 'equal',
 			split_data: { members: ['alice', 'bob'] }
 		});
-		const g = moneyGlance([dinner], budget, [], baseInput);
+		const g = moneySummary([dinner], budget, [], baseInput);
 		expect(g.myBudget).toBe(100); // 200 / 2
 		expect(g.myShare).toBeCloseTo(250);
 		expect(g.n1LeftToSpend).toBeCloseTo(-150); // negative, not vanished
@@ -333,7 +333,7 @@ describe('moneyGlance', () => {
 
 	it('ZERO REMAINING DAYS: trip over -> per-day rates null, totals still computed', () => {
 		const budget = makeBudget([cat({ category: 'food', mode: 'total', total: 1000 })]);
-		const g = moneyGlance([], budget, [], { ...baseInput, today: '2026-06-22' });
+		const g = moneySummary([], budget, [], { ...baseInput, today: '2026-06-22' });
 		expect(g.remainingDays).toBe(0);
 		expect(g.n1LeftToSpend).toBe(500); // total still meaningful
 		expect(g.n1PerDay).toBeNull(); // no /0
@@ -342,7 +342,7 @@ describe('moneyGlance', () => {
 
 	it('guards memberCount of 0 (treats as 1, no divide-by-zero)', () => {
 		const budget = makeBudget([cat({ category: 'food', mode: 'total', total: 500 })]);
-		const g = moneyGlance([], budget, [], { ...baseInput, memberCount: 0 });
+		const g = moneySummary([], budget, [], { ...baseInput, memberCount: 0 });
 		expect(g.myBudget).toBe(500); // 500 / 1
 	});
 
@@ -354,7 +354,7 @@ describe('moneyGlance', () => {
 			split_mode: 'equal',
 			split_data: { members: ['bob'] }
 		});
-		const g = moneyGlance([lunch], budget, [], { ...baseInput, memberCount: 1 });
+		const g = moneySummary([lunch], budget, [], { ...baseInput, memberCount: 1 });
 		expect(g.myBudget).toBe(800);
 		expect(g.myShare).toBeCloseTo(50);
 		expect(g.n1LeftToSpend).toBeCloseTo(750);
@@ -374,7 +374,7 @@ describe('moneyGlance', () => {
 			makeItem('i1', { booked: true, cost_estimate_usd: 200 }),
 			makeItem('i2', { booked: false, cost_estimate_usd: 100 })
 		];
-		const g = moneyGlance([logged], budget, items, baseInput);
+		const g = moneySummary([logged], budget, items, baseInput);
 		expect(g.remainingPlannedTotal).toBe(100); // only i2
 		expect(g.myShare).toBeCloseTo(100); // my half of the $200 logged
 	});
