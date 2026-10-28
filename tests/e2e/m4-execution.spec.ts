@@ -1,61 +1,81 @@
 import { test, expect } from '@playwright/test';
-import { E2E_BASE } from './e2e-env';
+import { E2E_BASE, E2E_PB_BASE } from './e2e-env';
+import { EMAILS, pb, token } from './japan-fixture';
 
 // playwright.config.ts boots `npm run build && npm run preview` on :4173.
 const BASE = E2E_BASE;
 
-// The first trip belonging to E2E_TEST_EMAIL is active (today ∈ trip dates), so it
-// loads in *trip mode* — the nav surfaces Now/Money/Add/Docs, NOT a "More" tab.
-// Secondary pages live at known routes, so navigate by URL (mode- and viewport-
-// independent) rather than clicking nav chrome that only exists in one mode.
-async function openTripSlug(page: import('@playwright/test').Page): Promise<string> {
-	await page.goto(`${BASE}/trips`, { waitUntil: 'networkidle' });
-	await page.locator('a[href*="/trips/"]').first().click();
-	await page.waitForURL('**/trips/**');
-	return page.url().split('/trips/')[1].split(/[/?#]/)[0];
-}
+// #552 — this spec seeds its own trip (rules-fixture, re-dated 3 days ago → +4 days
+// so it is active and loads in Trip Mode) with one planned item, instead of clicking whichever
+// trip the shared E2E_TEST_EMAIL user saw first. Secondary pages live at known
+// routes, so navigate by URL rather than clicking nav chrome.
+const SLUG = 'e2e-m4-execution-552';
 
 test.describe('M4 Execution', () => {
+	test.describe.configure({ mode: 'serial' });
+
+	let itemId = '';
+
+	test.beforeAll(async () => {
+		const owner = await token(EMAILS.owner);
+		const res = await fetch(`${E2E_PB_BASE}/api/dev/rules-fixture`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${owner}` },
+			body: JSON.stringify({ emails: EMAILS, slug: SLUG })
+		});
+		expect(res.ok, `rules-fixture: ${res.status}`).toBe(true);
+		const { tripId, phaseId } = (await res.json()) as { tripId: string; phaseId: string };
+		const ymd = (offset: number) =>
+			new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
+		await pb(owner, 'PATCH', `/api/collections/trips/records/${tripId}`, {
+			// Starts before mcp-seed's Porto trip (yesterday): the rules users are
+			// shared, and MCP trip_brief briefs the current trip with the latest start.
+			start_date: `${ymd(-3)} 00:00:00.000Z`,
+			end_date: `${ymd(4)} 00:00:00.000Z`
+		});
+		const days = (
+			await pb(
+				owner,
+				'GET',
+				`/api/collections/days/records?sort=date&filter=${encodeURIComponent(`trip="${tripId}"`)}`
+			)
+		).items as { id: string; date: string }[];
+		const item = await pb(owner, 'POST', '/api/collections/items/records', {
+			trip: tripId,
+			phase: phaseId,
+			day: days[0].id,
+			type: 'activity',
+			title: 'M4 planned activity',
+			status: 'planned',
+			start_time: `${days[0].date.slice(0, 10)} 10:00:00.000Z`,
+			sort_order: 100
+		});
+		itemId = item.id as string;
+	});
+
 	test.beforeEach(async ({ page }) => {
-		// Dev login (param-less → falls back to E2E_TEST_EMAIL).
-		await page.goto(`${BASE}/api/dev/login`);
+		await page.goto(`${BASE}/api/dev/login?email=${encodeURIComponent(EMAILS.owner)}`);
 		await page.waitForURL('**/trips');
 	});
 
 	test('vote button renders on item detail', async ({ page }) => {
-		const slug = await openTripSlug(page);
+		await page.goto(`${BASE}/trips/${SLUG}/items/${itemId}`, { waitUntil: 'networkidle' });
 
+		// #442: a planned item carries the quiet "Your vote" row in Details.
+		// #439: in Trip Mode Details is the collapsed "Plan details"; open it.
 		// The trip layout is dual-tree (one CSS-hidden); scope to the visible subtree.
-		const dayLink = page.locator(`a[href*="/trips/${slug}/days/"]:visible`).first();
-		if (await dayLink.isVisible()) {
-			await dayLink.click();
-			await page.waitForURL('**/days/**');
-
-			// Click an existing item link (exclude /items/new and /edit).
-			const itemLink = page
-				.locator(`a[href*="/items/"]:not([href*="/items/new"]):not([href*="/edit"]):visible`)
-				.first();
-			if (await itemLink.isVisible()) {
-				await itemLink.click();
-				await page.waitForURL('**/items/**');
-
-				// #442: a planned item carries the quiet "Your vote" row in Details.
-				// #439: in Trip Mode Details is the collapsed "Plan details"; open it.
-				const planDetails = page.getByTestId('plan-details').filter({ visible: true }).first();
-				if (await planDetails.isVisible()) await planDetails.locator('summary').click();
-				await expect(
-					page.getByTestId('item-your-vote').filter({ visible: true }).first()
-				).toBeVisible();
-			}
-		}
+		const planDetails = page.getByTestId('plan-details').filter({ visible: true }).first();
+		await planDetails.locator('summary').click();
+		await expect(
+			page.getByTestId('item-your-vote').filter({ visible: true }).first()
+		).toBeVisible();
 	});
 
 	test('trip mode today view renders', async ({ page }) => {
-		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/now`, { waitUntil: 'networkidle' });
-		await page.waitForURL('**/now');
-
 		// #244 merged Today into the weighted Now view (/today 308-redirects to /now).
+		// An inactive trip would redirect away from /now, so the URL proves Trip Mode.
+		await page.goto(`${BASE}/trips/${SLUG}/now`, { waitUntil: 'networkidle' });
+		await expect(page).toHaveURL(new RegExp(`/trips/${SLUG}/now$`));
 		await expect(page.locator('main:visible').first()).toBeVisible();
 	});
 
@@ -72,9 +92,8 @@ test.describe('M4 Execution', () => {
 
 	test('mobile responsive — trip mode at 375px', async ({ page }) => {
 		await page.setViewportSize({ width: 375, height: 812 });
-		const slug = await openTripSlug(page);
-		await page.goto(`${BASE}/trips/${slug}/now`, { waitUntil: 'networkidle' });
-		await page.waitForURL('**/now');
+		await page.goto(`${BASE}/trips/${SLUG}/now`, { waitUntil: 'networkidle' });
+		await expect(page).toHaveURL(new RegExp(`/trips/${SLUG}/now$`));
 
 		const main = page.locator('main:visible').first();
 		const box = await main.boundingBox();
