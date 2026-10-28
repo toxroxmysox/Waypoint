@@ -35,8 +35,8 @@
 		v?.budget_per_person ?? (f?.budgetPerPerson ? String(f.budgetPerPerson) : '')
 	);
 	let sketch = $state<PhaseSketchSegment[]>(f?.sketch ? [...f.sketch] : []);
-	let selectedKeystones = $state<Set<string>>(new Set(f?.keystones ?? []));
-	let newKeystones = $state('');
+	let selectedCoreIdeas = $state<Set<string>>(new Set(f?.coreIdeas ?? []));
+	let newCoreIdeas = $state('');
 
 	// #375 — a server fail() renders its explanation at the top of the page,
 	// out of sight from the submit control. Scroll it (or the named field) back
@@ -47,11 +47,11 @@
 	});
 	let submitting = $state(false);
 
-	function toggleKeystone(id: string) {
-		const next = new Set(selectedKeystones);
+	function toggleCoreIdea(id: string) {
+		const next = new Set(selectedCoreIdeas);
 		if (next.has(id)) next.delete(id);
 		else next.add(id);
-		selectedKeystones = next;
+		selectedCoreIdeas = next;
 	}
 </script>
 
@@ -170,36 +170,36 @@
 			</div>
 		</Card>
 
-		<!-- Keystones — anchor ideas. Pick from existing, or quick-create new ones. -->
+		<!-- Core Ideas — anchor ideas. Pick from existing, or quick-create new ones. -->
 		<Card>
 			<div class="p-4">
 				<p class="text-xs font-semibold text-ink-soft">Anchor ideas</p>
 				<p class="mt-0.5 text-[11px] text-ink-muted">The must-dos that make this pitch worth it.</p>
 				{#if data.ideas.length > 0}
-					<div class="mt-1" data-testid="keystone-picker">
+					<div class="mt-1" data-testid="core-idea-picker">
 						{#each data.ideas as idea, i (idea.id)}
 							<Row
 								type={idea.type}
 								subtype={idea.subtype}
 								title={idea.title}
 								sub={idea.place}
-								selected={selectedKeystones.has(idea.id)}
-								onselect={() => toggleKeystone(idea.id)}
+								selected={selectedCoreIdeas.has(idea.id)}
+								onselect={() => toggleCoreIdea(idea.id)}
 								divider={i < data.ideas.length - 1}
 							/>
 						{/each}
 					</div>
 				{/if}
-				{#each [...selectedKeystones] as id (id)}
-					<input type="hidden" name="keystone" value={id} />
+				{#each [...selectedCoreIdeas] as id (id)}
+					<input type="hidden" name="core_idea" value={id} />
 				{/each}
 				<label for="sc-newk" class="mt-3 block text-[11px] text-ink-muted"
 					>Add new anchors (one per line)</label
 				>
 				<textarea
 					id="sc-newk"
-					name="new_keystones"
-					bind:value={newKeystones}
+					name="new_core_ideas"
+					bind:value={newCoreIdeas}
 					rows="2"
 					placeholder="Doi Suthep sunrise&#10;Street-food crawl"
 					class="mt-1 block w-full rounded-md border border-line bg-surface px-2.5 py-1.5 text-sm text-ink"

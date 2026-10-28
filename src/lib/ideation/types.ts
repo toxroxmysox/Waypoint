@@ -12,20 +12,20 @@ export interface PhaseSketchSegment {
 	days: number;
 }
 
-/** A pitch for what a forming trip could be. Champion-authored, forkable. */
+/** A pitch for what a forming trip could be. Authored by its Scenario Creator (stored as `champion`), forkable. */
 export interface Scenario {
 	id: string;
 	trip: string;
 	title: string;
 	pitch: string;
-	champion: string; // trip_members id
+	champion: string; // trip_members id — the Scenario Creator
 	date_start: string; // '' when unset
 	date_end: string; // '' when unset
 	// ⚠ PB numbers can't be null — unset stores as 0. Treat 0/falsy as "no budget"
 	// everywhere (the #332/#335 scar); never render "$0".
 	budget_per_person: number;
 	phase_sketch: PhaseSketchSegment[]; // [] when unset
-	keystones: string[]; // items ids
+	keystones: string[]; // items ids — the Core Ideas
 	fork_of: string; // '' when not a fork
 	status: ScenarioStatus;
 	created: string;
@@ -70,7 +70,7 @@ export interface Decision {
 	created: string;
 }
 
-/** The frozen snapshot: every scenario (incl. sketch + keystone labels), vote
+/** The frozen snapshot: every scenario (incl. sketch + Core Idea labels), vote
  *  tallies, pros/cons, chooser, and date at the moment of the decision. */
 export interface DecisionPayload {
 	chosen_scenario: string;
@@ -84,6 +84,8 @@ export interface DecisionPayload {
 	scenarios: DecisionScenarioSnapshot[];
 }
 
+// Stored JSON keys in `decisions.payload`: `champion_name` = Scenario Creator,
+// `keystone_labels` = Core Ideas. Never renamed — existing records carry them.
 export interface DecisionScenarioSnapshot {
 	id: string;
 	title: string;

@@ -38,14 +38,11 @@ export const load: PageServerLoad = async ({ parent, locals, params }) => {
 	const members = withAvatarUrls(locals.pb, membersRaw as never);
 
 	const myVote = votes.find((v) => v.member === membership.id) ?? null;
-	const champion = scenario.expand?.champion;
-	const championName =
-		champion?.display_name ||
-		champion?.placeholder_name ||
-		champion?.expand?.user?.name ||
-		'Someone';
+	const creator = scenario.expand?.champion;
+	const creatorName =
+		creator?.display_name || creator?.placeholder_name || creator?.expand?.user?.name || 'Someone';
 
-	const isChampion = scenario.champion === membership.id;
+	const isCreator = scenario.champion === membership.id;
 	const isOwnerTier = membership.role === 'owner' || membership.role === 'co_owner';
 	const canWeigh = membership.role !== 'viewer';
 	const hasDates = !!(scenario.date_start && scenario.date_end);
@@ -55,7 +52,7 @@ export const load: PageServerLoad = async ({ parent, locals, params }) => {
 			id: scenario.id,
 			title: scenario.title,
 			pitch: scenario.pitch || '',
-			championName,
+			creatorName,
 			forkOfTitle: scenario.expand?.fork_of?.title || '',
 			forkOfId: scenario.fork_of || '',
 			status: scenario.status,
@@ -64,7 +61,7 @@ export const load: PageServerLoad = async ({ parent, locals, params }) => {
 			hasDates,
 			budgetPerPerson: scenario.budget_per_person > 0 ? scenario.budget_per_person : 0,
 			sketch: Array.isArray(scenario.phase_sketch) ? scenario.phase_sketch : [],
-			keystoneLabels: (scenario.expand?.keystones ?? []).map((k: Item) => k.title)
+			coreIdeaLabels: (scenario.expand?.keystones ?? []).map((k: Item) => k.title)
 		},
 		votes: votes.map((v) => ({ id: v.id, member: v.member, value: v.value })),
 		myVote: myVote ? { id: myVote.id, value: myVote.value } : null,
@@ -81,7 +78,7 @@ export const load: PageServerLoad = async ({ parent, locals, params }) => {
 			mine: p.member === membership.id
 		})),
 		members,
-		perms: { isChampion, isOwnerTier, canWeigh, canPromote: isOwnerTier && hasDates }
+		perms: { isCreator, isOwnerTier, canWeigh, canPromote: isOwnerTier && hasDates }
 	};
 };
 
@@ -175,7 +172,7 @@ export const actions: Actions = {
 		}
 	},
 
-	// Champion-only delete (scenarios.pb.js re-enforces). Redirects home.
+	// Creator-only delete (scenarios.pb.js re-enforces). Redirects home.
 	deleteScenario: async ({ params, locals }) => {
 		try {
 			const { scenario } = await resolve(locals, params.slug, params.id);
@@ -183,7 +180,7 @@ export const actions: Actions = {
 		} catch (err: unknown) {
 			if (isRedirect(err)) throw err;
 			return fail(403, {
-				error: err instanceof Error ? err.message : 'Only the champion can delete this.'
+				error: err instanceof Error ? err.message : 'Only its creator can delete this.'
 			});
 		}
 		redirect(303, `/trips/${params.slug}`);

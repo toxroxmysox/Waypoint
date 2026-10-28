@@ -76,7 +76,7 @@
 					>
 				{/if}
 			</div>
-			<p class="mt-0.5 text-[12px] text-ink-muted">{s.championName}'s pitch</p>
+			<p class="mt-0.5 text-[12px] text-ink-muted">{s.creatorName}'s pitch</p>
 			{#if s.pitch}<p class="mt-2 text-sm text-ink-soft">{s.pitch}</p>{/if}
 
 			{#if s.hasDates || s.budgetPerPerson > 0}
@@ -99,12 +99,12 @@
 				<div class="mt-1.5"><ScenarioSketchStrip sketch={s.sketch} /></div>
 			{/if}
 
-			{#if s.keystoneLabels.length > 0}
+			{#if s.coreIdeaLabels.length > 0}
 				<p class="mt-3 text-[9.5px] font-bold tracking-[0.09em] text-ink-muted uppercase">
 					Going here, doing this
 				</p>
 				<div class="mt-1 flex flex-wrap gap-1.5">
-					{#each s.keystoneLabels as label (label)}
+					{#each s.coreIdeaLabels as label (label)}
 						<span class="rounded-full bg-surface-2 px-2.5 py-1 text-[11px] text-ink-soft"
 							>{label}</span
 						>
@@ -260,7 +260,7 @@
 		</Card>
 	</div>
 
-	<!-- Actions: fork (anyone), champion edit/delete, owner promote -->
+	<!-- Actions: fork (anyone), creator edit/delete, owner promote -->
 	<div class="space-y-2 pt-1">
 		{#if data.perms.canWeigh}
 			<Button
@@ -274,7 +274,7 @@
 			</Button>
 		{/if}
 
-		{#if data.perms.isChampion}
+		{#if data.perms.isCreator}
 			<div class="flex gap-2">
 				<Button
 					href="/trips/{data.trip.slug}/scenarios/new?fork={s.id}"

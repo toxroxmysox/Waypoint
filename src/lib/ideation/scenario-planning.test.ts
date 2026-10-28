@@ -234,7 +234,7 @@ describe('planPromotion', () => {
 			{ name: 'Chiang Mai', start: '2027-11-09' },
 			{ name: 'Ko Lanta', start: '2027-11-13' }
 		]);
-		expect(plan.keystoneItemIds).toEqual(['itemA', 'itemB']);
+		expect(plan.coreIdeaItemIds).toEqual(['itemA', 'itemB']);
 		expect(plan.budgetPerPerson).toBe(1900);
 	});
 
@@ -274,7 +274,7 @@ describe('planPromotion', () => {
 		const plan = planPromotion(
 			scenario({ date_start: '2027-11-06', date_end: '2027-11-17', keystones })
 		);
-		plan.keystoneItemIds.push('c');
+		plan.coreIdeaItemIds.push('c');
 		expect(keystones).toEqual(['a', 'b']);
 	});
 });
@@ -285,7 +285,7 @@ describe('scenarioDimensions', () => {
 			dates: false,
 			budget: false,
 			sketch: false,
-			keystones: false
+			coreIdeas: false
 		});
 		expect(
 			scenarioDimensions(
@@ -297,7 +297,7 @@ describe('scenarioDimensions', () => {
 					keystones: ['x']
 				})
 			)
-		).toEqual({ dates: true, budget: true, sketch: true, keystones: true });
+		).toEqual({ dates: true, budget: true, sketch: true, coreIdeas: true });
 	});
 
 	it('a lone start date does NOT count as the dates dimension (needs both)', () => {
@@ -315,7 +315,7 @@ describe('boardLiveDimensions + emptySlotsFor (converge-over-time)', () => {
 			dates: false,
 			budget: false,
 			sketch: false,
-			keystones: false
+			coreIdeas: false
 		});
 	});
 
@@ -324,7 +324,7 @@ describe('boardLiveDimensions + emptySlotsFor (converge-over-time)', () => {
 			dates: true,
 			budget: true,
 			sketch: false,
-			keystones: false
+			coreIdeas: false
 		});
 	});
 
@@ -335,14 +335,14 @@ describe('boardLiveDimensions + emptySlotsFor (converge-over-time)', () => {
 			dates: false,
 			budget: true,
 			sketch: false,
-			keystones: false
+			coreIdeas: false
 		});
 		// `bare` filled nothing → empty slots for both live dimensions.
 		expect(emptySlotsFor(bare, board)).toEqual({
 			dates: true,
 			budget: true,
 			sketch: false,
-			keystones: false
+			coreIdeas: false
 		});
 	});
 

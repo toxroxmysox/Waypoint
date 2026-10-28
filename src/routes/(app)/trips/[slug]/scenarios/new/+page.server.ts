@@ -4,7 +4,7 @@ import type { Item, TripMember } from '$lib/types';
 import type { PhaseSketchSegment } from '$lib/ideation/types';
 import { normalizeSketchToWindow } from '$lib/ideation/scenario-planning';
 
-// #337 — the scenario composer. Title first; dates / budget / sketch / keystones
+// #337 — the scenario composer. Title first; dates / budget / sketch / Core Ideas
 // ALL optional (spec §Surface). Only forming trips have a board; a viewer can't
 // pitch. `fork` query param pre-fills from an existing scenario (the fork path).
 export const load: PageServerLoad = async ({ parent, locals, url }) => {
@@ -18,7 +18,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		redirect(303, `/trips/${trip.slug}`);
 	}
 
-	// Existing forming ideas (unplanned items) for the keystone picker.
+	// Existing forming ideas (unplanned items) for the Core Idea picker.
 	const ideas = await locals.pb.collection('items').getFullList<Item>({
 		filter: `trip = "${trip.id}"`,
 		fields: 'id,title,type,subtype,location_name',
@@ -34,7 +34,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		dateEnd: string;
 		budgetPerPerson: number;
 		sketch: PhaseSketchSegment[];
-		keystones: string[];
+		coreIdeas: string[];
 	} | null = null;
 	const forkId = url.searchParams.get('fork');
 	if (forkId) {
@@ -49,7 +49,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 					dateEnd: src.date_end ? src.date_end.slice(0, 10) : '',
 					budgetPerPerson: src.budget_per_person > 0 ? src.budget_per_person : 0,
 					sketch: Array.isArray(src.phase_sketch) ? src.phase_sketch : [],
-					keystones: Array.isArray(src.keystones) ? src.keystones : []
+					coreIdeas: Array.isArray(src.keystones) ? src.keystones : []
 				};
 			}
 		} catch {
@@ -161,18 +161,18 @@ export const actions: Actions = {
 				sketch = normalizeSketchToWindow(sketch, dateStart, dateEnd);
 			}
 
-			// Keystones: existing idea ids the composer selected.
-			const existingKeystones = data
-				.getAll('keystone')
+			// Core Ideas: existing idea ids the composer selected.
+			const existingCoreIdeas = data
+				.getAll('core_idea')
 				.map((v) => v.toString())
 				.filter(Boolean);
 
-			// Keystone quick-create: newline-separated titles → unplanned items via the
+			// Core Idea quick-create: newline-separated titles → unplanned items via the
 			// shared ideas capture path (/api/suggestions/create). Auto-approved
 			// (owner/co_owner, or auto-approve trips) returns an item_id we attach; a
 			// queued traveler suggestion returns no id and simply isn't attached yet.
 			const quickCreated: string[] = [];
-			const quickRaw = data.get('new_keystones')?.toString() || '';
+			const quickRaw = data.get('new_core_ideas')?.toString() || '';
 			for (const line of quickRaw
 				.split('\n')
 				.map((l) => l.trim())
@@ -189,15 +189,15 @@ export const actions: Actions = {
 				}
 			}
 
-			const keystones = [...new Set([...existingKeystones, ...quickCreated])];
+			const coreIdeas = [...new Set([...existingCoreIdeas, ...quickCreated])];
 
 			const body: Record<string, unknown> = {
 				trip: trip.id,
 				title,
 				pitch,
-				champion: membership.id,
+				champion: membership.id, // the Scenario Creator
 				status: 'candidate',
-				keystones,
+				keystones: coreIdeas,
 				phase_sketch: sketch
 			};
 			if (dateStart && dateEnd) {
