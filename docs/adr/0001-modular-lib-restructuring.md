@@ -1,6 +1,6 @@
 # ADR-0001: Modular lib/ Restructuring
 
-**Status:** Proposed
+**Status:** Accepted (implemented; status corrected 2026-10-27, #548)
 **Date:** 2026-05-29
 **Updated:** 2026-05-29
 **Deciders:** Scott
