@@ -27,7 +27,7 @@
 	import { itemMenuEntries, itemPermissions } from '$lib/itinerary/item-actions';
 	import { heroStatus } from '$lib/trip-mode/hero';
 	import { formatCountdown } from '$lib/shell/format';
-	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
+	import NotificationBell from '$lib/group-input/components/NotificationBell.svelte';
 	import type { Item } from '$lib/types';
 	import { page } from '$app/state';
 	import { invalidateAll } from '$app/navigation';

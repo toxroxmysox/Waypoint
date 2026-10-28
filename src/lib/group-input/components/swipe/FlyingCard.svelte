@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import type { VoteValue } from '$lib/collaboration/voting';
+	import type { VoteValue } from '$lib/group-input/voting';
 
 	// The voted card departs as its own layer, flying off in the vote direction
 	// while the next card rises from the deck (.wp-rise). It starts from the card's

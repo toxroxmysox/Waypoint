@@ -6,8 +6,8 @@
 	import Button from '$lib/ui/Button.svelte';
 	import Avatar from '$lib/ui/Avatar.svelte';
 	import BottomSheet from '$lib/ui/BottomSheet.svelte';
-	import GoalSentimentStacks from '$lib/collaboration/components/GoalSentimentStacks.svelte';
-	import GoalVoteResultsSheet from '$lib/collaboration/components/GoalVoteResultsSheet.svelte';
+	import GoalSentimentStacks from '$lib/group-input/components/GoalSentimentStacks.svelte';
+	import GoalVoteResultsSheet from '$lib/group-input/components/GoalVoteResultsSheet.svelte';
 	import { memberDisplayName, memberInitial } from '$lib/itinerary/member-name';
 	import { untrack } from 'svelte';
 	import type { TripGoal } from '$lib/types';

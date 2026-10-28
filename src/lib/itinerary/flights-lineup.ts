@@ -1,5 +1,5 @@
 import type { Item } from '$lib/types';
-import type { MemberWithAvatar } from '$lib/collaboration/member-avatar';
+import type { MemberWithAvatar } from '$lib/group-input/member-avatar';
 import { memberDisplayName, memberInitial } from './member-name';
 
 // Flights Smart List (#225, PRD docs/ITEM_ASSIGNMENT_PRD.md — Slice 3): a

@@ -1,7 +1,7 @@
 import type PocketBase from 'pocketbase';
-import type { TripMember } from '$lib/collaboration/types';
+import type { TripMember } from '$lib/group-input/types';
 import type { Item } from '$lib/itinerary/types';
-import { withAvatarUrls, type MemberWithAvatar } from '$lib/collaboration/member-avatar';
+import { withAvatarUrls, type MemberWithAvatar } from '$lib/group-input/member-avatar';
 import type { Scenario, ScenarioVote, ScenarioPoint, PhaseSketchSegment } from './types';
 import {
 	boardLiveDimensions,

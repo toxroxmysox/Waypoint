@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { flightsLineup, type FlightItemInput } from './flights-lineup';
-import type { MemberWithAvatar } from '$lib/collaboration/member-avatar';
+import type { MemberWithAvatar } from '$lib/group-input/member-avatar';
 import type { Item } from '$lib/types';
 
 // A flight Item carrying the stored fields the lookup persists, plus the

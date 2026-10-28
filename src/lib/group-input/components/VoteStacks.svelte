@@ -5,7 +5,7 @@
 		groupVotesByOption,
 		type DisplayVote,
 		type VoteValue
-	} from '$lib/collaboration/voting';
+	} from '$lib/group-input/voting';
 	import Avatar from '$lib/ui/Avatar.svelte';
 
 	// Target-agnostic (ADR-0004/0009): item `Vote`, `GoalVote`, and

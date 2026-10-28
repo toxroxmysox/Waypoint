@@ -117,7 +117,7 @@ All already render `<Avatar>` with `initial=` only:
 
 | Surface                  | File                                                                                   |
 | ------------------------ | -------------------------------------------------------------------------------------- |
-| Vote stacks              | [`VoteStacks.svelte`](../src/lib/collaboration/components/VoteStacks.svelte)           |
+| Vote stacks              | [`VoteStacks.svelte`](../src/lib/group-input/components/VoteStacks.svelte)             |
 | Members list             | [`members/+page.svelte`](<../src/routes/(app)/trips/[slug]/members/+page.svelte>)      |
 | Assignee picker          | [`AssignMemberSheet.svelte`](../src/lib/itinerary/components/AssignMemberSheet.svelte) |
 | Task assignee            | [`TaskRow.svelte`](../src/lib/itinerary/components/TaskRow.svelte)                     |

@@ -155,5 +155,5 @@ export interface TripGoal extends RecordModel {
 	// Autodate (added 0041). Drives the Goals-tab oldest-first vote tiebreak (#77).
 	created: string;
 	updated: string;
-	expand?: { created_by?: import('../collaboration/types').TripMember };
+	expand?: { created_by?: import('../group-input/types').TripMember };
 }

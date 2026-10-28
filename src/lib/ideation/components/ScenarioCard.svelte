@@ -9,9 +9,9 @@
 	// Converge-over-time: a LIVE dimension this card hasn't filled renders a quiet
 	// empty slot ("no dates yet") instead of the content.
 	import type { BoardScenario } from '$lib/ideation/scenario-board.server';
-	import type { MemberWithAvatar } from '$lib/collaboration/member-avatar';
+	import type { MemberWithAvatar } from '$lib/group-input/member-avatar';
 	import Card from '$lib/ui/Card.svelte';
-	import VoteStacks from '$lib/collaboration/components/VoteStacks.svelte';
+	import VoteStacks from '$lib/group-input/components/VoteStacks.svelte';
 	import ScenarioSketchStrip from './ScenarioSketchStrip.svelte';
 	import { formatDateRange } from '$lib/shell/format';
 

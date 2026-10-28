@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { Day, Expense, Item, TripMember, Vote } from '$lib/types';
 import { toDateOnly } from '$lib/itinerary/multi-day';
-import { tallyVotes } from '$lib/collaboration/voting';
+import { tallyVotes } from '$lib/group-input/voting';
 import { myTrips } from '../context';
 import { ITEM_FIELDS, itemCard } from '../day-data';
 import { offTrip, result, stripHtml, type Card } from '../present';

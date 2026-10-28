@@ -30,9 +30,9 @@
 	import GoingAnswer from '$lib/itinerary/components/GoingAnswer.svelte';
 	import MarkBookedSheet from '$lib/itinerary/components/MarkBookedSheet.svelte';
 
-	import { votePills } from '$lib/collaboration/voting';
+	import { votePills } from '$lib/group-input/voting';
 	import { memberDisplayName } from '$lib/itinerary/member-name';
-	import VotePills from '$lib/collaboration/components/VotePills.svelte';
+	import VotePills from '$lib/group-input/components/VotePills.svelte';
 	import ItemActionsMenu from '$lib/itinerary/components/ItemActionsMenu.svelte';
 	import ItemActionSheets from '$lib/itinerary/components/ItemActionSheets.svelte';
 	import ChecklistBody from '$lib/itinerary/components/ChecklistBody.svelte';

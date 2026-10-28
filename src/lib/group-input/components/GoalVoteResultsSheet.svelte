@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { GoalVote, Vote, TripMember } from '$lib/types';
-	import { VOTE_OPTIONS, groupVotesByOption, type VoteValue } from '$lib/collaboration/voting';
+	import { VOTE_OPTIONS, groupVotesByOption, type VoteValue } from '$lib/group-input/voting';
 	import Avatar from '$lib/ui/Avatar.svelte';
 	import BottomSheet from '$lib/ui/BottomSheet.svelte';
 

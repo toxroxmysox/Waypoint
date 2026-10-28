@@ -17,12 +17,12 @@
 	import { withOrigin } from '$lib/shell/back-nav';
 	import { page } from '$app/state';
 	import { toast } from '$lib/shell/stores/toast';
-	import type { Suggestion } from '$lib/collaboration/types';
+	import type { Suggestion } from '$lib/group-input/types';
 	import type { TripMember } from '$lib/types';
-	import type { DisplayVote } from '$lib/collaboration/voting';
+	import type { DisplayVote } from '$lib/group-input/voting';
 	import Card from '$lib/ui/Card.svelte';
 	import Pill from '$lib/ui/Pill.svelte';
-	import VotePills from '$lib/collaboration/components/VotePills.svelte';
+	import VotePills from '$lib/group-input/components/VotePills.svelte';
 	import { ideaSub } from '$lib/itinerary/idea-groups';
 	import WhatIsLink from '$lib/ui/WhatIsLink.svelte';
 

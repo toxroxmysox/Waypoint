@@ -3,9 +3,9 @@
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import Card from '$lib/ui/Card.svelte';
 	import Button from '$lib/ui/Button.svelte';
-	import VoteStacks from '$lib/collaboration/components/VoteStacks.svelte';
+	import VoteStacks from '$lib/group-input/components/VoteStacks.svelte';
 	import ScenarioSketchStrip from '$lib/ideation/components/ScenarioSketchStrip.svelte';
-	import { VOTE_OPTIONS, type VoteValue } from '$lib/collaboration/voting';
+	import { VOTE_OPTIONS, type VoteValue } from '$lib/group-input/voting';
 	import { optimisticSubmit, nextVote } from '$lib/ui/optimistic-submit';
 
 	let { data, form } = $props();

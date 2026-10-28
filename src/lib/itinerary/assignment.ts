@@ -1,4 +1,4 @@
-import type { MemberRole } from '$lib/collaboration/types';
+import type { MemberRole } from '$lib/group-input/types';
 
 // The self-assign brain (#226, ADR-0011). Two pure, I/O-free functions so the
 // "who may self-assign" + "toggle me on/off this item" rules live in exactly one

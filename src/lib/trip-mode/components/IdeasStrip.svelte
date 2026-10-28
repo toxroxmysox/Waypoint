@@ -16,7 +16,7 @@
 	// owner/co_owner (`canPlan`).
 	import { enhance } from '$app/forms';
 	import type { Item, Vote } from '$lib/types';
-	import type { MemberWithAvatar } from '$lib/collaboration/member-avatar';
+	import type { MemberWithAvatar } from '$lib/group-input/member-avatar';
 	import IdeaCard from '$lib/itinerary/components/IdeaCard.svelte';
 	import IdeaGroupHeading from '$lib/itinerary/components/IdeaGroupHeading.svelte';
 	import { ideaGroups, ideaScores } from '$lib/itinerary/idea-groups';

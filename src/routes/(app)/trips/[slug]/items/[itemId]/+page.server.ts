@@ -12,10 +12,10 @@ import type {
 	Expense,
 	TripGoal
 } from '$lib/types';
-import { VOTE_OPTIONS, type VoteValue } from '$lib/collaboration/voting';
+import { VOTE_OPTIONS, type VoteValue } from '$lib/group-input/voting';
 import { toDocumentView } from '$lib/documents/view';
 import { isFileDocument, codesForItem } from '$lib/documents/codes';
-import { memberAvatarUrl, withAvatarUrls } from '$lib/collaboration/member-avatar';
+import { memberAvatarUrl, withAvatarUrls } from '$lib/group-input/member-avatar';
 import { computeMovePatch } from '$lib/itinerary/move-item';
 import { paidSummaryForItem } from '$lib/money/linked-expenses';
 import { itemPermissions, ITEM_ACTION_ERRORS } from '$lib/itinerary/item-actions';

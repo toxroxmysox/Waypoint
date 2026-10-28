@@ -1,7 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { TripMember, PendingInvite, User, JoinToken } from '$lib/types';
-import { memberAvatarUrl } from '$lib/collaboration/member-avatar';
+import { memberAvatarUrl } from '$lib/group-input/member-avatar';
 import { memberDisplayName } from '$lib/itinerary/member-name';
 import { pbFileUrl } from '$lib/shell/pb-file-url';
 import { pbBaseUrl } from '$lib/shell/pb';

@@ -1,19 +1,19 @@
 <script lang="ts" generics="C extends { id: string }">
 	import type { Snippet } from 'svelte';
 	import type { Vote, TripMember } from '$lib/types';
-	import { type VoteValue } from '$lib/collaboration/voting';
+	import { type VoteValue } from '$lib/group-input/voting';
 	import {
 		voteFromIntent,
 		commitFromRelease,
 		COMMIT_PX,
 		type PointerSample
-	} from '$lib/collaboration/swipe-physics';
+	} from '$lib/group-input/swipe-physics';
 	import { haptic } from '$lib/utils/haptics';
 	import { VOTE_META } from './vote-meta';
 	import RadialProgress from './RadialProgress.svelte';
 	import CompassRose from './CompassRose.svelte';
 	import FlyingCard from './FlyingCard.svelte';
-	import VoteStacks from '$lib/collaboration/components/VoteStacks.svelte';
+	import VoteStacks from '$lib/group-input/components/VoteStacks.svelte';
 	import BottomSheet from '$lib/ui/BottomSheet.svelte';
 
 	// The shared SwipeDeck engine. One feature dresses it via the `face` snippet;

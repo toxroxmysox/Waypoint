@@ -1,8 +1,8 @@
 import { fail, error } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Suggestion, SuggestionVote, TripMember } from '$lib/types';
-import { withAvatarUrls } from '$lib/collaboration/member-avatar';
-import type { DisplayVote } from '$lib/collaboration/voting';
+import { withAvatarUrls } from '$lib/group-input/member-avatar';
+import type { DisplayVote } from '$lib/group-input/voting';
 import { pbBaseUrl } from '$lib/shell/pb';
 
 // #251 — a Suggestion plus the votes cast on its ghost (suggestion_votes), so each

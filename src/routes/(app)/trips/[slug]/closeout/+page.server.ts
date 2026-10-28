@@ -5,7 +5,7 @@ import { getTripLifecycle } from '$lib/trip-mode/trip-lifecycle';
 import { resolvePublishDay } from '$lib/portability/archive-visibility';
 import { handleSaveMemory } from '$lib/memory/save-memory.server';
 import type { Memory } from '$lib/memory/types';
-import { withAvatarUrls } from '$lib/collaboration/member-avatar';
+import { withAvatarUrls } from '$lib/group-input/member-avatar';
 
 // Closeout wizard loader (#240/#195 — Slice 2).
 //

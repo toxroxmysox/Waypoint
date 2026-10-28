@@ -3,7 +3,7 @@
 	import Card from '$lib/ui/Card.svelte';
 	import ScenarioSketchStrip from '$lib/ideation/components/ScenarioSketchStrip.svelte';
 	import { formatDateRange } from '$lib/shell/format';
-	import type { VoteValue } from '$lib/collaboration/voting';
+	import type { VoteValue } from '$lib/group-input/voting';
 
 	let { data } = $props();
 	const d = $derived(data.decision);

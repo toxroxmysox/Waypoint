@@ -3,7 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 import type { TripMember } from '$lib/types';
 import type { Scenario, ScenarioVote, ScenarioPoint } from '$lib/ideation/types';
 import type { Item } from '$lib/itinerary/types';
-import { withAvatarUrls } from '$lib/collaboration/member-avatar';
+import { withAvatarUrls } from '$lib/group-input/member-avatar';
 import { formatDateRange } from '$lib/shell/format';
 import { nightsBetween, planPromotion, PromotionError } from '$lib/ideation/scenario-planning';
 import { promoteScenario } from '$lib/ideation/scenario-promotion.server';

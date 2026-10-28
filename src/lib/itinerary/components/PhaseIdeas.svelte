@@ -6,8 +6,8 @@
 	// changes nothing (drag only plans), and Phase Detail has no day to drop on.
 	// Replaces PhaseParkingReorder (#88).
 	import type { Card as ParkingCard } from '$lib/itinerary/parking-lot-cards';
-	import type { MemberWithAvatar } from '$lib/collaboration/member-avatar';
-	import { scoreVotes } from '$lib/collaboration/voting';
+	import type { MemberWithAvatar } from '$lib/group-input/member-avatar';
+	import { scoreVotes } from '$lib/group-input/voting';
 	import IdeaCard from './IdeaCard.svelte';
 	import IdeaGroupHeading from './IdeaGroupHeading.svelte';
 	import GhostCard from './GhostCard.svelte';

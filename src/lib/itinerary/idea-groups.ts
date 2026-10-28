@@ -3,7 +3,7 @@
 // plural label) in a fixed order; inside a group ideas sort by the weighted vote
 // score, ties by sort order. No DOM, no I/O: the surfaces (day page zone,
 // desktop Ideas panel, Phase Detail) all render through these.
-import { scoreVotes, sortByVoteScore, type DisplayVote } from '$lib/collaboration/voting';
+import { scoreVotes, sortByVoteScore, type DisplayVote } from '$lib/group-input/voting';
 import { cardMeta, type CardItemFields } from '$lib/itinerary/card-anatomy';
 import type { ItemType } from '$lib/itinerary/types';
 

@@ -9,7 +9,7 @@
 	import SectionH from '$lib/ui/SectionH.svelte';
 	import SubTabs from '$lib/ui/SubTabs.svelte';
 	import Row from '$lib/ui/Row.svelte';
-	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
+	import NotificationBell from '$lib/group-input/components/NotificationBell.svelte';
 	import FAB from '$lib/shell/components/FAB.svelte';
 	import IdeaCaptureSheet from '$lib/itinerary/components/IdeaCaptureSheet.svelte';
 	import DayCard from '$lib/itinerary/components/DayCard.svelte';

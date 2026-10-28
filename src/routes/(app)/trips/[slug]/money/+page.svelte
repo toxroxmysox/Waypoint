@@ -13,7 +13,7 @@
 	import Row from '$lib/ui/Row.svelte';
 	import FlightSubLine from '$lib/itinerary/components/FlightSubLine.svelte';
 	import { rowTrailing } from '$lib/itinerary/row';
-	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
+	import NotificationBell from '$lib/group-input/components/NotificationBell.svelte';
 	import { untrack } from 'svelte';
 
 	let { data } = $props();

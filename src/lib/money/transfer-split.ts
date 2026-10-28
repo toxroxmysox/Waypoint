@@ -12,7 +12,7 @@
 // identical copy in its goja callback (the PB sandbox can't import modules);
 // this module exists so the algorithm is unit-tested in isolation and
 // documented in one place. Keep the two in lock-step — sibling to
-// `collaboration/member-references.ts`, which proves the membership READ.
+// `group-input/member-references.ts`, which proves the membership READ.
 //
 // MERGE semantics (move-to-target):
 //   equal { members: [...] }   — replace departed→target; if target is ALREADY

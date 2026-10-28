@@ -1,10 +1,10 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { TripGoal, GoalVote, TripMember } from '$lib/types';
-import { VOTE_OPTIONS, type VoteValue } from '$lib/collaboration/voting';
-import { buildCaptureDeck, type ReactionCandidate } from '$lib/collaboration/swipe-deck';
+import { VOTE_OPTIONS, type VoteValue } from '$lib/group-input/voting';
+import { buildCaptureDeck, type ReactionCandidate } from '$lib/group-input/swipe-deck';
 import { buildGoalPrompts, promptKicker } from '$lib/itinerary/goal-prompts';
-import { withAvatarUrls } from '$lib/collaboration/member-avatar';
+import { withAvatarUrls } from '$lib/group-input/member-avatar';
 
 /** Fisher–Yates — prompts are "shown once per session, shuffled" (per page load). */
 function shuffle<T>(arr: T[]): T[] {

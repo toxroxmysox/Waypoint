@@ -3,7 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 import type { Phase, Day, Item, TripMember, Suggestion, SuggestionVote, Vote } from '$lib/types';
 import { nextSortOrder, insertBetween, reorderUpdates } from '$lib/itinerary/sort-order';
 import { summarizeDays } from '$lib/itinerary/day-card';
-import { withAvatarUrls } from '$lib/collaboration/member-avatar';
+import { withAvatarUrls } from '$lib/group-input/member-avatar';
 import { parkingLotCards } from '$lib/itinerary/parking-lot-cards';
 import { retilePhases, validateMovePhaseStart, toDay } from '$lib/itinerary/phase-tiling';
 import {

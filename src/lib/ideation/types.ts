@@ -1,6 +1,6 @@
 // #337 (Candidate Scenarios / Ideation) — the scenario domain types.
 // See docs/superpowers/specs/2026-07-03-scenario-building-design.md.
-import type { VoteValue, TripMember } from '../collaboration/types';
+import type { VoteValue, TripMember } from '../group-input/types';
 import type { Item } from '../itinerary/types';
 
 export type ScenarioStatus = 'candidate' | 'won' | 'archived';

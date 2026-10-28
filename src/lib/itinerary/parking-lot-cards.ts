@@ -18,8 +18,8 @@
 // oldest-first, so equal-score ghosts trail equal-score items deterministically.
 
 import type { Item } from './types';
-import type { MemberRole, Suggestion, VoteValue } from '../collaboration/types';
-import { scoreVotes, sortByVoteScore, type DisplayVote } from '../collaboration/voting';
+import type { MemberRole, Suggestion, VoteValue } from '../group-input/types';
+import { scoreVotes, sortByVoteScore, type DisplayVote } from '../group-input/voting';
 
 /** A vote on either a real item (`Vote`) or a ghost (`SuggestionVote`). Both
  *  satisfy the target-agnostic `DisplayVote` (id + member + value), which is all

@@ -2,8 +2,8 @@
 	import { enhance } from '$app/forms';
 	import { goto, invalidateAll } from '$app/navigation';
 	import type { Vote } from '$lib/types';
-	import { type VoteValue } from '$lib/collaboration/voting';
-	import SwipeDeck from '$lib/collaboration/components/swipe/SwipeDeck.svelte';
+	import { type VoteValue } from '$lib/group-input/voting';
+	import SwipeDeck from '$lib/group-input/components/swipe/SwipeDeck.svelte';
 	import Avatar from '$lib/ui/Avatar.svelte';
 	import Button from '$lib/ui/Button.svelte';
 	import WhatIsLink from '$lib/ui/WhatIsLink.svelte';

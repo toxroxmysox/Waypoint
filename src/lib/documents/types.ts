@@ -1,5 +1,5 @@
 import type { RecordModel } from 'pocketbase';
-import type { TripMember } from '$lib/collaboration/types';
+import type { TripMember } from '$lib/group-input/types';
 
 // A Document is an artifact (PDF or image) attached to a trip, or to a single
 // item within it. `item` empty = trip-scoped; set = item-scoped. ADR-0005 — no

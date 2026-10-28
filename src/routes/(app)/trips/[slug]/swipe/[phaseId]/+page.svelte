@@ -2,9 +2,9 @@
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
 	import type { Item } from '$lib/types';
-	import { type VoteValue } from '$lib/collaboration/voting';
-	import SwipeDeck from '$lib/collaboration/components/swipe/SwipeDeck.svelte';
-	import { VOTE_META } from '$lib/collaboration/components/swipe/vote-meta';
+	import { type VoteValue } from '$lib/group-input/voting';
+	import SwipeDeck from '$lib/group-input/components/swipe/SwipeDeck.svelte';
+	import { VOTE_META } from '$lib/group-input/components/swipe/vote-meta';
 	import Hero from '$lib/itinerary/components/Hero.svelte';
 	import { formatTimeText } from '$lib/shell/format';
 	import Button from '$lib/ui/Button.svelte';

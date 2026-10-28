@@ -1,14 +1,14 @@
 import { fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Item, ItemType, Day, Phase, Expense, Settlement, TripMember, Vote } from '$lib/types';
-import { firstVotablePhase } from '$lib/collaboration/swipe-deck';
+import { firstVotablePhase } from '$lib/group-input/swipe-deck';
 import { summarizeDays } from '$lib/itinerary/day-card';
 import { getTripLifecycle } from '$lib/trip-mode/trip-lifecycle';
 import { simplifyDebts } from '$lib/money/debt-simplify';
 import { buildArchiveView } from '$lib/portability/archive-view';
 import { publishStatus, resolvePublishDay } from '$lib/portability/archive-visibility';
 import { tripToday, tripTz } from '$lib/shell/trip-time';
-import { needsOnboarding } from '$lib/collaboration/onboarding';
+import { needsOnboarding } from '$lib/group-input/onboarding';
 import { loadScenarioBoard, type ScenarioBoardData } from '$lib/ideation/scenario-board.server';
 import { aggregateDayStatuses, type AvailabilityCell } from '$lib/ideation/availability';
 import type PocketBase from 'pocketbase';

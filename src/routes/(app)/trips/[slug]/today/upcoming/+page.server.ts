@@ -3,7 +3,7 @@ import type { PageServerLoad } from './$types';
 import type { Day, Item, Document, TripMember } from '$lib/types';
 import { attachCodesToItems } from '$lib/documents/codes';
 import { docCountsForItems } from '$lib/documents/doc-counts';
-import { withAvatarUrls } from '$lib/collaboration/member-avatar';
+import { withAvatarUrls } from '$lib/group-input/member-avatar';
 import { tripNow, tripTz } from '$lib/shell/trip-time';
 import { isTripActive } from '$lib/trip-mode/activation';
 

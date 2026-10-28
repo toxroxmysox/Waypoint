@@ -2,7 +2,7 @@ import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Item, ItemStatus, TripGoal, TripMember } from '$lib/types';
 import { deriveGoalStatus } from '$lib/itinerary/goal-status';
-import { memberAvatarUrl } from '$lib/collaboration/member-avatar';
+import { memberAvatarUrl } from '$lib/group-input/member-avatar';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, membership } = await parent();
