@@ -543,7 +543,7 @@ describe('getNowFeed — merged Now: faded past / Focus / normal rest (#244)', (
 
 	it('UNTIMED items render in the rest — the whole point of the merge (old Now dropped them)', () => {
 		const items = [
-			makeItem({ id: 'idea', start_time: '', sort_order: 100, title: 'Promoted idea' }),
+			makeItem({ id: 'idea', start_time: '', sort_order: 100, title: 'Planned idea' }),
 			makeItem({
 				id: 'dinner',
 				start_time: '2026-10-15 19:00:00.000Z',

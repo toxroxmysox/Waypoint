@@ -10,7 +10,7 @@
  *
  *   2. The promotion cascade PLANNER. Given a won scenario + its trip, compute the
  *      pure plan the server cascade executes: the dates to set, the phase layout to
- *      hand the tiling engine (phase STARTS laid out from trip start), the keystone
+ *      hand the tiling engine (phase STARTS laid out from trip start), the Core Idea
  *      item ids, and the budget. No I/O — the server wrapper applies it.
  *
  * DAY MODEL — sketch days are NIGHTS (day-transitions), matching the board mockup
@@ -142,8 +142,8 @@ export interface PromotionPlan {
 	/** Phase layout for the tiling engine: named starts in order (empty when the
 	 *  scenario has no sketch — the promotion hook's seeded "Phase 1" then stands). */
 	phases: { name: string; start: string }[];
-	/** Keystone item ids to flag as chosen anchors (they stay in the idea pool). */
-	keystoneItemIds: string[];
+	/** Core Idea item ids to flag as chosen anchors (they stay in the idea pool). */
+	coreIdeaItemIds: string[];
 	/** Per-person budget to seed the trip budget — 0 means "no budget" (never set). */
 	budgetPerPerson: number;
 }
@@ -180,7 +180,7 @@ export function planPromotion(scenario: Scenario): PromotionPlan {
 		dateStart,
 		dateEnd,
 		phases,
-		keystoneItemIds: Array.isArray(scenario.keystones) ? [...scenario.keystones] : [],
+		coreIdeaItemIds: Array.isArray(scenario.keystones) ? [...scenario.keystones] : [],
 		// 0/falsy budget = "no budget" (the #332/#335 scar); never seed a $0 budget.
 		budgetPerPerson: scenario.budget_per_person > 0 ? scenario.budget_per_person : 0
 	};
@@ -191,7 +191,7 @@ export interface ConvergeDimensions {
 	dates: boolean;
 	budget: boolean;
 	sketch: boolean;
-	keystones: boolean;
+	coreIdeas: boolean;
 }
 
 /** Whether a single scenario has filled each dimension. A dimension is "filled"
@@ -201,7 +201,7 @@ export function scenarioDimensions(s: Scenario): ConvergeDimensions {
 		dates: !!(s.date_start && s.date_end),
 		budget: s.budget_per_person > 0,
 		sketch: Array.isArray(s.phase_sketch) && s.phase_sketch.length > 0,
-		keystones: Array.isArray(s.keystones) && s.keystones.length > 0
+		coreIdeas: Array.isArray(s.keystones) && s.keystones.length > 0
 	};
 }
 
@@ -216,13 +216,13 @@ export function scenarioDimensions(s: Scenario): ConvergeDimensions {
  * Pure; input not mutated.
  */
 export function boardLiveDimensions(scenarios: Scenario[]): ConvergeDimensions {
-	const live: ConvergeDimensions = { dates: false, budget: false, sketch: false, keystones: false };
+	const live: ConvergeDimensions = { dates: false, budget: false, sketch: false, coreIdeas: false };
 	for (const s of scenarios) {
 		const d = scenarioDimensions(s);
 		live.dates = live.dates || d.dates;
 		live.budget = live.budget || d.budget;
 		live.sketch = live.sketch || d.sketch;
-		live.keystones = live.keystones || d.keystones;
+		live.coreIdeas = live.coreIdeas || d.coreIdeas;
 	}
 	return live;
 }
@@ -240,6 +240,6 @@ export function emptySlotsFor(scenario: Scenario, board: Scenario[]): ConvergeDi
 		dates: live.dates && !mine.dates,
 		budget: live.budget && !mine.budget,
 		sketch: live.sketch && !mine.sketch,
-		keystones: live.keystones && !mine.keystones
+		coreIdeas: live.coreIdeas && !mine.coreIdeas
 	};
 }

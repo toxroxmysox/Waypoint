@@ -3,9 +3,9 @@ import { E2E_BASE } from './e2e-env';
 
 // #245 Door 1 — proactive "ideas for now". When today's Focus is free-time /
 // nothing-else-planned, the merged Now surfaces the CURRENT PHASE's parked ideas
-// (vote-score ordered); one-tap promote slots the idea onto today AFTER the
+// (vote-score ordered); one-tap plan slots the idea onto today AFTER the
 // current moment (computeMovePatch + sort-order, no phase change) and it renders
-// immediately on Now. Critical path: free-time → ideas strip visible → promote →
+// immediately on Now. Critical path: free-time → ideas strip visible → plan →
 // item renders on Today. Verified at 375px.
 //
 // Harness (same as multi-day.spec.ts):
@@ -45,7 +45,7 @@ test.describe('Trip Mode Door 1 — ideas for now (#245)', () => {
 		await page.waitForURL(`${BASE_URL}/trips`, { timeout: 10000 });
 	});
 
-	test('free-time → ideas strip → promote → item renders on Today', async ({ page }) => {
+	test('free-time → ideas strip → plan → item renders on Today', async ({ page }) => {
 		await page.setViewportSize({ width: 375, height: 812 });
 
 		const stamp = Date.now().toString(36);
@@ -123,10 +123,10 @@ test.describe('Trip Mode Door 1 — ideas for now (#245)', () => {
 		await expect(strip.locator('[data-idea-heading]').first()).toBeVisible();
 		await expect(strip.getByRole('button', { name: /^Love/ }).first()).toBeVisible();
 
-		// --- One-tap promote ("Do this") → the idea moves onto today. ---
+		// --- One-tap plan ("Do this") → the idea moves onto today. ---
 		await strip.getByRole('button', { name: 'Do this' }).first().click();
 
-		// After promote: the idea renders on Today as a normal card (the "Coming up"
+		// After planning: the idea renders on Today as a normal card (the "Coming up"
 		// rest list), and it is GONE from the ideas strip (it's no longer unplanned).
 		// Stretched-link card (#231): the <a> has aria-label=title, not the title as
 		// child text — target by role/name, not href+hasText.

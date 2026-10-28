@@ -7,9 +7,9 @@
 	import { withOrigin } from '$lib/shell/back-nav';
 	import { page } from '$app/state';
 	import type { Item, TripMember } from '$lib/types';
-	import type { DisplayVote } from '$lib/collaboration/voting';
+	import type { DisplayVote } from '$lib/group-input/voting';
 	import Card from '$lib/ui/Card.svelte';
-	import VotePills from '$lib/collaboration/components/VotePills.svelte';
+	import VotePills from '$lib/group-input/components/VotePills.svelte';
 	import AssigneeStacks from '$lib/itinerary/components/AssigneeStacks.svelte';
 	import { ideaSub } from '$lib/itinerary/idea-groups';
 	import type { Snippet } from 'svelte';

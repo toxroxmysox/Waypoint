@@ -36,7 +36,7 @@ onRecordUpdateRequest((e) => {
 	}
 
 	if (e.record.get('champion') !== member.id) {
-		throw new ForbiddenError('Only the champion can edit this scenario — fork it instead.');
+		throw new ForbiddenError('Only its creator can edit this scenario — fork it instead.');
 	}
 
 	e.next();
@@ -61,7 +61,7 @@ onRecordDeleteRequest((e) => {
 	}
 
 	if (e.record.get('champion') !== member.id) {
-		throw new ForbiddenError('Only the champion can delete this scenario.');
+		throw new ForbiddenError('Only its creator can delete this scenario.');
 	}
 
 	e.next();

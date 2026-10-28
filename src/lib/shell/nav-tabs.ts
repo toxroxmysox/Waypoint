@@ -59,7 +59,7 @@ export function getNavConfig(slug: string, mode: TripViewMode, forming = false):
 				// view at /now) + Next 3 days (the existing /today/upcoming view). Merging
 				// the two freed this slot for Money — 375px can't hold a 5th tab + the FAB.
 				{ id: 'now', label: 'Now', href: `/trips/${slug}/now`, icon: 'clock' },
-				// Money (#227) — the Trip-Mode money glance, lands in the slot #244 freed.
+				// Money (#227) — the Trip-Mode Money summary, lands in the slot #244 freed.
 				{ id: 'money', label: 'Money', href: `/trips/${slug}/money`, icon: 'dollar' },
 				{ id: 'add', label: 'Add', href: '', icon: 'plus', oversized: true, action: 'add-sheet' },
 				// Documents (#71) — occupies the vacated Vault slot.
@@ -95,7 +95,7 @@ export function getActiveTab(pathname: string, mode: NavChrome): string {
 		// #244: Now absorbed Today. Both the weighted view (/now) and the "Next 3 days"
 		// sub-tab (/today, /today/upcoming) highlight the single Now tab.
 		if (pathname.includes('/now') || pathname.includes('/today')) return 'now';
-		// Trip-Mode Money glance (#227) — now a real nav tab (#244 freed the slot).
+		// Trip-Mode Money summary (#227) — now a real nav tab (#244 freed the slot).
 		if (pathname.includes('/money')) return 'money';
 		// Non-tab trip surfaces (item detail reached from Trip Mode, etc.) get NO
 		// active tab — don't false-highlight "Now" on a page that isn't Now (#197).
@@ -124,7 +124,7 @@ export function resolveChromeMode(
 ): TripViewMode {
 	if (!dateActive) return 'planning';
 	// Exclusive Trip-Mode surfaces. `/money` is the Trip-Mode Money summary (#227) — a
-	// trip-mode glance distinct from the planning `/expenses` + `/budget` pages it deep-
+	// trip-mode summary distinct from the planning `/expenses` + `/budget` pages it deep-
 	// links to (those deliberately stay planning chrome, #197 B-011). Tapping a deep-link
 	// crosses to planning Money by design.
 	if (/\/(now|today|money)(\/|$)/.test(pathname)) return 'trip';

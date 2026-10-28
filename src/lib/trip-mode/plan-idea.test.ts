@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { promotedDisplayOrder, promotePlacement } from './promote';
+import { plannedDisplayOrder, planPlacement } from './plan-idea';
 import { orderDayItems } from '$lib/itinerary/timeline';
 import { computeMovePatch } from '$lib/itinerary/move-item';
 import type { Item } from '$lib/types';
@@ -47,7 +47,7 @@ function makeItem(overrides: Partial<Item> = {}): Item {
 
 const NOON = new Date('2026-10-15T12:00:00Z');
 
-describe('promotedDisplayOrder — placement after the current moment', () => {
+describe('plannedDisplayOrder — placement after the current moment', () => {
 	it('slots the idea after items already started, before upcoming ones', () => {
 		const dayItems = [
 			makeItem({
@@ -62,7 +62,7 @@ describe('promotedDisplayOrder — placement after the current moment', () => {
 			})
 		];
 		const idea = makeItem({ id: 'idea', start_time: '' });
-		const order = promotedDisplayOrder(dayItems, idea, NOON).map((i) => i.id);
+		const order = plannedDisplayOrder(dayItems, idea, NOON).map((i) => i.id);
 		// morning (done) → idea → evening (upcoming).
 		expect(order).toEqual(['morning', 'idea', 'evening']);
 	});
@@ -76,7 +76,7 @@ describe('promotedDisplayOrder — placement after the current moment', () => {
 			})
 		];
 		const idea = makeItem({ id: 'idea', start_time: '' });
-		const order = promotedDisplayOrder(dayItems, idea, NOON).map((i) => i.id);
+		const order = plannedDisplayOrder(dayItems, idea, NOON).map((i) => i.id);
 		expect(order).toEqual(['idea', 'evening']);
 	});
 
@@ -94,7 +94,7 @@ describe('promotedDisplayOrder — placement after the current moment', () => {
 			})
 		];
 		const idea = makeItem({ id: 'idea', start_time: '' });
-		const order = promotedDisplayOrder(dayItems, idea, NOON).map((i) => i.id);
+		const order = plannedDisplayOrder(dayItems, idea, NOON).map((i) => i.id);
 		expect(order).toEqual(['breakfast', 'lunch', 'idea']);
 	});
 
@@ -112,7 +112,7 @@ describe('promotedDisplayOrder — placement after the current moment', () => {
 			})
 		];
 		const idea = makeItem({ id: 'idea', start_time: '' });
-		const order = promotedDisplayOrder(dayItems, idea, NOON).map((i) => i.id);
+		const order = plannedDisplayOrder(dayItems, idea, NOON).map((i) => i.id);
 		expect(order).toEqual(['ongoing', 'idea', 'later']);
 	});
 
@@ -126,7 +126,7 @@ describe('promotedDisplayOrder — placement after the current moment', () => {
 			}),
 			idea
 		];
-		const order = promotedDisplayOrder(dayItems, idea, NOON).map((i) => i.id);
+		const order = plannedDisplayOrder(dayItems, idea, NOON).map((i) => i.id);
 		// Idea isn't double-counted — appears exactly once, after the morning item.
 		expect(order).toEqual(['morning', 'idea']);
 	});
@@ -141,13 +141,13 @@ describe('promotedDisplayOrder — placement after the current moment', () => {
 			})
 		];
 		const idea = makeItem({ id: 'idea', start_time: '' });
-		const order = promotedDisplayOrder(dayItems, idea, NOON).map((i) => i.id);
+		const order = plannedDisplayOrder(dayItems, idea, NOON).map((i) => i.id);
 		expect(order).not.toContain('hotel');
 		expect(order).toEqual(['morning', 'idea']);
 	});
 });
 
-describe('promotePlacement — sort_order round-trips the placement', () => {
+describe('planPlacement — sort_order round-trips the placement', () => {
 	it('returns monotonic gap-based orders matching the display order', () => {
 		const dayItems = [
 			makeItem({
@@ -164,7 +164,7 @@ describe('promotePlacement — sort_order round-trips the placement', () => {
 			})
 		];
 		const idea = makeItem({ id: 'idea', start_time: '' });
-		const updates = promotePlacement(dayItems, idea, NOON);
+		const updates = planPlacement(dayItems, idea, NOON);
 
 		// Every day item + the idea gets a fresh, ascending sort_order.
 		const byId = Object.fromEntries(updates.map((u) => [u.id, u.sort_order]));
@@ -193,7 +193,7 @@ describe('promotePlacement — sort_order round-trips the placement', () => {
 			})
 		];
 		const idea = makeItem({ id: 'idea', start_time: '' });
-		const updates = promotePlacement(dayItems, idea, NOON);
+		const updates = planPlacement(dayItems, idea, NOON);
 		const byId = Object.fromEntries(updates.map((u) => [u.id, u.sort_order]));
 		expect(byId['idea']).toBeGreaterThan(byId['done']);
 	});

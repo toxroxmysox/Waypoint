@@ -1,6 +1,6 @@
 import type PocketBase from 'pocketbase';
-import type { TripMember } from '$lib/collaboration/types';
-import { withAvatarUrls, type MemberWithAvatar } from '$lib/collaboration/member-avatar';
+import type { TripMember } from '$lib/group-input/types';
+import { withAvatarUrls, type MemberWithAvatar } from '$lib/group-input/member-avatar';
 import {
 	canvasExtent,
 	daysInExtent,

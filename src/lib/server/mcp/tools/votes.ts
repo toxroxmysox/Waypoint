@@ -2,7 +2,7 @@
 // tally, and the caller's own vote id, so a change of mind is an update to that
 // vote (as get_item does for item votes, #520), never a second vote.
 import type { VoteValue } from '$lib/types';
-import { tallyVotes } from '$lib/collaboration/voting';
+import { tallyVotes } from '$lib/group-input/voting';
 import type { Card } from '../present';
 
 export interface VoteRow {

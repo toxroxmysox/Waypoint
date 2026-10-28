@@ -72,7 +72,7 @@ Old `CONTEXT.md` "Bounded Contexts" → this map, with **why each L1 exists** (e
 | (Logistics)                         | folded → **Itinerary / Logistics sub**                                                   | _was_ inherited-from-`lib/itinerary/`; demoted per council rec #8                                                                                                                  |
 | Vault                               | retired (ADR-0005)                                                                       | —                                                                                                                                                                                  |
 
-⚠ **Code smell to fix (not a map change):** `lib/collaboration/` spans **3** capabilities (voting → Group Input; member-avatar → Identity). A `lib/` split should follow this map.
+⚠ **Code smell to fix (not a map change):** `lib/group-input/` (was `lib/collaboration/`, renamed in #571) spans **3** capabilities (voting → Group Input; member-avatar → Identity). A `lib/` split should follow this map.
 
 ---
 

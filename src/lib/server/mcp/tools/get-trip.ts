@@ -3,7 +3,7 @@ import type { GoalStatus, Item, ItemStatus, Phase, TripGoal, TripMember, Vote } 
 import type { Scenario } from '$lib/ideation/types';
 import { formatDayDate } from '$lib/shell/format';
 import { deriveGoalStatus } from '$lib/itinerary/goal-status';
-import { scoreVotes, sortByVoteScore } from '$lib/collaboration/voting';
+import { scoreVotes, sortByVoteScore } from '$lib/group-input/voting';
 import { resolveTrip } from '../context';
 import { loadTripDays, loadTripItems } from '../day-data';
 import { lodgingForNight, nightsOf } from '$lib/itinerary/lodging-nights';

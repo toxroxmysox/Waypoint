@@ -90,7 +90,7 @@ Boots a disposable PB, seeds a populated trip, screenshots into `.visual/`, tear
 ## Layout
 
 ```
-src/lib/            domain modules — itinerary, money, collaboration, trip-mode, shell
+src/lib/            domain modules — itinerary, money, group-input, trip-mode, shell
 src/routes/         SvelteKit routes; api/ holds server-side proxies for external APIs
 backend/pb_hooks/   PocketBase goja hooks (*.pb.js)
 backend/pb_migrations/  schema — append-only, never edited or deleted

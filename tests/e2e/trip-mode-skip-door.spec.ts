@@ -4,7 +4,7 @@ import { E2E_BASE } from './e2e-env';
 // #246 Door 2 — skip → parking lot + inline ideas strip. A planned today item can
 // be skipped from the Today card's overflow; skip returns it to the parking lot
 // (unplanned, day cleared, time stripped — reversible, never `considered`), and
-// the freed slot renders Door 1's same ideas strip so a backup can be promoted
+// the freed slot renders Door 1's same ideas strip so a backup can be planned
 // into the gap. Verified at 375px.
 //
 // Harness (same as multi-day.spec.ts): PocketBase :8090 (WAYPOINT_DEV_MODE=true,
@@ -37,7 +37,7 @@ test.describe('Trip Mode Door 2 — skip → parking lot + ideas strip (#246)', 
 		await page.waitForURL(`${BASE_URL}/trips`, { timeout: 10000 });
 	});
 
-	test('skip a today item → it leaves Today and returns to ideas; promote it back', async ({
+	test('skip a today item → it leaves Today and returns to ideas; plan it back', async ({
 		page
 	}) => {
 		await page.setViewportSize({ width: 375, height: 812 });
@@ -121,7 +121,7 @@ test.describe('Trip Mode Door 2 — skip → parking lot + ideas strip (#246)', 
 		// unplanned now. Scope the negative to the rest-list CARD (the rail ItemCard's
 		// `.no-callout` container), NOT the whole page: skip returns the item to
 		// THIS phase's parking lot, so it correctly REAPPEARS in the ideas strip below as a
-		// re-promotable backup (#432: now an idea card, so the `.no-callout` locator excludes the strip). A page-wide
+		// re-plannable backup (#432: now an idea card, so the `.no-callout` locator excludes the strip). A page-wide
 		// link-count-0 would falsely catch that legitimate strip occurrence.
 		await expect(
 			page

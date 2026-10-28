@@ -1,7 +1,7 @@
-// #230 / ADR-0015 — Money Units: a settle-up + glance GROUPING, not a split or payer
+// #230 / ADR-0015 — Money Units: a settle-up + summary GROUPING, not a split or payer
 // concept. A Money Unit is a self-declared, shared, trip-scoped grouping of members who
 // pool money (a couple, or any ad-hoc pool). Pure module — no I/O. Mirrors `debt-simplify`
-// / `money-glance` as a pure money module.
+// / `money-summary` as a pure money module.
 //
 // Three invariants from ADR-0015:
 //   1. Split is NEVER affected — expenses always split per-person. A unit changes nothing
@@ -126,7 +126,7 @@ export function effectiveUnitBudget(
 /**
  * A unit's spent = Σ its members' individual shares (attribution is free once the unit is
  * defined — ADR-0015). `memberShares` maps member id → that member's reconciliation-aware
- * share of logged expenses (computed by `money-glance`'s `myShareOfExpenses` per member).
+ * share of logged expenses (computed by `money-summary`'s `myShareOfExpenses` per member).
  * Members not in `memberShares` contribute 0.
  */
 export function unitSpent(memberShares: Map<string, number>, unitMembers: string[]): number {
@@ -138,7 +138,7 @@ export function unitSpent(memberShares: Map<string, number>, unitMembers: string
 }
 
 /**
- * The unit a member belongs to, for auto-scoping the glance to the viewer's OWN unit
+ * The unit a member belongs to, for auto-scoping the summary to the viewer's OWN unit
  * (persistent + declared → no per-view picking). Returns the declared unit containing
  * `meId`, or a synthetic unit-of-one ({ id: meId, members: [meId] }) when the member is in
  * no declared unit (a solo member is a unit of one — unchanged).

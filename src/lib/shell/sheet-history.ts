@@ -119,7 +119,7 @@ export function consumeOrphan(id: number): void {
  *
  * Without this gate the walk ran on any state change that matched an orphan,
  * which deterministically broke an unrelated trip-mode flow (skip an item →
- * ideas strip → promote it back) while every direct dismissal path still looked
+ * ideas strip → plan it back) while every direct dismissal path still looked
  * clean. Measured: that spec passes before the walk existed and fails after.
  *
  * One-shot — a single back press authorises at most one walk.

@@ -3,7 +3,7 @@
 	import { untrack } from 'svelte';
 	import NavBar from '$lib/ui/NavBar.svelte';
 	import SubTabs from '$lib/ui/SubTabs.svelte';
-	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
+	import NotificationBell from '$lib/group-input/components/NotificationBell.svelte';
 	import Button from '$lib/ui/Button.svelte';
 	import Card from '$lib/ui/Card.svelte';
 	import { moneyTabs } from '$lib/money/money-tabs';

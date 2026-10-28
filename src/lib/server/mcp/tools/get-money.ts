@@ -12,7 +12,7 @@ import {
 	groupBudgetTotal,
 	myShareOfExpenses,
 	remainingPlannedTotal
-} from '$lib/money/money-glance';
+} from '$lib/money/money-summary';
 import { unitDebts } from '$lib/money/money-units';
 import { daysBetween } from '$lib/shell/trip-time';
 import { resolveTrip } from '../context';

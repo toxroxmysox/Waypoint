@@ -1,4 +1,4 @@
-import type { MemberRole } from '$lib/collaboration/types';
+import type { MemberRole } from '$lib/group-input/types';
 import type { TripViewMode } from '$lib/trip-mode/activation';
 import type { Item } from './types';
 

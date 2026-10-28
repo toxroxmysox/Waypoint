@@ -1,7 +1,7 @@
 import type PocketBase from 'pocketbase';
-import type { TripMember } from '$lib/collaboration/types';
+import type { TripMember } from '$lib/group-input/types';
 import type { Item } from '$lib/itinerary/types';
-import { withAvatarUrls, type MemberWithAvatar } from '$lib/collaboration/member-avatar';
+import { withAvatarUrls, type MemberWithAvatar } from '$lib/group-input/member-avatar';
 import type { Scenario, ScenarioVote, ScenarioPoint, PhaseSketchSegment } from './types';
 import {
 	boardLiveDimensions,
@@ -11,28 +11,28 @@ import {
 import { windowStatus, type AvailabilityCell, type DayStatus } from './availability';
 
 /** A scenario decorated with everything a board card renders — its own votes,
- *  pro/con counts, keystone labels, champion display, fork lineage, and the
+ *  pro/con counts, Core Idea labels, creator display, fork lineage, and the
  *  converge empty-slots it should show. Pure display shape (no PB types leak). */
 export interface BoardScenario {
 	id: string;
 	title: string;
 	pitch: string;
-	championName: string;
-	championId: string;
+	creatorName: string;
+	creatorId: string;
 	forkOfTitle: string; // '' when not a fork
 	dateStart: string;
 	dateEnd: string;
 	nights: number; // 0 when no dates
 	budgetPerPerson: number; // 0 = no budget
 	sketch: PhaseSketchSegment[];
-	keystoneLabels: string[];
+	coreIdeaLabels: string[];
 	votes: { id: string; member: string; value: ScenarioVote['value'] }[];
 	proCount: number;
 	conCount: number;
 	status: Scenario['status'];
 	dimensions: ConvergeDimensions;
 	emptySlots: ConvergeDimensions;
-	canManage: boolean; // caller is champion (edit/delete)
+	canManage: boolean; // caller is the Scenario Creator (edit/delete)
 	// #271 — availability overlap across THIS scenario's date window (green =
 	// everyone free the whole window; yellow = some free; null = no responses / no
 	// window). Availability colours the window but never sets the date (ADR-0023 D8).
@@ -57,10 +57,10 @@ function nightsBetween(start: string, end: string): number {
 
 /**
  * Load the scenario board for a forming trip (#337). Fetches candidate scenarios
- * (expanding champion, keystones, fork_of), their votes + pros/cons, and the active
+ * (expanding champion = creator, keystones = Core Ideas, fork_of), their votes + pros/cons, and the active
  * members for avatar stacks — then decorates each into a display-ready BoardScenario.
  * Archived/won scenarios are excluded from the live board (they live in the decision
- * record). `callerMemberId` flags the caller's own championed cards as manageable.
+ * record). `callerMemberId` flags the caller's own Scenarios as manageable.
  */
 export async function loadScenarioBoard(
 	pb: PocketBase,
@@ -120,25 +120,25 @@ export async function loadScenarioBoard(
 	const liveDimensions = boardLiveDimensions(scenarios);
 
 	const board: BoardScenario[] = scenarios.map((s) => {
-		const champion = s.expand?.champion;
-		const championUser = champion?.expand?.user;
-		const championName =
-			champion?.display_name || champion?.placeholder_name || championUser?.name || 'Someone';
+		const creator = s.expand?.champion;
+		const creatorUser = creator?.expand?.user;
+		const creatorName =
+			creator?.display_name || creator?.placeholder_name || creatorUser?.name || 'Someone';
 		const sketch = Array.isArray(s.phase_sketch) ? s.phase_sketch : [];
 		const dims = scenarioDimensions(s);
 		return {
 			id: s.id,
 			title: s.title,
 			pitch: s.pitch || '',
-			championName,
-			championId: s.champion,
+			creatorName,
+			creatorId: s.champion,
 			forkOfTitle: s.expand?.fork_of?.title || '',
 			dateStart: s.date_start ? s.date_start.slice(0, 10) : '',
 			dateEnd: s.date_end ? s.date_end.slice(0, 10) : '',
 			nights: nightsBetween(s.date_start, s.date_end),
 			budgetPerPerson: s.budget_per_person > 0 ? s.budget_per_person : 0,
 			sketch,
-			keystoneLabels: (s.expand?.keystones ?? []).map((k: Item) => k.title),
+			coreIdeaLabels: (s.expand?.keystones ?? []).map((k: Item) => k.title),
 			votes: (votesByScenario[s.id] ?? []).map((v) => ({
 				id: v.id,
 				member: v.member,
@@ -152,7 +152,7 @@ export async function loadScenarioBoard(
 				dates: liveDimensions.dates && !dims.dates,
 				budget: liveDimensions.budget && !dims.budget,
 				sketch: liveDimensions.sketch && !dims.sketch,
-				keystones: liveDimensions.keystones && !dims.keystones
+				coreIdeas: liveDimensions.coreIdeas && !dims.coreIdeas
 			},
 			canManage: s.champion === callerMemberId,
 			// Colour this card's group-row by availability over its own window.
@@ -171,5 +171,5 @@ export async function loadScenarioBoard(
 }
 
 function emptyDims(): ConvergeDimensions {
-	return { dates: false, budget: false, sketch: false, keystones: false };
+	return { dates: false, budget: false, sketch: false, coreIdeas: false };
 }

@@ -3,7 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 import type { Phase, Day, Item, TripMember, Suggestion, SuggestionVote, Vote } from '$lib/types';
 import { nextSortOrder, insertBetween, reorderUpdates } from '$lib/itinerary/sort-order';
 import { summarizeDays } from '$lib/itinerary/day-card';
-import { withAvatarUrls } from '$lib/collaboration/member-avatar';
+import { withAvatarUrls } from '$lib/group-input/member-avatar';
 import { parkingLotCards } from '$lib/itinerary/parking-lot-cards';
 import { retilePhases, validateMovePhaseStart, toDay } from '$lib/itinerary/phase-tiling';
 import {
@@ -458,7 +458,7 @@ export const actions: Actions = {
 	// /api/suggestions/review endpoint the Inbox uses (owner/co_owner gate +
 	// author attribution + vote migration + author notification live server-side).
 	// On success, enhance re-runs load() → the ghost vanishes from pendingRaw and
-	// its now-real item appears in the parking lot: a promotion in place.
+	// its now-real item appears in the parking lot, in place.
 	approveGhost: async ({ request, locals }) => {
 		const data = await request.formData();
 		const suggestionId = data.get('suggestion_id')?.toString() || '';

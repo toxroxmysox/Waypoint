@@ -1,5 +1,5 @@
 import type { Item } from '../itinerary/types';
-import type { TripMember } from '../collaboration/types';
+import type { TripMember } from '../group-input/types';
 
 export type ExpenseCategory = 'lodging' | 'transportation' | 'food' | 'activity' | 'other';
 

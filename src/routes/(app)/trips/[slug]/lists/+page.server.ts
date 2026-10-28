@@ -2,7 +2,7 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Checklist, TripMember } from '$lib/types';
 import { fetchManualChecklists, rollupChecklists } from '$lib/itinerary/checklist-loaders';
-import { withAvatarUrls } from '$lib/collaboration/member-avatar';
+import { withAvatarUrls } from '$lib/group-input/member-avatar';
 
 export const load: PageServerLoad = async ({ parent, locals }) => {
 	const { trip } = await parent();

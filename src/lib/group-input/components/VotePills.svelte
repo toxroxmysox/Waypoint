@@ -25,7 +25,7 @@
 		withMyVote,
 		type DisplayVote,
 		type VoteValue
-	} from '$lib/collaboration/voting';
+	} from '$lib/group-input/voting';
 
 	let {
 		votes = [],
@@ -180,7 +180,7 @@
 	{/if}
 </div>
 
-{#snippet pillBody(pill: import('$lib/collaboration/voting').VotePill, interactive: boolean)}
+{#snippet pillBody(pill: import('$lib/group-input/voting').VotePill, interactive: boolean)}
 	<span
 		class="inline-flex min-w-[2.5rem] items-center justify-center gap-1 rounded-full border px-2 py-1 text-xs font-semibold tabular-nums transition-colors
 			{pill.mine ? FILLED[pill.value] : OPEN}

@@ -7,7 +7,7 @@ import type PocketBase from 'pocketbase';
  * context (backend/pb_hooks/scenarios.pb.js → POST /api/scenarios/promote). It must:
  *   - write `decisions`, whose client create rule is null (DENY_ALL) — only the
  *     admin-context hook may mint one (spec: "created by hook at promotion");
- *   - flip the status of LOSING scenarios championed by others (the champion-only
+ *   - flip the status of LOSING scenarios other members created (the creator-only
  *     edit gate would 403 a caller-context write).
  *
  * So the cascade can't run through the caller's authed client record-by-record. This

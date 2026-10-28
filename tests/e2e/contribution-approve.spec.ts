@@ -144,7 +144,7 @@ test.describe('#249 approve ghost → real item', () => {
 				.first()
 				.click();
 
-			// The ghost promotes in place → a real (linked) idea card with the same
+			// The ghost turns real in place → a real (linked) idea card with the same
 			// title appears; the dotted ghost for that title is gone.
 			await expect(
 				owner.page

@@ -6,7 +6,7 @@ import { phasesForDay } from '$lib/itinerary/phases';
 import { rebalanceDayOrder } from '$lib/itinerary/sort-order';
 import { spanningItemsForDate } from '$lib/itinerary/multi-day';
 import { summarizeDays } from '$lib/itinerary/day-card';
-import { withAvatarUrls } from '$lib/collaboration/member-avatar';
+import { withAvatarUrls } from '$lib/group-input/member-avatar';
 import { DISCRETE_FILTER, SPANNING_FILTER } from '$lib/trip-mode/spanning';
 
 // A failed PB call's status when it is an HTTP error, else 500 (#499: a refused

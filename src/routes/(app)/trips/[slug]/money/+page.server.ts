@@ -12,11 +12,11 @@ import type {
 import { rowContent } from '$lib/itinerary/row';
 import { tripToday, tripTz } from '$lib/shell/trip-time';
 import { computeBalances } from '$lib/money/debt-simplify';
-import { moneyGlance, groupBudgetTotal, myShareOfExpenses } from '$lib/money/money-glance';
+import { moneySummary, groupBudgetTotal, myShareOfExpenses } from '$lib/money/money-summary';
 import { unitForMember, effectiveUnitBudget, unitSpent } from '$lib/money/money-units';
 
-// Trip-Mode Money summary (#227) — a read-only, per-person glance answering "how much
-// do I have left to spend?". Reuses the pure `money-glance` module; this loader is just
+// Trip-Mode Money summary (#227) — a read-only, per-person roll-up answering "how much
+// do I have left to spend?". Reuses the pure `money-summary` module; this loader is just
 // the I/O glue (expenses + budget + roster + remaining-planned items in, figures out).
 // Read-only: every figure deep-links to the planning Money pages (/budget, /expenses)
 // to settle or edit. The Money *tab* is blocked by #166's nav merge; this route is
@@ -33,7 +33,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 			filter: `trip = "${trip.id}"`,
 			sort: '-date,-id'
 		}),
-		// #230 — names too, so the glance can label the viewer's unit ("You & Abby").
+		// #230 — names too, so the summary can label the viewer's unit ("You & Abby").
 		locals.pb.collection('trip_members').getFullList<TripMember>({
 			filter: `trip = "${trip.id}" && removed_at = ""`,
 			fields: 'id,display_name,placeholder_name'
@@ -46,7 +46,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 				'id,title,type,subtype,booked,cost_estimate_usd,day,phase,start_time,end_time,end_date,location_name,description,flight_number',
 			sort: '-cost_estimate_usd'
 		}),
-		// #230 / ADR-0015 — Money Units, for auto-scoping the glance to the viewer's own
+		// #230 / ADR-0015 — Money Units, for auto-scoping the summary to the viewer's own
 		// unit. Tolerate the collection being absent (pre-0050 PB) so the page never 500s.
 		locals.pb
 			.collection('money_units')
@@ -60,7 +60,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 			.collection('trip_budgets')
 			.getFirstListItem<TripBudget>(`trip = "${trip.id}"`);
 	} catch {
-		// No budget yet — the glance shows my share and omits "left" (PRD A3).
+		// No budget yet — the summary shows my share and omits "left" (PRD A3).
 	}
 
 	// Trip-local "today" + trip length. NEVER machine-tz: tripTz validates the stored
@@ -73,7 +73,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 	const end = new Date(endStr + 'T00:00:00Z');
 	const tripDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1);
 
-	const glance = moneyGlance(expenses, budget, items, {
+	const summary = moneySummary(expenses, budget, items, {
 		meId: membership.id,
 		memberCount: members.length,
 		tripEnd: trip.end_date,
@@ -86,7 +86,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 	const myBalance = computeBalances(expenses, settlements).get(membership.id) ?? 0;
 
 	// The items behind N2, for the drill-down list: still planned (unbooked) AND not
-	// yet captured as an expense. Mirrors money-glance's remaining-planned predicate.
+	// yet captured as an expense. Mirrors money-summary's remaining-planned predicate.
 	const linkedItemIds = new Set(expenses.map((e) => e.linked_item).filter(Boolean) as string[]);
 	const remainingPlannedItems = items
 		.filter((i) => !i.booked && !linkedItemIds.has(i.id) && (i.cost_estimate_usd ?? 0) > 0)
@@ -106,7 +106,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 			};
 		});
 
-	// #230 / ADR-0015 — auto-scope a UNIT view of the glance to the viewer's own unit
+	// #230 / ADR-0015 — auto-scope a UNIT view of the summary to the viewer's own unit
 	// (persistent + declared → no per-view picking; solo member = unit of one, unchanged).
 	// Unit budget = the absolute override OR the even share (group ÷ heads × unit size);
 	// unit spent = Σ the unit members' reconciliation-aware shares (attribution is free
@@ -142,7 +142,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 
 	return {
 		trip,
-		glance,
+		summary,
 		myBalance,
 		memberCount: members.length,
 		remainingPlannedItems,

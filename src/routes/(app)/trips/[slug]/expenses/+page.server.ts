@@ -234,7 +234,7 @@ export const actions: Actions = {
 		}
 	}
 	// Money Unit actions (saveMoneyUnit / leaveMoneyUnit / deleteMoneyUnit) live on the
-	// Groups route now (#332) — /trips/[slug]/groups. The Expenses page still LOADS
+	// Money Units route now (#332, #571) — /trips/[slug]/money-units. The Expenses page still LOADS
 	// `moneyUnits` for the settle-up collapse, but no longer manages them.
 };
 

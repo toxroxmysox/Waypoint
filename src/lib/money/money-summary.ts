@@ -1,4 +1,4 @@
-// Trip-Mode Money glance — the pure, testable core of the per-person summary (#227).
+// Trip-Mode Money summary — the pure, testable core of the per-person roll-up (#227).
 //
 // Answers ONE question per member: "how much do I have left to spend?" Everything
 // here is per-person (group framing was superseded 2026-06-15; multi-person units +
@@ -20,12 +20,12 @@ import type { Expense, TripBudget } from './types';
 import type { SplitDataEqual, SplitDataByAmount } from './types';
 
 /** Just the item shape this aggregation needs (matches a field-limited fetch). */
-export interface GlanceItem {
+export interface SummaryItem {
 	booked: boolean;
 	cost_estimate_usd?: number;
 }
 
-export interface MoneyGlanceInput {
+export interface MoneySummaryInput {
 	/** Current member's `trip_members` record id — the same id space `paid_by` /
 	 *  split member ids use. */
 	meId: string;
@@ -39,7 +39,7 @@ export interface MoneyGlanceInput {
 	tripDays: number;
 }
 
-export interface MoneyGlance {
+export interface MoneySummary {
 	/** Σ group budget across categories (per_day × tripDays, else total). null = no budget set. */
 	groupBudgetTotal: number | null;
 	/** groupBudgetTotal ÷ memberCount. null when no budget set. */
@@ -120,7 +120,7 @@ export function myShareOfExpenses(expenses: Expense[], meId: string): number {
  * drops out of the forecast. Each item carries its own id for the linkage check.
  */
 export function remainingPlannedTotal(
-	items: (GlanceItem & { id: string })[],
+	items: (SummaryItem & { id: string })[],
 	linkedItemIds: Set<string>
 ): number {
 	let sum = 0;
@@ -147,16 +147,16 @@ export function remainingDays(today: string, tripEnd: string): number {
 }
 
 /**
- * The whole per-person glance. Pure: same inputs → same output. `expenses` are LOGGED
+ * The whole per-person summary. Pure: same inputs → same output. `expenses` are LOGGED
  * expenses only (never estimates); `budget` is the trip's budget or null; `items` carry
  * `booked` + `cost_estimate_usd` + `id` for the N2 forecast.
  */
-export function moneyGlance(
+export function moneySummary(
 	expenses: Expense[],
 	budget: TripBudget | null,
-	items: (GlanceItem & { id: string })[],
-	{ meId, memberCount, tripEnd, today, tripDays }: MoneyGlanceInput
-): MoneyGlance {
+	items: (SummaryItem & { id: string })[],
+	{ meId, memberCount, tripEnd, today, tripDays }: MoneySummaryInput
+): MoneySummary {
 	const members = Math.max(1, memberCount);
 
 	const groupTotal = groupBudgetTotal(budget, tripDays);

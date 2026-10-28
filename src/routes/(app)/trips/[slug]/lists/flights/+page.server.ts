@@ -2,7 +2,7 @@ import { flightPlaceLine } from '$lib/itinerary/flight-place';
 import type { PageServerLoad } from './$types';
 import type { Item, Day, TripMember } from '$lib/types';
 import { flightsLineup, type FlightItemInput } from '$lib/itinerary/flights-lineup';
-import { withAvatarUrls } from '$lib/collaboration/member-avatar';
+import { withAvatarUrls } from '$lib/group-input/member-avatar';
 import { flightSub } from '$lib/itinerary/row';
 
 // Flights Smart List (#225) — a trip-wide READ-ONLY lens, sibling to Booking.

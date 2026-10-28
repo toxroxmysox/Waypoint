@@ -2,9 +2,9 @@ import { memberDisplayName } from '$lib/itinerary/member-name';
 import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Item, Phase, Day, Vote, TripMember } from '$lib/types';
-import { VOTE_OPTIONS, type VoteValue } from '$lib/collaboration/voting';
-import { buildDeck, type DeckCandidate } from '$lib/collaboration/swipe-deck';
-import { withAvatarUrls } from '$lib/collaboration/member-avatar';
+import { VOTE_OPTIONS, type VoteValue } from '$lib/group-input/voting';
+import { buildDeck, type DeckCandidate } from '$lib/group-input/swipe-deck';
+import { withAvatarUrls } from '$lib/group-input/member-avatar';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, membership, phases, days } = await parent();

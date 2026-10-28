@@ -6,7 +6,7 @@
 	import Avatar from '$lib/ui/Avatar.svelte';
 	import { isRenderablePhoto } from '$lib/memory/memory';
 	import type { Memory } from '$lib/memory/types';
-	import type { MemberWithAvatar } from '$lib/collaboration/member-avatar';
+	import type { MemberWithAvatar } from '$lib/group-input/member-avatar';
 	import type { User } from '$lib/types';
 
 	let {

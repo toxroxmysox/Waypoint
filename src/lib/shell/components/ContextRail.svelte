@@ -137,7 +137,7 @@
 					ideas={nowIdeas}
 					members={railMembers}
 					{slug}
-					canPromote={(page.data.canPromote as boolean | undefined) ?? false}
+					canPlan={(page.data.canPlan as boolean | undefined) ?? false}
 					myMemberId={railMembership?.id ?? ''}
 					canVote={(page.data.canVote as boolean | undefined) ?? false}
 					heading={nowRail.skipped ? 'Replace it' : 'Ideas for now'}

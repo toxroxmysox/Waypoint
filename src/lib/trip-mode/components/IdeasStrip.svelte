@@ -12,11 +12,11 @@
 	//
 	// Roles (SPEC §4): the strip renders for EVERYONE; travelers and owners cast
 	// votes on the pills, viewers see counts only (`canVote`). "Do this" (Light
-	// Replanning, one-tap Promote) is a quiet outlined pill (Scott, 2026-10-10) and shows only for
-	// owner/co_owner (`canPromote`).
+	// Replanning, one-tap plan) is a quiet outlined pill (Scott, 2026-10-10) and shows only for
+	// owner/co_owner (`canPlan`).
 	import { enhance } from '$app/forms';
 	import type { Item, Vote } from '$lib/types';
-	import type { MemberWithAvatar } from '$lib/collaboration/member-avatar';
+	import type { MemberWithAvatar } from '$lib/group-input/member-avatar';
 	import IdeaCard from '$lib/itinerary/components/IdeaCard.svelte';
 	import IdeaGroupHeading from '$lib/itinerary/components/IdeaGroupHeading.svelte';
 	import { ideaGroups, ideaScores } from '$lib/itinerary/idea-groups';
@@ -25,7 +25,7 @@
 		ideas = [],
 		members = [],
 		slug = '',
-		canPromote = false,
+		canPlan = false,
 		myMemberId = '',
 		canVote = false,
 		heading = 'Ideas for now',
@@ -39,7 +39,7 @@
 		members?: MemberWithAvatar[];
 		slug?: string;
 		/** True for owner/co_owner — shows the one-tap "Do this" affordance. */
-		canPromote?: boolean;
+		canPlan?: boolean;
 		/** The viewer's trip_members.id (their vote pill is filled). */
 		myMemberId?: string;
 		/** False for viewers: the pills show counts only. */
@@ -53,8 +53,8 @@
 		open?: boolean;
 	} = $props();
 
-	// A pending promote keyed by item id → disables just that row's button.
-	let promoting = $state<string | null>(null);
+	// A pending plan keyed by item id → disables just that row's button.
+	let planningId = $state<string | null>(null);
 
 	const votesById = $derived(Object.fromEntries(ideas.map((i) => [i.item.id, i.votes])));
 	const groups = $derived(
@@ -122,28 +122,28 @@
 								{canVote}
 							/>
 						</div>
-						{#if canPromote}
+						{#if canPlan}
 							<form
 								method="POST"
-								action="?/promoteIdea"
+								action="?/planIdea"
 								class="shrink-0"
 								use:enhance={() => {
-									promoting = item.id;
+									planningId = item.id;
 									return async ({ update }) => {
 										// reset:false re-runs load() (ideas/feed re-derive) WITHOUT
 										// remounting the page — never window.location.reload (wipes $state).
 										await update({ reset: false });
-										promoting = null;
+										planningId = null;
 									};
 								}}
 							>
 								<input type="hidden" name="item_id" value={item.id} />
 								<button
 									type="submit"
-									disabled={promoting === item.id}
+									disabled={planningId === item.id}
 									class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-line bg-surface px-4 text-xs font-semibold whitespace-nowrap text-ink hover:bg-surface-2 active:bg-surface-2 disabled:opacity-40"
 								>
-									{promoting === item.id ? 'Adding…' : 'Do this'}
+									{planningId === item.id ? 'Adding…' : 'Do this'}
 								</button>
 							</form>
 						{/if}

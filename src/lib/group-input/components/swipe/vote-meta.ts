@@ -1,4 +1,4 @@
-import type { VoteValue } from '$lib/collaboration/voting';
+import type { VoteValue } from '$lib/group-input/voting';
 
 /**
  * Compass dressing for the four vote options. Colors mirror the shipped

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { parkingLotCards, type Card, type CardVote } from './parking-lot-cards';
 import type { Item } from './types';
-import type { MemberRole, Suggestion, VoteValue } from '../collaboration/types';
+import type { MemberRole, Suggestion, VoteValue } from '../group-input/types';
 
 // --- builders ---------------------------------------------------------------
 

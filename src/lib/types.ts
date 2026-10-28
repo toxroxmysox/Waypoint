@@ -1,6 +1,6 @@
 export * from './shell/types';
 export * from './itinerary/types';
-export * from './collaboration/types';
+export * from './group-input/types';
 export * from './money/types';
 export * from './documents/types';
 export * from './portability/types';

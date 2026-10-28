@@ -6,7 +6,7 @@
 	import type { Suggestion } from '$lib/types';
 	import type { InboxSuggestion } from './+page.server';
 	import { titleCase } from '$lib/shell/format';
-	import { tallyVotes, type VoteValue } from '$lib/collaboration/voting';
+	import { tallyVotes, type VoteValue } from '$lib/group-input/voting';
 
 	let { data, form } = $props();
 

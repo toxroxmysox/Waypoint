@@ -6,7 +6,7 @@
 	import FreeTimeLabel from '$lib/itinerary/components/FreeTimeLabel.svelte';
 	import { freeTimeGaps } from '$lib/itinerary/card-anatomy';
 	import Card from '$lib/ui/Card.svelte';
-	import NotificationBell from '$lib/collaboration/components/NotificationBell.svelte';
+	import NotificationBell from '$lib/group-input/components/NotificationBell.svelte';
 	import { getTripModeState } from '$lib/trip-mode/trip-mode';
 	import { untrack } from 'svelte';
 	import type { Notification } from '$lib/types';

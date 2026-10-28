@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { VOTE_OPTIONS, type VoteValue } from '$lib/collaboration/voting';
+	import { VOTE_OPTIONS, type VoteValue } from '$lib/group-input/voting';
 	import { VOTE_META } from './vote-meta';
 
 	// The four vote options as real buttons in a compass layout: Love N, Like E,

@@ -1,17 +1,17 @@
 <script lang="ts">
 	// #337 — a rich scenario card (spec §Surface, mockup board-v3.html). Vertical
 	// sections with quiet uppercase hairline headers:
-	//   1. Title + champion + fork lineage
+	//   1. Title + creator + fork lineage
 	//   2. When & how much — date window + nights · budget/person
 	//   3. The shape of it — the phase sketch mini-strip
-	//   4. Going here, doing this — keystone chips
+	//   4. Going here, doing this — Core Idea chips
 	//   5. The group — vote avatar stacks (never numeric) + pro/con counts
 	// Converge-over-time: a LIVE dimension this card hasn't filled renders a quiet
 	// empty slot ("no dates yet") instead of the content.
 	import type { BoardScenario } from '$lib/ideation/scenario-board.server';
-	import type { MemberWithAvatar } from '$lib/collaboration/member-avatar';
+	import type { MemberWithAvatar } from '$lib/group-input/member-avatar';
 	import Card from '$lib/ui/Card.svelte';
-	import VoteStacks from '$lib/collaboration/components/VoteStacks.svelte';
+	import VoteStacks from '$lib/group-input/components/VoteStacks.svelte';
 	import ScenarioSketchStrip from './ScenarioSketchStrip.svelte';
 	import { formatDateRange } from '$lib/shell/format';
 
@@ -30,7 +30,7 @@
 
 <Card>
 	<a {href} class="block p-3.5" data-testid="scenario-card" data-scenario-id={scenario.id}>
-		<!-- 1. Title + champion + fork lineage -->
+		<!-- 1. Title + creator + fork lineage -->
 		<div class="flex items-start justify-between gap-2">
 			<h3 class="font-display text-[17px] leading-tight font-semibold text-ink">
 				{scenario.title}
@@ -41,7 +41,7 @@
 				</span>
 			{/if}
 		</div>
-		<p class="mt-0.5 text-[11px] text-ink-muted">{scenario.championName}'s pitch</p>
+		<p class="mt-0.5 text-[11px] text-ink-muted">{scenario.creatorName}'s pitch</p>
 		{#if scenario.pitch}
 			<p class="mt-1 text-sm text-ink-soft">{scenario.pitch}</p>
 		{/if}
@@ -91,15 +91,15 @@
 		{/if}
 
 		<!-- 4. Going here, doing this -->
-		{#if scenario.dimensions.keystones || scenario.emptySlots.keystones}
+		{#if scenario.dimensions.coreIdeas || scenario.emptySlots.coreIdeas}
 			<p
 				class="mt-3 border-t border-[var(--color-line)] pt-2 text-[9.5px] font-bold tracking-[0.09em] text-ink-muted uppercase"
 			>
 				Going here, doing this
 			</p>
-			{#if scenario.dimensions.keystones}
+			{#if scenario.dimensions.coreIdeas}
 				<div class="mt-1 flex flex-wrap gap-1.5">
-					{#each scenario.keystoneLabels as label (label)}
+					{#each scenario.coreIdeaLabels as label (label)}
 						<span class="rounded-full bg-surface-2 px-2.5 py-1 text-[11px] text-ink-soft"
 							>{label}</span
 						>

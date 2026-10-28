@@ -12,7 +12,7 @@
 	import { enhance } from '$app/forms';
 	import { cycleValue, type AvailabilityValue } from '$lib/ideation/availability';
 	import type { PollDay } from '$lib/ideation/availability-poll.server';
-	import type { MemberWithAvatar } from '$lib/collaboration/member-avatar';
+	import type { MemberWithAvatar } from '$lib/group-input/member-avatar';
 
 	let {
 		weeks,
