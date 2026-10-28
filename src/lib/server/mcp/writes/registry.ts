@@ -221,7 +221,8 @@ export const WRITABLE: Record<string, WritableSpec> = {
 		}
 	},
 	goal_votes: {
-		label: "the user's own vote on a goal (only one they state)",
+		label:
+			"the user's own vote on a goal (only one they state; to change it, update the vote id get_trip gives as your_vote)",
 		tripPath: 'goal.trip',
 		stamp: { member: 'member' },
 		fields: { goal: 'goal id', value: 'love | like | flexible | dislike' }
@@ -255,7 +256,8 @@ export const WRITABLE: Record<string, WritableSpec> = {
 		}
 	},
 	scenario_votes: {
-		label: "the user's own vote on a scenario (only one they state)",
+		label:
+			"the user's own vote on a scenario (only one they state; to change it, update the vote id get_trip gives as your_vote)",
 		tripPath: 'scenario.trip',
 		stamp: { member: 'member' },
 		fields: { scenario: 'scenario id', value: 'love | like | flexible | dislike' }
@@ -277,7 +279,8 @@ export const WRITABLE: Record<string, WritableSpec> = {
 			dated(trip) ? 'This trip already has dates, so the availability poll is closed.' : null
 	},
 	suggestion_votes: {
-		label: "the user's own vote on a suggestion (only one they state)",
+		label:
+			"the user's own vote on a suggestion (only one they state; to change it, update the vote id get_trip gives as your_vote)",
 		tripPath: 'suggestion.trip',
 		stamp: { member: 'member' },
 		fields: { suggestion: 'suggestion id', value: 'love | like | flexible | dislike' }

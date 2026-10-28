@@ -165,6 +165,139 @@ test.describe('get_trip', () => {
 		const v = await callTool(tokens.viewer, 'get_trip', { trip: seed.trips.current });
 		expect(v.structured.cards).toEqual(o.structured.cards);
 	});
+
+	// #567 — goal, scenario and suggestion votes: each caller gets their own vote id.
+	test("each caller's own goal, scenario and suggestion vote, as your_vote", async () => {
+		const su = await superuser();
+		const pb = async (token: string, method: string, path: string, body?: unknown) => {
+			const res = await fetch(`${E2E_PB_BASE}${path}`, {
+				method,
+				headers: { 'content-type': 'application/json', Authorization: token },
+				body: body === undefined ? undefined : JSON.stringify(body)
+			});
+			const json = await res.json();
+			expect(res.ok, `${method} ${path}: ${JSON.stringify(json)}`).toBe(true);
+			return json;
+		};
+		const auth = (email: string) =>
+			fetch(`${E2E_PB_BASE}/api/dev/auth-bypass`, {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ email })
+			}).then((r) => r.json());
+		const [owner, traveler] = [await auth(MCP_EMAILS.owner), await auth(MCP_EMAILS.traveler)];
+		const add = (token: string, col: string, body: unknown) =>
+			pb(token, 'POST', `/api/collections/${col}/records`, body);
+
+		const slug = `e2e-mcp-dateless-${seed.suffix}`;
+		const trip = await add(owner.token, 'trips', {
+			slug,
+			title: `E2E MCP Someday ${seed.suffix}`,
+			created_by: owner.record.id
+		});
+		const ownerMember = (
+			await pb(
+				owner.token,
+				'GET',
+				`/api/collections/trip_members/records?filter=${encodeURIComponent(`trip="${trip.id}"`)}`
+			)
+		).items[0].id;
+		const travelerMember = (
+			await add(su, 'trip_members', {
+				trip: trip.id,
+				user: traveler.record.id,
+				role: 'traveler',
+				display_name: 'Abby'
+			})
+		).id;
+		// Nobody may vote on their own goal, scenario or suggestion: a third member makes them.
+		const kim = (
+			await add(su, 'trip_members', {
+				trip: trip.id,
+				role: 'traveler',
+				placeholder_name: 'Kim',
+				display_name: 'Kim'
+			})
+		).id;
+		const goal = await add(su, 'trip_goals', {
+			trip: trip.id,
+			title: 'See the aurora',
+			created_by: kim,
+			manual_status: 'unplanned',
+			sort_order: 0
+		});
+		const scenario = await add(su, 'scenarios', {
+			trip: trip.id,
+			title: 'Tromsø in March',
+			pitch: 'Dark skies',
+			champion: kim,
+			status: 'candidate'
+		});
+		const suggestion = await add(su, 'suggestions', {
+			trip: trip.id,
+			author: kim,
+			target_type: 'new_item',
+			payload: { title: 'Dog sledding', type: 'activity' },
+			status: 'pending'
+		});
+		const ownerGoalVote = await add(owner.token, 'goal_votes', {
+			goal: goal.id,
+			member: ownerMember,
+			value: 'love'
+		});
+		const travelerGoalVote = await add(traveler.token, 'goal_votes', {
+			goal: goal.id,
+			member: travelerMember,
+			value: 'dislike'
+		});
+		const ownerScenarioVote = await add(owner.token, 'scenario_votes', {
+			scenario: scenario.id,
+			member: ownerMember,
+			value: 'like'
+		});
+		const ownerSuggestionVote = await add(owner.token, 'suggestion_votes', {
+			suggestion: suggestion.id,
+			member: ownerMember,
+			value: 'flexible'
+		});
+
+		const o = await callTool(tokens.owner, 'get_trip', { trip: slug });
+		expect(o.structured.goals).toEqual([
+			{ id: goal.id, title: 'See the aurora', your_vote: { id: ownerGoalVote.id, value: 'love' } }
+		]);
+		expect(o.structured.scenarios).toEqual([
+			{
+				id: scenario.id,
+				title: 'Tromsø in March',
+				your_vote: { id: ownerScenarioVote.id, value: 'like' }
+			}
+		]);
+		expect(o.structured.suggestions).toEqual([
+			{
+				id: suggestion.id,
+				title: 'Dog sledding',
+				your_vote: { id: ownerSuggestionVote.id, value: 'flexible' }
+			}
+		]);
+		expect(o.text).toContain(`Your vote: love (vote id ${ownerGoalVote.id})`);
+		expect(o.text).toContain('2 votes: 1 love, 1 dislike');
+		expect(o.text).toContain('Dog sledding');
+		expect(o.text).toContain('Suggested by Kim');
+		expect(JSON.stringify(o)).not.toContain(travelerGoalVote.id);
+
+		// Someone else's vote, and no vote: no your_vote.
+		const t = await callTool(tokens.traveler, 'get_trip', { trip: slug });
+		expect(t.structured.goals).toEqual([
+			{
+				id: goal.id,
+				title: 'See the aurora',
+				your_vote: { id: travelerGoalVote.id, value: 'dislike' }
+			}
+		]);
+		expect(t.structured.scenarios).toEqual([{ id: scenario.id, title: 'Tromsø in March' }]);
+		expect(t.structured.suggestions).toEqual([{ id: suggestion.id, title: 'Dog sledding' }]);
+		expect(JSON.stringify(t)).not.toContain(ownerGoalVote.id);
+	});
 });
 
 test.describe('search', () => {
