@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import CloseoutItemRow from '$lib/itinerary/components/CloseoutItemRow.svelte';
+	import { itemOutcome } from '$lib/itinerary/closeout-outcome';
 	import { formatCalendarDate } from '$lib/shell/format';
 	import type { Day, Item, Phase } from '$lib/types';
 
@@ -11,7 +12,8 @@
 		tripId,
 		days = [],
 		// #273 — passed straight to the trim-end picker in each row.
-		tripEndDate = ''
+		tripEndDate = '',
+		mode = 'walk'
 	}: {
 		day: Day;
 		items: Item[];
@@ -19,6 +21,7 @@
 		tripId: string;
 		days?: Day[];
 		tripEndDate?: string;
+		mode?: 'walk' | 'rate';
 	} = $props();
 
 	const phaseMap = $derived(new Map(phases.map((p) => [p.id, p])));
@@ -36,7 +39,7 @@
 		[...items].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
 	);
 
-	const pendingItems = $derived(items.filter((i) => i.status !== 'done'));
+	const pendingItems = $derived(items.filter((i) => itemOutcome(i) === 'pending'));
 	let bulkSubmitting = $state(false);
 	let bulkDone = $state(false);
 </script>
@@ -50,7 +53,7 @@
 			{/if}
 		</div>
 
-		{#if pendingItems.length > 0 && !bulkDone}
+		{#if mode === 'walk' && pendingItems.length > 0 && !bulkDone}
 			<form
 				method="POST"
 				action="?/markDoneAll"
@@ -94,6 +97,7 @@
 				phaseId={day.phases?.[0] || ''}
 				{days}
 				{tripEndDate}
+				{mode}
 			/>
 		{/each}
 	{/if}

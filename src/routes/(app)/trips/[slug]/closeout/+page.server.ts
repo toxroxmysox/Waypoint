@@ -28,7 +28,7 @@ import { outcomeUpdate, parseOutcome, parseRating } from '$lib/itinerary/closeou
 async function closeoutCaller(
 	locals: App.Locals,
 	slug: string
-): Promise<{ trip: { id: string }; canEdit: boolean } | null> {
+): Promise<{ trip: { id: string }; canEdit: boolean; archived: boolean } | null> {
 	try {
 		const trip = await locals.pb
 			.collection('trips')
@@ -39,10 +39,18 @@ async function closeoutCaller(
 				`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`
 			);
 		const r = membership.role;
-		return { trip, canEdit: r === 'owner' || r === 'co_owner' || r === 'traveler' };
+		return {
+			trip,
+			canEdit: r === 'owner' || r === 'co_owner' || r === 'traveler',
+			archived: !!trip.archived
+		};
 	} catch {
 		return null;
 	}
+}
+
+function isNotFound(err: unknown): boolean {
+	return typeof err === 'object' && err !== null && (err as { status?: number }).status === 404;
 }
 
 export const load: PageServerLoad = async ({ parent, locals, params }) => {
@@ -115,19 +123,6 @@ export const actions: Actions = {
 	// composer handler; PB rules (author-only) + memories.pb.js enforce.
 	saveMemory: handleSaveMemory,
 
-	markDone: async ({ request, locals }) => {
-		const data = await request.formData();
-		const itemId = data.get('item_id')?.toString();
-		if (!itemId) return fail(400, { error: 'Missing item ID.' });
-
-		try {
-			await locals.pb.collection('items').update(itemId, { status: 'done' });
-			return { success: true };
-		} catch (err: unknown) {
-			return fail(500, { error: err instanceof Error ? err.message : 'Failed to update item.' });
-		}
-	},
-
 	// #576 — resolve one item: Recommend / Don't recommend (done + rating) or
 	// Didn't do (considered, unrated). Replaces the old Done/Swap/Skip row buttons.
 	resolve: async ({ request, locals, params }) => {
@@ -138,7 +133,9 @@ export const actions: Actions = {
 		if (!outcome) return fail(400, { error: 'Invalid outcome.' });
 
 		const caller = await closeoutCaller(locals, params.slug);
-		if (!caller?.canEdit) return fail(403, { error: 'Only travelers can close out items.' });
+		if (!caller?.canEdit) return fail(403, { error: "Viewers can't close out items." });
+		// Rate mode (a closed trip) is ratings-only.
+		if (caller.archived) return fail(400, { error: 'This trip is already closed.' });
 
 		try {
 			const item = await locals.pb.collection('items').getOne<Item>(itemId, { fields: 'id,trip' });
@@ -146,6 +143,7 @@ export const actions: Actions = {
 			await locals.pb.collection('items').update(itemId, outcomeUpdate(outcome));
 			return { success: true };
 		} catch (err: unknown) {
+			if (isNotFound(err)) return fail(400, { error: 'Item not found.' });
 			return fail(500, { error: err instanceof Error ? err.message : 'Failed to update item.' });
 		}
 	},
@@ -160,7 +158,7 @@ export const actions: Actions = {
 		if (rating === null) return fail(400, { error: 'Invalid rating.' });
 
 		const caller = await closeoutCaller(locals, params.slug);
-		if (!caller?.canEdit) return fail(403, { error: 'Only travelers can rate items.' });
+		if (!caller?.canEdit) return fail(403, { error: "Viewers can't rate items." });
 
 		try {
 			const item = await locals.pb
@@ -171,6 +169,7 @@ export const actions: Actions = {
 			await locals.pb.collection('items').update(itemId, { rating });
 			return { success: true };
 		} catch (err: unknown) {
+			if (isNotFound(err)) return fail(400, { error: 'Item not found.' });
 			return fail(500, { error: err instanceof Error ? err.message : 'Failed to rate item.' });
 		}
 	},
@@ -268,7 +267,11 @@ export const actions: Actions = {
 		}
 	},
 
-	addReplacement: async ({ request, locals }) => {
+	addReplacement: async ({ request, locals, params }) => {
+		const caller = await closeoutCaller(locals, params.slug);
+		if (!caller?.canEdit) return fail(403, { error: "Viewers can't close out items." });
+		// Rate mode (a closed trip) is ratings-only.
+		if (caller.archived) return fail(400, { error: 'This trip is already closed.' });
 		const data = await request.formData();
 		const tripId = data.get('trip_id')?.toString();
 		const originalItemId = data.get('original_item_id')?.toString();
@@ -278,6 +281,7 @@ export const actions: Actions = {
 		const type = data.get('type')?.toString() || 'activity';
 
 		if (!tripId || !title) return fail(400, { error: 'Trip ID and title are required.' });
+		if (tripId !== caller.trip.id) return fail(400, { error: 'Item is not on this trip.' });
 
 		try {
 			// Create first: if it fails, the original must not be left considered with

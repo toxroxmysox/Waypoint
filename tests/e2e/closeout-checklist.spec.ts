@@ -67,8 +67,15 @@ test.describe('Closeout leaves checklists untouched (#53)', () => {
 
 		// --- Closeout: mark the item done (reviews the Item) ---
 		await page.goto(`${BASE}/trips/${tripSlug}/closeout`, { waitUntil: 'networkidle' });
-		await page.getByRole('button', { name: 'Done', exact: true }).first().click();
-		await expect(page.getByRole('button', { name: 'Done', exact: true })).toHaveCount(0, {
+		// #576: Done became Recommend / Don't recommend / Didn't do.
+		await page
+			.getByRole('button', { name: 'Recommend', exact: true })
+			.filter({ visible: true })
+			.first()
+			.click();
+		await expect(
+			page.getByRole('button', { name: 'Recommend', exact: true }).filter({ visible: true })
+		).toHaveCount(0, {
 			timeout: 5000
 		});
 

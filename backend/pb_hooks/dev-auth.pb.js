@@ -1511,6 +1511,9 @@ routerAdd('POST', '/api/dev/seed-visual-trip', (e) => {
 		for (let k = 0; k < planned.length; k++) {
 			const it = planned[k];
 			it.set('status', 'done');
+			// #576: a couple of rated items so rate mode has 👍/👎 to show (dev seed only).
+			if (k === 0) it.set('rating', 'recommend');
+			if (k === 1) it.set('rating', 'not_recommend');
 			if (descs[it.getString('title')]) it.set('description', descs[it.getString('title')]);
 			if (it.getString('title') === 'American Club check-in') {
 				it.set('end_date', days[3].getString('date').substring(0, 10) + ' 00:00:00.000Z');

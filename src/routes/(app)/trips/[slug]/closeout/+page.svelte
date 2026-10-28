@@ -6,6 +6,7 @@
 	import PublishControl from '$lib/portability/components/PublishControl.svelte';
 	import MemorySheet from '$lib/memory/components/MemorySheet.svelte';
 	import MemoryCard from '$lib/memory/components/MemoryCard.svelte';
+	import { itemOutcome } from '$lib/itinerary/closeout-outcome';
 	import { tripToday, tripTz } from '$lib/shell/trip-time';
 	import type { Day, Item } from '$lib/types';
 	import type { Memory } from '$lib/memory/types';
@@ -15,6 +16,9 @@
 	// owner/co_owner curate + decide publishing; travelers do the item walk only and
 	// their wizard ends at "submit review → closed" (no publish step).
 	const canCurate = $derived(data.canCurate ?? false);
+
+	// #576 — 'rate' = a closed trip's rating-only walk.
+	const isRate = $derived(data.mode === 'rate');
 
 	let currentDayIndex = $state(0);
 	let finishing = $state(false);
@@ -54,7 +58,9 @@
 	// Whether the step EXISTS at all — based on the trip having unplanned ideas at load,
 	// independent of in-session drops (so dropping the last idea doesn't yank the step
 	// out from under the user mid-review). Derived from the unfiltered set.
-	const hasIdeasStep = $derived(canCurate && data.items.some((i) => i.status === 'unplanned'));
+	const hasIdeasStep = $derived(
+		!isRate && canCurate && data.items.some((i) => i.status === 'unplanned')
+	);
 
 	// After the day walk: the optional owner ideas step, then the summary.
 	const showIdeas = $derived(currentDayIndex >= totalDays && hasIdeasStep && !ideasReviewed);
@@ -91,25 +97,24 @@
 		new Map((data.members ?? []).map((m: (typeof data.members)[number]) => [m.id, m]))
 	);
 
+	// #576 — what the walk resolved each planned item to. Unplanned ideas are not part
+	// of the walk, so they never count as "not reviewed".
 	const summary = $derived.by(() => {
-		let done = 0;
-		let planned = 0;
-		let considered = 0;
+		const c = { recommend: 0, not_recommend: 0, done_unrated: 0, didnt_do: 0, pending: 0 };
 		for (const item of data.items) {
-			if (item.status === 'done') done++;
-			else if (item.status === 'considered') considered++;
-			else planned++;
+			if (item.status === 'unplanned') continue;
+			c[itemOutcome(item)]++;
 		}
-		return { done, planned, considered, total: data.items.length };
+		return c;
 	});
 </script>
 
 <svelte:head>
-	<title>Closeout — {data.trip.title}</title>
+	<title>{isRate ? 'Rate activities' : 'Closeout'} — {data.trip.title}</title>
 </svelte:head>
 
 <NavBar
-	title="Closeout"
+	title={isRate ? 'Rate activities' : 'Closeout'}
 	subtitle={data.trip.title}
 	subtitleStyle="tagline"
 	back
@@ -167,6 +172,7 @@
 			tripId={data.trip.id}
 			days={data.days}
 			tripEndDate={data.trip.end_date}
+			mode={data.mode}
 		/>
 
 		<!-- #269 — the day's memories, all travelers, alongside the item review
@@ -301,27 +307,50 @@
 				Continue
 			</button>
 		</div>
+	{:else if isRate}
+		<div class="border-border mt-4 rounded-xl border bg-surface p-6 text-center">
+			<h2 class="text-lg font-semibold text-ink">That's every day</h2>
+			<p class="mt-1 text-sm text-ink-muted">Your ratings are saved as you tap.</p>
+			<a
+				href="/trips/{data.trip.slug}"
+				class="mt-4 block w-full rounded-lg bg-ink px-4 py-3 text-sm font-medium text-paper"
+				>Done rating</a
+			>
+			<button
+				type="button"
+				onclick={() => (currentDayIndex = totalDays - 1)}
+				class="py-2 text-sm text-ink-muted"
+			>
+				Go back and review
+			</button>
+		</div>
 	{:else}
 		<div class="border-border mt-4 rounded-xl border bg-surface p-6">
 			<h2 class="text-lg font-semibold text-ink">Trip Closeout Summary</h2>
-			<p class="mt-1 text-sm text-ink-muted">Here's how your trip shook out.</p>
+			<p class="mt-1 text-sm text-ink-muted">
+				Here's how your trip shook out. Anything not reviewed yet finishes as done.
+			</p>
 
 			<div class="mt-4 space-y-2">
 				<div class="flex justify-between text-sm">
-					<span class="text-ink-muted">Done</span>
-					<span class="font-medium text-moss">{summary.done}</span>
+					<span class="text-ink-muted">Recommended</span>
+					<span class="font-medium text-moss">{summary.recommend}</span>
 				</div>
 				<div class="flex justify-between text-sm">
-					<span class="text-ink-muted">Skipped (stayed planned)</span>
-					<span class="font-medium text-ink-muted">{summary.planned}</span>
+					<span class="text-ink-muted">Not recommended</span>
+					<span class="font-medium text-ink">{summary.not_recommend}</span>
 				</div>
 				<div class="flex justify-between text-sm">
-					<span class="text-ink-muted">Swapped (considered)</span>
-					<span class="font-medium text-gold">{summary.considered}</span>
+					<span class="text-ink-muted">Done, not rated</span>
+					<span class="font-medium text-ink-muted">{summary.done_unrated}</span>
+				</div>
+				<div class="flex justify-between text-sm">
+					<span class="text-ink-muted">Didn't do</span>
+					<span class="font-medium text-gold">{summary.didnt_do}</span>
 				</div>
 				<div class="border-border flex justify-between border-t pt-2 text-sm">
-					<span class="font-medium text-ink">Total items</span>
-					<span class="font-medium text-ink">{summary.total}</span>
+					<span class="font-medium text-ink">Not reviewed yet</span>
+					<span class="font-medium text-ink">{summary.pending}</span>
 				</div>
 			</div>
 
@@ -348,7 +377,7 @@
 				>
 					{#if canCurate}
 						<!-- Owner/co_owner final step: choose whether the public record publishes.
-						     Server re-enforces owner/co_owner before honoring these fields (#241). -->
+							     Server re-enforces owner/co_owner before honoring these fields (#241). -->
 						<div class="mb-4 rounded-xl border border-line p-4">
 							<h3 class="text-sm font-semibold text-ink">Share the record</h3>
 							<p class="mt-0.5 mb-3 text-xs text-ink-muted">
