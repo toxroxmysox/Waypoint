@@ -1,9 +1,9 @@
 import type { Day, Phase } from '$lib/types';
 
 /**
- * All phases a day belongs to, ordered by phase `order` (lowest first).
- * A day can belong to multiple phases when their date ranges overlap
- * (e.g. a travel-transition day between two cities).
+ * The phases a day belongs to, ordered by phase `order` (lowest first).
+ * Phases tile the trip (ADR-0021): a day belongs to exactly one phase, or two on
+ * a Travel Day, where adjacent phases share their boundary day.
  */
 export function phasesForDay(day: Day, allPhases: Phase[]): Phase[] {
 	const ids = new Set(day.phases ?? []);
@@ -18,11 +18,4 @@ export function phasesForDay(day: Day, allPhases: Phase[]): Phase[] {
 export function primaryPhaseForDay(day: Day, allPhases: Phase[]): Phase | null {
 	const matches = phasesForDay(day, allPhases);
 	return matches.length > 0 ? matches[0] : null;
-}
-
-/**
- * True if the day bridges two or more phases — i.e. a travel-transition day.
- */
-export function isTravelTransition(day: Day): boolean {
-	return (day.phases ?? []).length > 1;
 }
