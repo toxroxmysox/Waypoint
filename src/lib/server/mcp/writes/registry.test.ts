@@ -128,9 +128,8 @@ describe('vote labels name the read that gives your_vote (#520, #567)', () => {
 });
 
 describe('items.rating is writable (#576)', () => {
-	it('is described with its values and closeout rule', () => {
-		expect(WRITABLE.items.fields.rating).toBe(
-			'recommend | not_recommend | empty to clear; done items only (closeout)'
-		);
+	it('describe lists its values and the closeout rule', () => {
+		expect(allowedValues(WRITABLE.items.fields.rating)).toEqual(['recommend', 'not_recommend']);
+		expect(WRITABLE.items.fields.rating).toMatch(/done items only.*empty to clear/);
 	});
 });

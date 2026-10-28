@@ -99,7 +99,7 @@ describe('rating on items (#576)', () => {
 	it('ITEM_FIELDS asks PB for rating, so every item read carries it', () => {
 		expect(ITEM_FIELDS.split(',')).toContain('rating');
 	});
-	it('a rated item card says so, in words (get_day, search, get_item, trip_brief)', () => {
+	it('a rated item card says so, in words (get_day, get_item, search; trip_brief builds its own cards)', () => {
 		expect(itemCard(mk('recommend')).lines).toContain('Recommended');
 		expect(itemCard(mk('not_recommend')).lines).toContain('Not recommended');
 	});

@@ -108,6 +108,11 @@ const MEMBER_FIELDS = new Set([
 	'uploaded_by'
 ]);
 
+const RATING_LABEL: Record<string, string> = {
+	recommend: 'Recommended',
+	not_recommend: 'Not recommended'
+};
+
 function show(
 	collection: string,
 	field: string,
@@ -156,6 +161,7 @@ function show(
 			)
 			.join(', ');
 	}
+	if (collection === 'items' && field === 'rating') return RATING_LABEL[String(v)] ?? String(v);
 	if (typeof v === 'string' && allowedValues(spec?.fields[field] ?? '')?.includes(v))
 		return sentence(v);
 	if (typeof v === 'boolean') return v ? 'Yes' : 'No';
