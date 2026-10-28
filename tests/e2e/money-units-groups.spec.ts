@@ -53,7 +53,7 @@ test.describe('#332 Money Units — Groups sub-tab', () => {
 	test.skip(!process.env.E2E_TEST_EMAIL, 'Set E2E_TEST_EMAIL to run E2E tests');
 
 	const tripSlug = FIXTURE_SLUG;
-	const GROUPS = `${BASE}/trips/${tripSlug}/groups`;
+	const MONEY_UNITS = `${BASE}/trips/${tripSlug}/money-units`;
 
 	test.beforeAll(async () => {
 		await setupFixture(EMAILS.owner);
@@ -84,11 +84,21 @@ test.describe('#332 Money Units — Groups sub-tab', () => {
 			.click();
 	}
 
+	test('the old /groups path redirects to /money-units (#571)', async ({ browser }) => {
+		const { page, ctx } = await devLogin(browser, EMAILS.owner);
+		try {
+			await page.goto(`${BASE}/trips/${tripSlug}/groups`, { waitUntil: 'networkidle' });
+			await expect(page).toHaveURL(MONEY_UNITS);
+		} finally {
+			await ctx.close();
+		}
+	});
+
 	test('groups tab renders with the 3-tab nav + teaching empty state', async ({ browser }) => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 		try {
 			await page.setViewportSize({ width: 375, height: 812 });
-			await page.goto(GROUPS, { waitUntil: 'networkidle' }); // 'New group' opens a client-side sheet
+			await page.goto(MONEY_UNITS, { waitUntil: 'networkidle' }); // 'New group' opens a client-side sheet
 			await expect(
 				page
 					.getByText(/no groups yet/i)
@@ -120,7 +130,7 @@ test.describe('#332 Money Units — Groups sub-tab', () => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 		try {
 			await page.setViewportSize({ width: 375, height: 812 });
-			await page.goto(GROUPS, { waitUntil: 'networkidle' }); // 'New group' opens a client-side sheet
+			await page.goto(MONEY_UNITS, { waitUntil: 'networkidle' }); // 'New group' opens a client-side sheet
 			await expect(
 				page
 					.getByText(/no groups yet/i)
@@ -195,7 +205,7 @@ test.describe('#332 Money Units — Groups sub-tab', () => {
 		const { page, ctx } = await devLogin(browser, EMAILS.owner);
 		try {
 			await page.setViewportSize({ width: 375, height: 812 });
-			await page.goto(GROUPS, { waitUntil: 'networkidle' }); // 'New group' opens a client-side sheet
+			await page.goto(MONEY_UNITS, { waitUntil: 'networkidle' }); // 'New group' opens a client-side sheet
 			await expect(
 				page
 					.getByText(/no groups yet/i)
