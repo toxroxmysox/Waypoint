@@ -10,7 +10,11 @@ describe('votedCard (#567: the caller sees their own vote id, so a change is an 
 			{ id: 'v_mine', member: me, value: 'love' },
 			{ id: 'v_other', member: 'mem_ana', value: 'like' }
 		]);
-		expect(ref).toEqual({ id: 'goal_1', your_vote: { id: 'v_mine', value: 'love' } });
+		expect(ref).toEqual({
+			id: 'goal_1',
+			title: 'See the aurora',
+			your_vote: { id: 'v_mine', value: 'love' }
+		});
 		expect(card.lines).toEqual([
 			'Up north',
 			'id: goal_1',
@@ -23,13 +27,13 @@ describe('votedCard (#567: the caller sees their own vote id, so a change is an 
 		const { card, ref } = votedCard(base, 'goal_1', me, [
 			{ id: 'v_other', member: 'mem_ana', value: 'dislike' }
 		]);
-		expect(ref).toEqual({ id: 'goal_1' });
+		expect(ref).toEqual({ id: 'goal_1', title: 'See the aurora' });
 		expect(card.lines).toEqual(['Up north', 'id: goal_1', '1 vote: 1 dislike']);
 		expect(card.lines.join(' ')).not.toContain('v_other');
 	});
 	it('no vote: says so', () => {
 		const { card, ref } = votedCard(base, 'goal_1', me, []);
-		expect(ref).toEqual({ id: 'goal_1' });
+		expect(ref).toEqual({ id: 'goal_1', title: 'See the aurora' });
 		expect(card.lines).toEqual(['Up north', 'id: goal_1', 'no votes']);
 	});
 });

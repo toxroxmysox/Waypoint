@@ -83,6 +83,7 @@ export const getTrip: ToolDef = {
 		const t = await resolveTrip(ctx, ref);
 		if (!t.open) return offTrip(t.trip);
 		const trip = t.trip;
+		const dateless = !trip.start_date;
 		const byTrip = (f: string) => ctx.pb.filter(`${f} = {:t}`, { t: trip.id });
 		const voteFields = (f: string) => ({ fields: `id,member,value,${f}`, requestKey: null });
 		const [
@@ -122,16 +123,21 @@ export const getTrip: ToolDef = {
 				filter: byTrip('goal.trip'),
 				...voteFields('goal')
 			}),
-			ctx.pb.collection('scenarios').getFullList<Scenario>({
-				filter: `${byTrip('trip')} && status != "archived"`,
-				fields: 'id,title,pitch,status,date_start,date_end,budget_per_person',
-				sort: 'created',
-				requestKey: null
-			}),
-			ctx.pb.collection('scenario_votes').getFullList<VoteRow & { scenario: string }>({
-				filter: byTrip('scenario.trip'),
-				...voteFields('scenario')
-			}),
+			// Scenarios are only voted on while the trip has no dates.
+			dateless
+				? ctx.pb.collection('scenarios').getFullList<Scenario>({
+						filter: `${byTrip('trip')} && status = "candidate"`,
+						fields: 'id,title,pitch,date_start,date_end,budget_per_person',
+						sort: 'created',
+						requestKey: null
+					})
+				: [],
+			dateless
+				? ctx.pb.collection('scenario_votes').getFullList<VoteRow & { scenario: string }>({
+						filter: byTrip('scenario.trip'),
+						...voteFields('scenario')
+					})
+				: [],
 			ctx.pb
 				.collection('suggestions')
 				.getFullList<{ id: string; author: string; payload: { title?: string } | null }>({
@@ -210,7 +216,7 @@ export const getTrip: ToolDef = {
 					{
 						emoji: '🧭',
 						title: s.title,
-						tag: s.status === 'won' ? 'chosen scenario' : 'scenario',
+						tag: 'scenario',
 						lines: [
 							s.pitch,
 							s.date_start && s.date_end

@@ -13,6 +13,7 @@ export interface VoteRow {
 
 export interface VotedRef {
 	id: string;
+	title: string;
 	your_vote?: { id: string; value: VoteValue };
 }
 
@@ -45,13 +46,21 @@ export function votedCard(
 				...(mine ? [`Your vote: ${mine.value} (vote id ${mine.id})`] : [])
 			]
 		},
-		ref: { id, ...(mine ? { your_vote: { id: mine.id, value: mine.value } } : {}) }
+		ref: {
+			id,
+			title: card.title,
+			...(mine ? { your_vote: { id: mine.id, value: mine.value } } : {})
+		}
 	};
 }
 
 /** Votes bucketed by the record they are on. */
 export function bucket<V extends VoteRow>(votes: V[], key: (v: V) => string): Map<string, V[]> {
 	const by = new Map<string, V[]>();
-	for (const v of votes) by.set(key(v), [...(by.get(key(v)) ?? []), v]);
+	for (const v of votes) {
+		const list = by.get(key(v));
+		if (list) list.push(v);
+		else by.set(key(v), [v]);
+	}
 	return by;
 }

@@ -263,13 +263,21 @@ test.describe('get_trip', () => {
 
 		const o = await callTool(tokens.owner, 'get_trip', { trip: slug });
 		expect(o.structured.goals).toEqual([
-			{ id: goal.id, your_vote: { id: ownerGoalVote.id, value: 'love' } }
+			{ id: goal.id, title: 'See the aurora', your_vote: { id: ownerGoalVote.id, value: 'love' } }
 		]);
 		expect(o.structured.scenarios).toEqual([
-			{ id: scenario.id, your_vote: { id: ownerScenarioVote.id, value: 'like' } }
+			{
+				id: scenario.id,
+				title: 'Tromsø in March',
+				your_vote: { id: ownerScenarioVote.id, value: 'like' }
+			}
 		]);
 		expect(o.structured.suggestions).toEqual([
-			{ id: suggestion.id, your_vote: { id: ownerSuggestionVote.id, value: 'flexible' } }
+			{
+				id: suggestion.id,
+				title: 'Dog sledding',
+				your_vote: { id: ownerSuggestionVote.id, value: 'flexible' }
+			}
 		]);
 		expect(o.text).toContain(`Your vote: love (vote id ${ownerGoalVote.id})`);
 		expect(o.text).toContain('2 votes: 1 love, 1 dislike');
@@ -280,10 +288,14 @@ test.describe('get_trip', () => {
 		// Someone else's vote, and no vote: no your_vote.
 		const t = await callTool(tokens.traveler, 'get_trip', { trip: slug });
 		expect(t.structured.goals).toEqual([
-			{ id: goal.id, your_vote: { id: travelerGoalVote.id, value: 'dislike' } }
+			{
+				id: goal.id,
+				title: 'See the aurora',
+				your_vote: { id: travelerGoalVote.id, value: 'dislike' }
+			}
 		]);
-		expect(t.structured.scenarios).toEqual([{ id: scenario.id }]);
-		expect(t.structured.suggestions).toEqual([{ id: suggestion.id }]);
+		expect(t.structured.scenarios).toEqual([{ id: scenario.id, title: 'Tromsø in March' }]);
+		expect(t.structured.suggestions).toEqual([{ id: suggestion.id, title: 'Dog sledding' }]);
 		expect(JSON.stringify(t)).not.toContain(ownerGoalVote.id);
 	});
 });
