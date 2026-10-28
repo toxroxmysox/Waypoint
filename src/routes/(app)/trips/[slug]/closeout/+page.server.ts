@@ -6,6 +6,7 @@ import { resolvePublishDay } from '$lib/portability/archive-visibility';
 import { handleSaveMemory } from '$lib/memory/save-memory.server';
 import type { Memory } from '$lib/memory/types';
 import { withAvatarUrls } from '$lib/group-input/member-avatar';
+import { outcomeUpdate, parseOutcome, parseRating } from '$lib/itinerary/closeout-outcome';
 
 // Closeout wizard loader (#240/#195 — Slice 2).
 //
@@ -22,6 +23,45 @@ import { withAvatarUrls } from '$lib/group-input/member-avatar';
 // see the unplanned [[Parking Lot]] ideas (that curation is owner-only, Slice 5). The
 // day-by-day walk is already day-scoped (unplanned ideas carry an empty `day` and never
 // appear), so `canCurate` simply gates the owner-only ideas step the UI adds in Slice 5.
+// Role for the caller on this trip, resolved server-side (never trust the client).
+// Used by the resolve/rate actions: viewers and non-members are refused.
+async function closeoutCaller(
+	locals: App.Locals,
+	slug: string
+): Promise<{ trip: { id: string }; canEdit: boolean; archived: boolean } | null> {
+	try {
+		const trip = await locals.pb
+			.collection('trips')
+			.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug }));
+		const membership = await locals.pb
+			.collection('trip_members')
+			.getFirstListItem<TripMember>(
+				`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`
+			);
+		const r = membership.role;
+		return {
+			trip,
+			canEdit: r === 'owner' || r === 'co_owner' || r === 'traveler',
+			archived: !!trip.archived
+		};
+	} catch {
+		return null;
+	}
+}
+
+function isNotFound(err: unknown): boolean {
+	return typeof err === 'object' && err !== null && (err as { status?: number }).status === 404;
+}
+
+// #576 — a PB refusal (400/403) surfaces as that failure with its message, never a 500.
+function pbFailure(err: unknown, fallback: string) {
+	const status =
+		typeof err === 'object' && err !== null ? (err as { status?: number }).status : undefined;
+	const message = err instanceof Error && err.message ? err.message : fallback;
+	if (status === 400 || status === 403) return fail(status, { error: message });
+	return fail(500, { error: message });
+}
+
 export const load: PageServerLoad = async ({ parent, locals, params }) => {
 	const { trip, membership, days, phases } = await parent();
 
@@ -80,6 +120,9 @@ export const load: PageServerLoad = async ({ parent, locals, params }) => {
 		canCurate,
 		memories,
 		canCaptureMemories,
+		// #576 — 'rate' = a closed trip's rating walk (re-rate only); 'walk' = the
+		// wrap-up resolve walk.
+		mode: (lifecycle === 'closed' ? 'rate' : 'walk') as 'walk' | 'rate',
 		members: withAvatarUrls(locals.pb, members)
 	};
 };
@@ -89,23 +132,65 @@ export const actions: Actions = {
 	// composer handler; PB rules (author-only) + memories.pb.js enforce.
 	saveMemory: handleSaveMemory,
 
-	markDone: async ({ request, locals }) => {
+	// #576 — resolve one item: Recommend / Don't recommend (done + rating) or
+	// Didn't do (considered, unrated). Replaces the old Done/Swap/Skip row buttons.
+	resolve: async ({ request, locals, params }) => {
 		const data = await request.formData();
 		const itemId = data.get('item_id')?.toString();
+		const outcome = parseOutcome(data.get('outcome')?.toString());
 		if (!itemId) return fail(400, { error: 'Missing item ID.' });
+		if (!outcome) return fail(400, { error: 'Invalid outcome.' });
+
+		const caller = await closeoutCaller(locals, params.slug);
+		if (!caller?.canEdit) return fail(403, { error: "Viewers can't close out items." });
+		// Rate mode (a closed trip) is ratings-only.
+		if (caller.archived) return fail(400, { error: 'This trip is already closed.' });
 
 		try {
-			await locals.pb.collection('items').update(itemId, { status: 'done' });
+			const item = await locals.pb.collection('items').getOne<Item>(itemId, { fields: 'id,trip' });
+			if (item.trip !== caller.trip.id) return fail(400, { error: 'Item is not on this trip.' });
+			await locals.pb.collection('items').update(itemId, outcomeUpdate(outcome));
 			return { success: true };
 		} catch (err: unknown) {
-			return fail(500, { error: err instanceof Error ? err.message : 'Failed to update item.' });
+			if (isNotFound(err)) return fail(400, { error: 'Item not found.' });
+			return pbFailure(err, 'Failed to update item.');
 		}
 	},
 
-	markDoneAll: async ({ request, locals }) => {
+	// #576 — set/clear the rating on a done item ('' clears). Rating only; status
+	// is untouched.
+	rate: async ({ request, locals, params }) => {
+		const data = await request.formData();
+		const itemId = data.get('item_id')?.toString();
+		const rating = parseRating(data.get('rating')?.toString());
+		if (!itemId) return fail(400, { error: 'Missing item ID.' });
+		if (rating === null) return fail(400, { error: 'Invalid rating.' });
+
+		const caller = await closeoutCaller(locals, params.slug);
+		if (!caller?.canEdit) return fail(403, { error: "Viewers can't rate items." });
+
+		try {
+			const item = await locals.pb
+				.collection('items')
+				.getOne<Item>(itemId, { fields: 'id,trip,status' });
+			if (item.trip !== caller.trip.id) return fail(400, { error: 'Item is not on this trip.' });
+			if (item.status !== 'done') return fail(400, { error: 'Only done items can be rated.' });
+			await locals.pb.collection('items').update(itemId, { rating });
+			return { success: true };
+		} catch (err: unknown) {
+			if (isNotFound(err)) return fail(400, { error: 'Item not found.' });
+			return pbFailure(err, 'Failed to rate item.');
+		}
+	},
+
+	markDoneAll: async ({ request, locals, params }) => {
 		const data = await request.formData();
 		const itemIds = data.getAll('item_ids').map((id) => id.toString());
 		if (itemIds.length === 0) return fail(400, { error: 'No items to mark.' });
+		const caller = await closeoutCaller(locals, params.slug);
+		if (!caller?.canEdit) return fail(403, { error: "Viewers can't close out items." });
+		// Rate mode (a closed trip) is ratings-only.
+		if (caller.archived) return fail(400, { error: 'This trip is already closed.' });
 
 		try {
 			await Promise.all(
@@ -113,7 +198,7 @@ export const actions: Actions = {
 			);
 			return { bulkSuccess: true, count: itemIds.length };
 		} catch (err: unknown) {
-			return fail(500, { error: err instanceof Error ? err.message : 'Failed to bulk update.' });
+			return pbFailure(err, 'Failed to bulk update.');
 		}
 	},
 
@@ -169,11 +254,15 @@ export const actions: Actions = {
 		}
 	},
 
-	trimEnd: async ({ request, locals }) => {
+	trimEnd: async ({ request, locals, params }) => {
 		const data = await request.formData();
 		const itemId = data.get('item_id')?.toString();
 		const endDate = (data.get('end_date')?.toString() || '').split(/[T ]/)[0];
 		if (!itemId) return fail(400, { error: 'Missing item ID.' });
+		const caller = await closeoutCaller(locals, params.slug);
+		if (!caller?.canEdit) return fail(403, { error: "Viewers can't close out items." });
+		// Rate mode (a closed trip) is ratings-only.
+		if (caller.archived) return fail(400, { error: 'This trip is already closed.' });
 		try {
 			// #411: trimmed to its start day = a one-day item, which has no span
 			// (items.pb.js refuses an end_date on or before the start day).
@@ -189,13 +278,15 @@ export const actions: Actions = {
 			});
 			return { success: true };
 		} catch (err: unknown) {
-			return fail(500, {
-				error: err instanceof Error ? err.message : 'Failed to update end date.'
-			});
+			return pbFailure(err, 'Failed to update end date.');
 		}
 	},
 
-	addReplacement: async ({ request, locals }) => {
+	addReplacement: async ({ request, locals, params }) => {
+		const caller = await closeoutCaller(locals, params.slug);
+		if (!caller?.canEdit) return fail(403, { error: "Viewers can't close out items." });
+		// Rate mode (a closed trip) is ratings-only.
+		if (caller.archived) return fail(400, { error: 'This trip is already closed.' });
 		const data = await request.formData();
 		const tripId = data.get('trip_id')?.toString();
 		const originalItemId = data.get('original_item_id')?.toString();
@@ -205,12 +296,23 @@ export const actions: Actions = {
 		const type = data.get('type')?.toString() || 'activity';
 
 		if (!tripId || !title) return fail(400, { error: 'Trip ID and title are required.' });
+		if (tripId !== caller.trip.id) return fail(400, { error: 'Item is not on this trip.' });
 
 		try {
+			// The walk posts Didn't do first, so the original is usually already
+			// considered: re-writing it is a no-op the traveler closeout exception
+			// refuses (C1). Check it belongs here, and skip the write when done already.
+			let markOriginal = false;
 			if (originalItemId) {
-				await locals.pb.collection('items').update(originalItemId, { status: 'considered' });
+				const original = await locals.pb
+					.collection('items')
+					.getOne<Item>(originalItemId, { fields: 'id,trip,status' });
+				if (original.trip !== caller.trip.id)
+					return fail(400, { error: 'Item is not on this trip.' });
+				markOriginal = original.status !== 'considered';
 			}
-
+			// Create first: if it fails, the original must not be left considered with
+			// no replacement.
 			await locals.pb.collection('items').create({
 				trip: tripId,
 				day: dayId,
@@ -221,11 +323,13 @@ export const actions: Actions = {
 				booked: false,
 				sort_order: 999
 			});
+			if (originalItemId && markOriginal) {
+				await locals.pb.collection('items').update(originalItemId, { status: 'considered' });
+			}
 			return { replacementAdded: true };
 		} catch (err: unknown) {
-			return fail(500, {
-				error: err instanceof Error ? err.message : 'Failed to create replacement.'
-			});
+			if (isNotFound(err)) return fail(400, { error: 'Item not found.' });
+			return pbFailure(err, 'Failed to create replacement.');
 		}
 	},
 
@@ -245,6 +349,11 @@ export const actions: Actions = {
 			// them); guard the write too so a hand-crafted POST is rejected.
 			if (membership.role === 'viewer') {
 				return fail(403, { error: 'Viewers cannot close out a trip.' });
+			}
+			// #576 — a closed trip is rating-only; re-running Finish would rewrite the
+			// publish choice.
+			if (trip.archived) {
+				return fail(400, { error: 'This trip is already closed.' });
 			}
 			const canPublish = membership.role === 'owner' || membership.role === 'co_owner';
 

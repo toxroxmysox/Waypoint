@@ -5,7 +5,7 @@ import { formatDayDate } from '$lib/shell/format';
 import { deriveGoalStatus } from '$lib/itinerary/goal-status';
 import { scoreVotes, sortByVoteScore } from '$lib/group-input/voting';
 import { resolveTrip } from '../context';
-import { loadTripDays, loadTripItems } from '../day-data';
+import { loadTripDays, loadTripItems, stayLabel } from '../day-data';
 import { lodgingForNight, nightsOf } from '$lib/itinerary/lodging-nights';
 import { offTrip, result, stripHtml, tripDates, ymd, EMOJI, type Card } from '../present';
 import type { ToolDef } from './types';
@@ -171,7 +171,7 @@ export const getTrip: ToolDef = {
 					const here = lodgingForNight(items, days, date);
 					return {
 						date,
-						lodging: here.length ? here.map((l) => l.title).join(', ') : 'no lodging'
+						lodging: here.length ? here.map(stayLabel).join(', ') : 'no lodging'
 					};
 				})
 			)

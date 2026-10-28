@@ -9,13 +9,13 @@
 	import { RAIL, TIMED_MIN_HEIGHT } from '$lib/itinerary/card-anatomy';
 	import { timeShape } from '$lib/itinerary/timeline';
 	import { recordCardFields, type RecordCardItem } from '$lib/portability/record-card';
-	import type { ItemType } from '$lib/itinerary/types';
+	import type { ItemType, ItemRating } from '$lib/itinerary/types';
 
 	let {
 		item,
 		dayDate
 	}: {
-		item: RecordCardItem & { subtype?: string; type: ItemType };
+		item: RecordCardItem & { subtype?: string; type: ItemType; rating?: ItemRating };
 		/** The owning day's calendar date. */
 		dayDate: string;
 	} = $props();
@@ -39,9 +39,26 @@
 
 	<Card class="relative h-full {timed ? 'min-h-[62px]' : ''}">
 		<div class="p-3">
-			<h4 class="line-clamp-2 text-sm leading-5 font-semibold text-ink" data-card="title">
-				{item.title}
-			</h4>
+			<div class="flex items-start gap-2">
+				<h4
+					class="line-clamp-2 min-w-0 flex-1 text-sm leading-5 font-semibold text-ink"
+					data-card="title"
+				>
+					{item.title}
+				</h4>
+				{#if item.rating === 'recommend'}
+					<span class="shrink-0 text-sm leading-5" role="img" aria-label="Recommended" data-rating
+						>👍</span
+					>
+				{:else if item.rating === 'not_recommend'}
+					<span
+						class="shrink-0 text-sm leading-5"
+						role="img"
+						aria-label="Not recommended"
+						data-rating>👎</span
+					>
+				{/if}
+			</div>
 			{#if fields.meta}
 				<p class="mt-0.5 truncate text-[12px] leading-4 text-ink-muted" data-card="meta">
 					{fields.meta}

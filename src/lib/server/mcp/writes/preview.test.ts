@@ -81,6 +81,26 @@ describe('previewCards', () => {
 	});
 });
 
+describe('rating preview (#576)', () => {
+	const rate = (to: string, from = ''): PlannedChange => ({
+		...update,
+		before: { rating: from },
+		after: { rating: to },
+		title: 'Safari'
+	});
+	it('shows the human label, not the raw value', () => {
+		const [a] = previewCards([rate('recommend')], null, trip);
+		expect(a.changes).toContainEqual({ field: 'Rating', from: '—', to: 'Recommended' });
+		const [b] = previewCards([rate('not_recommend', 'recommend')], null, trip);
+		expect(b.changes).toContainEqual({
+			field: 'Rating',
+			from: 'Recommended',
+			to: 'Not recommended'
+		});
+		expect(b.lines.join()).not.toContain('not_recommend');
+	});
+});
+
 describe('formats', () => {
 	it('clocks read like the app: 9:40 am, 12:05 pm', () => {
 		expect(clockAm('2026-11-03 09:40:00.000Z')).toBe('9:40 am');

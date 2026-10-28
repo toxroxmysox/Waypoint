@@ -46,6 +46,22 @@ const RECORDS: Record<string, Record<string, Record<string, unknown>>> = {
 			end_time: '2026-11-03 06:10:00.000Z',
 			end_date: '2026-11-03 00:00:00.000Z'
 		},
+		safari: {
+			id: 'safari',
+			trip: 'porto',
+			day: 'day03',
+			title: 'Safari',
+			status: 'done',
+			created_by: 'mOwner'
+		},
+		hike: {
+			id: 'hike',
+			trip: 'porto',
+			day: 'day03',
+			title: 'Hike',
+			status: 'planned',
+			created_by: 'mOwner'
+		},
 		lisbon: { id: 'lisbon', trip: 'lisbon', day: 'x', title: 'Elsewhere' }
 	},
 	checklists: { packing: { id: 'packing', trip: 'porto', title: 'Packing' } },
@@ -429,5 +445,54 @@ describe('compileOps — dead Item fields are not writable (#536)', () => {
 	);
 	it('keeps paid_by on expenses, where it lives', () => {
 		expect(WRITABLE.expenses.fields).toHaveProperty('paid_by');
+	});
+});
+
+describe('compileOps — rating (#576)', () => {
+	const upd = (id: string, data: Record<string, unknown>) =>
+		[{ action: 'update' as const, collection: 'items', id, data }] as WriteOp[];
+	it('carries rating through unchanged on a done item (PB hook still clears non-done)', async () => {
+		const [u] = await compile(upd('safari', { rating: 'recommend' }));
+		expect(u.after).toEqual({ rating: 'recommend' });
+		expect(u.before).toEqual({ rating: null });
+		const [c] = await compile(upd('safari', { rating: '' }));
+		expect(c.after).toEqual({ rating: '' });
+	});
+	it('refuses rating a non-done item, unless the same change sets status done', async () => {
+		await expect(compile(upd('hike', { rating: 'recommend' }))).rejects.toThrow(
+			/Only done items can be rated/
+		);
+		await expect(
+			compile(upd('hike', { rating: 'recommend', status: 'considered' }))
+		).rejects.toThrow(/Only done items can be rated/);
+		await expect(
+			compile(upd('hike', { rating: 'recommend', status: 'done' }))
+		).resolves.toHaveLength(1);
+		await expect(compile(upd('hike', { rating: '' }))).resolves.toHaveLength(1);
+	});
+	it('traveler: {rating} and {rating, status} admitted on any item; PB owns the rest', async () => {
+		await expect(
+			compile(upd('safari', { rating: 'not_recommend' }), 'traveler')
+		).resolves.toHaveLength(1);
+		await expect(
+			compile(upd('hike', { rating: 'recommend', status: 'done' }), 'traveler')
+		).resolves.toHaveLength(1);
+		await expect(compile(upd('hike', { status: 'considered' }), 'traveler')).resolves.toHaveLength(
+			1
+		);
+	});
+	it('traveler: any other field alongside is refused', async () => {
+		await expect(
+			compile(upd('safari', { rating: 'recommend', title: 'x' }), 'traveler')
+		).rejects.toThrow(/Only the trip's owners/);
+		// pinned old rule: assigned_to is a self field, rating is not, so the mix is refused
+		await expect(
+			compile(upd('safari', { rating: 'recommend', assigned_to: ['mTrav'] }), 'traveler')
+		).rejects.toThrow(/Only the trip's owners/);
+	});
+	it('does not refuse an archived trip', async () => {
+		await expect(
+			compile(upd('safari', { rating: 'recommend' }), 'owner', { archived: true })
+		).resolves.toHaveLength(1);
 	});
 });

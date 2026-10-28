@@ -40,17 +40,19 @@ onRecordUpdateRequest((e) => {
 	];
 
 	let protectedChanged = false;
+	// #576 — which protected fields changed (a traveler's closeout Finish may change
+	// exactly one: archived false -> true).
+	const changedFields = [];
 	for (let i = 0; i < boolTextFields.length; i++) {
 		const f = boolTextFields[i];
 		if ('' + e.record.get(f) !== '' + original.get(f)) {
 			protectedChanged = true;
-			break;
+			changedFields.push(f);
 		}
 	}
-	if (!protectedChanged) {
-		if (e.record.getString('archive_publish_at') !== original.getString('archive_publish_at')) {
-			protectedChanged = true;
-		}
+	if (e.record.getString('archive_publish_at') !== original.getString('archive_publish_at')) {
+		protectedChanged = true;
+		changedFields.push('archive_publish_at');
 	}
 
 	// #401 — Trip Notes are edited like day notes: any non-viewer member.
@@ -91,9 +93,25 @@ onRecordUpdateRequest((e) => {
 
 	const callerRole = callerMember.getString('role');
 	if (callerRole !== 'owner' && callerRole !== 'co_owner') {
-		throw new ForbiddenError(
-			'Only an owner or co-owner can change a trip’s publishing or lifecycle settings'
-		);
+		// #576 — closeout is open to travelers, so a traveler's Finish may archive an
+		// ENDED trip: archived false -> true and nothing else protected. Everything
+		// else stays owner/co_owner-only (viewers never).
+		let travelerFinish = false;
+		if (
+			callerRole === 'traveler' &&
+			changedFields.length === 1 &&
+			changedFields[0] === 'archived' &&
+			'' + original.get('archived') !== 'true' &&
+			'' + e.record.get('archived') === 'true'
+		) {
+			const gate = require(`${__hooks}/closeout-gate.js`);
+			travelerFinish = gate.tripEnded(e.app, e.record.id);
+		}
+		if (!travelerFinish) {
+			throw new ForbiddenError(
+				'Only an owner or co-owner can change a trip’s publishing or lifecycle settings'
+			);
+		}
 	}
 
 	e.next();

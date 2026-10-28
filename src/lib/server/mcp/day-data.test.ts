@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dayCards, dayFrom, resolveDate } from './day-data';
+import { dayCards, dayFrom, resolveDate, ITEM_FIELDS, itemCard, stayLabel } from './day-data';
 import type { Day, Item } from '$lib/types';
 
 describe('resolveDate', () => {
@@ -80,5 +80,59 @@ describe('dayFrom — red-eye flights (#538)', () => {
 		expect(dayCards(d).find((c) => c.title === 'UA 1')?.lines).toContain(
 			'Lands 6:40a · departed yesterday'
 		);
+	});
+});
+
+describe('rating on items (#576)', () => {
+	const mk = (rating: string, status = 'done') =>
+		({
+			id: 'safari',
+			title: 'Safari',
+			type: 'activity',
+			status,
+			rating,
+			start_time: '',
+			end_time: '',
+			end_date: '',
+			assigned_to: []
+		}) as unknown as Item;
+	it('ITEM_FIELDS asks PB for rating, so every item read carries it', () => {
+		expect(ITEM_FIELDS.split(',')).toContain('rating');
+	});
+	it('a rated item card says so, in words (get_day, get_item, search; trip_brief builds its own cards)', () => {
+		expect(itemCard(mk('recommend')).lines).toContain('Recommended');
+		expect(itemCard(mk('not_recommend')).lines).toContain('Not recommended');
+	});
+	it('an unrated item card says nothing', () => {
+		expect(itemCard(mk('')).lines.join()).not.toMatch(/ecommend/);
+	});
+	it('a rated stay card says so on get_day; an unrated one says nothing (I2)', () => {
+		const days = [
+			{ id: 'd1', trip: 't', date: '2026-10-25 00:00:00.000Z' },
+			{ id: 'd2', trip: 't', date: '2026-10-26 00:00:00.000Z' }
+		] as Day[];
+		const stay = (id: string, rating: string) =>
+			({
+				id,
+				title: id,
+				type: 'lodging',
+				status: 'done',
+				rating,
+				day: 'd1',
+				sort_order: 0,
+				start_time: '',
+				end_time: '',
+				end_date: '2026-10-26 00:00:00.000Z',
+				assigned_to: []
+			}) as unknown as Item;
+		const d = dayFrom(days, [stay('Cape Hotel', 'recommend'), stay('Plain Inn', '')], '2026-10-25');
+		const cards = dayCards(d);
+		expect(cards.find((c) => c.title === 'Cape Hotel')?.lines).toContain('Recommended');
+		expect(cards.find((c) => c.title === 'Plain Inn')?.lines.join()).not.toMatch(/ecommend/);
+	});
+	it('stayLabel names the lodging with its rating for get_trip nights (I2)', () => {
+		expect(stayLabel(mk('recommend'))).toBe('Safari · Recommended');
+		expect(stayLabel(mk('not_recommend'))).toBe('Safari · Not recommended');
+		expect(stayLabel(mk(''))).toBe('Safari');
 	});
 });

@@ -145,6 +145,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 			record: undefined as ReturnType<typeof buildArchiveView> | undefined,
 			share: undefined as ClosedShare | undefined,
 			canManage: false,
+			canRate: false,
 			recordDecision: null as RecordDecision
 		};
 	}
@@ -213,6 +214,8 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 			showWelcome,
 			record,
 			canManage,
+			// #576: owner / co_owner / traveler may rate in the closed trip's rate walk.
+			canRate: ['owner', 'co_owner', 'traveler'].includes(membership.role),
 			// #343 — the scenario decision snapshot for the record's origin-story section
 			// (null when the trip has no decision; the section renders nothing).
 			recordDecision,
@@ -314,6 +317,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		record: undefined as ReturnType<typeof buildArchiveView> | undefined,
 		share: undefined as ClosedShare | undefined,
 		canManage: false,
+		canRate: false,
 		recordDecision: null as RecordDecision,
 		// Forming-only keys, absent here (shape consistency — see forming branch).
 		formingIdeas: [] as {

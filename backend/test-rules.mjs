@@ -3290,6 +3290,12 @@ const TRIPS_GATE_OPS = [
 	'ordinary_traveler_title_date',
 	'reconcile_after_gate',
 	'delete_superuser',
+	// #576 — a traveler's closeout Finish may archive an ENDED trip, nothing else.
+	'traveler_finish_ended',
+	'traveler_finish_plus_publish',
+	'traveler_finish_not_ended',
+	'traveler_unarchive',
+	'viewer_finish_ended',
 	// #503 — AI can make changes (ai_write): owner/co_owner only, default on.
 	'ai_write_owner_off',
 	'ai_write_traveler_denied',
@@ -3453,6 +3459,84 @@ async function runTripsGateNovelCases(tokens) {
 		'allow',
 		classifyWrite(suDel.status),
 		suDel.status
+	);
+
+	// 10. #576: traveler Finish. The fixture trip (2026-06-01..03) has ended, so a
+	//     traveler may archive it (archived false -> true, nothing else protected).
+	fixture = await setupFixture();
+	const tFin = await pbRequest('PATCH', `/api/collections/trips/records/${fixture.tripId}`, {
+		token: tokens.traveler,
+		body: { archived: true }
+	});
+	recordResult(
+		'trips',
+		'traveler_finish_ended',
+		'traveler',
+		'allow',
+		classifyWrite(tFin.status),
+		tFin.status
+	);
+	// ...and then cannot un-archive it (reopen is owner-only).
+	const tUnarch = await pbRequest('PATCH', `/api/collections/trips/records/${fixture.tripId}`, {
+		token: tokens.traveler,
+		body: { archived: false }
+	});
+	recordResult(
+		'trips',
+		'traveler_unarchive',
+		'traveler',
+		'deny',
+		classifyWrite(tUnarch.status),
+		tUnarch.status
+	);
+
+	// 11. Archive + any other protected field in one write -> still owner-only.
+	fixture = await setupFixture();
+	const tFinPub = await pbRequest('PATCH', `/api/collections/trips/records/${fixture.tripId}`, {
+		token: tokens.traveler,
+		body: { archived: true, archive_enabled: true }
+	});
+	recordResult(
+		'trips',
+		'traveler_finish_plus_publish',
+		'traveler',
+		'deny',
+		classifyWrite(tFinPub.status),
+		tFinPub.status
+	);
+
+	// 12. Trip not ended yet (end_date pushed into the future) -> traveler can't archive.
+	fixture = await setupFixture();
+	await pbRequest('PATCH', `/api/collections/trips/records/${fixture.tripId}`, {
+		token: tokens.owner,
+		body: { end_date: '2099-01-01 00:00:00.000Z' }
+	});
+	const tFinEarly = await pbRequest('PATCH', `/api/collections/trips/records/${fixture.tripId}`, {
+		token: tokens.traveler,
+		body: { archived: true }
+	});
+	recordResult(
+		'trips',
+		'traveler_finish_not_ended',
+		'traveler',
+		'deny',
+		classifyWrite(tFinEarly.status),
+		tFinEarly.status
+	);
+
+	// 13. Viewer still can't archive an ended trip.
+	fixture = await setupFixture();
+	const vFin = await pbRequest('PATCH', `/api/collections/trips/records/${fixture.tripId}`, {
+		token: tokens.viewer,
+		body: { archived: true }
+	});
+	recordResult(
+		'trips',
+		'viewer_finish_ended',
+		'viewer',
+		'deny',
+		classifyWrite(vFin.status),
+		vFin.status
 	);
 }
 

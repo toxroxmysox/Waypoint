@@ -55,6 +55,8 @@ export type ItemType =
 	| 'note'
 	| 'checklist'
 	| 'flight';
+/** #576 — closeout verdict; '' = not rated. Only `done` items carry one. */
+export type ItemRating = 'recommend' | 'not_recommend' | '';
 export type ItemStatus = 'planned' | 'done' | 'considered' | 'unplanned';
 
 export interface ConfirmationCode {
@@ -82,6 +84,8 @@ export interface Item extends RecordModel {
 	flight_number?: string;
 	end_date: string;
 	status: ItemStatus;
+	/** #576 — set in closeout; cleared server-side when status leaves `done`. */
+	rating: ItemRating;
 	booked: boolean;
 	booked_by: string;
 	paid_by: string;

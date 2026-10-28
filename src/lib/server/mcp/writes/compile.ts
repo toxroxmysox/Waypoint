@@ -38,6 +38,9 @@ const ITEM_EDIT_REFUSED =
 	"Only the trip's owners can edit items. I can leave a comment for them instead.";
 /** #226 / #402: a traveler may change who's going on any item (PB keeps it self-only). */
 const SELF_FIELDS = new Set(['assigned_to', 'not_going']);
+/** #576: after the trip ends a traveler may resolve (status) and rate any item. items.pb.js
+ * is the authority on trip-ended and which transitions are allowed; this only admits the shape. */
+const CLOSEOUT_FIELDS = new Set(['status', 'rating']);
 /** Collections the app lets only owners/co-owners change (#175, budgets.pb.js). */
 const OWNERS_ONLY: Record<string, string> = { phases: 'phases', trip_budgets: 'the budget' };
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -204,6 +207,15 @@ export async function compileOps(
 			if (!data[parent]) throw new Error(`Say which ${label(parent)} this belongs to (${parent}).`);
 		}
 
+		// #576: items.pb.js clears a rating on a non-done item; refuse instead of a silent no-op.
+		if (op.collection === 'items' && data.rating) {
+			const status = data.status ?? record?.status;
+			if (status !== 'done')
+				throw new Error(
+					'Only done items can be rated. Set status done in the same change, or rate it once it is done.'
+				);
+		}
+
 		// Role routing, as the app does it (#175 items are owner/co_owner).
 		let via: PlannedChange['via'] = 'record';
 		let outcome: Outcome = 'saved';
@@ -213,8 +225,10 @@ export async function compileOps(
 				outcome = trip.auto_approve_suggestions ? 'idea' : 'suggested';
 			} else {
 				const own = record?.created_by === ref.memberId;
-				const selfOnly = Object.keys(data).every((f) => SELF_FIELDS.has(f));
-				if (!own && !selfOnly) throw new Error(ITEM_EDIT_REFUSED);
+				const keys = Object.keys(data);
+				const selfOnly = keys.every((f) => SELF_FIELDS.has(f));
+				const closeout = keys.every((f) => CLOSEOUT_FIELDS.has(f));
+				if (!own && !selfOnly && !closeout) throw new Error(ITEM_EDIT_REFUSED);
 			}
 		}
 

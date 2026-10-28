@@ -36,9 +36,45 @@ onRecordCreateRequest((e) => {
 
 	const role = callerMember.getString('role');
 	if (role !== 'owner' && role !== 'co_owner') {
-		throw new ForbiddenError(
-			'Only an owner or co-owner can add items directly; travelers suggest items.'
-		);
+		// CLOSEOUT EXCEPTION (#576): after the trip has ended, a traveler may add
+		// an item that is already `done` (a swap replacement) carrying ONLY what
+		// the closeout addReplacement action sends (+ rating). Any other non-empty
+		// field (created_by, assigned_to, money, parent_item...) is refused, so the
+		// exception can't mint an item the traveler then "created". Never a viewer.
+		let allowed = false;
+		if (role === 'traveler' && '' + e.record.get('status') === 'done') {
+			const gate = require(`${__hooks}/closeout-gate.js`);
+			if (gate.tripEnded(e.app, tripId)) {
+				const open = [
+					'trip',
+					'day',
+					'phase',
+					'type',
+					'title',
+					'status',
+					'booked',
+					'sort_order',
+					'rating'
+				];
+				const check = gate.lockedFields.concat(['assigned_to', 'not_going', 'rating']);
+				allowed = true;
+				for (let i = 0; i < check.length; i++) {
+					const f = check[i];
+					if (open.indexOf(f) !== -1) continue;
+					const v = '' + e.record.get(f);
+					if (v !== '' && v !== 'false' && v !== '0' && v !== '[]' && v !== 'null') {
+						allowed = false;
+						break;
+					}
+				}
+				if ('' + e.record.get('booked') === 'true') allowed = false;
+			}
+		}
+		if (!allowed) {
+			throw new ForbiddenError(
+				'Only an owner or co-owner can add items directly; travelers suggest items.'
+			);
+		}
 	}
 
 	// #402 — Not going is self-only: a new item may carry the caller's own "not
@@ -166,6 +202,39 @@ onRecordUpdateRequest((e) => {
 		throw new ForbiddenError('Only an owner or co-owner can edit items.');
 	}
 
+	// --- Closeout exception (#576) ---------------------------------------------
+	// After the trip has ended, a traveler may resolve (status -> planned | done |
+	// considered) and rate an item, through the closeout walk. ONLY status and
+	// rating may differ: every other field, including assigned_to and not_going,
+	// must be unchanged, so a traveler can't use it to edit the plan. Unplanned
+	// ideas are owner curation: never resolvable here.
+	const gate = require(`${__hooks}/closeout-gate.js`);
+	const st = '' + e.record.get('status');
+	const origSt = '' + original.get('status');
+	if (
+		(st === 'planned' || st === 'done' || st === 'considered') &&
+		(origSt === 'planned' || origSt === 'done' || origSt === 'considered') &&
+		gate.tripEnded(e.app, tripId)
+	) {
+		const closeoutLocked = gate.lockedFields
+			.filter((f) => f !== 'status')
+			.concat(['assigned_to', 'not_going']);
+		let onlyCloseout = true;
+		for (let i = 0; i < closeoutLocked.length; i++) {
+			const f = closeoutLocked[i];
+			if ('' + e.record.get(f) !== '' + original.get(f)) {
+				onlyCloseout = false;
+				break;
+			}
+		}
+		// A no-op write isn't a closeout step: require status or rating to move.
+		const moved = st !== origSt || '' + e.record.get('rating') !== '' + original.get('rating');
+		if (onlyCloseout && moved) {
+			e.next();
+			return;
+		}
+	}
+
 	// --- Self-assign exception (traveler) --------------------------------------
 	// (`original` and `me` are resolved above, before the #402 not going check.)
 
@@ -174,38 +243,7 @@ onRecordUpdateRequest((e) => {
 	// be byte-for-byte unchanged. Explicit, stable field list (no goja schema
 	// introspection) + string-coercion compares (empty/JSON fields read back as
 	// objects; '' + x normalizes them — cerebrum goja scar).
-	const lockedFields = [
-		'trip',
-		'phase',
-		'day',
-		'type',
-		'subtype',
-		'title',
-		'description',
-		'location_name',
-		'location_address',
-		'location_coords',
-		'google_place_id',
-		'start_time',
-		'end_time',
-		'start_tz',
-		'end_tz',
-		'flight_number',
-		'end_date',
-		'status',
-		'booked',
-		'booked_by',
-		'paid_by',
-		'confirmation_codes',
-		'reservation_url',
-		'free_cancellation',
-		'cost_estimate_usd',
-		'cost_actual_usd',
-		'sort_order',
-		'parent_item',
-		'requires_booking',
-		'created_by'
-	];
+	const lockedFields = gate.lockedFields;
 	for (let i = 0; i < lockedFields.length; i++) {
 		const f = lockedFields[i];
 		if ('' + e.record.get(f) !== '' + original.get(f)) {
@@ -423,6 +461,9 @@ onRecordCreate((e) => {
 	}
 	if (keep.length !== notGoing.length) e.record.set('not_going', keep);
 
+	// #576 — only done items carry a rating.
+	if ('' + e.record.get('status') !== 'done') e.record.set('rating', '');
+
 	e.next();
 }, 'items');
 
@@ -460,6 +501,9 @@ onRecordUpdate((e) => {
 			notGoing.filter((id) => dropFromNot.indexOf(id) === -1)
 		);
 	}
+
+	// #576 — only done items carry a rating (any write path, incl. status edits).
+	if ('' + e.record.get('status') !== 'done') e.record.set('rating', '');
 
 	e.next();
 }, 'items');
