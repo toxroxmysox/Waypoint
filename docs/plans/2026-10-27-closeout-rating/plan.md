@@ -12,7 +12,7 @@
 
 **Intent sources:** glossary `CONTEXT.md` (Rating, Item Status, Closeout, Public Archive, Organizer); ADR-0011 (traveler self-assign exception, the pattern Task 2 extends); ADR-0025 (MCP writes). No new ADR.
 
-**Run:** `pnpm verify:visual '/trips/{slug}/closeout'` for the walk; for the rating walk, close the seeded trip via API (`archived: true`, past dates) and open `/trips/{slug}/closeout`. Public view: `/archive/{token}` after publishing. Full gate: `pnpm check && pnpm test:unit && bash scripts/backend-harnesses.sh items && pnpm test:e2e:clean`.
+**Run:** `pnpm verify:visual '/trips/{slug}/closeout'` for the walk; for the rating walk, close the seeded trip via API (`archived: true`, past dates) and open `/trips/{slug}/closeout`. Public view: `/archive/{token}` after publishing. Full gate: `pnpm check && pnpm test:unit -- --run && bash scripts/backend-harnesses.sh items && pnpm test:e2e:clean`.
 
 ## Global Constraints
 
@@ -29,7 +29,7 @@
 ## Review Focus
 
 1. **Traveler permissions (inference from `items.pb.js`, not yet run):** the update hook locks `status` for travelers and the create hook refuses them, so a traveler's closeout Done/Swap/Finish is refused today. Task 2's first test confirms this RED before fixing it.
-2. **Re-running Finish on a closed trip:** today a closed trip's closeout shows the summary with **Finish**, which re-runs `finishCloseout` and can rewrite the publish choice. Rate mode must not offer it (Task 5 test).
+2. **Re-running Finish on a closed trip:** today a closed trip's closeout shows the summary with **Finish**, which re-runs `finishCloseout` and can rewrite the publish choice. The action refuses it (Task 4 test) and rate mode doesn't render it (Task 5 test).
 3. **Status change by any path clears the rating:** an Organizer editing status in the item form, or Claude setting `considered`, must not leave a stale 👍 (Task 1 harness case covers both API and model paths).
 4. **Unrated vs not recommended:** an unrated done item must render no mark, never 👎, on Record and archive (Task 6 unit test).
 5. **Viewer by hand-crafted POST:** a viewer posting `?/rate` or `?/resolve` gets 403 even though no buttons render (Task 4 test).
@@ -151,8 +151,7 @@ expect(itemOutcome({ status: 'planned', rating: '' })).toBe('pending');
 
 Behavior:
 - **Walk, pending row:** three identical pills **👍 Recommend · 👎 Don't recommend · Didn't do** (keep the existing 44px pill class). Didn't do posts `outcome=didnt_do`, then shows "Did something else instead?" with **+ Add** (opens the existing `InlineQuickAdd` replacement flow) and **No**.
-- **Walk, done row:** trailing shows 👍 / 👎 / `Done`; tapping a resolved done row's trailing is not required (rating change happens in rate mode or by re-walking during wrap-up via the pills on unresolved rows only).
-- **Walk, considered row:** trailing `Didn't do`.
+- **Walk, resolved row:** trailing shows 👍 / 👎 / `Done` (unrated) / `Didn't do`; no controls. Changing a rating after resolving happens in rate mode.
 - **Rate mode:** done rows show two toggle pills 👍 Recommend / 👎 Don't recommend with the current one pressed (`aria-pressed`); tapping the pressed one posts `rating=''`. Considered rows show `Didn't do`, no controls. No "All done" bulk button, no date adjust, no memory capture (already read-only), no ideas step.
 - **Summary:** walk mode counts **Recommended / Not recommended / Done, not rated / Didn't do / Not reviewed yet**. Rate mode replaces the summary + Finish with a **Done rating** link back to `/trips/{slug}`. NavBar title in rate mode: **Rate activities**.
 
@@ -213,6 +212,6 @@ Behavior:
 
 ### Final gate
 
-- [ ] `pnpm check && pnpm test:unit && bash scripts/backend-harnesses.sh && pnpm test:e2e:clean` all green (residual parallel flakes rerun serially, stated as such).
+- [ ] `pnpm check && pnpm test:unit -- --run && bash scripts/backend-harnesses.sh && pnpm test:e2e:clean` all green (residual parallel flakes rerun serially, stated as such).
 - [ ] Scott's visual sweep: walk + rate mode + record at 375px.
 - [ ] PR body references #576; issue closes on deploy.
