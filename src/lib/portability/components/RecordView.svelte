@@ -202,7 +202,7 @@
 		{#if canRate && rateHref}
 			<a
 				href={rateHref}
-				class="inline-flex items-center gap-1 px-0.5 text-xs font-semibold text-moss"
+				class="inline-flex min-h-11 items-center gap-1 px-0.5 text-xs font-semibold text-moss"
 			>
 				Rate activities
 				<svg

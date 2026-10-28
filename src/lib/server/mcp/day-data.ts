@@ -117,6 +117,10 @@ const RATING_TEXT: Record<string, string> = {
 	not_recommend: 'Not recommended'
 };
 
+/** #576 — a stay's name with its closeout rating, for get_trip's nights. */
+export const stayLabel = (s: Pick<Item, 'title' | 'rating'>) =>
+	[s.title, RATING_TEXT[s.rating ?? '']].filter(Boolean).join(' · ');
+
 export function itemCard(i: Item, date?: string): Card {
 	return {
 		emoji: EMOJI[i.type] ?? '•',
@@ -138,7 +142,9 @@ export function dayCards(d: DayData): Card[] {
 		tag: s.booked ? 'booked' : undefined,
 		lines: [
 			spanBandText(s, d.days, d.date)?.text ?? '',
-			s.location_name || s.location_address
+			s.location_name || s.location_address,
+			// #576 — a stay's rating, as on itemCard.
+			RATING_TEXT[s.rating ?? '']
 		].filter(Boolean) as string[]
 	}));
 	const cards = [

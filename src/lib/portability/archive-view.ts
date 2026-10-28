@@ -51,7 +51,7 @@ export function buildArchiveView(
 		sort_order: item.sort_order,
 		status: item.status,
 		// #576: 👍/👎 from closeout. Only done items carry one ('' = not rated, no mark).
-		rating: item.rating ?? ''
+		rating: item.status === 'done' ? (item.rating ?? '') : ''
 	}));
 
 	// Opt-in budget summary (#243). Default off → null. Only the aggregate total +

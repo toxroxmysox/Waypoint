@@ -148,7 +148,8 @@ describe('buildArchiveView ratings (#576)', () => {
 		makeItem({ id: 'up', status: 'done', rating: 'recommend' }),
 		makeItem({ id: 'down', status: 'done', rating: 'not_recommend' }),
 		makeItem({ id: 'none', status: 'done', rating: '' }),
-		makeItem({ id: 'cons', status: 'considered', rating: '' })
+		// stale rating on a non-done item (defense in depth: the hook clears it)
+		makeItem({ id: 'cons', status: 'considered', rating: 'recommend' })
 	]);
 
 	it('doneItems carry rating; unrated stays empty, never not_recommend', () => {
@@ -156,7 +157,7 @@ describe('buildArchiveView ratings (#576)', () => {
 		expect(byId).toEqual({ up: 'recommend', down: 'not_recommend', none: '' });
 	});
 
-	it('considered items carry an empty rating', () => {
+	it('considered items carry an empty rating, even with a stale one stored', () => {
 		expect(view.consideredItems.map((i) => i.rating)).toEqual(['']);
 	});
 });

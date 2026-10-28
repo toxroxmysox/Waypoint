@@ -377,7 +377,7 @@
 				>
 					{#if canCurate}
 						<!-- Owner/co_owner final step: choose whether the public record publishes.
-							     Server re-enforces owner/co_owner before honoring these fields (#241). -->
+						     Server re-enforces owner/co_owner before honoring these fields (#241). -->
 						<div class="mb-4 rounded-xl border border-line p-4">
 							<h3 class="text-sm font-semibold text-ink">Share the record</h3>
 							<p class="mt-0.5 mb-3 text-xs text-ink-muted">
