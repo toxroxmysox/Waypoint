@@ -17,19 +17,38 @@ async function openActiveTrip(page: Page): Promise<string> {
 	return page.url().split('/trips/')[1].split(/[/?#]/)[0];
 }
 
+// Wait until the service worker controls the page. Only then do navigations go
+// through its network-first handler and land in the runtime cache (#565). Under
+// parallel load the SW can still be installing several page loads in, and a
+// document that was mid-load when it activated can miss `clients.claim()` and
+// stay uncontrolled for good; a fresh navigation is always controlled.
+async function waitForServiceWorkerControl(page: Page): Promise<void> {
+	await page.evaluate(() => navigator.serviceWorker.ready);
+	if (!(await page.evaluate(() => !!navigator.serviceWorker.controller))) await page.reload();
+	await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
+}
+
+// Visit `path` online under SW control and wait until its page is in the cache.
+// The SW writes the cache beside the response, so poll rather than sleep.
+async function visitAndCache(page: Page, path: string): Promise<void> {
+	await waitForServiceWorkerControl(page);
+	await page.goto(`${BASE}${path}`);
+	await expect
+		.poll(() =>
+			page.evaluate(async (u) => !!(await caches.match(new URL(u, location.origin).href)), path)
+		)
+		.toBe(true);
+}
+
 // A day URL for the active trip, taken from a day link the trip surfaces while
-// online (so it — and its data payload — get cached for the offline leg).
+// online, then cached for the offline leg.
 async function firstDayHref(page: Page, slug: string): Promise<string | null> {
 	await page.goto(`${BASE}/trips/${slug}`);
 	await page.waitForURL(`**/trips/${slug}`);
 	const dayLink = page.locator(`a[href*="/trips/${slug}/days/"]`).first();
 	if ((await dayLink.count()) === 0) return null;
 	const href = await dayLink.getAttribute('href');
-	if (href) {
-		// Visit it online so the page + its __data.json land in cache.
-		await page.goto(`${BASE}${href}`);
-		await page.waitForURL('**/days/**');
-	}
+	if (href) await visitAndCache(page, href);
 	return href;
 }
 
@@ -49,13 +68,9 @@ test.describe('Offline — read-only active trip on a plane (#255)', () => {
 		// browse offline (overview, Now, a day). The SW caches navigations +
 		// __data.json network-first as we visit; the app-open prefetch also fires.
 		const slug = await openActiveTrip(page);
-		await page.goto(`${BASE}/trips/${slug}/now`);
-		await page.waitForURL('**/now');
+		await visitAndCache(page, `/trips/${slug}/now`);
 		await expect(page.locator('main:visible').first()).toBeVisible();
 		const dayHref = await firstDayHref(page, slug);
-
-		// Give the SW a beat to finish writing the network-first caches.
-		await page.waitForTimeout(500);
 
 		// ── Go offline and cold-launch (reload) the Now surface. The shell +
 		// cached trip must render — never a raw 503 'Offline'.
@@ -132,7 +147,6 @@ test.describe('Offline — read-only active trip on a plane (#255)', () => {
 		const slug = await openActiveTrip(page);
 		const dayHref = await firstDayHref(page, slug);
 		test.skip(!dayHref, 'active trip has no day links');
-		await page.waitForTimeout(500);
 
 		// Stall every page + data request for this trip (the SW's fetches are routed
 		// through the context in Chromium). Never fulfilled, never aborted: lie-fi.
