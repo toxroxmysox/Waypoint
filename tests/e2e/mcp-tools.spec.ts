@@ -210,23 +210,32 @@ test.describe('get_trip', () => {
 				display_name: 'Abby'
 			})
 		).id;
-		const goal = await add(owner.token, 'trip_goals', {
+		// Nobody may vote on their own goal, scenario or suggestion: a third member makes them.
+		const kim = (
+			await add(su, 'trip_members', {
+				trip: trip.id,
+				role: 'traveler',
+				placeholder_name: 'Kim',
+				display_name: 'Kim'
+			})
+		).id;
+		const goal = await add(su, 'trip_goals', {
 			trip: trip.id,
 			title: 'See the aurora',
-			created_by: ownerMember,
+			created_by: kim,
 			manual_status: 'unplanned',
 			sort_order: 0
 		});
-		const scenario = await add(owner.token, 'scenarios', {
+		const scenario = await add(su, 'scenarios', {
 			trip: trip.id,
 			title: 'Tromsø in March',
 			pitch: 'Dark skies',
-			champion: ownerMember,
+			champion: kim,
 			status: 'candidate'
 		});
 		const suggestion = await add(su, 'suggestions', {
 			trip: trip.id,
-			author: travelerMember,
+			author: kim,
 			target_type: 'new_item',
 			payload: { title: 'Dog sledding', type: 'activity' },
 			status: 'pending'
@@ -265,7 +274,7 @@ test.describe('get_trip', () => {
 		expect(o.text).toContain(`Your vote: love (vote id ${ownerGoalVote.id})`);
 		expect(o.text).toContain('2 votes: 1 love, 1 dislike');
 		expect(o.text).toContain('Dog sledding');
-		expect(o.text).toContain('Suggested by Abby');
+		expect(o.text).toContain('Suggested by Kim');
 		expect(JSON.stringify(o)).not.toContain(travelerGoalVote.id);
 
 		// Someone else's vote, and no vote: no your_vote.
