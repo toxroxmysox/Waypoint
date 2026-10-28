@@ -398,6 +398,8 @@
 			record={data.record}
 			share={data.share}
 			canManage={data.canManage}
+			canRate={data.canRate}
+			rateHref="/trips/{data.trip.slug}/closeout"
 			decision={data.recordDecision}
 			decisionHref="/trips/{data.trip.slug}/decision"
 		/>

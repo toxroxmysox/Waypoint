@@ -30,6 +30,8 @@
 		record,
 		share,
 		canManage = false,
+		canRate = false,
+		rateHref = '',
 		decision = null,
 		decisionHref = ''
 	}: {
@@ -43,6 +45,9 @@
 			today: string;
 		};
 		canManage?: boolean;
+		/** Owner / co-owner / traveler: may open the rate walk (#576). */
+		canRate?: boolean;
+		rateHref?: string;
 		decision?: RecordDecision;
 		decisionHref?: string;
 	} = $props();
@@ -194,6 +199,25 @@
 		<div class="px-0.5 text-[9.5px] font-bold tracking-[0.14em] text-ink-muted uppercase">
 			What we did
 		</div>
+		{#if canRate && rateHref}
+			<a
+				href={rateHref}
+				class="inline-flex items-center gap-1 px-0.5 text-xs font-semibold text-moss"
+			>
+				Rate activities
+				<svg
+					width="12"
+					height="12"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2.5"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg
+				>
+			</a>
+		{/if}
 		{#if record.days.length === 0}
 			<p class="px-1 text-sm text-ink-muted">No itinerary days to show.</p>
 		{:else}

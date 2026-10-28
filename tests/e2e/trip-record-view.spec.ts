@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { E2E_BASE } from './e2e-env';
+import { EMAILS, token, pb, devLogin, seedOwnTrip } from './japan-fixture';
 
 // #242 critical path: trip ended → wrap-up banner → launch closeout → walk to the
 // publish step → "Publish now" → finish → the closed Overview is the read-only Record
@@ -259,5 +260,102 @@ test.describe('Closed Record view + Share + reopen (#242)', () => {
 				.filter({ visible: true })
 				.first()
 		).toHaveAttribute('href', `/trips/${slug}/decision`);
+	});
+});
+
+// #576 — ratings on the closed Record + the public archive, and the Rate activities
+// link. Seeds a closed trip via the rules-fixture API (owner/traveler/viewer).
+test.describe('Record + archive ratings (#576)', () => {
+	test.skip(!process.env.E2E_TEST_EMAIL, 'Set E2E_TEST_EMAIL to run E2E tests');
+	test.describe.configure({ mode: 'serial' });
+
+	const slug = 'e2e-record-rating-576';
+	let shareToken = '';
+
+	test.beforeAll(async () => {
+		const { tripId, phaseId } = await seedOwnTrip(slug);
+		const owner = await token(EMAILS.owner);
+		const days = (
+			await pb(
+				owner,
+				'GET',
+				`/api/collections/days/records?perPage=50&sort=date&filter=${encodeURIComponent(`trip="${tripId}"`)}`
+			)
+		).items as { id: string }[];
+		const mk = (title: string, status: string, rating = '') =>
+			pb(owner, 'POST', '/api/collections/items/records', {
+				trip: tripId,
+				phase: phaseId,
+				day: days[0].id,
+				type: 'activity',
+				title,
+				status: 'planned',
+				sort_order: 100 + Math.floor(Math.random() * 1000)
+			}).then((it) =>
+				pb(owner, 'PATCH', `/api/collections/items/records/${it.id}`, { status, rating })
+			);
+		await mk('Rated up item', 'done', 'recommend');
+		await mk('Rated down item', 'done', 'not_recommend');
+		await mk('Unrated item', 'done');
+		await mk('Skipped item', 'considered');
+		shareToken = `rating576${Date.now().toString(36)}`;
+		await pb(owner, 'PATCH', `/api/collections/trips/records/${tripId}`, {
+			archived: true,
+			archive_enabled: true,
+			archive_publish_at: '2026-01-01 00:00:00.000Z',
+			public_share_token: shareToken
+		});
+	});
+
+	const card = (page: import('@playwright/test').Page, title: string) =>
+		page.locator('[data-record-card]').filter({ visible: true }).filter({ hasText: title });
+
+	test('record shows 👍/👎 on rated items, nothing on an unrated one', async ({ browser }) => {
+		const { page, close } = await devLogin(browser, EMAILS.owner);
+		await page.goto(`${BASE}/trips/${slug}`, { waitUntil: 'networkidle' });
+		await expect(card(page, 'Rated up item').getByLabel('Recommended')).toHaveText('👍');
+		await expect(card(page, 'Rated down item').getByLabel('Not recommended')).toHaveText('👎');
+		await expect(card(page, 'Unrated item')).toBeVisible();
+		await expect(card(page, 'Unrated item').getByLabel('Recommended')).toHaveCount(0);
+		await expect(card(page, 'Unrated item').getByLabel('Not recommended')).toHaveCount(0);
+		await close();
+	});
+
+	test("Didn't do item sits under considered, not under done", async ({ browser }) => {
+		const { page, close } = await devLogin(browser, EMAILS.owner);
+		await page.goto(`${BASE}/trips/${slug}`, { waitUntil: 'networkidle' });
+		await expect(card(page, 'Skipped item')).toHaveCount(0);
+		await page
+			.getByRole('button', { name: /What we considered/ })
+			.filter({ visible: true })
+			.click();
+		await expect(
+			page.locator('[data-considered]').filter({ visible: true }).getByText('Skipped item')
+		).toBeVisible();
+		await close();
+	});
+
+	test('traveler sees Rate activities; viewer does not', async ({ browser }) => {
+		const t = await devLogin(browser, EMAILS.traveler);
+		await t.page.goto(`${BASE}/trips/${slug}`, { waitUntil: 'networkidle' });
+		const link = t.page.getByRole('link', { name: 'Rate activities' }).filter({ visible: true });
+		await expect(link).toBeVisible();
+		await expect(link).toHaveAttribute('href', `/trips/${slug}/closeout`);
+		await t.close();
+		const v = await devLogin(browser, EMAILS.viewer);
+		await v.page.goto(`${BASE}/trips/${slug}`, { waitUntil: 'networkidle' });
+		await expect(card(v.page, 'Rated up item')).toBeVisible();
+		await expect(
+			v.page.getByRole('link', { name: 'Rate activities' }).filter({ visible: true })
+		).toHaveCount(0);
+		await v.close();
+	});
+
+	test('public archive shows the same marks', async ({ page }) => {
+		await page.goto(`${BASE}/archive/${shareToken}`, { waitUntil: 'networkidle' });
+		await expect(card(page, 'Rated up item').getByLabel('Recommended')).toHaveText('👍');
+		await expect(card(page, 'Rated down item').getByLabel('Not recommended')).toHaveText('👎');
+		await expect(card(page, 'Unrated item').getByLabel('Recommended')).toHaveCount(0);
+		await expect(page.getByRole('link', { name: 'Rate activities' })).toHaveCount(0);
 	});
 });

@@ -143,6 +143,24 @@ describe('buildArchiveView planned-leak guard (#240 — Grill Resolution #16)', 
 	});
 });
 
+describe('buildArchiveView ratings (#576)', () => {
+	const view = buildArchiveView(makeTrip(), [] as Phase[], [] as Day[], [
+		makeItem({ id: 'up', status: 'done', rating: 'recommend' }),
+		makeItem({ id: 'down', status: 'done', rating: 'not_recommend' }),
+		makeItem({ id: 'none', status: 'done', rating: '' }),
+		makeItem({ id: 'cons', status: 'considered', rating: '' })
+	]);
+
+	it('doneItems carry rating; unrated stays empty, never not_recommend', () => {
+		const byId = Object.fromEntries(view.doneItems.map((i) => [i.id, i.rating]));
+		expect(byId).toEqual({ up: 'recommend', down: 'not_recommend', none: '' });
+	});
+
+	it('considered items carry an empty rating', () => {
+		expect(view.consideredItems.map((i) => i.rating)).toEqual(['']);
+	});
+});
+
 function makeExpense(amount: number): Expense {
 	return {
 		id: 'e',

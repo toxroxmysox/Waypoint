@@ -3,6 +3,7 @@
 	import { orderDayItems } from '$lib/itinerary/timeline';
 	import { formatCalendarDate } from '$lib/shell/format';
 	import type { Day, Phase, ItemType } from '$lib/types';
+	import type { ItemRating } from '$lib/itinerary/types';
 
 	type SanitizedItem = {
 		id: string;
@@ -19,6 +20,7 @@
 		end_date?: string;
 		status: string;
 		sort_order?: number;
+		rating?: ItemRating;
 	};
 
 	let {
