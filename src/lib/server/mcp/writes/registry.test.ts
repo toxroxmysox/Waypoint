@@ -115,3 +115,14 @@ describe('allowedValues — describe lists the choices (#520)', () => {
 		]);
 	});
 });
+
+describe('vote labels name the read that gives your_vote (#520, #567)', () => {
+	it.each([
+		['votes', 'get_item'],
+		['goal_votes', 'get_trip'],
+		['scenario_votes', 'get_trip'],
+		['suggestion_votes', 'get_trip']
+	])('%s → %s', (collection, read) => {
+		expect(WRITABLE[collection].label).toContain(`${read} gives as your_vote`);
+	});
+});

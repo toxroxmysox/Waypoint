@@ -1,13 +1,15 @@
 import { z } from 'zod';
 import type { GoalStatus, Item, ItemStatus, Phase, TripGoal, TripMember, Vote } from '$lib/types';
+import type { Scenario } from '$lib/ideation/types';
 import { formatDayDate } from '$lib/shell/format';
 import { deriveGoalStatus } from '$lib/itinerary/goal-status';
-import { scoreVotes, sortByVoteScore, tallyVotes } from '$lib/collaboration/voting';
+import { scoreVotes, sortByVoteScore } from '$lib/collaboration/voting';
 import { resolveTrip } from '../context';
 import { loadTripDays, loadTripItems } from '../day-data';
 import { lodgingForNight, nightsOf } from '$lib/itinerary/lodging-nights';
 import { offTrip, result, stripHtml, tripDates, ymd, EMOJI, type Card } from '../present';
 import type { ToolDef } from './types';
+import { bucket, tallyLine, votedCard, type VoteRow, type VotedRef } from './votes';
 
 /** As the app names members (memberDisplayName): display name, account name, placeholder name. Never an email (#409). */
 export const memberName = (m: Pick<TripMember, 'display_name' | 'placeholder_name' | 'expand'>) =>
@@ -73,13 +75,29 @@ export const getTrip: ToolDef = {
 	title: 'Trip overview',
 	description:
 		'A trip at a glance: its phases (places and dates), where the group sleeps each night, members by name and role, ' +
-		'goals with their status, and unplaced ideas with vote counts.',
+		'goals with their status, scenarios (dateless trips), unplaced ideas, and suggestions awaiting review, with vote counts. ' +
+		"Goals, scenarios and suggestions carry their id and the user's own vote as your_vote {id, value}: " +
+		'to change that vote, update that vote id.',
 	inputSchema: { trip: z.string().describe('Trip slug, or part of its title') },
 	async run(ctx, { trip: ref }: { trip: string }) {
 		const t = await resolveTrip(ctx, ref);
 		if (!t.open) return offTrip(t.trip);
 		const trip = t.trip;
-		const [phases, days, items, members, goals, votes] = await Promise.all([
+		const byTrip = (f: string) => ctx.pb.filter(`${f} = {:t}`, { t: trip.id });
+		const voteFields = (f: string) => ({ fields: `id,member,value,${f}`, requestKey: null });
+		const [
+			phases,
+			days,
+			items,
+			members,
+			goals,
+			votes,
+			goalVotes,
+			scenarios,
+			scenarioVotes,
+			suggestions,
+			suggestionVotes
+		] = await Promise.all([
 			ctx.pb.collection('phases').getFullList<Phase>({
 				filter: ctx.pb.filter('trip = {:t}', { t: trip.id }),
 				fields: 'id,name,location,country_code,start_date,end_date,order,notes',
@@ -99,11 +117,47 @@ export const getTrip: ToolDef = {
 				filter: ctx.pb.filter('trip = {:t}', { t: trip.id }),
 				fields: 'id,item,value',
 				requestKey: null
+			}),
+			ctx.pb.collection('goal_votes').getFullList<VoteRow & { goal: string }>({
+				filter: byTrip('goal.trip'),
+				...voteFields('goal')
+			}),
+			ctx.pb.collection('scenarios').getFullList<Scenario>({
+				filter: `${byTrip('trip')} && status != "archived"`,
+				fields: 'id,title,pitch,status,date_start,date_end,budget_per_person',
+				sort: 'created',
+				requestKey: null
+			}),
+			ctx.pb.collection('scenario_votes').getFullList<VoteRow & { scenario: string }>({
+				filter: byTrip('scenario.trip'),
+				...voteFields('scenario')
+			}),
+			ctx.pb
+				.collection('suggestions')
+				.getFullList<{ id: string; author: string; payload: { title?: string } | null }>({
+					filter: `${byTrip('trip')} && status = "pending" && target_type = "new_item"`,
+					fields: 'id,author,payload',
+					sort: 'created',
+					requestKey: null
+				}),
+			ctx.pb.collection('suggestion_votes').getFullList<VoteRow & { suggestion: string }>({
+				filter: byTrip('suggestion.trip'),
+				...voteFields('suggestion')
 			})
 		]);
 
 		const notesCard = tripNotesCard(trip.notes);
 		const cards: Card[] = [...(notesCard ? [notesCard] : []), ...phases.map(phaseCard)];
+		// #567 — ids and your_vote of the goals, scenarios and suggestions shown.
+		const refs: Record<'goals' | 'scenarios' | 'suggestions', VotedRef[]> = {
+			goals: [],
+			scenarios: [],
+			suggestions: []
+		};
+		const add = (to: keyof typeof refs, voted: { card: Card; ref: VotedRef }) => {
+			cards.push(voted.card);
+			refs[to].push(voted.ref);
+		};
 
 		cards.push(
 			...nightCards(
@@ -126,17 +180,50 @@ export const getTrip: ToolDef = {
 		}
 
 		const statusById = new Map(items.map((i) => [i.id, i.status as ItemStatus]));
+		const goalVotesBy = bucket(goalVotes, (v) => v.goal);
 		for (const g of goals) {
 			const linked = (g.items ?? [])
 				.map((id) => statusById.get(id))
 				.filter(Boolean) as ItemStatus[];
 			const status: GoalStatus = deriveGoalStatus(linked, g.manual_status);
-			cards.push({
-				emoji: '🎯',
-				title: g.title,
-				tag: status,
-				lines: [stripHtml(g.description ?? '')].filter(Boolean)
-			});
+			add(
+				'goals',
+				votedCard(
+					{
+						emoji: '🎯',
+						title: g.title,
+						tag: status,
+						lines: [stripHtml(g.description ?? '')].filter(Boolean)
+					},
+					g.id,
+					t.memberId,
+					goalVotesBy.get(g.id) ?? []
+				)
+			);
+		}
+
+		const scenarioVotesBy = bucket(scenarioVotes, (v) => v.scenario);
+		for (const s of scenarios) {
+			add(
+				'scenarios',
+				votedCard(
+					{
+						emoji: '🧭',
+						title: s.title,
+						tag: s.status === 'won' ? 'chosen scenario' : 'scenario',
+						lines: [
+							s.pitch,
+							s.date_start && s.date_end
+								? tripDates({ start_date: s.date_start, end_date: s.date_end })
+								: '',
+							s.budget_per_person ? `$${s.budget_per_person} per person` : ''
+						].filter(Boolean)
+					},
+					s.id,
+					t.memberId,
+					scenarioVotesBy.get(s.id) ?? []
+				)
+			);
 		}
 
 		const ideas = items.filter((i) => !i.day);
@@ -146,24 +233,36 @@ export const getTrip: ToolDef = {
 			ideas.map((i) => [i.id, scoreVotes(votesBy.get(i.id) ?? [])])
 		);
 		for (const i of sortByVoteScore(ideas as (Item & { sort_order: number })[], scores)) {
-			const { counts, total } = tallyVotes(votesBy.get(i.id) ?? []);
-			const breakdown = Object.entries(counts)
-				.filter(([, n]) => n)
-				.map(([k, n]) => `${n} ${k}`)
-				.join(', ');
 			cards.push({
 				emoji: '💡',
 				title: i.title,
 				tag: 'idea',
-				lines: [
-					`${EMOJI[i.type] ?? ''} ${i.type}`.trim(),
-					total ? `${total} vote${total === 1 ? '' : 's'}: ${breakdown}` : 'no votes'
-				]
+				lines: [`${EMOJI[i.type] ?? ''} ${i.type}`.trim(), tallyLine(votesBy.get(i.id) ?? [])]
 			});
 		}
 
+		const name = new Map(members.map((m) => [m.id, memberName(m)]));
+		const suggestionVotesBy = bucket(suggestionVotes, (v) => v.suggestion);
+		for (const s of suggestions) {
+			add(
+				'suggestions',
+				votedCard(
+					{
+						emoji: '👻',
+						title: s.payload?.title || 'Untitled suggestion',
+						tag: 'suggestion, awaiting review',
+						lines: [`Suggested by ${name.get(s.author) ?? 'a former member'}`]
+					},
+					s.id,
+					t.memberId,
+					suggestionVotesBy.get(s.id) ?? []
+				)
+			);
+		}
+
 		return result(`${trip.title} (${ymd(trip.start_date)} → ${ymd(trip.end_date)})`, cards, {
-			timezone: trip.timezone
+			timezone: trip.timezone,
+			...refs
 		});
 	}
 };
