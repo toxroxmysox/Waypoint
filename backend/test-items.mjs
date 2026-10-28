@@ -321,6 +321,160 @@ async function main() {
 		);
 	}
 
+	// #576 — closeout: once the trip has ended (archived, or end_date before
+	// today in the trip's timezone) a traveler may resolve (status) and rate an
+	// item, and add a done replacement. Nothing else; viewers never.
+	console.log('\n[closeout]');
+	{
+		const traveler = must(
+			'auth traveler',
+			await pb('POST', '/api/dev/auth-bypass', { body: { email: EMAILS.traveler } })
+		).token;
+		const viewer = must(
+			'auth viewer',
+			await pb('POST', '/api/dev/auth-bypass', { body: { email: EMAILS.viewer } })
+		).token;
+		const admin = must(
+			'auth admin',
+			await pb('POST', '/api/collections/_superusers/auth-with-password', {
+				body: { identity: 'admin@e2e.test', password: 'e2eAdminPass123' }
+			})
+		).token;
+		// fx.tripId runs 2026-06 (ended). Mint an owner item on it per case.
+		const day0 = days[0];
+		const mk = async (status) =>
+			(
+				await pb('POST', '/api/collections/items/records', {
+					token: owner,
+					body: { ...base, day: day0.id, status }
+				})
+			).data;
+		const read = async (id) =>
+			(await pb('GET', `/api/collections/items/records/${id}`, { token: owner })).data;
+
+		const a = await mk('planned');
+		const r1 = await patch(a.id, { status: 'done', rating: 'recommend' }, traveler);
+		const a2 = await read(a.id);
+		assert(
+			'closeout: traveler marks done + recommend',
+			r1.status === 200 && a2?.status === 'done' && a2?.rating === 'recommend',
+			{ status: r1.status, msg: r1.data?.message, got: a2 && [a2.status, a2.rating] }
+		);
+
+		const b = await mk('planned');
+		const r2 = await patch(b.id, { status: 'considered' }, traveler);
+		assert('closeout: traveler marks considered', r2.status === 200, {
+			status: r2.status,
+			msg: r2.data?.message
+		});
+
+		const r3 = await create({ day: day0.id, status: 'done', title: 'Replacement' }, traveler);
+		assert('closeout: traveler adds a done replacement', r3.status === 200, {
+			status: r3.status,
+			msg: r3.data?.message
+		});
+		const r3b = await create({ day: day0.id, status: 'planned', title: 'Sneaky' }, traveler);
+		assert('closeout: traveler cannot add a planned item', r3b.status === 403, r3b.status);
+
+		const c = await mk('planned');
+		const r4 = await patch(c.id, { title: 'Hacked', status: 'done' }, traveler);
+		assert('closeout: traveler changes title after trip end', r4.status === 403, r4.status);
+
+		const v = await mk('done');
+		const r5 = await patch(v.id, { rating: 'recommend' }, viewer);
+		assert('closeout: viewer sets rating', r5.status === 403, r5.status);
+		const r5b = await create({ day: day0.id, status: 'done' }, viewer);
+		assert('closeout: viewer adds a done item', r5b.status === 403, r5b.status);
+
+		// Active trip (dates spanning today) with the traveler on it.
+		const iso = (d) => d.toISOString().slice(0, 10) + ' 00:00:00.000Z';
+		const now = Date.now();
+		const mkTrip = async (slug, extra) => {
+			const t = must(
+				'trip ' + slug,
+				await pb('POST', '/api/collections/trips/records', {
+					token: owner,
+					body: {
+						title: 'Closeout ' + slug,
+						slug,
+						created_by: fx.userIds.owner,
+						timezone: 'UTC',
+						start_date: iso(new Date(now - 86400000)),
+						end_date: iso(new Date(now + 86400000)),
+						...extra
+					}
+				})
+			);
+			must(
+				'traveler joins ' + slug,
+				await pb('POST', '/api/collections/trip_members/records', {
+					token: admin,
+					body: { trip: t.id, user: fx.userIds.traveler, role: 'traveler' }
+				})
+			);
+			const dayRows = must(
+				'days ' + slug,
+				await pb(
+					'GET',
+					`/api/collections/days/records?filter=${encodeURIComponent(`trip="${t.id}"`)}&sort=date`,
+					{ token: owner }
+				)
+			).items;
+			const it = must(
+				'item ' + slug,
+				await pb('POST', '/api/collections/items/records', {
+					token: owner,
+					body: { trip: t.id, type: 'activity', title: 'X', day: dayRows[0].id, status: 'planned' }
+				})
+			);
+			return { t, it, day: dayRows[0].id };
+		};
+		const active = await mkTrip('closeout-active', {});
+		const r6 = await patch(active.it.id, { status: 'done' }, traveler);
+		assert('closeout: traveler sets done on an active trip', r6.status === 403, r6.status);
+		const r6b = await pb('POST', '/api/collections/items/records', {
+			token: traveler,
+			body: { trip: active.t.id, type: 'activity', title: 'R', day: active.day, status: 'done' }
+		});
+		assert('closeout: traveler adds done on an active trip', r6b.status === 403, r6b.status);
+
+		// Archived while dates still span today -> closed.
+		const arch = await mkTrip('closeout-archived', {});
+		must(
+			'archive',
+			await pb('PATCH', `/api/collections/trips/records/${arch.t.id}`, {
+				token: owner,
+				body: { archived: true }
+			})
+		);
+		const r7 = await patch(arch.it.id, { status: 'done', rating: 'not_recommend' }, traveler);
+		assert('closeout: traveler rates on an archived trip', r7.status === 200, {
+			status: r7.status,
+			msg: r7.data?.message
+		});
+
+		// end_date yesterday (UTC) in a UTC+14 zone is long past -> ended.
+		const ahead = await mkTrip('closeout-ahead', {
+			timezone: 'Pacific/Kiritimati',
+			start_date: iso(new Date(now - 3 * 86400000)),
+			end_date: iso(new Date(now - 86400000))
+		});
+		const r8 = await patch(ahead.it.id, { status: 'done' }, traveler);
+		assert('closeout: ended per trip-local date (end yesterday)', r8.status === 200, r8.status);
+		// end_date = today in UTC is the last day, not ended.
+		const endsToday = await mkTrip('closeout-today', {
+			timezone: 'UTC',
+			start_date: iso(new Date(now - 3 * 86400000)),
+			end_date: iso(new Date(now))
+		});
+		const r9 = await patch(endsToday.it.id, { status: 'done' }, traveler);
+		assert('closeout: end_date today is not ended yet', r9.status === 403, r9.status);
+
+		// Owner unaffected.
+		const r10 = await patch(active.it.id, { status: 'done' }, owner);
+		assert('closeout: owner unaffected on an active trip', r10.status === 200, r10.status);
+	}
+
 	console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'}: ${pass}/${pass + fail}`);
 	exit(fail === 0 ? 0 : 1);
 }

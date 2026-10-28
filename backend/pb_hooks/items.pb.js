@@ -36,9 +36,46 @@ onRecordCreateRequest((e) => {
 
 	const role = callerMember.getString('role');
 	if (role !== 'owner' && role !== 'co_owner') {
-		throw new ForbiddenError(
-			'Only an owner or co-owner can add items directly; travelers suggest items.'
-		);
+		// CLOSEOUT EXCEPTION (#576): after the trip has ended, a traveler may add
+		// an item that is already `done` (a swap replacement). Never a viewer.
+		let allowed = false;
+		if (role === 'traveler' && '' + e.record.get('status') === 'done') {
+			// #576 — has the trip ended? Mirrors trip-lifecycle.ts: closed (archived) or
+			// wrap-up (today > end_date in the trip's timezone). Inlined (goja isolation);
+			// goja has no Intl, so the trip-local date is digest-core.js's tripLocalDate.
+			// Empty dates read via getString (an empty date field is a truthy object);
+			// no start_date = forming, no end_date = planning -> not ended.
+			let tripEnded = false;
+			try {
+				const trip = e.app.findRecordById('trips', tripId);
+				if (trip.getBool('archived')) {
+					tripEnded = true;
+				} else if (trip.getString('start_date') && trip.getString('end_date')) {
+					const tz = ('' + trip.getString('timezone')).trim();
+					const usable = tz === 'UTC' || (tz.indexOf('/') > 0 && tz.toLowerCase() !== 'local');
+					const nowT = new DateTime().time();
+					let today;
+					if (!usable) {
+						today = nowT.format('2006-01-02');
+					} else {
+						try {
+							today = nowT.in(new Timezone(tz)).format('2006-01-02');
+						} catch (_) {
+							today = nowT.format('2006-01-02');
+						}
+					}
+					tripEnded = today > trip.getString('end_date').split(/[T ]/)[0];
+				}
+			} catch (_) {
+				tripEnded = false;
+			}
+			allowed = tripEnded;
+		}
+		if (!allowed) {
+			throw new ForbiddenError(
+				'Only an owner or co-owner can add items directly; travelers suggest items.'
+			);
+		}
 	}
 
 	// #402 — Not going is self-only: a new item may carry the caller's own "not
@@ -164,6 +201,95 @@ onRecordUpdateRequest((e) => {
 	// Viewers are read-only — never a self-assign.
 	if (role === 'viewer') {
 		throw new ForbiddenError('Only an owner or co-owner can edit items.');
+	}
+
+	// --- Closeout exception (#576) ---------------------------------------------
+	// After the trip has ended, a traveler may resolve (status -> planned | done |
+	// considered) and rate an item, through the closeout walk. ONLY status and
+	// rating may differ: every other field, including assigned_to and not_going,
+	// must be unchanged, so a traveler can't use it to edit the plan.
+	// #576 — has the trip ended? Mirrors trip-lifecycle.ts: closed (archived) or
+	// wrap-up (today > end_date in the trip's timezone). Inlined (goja isolation);
+	// goja has no Intl, so the trip-local date is digest-core.js's tripLocalDate.
+	// Empty dates read via getString (an empty date field is a truthy object);
+	// no start_date = forming, no end_date = planning -> not ended.
+	let tripEnded = false;
+	try {
+		const trip = e.app.findRecordById('trips', tripId);
+		if (trip.getBool('archived')) {
+			tripEnded = true;
+		} else if (trip.getString('start_date') && trip.getString('end_date')) {
+			const tz = ('' + trip.getString('timezone')).trim();
+			const usable = tz === 'UTC' || (tz.indexOf('/') > 0 && tz.toLowerCase() !== 'local');
+			const nowT = new DateTime().time();
+			let today;
+			if (!usable) {
+				today = nowT.format('2006-01-02');
+			} else {
+				try {
+					today = nowT.in(new Timezone(tz)).format('2006-01-02');
+				} catch (_) {
+					today = nowT.format('2006-01-02');
+				}
+			}
+			tripEnded = today > trip.getString('end_date').split(/[T ]/)[0];
+		}
+	} catch (_) {
+		tripEnded = false;
+	}
+	if (tripEnded) {
+		const st = '' + e.record.get('status');
+		if (st === 'planned' || st === 'done' || st === 'considered') {
+			const closeoutLocked = [
+				'trip',
+				'phase',
+				'day',
+				'type',
+				'subtype',
+				'title',
+				'description',
+				'location_name',
+				'location_address',
+				'location_coords',
+				'google_place_id',
+				'start_time',
+				'end_time',
+				'start_tz',
+				'end_tz',
+				'flight_number',
+				'end_date',
+				'booked',
+				'booked_by',
+				'paid_by',
+				'confirmation_codes',
+				'reservation_url',
+				'free_cancellation',
+				'cost_estimate_usd',
+				'cost_actual_usd',
+				'sort_order',
+				'parent_item',
+				'requires_booking',
+				'created_by',
+				'assigned_to',
+				'not_going'
+			];
+			let onlyCloseout = true;
+			for (let i = 0; i < closeoutLocked.length; i++) {
+				const f = closeoutLocked[i];
+				if ('' + e.record.get(f) !== '' + original.get(f)) {
+					onlyCloseout = false;
+					break;
+				}
+			}
+			// A no-op write isn't a closeout step: require status or rating to move.
+			const moved =
+				st !== '' + original.get('status') ||
+				'' + e.record.get('rating') !== '' + original.get('rating');
+			if (onlyCloseout && moved) {
+				e.next();
+				return;
+			}
+		}
 	}
 
 	// --- Self-assign exception (traveler) --------------------------------------
