@@ -73,11 +73,10 @@ test.describe('Closeout leaves checklists untouched (#53)', () => {
 			.filter({ visible: true })
 			.first()
 			.click();
+		// #576 F1: the done row keeps the rating toggle, now pressed.
 		await expect(
-			page.getByRole('button', { name: 'Recommend', exact: true }).filter({ visible: true })
-		).toHaveCount(0, {
-			timeout: 5000
-		});
+			page.getByRole('button', { name: 'Recommend', exact: true }).filter({ visible: true }).first()
+		).toHaveAttribute('aria-pressed', 'true', { timeout: 5000 });
 
 		// --- Item is reviewed (Done) but its checklist + task survive ---
 		await page.goto(itemUrl, { waitUntil: 'networkidle' });
@@ -161,6 +160,12 @@ test.describe('Closeout leaves checklists untouched (#53)', () => {
 		await expect(
 			page.getByText('Day 1 of', { exact: false }).filter({ visible: true })
 		).toHaveCount(0);
-		await expect(page.getByText('Done').filter({ visible: true }).first()).toBeVisible();
+		// #576 F1: done rows carry the (unrated) rating toggle, not a Done label.
+		await expect(
+			page.getByRole('button', { name: 'Recommend', exact: true }).filter({ visible: true }).first()
+		).toHaveAttribute('aria-pressed', 'false', { timeout: 5000 });
+		await expect(
+			page.getByRole('button', { name: "Didn't do", exact: true }).filter({ visible: true })
+		).toHaveCount(0);
 	});
 });

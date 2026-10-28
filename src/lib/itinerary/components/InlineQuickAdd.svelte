@@ -21,6 +21,8 @@
 	let title = $state('');
 	let type = $state<ItemType>('activity');
 	let submitting = $state(false);
+	// #576 — a refused add, shown in the form (in-context, not a toast).
+	let error = $state('');
 	let titleInput: HTMLInputElement | undefined = $state();
 
 	$effect(() => {
@@ -34,9 +36,13 @@
 	class="mt-2 flex flex-col gap-2 rounded-lg bg-surface-2 p-3"
 	use:enhance={() => {
 		submitting = true;
+		error = '';
 		return async ({ result }) => {
 			submitting = false;
 			if (result.type === 'success') onAdded();
+			else if (result.type === 'failure')
+				error = String(result.data?.error || "Couldn't add that. Try again.");
+			else if (result.type === 'error') error = "Couldn't add that. Try again.";
 		};
 	}}
 >
@@ -68,6 +74,10 @@
 			<option value="note">Note</option>
 		</select>
 	</div>
+
+	{#if error}
+		<p role="alert" class="text-xs text-error">{error}</p>
+	{/if}
 
 	<div class="flex justify-end gap-2">
 		<button type="button" onclick={onCancel} class="px-3 py-1.5 text-sm text-ink-muted">

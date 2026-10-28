@@ -1,8 +1,9 @@
 <script lang="ts">
 	// A Closeout item as a Row (#434; spec §Row, CARD_SYSTEM D11). #576: a pending row
 	// carries three IDENTICAL bordered pills (👍 Recommend · 👎 Don't recommend · Didn't
-	// do), each a 44px hit area. Rate mode (a closed trip) swaps them for two toggle
-	// pills on done rows. The multi-day date adjust is kept as built (walk only).
+	// do), each a 44px hit area. A done row, in the walk or rate mode (a closed trip),
+	// carries two toggle pills instead (tap the pressed one to clear). The multi-day
+	// date adjust is kept as built (walk only).
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import Row from '$lib/ui/Row.svelte';
@@ -37,6 +38,16 @@
 	let followUp = $state<'none' | 'asking' | 'replacing'>('none');
 	let submitting = $state(false);
 	let editingEnd = $state(false);
+	// #576 — a refused write, shown on the row (in-context, not a toast).
+	let error = $state('');
+
+	type ActionResult = { type: string; data?: Record<string, unknown> };
+	const failureText = (result: ActionResult) =>
+		result.type === 'failure'
+			? String(result.data?.error || "Couldn't save that. Try again.")
+			: result.type === 'error'
+				? "Couldn't save that. Try again."
+				: '';
 
 	const outcome = $derived(itemOutcome(item));
 	const isPending = $derived(outcome === 'pending');
@@ -50,21 +61,10 @@
 	// Pressed toggle (rate mode): inverted so it reads as selected.
 	const pillOn = `${pillBase} border-ink bg-ink text-paper`;
 
-	const trailingText = $derived(
-		outcome === 'recommend'
-			? '👍'
-			: outcome === 'not_recommend'
-				? '👎'
-				: outcome === 'didnt_do'
-					? "Didn't do"
-					: outcome === 'done_unrated'
-						? 'Done'
-						: ''
-	);
-	const showTrailing = $derived(!isPending && !(mode === 'rate' && isDone));
-	const showBelow = $derived(
-		isPending || !!range || followUp !== 'none' || (mode === 'rate' && isDone)
-	);
+	// Done rows show the toggle instead, so the only trailing label left is Didn't do.
+	const trailingText = $derived(outcome === 'didnt_do' ? "Didn't do" : '');
+	const showTrailing = $derived(!isPending && !isDone);
+	const showBelow = $derived(isPending || isDone || !!range || followUp !== 'none' || !!error);
 </script>
 
 {#snippet trailing()}
@@ -122,6 +122,7 @@
 				originalItemId={item.id}
 				onAdded={async () => {
 					followUp = 'none';
+					error = '';
 					await invalidateAll();
 				}}
 				onCancel={() => (followUp = 'asking')}
@@ -140,9 +141,11 @@
 			class="flex flex-wrap gap-2"
 			use:enhance={({ submitter }) => {
 				submitting = true;
+				error = '';
 				const didntDo = (submitter as HTMLButtonElement | null)?.value === 'didnt_do';
 				return async ({ result, update }) => {
 					submitting = false;
+					error = failureText(result);
 					if (result.type === 'success' && didntDo) followUp = 'asking';
 					await update({ reset: false });
 				};
@@ -159,15 +162,17 @@
 				>Didn't do</button
 			>
 		</form>
-	{:else if mode === 'rate' && isDone}
+	{:else if isDone}
 		<form
 			method="POST"
 			action="?/rate"
 			class="flex flex-wrap gap-2"
 			use:enhance={() => {
 				submitting = true;
-				return async ({ update }) => {
+				error = '';
+				return async ({ result, update }) => {
 					submitting = false;
+					error = failureText(result);
 					await update({ reset: false });
 				};
 			}}
@@ -194,6 +199,10 @@
 			>
 		</form>
 	{/if}
+
+	{#if error}
+		<p role="alert" class="mt-1 text-xs text-error">{error}</p>
+	{/if}
 {/snippet}
 
 <div data-testid="closeout-row" data-item-id={item.id} class="[&:last-child>div]:border-b-0">
@@ -204,7 +213,7 @@
 		sub={rowSub(item)}
 		trailing={showTrailing ? trailing : undefined}
 		strike={outcome === 'didnt_do'}
-		dim={!isPending && followUp === 'none' && !(mode === 'rate' && isDone)}
+		dim={!isPending && !isDone && followUp === 'none'}
 		below={showBelow ? pills : undefined}
 		class="px-3"
 	/>
