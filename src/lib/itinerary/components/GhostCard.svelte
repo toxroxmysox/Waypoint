@@ -118,7 +118,7 @@
 		</div>
 
 		{#if canReview}
-			<!-- The tray (#444). Approve promotes the suggestion to a real item (author-
+			<!-- The tray (#444). Approve turns the suggestion into a real item (author-
 		     attributed, votes carried). Reject demands a one-line note. Edit opens the
 		     edit view (Reject / Save / Approve). -->
 			<div class="space-y-2 border-t border-dashed border-line/70 px-3 py-2">

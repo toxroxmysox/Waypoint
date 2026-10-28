@@ -143,7 +143,7 @@ export function getNowViewState(
  *                     with ALL UNTIMED items by sort_order (normal-weight cards).
  *
  * Untimed items are the reason this exists: the old Now filtered to timed-only,
- * so a promoted (untimed) idea never rendered. The merge surfaces them here.
+ * so a planned (untimed) idea never rendered. The merge surfaces them here.
  *
  * In mid-event the Focus holds a Hero per ongoing item (#430: mine first, then by
  * start) and none of them is in `restItems`.

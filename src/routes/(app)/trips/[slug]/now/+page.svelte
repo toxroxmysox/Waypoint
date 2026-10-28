@@ -87,7 +87,7 @@
 	const doorOpen = $derived(focus.kind === 'free-time' || focus.kind === 'nothing-else-planned');
 
 	// #246 Door 2 — a just-skipped item frees a slot; open the SAME ideas strip
-	// inline so the gap can be re-filled (accepting an idea promotes it in). Sticky
+	// inline so the gap can be re-filled (accepting an idea plans it in). Sticky
 	// for the session after a skip even if a later item keeps the Focus engaged —
 	// the strip renders below the rest list as the "replace what you skipped" rail.
 	let justSkipped = $state(false);
@@ -342,7 +342,7 @@
 	     so the next thing in the day is never below a scroll of ideas. -->
 	<!-- #245 Door 1 / #246 Door 2 — "ideas for now": the current phase's parked
 	     ideas, shown at a free-time / nothing-else Focus (Door 1) OR after a
-	     just-skipped slot (Door 2 — accepting one promotes it into the gap). Same
+	     just-skipped slot (Door 2 — accepting one plans it into the gap). Same
 	     component, two triggers. Self-hides when the phase has no ideas. -->
 	<!-- #446: at >=1280px the context rail holds this strip; the column stays on today. -->
 	{#if doorOpen || justSkipped}
@@ -351,7 +351,7 @@
 				ideas={data.ideas}
 				members={data.members}
 				slug={data.trip.slug}
-				canPromote={data.canPromote}
+				canPlan={data.canPlan}
 				myMemberId={data.myMemberId}
 				canVote={data.canVote}
 				heading={justSkipped && !doorOpen ? 'Replace it' : 'Ideas for now'}

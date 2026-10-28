@@ -11,7 +11,7 @@ import { withAvatarUrls } from '$lib/collaboration/member-avatar';
 import { primaryPhaseForDay } from '$lib/itinerary/phases';
 import { currentPhaseId } from '$lib/trip-mode/current-phase';
 import { computeMovePatch } from '$lib/itinerary/move-item';
-import { promotePlacement } from '$lib/trip-mode/promote';
+import { planPlacement } from '$lib/trip-mode/plan-idea';
 import { scoreVotes, sortByVoteScore } from '$lib/collaboration/voting';
 import { handleSaveMemory } from '$lib/memory/save-memory.server';
 import type { Memory } from '$lib/memory/types';
@@ -31,7 +31,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const today = days.find((d: Day) => d.date.split(/[T ]/)[0] === todayStr) ?? null;
 
 	// #244: Now absorbed Today — it is the whole day, not just the forward slice.
-	// All of today's discrete (non-spanning) items, TIMED AND UNTIMED, so a promoted
+	// All of today's discrete (non-spanning) items, TIMED AND UNTIMED, so a planned
 	// (untimed) idea renders. Weights (faded past / Focus / normal rest) derive client-
 	// side via `getNowFeed`; the loader just supplies the full set.
 	const todayItems = today
@@ -165,9 +165,9 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		}
 	}
 
-	// #245/SPEC §4 — promote is an item edit: owner/co_owner only. The strip renders
+	// #245/SPEC §4 — planning is an item edit: owner/co_owner only. The strip renders
 	// for everyone (travelers/viewers see vote stacks read-only); this gates the tap.
-	const canPromote = membership.role === 'owner' || membership.role === 'co_owner';
+	const canPlan = membership.role === 'owner' || membership.role === 'co_owner';
 
 	// #269 Trip Memory — today's memories from ALL travelers (review cards) +
 	// the caller's own (the composer's upsert target). Viewers see, never author.
@@ -196,10 +196,10 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		memories,
 		myMemory,
 		canCapture,
-		// #245 Door 1 — current-phase ideas strip (vote-score ordered) + the promote gate.
+		// #245 Door 1 — current-phase ideas strip (vote-score ordered) + the plan gate.
 		ideas,
 		currentPhaseId: derivedPhaseId,
-		canPromote,
+		canPlan,
 		// #432 — the idea cards' vote pills: the viewer's member id + whether they may vote.
 		myMemberId: membership.id,
 		canVote: membership.role !== 'viewer'
@@ -242,12 +242,12 @@ export const actions: Actions = {
 		}
 	},
 
-	// #245 Door 1 — promote a parked idea onto TODAY (Light Replanning, today only).
-	// REUSES computeMovePatch + promote placement (sort-order) — no parallel module
+	// #245 Door 1 — plan a parked idea onto TODAY (Light Replanning, today only).
+	// REUSES computeMovePatch + plan placement (sort-order) — no parallel module
 	// (PRD §7): assign `day` + `planned`, slot into sort_order after the current
 	// moment, NO phase reassignment (the idea keeps its phase, which already
 	// contains today). Owner/co_owner only (SPEC §4); travelers/viewers 403.
-	promoteIdea: async ({ request, params, locals }) => {
+	planIdea: async ({ request, params, locals }) => {
 		const trip = await locals.pb
 			.collection('trips')
 			.getFirstListItem<Trip>(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
@@ -258,7 +258,7 @@ export const actions: Actions = {
 				`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`
 			);
 		if (membership.role !== 'owner' && membership.role !== 'co_owner') {
-			return fail(403, { error: 'Only the trip owner or a co-owner can promote an idea.' });
+			return fail(403, { error: 'Only the trip owner or a co-owner can plan an idea.' });
 		}
 
 		const data = await request.formData();
@@ -266,7 +266,7 @@ export const actions: Actions = {
 		if (!itemId) return fail(400, { error: 'Missing item ID.' });
 
 		try {
-			// Today's day (Light Replanning boundary — promote targets today only).
+			// Today's day (Light Replanning boundary — planning targets today only).
 			// Match on the calendar-date prefix, mirroring the loader (PB may store
 			// `date` as a datetime; a string-prefix compare is the robust check).
 			const now = tripNow(tripTz(trip));
@@ -299,8 +299,8 @@ export const actions: Actions = {
 				filter: `day = "${today.id}" && ${DISCRETE_FILTER}`,
 				sort: 'start_time,sort_order'
 			});
-			const promoted = dayItems.find((i) => i.id === itemId) ?? { ...item, ...patch };
-			const updates = promotePlacement(dayItems, promoted as Item, now);
+			const planned = dayItems.find((i) => i.id === itemId) ?? { ...item, ...patch };
+			const updates = planPlacement(dayItems, planned as Item, now);
 			await Promise.all(
 				updates.map((u) => locals.pb.collection('items').update(u.id, { sort_order: u.sort_order }))
 			);
@@ -309,9 +309,9 @@ export const actions: Actions = {
 		} catch (err: unknown) {
 			const e = err as { status?: number };
 			if (e?.status === 403) {
-				return fail(403, { error: 'Only the trip owner or a co-owner can promote an idea.' });
+				return fail(403, { error: 'Only the trip owner or a co-owner can plan an idea.' });
 			}
-			return fail(500, { error: err instanceof Error ? err.message : 'Failed to promote idea.' });
+			return fail(500, { error: err instanceof Error ? err.message : 'Failed to plan idea.' });
 		}
 	}
 };
