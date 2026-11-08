@@ -37,7 +37,7 @@ onRecordAfterCreateSuccess((e) => {
 		let rawPayload = e.record.get('payload');
 		if (Array.isArray(rawPayload)) {
 			try {
-				rawPayload = JSON.parse(String.fromCharCode.apply(null, rawPayload));
+				rawPayload = JSON.parse(toString(rawPayload));
 			} catch (_) {}
 		} else if (typeof rawPayload === 'string') {
 			try {

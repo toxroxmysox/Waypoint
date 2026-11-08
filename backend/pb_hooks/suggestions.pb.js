@@ -402,7 +402,7 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 		// PB 0.27 JSON fields return as a byte array, string, or object depending on context — normalize all cases.
 		if (Array.isArray(rawPayload)) {
 			try {
-				rawPayload = JSON.parse(String.fromCharCode.apply(null, rawPayload));
+				rawPayload = JSON.parse(toString(rawPayload));
 			} catch (_) {
 				rawPayload = {};
 			}
@@ -612,7 +612,7 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 			let rp = suggestion.get('payload');
 			if (Array.isArray(rp)) {
 				try {
-					rp = JSON.parse(String.fromCharCode.apply(null, rp));
+					rp = JSON.parse(toString(rp));
 				} catch (_) {
 					rp = {};
 				}
@@ -640,7 +640,7 @@ routerAdd('POST', '/api/suggestions/review', (e) => {
 			let rp = suggestion.get('payload');
 			if (Array.isArray(rp)) {
 				try {
-					rp = JSON.parse(String.fromCharCode.apply(null, rp));
+					rp = JSON.parse(toString(rp));
 				} catch (_) {
 					rp = {};
 				}
@@ -734,7 +734,7 @@ routerAdd('POST', '/api/suggestions/update', (e) => {
 	let stored = suggestion.get('payload');
 	if (Array.isArray(stored)) {
 		try {
-			stored = JSON.parse(String.fromCharCode.apply(null, stored));
+			stored = JSON.parse(toString(stored));
 		} catch (_) {
 			stored = {};
 		}

@@ -34,7 +34,7 @@ onRecordCreateRequest((e) => {
 	let categories = record.get('categories');
 	if (Array.isArray(categories) && categories.length > 0 && typeof categories[0] === 'number') {
 		try {
-			categories = JSON.parse(String.fromCharCode.apply(null, categories));
+			categories = JSON.parse(toString(categories));
 		} catch (_) {
 			categories = [];
 		}
@@ -96,7 +96,7 @@ onRecordUpdateRequest((e) => {
 	let categories = record.get('categories');
 	if (Array.isArray(categories) && categories.length > 0 && typeof categories[0] === 'number') {
 		try {
-			categories = JSON.parse(String.fromCharCode.apply(null, categories));
+			categories = JSON.parse(toString(categories));
 		} catch (_) {
 			categories = [];
 		}

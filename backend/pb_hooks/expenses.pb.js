@@ -47,7 +47,7 @@ onRecordCreateRequest((e) => {
 	// PB JSON fields may come as byte array in hooks.
 	if (Array.isArray(splitData) && splitData.length > 0 && typeof splitData[0] === 'number') {
 		try {
-			splitData = JSON.parse(String.fromCharCode.apply(null, splitData));
+			splitData = JSON.parse(toString(splitData));
 		} catch (_) {
 			splitData = {};
 		}
@@ -101,7 +101,7 @@ onRecordUpdateRequest((e) => {
 
 	if (Array.isArray(splitData) && splitData.length > 0 && typeof splitData[0] === 'number') {
 		try {
-			splitData = JSON.parse(String.fromCharCode.apply(null, splitData));
+			splitData = JSON.parse(toString(splitData));
 		} catch (_) {
 			splitData = {};
 		}
@@ -218,7 +218,7 @@ onRecordValidate((e) => {
 		// PB JSON fields read back as a byte array (or string) in hooks.
 		if (splitData && typeof splitData === 'object' && typeof splitData.length === 'number') {
 			try {
-				splitData = JSON.parse(String.fromCharCode.apply(null, splitData));
+				splitData = JSON.parse(toString(splitData));
 			} catch (_) {
 				splitData = null;
 			}
