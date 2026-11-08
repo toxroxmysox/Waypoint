@@ -21,7 +21,7 @@ jobs:
   # ── HARD GATE ────────────────────────────────────────────────────────────
   verify:
     name: check + unit tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -40,7 +40,7 @@ jobs:
   # before pushing.
   lint:
     name: lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -51,7 +51,7 @@ jobs:
   # ── REPORTING ONLY ───────────────────────────────────────────────────────
   backend:
     name: PocketBase harnesses (non-blocking)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     # Non-blocking for its first outings. Promote to a gate once it has proven
     # stable — it passed on the very first CI run, so that should be soon.
@@ -70,7 +70,7 @@ jobs:
 
   e2e:
     name: Playwright e2e (non-blocking)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     # The fiddly one: builds the app and drives an isolated PB on :8097.
     # Reporting-only until it has a track record.
