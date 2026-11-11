@@ -548,7 +548,7 @@ routerAdd('GET', '/api/members/can-purge', (e) => {
 		let split = exp.get('split_data');
 		if (Array.isArray(split) && split.length > 0 && typeof split[0] === 'number') {
 			try {
-				split = JSON.parse(String.fromCharCode.apply(null, split));
+				split = JSON.parse(toString(split));
 			} catch (_) {
 				split = null;
 			}
@@ -935,7 +935,7 @@ routerAdd('POST', '/api/members/remove', (e) => {
 			let split = exp.get('split_data');
 			if (Array.isArray(split) && split.length > 0 && typeof split[0] === 'number') {
 				try {
-					split = JSON.parse(String.fromCharCode.apply(null, split));
+					split = JSON.parse(toString(split));
 				} catch (_) {
 					split = null;
 				}
@@ -1074,13 +1074,13 @@ routerAdd('POST', '/api/members/remove', (e) => {
 				}
 				for (const exp of expenses) {
 					// PB JSON fields surface as a BYTE ARRAY in goja hooks (not a parsed
-					// object) — decode via String.fromCharCode then JSON.parse, exactly as
+					// object) — decode via toString (UTF-8) then JSON.parse, exactly as
 					// expenses.pb.js does. Missing this would silently skip every split, so
 					// a member who only owes a share would wrongly purge (money-integrity bug).
 					let split = exp.get('split_data');
 					if (Array.isArray(split) && split.length > 0 && typeof split[0] === 'number') {
 						try {
-							split = JSON.parse(String.fromCharCode.apply(null, split));
+							split = JSON.parse(toString(split));
 						} catch (_) {
 							split = null;
 						}

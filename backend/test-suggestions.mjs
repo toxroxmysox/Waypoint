@@ -890,7 +890,7 @@ console.log('\n15. #444 update (Save keeps it pending)');
 	const t = await api(
 		'POST',
 		'/api/suggestions/create',
-		{ trip_id: tripId, payload: { ...rich, title: '3-night stay (#411)' } },
+		{ trip_id: tripId, payload: { ...rich, title: '3-night stay (#411) ธนา Café 🍜' } },
 		tokens.traveler
 	);
 	const ap = await api(
@@ -903,6 +903,10 @@ console.log('\n15. #444 update (Save keeps it pending)');
 	lossless(ai)
 		? pass('approve keeps every field')
 		: fail('approve keeps every field', `${ap.status} ${fields(ai)}`);
+	// goja returns the payload JSON as UTF-8 bytes; it must not be read one char per byte.
+	ai.title === '3-night stay (#411) ธนา Café 🍜'
+		? pass('approve keeps a non-ASCII title intact')
+		: fail('approve keeps a non-ASCII title intact', ai.title);
 
 	const auto = await api(
 		'POST',

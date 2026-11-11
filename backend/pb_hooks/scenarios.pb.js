@@ -135,7 +135,7 @@ routerAdd('POST', '/api/scenarios/promote', (e) => {
 		if (Array.isArray(raw) && (raw.length === 0 || typeof raw[0] !== 'number')) return raw;
 		if (Array.isArray(raw) && typeof raw[0] === 'number') {
 			try {
-				return JSON.parse(String.fromCharCode.apply(null, raw));
+				return JSON.parse(toString(raw));
 			} catch (_) {
 				return [];
 			}

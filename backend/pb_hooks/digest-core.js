@@ -414,6 +414,56 @@ function renderDigestEmail(opts) {
 // --- PB-side plumbing (goja globals only via runDigest's default deps) --------
 
 /**
+ * UTF-8 bytes → string. goja returns a JSON field as its raw UTF-8 bytes and
+ * has no TextDecoder; String.fromCharCode over the bytes reads them as
+ * Latin-1 and garbles every non-ASCII character (ธ → à¸˜). Malformed
+ * sequences decode to U+FFFD rather than throwing.
+ */
+function decodeUtf8Bytes(bytes) {
+	let out = '';
+	const n = bytes.length;
+	let i = 0;
+	while (i < n) {
+		const b0 = bytes[i] & 0xff;
+		let cp = 0xfffd;
+		let len = 1;
+		if (b0 < 0x80) {
+			cp = b0;
+		} else if (b0 >= 0xc2 && b0 < 0xe0) {
+			len = 2;
+		} else if (b0 >= 0xe0 && b0 < 0xf0) {
+			len = 3;
+		} else if (b0 >= 0xf0 && b0 < 0xf5) {
+			len = 4;
+		}
+		if (len > 1) {
+			if (i + len > n) {
+				len = 1;
+			} else {
+				cp = b0 & (len === 2 ? 0x1f : len === 3 ? 0x0f : 0x07);
+				for (let k = 1; k < len; k++) {
+					const b = bytes[i + k] & 0xff;
+					if ((b & 0xc0) !== 0x80) {
+						cp = 0xfffd;
+						len = k;
+						break;
+					}
+					cp = (cp << 6) | (b & 0x3f);
+				}
+			}
+		}
+		if (cp > 0xffff) {
+			cp -= 0x10000;
+			out += String.fromCharCode(0xd800 + (cp >> 10), 0xdc00 + (cp & 0x3ff));
+		} else {
+			out += String.fromCharCode(cp);
+		}
+		i += len;
+	}
+	return out;
+}
+
+/**
  * Parse the trips.digest_state json field, tolerating the shapes goja hands
  * back for JSON fields (byte array / string / object — cf. the suggestions
  * payload handling in notifications.pb.js). Returns null when unset/invalid.
@@ -422,7 +472,7 @@ function parseDigestState(raw) {
 	try {
 		if (raw === null || raw === undefined || raw === '') return null;
 		if (Array.isArray(raw)) {
-			const str = String.fromCharCode.apply(null, raw);
+			const str = decodeUtf8Bytes(raw);
 			if (!str) return null;
 			raw = str;
 		}
@@ -776,5 +826,6 @@ module.exports = {
 	remindersFor: remindersFor,
 	hasReminders: hasReminders,
 	parseDigestState: parseDigestState,
+	decodeUtf8Bytes: decodeUtf8Bytes,
 	runDigest: runDigest
 };

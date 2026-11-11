@@ -39,12 +39,14 @@
 ### Task 1: `rating` field + done-only invariant
 
 **Files:**
+
 - Create: `backend/pb_migrations/0091_items_rating.js`
 - Modify: `backend/pb_hooks/items.pb.js` (model hooks `onRecordCreate` / `onRecordUpdate` near the bottom)
 - Modify: `src/lib/itinerary/types.ts` (`ItemRating`, `Item.rating`)
 - Test: `backend/test-items.mjs`
 
 **Interfaces:**
+
 - Produces: `export type ItemRating = 'recommend' | 'not_recommend' | ''` and `rating: ItemRating` on `Item` (both in `src/lib/itinerary/types.ts`). PB field `items.rating`: select, single, values `recommend`, `not_recommend`, not required.
 
 - [ ] **Step 1: Write failing harness cases in `backend/test-items.mjs`** (owner client, follow the file's existing case style):
@@ -61,10 +63,12 @@
 ### Task 2: Travelers can walk closeout
 
 **Files:**
+
 - Modify: `backend/pb_hooks/items.pb.js` (update hook after the creator exception; create hook)
 - Test: `backend/test-items.mjs`
 
 **Interfaces:**
+
 - Consumes: `items.rating` (Task 1).
 - Produces: after the trip has ended, a traveler may (a) update an item when the only changed fields are `status` (to `planned` | `done` | `considered`) and/or `rating`; (b) create an item with `status = 'done'` (a swap replacement). "Trip has ended" = `archived` is true, or `end_date` is before today in the trip's `timezone` (compute the trip-local date inline, as `digest-core.js` does). Viewers stay refused.
 
@@ -84,10 +88,12 @@
 ### Task 3: Closeout outcome module
 
 **Files:**
+
 - Create: `src/lib/itinerary/closeout-outcome.ts`
 - Test: `src/lib/itinerary/closeout-outcome.test.ts`
 
 **Interfaces:**
+
 - Consumes: `ItemStatus`, `ItemRating` (Task 1).
 - Produces:
   - `export type CloseoutOutcome = 'recommend' | 'not_recommend' | 'didnt_do'`
@@ -97,6 +103,7 @@
   - `export function itemOutcome(item: Pick<Item, 'status' | 'rating'>): CloseoutOutcome | 'done_unrated' | 'pending'`
 
 - [ ] **Step 1: Failing tests**
+
 ```ts
 expect(outcomeUpdate('recommend')).toEqual({ status: 'done', rating: 'recommend' });
 expect(outcomeUpdate('not_recommend')).toEqual({ status: 'done', rating: 'not_recommend' });
@@ -108,6 +115,7 @@ expect(itemOutcome({ status: 'done', rating: '' })).toBe('done_unrated');
 expect(itemOutcome({ status: 'considered', rating: '' })).toBe('didnt_do');
 expect(itemOutcome({ status: 'planned', rating: '' })).toBe('pending');
 ```
+
 - [ ] **Step 2: Run** `pnpm vitest run src/lib/itinerary/closeout-outcome.test.ts` → FAIL.
 - [ ] **Step 3: Implement.**
 - [ ] **Step 4: Run** → PASS.
@@ -116,10 +124,12 @@ expect(itemOutcome({ status: 'planned', rating: '' })).toBe('pending');
 ### Task 4: Closeout server actions
 
 **Files:**
+
 - Modify: `src/routes/(app)/trips/[slug]/closeout/+page.server.ts`
 - Test: `tests/e2e/closeout-rating.spec.ts` (created here; Task 5 extends it)
 
 **Interfaces:**
+
 - Consumes: `outcomeUpdate`, `parseOutcome`, `parseRating` (Task 3).
 - Produces (form actions; all `fail(403)` for viewers, `fail(400)` on a bad value):
   - `?/resolve` — fields `item_id`, `outcome` → `items.update(item_id, outcomeUpdate(outcome))`. Replaces `markDone`.
@@ -140,16 +150,19 @@ expect(itemOutcome({ status: 'planned', rating: '' })).toBe('pending');
 ### Task 5: Closeout rows, rate mode, summary
 
 **Files:**
+
 - Modify: `src/lib/itinerary/components/CloseoutItemRow.svelte`
 - Modify: `src/lib/itinerary/components/CloseoutDayCard.svelte`
 - Modify: `src/routes/(app)/trips/[slug]/closeout/+page.svelte`
 - Test: `tests/e2e/closeout-rating.spec.ts`; grep-fix `tests/e2e/m5-closure.spec.ts`, `closeout-checklist.spec.ts`, others hit by the label grep.
 
 **Interfaces:**
+
 - Consumes: `?/resolve`, `?/rate`, `data.mode` (Task 4); `itemOutcome` (Task 3).
 - Produces: `CloseoutItemRow` and `CloseoutDayCard` take `mode: 'walk' | 'rate'`.
 
 Behavior:
+
 - **Walk, pending row:** three identical pills **👍 Recommend · 👎 Don't recommend · Didn't do** (keep the existing 44px pill class). Didn't do posts `outcome=didnt_do`, then shows "Did something else instead?" with **+ Add** (opens the existing `InlineQuickAdd` replacement flow) and **No**.
 - **Walk, resolved row:** trailing shows 👍 / 👎 / `Done` (unrated) / `Didn't do`; no controls. Changing a rating after resolving happens in rate mode.
 - **Rate mode:** done rows show two toggle pills 👍 Recommend / 👎 Don't recommend with the current one pressed (`aria-pressed`); tapping the pressed one posts `rating=''`. Considered rows show `Didn't do`, no controls. No "All done" bulk button, no date adjust, no memory capture (already read-only), no ideas step.
@@ -169,6 +182,7 @@ Behavior:
 ### Task 6: Ratings on Record and Public Archive, plus the entry link
 
 **Files:**
+
 - Modify: `src/lib/portability/archive-view.ts` (sanitized item gains `rating`)
 - Modify: `src/lib/portability/components/ArchiveDaySection.svelte` (`SanitizedItem.rating`, 👍/👎 mark)
 - Modify: `src/lib/portability/components/RecordView.svelte` (prop `canRate`, **Rate activities** link)
@@ -177,6 +191,7 @@ Behavior:
 - Test: `src/lib/portability/archive-view.test.ts`; `tests/e2e/trip-record-view.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `Item.rating` (Task 1).
 - Produces: `buildArchiveView(...).doneItems[n].rating: ItemRating`.
 
@@ -193,12 +208,14 @@ Behavior:
 ### Task 7: Claude reads and writes ratings
 
 **Files:**
+
 - Modify: `src/lib/server/mcp/day-data.ts` (`ITEM_FIELDS` += `rating`)
 - Modify: `src/lib/server/mcp/tools/get-trip.ts` (only if it builds its own item field list)
 - Modify: `src/lib/server/mcp/writes/registry.ts` (items `fields.rating: 'recommend | not_recommend | empty to clear; done items only (closeout)'`)
 - Test: the existing MCP tool tests beside those files (follow their names); `CONTEXT.md` unchanged.
 
 **Interfaces:**
+
 - Consumes: `items.rating` (Task 1) and the Task 2 traveler exception (a traveler's AI write obeys the same hook).
 
 - [ ] **Step 1: Failing tests**

@@ -191,6 +191,50 @@ async function main() {
 		);
 	}
 
+	console.log('\n— a non-ASCII title survives the snapshot round-trip (UTF-8 bytes)');
+	// goja hands digest_state back as raw UTF-8 bytes; decoding them one char
+	// per byte reported "TANA (ธนา) (renamed from “TANA (à¸˜à¸™à¸²)”)" every
+	// morning. Baseline for real (a baseline writes state, never sends), then
+	// the next run must see no edit.
+	must(
+		'thai item',
+		await pb('POST', '/api/collections/items/records', {
+			token: owner,
+			body: {
+				trip: fx.tripId,
+				day: days[0].id,
+				type: 'meal',
+				title: 'TANA (ธนา) — Café 🍜',
+				status: 'planned'
+			}
+		})
+	);
+	must(
+		'unset state',
+		await pb('PATCH', `/api/collections/trips/records/${fx.tripId}`, {
+			token: admin,
+			body: { digest_state: null }
+		})
+	);
+	const base = must('baseline run', await pb('POST', '/api/digest/run', { body: { force: true } }));
+	assert('fixture trip is baselined for real', base.baselined.includes(trip.slug), base);
+	const stored = must(
+		'trip after baseline',
+		await pb('GET', `/api/collections/trips/records/${fx.tripId}`, { token: admin })
+	);
+	assert(
+		'stored snapshot holds the exact title',
+		Object.values(stored.digest_state || {}).some((v) => v.t === 'TANA (ธนา) — Café 🍜'),
+		stored.digest_state
+	);
+	const rerun = must('dry run 4', await run({ force: true }));
+	const forTrip = rerun.emails.filter((e) => e.trips.includes(trip.slug));
+	assert(
+		'the next run reports no phantom rename',
+		forTrip.every((e) => !e.text.includes('renamed from') && !e.text.includes('Edited')),
+		forTrip.map((e) => e.text)
+	);
+
 	console.log(`\n${pass} passed, ${fail} failed`);
 	exit(fail === 0 ? 0 : 1);
 }

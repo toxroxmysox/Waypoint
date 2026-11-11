@@ -144,4 +144,22 @@ describe('parseDigestState', () => {
 		expect(core.parseDigestState('not json')).toBeNull();
 		expect(core.parseDigestState(42)).toBeNull();
 	});
+
+	// goja hands a JSON field back as its raw UTF-8 bytes. Reading them one
+	// byte per char garbled every non-ASCII title, so the next diff saw a
+	// "rename" every morning (Thailand: "TANA (ธนา)").
+	it('decodes a byte array as UTF-8, not one char per byte', () => {
+		const snap = {
+			a: { t: 'TANA (ธนา)', d: '2026-12-01', s: 'planned', g: 'x' },
+			b: { t: 'Café “Ménage” 🍜', d: '', s: 'idea', g: 'y' }
+		};
+		const bytes = Array.from(new TextEncoder().encode(JSON.stringify(snap)));
+		expect(core.parseDigestState(bytes)).toEqual(snap);
+	});
+
+	it('decodeUtf8Bytes covers 1–4 byte sequences', () => {
+		const s = 'a é ธ 🍜';
+		expect(core.decodeUtf8Bytes(Array.from(new TextEncoder().encode(s)))).toBe(s);
+		expect(core.decodeUtf8Bytes([])).toBe('');
+	});
 });
