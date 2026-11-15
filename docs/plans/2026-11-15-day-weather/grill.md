@@ -49,7 +49,7 @@ A glance, not a weather app: each day says what to expect where you'll be.
 - **Placement, Now:** a line under the large "Now" title, above the Today / Next 3 days sub-tabs, always with the city name.
 - **Placement, Next 3 days:** compact line right-aligned on each day's section header.
 - **Not shown:** Overview day rows, the date strip, past days, any day without a resolvable place.
-- **Units:** per-user °F/°C in Account beside "Open links in"; default °F for everyone (not locale).
+- **Units:** per-user °F/°C in Account's Display section (with Appearance, #583); default °F for everyone (not locale).
 - **Display-only:** no tap, no link out, no detail sheet.
 - **Caching:** server-side per place + date (TTL is the plan's call; forecasts change a few times a day, Typicals effectively never). The weather ships in the SSR payload so offline snapshots carry it.
 - **Offline / staleness:** a stale snapshot shows its weather as is; the existing offline banner is the only staleness signal.
