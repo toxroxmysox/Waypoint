@@ -14,6 +14,13 @@ import {
 } from '$lib/itinerary/phase-logistics';
 import { formatCalendarDate } from '$lib/shell/format';
 import { planIdeaOnDay } from '$lib/server/plan-idea';
+import {
+	failStatus,
+	getActiveMembership,
+	getTripBySlug,
+	isOrganizer,
+	isViewer
+} from '$lib/server/trip-access';
 import { pbBaseUrl } from '$lib/shell/pb';
 
 // #249/#250 — ghost approve/reject reuse the same /api/suggestions/review hook
@@ -136,13 +143,10 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	});
 
 	// #401 — In / Staying / Out, the "On which day?" rows, and who may plan which idea.
-	const canPrivileged = membership.role === 'owner' || membership.role === 'co_owner';
-	const canPlanIds =
-		membership.role === 'viewer'
-			? []
-			: unplanned
-					.filter((it) => canPrivileged || it.created_by === membership.id)
-					.map((it) => it.id);
+	const canPrivileged = isOrganizer(membership.role);
+	const canPlanIds = isViewer(membership.role)
+		? []
+		: unplanned.filter((it) => canPrivileged || it.created_by === membership.id).map((it) => it.id);
 	const voted = new Set(myVotes.map((v) => v.item));
 	// "Rate N" = this viewer's unvoted ideas (the parking lot it sits over).
 	const unratedCount = unplanned.filter((it) => !it.day && !voted.has(it.id)).length;
@@ -155,7 +159,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		planRows: dayMenuRows(days, daySummaries),
 		canPlanIds,
 		unratedCount,
-		canEditNotes: membership.role !== 'viewer',
+		canEditNotes: !isViewer(membership.role),
 		canAddLogistics: canPrivileged,
 		phaseDays: days,
 		phaseItems: items,
@@ -166,12 +170,6 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 		viewerRole
 	};
 };
-
-// A failed PB call's HTTP status, else 500.
-function failStatus(err: unknown): number {
-	const status = (err as { status?: number })?.status;
-	return typeof status === 'number' && status >= 400 && status < 600 ? status : 500;
-}
 
 export const actions: Actions = {
 	// #401 — Phase Notes, edited like day notes; phases.pb.js lets any non-viewer
@@ -241,9 +239,7 @@ export const actions: Actions = {
 	},
 
 	update: async ({ request, params, locals }) => {
-		const trip = await locals.pb
-			.collection('trips')
-			.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+		const trip = await getTripBySlug(locals.pb, params.slug);
 		const data = await request.formData();
 		const name = data.get('name')?.toString().trim();
 		const location = data.get('location')?.toString().trim() || '';
@@ -285,18 +281,12 @@ export const actions: Actions = {
 	// phase-scoped, day-less item. No day is ever required or implied (status =
 	// day ? planned : unplanned — here there is no day, so unplanned).
 	addIdea: async ({ request, params, locals }) => {
-		const trip = await locals.pb
-			.collection('trips')
-			.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+		const trip = await getTripBySlug(locals.pb, params.slug);
 
 		const phase = await locals.pb.collection('phases').getOne<Phase>(params.phaseId);
 		if (phase.trip !== trip.id) return fail(404, { ideaError: 'Phase not found.' });
 
-		const membership = await locals.pb
-			.collection('trip_members')
-			.getFirstListItem<TripMember>(
-				`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`
-			);
+		const membership = await getActiveMembership(locals.pb, trip.id, locals.user?.id);
 
 		const data = await request.formData();
 		const title = data.get('title')?.toString().trim();
@@ -392,9 +382,7 @@ export const actions: Actions = {
 	// non-viewer, can't-vote-your-own-suggestion, and self-as-member. An existing
 	// vote by this member is updated (change of mind), else a new one is created.
 	voteGhost: async ({ request, params, locals }) => {
-		const trip = await locals.pb
-			.collection('trips')
-			.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
+		const trip = await getTripBySlug(locals.pb, params.slug);
 
 		const data = await request.formData();
 		const suggestionId = data.get('suggestion_id')?.toString();
@@ -406,11 +394,7 @@ export const actions: Actions = {
 
 		let membership: TripMember;
 		try {
-			membership = await locals.pb
-				.collection('trip_members')
-				.getFirstListItem<TripMember>(
-					`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`
-				);
+			membership = await getActiveMembership(locals.pb, trip.id, locals.user?.id);
 		} catch {
 			return fail(403, { error: 'Not a member of this trip.' });
 		}
