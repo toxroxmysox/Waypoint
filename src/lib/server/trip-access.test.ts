@@ -97,6 +97,14 @@ describe('loadTripAccess', () => {
 			'You are not a member of this trip'
 		]);
 	});
+	it('signed out → 403 without querying members', async () => {
+		const { pb, seen } = fakePb(trip, member('owner'));
+		expect(await httpStatus(loadTripAccess(pb, 'paris', undefined))).toEqual([
+			403,
+			'You are not a member of this trip'
+		]);
+		expect(seen.trip_members).toBeUndefined();
+	});
 	it('member → trip + membership, querying ACTIVE membership only', async () => {
 		const { pb, seen } = fakePb(trip, member('viewer'));
 		const got = await loadTripAccess(pb, 'paris', 'u1');

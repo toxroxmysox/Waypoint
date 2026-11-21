@@ -63,11 +63,14 @@ export function findActiveMembership(
 	return getActiveMembership(pb, tripId, userId).catch(() => null);
 }
 
-/** Loader gate: 404 for an unknown trip, 403 for a non-member. */
+/**
+ * Loader gate: 404 for an unknown trip, 403 for a non-member. A missing `userId`
+ * (signed out) is a 403 — never a `user = ""` query, which would match a placeholder.
+ */
 export async function loadTripAccess(
 	pb: PocketBase,
 	slug: string,
-	userId: string
+	userId: string | undefined
 ): Promise<{ trip: Trip; membership: TripMember }> {
 	let trip: Trip;
 	try {
@@ -75,6 +78,7 @@ export async function loadTripAccess(
 	} catch {
 		error(404, 'Trip not found');
 	}
+	if (!userId) error(403, 'You are not a member of this trip');
 	let membership: TripMember;
 	try {
 		membership = await getActiveMembership(pb, trip.id, userId);
