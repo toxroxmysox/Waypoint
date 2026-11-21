@@ -23,10 +23,10 @@ import { needsBooking } from '$lib/itinerary/booking-projection';
 import { tripNow, tripTz } from '$lib/shell/trip-time';
 import { parseMarkBooked, markBookedDestination } from '$lib/itinerary/item-page';
 import {
+	callerIsViewer,
 	failStatus,
 	findActiveMembership,
-	getActiveMembership,
-	isViewer
+	getActiveMembership
 } from '$lib/server/trip-access';
 
 const BOOK_ERROR = "Couldn't save that. Reload the page and try again.";
@@ -166,12 +166,8 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 };
 
 // Tasks sit outside the Suggestion pipeline (ADR-0003): traveler+ mutate freely,
-// viewers are read-only. PB rules are membership-scoped, so the viewer gate lives
-// here at the app layer.
-async function callerIsViewer(locals: App.Locals, tripId: string): Promise<boolean> {
-	return isViewer((await getActiveMembership(locals.pb, tripId, locals.user?.id)).role);
-}
-
+// viewers are read-only. PB rules are membership-scoped, so the viewer gate
+// (callerIsViewer) lives at the app layer.
 // Resolve a task with its parent checklist and assert it belongs to this item.
 // Returns null when the task isn't attached to this item's checklist (tampering).
 async function loadTaskInItem(
@@ -267,7 +263,7 @@ export const actions: Actions = {
 	// item for v1 — no-op if one already exists.
 	attachChecklist: async ({ request, params, locals }) => {
 		const item = await locals.pb.collection('items').getOne<Item>(params.itemId);
-		if (await callerIsViewer(locals, item.trip))
+		if (await callerIsViewer(locals.pb, item.trip, locals.user?.id))
 			return fail(403, { error: 'Viewers cannot modify checklists.' });
 
 		const formData = await request.formData();
@@ -297,7 +293,7 @@ export const actions: Actions = {
 
 	deleteChecklist: async ({ request, params, locals }) => {
 		const item = await locals.pb.collection('items').getOne<Item>(params.itemId);
-		if (await callerIsViewer(locals, item.trip))
+		if (await callerIsViewer(locals.pb, item.trip, locals.user?.id))
 			return fail(403, { error: 'Viewers cannot modify checklists.' });
 
 		const formData = await request.formData();
@@ -317,7 +313,7 @@ export const actions: Actions = {
 
 	addTask: async ({ request, params, locals }) => {
 		const item = await locals.pb.collection('items').getOne<Item>(params.itemId);
-		if (await callerIsViewer(locals, item.trip))
+		if (await callerIsViewer(locals.pb, item.trip, locals.user?.id))
 			return fail(403, { error: 'Viewers cannot modify checklists.' });
 
 		const formData = await request.formData();
@@ -352,7 +348,7 @@ export const actions: Actions = {
 
 	toggleTask: async ({ request, params, locals }) => {
 		const item = await locals.pb.collection('items').getOne<Item>(params.itemId);
-		if (await callerIsViewer(locals, item.trip))
+		if (await callerIsViewer(locals.pb, item.trip, locals.user?.id))
 			return fail(403, { error: 'Viewers cannot modify checklists.' });
 
 		const formData = await request.formData();
@@ -372,7 +368,7 @@ export const actions: Actions = {
 
 	assignTask: async ({ request, params, locals }) => {
 		const item = await locals.pb.collection('items').getOne<Item>(params.itemId);
-		if (await callerIsViewer(locals, item.trip))
+		if (await callerIsViewer(locals.pb, item.trip, locals.user?.id))
 			return fail(403, { error: 'Viewers cannot modify checklists.' });
 
 		const formData = await request.formData();
@@ -403,7 +399,7 @@ export const actions: Actions = {
 
 	deleteTask: async ({ request, locals, params }) => {
 		const item = await locals.pb.collection('items').getOne<Item>(params.itemId);
-		if (await callerIsViewer(locals, item.trip))
+		if (await callerIsViewer(locals.pb, item.trip, locals.user?.id))
 			return fail(403, { error: 'Viewers cannot modify checklists.' });
 
 		const formData = await request.formData();

@@ -3,6 +3,7 @@ import { isHttpError } from '@sveltejs/kit';
 import type PocketBase from 'pocketbase';
 import type { MemberRole } from '$lib/types';
 import {
+	callerIsViewer,
 	failStatus,
 	findActiveMembership,
 	isOrganizer,
@@ -157,5 +158,20 @@ describe('findActiveMembership', () => {
 		const { pb, seen } = fakePb(trip, member('owner'));
 		expect(await findActiveMembership(pb, 't1', undefined)).toBeNull();
 		expect(seen.trip_members).toBeUndefined();
+	});
+});
+
+describe('callerIsViewer', () => {
+	it.each([
+		['viewer', true],
+		['traveler', false],
+		['owner', false]
+	] as [MemberRole, boolean][])('%s → %s', async (role, want) => {
+		expect(await callerIsViewer(fakePb(trip, member(role)).pb, 't1', 'u1')).toBe(want);
+	});
+	it('non-member throws (caller propagates, as before)', async () => {
+		await expect(callerIsViewer(fakePb(trip, notFound).pb, 't1', 'u1')).rejects.toMatchObject({
+			status: 404
+		});
 	});
 });

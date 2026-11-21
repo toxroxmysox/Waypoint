@@ -69,6 +69,19 @@ export function findActiveMembership(
 }
 
 /**
+ * Whether the caller is a viewer on this trip — the app-layer gate for paths PB
+ * rules leave open to every member (tasks, ADR-0003). Throws like
+ * getActiveMembership when the caller isn't a member.
+ */
+export async function callerIsViewer(
+	pb: PocketBase,
+	tripId: string,
+	userId: string | undefined
+): Promise<boolean> {
+	return isViewer((await getActiveMembership(pb, tripId, userId)).role);
+}
+
+/**
  * Loader gate: 404 for an unknown trip, 403 for a non-member. A missing `userId`
  * (signed out) is a 403 — never a `user = ""` query, which would match a placeholder.
  */
