@@ -1,9 +1,9 @@
-import { error } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
-import type { Trip, TripMember, Phase, Day, Notification, Item } from '$lib/types';
+import type { Phase, Day, Notification, Item } from '$lib/types';
 import type { Document } from '$lib/documents/types';
 import { isTripActive } from '$lib/trip-mode/activation';
 import { buildOfflineManifest } from '$lib/offline/offline-manifest';
+import { loadTripAccess } from '$lib/server/trip-access';
 
 export const load: LayoutServerLoad = async ({ params, locals, depends }) => {
 	// #297: register a custom dependency so the NotificationBell can force a
@@ -12,26 +12,8 @@ export const load: LayoutServerLoad = async ({ params, locals, depends }) => {
 	// that share this layout (which would NOT otherwise re-run this load).
 	depends('app:notifications');
 
-	let trip: Trip;
-	try {
-		trip = await locals.pb
-			.collection('trips')
-			.getFirstListItem<Trip>(locals.pb.filter('slug = {:slug}', { slug: params.slug }));
-	} catch {
-		error(404, 'Trip not found');
-	}
-
-	// Verify membership
-	let membership: TripMember;
-	try {
-		membership = await locals.pb.collection('trip_members').getFirstListItem<TripMember>(
-			// #133: a Departed Member's `user` is cleared on removal, but guard the
-			// access gate explicitly — a tombstone must never resolve as a member.
-			`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`
-		);
-	} catch {
-		error(403, 'You are not a member of this trip');
-	}
+	// 404 unknown trip / 403 not an active member (#543 trip-access).
+	const { trip, membership } = await loadTripAccess(locals.pb, params.slug, locals.user?.id);
 
 	// Parking Lot is phase-scoped (glossary) — no trip-wide unplanned query here.
 	// The ContextRail "Ideas" list reads the day page's phase-scoped parkingLotItems

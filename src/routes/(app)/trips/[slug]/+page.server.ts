@@ -12,6 +12,7 @@ import { needsOnboarding } from '$lib/group-input/onboarding';
 import { loadScenarioBoard, type ScenarioBoardData } from '$lib/ideation/scenario-board.server';
 import { aggregateDayStatuses, type AvailabilityCell } from '$lib/ideation/availability';
 import type PocketBase from 'pocketbase';
+import { failStatus, isOrganizer, isViewer, requireOrganizer } from '$lib/server/trip-access';
 import type { Decision, DecisionPayload } from '$lib/ideation/types';
 
 /** Availability poll summary for the forming-home entry card (#271). Cheap: one
@@ -116,9 +117,9 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 			// count + whether the caller has painted). A sibling surface to the board.
 			summarizeAvailability(locals.pb, trip.id, membership.id)
 		]);
-		const canSetDates = membership.role === 'owner' || membership.role === 'co_owner';
+		const canSetDates = isOrganizer(membership.role);
 		// The composer/vote/point create paths are open to non-viewers (viewers read).
-		const canPitch = membership.role !== 'viewer';
+		const canPitch = !isViewer(membership.role);
 		return {
 			lifecycle,
 			// The onboarding welcome card is a planning-Overview surface; the forming
@@ -208,7 +209,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 			memberCount: recordMemberCount
 		});
 		const status = publishStatus(trip);
-		const canManage = membership.role === 'owner' || membership.role === 'co_owner';
+		const canManage = isOrganizer(membership.role);
 		return {
 			lifecycle,
 			showWelcome,
@@ -351,26 +352,8 @@ type ClosedShare = {
 	today: string;
 };
 
-// Helper inlined per action (server load can't share a closure with actions): resolve
-// the trip + the caller's ACTIVE membership, throwing fail(403) for a non-owner.
-async function requireOwner(
-	locals: App.Locals,
-	slug: string
-): Promise<{ tripId: string; ok: true } | { ok: false; status: number; message: string }> {
-	const trip = await locals.pb
-		.collection('trips')
-		.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug }));
-	const membership = await locals.pb
-		.collection('trip_members')
-		.getFirstListItem<TripMember>(
-			`trip = "${trip.id}" && user = "${locals.user!.id}" && removed_at = ""`
-		);
-	if (membership.role !== 'owner' && membership.role !== 'co_owner') {
-		return { ok: false, status: 403, message: 'Only owners or co-owners can do that.' };
-	}
-	return { tripId: trip.id, ok: true };
-}
-
+// Organizer-only actions gate with the module-scope requireOrganizer (#543 trip-access).
+// Module-scope helpers are shared by load and actions fine.
 export const actions: Actions = {
 	// #401 — Trip Notes, edited like day notes; trips.pb.js blocks viewers.
 	updateTripNotes: async ({ request, locals, params }) => {
@@ -385,11 +368,8 @@ export const actions: Actions = {
 			await locals.pb.collection('trips').update(trip.id, { notes });
 			return { success: true };
 		} catch (err: unknown) {
-			const status = (err as { status?: number })?.status;
 			const message = err instanceof Error ? err.message : "Couldn't save notes.";
-			return fail(typeof status === 'number' && status >= 400 && status < 600 ? status : 500, {
-				error: message
-			});
+			return fail(failStatus(err), { error: message });
 		}
 	},
 
@@ -400,7 +380,7 @@ export const actions: Actions = {
 	// Owner/co_owner only, matching the settings date form.
 	setDates: async ({ request, locals, params }) => {
 		try {
-			const gate = await requireOwner(locals, params.slug);
+			const gate = await requireOrganizer(locals.pb, params.slug, locals.user!.id);
 			if (!gate.ok) return fail(gate.status, { dateError: gate.message });
 
 			const data = await request.formData();
@@ -414,7 +394,7 @@ export const actions: Actions = {
 				return fail(400, { dateError: 'Start date must be before end date.' });
 			}
 
-			await locals.pb.collection('trips').update(gate.tripId, {
+			await locals.pb.collection('trips').update(gate.trip.id, {
 				start_date: startDate + ' 00:00:00.000Z',
 				end_date: endDate + ' 00:00:00.000Z'
 			});
@@ -470,7 +450,7 @@ export const actions: Actions = {
 	// "Keep private"/disable clears the date (and turns sharing off on explicit disable).
 	publishRecord: async ({ request, locals, params }) => {
 		try {
-			const gate = await requireOwner(locals, params.slug);
+			const gate = await requireOrganizer(locals.pb, params.slug, locals.user!.id);
 			if (!gate.ok) return fail(gate.status, { error: gate.message });
 
 			const data = await request.formData();
@@ -486,7 +466,7 @@ export const actions: Actions = {
 			} else if (publish) {
 				// #301: default "publish now" to the trip-LOCAL today (matching the
 				// visibility gate), never the UTC date — see resolvePublishDay.
-				const trip = await locals.pb.collection('trips').getOne(gate.tripId);
+				const trip = await locals.pb.collection('trips').getOne(gate.trip.id);
 				const day = resolvePublishDay(data.get('publish_date')?.toString() || '', {
 					timezone: trip.timezone
 				});
@@ -502,7 +482,7 @@ export const actions: Actions = {
 				updates.archive_publish_at = '';
 			}
 
-			await locals.pb.collection('trips').update(gate.tripId, updates);
+			await locals.pb.collection('trips').update(gate.trip.id, updates);
 			return { publishSaved: true };
 		} catch (err: unknown) {
 			return fail(500, { error: err instanceof Error ? err.message : 'Failed to update sharing.' });
@@ -516,10 +496,10 @@ export const actions: Actions = {
 	// (publishing pauses until the next closeout re-sets it).
 	reopenTrip: async ({ locals, params }) => {
 		try {
-			const gate = await requireOwner(locals, params.slug);
+			const gate = await requireOrganizer(locals.pb, params.slug, locals.user!.id);
 			if (!gate.ok) return fail(gate.status, { error: gate.message });
 
-			await locals.pb.collection('trips').update(gate.tripId, {
+			await locals.pb.collection('trips').update(gate.trip.id, {
 				archived: false,
 				archive_publish_at: ''
 			});
