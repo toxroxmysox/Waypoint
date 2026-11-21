@@ -43,12 +43,17 @@ function activeMemberFilter(tripId: string, userId: string): string {
 	return `trip = "${tripId}" && user = "${userId}" && removed_at = ""`;
 }
 
-/** The caller's active membership. Throws the PB error (404) when not a member. */
-export function getActiveMembership(
+/**
+ * The caller's active membership. Throws the PB error (404) when not a member, and a
+ * plain (status-less → 500) error when signed out — never a `user = ""` query, which
+ * would match a placeholder member.
+ */
+export async function getActiveMembership(
 	pb: PocketBase,
 	tripId: string,
-	userId: string
+	userId: string | undefined
 ): Promise<TripMember> {
+	if (!userId) throw new Error('Not signed in.');
 	return pb
 		.collection('trip_members')
 		.getFirstListItem<TripMember>(activeMemberFilter(tripId, userId));
@@ -58,7 +63,7 @@ export function getActiveMembership(
 export function findActiveMembership(
 	pb: PocketBase,
 	tripId: string,
-	userId: string
+	userId: string | undefined
 ): Promise<TripMember | null> {
 	return getActiveMembership(pb, tripId, userId).catch(() => null);
 }
@@ -102,7 +107,7 @@ export type OrganizerGate =
 export async function requireOrganizer(
 	pb: PocketBase,
 	slug: string,
-	userId: string
+	userId: string | undefined
 ): Promise<OrganizerGate> {
 	const trip = await getTripBySlug(pb, slug);
 	const membership = await getActiveMembership(pb, trip.id, userId);

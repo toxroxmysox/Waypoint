@@ -380,7 +380,7 @@ export const actions: Actions = {
 	// Owner/co_owner only, matching the settings date form.
 	setDates: async ({ request, locals, params }) => {
 		try {
-			const gate = await requireOrganizer(locals.pb, params.slug, locals.user!.id);
+			const gate = await requireOrganizer(locals.pb, params.slug, locals.user?.id);
 			if (!gate.ok) return fail(gate.status, { dateError: gate.message });
 
 			const data = await request.formData();
@@ -450,7 +450,7 @@ export const actions: Actions = {
 	// "Keep private"/disable clears the date (and turns sharing off on explicit disable).
 	publishRecord: async ({ request, locals, params }) => {
 		try {
-			const gate = await requireOrganizer(locals.pb, params.slug, locals.user!.id);
+			const gate = await requireOrganizer(locals.pb, params.slug, locals.user?.id);
 			if (!gate.ok) return fail(gate.status, { error: gate.message });
 
 			const data = await request.formData();
@@ -496,7 +496,7 @@ export const actions: Actions = {
 	// (publishing pauses until the next closeout re-sets it).
 	reopenTrip: async ({ locals, params }) => {
 		try {
-			const gate = await requireOrganizer(locals.pb, params.slug, locals.user!.id);
+			const gate = await requireOrganizer(locals.pb, params.slug, locals.user?.id);
 			if (!gate.ok) return fail(gate.status, { error: gate.message });
 
 			await locals.pb.collection('trips').update(gate.trip.id, {

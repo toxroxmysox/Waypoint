@@ -153,4 +153,9 @@ describe('findActiveMembership', () => {
 			role: 'traveler'
 		});
 	});
+	it('null when signed out, without querying', async () => {
+		const { pb, seen } = fakePb(trip, member('owner'));
+		expect(await findActiveMembership(pb, 't1', undefined)).toBeNull();
+		expect(seen.trip_members).toBeUndefined();
+	});
 });

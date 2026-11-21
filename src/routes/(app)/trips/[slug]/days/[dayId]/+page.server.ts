@@ -15,7 +15,7 @@ import { DISCRETE_FILTER, SPANNING_FILTER } from '$lib/trip-mode/spanning';
 async function canArrangeDay(locals: App.Locals, dayId: string): Promise<boolean> {
 	try {
 		const day = await locals.pb.collection('days').getOne<Day>(dayId, { fields: 'trip' });
-		const member = await getActiveMembership(locals.pb, day.trip, locals.user!.id);
+		const member = await getActiveMembership(locals.pb, day.trip, locals.user?.id);
 		return isOrganizer(member.role);
 	} catch {
 		return false;
