@@ -1,5 +1,6 @@
 import { error, fail } from '@sveltejs/kit';
 import { planIdeaOnDay } from '$lib/server/plan-idea';
+import { failStatus, getActiveMembership, isOrganizer } from '$lib/server/trip-access';
 import type { Actions, PageServerLoad } from './$types';
 import type { Day, Item, Vote, TripMember } from '$lib/types';
 import { phasesForDay } from '$lib/itinerary/phases';
@@ -9,24 +10,13 @@ import { summarizeDays } from '$lib/itinerary/day-card';
 import { withAvatarUrls } from '$lib/group-input/member-avatar';
 import { DISCRETE_FILTER, SPANNING_FILTER } from '$lib/trip-mode/spanning';
 
-// A failed PB call's status when it is an HTTP error, else 500 (#499: a refused
-// move is a 403, not a 500).
-function failStatus(err: unknown): number {
-	const status = (err as { status?: number } | null)?.status;
-	return typeof status === 'number' && status >= 400 && status < 600 ? status : 500;
-}
-
 // #499 — reorder and drag-to-plan rebalance EVERY item on the day, and items.pb.js
 // lets only an owner/co_owner write another member's sort_order. Gate up front.
 async function canArrangeDay(locals: App.Locals, dayId: string): Promise<boolean> {
 	try {
 		const day = await locals.pb.collection('days').getOne<Day>(dayId, { fields: 'trip' });
-		const member = await locals.pb
-			.collection('trip_members')
-			.getFirstListItem<TripMember>(
-				`trip = "${day.trip}" && user = "${locals.user!.id}" && removed_at = ""`
-			);
-		return member.role === 'owner' || member.role === 'co_owner';
+		const member = await getActiveMembership(locals.pb, day.trip, locals.user!.id);
+		return isOrganizer(member.role);
 	} catch {
 		return false;
 	}
