@@ -16,14 +16,6 @@ function parseDateTime(dt: string): Date {
 	return new Date(dt.replace(' ', 'T'));
 }
 
-/**
- * Multi-day items (rental car, lodging) carry an `end_date`. They run in the
- * background and surface separately as ongoing banners (the loader provides
- * them). They must never be the discrete Focus pick — otherwise their far-future
- * `end_time` hijacks the current-item choice (#82) and drives a trip-length
- * countdown (#83) — nor a forward-list row.
- */
-
 const ms = (dt: string) => parseDateTime(dt).getTime();
 
 /**
@@ -47,6 +39,10 @@ function bucketNowItems(
 	viewerMemberId = ''
 ): { earlier: Item[]; ongoing: Item[]; coming: Item[] } {
 	const t = now.getTime();
+	// A Span (rental car, lodging) runs in the background as a banner (the loader
+	// provides it). Never the discrete Focus pick — its far-future `end_time` would
+	// hijack the current-item choice (#82) and drive a trip-length countdown (#83)
+	// — nor a forward-list row.
 	const day = items.filter((i) => !showsAsSpan(i));
 	// Latest start among items that have already begun, per start-only check below.
 	const begunStarts = day.filter((i) => !!i.start_time && ms(i.start_time) <= t);

@@ -34,7 +34,7 @@ function parseDateTime(dt: string): Date {
  */
 export function plannedDisplayOrder(dayItems: Item[], planned: Item, now: Date): Item[] {
 	const t = now.getTime();
-	// The day's existing items in canonical display order, excluding multi-day
+	// The day's existing items in canonical display order, excluding Span
 	// banners (they never carry day `sort_order`) and the planned idea itself
 	// (it may already be in the array if the caller attached it first).
 	const ordered = orderDayItems(dayItems.filter((i) => !showsAsSpan(i) && i.id !== planned.id));
