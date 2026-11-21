@@ -2,6 +2,7 @@ import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Checklist, Task, TripMember } from '$lib/types';
 import { withAvatarUrls } from '$lib/group-input/member-avatar';
+import { getActiveMembership, getTripBySlug, isViewer } from '$lib/server/trip-access';
 
 export const load: PageServerLoad = async ({ params, parent, locals }) => {
 	const { trip } = await parent();
@@ -30,19 +31,8 @@ export const load: PageServerLoad = async ({ params, parent, locals }) => {
 	return { checklist, tasks, members: withAvatarUrls(locals.pb, members) };
 };
 
-async function getTrip(locals: App.Locals, slug: string) {
-	return locals.pb
-		.collection('trips')
-		.getFirstListItem(locals.pb.filter('slug = {:slug}', { slug }));
-}
-
-async function isViewer(locals: App.Locals, tripId: string): Promise<boolean> {
-	const membership = await locals.pb
-		.collection('trip_members')
-		.getFirstListItem<TripMember>(
-			`trip = "${tripId}" && user = "${locals.user!.id}" && removed_at = ""`
-		);
-	return membership.role === 'viewer';
+async function callerIsViewer(locals: App.Locals, tripId: string): Promise<boolean> {
+	return isViewer((await getActiveMembership(locals.pb, tripId, locals.user?.id)).role);
 }
 
 // Load the parent checklist for this route and assert it owns the given task.
@@ -61,8 +51,8 @@ async function loadChecklist(
 
 export const actions: Actions = {
 	addTask: async ({ request, params, locals }) => {
-		const trip = await getTrip(locals, params.slug);
-		if (await isViewer(locals, trip.id))
+		const trip = await getTripBySlug(locals.pb, params.slug);
+		if (await callerIsViewer(locals, trip.id))
 			return fail(403, { error: 'Viewers cannot modify lists.' });
 
 		const checklist = await loadChecklist(locals, trip.id, params.listId);
@@ -92,8 +82,8 @@ export const actions: Actions = {
 	},
 
 	toggleTask: async ({ request, params, locals }) => {
-		const trip = await getTrip(locals, params.slug);
-		if (await isViewer(locals, trip.id))
+		const trip = await getTripBySlug(locals.pb, params.slug);
+		if (await callerIsViewer(locals, trip.id))
 			return fail(403, { error: 'Viewers cannot modify lists.' });
 
 		const data = await request.formData();
@@ -111,8 +101,8 @@ export const actions: Actions = {
 	},
 
 	assignTask: async ({ request, params, locals }) => {
-		const trip = await getTrip(locals, params.slug);
-		if (await isViewer(locals, trip.id))
+		const trip = await getTripBySlug(locals.pb, params.slug);
+		if (await callerIsViewer(locals, trip.id))
 			return fail(403, { error: 'Viewers cannot modify lists.' });
 
 		const data = await request.formData();
@@ -140,8 +130,8 @@ export const actions: Actions = {
 	},
 
 	deleteTask: async ({ request, params, locals }) => {
-		const trip = await getTrip(locals, params.slug);
-		if (await isViewer(locals, trip.id))
+		const trip = await getTripBySlug(locals.pb, params.slug);
+		if (await callerIsViewer(locals, trip.id))
 			return fail(403, { error: 'Viewers cannot modify lists.' });
 
 		const data = await request.formData();
@@ -159,8 +149,8 @@ export const actions: Actions = {
 	},
 
 	rename: async ({ request, params, locals }) => {
-		const trip = await getTrip(locals, params.slug);
-		if (await isViewer(locals, trip.id))
+		const trip = await getTripBySlug(locals.pb, params.slug);
+		if (await callerIsViewer(locals, trip.id))
 			return fail(403, { error: 'Viewers cannot modify lists.' });
 
 		const checklist = await loadChecklist(locals, trip.id, params.listId);
@@ -179,8 +169,8 @@ export const actions: Actions = {
 	},
 
 	deleteList: async ({ params, locals }) => {
-		const trip = await getTrip(locals, params.slug);
-		if (await isViewer(locals, trip.id))
+		const trip = await getTripBySlug(locals.pb, params.slug);
+		if (await callerIsViewer(locals, trip.id))
 			return fail(403, { error: 'Viewers cannot modify lists.' });
 
 		const checklist = await loadChecklist(locals, trip.id, params.listId);
