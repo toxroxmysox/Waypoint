@@ -2,6 +2,7 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Day, Item, Phase, Vote } from '$lib/types';
 import { toDateOnly } from '$lib/itinerary/multi-day';
+import { PARKING_LOT_FILTER } from '$lib/itinerary/parking-lot';
 import {
 	validateNewPhaseStart,
 	validateMovePhaseStart,
@@ -53,7 +54,7 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 	// so they can be re-homed. New code can't create these (block-at-delete +
 	// phase-required validation), but legacy data may already have them.
 	const orphans = await locals.pb.collection('items').getFullList<Item>({
-		filter: `trip = "${trip.id}" && status = "unplanned" && phase = ""`,
+		filter: `trip = "${trip.id}" && ${PARKING_LOT_FILTER} && phase = ""`,
 		fields: 'id,title,type',
 		sort: 'title'
 	});

@@ -6,7 +6,7 @@ import { primaryPhaseForDay } from '$lib/itinerary/phases';
 import { toDateOnly } from '$lib/itinerary/multi-day';
 import { codesForItem } from '$lib/documents/codes';
 import { getNowFeed } from '$lib/trip-mode/now-state';
-import { isSpanning } from '$lib/trip-mode/spanning';
+import { showsAsSpan } from '$lib/trip-mode/spanning';
 import { currentPhaseId } from '$lib/trip-mode/current-phase';
 import { myTrips, resolveTrip, type TripRef } from '../context';
 import { dayFrom, dayHeading, loadTripDays, loadTripItems, resolveDate } from '../day-data';
@@ -87,7 +87,7 @@ export const tripBrief: ToolDef = {
 		if (!d.day) return result(trip.title, [], { note: 'This trip has no days yet.' });
 
 		const cards: Card[] = [];
-		const discrete = d.items.filter((i) => !isSpanning(i));
+		const discrete = d.items.filter((i) => !showsAsSpan(i));
 		// Before the trip, day one is shown whole: nothing has started yet.
 		const now = upcoming ? new Date(`${date}T00:00:00Z`) : tripNow(tz, ctx.now);
 		const feed = getNowFeed(discrete, now, true, t.memberId);
@@ -97,7 +97,7 @@ export const tripBrief: ToolDef = {
 				(i) =>
 					i.day &&
 					i.day !== d.day!.id &&
-					!isSpanning(i) &&
+					!showsAsSpan(i) &&
 					i.start_time &&
 					toDateOnly(i.start_time) > date
 			)

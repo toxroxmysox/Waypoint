@@ -8,6 +8,7 @@ import { spanningItemsForDate } from '$lib/itinerary/multi-day';
 import { summarizeDays } from '$lib/itinerary/day-card';
 import { withAvatarUrls } from '$lib/group-input/member-avatar';
 import { DISCRETE_FILTER, SPANNING_FILTER } from '$lib/trip-mode/spanning';
+import { PARKING_LOT_FILTER } from '$lib/itinerary/parking-lot';
 
 // A failed PB call's status when it is an HTTP error, else 500 (#499: a refused
 // move is a 403, not a 500).
@@ -74,7 +75,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const parkingLotItems =
 		phaseIds.length > 0
 			? await locals.pb.collection('items').getFullList<Item>({
-					filter: `trip = "${trip.id}" && status = "unplanned" && (${phaseIds.map((id) => `phase = "${id}"`).join(' || ')})`,
+					filter: `trip = "${trip.id}" && ${PARKING_LOT_FILTER} && (${phaseIds.map((id) => `phase = "${id}"`).join(' || ')})`,
 					sort: 'sort_order'
 				})
 			: [];

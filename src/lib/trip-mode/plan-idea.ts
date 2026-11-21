@@ -1,7 +1,7 @@
 import type { Item } from '$lib/types';
 import { orderDayItems } from '$lib/itinerary/timeline';
 import { rebalanceDayOrder } from '$lib/itinerary/sort-order';
-import { isSpanning } from './spanning';
+import { showsAsSpan } from './spanning';
 
 // #245 Door 1 — plan a parked idea onto TODAY, placed AFTER the current
 // moment. NO new `replan` module (PRD §7): this composes the existing shared
@@ -23,8 +23,6 @@ function parseDateTime(dt: string): Date {
 	return new Date(dt.replace(' ', 'T'));
 }
 
-const isMultiDay = isSpanning; // #498 — flights with an end_date stay discrete
-
 /**
  * Display order for today with `planned` slotted in right AFTER the current
  * moment. "After the current moment" = after every item whose `start_time` is
@@ -39,7 +37,7 @@ export function plannedDisplayOrder(dayItems: Item[], planned: Item, now: Date):
 	// The day's existing items in canonical display order, excluding multi-day
 	// banners (they never carry day `sort_order`) and the planned idea itself
 	// (it may already be in the array if the caller attached it first).
-	const ordered = orderDayItems(dayItems.filter((i) => !isMultiDay(i) && i.id !== planned.id));
+	const ordered = orderDayItems(dayItems.filter((i) => !showsAsSpan(i) && i.id !== planned.id));
 
 	// Insert after the last item that has already started (at/before now). Untimed
 	// items (no start_time) count as "not yet anchored" → they sit after the

@@ -7,7 +7,7 @@ import { formatDayDate, formatTimeText } from '$lib/shell/format';
 import { orderDayItems } from '$lib/itinerary/timeline';
 import { spanBandText, spanningItemsForDate, toDateOnly } from '$lib/itinerary/multi-day';
 import { isOvernightFlight, landingView, overnightNote } from '$lib/itinerary/overnight';
-import { isSpanning } from '$lib/trip-mode/spanning';
+import { showsAsSpan } from '$lib/trip-mode/spanning';
 import type { McpContext } from './context';
 import { EMOJI, stripHtml, type Card } from './present';
 
@@ -101,9 +101,9 @@ export function dayFrom(days: Day[], all: Item[], date: string): DayData {
 	if (!day) return { date, day: null, days, stays: [], items: [], notes: '' };
 	// #538 — a red-eye is an item on both days (as on the Day page and Now), never a
 	// stay. On its landing day it's ordered by landing time.
-	const stays = spanningItemsForDate(all.filter(isSpanning), days, date);
+	const stays = spanningItemsForDate(all.filter(showsAsSpan), days, date);
 	const stayIds = new Set(stays.map((s) => s.id));
-	const own = all.filter((i) => i.day === day.id && !isSpanning(i) && !stayIds.has(i.id));
+	const own = all.filter((i) => i.day === day.id && !showsAsSpan(i) && !stayIds.has(i.id));
 	const landing = all.filter(
 		(i) => i.day !== day.id && isOvernightFlight(i) && toDateOnly(i.end_date!) === date
 	);

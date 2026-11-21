@@ -1,5 +1,5 @@
 import type { Item } from '$lib/types';
-import { isSpanning } from './spanning';
+import { showsAsSpan } from './spanning';
 
 // #245 Door 1 — the boundary-day core. A calendar day can belong to ≥2 phases
 // (a travel-transition day). To scope the "ideas for now" strip to the CURRENT
@@ -25,8 +25,6 @@ function parseDateTime(dt: string): Date {
 	return new Date(dt.replace(' ', 'T'));
 }
 
-const isMultiDay = isSpanning; // #498 — flights with an end_date stay discrete
-
 function isTransit(i: Item): boolean {
 	return TRANSIT_TYPES.has(i.type);
 }
@@ -35,7 +33,7 @@ function isTransit(i: Item): boolean {
 function activeItem(items: Item[], now: Date): Item | null {
 	const t = now.getTime();
 	const ongoing = items.filter((i) => {
-		if (isMultiDay(i)) return false;
+		if (showsAsSpan(i)) return false;
 		if (!i.start_time || !i.end_time) return false;
 		return parseDateTime(i.start_time).getTime() <= t && t < parseDateTime(i.end_time).getTime();
 	});
@@ -54,7 +52,7 @@ function activeItem(items: Item[], now: Date): Item | null {
 function mostRecentByTime(items: Item[], now: Date): Item | null {
 	const t = now.getTime();
 	const started = items.filter(
-		(i) => !isMultiDay(i) && !!i.start_time && parseDateTime(i.start_time).getTime() <= t
+		(i) => !showsAsSpan(i) && !!i.start_time && parseDateTime(i.start_time).getTime() <= t
 	);
 	if (started.length === 0) return null;
 	return started
@@ -120,7 +118,7 @@ function nextArrivingItem(transit: Item, todayItems: Item[], forwardItems: Item[
 		.filter(
 			(i) =>
 				i.id !== transit.id &&
-				!isMultiDay(i) &&
+				!showsAsSpan(i) &&
 				!!i.start_time &&
 				parseDateTime(i.start_time).getTime() >= transitStart
 		)
@@ -129,7 +127,7 @@ function nextArrivingItem(transit: Item, todayItems: Item[], forwardItems: Item[
 	// forwardItems are already later-day, earliest-first (caller contract), but
 	// re-sort defensively so the merge is deterministic regardless of input order.
 	const laterDays = forwardItems
-		.filter((i) => !isMultiDay(i))
+		.filter((i) => !showsAsSpan(i))
 		.slice()
 		.sort((a, b) => parseDateTime(a.start_time).getTime() - parseDateTime(b.start_time).getTime());
 

@@ -15,6 +15,7 @@ import {
 import { formatCalendarDate } from '$lib/shell/format';
 import { planIdeaOnDay } from '$lib/server/plan-idea';
 import { pbBaseUrl } from '$lib/shell/pb';
+import { PARKING_LOT_FILTER } from '$lib/itinerary/parking-lot';
 
 // #249/#250 — ghost approve/reject reuse the same /api/suggestions/review hook
 // endpoint the Inbox uses (server-side: owner gate + author attribution + vote
@@ -308,7 +309,7 @@ export const actions: Actions = {
 		try {
 			// Order among this phase's existing ideas (day-less unplanned items).
 			const existing = await locals.pb.collection('items').getFullList({
-				filter: `trip = "${trip.id}" && phase = "${phase.id}" && status = "unplanned"`,
+				filter: `trip = "${trip.id}" && phase = "${phase.id}" && ${PARKING_LOT_FILTER}`,
 				fields: 'sort_order'
 			});
 			const sort_order = nextSortOrder(existing.map((i) => Number(i.sort_order)));
@@ -367,7 +368,7 @@ export const actions: Actions = {
 
 			// Gap collapsed → rebalance this phase's unplanned ideas as one block.
 			const ideas = await locals.pb.collection('items').getFullList<Item>({
-				filter: `phase = "${params.phaseId}" && status = "unplanned" && day = ""`,
+				filter: `phase = "${params.phaseId}" && ${PARKING_LOT_FILTER} && day = ""`,
 				sort: 'sort_order',
 				fields: 'id,sort_order'
 			});

@@ -17,6 +17,7 @@ import { handleSaveMemory } from '$lib/memory/save-memory.server';
 import type { Memory } from '$lib/memory/types';
 import { sortSpans } from '$lib/itinerary/multi-day';
 import { DISCRETE_FILTER, SPANNING_FILTER } from '$lib/trip-mode/spanning';
+import { PARKING_LOT_FILTER } from '$lib/itinerary/parking-lot';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	const { trip, membership, phases, days } = await parent();
@@ -139,7 +140,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 			// The current phase's parked (unplanned) ideas — the existing per-phase
 			// parking zone (#87), scoped to this phase ONLY (not pooled across the day).
 			const phaseIdeas = await locals.pb.collection('items').getFullList<Item>({
-				filter: `trip = "${trip.id}" && status = "unplanned" && phase = "${derivedPhaseId}"`,
+				filter: `trip = "${trip.id}" && ${PARKING_LOT_FILTER} && phase = "${derivedPhaseId}"`,
 				sort: 'sort_order'
 			});
 

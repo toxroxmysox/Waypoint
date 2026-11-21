@@ -1,7 +1,7 @@
 import type { Item } from '$lib/types';
 import type { NowViewState, NowFeed } from './types';
 import { orderDayItems, timeShape, itemAnchorTime, isAnchored } from '$lib/itinerary/timeline';
-import { isSpanning } from './spanning';
+import { showsAsSpan } from './spanning';
 
 /**
  * Evening cutoff (trip-local hour). It does NOT hide upcoming items — it ONLY
@@ -23,7 +23,6 @@ function parseDateTime(dt: string): Date {
  * `end_time` hijacks the current-item choice (#82) and drives a trip-length
  * countdown (#83) — nor a forward-list row.
  */
-const isMultiDay = isSpanning; // #498 — flights with an end_date stay discrete
 
 const ms = (dt: string) => parseDateTime(dt).getTime();
 
@@ -48,7 +47,7 @@ function bucketNowItems(
 	viewerMemberId = ''
 ): { earlier: Item[]; ongoing: Item[]; coming: Item[] } {
 	const t = now.getTime();
-	const day = items.filter((i) => !isMultiDay(i));
+	const day = items.filter((i) => !showsAsSpan(i));
 	// Latest start among items that have already begun, per start-only check below.
 	const begunStarts = day.filter((i) => !!i.start_time && ms(i.start_time) <= t);
 	const earlier: Item[] = [];
@@ -124,7 +123,7 @@ export function getNowViewState(
 		// Count what was PLANNED for today, not a done-count: done is assigned at
 		// Closeout and no Trip-Mode surface can move it, so "0 of N done" all day
 		// was a lie (#199). The summary reads "N things on today's plan".
-		const counted = todayItems.filter((i) => !isMultiDay(i));
+		const counted = todayItems.filter((i) => !showsAsSpan(i));
 		return {
 			focus: { kind: 'wrapped-summary', totalCount: counted.length },
 			forwardItems: []
