@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { Day, Expense, Item, TripMember, Vote } from '$lib/types';
 import { toDateOnly } from '$lib/itinerary/multi-day';
 import { tallyVotes } from '$lib/group-input/voting';
+import { CODE_ORDER } from '$lib/documents/codes';
 import { myTrips } from '../context';
 import { ITEM_FIELDS, itemCard } from '../day-data';
 import { offTrip, result, stripHtml, type Card } from '../present';
@@ -46,7 +47,7 @@ export const getItem: ToolDef = {
 			pb.collection('documents').getFullList({
 				filter: `${byItem('item')} && kind = "code"`,
 				fields: 'id,code_label,code_value',
-				sort: 'created',
+				sort: CODE_ORDER,
 				requestKey: null
 			}),
 			pb

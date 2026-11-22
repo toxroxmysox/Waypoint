@@ -4,7 +4,7 @@ import { formatClock, formatTimeText } from '$lib/shell/format';
 import { tripNow, tripTz } from '$lib/shell/trip-time';
 import { primaryPhaseForDay } from '$lib/itinerary/phases';
 import { toDateOnly } from '$lib/itinerary/multi-day';
-import { codesForItem } from '$lib/documents/codes';
+import { codesForItem, CODE_ORDER } from '$lib/documents/codes';
 import { getNowFeed } from '$lib/trip-mode/now-state';
 import { isSpanning } from '$lib/trip-mode/spanning';
 import { currentPhaseId } from '$lib/trip-mode/current-phase';
@@ -79,7 +79,7 @@ export const tripBrief: ToolDef = {
 			ctx.pb.collection('documents').getFullList<CodeDoc>({
 				filter: ctx.pb.filter('trip = {:t} && kind = "code"', { t: trip.id }),
 				fields: 'id,item,kind,code_label,code_value',
-				sort: 'created',
+				sort: CODE_ORDER,
 				requestKey: null
 			})
 		]);

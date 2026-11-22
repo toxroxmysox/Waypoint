@@ -4,7 +4,9 @@ import {
 	isFileDocument,
 	codesByItem,
 	codesForItem,
-	attachCodesToItems
+	attachCodesToItems,
+	CODE_ORDER,
+	NEWEST_FIRST
 } from './codes';
 
 // #268 / ADR-0016 — codes are kind:'code' Documents. These pure helpers re-source
@@ -73,5 +75,22 @@ describe('attachCodesToItems', () => {
 		attachCodesToItems(items, [code('a', 'C', 'X')]);
 		expect(items[0].confirmation_codes).toEqual([{ label: 'C', value: 'X' }]);
 		expect(items[1].confirmation_codes).toEqual([]); // no docs → emptied
+	});
+});
+
+// #592 — Now and Item detail showed one item's codes in opposite orders. Codes saved
+// in the same millisecond tie on `created`; a newest-first fetch that is then
+// reversed flips the tie. Both sorts must be total orders (`@rowid` breaks the tie)
+// and exact mirrors, so reversing a NEWEST_FIRST fetch yields CODE_ORDER.
+describe('code sort orders (#592)', () => {
+	const keys = (s: string) => s.split(',');
+	const negate = (k: string) => (k.startsWith('-') ? k.slice(1) : `-${k}`);
+
+	it('stored order is created, then insertion order', () => {
+		expect(keys(CODE_ORDER)).toEqual(['created', '@rowid']);
+	});
+
+	it('newest-first is the exact reverse of stored order', () => {
+		expect(keys(NEWEST_FIRST)).toEqual(keys(CODE_ORDER).map(negate));
 	});
 });

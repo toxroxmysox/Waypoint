@@ -14,7 +14,7 @@ import type {
 } from '$lib/types';
 import { buildTripExport } from '$lib/portability/export';
 import { fetchManualChecklists } from '$lib/itinerary/checklist-loaders';
-import { codesByItem } from '$lib/documents/codes';
+import { codesByItem, CODE_ORDER } from '$lib/documents/codes';
 
 export const GET: RequestHandler = async ({ params, locals }) => {
 	if (!locals.user) {
@@ -51,7 +51,7 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 	// Fetch them (oldest-first → creation order) and key by item id for the export.
 	const codeDocs = await locals.pb.collection('documents').getFullList<Document>({
 		filter: `trip = "${trip.id}" && kind = "code"`,
-		sort: 'created'
+		sort: CODE_ORDER
 	});
 	const codesByItemId = codesByItem(codeDocs);
 
