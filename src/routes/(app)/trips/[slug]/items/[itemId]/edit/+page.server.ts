@@ -5,7 +5,7 @@ import { datetimeToTime } from '$lib/shell/format';
 import { combineDateTime } from '$lib/shell/trip-time';
 import { syncGoalLinks } from '$lib/itinerary/goal-links';
 import type { Document } from '$lib/types';
-import { codesForItem } from '$lib/documents/codes';
+import { codesForItem, CODE_ORDER } from '$lib/documents/codes';
 import { reconcileItemCodes } from '$lib/documents/reconcile-codes';
 import { itemPermissions, ITEM_ACTION_ERRORS } from '$lib/itinerary/item-actions';
 
@@ -53,7 +53,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	// so the form populates from the canonical home, not the inert legacy json field.
 	const codeDocs = await locals.pb.collection('documents').getFullList<Document>({
 		filter: `item = "${item.id}" && kind = "code"`,
-		sort: 'created'
+		sort: CODE_ORDER
 	});
 
 	return {

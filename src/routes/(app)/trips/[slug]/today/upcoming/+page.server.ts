@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import type { Day, Item, Document, TripMember } from '$lib/types';
-import { attachCodesToItems } from '$lib/documents/codes';
+import { attachCodesToItems, CODE_ORDER } from '$lib/documents/codes';
 import { docCountsForItems } from '$lib/documents/doc-counts';
 import { withAvatarUrls } from '$lib/group-input/member-avatar';
 import { tripNow, tripTz } from '$lib/shell/trip-time';
@@ -37,7 +37,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 	if (items.length > 0) {
 		const codeDocs = await locals.pb.collection('documents').getFullList<Document>({
 			filter: `trip = "${trip.id}" && kind = "code"`,
-			sort: 'created'
+			sort: CODE_ORDER
 		});
 		attachCodesToItems(items, codeDocs);
 	}

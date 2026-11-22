@@ -3,7 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 import type { Document, Item } from '$lib/types';
 import { toDocumentView } from '$lib/documents/view';
 import { documentTypeBreakdown, itemsWithCodes } from '$lib/documents/grouping';
-import { isFileDocument } from '$lib/documents/codes';
+import { isFileDocument, NEWEST_FIRST } from '$lib/documents/codes';
 
 export const load: PageServerLoad = async ({ parent, locals }) => {
 	const { trip, membership } = await parent();
@@ -15,7 +15,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 	const [allDocuments, items] = await Promise.all([
 		locals.pb.collection('documents').getFullList<Document>({
 			filter: `trip = "${trip.id}"`,
-			sort: '-created',
+			sort: NEWEST_FIRST,
 			expand: 'uploaded_by'
 		}),
 		locals.pb.collection('items').getFullList<Item>({
@@ -31,8 +31,8 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 	const fileDocs = allDocuments.filter(isFileDocument);
 	const documents = fileDocs.map((d) => toDocumentView(d, trip.slug, itemMap.get(d.item)));
 
-	// Code docs, oldest-first (reverse the newest-first fetch) so the codes section
-	// reads in creation order.
+	// Code docs in CODE_ORDER (the reverse of the NEWEST_FIRST fetch, #592) so the
+	// codes section reads in the same order as every other surface.
 	const codeDocs = allDocuments.filter((d) => d.kind === 'code').reverse();
 
 	// Lightweight list for the add-sheet scope selector ("Whole trip" or an item).

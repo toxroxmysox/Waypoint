@@ -14,7 +14,7 @@ import type {
 } from '$lib/types';
 import { VOTE_OPTIONS, type VoteValue } from '$lib/group-input/voting';
 import { toDocumentView } from '$lib/documents/view';
-import { isFileDocument, codesForItem } from '$lib/documents/codes';
+import { isFileDocument, codesForItem, NEWEST_FIRST } from '$lib/documents/codes';
 import { memberAvatarUrl, withAvatarUrls } from '$lib/group-input/member-avatar';
 import { computeMovePatch } from '$lib/itinerary/move-item';
 import { paidSummaryForItem } from '$lib/money/linked-expenses';
@@ -80,7 +80,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 				.collection('documents')
 				.getFullList<Document>({
 					filter: `item = "${item.id}"`,
-					sort: '-created',
+					sort: NEWEST_FIRST,
 					expand: 'uploaded_by'
 				})
 				.catch(() => [] as Document[]),
@@ -111,7 +111,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
 
 	// #268 / ADR-0016 — codes are now `kind: 'code'` Documents. Only file docs
 	// render as cards in the DocumentSection; code docs re-source the item's
-	// `confirmation_codes` (oldest-first → creation order) so the inline editor and
+	// `confirmation_codes` (reversed NEWEST_FIRST = CODE_ORDER, #592) so the inline editor and
 	// the view-mode Booking section read from the canonical home.
 	const documents = rawDocuments
 		.filter(isFileDocument)

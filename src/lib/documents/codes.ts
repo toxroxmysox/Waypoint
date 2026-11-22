@@ -19,6 +19,21 @@ export function isFileDocument(doc: Pick<Document, 'kind'>): boolean {
 	return doc.kind !== 'code';
 }
 
+/**
+ * #592 — the one order codes read in everywhere: stored (creation) order. Codes
+ * saved in the same millisecond (one form submit, an import, a seed) tie on
+ * `created`, and PB returns ties in whatever order the query plan gives, so a
+ * newest-first fetch that is then reversed showed them flipped. `@rowid` (insertion
+ * order) makes this a total order. Use it as the PB `sort` for every code fetch.
+ */
+export const CODE_ORDER = 'created,@rowid';
+
+/**
+ * The exact reverse of CODE_ORDER, for fetches that mix file and code Documents and
+ * show files newest first. Reversing a list fetched with this yields CODE_ORDER.
+ */
+export const NEWEST_FIRST = '-created,-@rowid';
+
 type CodeDoc = Pick<Document, 'item' | 'code_label' | 'code_value' | 'kind'>;
 
 /** Project a single code Document into the legacy `{ label, value }` shape. */
@@ -31,8 +46,8 @@ export function codeFromDocument(doc: CodeDoc): ConfirmationCode {
  * with no value are dropped (a value-less code is meaningless — and the create
  * hook rejects it). Trip-scoped code docs (no item) bucket under the empty key.
  *
- * Pass docs already ordered the way the UI wants them (the loaders fetch oldest
- * first so the inline editor and the Documents window read in creation order).
+ * Pass docs in CODE_ORDER (fetch with it, or reverse a NEWEST_FIRST fetch) so
+ * every surface lists an item's codes in the same order.
  */
 export function codesByItem(docs: CodeDoc[]): Map<string, ConfirmationCode[]> {
 	const out = new Map<string, ConfirmationCode[]>();
